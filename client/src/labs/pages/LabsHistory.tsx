@@ -631,10 +631,10 @@ export default function LabsHistory() {
         style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 4px" }}
         data-testid="history-title"
       >
-        {t("history.archiveTitle", "Archive")}
+        {t("history.archiveTitle", "Community Archive")}
       </h1>
       <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: "0 0 12px" }}>
-        {t("history.archiveSubtitle", "Past tastings, analytics & group taste profile")}
+        {t("history.archiveSubtitle", "Historical tastings & results")}
       </p>
 
       <div

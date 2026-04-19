@@ -32,7 +32,7 @@ export const SECTIONS: BibliothekSection[] = [
     titleKey: "bibliothek.sectionCommunity",
     titleFallback: "Community",
     links: [
-      { icon: Archive, labelKey: "bibliothek.archive", labelFallback: "Archive", descKey: "bibliothek.archiveDesc", descFallback: "Historical tastings & analytics", href: "/labs/history", testId: "labs-link-bibliothek-archive" },
+      { icon: Archive, labelKey: "bibliothek.archive", labelFallback: "Community Archive", descKey: "bibliothek.archiveDesc", descFallback: "Historical tastings & analytics", href: "/labs/history", testId: "labs-link-bibliothek-archive" },
     ],
   },
   {

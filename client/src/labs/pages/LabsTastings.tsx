@@ -470,7 +470,7 @@ export default function LabsTastings() {
         <Search className="labs-tastings-search-icon w-4 h-4" />
         <input
           className="labs-input labs-tastings-search-input"
-          placeholder={filterTab === "archive" ? t("tastings.archiveSearchPlaceholder", "Search archive...") : "Search tastings..."}
+          placeholder={filterTab === "archive" ? t("tastings.archiveSearchPlaceholder", "Search my archive...") : "Search tastings..."}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           data-testid="labs-tastings-search"
@@ -481,7 +481,7 @@ export default function LabsTastings() {
         <div className="labs-segmented">
           {(["all", "hosting", "joined", "archive"] as const).map((tab) => {
             const labelKey = `tastings.tab${tab.charAt(0).toUpperCase()}${tab.slice(1)}`;
-            const fallback = tab === "all" ? "All" : tab === "hosting" ? "Hosting" : tab === "joined" ? "Joined" : "Archive";
+            const fallback = tab === "all" ? "All" : tab === "hosting" ? "Hosting" : tab === "joined" ? "Joined" : "My Archive";
             return (
               <button
                 key={tab}
@@ -547,12 +547,12 @@ export default function LabsTastings() {
             </svg>
             <h2 className="labs-empty-title">
               {searchQuery
-                ? t("tastings.archiveEmptySearch", "No archived tastings match your search.")
-                : t("tastings.archiveEmptyTitle", "No archived tastings yet")}
+                ? t("tastings.archiveEmptySearch", "No tastings in your archive match your search.")
+                : t("tastings.archiveEmptyTitle", "Your archive is still empty")}
             </h2>
             {!searchQuery && (
               <p className="labs-empty-sub">
-                {t("tastings.archiveEmptySub", "Once a tasting is closed it will appear here.")}
+                {t("tastings.archiveEmptySub", "Once one of your tastings is closed it will appear in your archive.")}
               </p>
             )}
           </div>
