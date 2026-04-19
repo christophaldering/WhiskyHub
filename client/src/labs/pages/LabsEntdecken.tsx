@@ -11,10 +11,19 @@
         import CollectionBadge from "@/labs/components/CollectionBadge";
         import { apiUrl } from "@/lib/native";
         import {
-          Search, ChevronRight, Wine,
-          BookOpen,
+          Search, ChevronRight, ChevronLeft, Wine,
+          BookOpen, List, BarChart3, MapPin, Building2, Compass, Activity,
           X, ChevronDown, Check, ArrowUp, ArrowDown, Star,
         } from "lucide-react";
+
+        type WhiskyHubMode = "hub" | "list";
+        type WhiskyHubPreset =
+          | "all"
+          | "topRated"
+          | "mostTasted"
+          | "byRegion"
+          | "byDistillery"
+          | "flavourMap";
 
         type DistilleryGroup = {
           key: string;
@@ -91,6 +100,7 @@
 
         type ExploreSnapshot = {
           activeView: "whiskies" | "bibliothek";
+          whiskyHubMode: WhiskyHubMode;
           search: string;
           visibleCount: number;
           sort: string;
@@ -153,6 +163,9 @@
 
           const [activeView, setActiveView] = useState<"whiskies" | "bibliothek">(
             () => initialTabFromUrl ?? initialSnapshot?.activeView ?? "whiskies",
+          );
+          const [whiskyHubMode, setWhiskyHubMode] = useState<WhiskyHubMode>(
+            () => initialSnapshot?.whiskyHubMode ?? "hub",
           );
 
           useEffect(() => {
@@ -458,6 +471,7 @@
           useEffect(() => {
             writeExploreSnapshot({
               activeView,
+              whiskyHubMode,
               search,
               visibleCount,
               sort,
@@ -472,7 +486,33 @@
               },
               expandedGroups: Array.from(expandedGroups),
             });
-          }, [activeView, search, visibleCount, sort, sortDirection, filterSearch, filters, expandedGroups]);
+          }, [activeView, whiskyHubMode, search, visibleCount, sort, sortDirection, filterSearch, filters, expandedGroups]);
+
+          const applyWhiskyHubPreset = useCallback((preset: WhiskyHubPreset) => {
+            if (preset === "flavourMap") {
+              navigate("/labs/discover/lexicon?tab=flavour-map");
+              return;
+            }
+            setSearch("");
+            setVisibleCount(20);
+            setFilters({
+              region: new Set(), distillery: new Set(), category: new Set(),
+              country: new Set(), peatLevel: new Set(),
+            });
+            setExpandedGroups(new Set());
+            if (preset === "topRated") {
+              setSort("avg"); setSortDirection("desc"); setExpandedFilter(null);
+            } else if (preset === "mostTasted") {
+              setSort("most"); setSortDirection("desc"); setExpandedFilter(null);
+            } else if (preset === "byRegion") {
+              setSort("alpha"); setSortDirection("asc"); setExpandedFilter("region");
+            } else if (preset === "byDistillery") {
+              setSort("alpha"); setSortDirection("asc"); setExpandedFilter("distillery");
+            } else {
+              setSort("alpha"); setSortDirection("asc"); setExpandedFilter(null);
+            }
+            setWhiskyHubMode("list");
+          }, [navigate]);
 
           useEffect(() => {
             if (prevWhiskyCountRef.current !== null && prevWhiskyCountRef.current !== whiskies.length) {
@@ -545,8 +585,70 @@
                 </div>
               )}
 
-              {activeView === "whiskies" && (
+              {activeView === "whiskies" && whiskyHubMode === "hub" && (
+                <div className="labs-fade-in labs-stagger-2" data-testid="explore-whiskies-hub" style={{ marginBottom: 32 }}>
+                  <p className="labs-section-label flex items-center gap-2" style={{ marginBottom: 10 }}>
+                    <Wine className="w-3.5 h-3.5" />
+                    {t("discover.whiskies", "Whiskies")}
+                  </p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    {([
+                      { preset: "all", icon: List, labelKey: "explore.hub.allTitle", labelFb: "Alle Whiskies", descKey: "explore.hub.allDesc", descFb: "Stöbern, suchen, filtern", testId: "tile-whisky-all" },
+                      { preset: "topRated", icon: Star, labelKey: "explore.hub.topTitle", labelFb: "Top bewertet", descKey: "explore.hub.topDesc", descFb: "Höchste Ø Scores", testId: "tile-whisky-top" },
+                      { preset: "byRegion", icon: MapPin, labelKey: "explore.hub.regionTitle", labelFb: "Nach Region", descKey: "explore.hub.regionDesc", descFb: "Schottland, Japan, Irland \u2026", testId: "tile-whisky-region" },
+                      { preset: "byDistillery", icon: Building2, labelKey: "explore.hub.distilleryTitle", labelFb: "Nach Brennerei", descKey: "explore.hub.distilleryDesc", descFb: "207 Destillerien", testId: "tile-whisky-distillery" },
+                      { preset: "flavourMap", icon: Compass, labelKey: "explore.hub.flavourTitle", labelFb: "Flavour Map", descKey: "explore.hub.flavourDesc", descFb: "Geschmacksprofile visualisiert", testId: "tile-whisky-flavour" },
+                      { preset: "mostTasted", icon: Activity, labelKey: "explore.hub.mostTitle", labelFb: "Meist verkostet", descKey: "explore.hub.mostDesc", descFb: "Was die Community oft im Glas hat", testId: "tile-whisky-most" },
+                    ] as { preset: WhiskyHubPreset; icon: typeof Wine; labelKey: string; labelFb: string; descKey: string; descFb: string; testId: string }[]).map((tile) => (
+                      <button
+                        key={tile.preset}
+                        type="button"
+                        onClick={() => applyWhiskyHubPreset(tile.preset)}
+                        data-testid={tile.testId}
+                        className="labs-card"
+                        style={{
+                          minHeight: 92,
+                          padding: "14px 16px",
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: 12,
+                          cursor: "pointer",
+                          height: "100%",
+                          textAlign: "left",
+                          background: "var(--labs-surface)",
+                          border: "1px solid var(--labs-border)",
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        <div style={{ width: 38, height: 38, borderRadius: 10, background: "var(--labs-surface-elevated)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <tile.icon style={{ width: 18, height: 18, color: "var(--labs-accent)" }} strokeWidth={1.8} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.25 }}>
+                            {t(tile.labelKey, tile.labelFb)}
+                          </div>
+                          <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 3, lineHeight: 1.35 }}>
+                            {t(tile.descKey, tile.descFb)}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeView === "whiskies" && whiskyHubMode === "list" && (
               <div className="labs-fade-in labs-stagger-2" style={{ marginBottom: 32 }}>
+                <button
+                  type="button"
+                  onClick={() => { setWhiskyHubMode("hub"); setExpandedFilter(null); }}
+                  data-testid="button-back-whisky-hub"
+                  className="labs-btn-ghost"
+                  style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 10, color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", padding: "4px 0", fontFamily: "inherit", fontSize: 14 }}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  {t("explore.hub.back", "Whiskies")}
+                </button>
                 <p className="labs-section-label flex items-center gap-2" style={{ marginBottom: 10 }}>
                   <Wine className="w-3.5 h-3.5" />
                   {t("discover.whiskies", "Whiskies")}
