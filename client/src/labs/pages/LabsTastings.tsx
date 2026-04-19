@@ -21,13 +21,6 @@ function isTastingsTab(value: string | null): value is TastingsTab {
   return value === "join" || value === "solo" || value === "host" || value === "share";
 }
 
-function getTimeGreetingKey(): string {
-  const h = new Date().getHours();
-  if (h < 12) return "hub.timeGreetingMorning";
-  if (h < 18) return "hub.timeGreetingAfternoon";
-  return "hub.timeGreetingEvening";
-}
-
 type FilterTab = "all" | "hosting" | "joined" | "archive";
 type TimeFilter = "upcoming" | "live";
 
@@ -360,23 +353,8 @@ export default function LabsTastings() {
     );
   }
 
-  const displayName = currentParticipant?.name?.trim() || t("hub.guest");
-  const timeKey = getTimeGreetingKey();
-
   return (
     <div className="labs-page labs-fade-in">
-      <div className="labs-hub-greeting" data-testid="labs-hub">
-        <span className="labs-hub-greeting-time" data-testid="hub-time-greeting">
-          {t(timeKey)}
-        </span>
-        <h1 className="labs-hub-greeting-name" data-testid="hub-greeting-name">
-          {displayName}
-        </h1>
-        <p className="labs-hub-greeting-mood" data-testid="hub-mood-line">
-          {t("hub.moodLine")}
-        </p>
-      </div>
-
       <div className="labs-tastings-header">
         <div className="flex items-center justify-between">
           <h1
