@@ -2236,24 +2236,34 @@ function LabsToggle({ checked, onChange, icon, label, description, testId }: {
 }) {
   return (
     <div
-      className="labs-card p-4 flex items-center justify-between cursor-pointer"
+      className="labs-card p-4 flex items-center justify-between gap-3 cursor-pointer"
       onClick={() => onChange(!checked)}
       data-testid={testId}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-1 min-w-0">
         <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center"
+          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
           style={{ background: checked ? "var(--labs-accent-muted)" : "var(--labs-surface)" }}
         >
           {icon}
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>{label}</p>
-          <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{description}</p>
+          <p
+            className="text-xs"
+            style={{
+              color: "var(--labs-text-muted)",
+              hyphens: "none",
+              WebkitHyphens: "none",
+              overflowWrap: "break-word",
+            }}
+          >
+            {description}
+          </p>
         </div>
       </div>
       <div
-        className="w-12 h-7 rounded-full transition-all flex items-center px-0.5"
+        className="w-12 h-7 rounded-full transition-all flex items-center px-0.5 flex-shrink-0"
         style={{
           background: checked ? "var(--labs-accent)" : "var(--labs-border)",
           justifyContent: checked ? "flex-end" : "flex-start",
