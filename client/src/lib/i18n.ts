@@ -3094,6 +3094,17 @@ const resources = {
         noDrams: "No drams yet — start your first tasting!",
         bottleSharing: "Share Bottles",
         bottleSharingSub: "Async tasting · no time pressure",
+        notRatedYet: "Not rated yet",
+        origin: {
+          tasting: "Tasting",
+          solo: "Solo",
+          messe: "Fair",
+          journal: "Journal",
+        },
+        originStatus: {
+          draft: "Draft",
+          live: "Live",
+        },
       },
       bottleSharing: {
         title: "Bottle Sharing",
@@ -11975,6 +11986,17 @@ const resources = {
         noDrams: "Noch keine Drams — starte dein erstes Tasting!",
         bottleSharing: "Flaschen teilen",
         bottleSharingSub: "Async-Tasting · kein Zeitdruck",
+        notRatedYet: "Noch nicht bewertet",
+        origin: {
+          tasting: "Tasting",
+          solo: "Solo",
+          messe: "Messe",
+          journal: "Journal",
+        },
+        originStatus: {
+          draft: "Entwurf",
+          live: "Läuft",
+        },
       },
       bottleSharing: {
         title: "Bottle-Sharing",

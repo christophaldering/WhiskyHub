@@ -8,12 +8,12 @@ import { stripGuestSuffix } from "@/lib/utils";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
 import { useTranslation } from "react-i18next";
 import { JoinIcon, GlassIcon, HostIcon } from "@/labs/components/FlavourIcons";
-import i18n from "i18next";
 import LabsJoin from "@/labs/pages/LabsJoin";
 import LabsSolo from "@/labs/pages/LabsSolo";
 import LabsHost from "@/labs/pages/LabsHost";
 import LabsBottleSharing from "@/labs/pages/LabsBottleSharing";
 import { EmbeddedTastingsProvider } from "@/labs/embeddedTastingsContext";
+import { RecentRatedList, buildRecentRatedItems } from "@/labs/components/RecentRatedList";
 
 type TastingsTab = "join" | "solo" | "host" | "share";
 
@@ -212,37 +212,10 @@ export default function LabsTastings() {
     return items;
   }, [historyData, searchQuery]);
 
-  const recentDrams = useMemo(() => {
-    const items: { id: string; whiskyName: string; score: number; date: string }[] = [];
-    if (historyData?.tastings) {
-      for (const tasting of historyData.tastings) {
-        if (!tasting.ratings) continue;
-        for (const r of tasting.ratings) {
-          items.push({
-            id: `${tasting.id}-${r.whiskyId}`,
-            whiskyName: r.whiskyName || "Unknown Whisky",
-            score: r.normalizedScore ?? r.overall ?? 0,
-            date: r.updatedAt || tasting.date || "",
-          });
-        }
-      }
-    }
-    if (Array.isArray(journalData)) {
-      for (const j of journalData) {
-        if (j.status === "draft" || j.deletedAt) continue;
-        const score = j.personalScore ?? j.overall ?? 0;
-        if (score <= 0) continue;
-        items.push({
-          id: `journal-${j.id}`,
-          whiskyName: j.name || "Unknown Whisky",
-          score,
-          date: j.tastingDate || j.createdAt || "",
-        });
-      }
-    }
-    items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    return items.slice(0, 5);
-  }, [historyData, journalData]);
+  const recentDrams = useMemo(
+    () => buildRecentRatedItems(historyData, journalData, { participantId: currentParticipant?.id }),
+    [historyData, journalData, currentParticipant?.id],
+  );
 
   if (!currentParticipant) {
     if (activeTab) {
@@ -864,28 +837,12 @@ export default function LabsTastings() {
         </>
       )}
 
-      <div className="labs-hub-recent labs-fade-in" data-testid="hub-recent-section">
-        <span className="labs-section-label">{t("hub.recentlyRated")}</span>
-        {recentDrams.length > 0 ? (
-          <div className="labs-hub-dram-list">
-            {recentDrams.map((d) => (
-              <div key={d.id} className="labs-dram-item" data-testid={`dram-item-${d.id}`}>
-                <div className="labs-dram-info">
-                  <span className="labs-dram-name">{d.whiskyName}</span>
-                  <span className="labs-dram-date">
-                    {d.date ? new Date(d.date).toLocaleDateString(i18n.language === "de" ? "de-DE" : "en-US") : ""}
-                  </span>
-                </div>
-                <div className={`labs-dram-score${Math.round(d.score) >= 90 ? " labs-dram-score--high" : ""}`}>{Math.round(d.score)}</div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="labs-hub-empty" data-testid="hub-no-drams">
-            {t("hub.noDrams")}
-          </p>
-        )}
-      </div>
+      <RecentRatedList
+        items={recentDrams}
+        limit={3}
+        sectionTestId="hub-recent-section-teaser"
+        viewAllHref="/labs/taste/drams"
+      />
       </>
       )}
     </div>

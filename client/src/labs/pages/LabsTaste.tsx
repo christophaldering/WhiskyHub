@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import {
   Archive, Activity, Sparkles, BarChart3, Compass, ChevronRight,
 } from "lucide-react";
 import type { ElementType } from "react";
 import { useAppStore } from "@/lib/store";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import { tastingHistoryApi, journalApi } from "@/lib/api";
+import { RecentRatedList, buildRecentRatedItems } from "@/labs/components/RecentRatedList";
 import {
   AI_INSIGHTS_HUB_TILES,
   ANALYTICS_HUB_TILES,
@@ -128,6 +131,25 @@ export default function LabsTaste() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
+  const { data: historyData } = useQuery({
+    queryKey: ["tasting-history", currentParticipant?.id],
+    queryFn: () => tastingHistoryApi.get(currentParticipant!.id),
+    enabled: !!currentParticipant?.id && activeTab === "collection",
+    staleTime: 60_000,
+  });
+
+  const { data: journalData } = useQuery({
+    queryKey: ["journal-entries", currentParticipant?.id],
+    queryFn: () => journalApi.getAll(currentParticipant!.id),
+    enabled: !!currentParticipant?.id && activeTab === "collection",
+    staleTime: 60_000,
+  });
+
+  const recentItems = useMemo(
+    () => buildRecentRatedItems(historyData, journalData, { participantId: currentParticipant?.id }),
+    [historyData, journalData, currentParticipant?.id],
+  );
+
   if (!currentParticipant) {
     return (
       <AuthGateMessage
@@ -165,6 +187,15 @@ export default function LabsTaste() {
       return (
         <div data-testid="meine-welt-inline-collection">
           <HubTileGrid tiles={COLLECTION_HUB_TILES} t={t} testIdPrefix="meine-welt" variant="auto" />
+          <div style={{ marginTop: 24 }}>
+            <RecentRatedList
+              items={recentItems}
+              limit={12}
+              sectionTestId="meine-welt-recent-section"
+              viewAllHref="/labs/taste/drams"
+              headerVariant="meine-welt"
+            />
+          </div>
         </div>
       );
     }

@@ -606,6 +606,85 @@
   margin: 0;
 }
 
+.labs-recent-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.labs-recent-section-head .labs-section-label {
+  margin-bottom: 0;
+}
+
+.labs-recent-view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-ui, 'DM Sans', sans-serif);
+  font-size: 12px;
+  color: var(--labs-text-muted);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+@media (hover: hover) {
+  .labs-recent-view-all:hover {
+    color: var(--labs-text);
+  }
+}
+
+a.labs-dram-item {
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s ease;
+}
+
+@media (hover: hover) {
+  a.labs-dram-item:hover {
+    background: var(--labs-surface-elevated, var(--labs-surface));
+  }
+}
+
+.labs-dram-item--unrated .labs-dram-name {
+  color: var(--labs-text-muted);
+}
+
+.labs-dram-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.labs-dram-origin {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-ui, 'DM Sans', sans-serif);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--labs-text-muted);
+  background: var(--labs-border-subtle);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.labs-dram-badge-unrated {
+  flex-shrink: 0;
+  font-family: var(--font-ui, 'DM Sans', sans-serif);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--labs-text-muted);
+  background: var(--labs-border-subtle);
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
 /* ── End Hub page ── */
 
 /* ── End LabsHome page ── */

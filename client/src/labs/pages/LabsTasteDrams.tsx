@@ -181,6 +181,26 @@ export default function LabsTasteDrams() {
     statsInitRef.current = true;
   }, [journal, isLoading]);
 
+  const deepLinkAppliedRef = useRef(false);
+  useEffect(() => {
+    if (deepLinkAppliedRef.current) return;
+    if (isLoading || !journal.length) return;
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const entryId = params.get("entry");
+    if (!entryId) { deepLinkAppliedRef.current = true; return; }
+    const match = journal.find((e: any) => e.id === entryId);
+    if (match) {
+      setSelectedEntry(match as DramEntry);
+      const isSolo = (match as any).status === "draft" && isSoloEntry(match);
+      setViewState(isSolo ? "deepRate" : "detail");
+    }
+    deepLinkAppliedRef.current = true;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("entry");
+    window.history.replaceState({}, "", url.pathname + (url.search || "") + url.hash);
+  }, [journal, isLoading]);
+
   const { data: tastingHistory } = useQuery({
     queryKey: ["tasting-history", session.pid],
     queryFn: () => tastingHistoryApi.get(session.pid!),
