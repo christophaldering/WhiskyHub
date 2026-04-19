@@ -88,7 +88,14 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
   });
   const [overallRated, setOverallRated] = useState(() => {
     if (!initialData?.scores) return false;
-    return initialData.overallExplicit === true;
+    if (initialData.overallExplicit === true) return true;
+    const s = initialData.scores;
+    const hasAllDims =
+      typeof s.nose === "number" &&
+      typeof s.palate === "number" &&
+      typeof s.finish === "number" &&
+      typeof s.overall === "number";
+    return hasAllDims;
   });
   const autoDraftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFirstRender = useRef(true);
@@ -132,6 +139,10 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
   }, [scores, tags, notes, onSaveAsDraft, overallRated]);
 
   const handleSubmit = useCallback(async () => {
+    if (autoDraftTimer.current) {
+      clearTimeout(autoDraftTimer.current);
+      autoDraftTimer.current = null;
+    }
     setSaving(true);
     setTimeout(() => {
       onDone({ scores, tags, notes, overallExplicit: true });

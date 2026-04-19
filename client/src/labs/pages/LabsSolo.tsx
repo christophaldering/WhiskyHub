@@ -131,6 +131,7 @@ export default function LabsSolo() {
 
   const hasUnsavedRef = useRef(false);
   const latestRatingDataRef = useRef<Partial<RatingData>>({});
+  const finalizedRef = useRef(false);
 
   const showDraftFlash = useCallback(() => {
     setDraftSavedFlash(true);
@@ -251,6 +252,7 @@ export default function LabsSolo() {
     setBottleAdded(false);
     setSoloImageFile(imageFile || null);
     setDraftEntryId(null);
+    finalizedRef.current = false;
     setStep("form");
     saveSoloDraft({ step: "form", whisky: w, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: false, serverDraftId: null });
     showDraftFlash();
@@ -341,47 +343,69 @@ export default function LabsSolo() {
     setRatingResult(data);
     setSaveError(false);
     setIsDraftSave(false);
+    finalizedRef.current = true;
 
     const status = data.overallExplicit ? "final" : "draft";
     const body = buildJournalBody(data, status);
 
     try {
-      const res = await fetch(`/api/journal/${participantId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-participant-id": participantId,
-        },
-        body: JSON.stringify(body),
-      });
+      let res: Response;
+      if (draftEntryId) {
+        res = await fetch(`/api/journal/${participantId}/${draftEntryId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "x-participant-id": participantId,
+          },
+          body: JSON.stringify(body),
+        });
+      } else {
+        res = await fetch(`/api/journal/${participantId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-participant-id": participantId,
+          },
+          body: JSON.stringify(body),
+        });
+      }
 
       if (!res.ok) {
         setSaveError(true);
+        finalizedRef.current = false;
         return;
       }
 
-      if (soloImageFile) {
+      let entryId: string | null = draftEntryId;
+      try {
+        const entry = await res.json();
+        if (entry?.id) entryId = entry.id;
+      } catch {}
+
+      if (soloImageFile && entryId) {
         try {
-          const entry = await res.json();
-          if (entry?.id) {
-            const imgFormData = new FormData();
-            imgFormData.append("image", soloImageFile);
-            await fetch(`/api/journal/${participantId}/${entry.id}/image`, { method: "POST", body: imgFormData });
-          }
+          const imgFormData = new FormData();
+          imgFormData.append("image", soloImageFile);
+          await fetch(`/api/journal/${participantId}/${entryId}/image`, { method: "POST", body: imgFormData });
         } catch {}
         setSoloImageFile(null);
       }
 
       clearSoloDraft();
       hasUnsavedRef.current = false;
+      setDraftEntryId(null);
       queryClient.invalidateQueries({ queryKey: ["journal"] });
       setStep("done");
     } catch {
       setSaveError(true);
+      finalizedRef.current = false;
     }
-  }, [whisky, participantId, t, soloImageFile, buildJournalBody]);
+  }, [whisky, participantId, t, soloImageFile, buildJournalBody, draftEntryId]);
 
   const handleSaveAsDraft = useCallback(async (data: RatingData): Promise<boolean> => {
+    if (finalizedRef.current) {
+      return true;
+    }
     setRatingResult(data);
     setSaveError(false);
     setIsDraftSave(true);
@@ -572,6 +596,7 @@ export default function LabsSolo() {
     setDraftEntryId(null);
     setDraftSaving(false);
     setTastingContext(null);
+    finalizedRef.current = false;
     setStep("capture");
   }, []);
 

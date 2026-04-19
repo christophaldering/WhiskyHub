@@ -841,6 +841,19 @@ export default function LabsTasteDrams() {
   }
 
   if (viewState === "deepRate" && selectedEntry) {
+    const modeStorageKey = `labs:rating-mode:${selectedEntry.id}`;
+    let storedMode: "guided" | "compact" | null = null;
+    try {
+      const raw = localStorage.getItem(modeStorageKey);
+      if (raw === "guided" || raw === "compact") storedMode = raw;
+    } catch {}
+    const hasAllDimScores =
+      selectedEntry.noseScore != null &&
+      selectedEntry.tasteScore != null &&
+      selectedEntry.finishScore != null &&
+      selectedEntry.personalScore != null;
+    const initialDeepRateMode: "guided" | "compact" | undefined =
+      storedMode ?? (hasAllDimScores ? "compact" : undefined);
     const deepRateWhisky = {
       name: selectedEntry.name || selectedEntry.title || "",
       region: selectedEntry.region || "",
@@ -903,8 +916,14 @@ export default function LabsTasteDrams() {
         <RatingFlowV2
           whisky={deepRateWhisky}
           initialData={deepRateInitialData}
+          initialMode={initialDeepRateMode}
           onDone={handleDeepRateDone}
           onBack={() => setViewState(selectedEntry.status === "draft" ? "list" : "detail")}
+          onChange={(draft) => {
+            if (draft.mode === "guided" || draft.mode === "compact") {
+              try { localStorage.setItem(modeStorageKey, draft.mode); } catch {}
+            }
+          }}
           onSaveAsDraft={handleDeepRateSaveAsDraft}
           hideQuick
         />
