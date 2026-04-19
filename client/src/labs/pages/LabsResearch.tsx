@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
-import { FlaskConical, ChevronLeft, BookOpen, GraduationCap, TrendingUp, BookMarked, Lightbulb } from "lucide-react";
+import { FlaskConical, ChevronLeft, BookOpen, GraduationCap, TrendingUp, BookMarked } from "lucide-react";
 import type { ElementType } from "react";
 import BackLink from "@/labs/components/BackLink";
 
@@ -19,7 +19,6 @@ const HUB_LINKS: HubLink[] = [
   { icon: GraduationCap, labelKey: "research.subTesttheorie", labelFallback: "Test Theory & Psychometrics", descKey: "research.subTesttheorieDesc", descFallback: "Quality criteria, scale levels, measurement error, normalisation", href: "/labs/discover/research/testtheorie", testId: "labs-link-research-testtheorie" },
   { icon: TrendingUp, labelKey: "research.subStatistischeMethoden", labelFallback: "Statistical Methods", descKey: "research.subStatistischeMethodenDesc", descFallback: "Correlation, Kendall's W, factor analysis, cluster analysis", href: "/labs/discover/research/statistische-methoden", testId: "labs-link-research-statistische-methoden" },
   { icon: BookMarked, labelKey: "research.subLiteratur", labelFallback: "Literature & Studies", descKey: "research.subLiteraturDesc", descFallback: "Personality, perception & bias, methods, measurement", href: "/labs/discover/research/literatur", testId: "labs-link-research-literatur" },
-  { icon: Lightbulb, labelKey: "research.subHintergrund", labelFallback: "Background", descKey: "research.subHintergrundDesc", descFallback: "The CaskSense idea — where curiosity meets perception", href: "/labs/discover/research/hintergrund", testId: "labs-link-research-hintergrund" },
 ];
 
 export default function LabsResearch() {

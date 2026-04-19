@@ -115,7 +115,6 @@ const LabsIdeaBehindNumbers = lazy(() => import("@/labs/pages/LabsIdeaBehindNumb
 const LabsTestTheory = lazy(() => import("@/labs/pages/LabsTestTheory"));
 const LabsStatisticalMethods = lazy(() => import("@/labs/pages/LabsStatisticalMethods"));
 const LabsLiterature = lazy(() => import("@/labs/pages/LabsLiterature"));
-const LabsResearchHintergrund = lazy(() => import("@/labs/pages/LabsResearchHintergrund"));
 const LabsBackground = lazy(() => import("@/labs/pages/LabsBackground"));
 const LabsAbout = lazy(() => import("@/labs/pages/LabsAbout"));
 const LabsDonate = lazy(() => import("@/labs/pages/LabsDonate"));
@@ -662,7 +661,6 @@ function Router() {
               <Route path="/labs/discover/research/testtheorie" component={LabsTestTheory} />
               <Route path="/labs/discover/research/statistische-methoden" component={LabsStatisticalMethods} />
               <Route path="/labs/discover/research/literatur" component={LabsLiterature} />
-              <Route path="/labs/discover/research/hintergrund" component={LabsResearchHintergrund} />
               <Route path="/labs/discover/literature">
                 <Redirect to="/labs/discover/research/literatur" />
               </Route>
