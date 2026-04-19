@@ -13,7 +13,7 @@ import {
   MessageCircle, Video, FileText, FileSpreadsheet, Settings, Upload, Share2,
   Sparkles, RefreshCw, Camera, BookOpen, Heart, Pencil, Image,
   Download, ExternalLink, Lock, Printer, ScanLine, GripVertical, Layers, ArrowRightLeft, Archive, Info,
-  Crown,
+  Crown, Scissors,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
@@ -29,6 +29,7 @@ import { toast } from "@/hooks/use-toast";
 import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 import WhiskyHandoutManager from "@/labs/components/WhiskyHandoutManager";
+import PdfSplitterDialog from "@/labs/components/PdfSplitterDialog";
 import TastingHandoutManager from "@/labs/components/TastingHandoutManager";
 import AutoHandoutManager from "@/labs/components/AutoHandoutManager";
 import { downloadDataUrl } from "@/lib/download";
@@ -4324,6 +4325,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const [extImagePreview, setExtImagePreview] = useState<string | null>(null);
   const [extAddPending, setExtAddPending] = useState(false);
   const [editingWhiskyId, setEditingWhiskyId] = useState<string | null>(null);
+  const [showPdfSplitter, setShowPdfSplitter] = useState(false);
   const [editFields, setEditFields] = useState<Record<string, string>>({});
   const [wbLookupId, setWbLookupId] = useState("");
   const [wbLookupLoading, setWbLookupLoading] = useState(false);
@@ -6199,6 +6201,22 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           </div>
         )}
 
+        {whiskyCount > 0 && tasting.hostId === currentParticipant?.id && (
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+            <button
+              type="button"
+              className="labs-btn-ghost text-xs"
+              onClick={() => setShowPdfSplitter(true)}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px" }}
+              data-testid="labs-host-pdf-splitter-btn"
+              title="Mehrseitiges PDF-Programm in Whisky-Handouts aufteilen"
+            >
+              <Scissors className="w-3.5 h-3.5" />
+              PDF aufteilen
+            </button>
+          </div>
+        )}
+
         {(() => {
           const rvDesktop = tasting.blindMode && !tasting.guidedMode && tasting.status === "reveal"
             ? getRevealState(tasting, whiskyCount, t) : null;
@@ -6767,6 +6785,16 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             )}
           </div>
         </div>
+      )}
+
+      {tasting?.hostId && tasting.hostId === currentParticipant?.id && (
+        <PdfSplitterDialog
+          open={showPdfSplitter}
+          onClose={() => setShowPdfSplitter(false)}
+          tastingId={tastingId}
+          hostId={tasting.hostId}
+          whiskies={whiskies as any}
+        />
       )}
     </div>
   );

@@ -9,7 +9,7 @@ import { readExcelBuffer, sheetToArrayOfArrays, sheetToJson, sheetToCsv, jsonToS
 // @ts-ignore
 import AdmZip from "adm-zip";
 import { storage, getUniquePersonCount, deduplicateParticipantList, getAllCommunityRatings, buildCommunityWhiskyKey, invalidateCommunityRatingsCache } from "./storage";
-import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema, insertBenchmarkEntrySchema, type Participant, type WhiskyFriend, type WhiskybaseCollectionItem, type JournalEntry } from "@shared/schema";
+import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema, insertBenchmarkEntrySchema, type Participant, type WhiskyFriend, type WhiskybaseCollectionItem, type JournalEntry, type PdfSplitPage } from "@shared/schema";
 import OpenAI from "openai";
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
@@ -24,6 +24,7 @@ import { getAIClient, getAIStatus } from "./ai-client";
 import { hashPassword, verifyPassword } from "./lib/auth";
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, AlignmentType, WidthType, BorderStyle } from "docx";
 import sharp from "sharp";
+import { PDFDocument } from "pdf-lib";
 import { extractTextFromImage } from "./lib/ocr.js";
 import { getWhiskyIndex } from "./lib/whiskyIndex.js";
 import { scoreWhiskies, scoreWhiskiesMultiLine, extractHints, detectMode } from "./lib/matching.js";
@@ -3058,6 +3059,255 @@ export async function registerRoutes(
       res.json(updated);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
+    }
+  });
+
+  // --- PDF Splitter: split a multi-page program PDF into per-whisky handouts ---
+
+  // Best-effort cleanup of expired split sessions and their orphaned page files.
+  // Runs at most once per request that triggers a split, plus on commit. Files
+  // that are still referenced by library/whisky/tasting are left intact thanks
+  // to deleteHandoutFileIfUnreferenced.
+  async function cleanupExpiredPdfSplitSessions(): Promise<void> {
+    try {
+      const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24h TTL
+      const expired = await storage.listExpiredPdfSplitSessions(cutoff);
+      for (const session of expired) {
+        for (const page of session.pages) {
+          await deleteHandoutFileIfUnreferenced(objectStorage, page.fileUrl);
+        }
+        await storage.deletePdfSplitSession(session.id);
+      }
+    } catch (err) {
+      console.warn("[pdf-split] cleanup failed", err);
+    }
+  }
+
+  app.post("/api/tastings/:id/handout-pdf-split", (req: any, res: any, next: any) => {
+    handoutUpload.single("file")(req, res, (err: any) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(413).json({ message: "Datei zu groß (max. 20 MB)" });
+        }
+        return res.status(400).json({ message: err.message || "Upload fehlgeschlagen" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting nicht gefunden" });
+      const requesterId = req.headers["x-participant-id"] as string | undefined;
+      if (!requesterId || requesterId !== tasting.hostId) {
+        return res.status(403).json({ message: "Nur der Host kann Handouts hochladen" });
+      }
+      if (!req.file) return res.status(400).json({ message: "Keine Datei übermittelt" });
+
+      const fileName = (req.file.originalname || "").toLowerCase();
+      const isPdf = req.file.mimetype === "application/pdf" || fileName.endsWith(".pdf");
+      if (!isPdf) return res.status(400).json({ message: "Nur PDF kann aufgeteilt werden" });
+
+      let sourceDoc;
+      try {
+        sourceDoc = await PDFDocument.load(req.file.buffer, { ignoreEncryption: false });
+      } catch (loadErr: any) {
+        const msg = (loadErr?.message || "").toLowerCase();
+        if (msg.includes("encrypt")) {
+          return res.status(400).json({ message: "Verschlüsselte PDFs werden nicht unterstützt" });
+        }
+        return res.status(400).json({ message: "PDF konnte nicht gelesen werden" });
+      }
+
+      const pageCount = sourceDoc.getPageCount();
+      if (pageCount < 1) return res.status(400).json({ message: "PDF enthält keine Seiten" });
+      if (pageCount > 100) return res.status(400).json({ message: "PDF hat zu viele Seiten (max. 100)" });
+
+      // Best-effort cleanup of any expired sessions before creating new one
+      cleanupExpiredPdfSplitSessions().catch(() => {});
+
+      const pages: PdfSplitPage[] = [];
+      for (let i = 0; i < pageCount; i++) {
+        const pageDoc = await PDFDocument.create();
+        const [copied] = await pageDoc.copyPages(sourceDoc, [i]);
+        pageDoc.addPage(copied);
+        const bytes = await pageDoc.save();
+        const buffer = Buffer.from(bytes);
+        const uploadURL = await objectStorage.getObjectEntityUploadURL();
+        const resp = await fetch(uploadURL, {
+          method: "PUT",
+          body: buffer,
+          headers: { "Content-Type": "application/pdf" },
+        });
+        if (!resp.ok) {
+          // Roll back already-uploaded pages
+          for (const p of pages) {
+            await deleteObjectFromStorage(objectStorage, p.fileUrl);
+          }
+          throw new Error(`Object storage upload failed (${resp.status})`);
+        }
+        const fileUrl = objectStorage.normalizeObjectEntityPath(uploadURL);
+        pages.push({ pageNumber: i + 1, fileUrl, fileSize: buffer.length });
+      }
+
+      let session;
+      try {
+        session = await storage.createPdfSplitSession({
+          tastingId: tasting.id,
+          hostId: tasting.hostId,
+          pages,
+        });
+      } catch (sessionErr) {
+        // Roll back all uploaded page files since no session exists to TTL-clean them
+        for (const p of pages) {
+          await deleteObjectFromStorage(objectStorage, p.fileUrl).catch(() => {});
+        }
+        throw sessionErr;
+      }
+
+      res.json({ sessionId: session.id, pages: session.pages });
+    } catch (e: any) {
+      console.error("[pdf-split] split failed", e);
+      res.status(500).json({ message: e?.message || "PDF-Aufteilung fehlgeschlagen" });
+    }
+  });
+
+  app.post("/api/handout-pdf-split/:sessionId/commit", async (req: any, res: any) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string | undefined;
+      if (!requesterId) return res.status(401).json({ message: "Authentifizierung erforderlich" });
+
+      const session = await storage.getPdfSplitSession(req.params.sessionId);
+      if (!session) return res.status(404).json({ message: "Split-Session nicht gefunden oder abgelaufen" });
+      if (session.hostId !== requesterId) return res.status(403).json({ message: "Nicht erlaubt" });
+
+      const tasting = await storage.getTasting(session.tastingId);
+      if (!tasting) return res.status(404).json({ message: "Tasting nicht gefunden" });
+      if (tasting.hostId !== requesterId) return res.status(403).json({ message: "Nicht erlaubt" });
+
+      const assignmentSchema = z.object({
+        pageNumber: z.number().int().min(1),
+        whiskyId: z.string().min(1),
+        title: z.string().max(200).optional(),
+        author: z.string().max(200).optional(),
+        description: z.string().max(2000).optional(),
+        visibility: z.enum(["always", "after_reveal"]).optional(),
+      });
+      const bodySchema = z.object({
+        assignments: z.array(assignmentSchema).default([]),
+      });
+      const parsed = bodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Ungültige Daten", details: parsed.error.flatten() });
+      }
+      const { assignments } = parsed.data;
+
+      // Validate each pageNumber exists in session and each whisky belongs to tasting
+      const pageMap = new Map<number, PdfSplitPage>(session.pages.map((p) => [p.pageNumber, p]));
+      const whiskies = await storage.getWhiskiesForTasting(tasting.id);
+      const whiskyMap = new Map(whiskies.map((w) => [w.id, w]));
+
+      const usedPages = new Set<number>();
+      const usedWhiskies = new Set<string>();
+      for (const a of assignments) {
+        if (!pageMap.has(a.pageNumber)) {
+          return res.status(400).json({ message: `Seite ${a.pageNumber} ist nicht Teil dieser Aufteilung` });
+        }
+        if (usedPages.has(a.pageNumber)) {
+          return res.status(400).json({ message: `Seite ${a.pageNumber} wurde mehrfach zugewiesen` });
+        }
+        usedPages.add(a.pageNumber);
+        if (!whiskyMap.has(a.whiskyId)) {
+          return res.status(400).json({ message: "Whisky gehört nicht zu diesem Tasting" });
+        }
+        if (usedWhiskies.has(a.whiskyId)) {
+          return res.status(400).json({ message: "Jeder Whisky darf nur eine Seite zugewiesen bekommen" });
+        }
+        usedWhiskies.add(a.whiskyId);
+      }
+
+      // Apply assignments
+      let assigned = 0;
+      for (const a of assignments) {
+        const page = pageMap.get(a.pageNumber)!;
+        const whisky = whiskyMap.get(a.whiskyId)!;
+        const oldHandoutUrl = whisky.handoutUrl;
+
+        const updateData: Partial<typeof whisky> = {
+          handoutUrl: page.fileUrl,
+          handoutContentType: "application/pdf",
+        } as any;
+        if (typeof a.title === "string") (updateData as any).handoutTitle = a.title.slice(0, 200) || null;
+        if (typeof a.author === "string") (updateData as any).handoutAuthor = a.author.slice(0, 200) || null;
+        if (typeof a.description === "string") (updateData as any).handoutDescription = a.description.slice(0, 2000) || null;
+        if (a.visibility === "always" || a.visibility === "after_reveal") {
+          (updateData as any).handoutVisibility = a.visibility;
+        }
+
+        await storage.updateWhisky(whisky.id, updateData as any);
+        if (oldHandoutUrl && oldHandoutUrl !== page.fileUrl) {
+          await deleteHandoutFileIfUnreferenced(objectStorage, oldHandoutUrl);
+        }
+
+        // Auto-add to host's library, mirroring single-handout-upload behaviour
+        try {
+          const existing = await storage.suggestHandoutLibrary(tasting.hostId, {
+            whiskybaseId: whisky.whiskybaseId ?? null,
+            whiskyName: whisky.name,
+            distillery: whisky.distillery ?? null,
+          });
+          const alreadyInLibrary = existing.some((e) => e.fileUrl === page.fileUrl);
+          if (!alreadyInLibrary) {
+            await storage.createHandoutLibraryEntry({
+              hostId: tasting.hostId,
+              whiskyName: whisky.name,
+              distillery: whisky.distillery ?? null,
+              whiskybaseId: whisky.whiskybaseId ?? null,
+              fileUrl: page.fileUrl,
+              contentType: "application/pdf",
+              title: (updateData as any).handoutTitle ?? null,
+              author: (updateData as any).handoutAuthor ?? null,
+              description: (updateData as any).handoutDescription ?? null,
+            });
+          }
+        } catch (libErr) {
+          console.warn("[handout-library] auto-add from pdf-split failed", libErr);
+        }
+        assigned++;
+      }
+
+      // Discard unassigned pages
+      let discarded = 0;
+      for (const page of session.pages) {
+        if (!usedPages.has(page.pageNumber)) {
+          await deleteHandoutFileIfUnreferenced(objectStorage, page.fileUrl);
+          discarded++;
+        }
+      }
+
+      await storage.deletePdfSplitSession(session.id);
+      res.json({ assigned, discarded });
+    } catch (e: any) {
+      console.error("[pdf-split] commit failed", e);
+      res.status(500).json({ message: e?.message || "Commit fehlgeschlagen" });
+    }
+  });
+
+  app.delete("/api/handout-pdf-split/:sessionId", async (req: any, res: any) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string | undefined;
+      if (!requesterId) return res.status(401).json({ message: "Authentifizierung erforderlich" });
+      const session = await storage.getPdfSplitSession(req.params.sessionId);
+      if (!session) return res.status(204).end();
+      if (session.hostId !== requesterId) return res.status(403).json({ message: "Nicht erlaubt" });
+      const tasting = await storage.getTasting(session.tastingId);
+      if (tasting && tasting.hostId !== requesterId) return res.status(403).json({ message: "Nicht erlaubt" });
+      for (const page of session.pages) {
+        await deleteHandoutFileIfUnreferenced(objectStorage, page.fileUrl);
+      }
+      await storage.deletePdfSplitSession(session.id);
+      res.status(204).end();
+    } catch (e: any) {
+      res.status(500).json({ message: e?.message || "Abbruch fehlgeschlagen" });
     }
   });
 

@@ -161,6 +161,56 @@ export const whiskyApi = {
     fetchJSON(`/whiskies/${id}/handout`, { method: "DELETE", body: JSON.stringify({ hostId }) }),
 };
 
+export interface PdfSplitPage {
+  pageNumber: number;
+  fileUrl: string;
+  fileSize: number;
+}
+
+export const pdfSplitterApi = {
+  split: async (
+    tastingId: string,
+    file: File,
+    hostId: string,
+  ): Promise<{ sessionId: string; pages: PdfSplitPage[] }> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`${API_BASE}/tastings/${tastingId}/handout-pdf-split`, {
+      method: "POST",
+      body: formData,
+      headers: { "x-participant-id": hostId },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+  commit: (
+    sessionId: string,
+    hostId: string,
+    assignments: Array<{
+      pageNumber: number;
+      whiskyId: string;
+      title?: string;
+      author?: string;
+      description?: string;
+      visibility?: "always" | "after_reveal";
+    }>,
+  ): Promise<{ assigned: number; discarded: number }> =>
+    fetchJSON(`/handout-pdf-split/${sessionId}/commit`, {
+      method: "POST",
+      headers: { "x-participant-id": hostId },
+      body: JSON.stringify({ assignments }),
+    }),
+  cancel: async (sessionId: string, hostId: string): Promise<void> => {
+    await fetch(`${API_BASE}/handout-pdf-split/${sessionId}`, {
+      method: "DELETE",
+      headers: { "x-participant-id": hostId },
+    });
+  },
+};
+
 export const handoutLibraryApi = {
   list: (hostId: string, search?: string) => {
     const qs = new URLSearchParams({ hostId });

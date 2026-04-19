@@ -192,6 +192,26 @@ export const insertWhiskyHandoutLibrarySchema = createInsertSchema(whiskyHandout
 export type InsertWhiskyHandoutLibraryEntry = z.infer<typeof insertWhiskyHandoutLibrarySchema>;
 export type WhiskyHandoutLibraryEntry = typeof whiskyHandoutLibrary.$inferSelect;
 
+// --- PDF Split Sessions (temporary store for split program PDFs awaiting assignment) ---
+export interface PdfSplitPage {
+  pageNumber: number;
+  fileUrl: string;
+  fileSize: number;
+}
+
+export const pdfSplitSessions = pgTable("pdf_split_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tastingId: varchar("tasting_id").notNull(),
+  hostId: varchar("host_id").notNull(),
+  pages: jsonb("pages").$type<PdfSplitPage[]>().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  tastingIdx: index("idx_pdf_split_sessions_tasting").on(table.tastingId),
+  createdAtIdx: index("idx_pdf_split_sessions_created").on(table.createdAt),
+}));
+
+export type PdfSplitSession = typeof pdfSplitSessions.$inferSelect;
+
 // --- Participant Profiles ---
 export const profiles = pgTable("profiles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

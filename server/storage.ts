@@ -3,7 +3,7 @@ import { db } from "./db";
 import { markJournalUpdated } from "./whiskyDnaCache";
 import { getParticipantOverallScores, computeStabilityScore } from "./participant-scores";
 import {
-  participants, tastings, tastingParticipants, sharingParticipants, whiskies, whiskyHandoutLibrary, ratings,
+  participants, tastings, tastingParticipants, sharingParticipants, whiskies, whiskyHandoutLibrary, pdfSplitSessions, ratings,
   profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, whiskyGroups, whiskyGroupMembers, journalEntries, benchmarkEntries, wishlistEntries,
   newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, tastingPhotos, userFeedback,
   type InsertParticipant, type Participant,
@@ -12,6 +12,7 @@ import {
   type InsertSharingParticipant, type SharingParticipant,
   type InsertWhisky, type Whisky,
   type InsertWhiskyHandoutLibraryEntry, type WhiskyHandoutLibraryEntry,
+  type PdfSplitSession, type PdfSplitPage,
   type InsertRating, type Rating,
   type InsertProfile, type Profile,
   type InsertSessionInvite, type SessionInvite,
@@ -369,6 +370,12 @@ export interface IStorage {
   updateHandoutLibraryEntry(id: string, data: Partial<InsertWhiskyHandoutLibraryEntry>): Promise<WhiskyHandoutLibraryEntry | undefined>;
   deleteHandoutLibraryEntry(id: string): Promise<void>;
   isHandoutFileReferencedByLibrary(fileUrl: string): Promise<boolean>;
+
+  // PDF Split Sessions (temporary store for splitting multi-page program PDFs)
+  createPdfSplitSession(data: { tastingId: string; hostId: string; pages: PdfSplitPage[] }): Promise<PdfSplitSession>;
+  getPdfSplitSession(id: string): Promise<PdfSplitSession | undefined>;
+  deletePdfSplitSession(id: string): Promise<void>;
+  listExpiredPdfSplitSessions(olderThan: Date): Promise<PdfSplitSession[]>;
 
   // Ratings
   getRatingsForWhisky(whiskyId: string): Promise<Rating[]>;
@@ -1190,6 +1197,29 @@ export class DatabaseStorage implements IStorage {
 
   async deleteHandoutLibraryEntry(id: string): Promise<void> {
     await db.delete(whiskyHandoutLibrary).where(eq(whiskyHandoutLibrary.id, id));
+  }
+
+  // --- PDF Split Sessions ---
+  async createPdfSplitSession(data: { tastingId: string; hostId: string; pages: PdfSplitPage[] }): Promise<PdfSplitSession> {
+    const [row] = await db.insert(pdfSplitSessions).values({
+      tastingId: data.tastingId,
+      hostId: data.hostId,
+      pages: data.pages,
+    }).returning();
+    return row;
+  }
+
+  async getPdfSplitSession(id: string): Promise<PdfSplitSession | undefined> {
+    const [row] = await db.select().from(pdfSplitSessions).where(eq(pdfSplitSessions.id, id));
+    return row;
+  }
+
+  async deletePdfSplitSession(id: string): Promise<void> {
+    await db.delete(pdfSplitSessions).where(eq(pdfSplitSessions.id, id));
+  }
+
+  async listExpiredPdfSplitSessions(olderThan: Date): Promise<PdfSplitSession[]> {
+    return db.select().from(pdfSplitSessions).where(lt(pdfSplitSessions.createdAt, olderThan));
   }
 
   async isHandoutFileReferencedByLibrary(fileUrl: string): Promise<boolean> {
