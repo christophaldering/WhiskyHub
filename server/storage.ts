@@ -373,6 +373,8 @@ export interface IStorage {
   setHandoutLibraryEntryShared(id: string, isShared: boolean, sharedByName: string | null): Promise<WhiskyHandoutLibraryEntry | undefined>;
   listSharedHandoutLibrary(opts?: { search?: string; excludeHostId?: string; limit?: number }): Promise<WhiskyHandoutLibraryEntry[]>;
   setHandoutLibraryEntryAttribution(id: string, data: { clonedFromId?: string | null; sharedByName?: string | null }): Promise<void>;
+  findWhiskiesByWhiskybaseIdForHost(whiskybaseId: string, hostId: string): Promise<Array<{ id: string; name: string; distillery: string | null; tastingId: string; tastingTitle: string; tastingDate: string | null }>>;
+  findDistilleryByName(name: string): Promise<{ id: string; name: string; country: string; region: string } | undefined>;
 
   // PDF Split Sessions (temporary store for splitting multi-page program PDFs)
   createPdfSplitSession(data: { tastingId: string; hostId: string; pages: PdfSplitPage[] }): Promise<PdfSplitSession>;
@@ -1217,6 +1219,37 @@ export class DatabaseStorage implements IStorage {
     if (data.sharedByName !== undefined) patch.sharedByName = data.sharedByName;
     if (Object.keys(patch).length === 0) return;
     await db.update(whiskyHandoutLibrary).set(patch).where(eq(whiskyHandoutLibrary.id, id));
+  }
+
+  async findWhiskiesByWhiskybaseIdForHost(whiskybaseId: string, hostId: string): Promise<Array<{ id: string; name: string; distillery: string | null; tastingId: string; tastingTitle: string; tastingDate: string | null }>> {
+    const trimmed = whiskybaseId.trim();
+    if (!trimmed) return [];
+    const rows = await db
+      .select({
+        id: whiskies.id,
+        name: whiskies.name,
+        distillery: whiskies.distillery,
+        tastingId: whiskies.tastingId,
+        tastingTitle: tastings.title,
+        tastingDate: tastings.date,
+      })
+      .from(whiskies)
+      .innerJoin(tastings, eq(whiskies.tastingId, tastings.id))
+      .where(and(eq(whiskies.whiskybaseId, trimmed), eq(tastings.hostId, hostId)))
+      .orderBy(desc(tastings.date))
+      .limit(50);
+    return rows;
+  }
+
+  async findDistilleryByName(name: string): Promise<{ id: string; name: string; country: string; region: string } | undefined> {
+    const trimmed = name.trim();
+    if (!trimmed) return undefined;
+    const [row] = await db
+      .select({ id: distilleries.id, name: distilleries.name, country: distilleries.country, region: distilleries.region })
+      .from(distilleries)
+      .where(sql`LOWER(${distilleries.name}) = LOWER(${trimmed})`)
+      .limit(1);
+    return row;
   }
 
   async listSharedHandoutLibrary(opts?: { search?: string; excludeHostId?: string; limit?: number }): Promise<WhiskyHandoutLibraryEntry[]> {

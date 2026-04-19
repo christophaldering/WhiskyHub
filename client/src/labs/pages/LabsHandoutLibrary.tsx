@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useSearch } from "wouter";
 import {
   ChevronLeft, FileText, Image as ImageIcon, Library, Search, Trash2,
-  Pencil, Save, X, ExternalLink, Download, Globe, Lock, Plus, Upload, Loader2, RefreshCw, Scissors,
+  Pencil, Save, X, ExternalLink, Download, Globe, Lock, Plus, Upload, Loader2, RefreshCw, Scissors, Building2,
 } from "lucide-react";
 import { getParticipantId, handoutLibraryApi } from "@/lib/api";
 import { downloadFromEndpoint } from "@/lib/download";
@@ -181,6 +181,27 @@ interface DetailAction {
   testId: string;
 }
 
+interface HandoutLink {
+  id: string;
+  name: string;
+  distillery: string | null;
+  tastingId: string;
+  tastingTitle: string;
+  tastingDate: string | null;
+}
+
+interface HandoutLinkedDistillery {
+  id: string;
+  name: string;
+  country: string;
+  region: string;
+}
+
+interface HandoutLinksResponse {
+  whiskies: HandoutLink[];
+  distillery: HandoutLinkedDistillery | null;
+}
+
 interface HandoutDetailSheetProps {
   entry: WhiskyHandoutLibraryEntry;
   isPdf: boolean;
@@ -188,9 +209,79 @@ interface HandoutDetailSheetProps {
   actions: DetailAction[];
   onClose: () => void;
   t: (key: string, opts?: Record<string, unknown>) => string;
+  hostId?: string;
+  onOpenWhisky?: (link: HandoutLink) => void;
 }
 
-function HandoutDetailSheet({ entry, isPdf, metaParts, actions, onClose, t }: HandoutDetailSheetProps) {
+function HandoutLinksSection({ entry, hostId, t, onOpenWhisky }: { entry: WhiskyHandoutLibraryEntry; hostId: string; t: HandoutDetailSheetProps["t"]; onOpenWhisky?: (link: HandoutLink) => void }) {
+  const enabled = !!hostId && (!!entry.whiskybaseId || !!entry.distillery);
+  const linksQuery = useQuery<HandoutLinksResponse>({
+    queryKey: ["handout-library-links", entry.id],
+    queryFn: () => handoutLibraryApi.getLinks(entry.id, hostId) as Promise<HandoutLinksResponse>,
+    enabled,
+    staleTime: 30_000,
+  });
+  if (!enabled) return null;
+  const data = linksQuery.data;
+  const isLoading = linksQuery.isLoading;
+  const whiskies = data?.whiskies ?? [];
+  const distillery = data?.distillery ?? null;
+  const hasAny = whiskies.length > 0 || !!distillery;
+  if (!isLoading && !hasAny) return null;
+  return (
+    <div style={{ display: "grid", gap: 8, paddingTop: 8, borderTop: "1px solid var(--labs-border)" }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: 0.6 }}>
+        {t("labs.handoutLibrary.linksTitle")}
+      </div>
+      {isLoading && (
+        <div style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>{t("labs.handoutLibrary.linksLoading")}</div>
+      )}
+      {distillery && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--labs-text)" }} data-testid={`link-distillery-${distillery.id}`}>
+          <Building2 style={{ width: 13, height: 13, color: "var(--labs-accent)", flexShrink: 0 }} />
+          <span style={{ fontWeight: 500 }}>{distillery.name}</span>
+          <span style={{ color: "var(--labs-text-muted)" }}>· {distillery.region}, {distillery.country}</span>
+        </div>
+      )}
+      {whiskies.length > 0 && (
+        <div style={{ display: "grid", gap: 6 }}>
+          <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+            {t("labs.handoutLibrary.linksWhiskiesLabel", { count: whiskies.length })}
+          </div>
+          <div style={{ display: "grid", gap: 4 }}>
+            {whiskies.map((w) => (
+              <button
+                key={w.id}
+                type="button"
+                onClick={() => onOpenWhisky?.(w)}
+                disabled={!onOpenWhisky}
+                className="labs-btn-ghost"
+                style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "6px 8px", borderRadius: 8,
+                  fontSize: 12, color: "var(--labs-text)",
+                  textAlign: "left", width: "100%",
+                  background: "var(--labs-surface-elevated)",
+                  cursor: onOpenWhisky ? "pointer" : "default",
+                }}
+                data-testid={`link-whisky-${w.id}`}
+              >
+                <FileText style={{ width: 13, height: 13, color: "var(--labs-accent)", flexShrink: 0 }} />
+                <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <span style={{ fontWeight: 500 }}>{w.name}</span>
+                  <span style={{ color: "var(--labs-text-muted)" }}> · {w.tastingTitle}</span>
+                </span>
+                {onOpenWhisky && <ExternalLink style={{ width: 11, height: 11, color: "var(--labs-text-muted)", flexShrink: 0 }} />}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HandoutDetailSheet({ entry, isPdf, metaParts, actions, onClose, t, hostId, onOpenWhisky }: HandoutDetailSheetProps) {
   return (
     <div
       role="dialog"
@@ -273,6 +364,9 @@ function HandoutDetailSheet({ entry, isPdf, metaParts, actions, onClose, t }: Ha
           <div style={{ fontSize: 13, color: "var(--labs-text-secondary)", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
             {entry.description}
           </div>
+        )}
+        {hostId && (
+          <HandoutLinksSection entry={entry} hostId={hostId} t={t} onOpenWhisky={onOpenWhisky} />
         )}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, paddingTop: 6, borderTop: "1px solid var(--labs-border)" }}>
           {actions.map((a) => {
@@ -1275,6 +1369,11 @@ export default function LabsHandoutLibrary() {
             actions={actions}
             onClose={() => setDetailEntry(null)}
             t={t}
+            hostId={hostId}
+            onOpenWhisky={(w) => {
+              setDetailEntry(null);
+              setLocation(`/labs/host/${w.tastingId}`);
+            }}
           />
         );
       })()}
@@ -1314,6 +1413,7 @@ export default function LabsHandoutLibrary() {
             actions={actions}
             onClose={() => setCommunityDetailEntry(null)}
             t={t}
+            hostId={undefined}
           />
         );
       })()}

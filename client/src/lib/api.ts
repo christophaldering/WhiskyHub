@@ -228,6 +228,8 @@ export const handoutLibraryApi = {
     fetchJSON(`/handout-library/${id}`, { method: "PATCH", headers: { "x-participant-id": hostId }, body: JSON.stringify({ hostId, ...data }) }),
   delete: (id: string, hostId: string) =>
     fetchJSON(`/handout-library/${id}?hostId=${encodeURIComponent(hostId)}`, { method: "DELETE", headers: { "x-participant-id": hostId } }),
+  getLinks: (id: string, hostId: string) =>
+    fetchJSON(`/handout-library/${id}/links`, { headers: { "x-participant-id": hostId } }),
   applyToWhisky: (libraryId: string, hostId: string, whiskyId: string, visibility?: "always" | "after_reveal") =>
     fetchJSON(`/handout-library/${libraryId}/apply-to-whisky`, {
       method: "POST",

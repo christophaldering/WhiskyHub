@@ -3367,6 +3367,25 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/handout-library/:id/links", async (req: any, res: any) => {
+    try {
+      const hostId = req.headers["x-participant-id"] as string | undefined;
+      if (!hostId) return res.status(401).json({ message: "Authentifizierung erforderlich" });
+      const entry = await storage.getHandoutLibraryEntry(req.params.id);
+      if (!entry) return res.status(404).json({ message: "Bibliothekseintrag nicht gefunden" });
+      if (entry.hostId !== hostId) return res.status(403).json({ message: "Nicht erlaubt" });
+      const whiskies = entry.whiskybaseId
+        ? await storage.findWhiskiesByWhiskybaseIdForHost(entry.whiskybaseId, hostId)
+        : [];
+      const distillery = entry.distillery
+        ? (await storage.findDistilleryByName(entry.distillery)) ?? null
+        : null;
+      res.json({ whiskies, distillery });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   app.delete("/api/handout-library/:id", async (req: any, res: any) => {
     try {
       const hostId = req.headers["x-participant-id"] as string | undefined;
