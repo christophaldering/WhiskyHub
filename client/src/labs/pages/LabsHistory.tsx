@@ -180,26 +180,6 @@ function LabsHistoryList() {
         </div>
       )}
 
-      <Link href="/labs/history/insights" style={{ textDecoration: "none" }}>
-        <div
-          className="labs-card-interactive"
-          style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}
-          data-testid="link-insights"
-        >
-          <div style={{
-            width: 36, height: 36, borderRadius: 10, background: "var(--labs-accent-muted)",
-            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-          }}>
-            <BarChart3 style={{ width: 18, height: 18, color: "var(--labs-accent)" }} strokeWidth={1.8} />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)" }}>{t("m2.historical.insightsLink", "Cross-Tasting Insights")}</div>
-            <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 2 }}>{t("m2.historical.insightsDesc", "Top whiskies, regions, trends & group profile")}</div>
-          </div>
-          <ChevronRight style={{ width: 16, height: 16, color: "var(--labs-text-muted)", flexShrink: 0 }} strokeWidth={1.8} />
-        </div>
-      </Link>
-
       <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "stretch", flexWrap: "wrap" }}>
           <div style={{ position: "relative", flex: "1 1 200px", minWidth: 0 }}>
             <Search size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--labs-text-muted)" }} />
