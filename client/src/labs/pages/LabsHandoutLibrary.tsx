@@ -85,7 +85,6 @@ interface HandoutTileProps {
   isPdf: boolean;
   isSelected: boolean;
   toggleSelected: (id: string) => void;
-  onOpen: () => void;
   onDownload: () => void;
   onShareToggle: () => void;
   onReplace: () => void;
@@ -102,7 +101,7 @@ interface HandoutTileProps {
 function HandoutTile(props: HandoutTileProps) {
   const {
     entry, metaParts, isPdf, isSelected, toggleSelected,
-    onOpen, onDownload, onShareToggle, onReplace, onSplit, onEdit, onDelete,
+    onDownload, onShareToggle, onReplace, onSplit, onEdit, onDelete,
     shareDisabled, replaceDisabled, replaceLoading, deleteDisabled, t,
   } = props;
   return (
@@ -185,7 +184,6 @@ function HandoutTile(props: HandoutTileProps) {
           data-testid={`button-handout-open-${entry.id}`}
           title={t("labs.handoutLibrary.actionOpen")}
           aria-label={t("labs.handoutLibrary.actionOpen")}
-          onClick={onOpen}
         >
           <ExternalLink style={{ width: 12, height: 12 }} />
         </a>
@@ -997,7 +995,6 @@ export default function LabsHandoutLibrary() {
                   isPdf={isPdf}
                   isSelected={selected.has(entry.id)}
                   toggleSelected={toggleSelected}
-                  onOpen={() => { /* anchor handles navigation */ }}
                   onDownload={() => downloadFromEndpoint(entry.fileUrl, entry.title || entry.whiskyName)}
                   onShareToggle={() => shareMut.mutate({ id: entry.id, isShared: !entry.isShared })}
                   onReplace={() => { setReplaceTargetId(entry.id); replaceFileInputRef.current?.click(); }}
