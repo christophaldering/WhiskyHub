@@ -392,9 +392,11 @@ export default function LabsBottleSharing() {
   if (showWizard) {
     return (
       <div className="labs-page labs-fade-in">
-        <button onClick={() => stepIdx > 0 ? setStep(steps[stepIdx - 1]) : setShowWizard(false)} className="labs-btn-ghost" data-testid="button-sharing-back" style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: "var(--labs-space-sm)" }}>
-          <ChevronLeft className="w-4 h-4" />{t("bottleSharing.back")}
-        </button>
+        {(!isEmbedded || stepIdx > 0) && (
+          <button onClick={() => stepIdx > 0 ? setStep(steps[stepIdx - 1]) : setShowWizard(false)} className="labs-btn-ghost" data-testid="button-sharing-back" style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: "var(--labs-space-sm)" }}>
+            <ChevronLeft className="w-4 h-4" />{t("bottleSharing.back")}
+          </button>
+        )}
         <h1 className="labs-serif" style={{ fontSize: 24, fontWeight: 600, marginBottom: 4 }} data-testid="text-sharing-title">{t("bottleSharing.title")}</h1>
         <p style={{ fontSize: 13, color: "var(--labs-text-muted)", marginBottom: "var(--labs-space-lg)" }}>{t("bottleSharing.subtitle")}</p>
         <div style={{ display: "flex", gap: 4, marginBottom: "var(--labs-space-lg)" }}>

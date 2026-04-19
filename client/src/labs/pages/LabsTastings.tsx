@@ -453,6 +453,8 @@ export default function LabsTastings() {
         </div>
       )}
 
+      {!activeTab && (
+      <>
       <div className="labs-tastings-search-wrapper labs-fade-in labs-stagger-1">
         <Search className="labs-tastings-search-icon w-4 h-4" />
         <input
@@ -884,6 +886,8 @@ export default function LabsTastings() {
           </p>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }

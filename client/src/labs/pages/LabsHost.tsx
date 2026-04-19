@@ -2754,7 +2754,7 @@ function CreateTastingForm() {
         blindMode,
         revealOrder: blindMode && revealOrder !== "classic" ? JSON.stringify(revealOrder === "custom" ? customRevealSteps : (REVEAL_PRESETS_MAP[revealOrder] || REVEAL_PRESETS_MAP.classic)) : null,
         ratingScale,
-        guidedMode,
+        guidedMode: blindMode ? guidedMode : false,
         guestMode,
         sessionUiMode: sessionUiMode || null,
         reflectionEnabled,
@@ -2831,7 +2831,7 @@ function CreateTastingForm() {
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="labs-section-label" htmlFor="tasting-date">{t("m2.host.dateLabel")}</label>
             <input
@@ -2854,15 +2854,35 @@ function CreateTastingForm() {
               data-testid="labs-host-input-time"
             />
           </div>
-          <div className="sm:col-span-1">
-            <label className="labs-section-label" htmlFor="tasting-location">{t("labs.host.locationPlaceholder")}</label>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="labs-section-label" htmlFor="tasting-location">
+              {t("labs.host.locationOrVideoLabel", "Ort oder Video-Link")}
+            </label>
             <input
               id="tasting-location"
               className="labs-input"
-              placeholder={t("m2.host.optional", "Optional")}
+              placeholder={t("labs.host.locationPlaceholder")}
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               data-testid="labs-host-input-location"
+            />
+          </div>
+          <div>
+            <label className="labs-section-label" htmlFor="tasting-video">
+              <Video className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
+              {t("labs.host.videoLinkLabel", "Video-Link")}
+            </label>
+            <input
+              id="tasting-video"
+              type="url"
+              className="labs-input"
+              value={videoLink}
+              onChange={(e) => setVideoLink(e.target.value)}
+              placeholder={t("m2.host.videoLinkPlaceholder")}
+              data-testid="labs-host-input-video"
             />
           </div>
         </div>
@@ -2886,7 +2906,10 @@ function CreateTastingForm() {
 
         <LabsToggle
           checked={blindMode}
-          onChange={setBlindMode}
+          onChange={(v: boolean) => {
+            setBlindMode(v);
+            if (!v && guidedMode) setGuidedMode(false);
+          }}
           icon={<EyeOff className="w-5 h-5" style={{ color: blindMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
           label={t("labs.host.blindTasting")}
           description={t("labs.host.blindTastingDesc")}
@@ -2931,6 +2954,21 @@ function CreateTastingForm() {
                 }}
               />
             )}
+            <div className="mt-4">
+              <LabsToggle
+                checked={guidedMode}
+                onChange={(v: boolean) => {
+                  setGuidedMode(v);
+                  if (v && sessionUiMode === "flow") {
+                    setSessionUiMode("focus");
+                  }
+                }}
+                icon={<Compass className="w-5 h-5" style={{ color: guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+                label={t("labs.host.hostControlsPace")}
+                description={t("labs.host.hostControlsPaceDesc")}
+                testId="labs-host-toggle-guided"
+              />
+            </div>
           </div>
         )}
 
@@ -3003,20 +3041,6 @@ function CreateTastingForm() {
 
           {advancedOpen && (
             <div style={{ padding: "0 16px 16px" }} className="space-y-5">
-              <LabsToggle
-                checked={guidedMode}
-                onChange={(v: boolean) => {
-                  setGuidedMode(v);
-                  if (v && sessionUiMode === "flow") {
-                    setSessionUiMode("focus");
-                  }
-                }}
-                icon={<Compass className="w-5 h-5" style={{ color: guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
-                label={t("labs.host.hostControlsPace")}
-                description={t("labs.host.hostControlsPaceDesc")}
-                testId="labs-host-toggle-guided"
-              />
-
               <div>
                 <label className="labs-section-label">
                   <Globe className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
@@ -3078,51 +3102,20 @@ function CreateTastingForm() {
                   testId="labs-host-toggle-reflection"
                 />
                 {reflectionEnabled && (
-                  <div className="space-y-4 mt-4">
-                    <div>
-                      <label className="labs-section-label" style={{ fontSize: 11 }}>{t("labs.host.discussionFormat")}</label>
-                      <LabsSegmentedSelect
-                        value={reflectionMode}
-                        options={[
-                          { value: "standard", label: t("labs.host.discussionStandard"), desc: t("labs.host.discussionStandardDesc") },
-                          { value: "custom", label: t("labs.host.discussionCustom"), desc: t("labs.host.discussionCustomDesc") },
-                        ]}
-                        onChange={setReflectionMode}
-                      />
-                    </div>
-                    <div>
-                      <label className="labs-section-label" style={{ fontSize: 11 }}>{t("labs.host.showNames")}</label>
-                      <LabsSegmentedSelect
-                        value={reflectionVisibility}
-                        options={[
-                          { value: "named", label: t("labs.host.namesNamed"), desc: t("labs.host.namesNamedDesc") },
-                          { value: "anonymous", label: t("labs.host.namesAnonymous"), desc: t("labs.host.namesAnonymousDesc") },
-                          { value: "optional", label: t("labs.host.namesOptional"), desc: t("labs.host.namesOptionalDesc") },
-                        ]}
-                        onChange={setReflectionVisibility}
-                      />
-                    </div>
+                  <div className="mt-4">
+                    <label className="labs-section-label" style={{ fontSize: 11 }}>{t("labs.host.showNames")}</label>
+                    <LabsSegmentedSelect
+                      value={reflectionVisibility === "optional" ? "named" : reflectionVisibility}
+                      options={[
+                        { value: "named", label: t("labs.host.namesNamed"), desc: t("labs.host.namesNamedDesc") },
+                        { value: "anonymous", label: t("labs.host.namesAnonymous"), desc: t("labs.host.namesAnonymousDesc") },
+                      ]}
+                      onChange={setReflectionVisibility}
+                    />
                   </div>
                 )}
               </div>
 
-              <div>
-                <label className="labs-section-label">
-                  <Video className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
-                  Video Call Link
-                </label>
-                <input
-                  type="url"
-                  className="labs-input"
-                  value={videoLink}
-                  onChange={(e) => setVideoLink(e.target.value)}
-                  placeholder={t("m2.host.videoLinkPlaceholder")}
-                  data-testid="labs-host-input-video"
-                />
-                <p className="text-xs mt-1" style={{ color: "var(--labs-text-secondary)" }}>
-                  {t("m2.host.videoLinkDesc")}
-                </p>
-              </div>
             </div>
           )}
         </div>
@@ -4109,30 +4102,16 @@ function TastingSetupSection({
               testId="labs-settings-toggle-reflection"
             />
             {tasting.reflectionEnabled && (
-              <div className="space-y-3 mt-3">
-                <div>
-                  <label className="labs-section-label" style={{ fontSize: 11 }}>{t("labs.host.discussionFormat")}</label>
-                  <LabsSegmentedSelect
-                    value={(tasting.reflectionMode as string) || "standard"}
-                    options={[
-                      { value: "standard", label: t("labs.host.discussionStandard"), desc: t("labs.host.discussionStandardDesc") },
-                      { value: "custom", label: t("labs.host.discussionCustom"), desc: t("labs.host.discussionCustomDesc") },
-                    ]}
-                    onChange={handleChangeReflectionMode}
-                  />
-                </div>
-                <div>
-                  <label className="labs-section-label" style={{ fontSize: 11 }}>{t("labs.host.showNames")}</label>
-                  <LabsSegmentedSelect
-                    value={(tasting.reflectionVisibility as string) || "named"}
-                    options={[
-                      { value: "named", label: t("labs.host.namesNamed"), desc: t("labs.host.namesNamedDesc") },
-                      { value: "anonymous", label: t("labs.host.namesAnonymous"), desc: t("labs.host.namesAnonymousDesc") },
-                      { value: "optional", label: t("labs.host.namesOptional"), desc: t("labs.host.namesOptionalDesc") },
-                    ]}
-                    onChange={handleChangeReflectionVis}
-                  />
-                </div>
+              <div className="mt-3">
+                <label className="labs-section-label" style={{ fontSize: 11 }}>{t("labs.host.showNames")}</label>
+                <LabsSegmentedSelect
+                  value={((tasting.reflectionVisibility as string) === "optional" ? "named" : ((tasting.reflectionVisibility as string) || "named"))}
+                  options={[
+                    { value: "named", label: t("labs.host.namesNamed"), desc: t("labs.host.namesNamedDesc") },
+                    { value: "anonymous", label: t("labs.host.namesAnonymous"), desc: t("labs.host.namesAnonymousDesc") },
+                  ]}
+                  onChange={handleChangeReflectionVis}
+                />
               </div>
             )}
           </div>
