@@ -5,7 +5,7 @@ import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import {
   Users, Wine, ChevronRight, Activity, Star, UserPlus,
   GlassWater, Trophy, FileText, Compass, Check, X, Trash2, Wifi, Clock,
-  Globe, Mail, Send, BarChart3,
+  Globe, Mail, Send, BarChart3, Plus,
 } from "lucide-react";
 import CommunityInsights from "@/labs/components/CommunityInsights";
 import { LabsHistoryInsights } from "@/labs/pages/LabsHistory";
@@ -88,7 +88,7 @@ export default function LabsCircle() {
     try {
       const params = new URLSearchParams(searchStr);
       const t = params.get("tab");
-      if (t === "friends" || t === "leaderboard" || t === "sessions" || t === "activity" || t === "stats") {
+      if (t === "friends" || t === "leaderboard" || t === "sessions" || t === "activity" || t === "stats" || t === "community") {
         return t;
       }
     } catch {}
@@ -148,6 +148,54 @@ export default function LabsCircle() {
   });
 
   const communityInviteCount = Array.isArray(communityInvites) ? communityInvites.length : 0;
+
+  const { data: myCommunitiesData, isLoading: communitiesLoading } = useQuery<{ communities?: Array<Record<string, unknown>> }>({
+    queryKey: ["my-communities", pid],
+    queryFn: () => communityApi.getMine(),
+    enabled: !!pid && tab === "community",
+    refetchInterval: 30000,
+  });
+
+  const acceptCommunityInviteMutation = useMutation({
+    mutationFn: (inviteId: string) => communityApi.acceptInvite(inviteId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-communities"] });
+      queryClient.invalidateQueries({ queryKey: ["community-invites-pending"] });
+    },
+  });
+
+  const declineCommunityInviteMutation = useMutation({
+    mutationFn: (inviteId: string) => communityApi.declineInvite(inviteId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["community-invites-pending"] });
+    },
+  });
+
+  const [showCreateCommunity, setShowCreateCommunity] = useState(false);
+  const [communityName, setCommunityName] = useState("");
+  const [communityDescription, setCommunityDescription] = useState("");
+  const [creatingCommunity, setCreatingCommunity] = useState(false);
+
+  const handleCreateCommunity = async () => {
+    if (!communityName.trim()) return;
+    setCreatingCommunity(true);
+    try {
+      const community = await communityApi.create({
+        name: communityName.trim(),
+        description: communityDescription.trim() || undefined,
+      });
+      queryClient.invalidateQueries({ queryKey: ["my-communities"] });
+      setShowCreateCommunity(false);
+      setCommunityName("");
+      setCommunityDescription("");
+      navigate(`/labs/community/${community.id}`);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Failed to create community";
+      toast({ title: t("m2.circle.errorTitle"), description: message });
+    } finally {
+      setCreatingCommunity(false);
+    }
+  };
 
   const addFriendMutation = useMutation({
     mutationFn: (data: { firstName: string; lastName: string; email: string }) =>
@@ -364,7 +412,6 @@ export default function LabsCircle() {
       iconVariant: "surface",
       iconColorClass: "labs-icon-text-secondary",
       badge: communityInviteCount || undefined,
-      onClick: () => navigate("/labs/community"),
       testId: "labs-circle-tab-community",
     },
   ];
@@ -485,6 +532,7 @@ export default function LabsCircle() {
       {tab === "sessions" && renderSessionsTab()}
       {tab === "activity" && renderActivityTab()}
       {tab === "stats" && renderStatsTab()}
+      {tab === "community" && renderCommunityTab()}
 
       {selectedFriend && (
         <FriendDetailSheet
@@ -1297,6 +1345,187 @@ export default function LabsCircle() {
           </div>
           <LabsHistoryInsights />
         </div>
+      </div>
+    );
+  }
+
+  function renderCommunityTab() {
+    const communities = (myCommunitiesData?.communities || []) as Array<Record<string, unknown>>;
+    const invites = Array.isArray(communityInvites) ? (communityInvites as Array<Record<string, unknown>>) : [];
+
+    return (
+      <div className="labs-fade-in" data-testid="labs-circle-community">
+        <div className="flex items-center justify-end mb-4">
+          <button
+            onClick={() => setShowCreateCommunity(!showCreateCommunity)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+            style={{
+              background: showCreateCommunity ? "var(--labs-surface)" : "var(--labs-accent)",
+              color: showCreateCommunity ? "var(--labs-text)" : "var(--labs-bg)",
+              border: showCreateCommunity ? "1px solid var(--labs-border)" : "1px solid transparent",
+              cursor: "pointer",
+            }}
+            data-testid="btn-create-community"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            {showCreateCommunity ? t("common.cancel") : t("m2.community.createCommunity")}
+          </button>
+        </div>
+
+        {showCreateCommunity && (
+          <div className="labs-card mb-6" style={{ padding: "var(--labs-space-md)" }} data-testid="create-community-form">
+            <div className="space-y-3">
+              <div>
+                <label className="labs-label">{t("common.name")}</label>
+                <input
+                  type="text"
+                  className="labs-input w-full"
+                  placeholder={t("m2.community.namePlaceholder")}
+                  value={communityName}
+                  onChange={(e) => setCommunityName(e.target.value)}
+                  maxLength={100}
+                  data-testid="input-community-name"
+                />
+              </div>
+              <div>
+                <label className="labs-label">{t("m2.community.descOptional")}</label>
+                <textarea
+                  className="labs-input w-full"
+                  placeholder={t("m2.community.descPlaceholder")}
+                  value={communityDescription}
+                  onChange={(e) => setCommunityDescription(e.target.value)}
+                  maxLength={500}
+                  rows={2}
+                  style={{ resize: "none" }}
+                  data-testid="input-community-description"
+                />
+              </div>
+              <button
+                onClick={handleCreateCommunity}
+                disabled={!communityName.trim() || creatingCommunity}
+                className="labs-btn w-full"
+                style={{
+                  background: "var(--labs-accent)",
+                  color: "var(--labs-bg)",
+                  opacity: !communityName.trim() || creatingCommunity ? 0.5 : 1,
+                }}
+                data-testid="btn-submit-community"
+              >
+                {creatingCommunity ? t("m2.community.creating") : t("m2.community.createCommunity")}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {invites.length > 0 && (
+          <div className="mb-6" data-testid="community-invites-section">
+            <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--labs-text-muted)" }}>
+              <Mail className="w-3.5 h-3.5 inline mr-1" />
+              Pending Invitations ({invites.length})
+            </h3>
+            <div className="space-y-2">
+              {invites.map((invite) => {
+                const inviteId = invite.id as string;
+                return (
+                  <div key={inviteId} className="labs-card p-4 flex items-center justify-between" data-testid={`invite-${inviteId}`}>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
+                        {(invite.communityName as string) || "Community"}
+                      </p>
+                      <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
+                        Invited by {(invite.inviterName as string) || "someone"}
+                      </p>
+                      {invite.personalNote ? (
+                        <p className="text-[11px] italic mt-1" style={{ color: "var(--labs-text-secondary)" }}>
+                          "{invite.personalNote as string}"
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="flex gap-2 ml-3 flex-shrink-0">
+                      <button
+                        onClick={() => acceptCommunityInviteMutation.mutate(inviteId)}
+                        className="w-8 h-8 rounded-full flex items-center justify-center"
+                        style={{ background: "var(--labs-success-muted)", color: "var(--labs-success)", cursor: "pointer" }}
+                        data-testid={`btn-accept-invite-${inviteId}`}
+                      >
+                        <Check className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => declineCommunityInviteMutation.mutate(inviteId)}
+                        className="w-8 h-8 rounded-full flex items-center justify-center"
+                        style={{ background: "var(--labs-danger-muted, rgba(220,38,38,0.1))", color: "var(--labs-danger)", cursor: "pointer" }}
+                        data-testid={`btn-decline-invite-${inviteId}`}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {communitiesLoading ? (
+          <div className="text-center py-10">
+            <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>{t("common.loading")}</p>
+          </div>
+        ) : communities.length === 0 ? (
+          <div className="text-center py-10" data-testid="empty-communities">
+            <Users className="w-10 h-10 mx-auto mb-3" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} />
+            <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
+              No communities yet. Create one or accept an invitation to get started.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2" data-testid="communities-list">
+            {communities.map((c) => {
+              const cId = c.id as string;
+              const onlineCount = (c.onlineCount as number) ?? 0;
+              return (
+                <button
+                  key={cId}
+                  onClick={() => navigate(`/labs/community/${cId}`)}
+                  className="labs-card p-4 w-full text-left flex items-center justify-between transition-all"
+                  style={{ cursor: "pointer" }}
+                  data-testid={`community-card-${cId}`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
+                      {c.name as string}
+                    </p>
+                    {c.description ? (
+                      <p className="text-[11px] truncate mt-0.5" style={{ color: "var(--labs-text-muted)" }}>
+                        {c.description as string}
+                      </p>
+                    ) : null}
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
+                        <Users className="w-3 h-3 inline mr-1" />
+                        {(c.memberCount as number) || 0} members
+                      </span>
+                      <span
+                        className="text-[11px] flex items-center gap-1"
+                        style={{ color: onlineCount > 0 ? "#22c55e" : "var(--labs-text-muted)" }}
+                        data-testid={`online-count-${cId}`}
+                      >
+                        <span
+                          className="w-2 h-2 rounded-full inline-block"
+                          style={{
+                            background: onlineCount > 0 ? "#22c55e" : "var(--labs-text-muted)",
+                            opacity: onlineCount > 0 ? 1 : 0.5,
+                          }}
+                        />
+                        {onlineCount} online
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   }
