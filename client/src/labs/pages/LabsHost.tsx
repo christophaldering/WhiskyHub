@@ -2252,14 +2252,28 @@ function LabsToggle({ checked, onChange, icon, label, description, testId }: {
           {icon}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>{label}</p>
+          <p
+            className="text-sm font-medium"
+            style={{
+              color: "var(--labs-text)",
+              hyphens: "none",
+              WebkitHyphens: "none",
+              MozHyphens: "none",
+              msHyphens: "none",
+            }}
+          >
+            {label}
+          </p>
           <p
             className="text-xs"
             style={{
               color: "var(--labs-text-muted)",
               hyphens: "none",
               WebkitHyphens: "none",
-              overflowWrap: "break-word",
+              MozHyphens: "none",
+              msHyphens: "none",
+              overflowWrap: "normal",
+              wordBreak: "normal",
             }}
           >
             {description}
@@ -2595,8 +2609,40 @@ function LabsSegmentedSelect({ value, options, onChange }: {
             disabled={isDisabled}
             data-testid={`labs-opt-${opt.value}`}
           >
-            <div className="font-bold" style={{ fontSize: 16, color: isDisabled ? "var(--labs-text-muted)" : active ? "var(--labs-accent)" : "var(--labs-text)" }}>{opt.label}</div>
-            {opt.desc && <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.2, marginTop: 2 }}>{opt.desc}</div>}
+            <div
+              className="font-bold"
+              style={{
+                fontSize: 16,
+                color: isDisabled ? "var(--labs-text-muted)" : active ? "var(--labs-accent)" : "var(--labs-text)",
+                hyphens: "none",
+                WebkitHyphens: "none",
+                MozHyphens: "none",
+                msHyphens: "none",
+                overflowWrap: "normal",
+                wordBreak: "normal",
+                lineHeight: 1.15,
+              }}
+            >
+              {opt.label}
+            </div>
+            {opt.desc && (
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "var(--labs-text-muted)",
+                  lineHeight: 1.2,
+                  marginTop: 2,
+                  hyphens: "none",
+                  WebkitHyphens: "none",
+                  MozHyphens: "none",
+                  msHyphens: "none",
+                  overflowWrap: "normal",
+                  wordBreak: "normal",
+                }}
+              >
+                {opt.desc}
+              </div>
+            )}
           </button>
         );
       })}
