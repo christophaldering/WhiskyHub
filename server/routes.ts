@@ -14,6 +14,7 @@ import OpenAI from "openai";
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
 import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail, buildThankYouEmail, buildAdminLoginNotification, buildFriendInviteEmail, buildCommunityInviteEmail } from "./email";
+import { extractPagesText } from "./pdf-utils";
 import { registerObjectStorageRoutes, ObjectStorageService, objectStorageClient } from "./replit_integrations/object_storage";
 import { registerFunnelRoutes } from "./funnel-routes";
 import { recordEvents as recordFunnelEvents } from "./funnel-store";
@@ -3646,6 +3647,146 @@ export async function registerRoutes(
     } catch (e: any) {
       console.error("[handout-library] split failed", e);
       res.status(500).json({ message: e?.message || "Aufteilen fehlgeschlagen" });
+    }
+  });
+
+  app.post("/api/handout-library/:id/auto-suggest-split", async (req: any, res: any) => {
+    try {
+      const hostId = req.headers["x-participant-id"] as string | undefined;
+      if (!hostId) return res.status(401).json({ message: "Authentifizierung erforderlich" });
+      const entry = await storage.getHandoutLibraryEntry(req.params.id);
+      if (!entry) return res.status(404).json({ message: "Bibliothekseintrag nicht gefunden" });
+      if (entry.hostId !== hostId) return res.status(403).json({ message: "Nicht erlaubt" });
+      if (entry.contentType !== "application/pdf") {
+        return res.status(400).json({ message: "Nur PDFs können analysiert werden" });
+      }
+
+      const objectStorage = new ObjectStorageService();
+      let sourceBuffer: Buffer;
+      try {
+        const file = await objectStorage.getObjectEntityFile(entry.fileUrl);
+        const [data] = await file.download();
+        sourceBuffer = data as Buffer;
+      } catch (fetchErr) {
+        console.warn("[handout-library] auto-suggest: failed to read source PDF", fetchErr);
+        return res.status(502).json({ message: "PDF konnte nicht geladen werden" });
+      }
+
+      let pages: string[];
+      try {
+        pages = await extractPagesText(sourceBuffer);
+      } catch (extractErr: any) {
+        console.warn("[handout-library] auto-suggest: text extraction failed", extractErr);
+        return res.status(400).json({ message: "Text konnte aus PDF nicht extrahiert werden" });
+      }
+      const pageCount = pages.length;
+      if (pageCount === 0) {
+        return res.status(400).json({ message: "PDF enthält keine lesbaren Seiten" });
+      }
+
+      const { client, error: aiError, quotaInfo } = await getAIClient(hostId, "auto_handout");
+      if (!client) {
+        if (aiError === "AI_LIMIT_EXCEEDED") {
+          return res.status(429).json({ message: "KI-Kontingent erschöpft", quotaInfo });
+        }
+        if (aiError === "AI_DISABLED") {
+          return res.status(503).json({ message: "KI-Funktion deaktiviert" });
+        }
+        return res.status(503).json({ message: "Keine KI verfügbar – bitte OpenAI-Key in den Einstellungen hinterlegen" });
+      }
+
+      const MAX_CHARS_PER_PAGE = 1500;
+      const compactPages = pages.map((t, i) => {
+        const trimmed = t.length > MAX_CHARS_PER_PAGE ? t.slice(0, MAX_CHARS_PER_PAGE) + "…" : t;
+        return `=== Seite ${i + 1} ===\n${trimmed || "(leere Seite)"}`;
+      }).join("\n\n");
+
+      const sysPrompt = "Du bist ein Assistent, der Whisky-Tasting-Handouts (PDF) analysiert. Ein einzelnes PDF enthält oft mehrere Whiskys hintereinander, jeweils auf einer oder mehreren Seiten. Bestimme die Seitenbereiche je Whisky und extrahiere Metadaten. Antworte ausschließlich mit gültigem JSON nach dem geforderten Schema.";
+      const userPrompt = `Hier ist der Text eines PDFs mit ${pageCount} Seiten. Identifiziere die einzelnen Whisky-Abschnitte. Jeder Abschnitt deckt einen zusammenhängenden Seitenbereich ab (from, to, beide inklusive, 1-basiert). Decke möglichst alle Seiten ab, ohne Überlappungen. Wenn eine Seite nur Cover, Inhaltsverzeichnis, Vorwort oder Anhang ist, lasse sie weg. Antworte mit JSON dieser Struktur:
+{
+  "ranges": [
+    {
+      "from": <int>,
+      "to": <int>,
+      "whiskyName": "<Name des Whiskys, z. B. 'Ardbeg 10' oder 'Glenfarclas 25'>",
+      "distillery": "<Brennerei, optional>",
+      "whiskybaseId": "<Whiskybase-ID, optional>",
+      "title": "<Titel des Abschnitts wie im PDF, optional>"
+    }
+  ]
+}
+Nur das JSON, keine weiteren Worte.
+
+PDF-INHALT:
+${compactPages}`;
+
+      let aiText = "";
+      try {
+        const completion = await client.chat.completions.create({
+          model: process.env.AI_INTEGRATIONS_OPENAI_MODEL || "gpt-4o-mini",
+          temperature: 0.1,
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: sysPrompt },
+            { role: "user", content: userPrompt },
+          ],
+        });
+        aiText = completion.choices[0]?.message?.content || "";
+      } catch (aiErr: any) {
+        console.warn("[handout-library] auto-suggest: AI call failed", aiErr);
+        return res.status(502).json({ message: "KI-Analyse fehlgeschlagen" });
+      }
+
+      let parsed: any;
+      try {
+        parsed = JSON.parse(aiText);
+      } catch {
+        return res.status(502).json({ message: "KI-Antwort konnte nicht gelesen werden" });
+      }
+
+      const suggestionSchema = z.object({
+        ranges: z.array(z.object({
+          from: z.number().int().min(1),
+          to: z.number().int().min(1),
+          whiskyName: z.string().trim().min(1).max(200),
+          distillery: z.string().trim().max(200).optional().nullable(),
+          whiskybaseId: z.string().trim().max(100).optional().nullable(),
+          title: z.string().trim().max(200).optional().nullable(),
+        })),
+      });
+      const safe = suggestionSchema.safeParse(parsed);
+      if (!safe.success) {
+        return res.status(502).json({ message: "KI-Vorschlag ungültig", details: safe.error.flatten() });
+      }
+
+      const cleaned = safe.data.ranges
+        .map((r) => ({
+          from: Math.max(1, Math.min(pageCount, r.from)),
+          to: Math.max(1, Math.min(pageCount, r.to)),
+          whiskyName: r.whiskyName,
+          distillery: r.distillery || "",
+          whiskybaseId: r.whiskybaseId || "",
+          title: r.title || "",
+        }))
+        .filter((r) => r.to >= r.from)
+        .sort((a, b) => a.from - b.from);
+
+      const dedup: typeof cleaned = [];
+      const used = new Set<number>();
+      for (const r of cleaned) {
+        let overlap = false;
+        for (let p = r.from; p <= r.to; p++) {
+          if (used.has(p)) { overlap = true; break; }
+        }
+        if (overlap) continue;
+        for (let p = r.from; p <= r.to; p++) used.add(p);
+        dedup.push(r);
+      }
+
+      res.json({ ranges: dedup, pageCount });
+    } catch (e: any) {
+      console.error("[handout-library] auto-suggest failed", e);
+      res.status(500).json({ message: e?.message || "Auto-Vorschlag fehlgeschlagen" });
     }
   });
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Loader2, Scissors, Trash2, X } from "lucide-react";
+import { Loader2, Scissors, Sparkles, Trash2, X } from "lucide-react";
 import { handoutLibraryApi } from "@/lib/api";
 import type { WhiskyHandoutLibraryEntry } from "@shared/schema";
 import { GlobalWorkerOptions, getDocument } from "pdfjs-dist";
@@ -88,6 +88,30 @@ export default function HandoutLibraryPdfSplitterDialog({ open, onClose, entry, 
     })();
     return () => { localCancel.cancelled = true; };
   }, [open, entry?.id]);
+
+  const autoSuggestMut = useMutation({
+    mutationFn: () => {
+      if (!entry) throw new Error("no entry");
+      return handoutLibraryApi.autoSuggestSplit(entry.id, hostId);
+    },
+    onSuccess: (data) => {
+      setSubmitError(null);
+      setPendingStart(null);
+      const suggested: RangeMeta[] = (data.ranges || []).map((r) => ({
+        from: r.from,
+        to: r.to,
+        whiskyName: r.whiskyName,
+        distillery: r.distillery,
+        whiskybaseId: r.whiskybaseId,
+        title: r.title,
+      }));
+      setRanges(suggested);
+      if (suggested.length === 0) {
+        setSubmitError(t("labs.handoutSplitter.autoNoSuggestions"));
+      }
+    },
+    onError: (e: any) => setSubmitError(e?.message || t("labs.handoutSplitter.autoFailed")),
+  });
 
   const splitMut = useMutation({
     mutationFn: () => {
@@ -210,6 +234,24 @@ export default function HandoutLibraryPdfSplitterDialog({ open, onClose, entry, 
               {pendingStart === null
                 ? t("labs.handoutSplitter.rangeStartHint")
                 : t("labs.handoutSplitter.rangeFinishHint")}
+            </div>
+            <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+              <button
+                type="button"
+                className="labs-btn-secondary text-xs"
+                onClick={() => { setSubmitError(null); autoSuggestMut.mutate(); }}
+                disabled={autoSuggestMut.isPending || splitMut.isPending || loadingPages || !!previewError}
+                style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                data-testid="handout-library-split-auto-suggest"
+              >
+                {autoSuggestMut.isPending
+                  ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" />
+                  : <Sparkles style={{ width: 12, height: 12 }} />}
+                {autoSuggestMut.isPending ? t("labs.handoutSplitter.autoRunning") : t("labs.handoutSplitter.autoSuggest")}
+              </button>
+              <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                {t("labs.handoutSplitter.autoHint")}
+              </span>
             </div>
           </div>
 

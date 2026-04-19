@@ -300,6 +300,15 @@ export const handoutLibraryApi = {
       headers: { "x-participant-id": hostId },
       body: JSON.stringify({ ranges }),
     }),
+  autoSuggestSplit: (
+    id: string,
+    hostId: string,
+  ): Promise<{ ranges: Array<{ from: number; to: number; whiskyName: string; distillery: string; whiskybaseId: string; title: string }>; pageCount: number }> =>
+    fetchJSON(`/handout-library/${id}/auto-suggest-split`, {
+      method: "POST",
+      headers: { "x-participant-id": hostId },
+      body: JSON.stringify({}),
+    }),
   bulkDelete: (ids: string[], hostId: string) =>
     fetchJSON(`/handout-library/bulk-delete`, {
       method: "POST",
