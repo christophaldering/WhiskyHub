@@ -17,7 +17,7 @@ function getTimeGreetingKey(): string {
   return "hub.timeGreetingEvening";
 }
 
-type FilterTab = "all" | "hosting" | "joined";
+type FilterTab = "all" | "hosting" | "joined" | "archive";
 type TimeFilter = "upcoming" | "live";
 
 function formatTastingDate(dateStr: string | null | undefined): string {
@@ -158,6 +158,21 @@ export default function LabsTastings() {
     enabled: !!currentParticipant?.id,
     staleTime: 60_000,
   });
+
+  const archiveItems = useMemo(() => {
+    const list = historyData?.tastings ?? [];
+    let items = list.filter((t: any) => t.status !== "open" && t.status !== "draft" && t.status !== "deleted");
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      items = items.filter((t: any) =>
+        t.title?.toLowerCase().includes(q) ||
+        t.location?.toLowerCase().includes(q) ||
+        t.hostName?.toLowerCase().includes(q)
+      );
+    }
+    items = [...items].sort((a: any, b: any) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+    return items;
+  }, [historyData, searchQuery]);
 
   const recentDrams = useMemo(() => {
     const items: { id: string; whiskyName: string; score: number; date: string }[] = [];
@@ -315,7 +330,7 @@ export default function LabsTastings() {
           >
             Tastings
           </h1>
-          {counts.live > 0 && (
+          {counts.live > 0 && filterTab !== "archive" && (
             <span
               className="labs-badge labs-badge-success labs-tastings-live-badge"
               data-testid="labs-tastings-live-count"
@@ -358,7 +373,7 @@ export default function LabsTastings() {
         <Search className="labs-tastings-search-icon w-4 h-4" />
         <input
           className="labs-input labs-tastings-search-input"
-          placeholder="Search tastings..."
+          placeholder={filterTab === "archive" ? t("tastings.archiveSearchPlaceholder", "Search archive...") : "Search tastings..."}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           data-testid="labs-tastings-search"
@@ -367,18 +382,23 @@ export default function LabsTastings() {
 
       <div className="labs-tastings-filter-zone labs-fade-in labs-stagger-2">
         <div className="labs-segmented">
-          {(["all", "hosting", "joined"] as const).map((tab) => (
-            <button
-              key={tab}
-              className={`labs-segmented-btn ${filterTab === tab ? "labs-segmented-btn-active" : ""}`}
-              onClick={() => setFilterTab(tab)}
-              data-testid={`labs-tastings-filter-${tab}`}
-            >
-              {tab === "all" ? "All" : tab === "hosting" ? "Hosting" : "Joined"}
-            </button>
-          ))}
+          {(["all", "hosting", "joined", "archive"] as const).map((tab) => {
+            const labelKey = `tastings.tab${tab.charAt(0).toUpperCase()}${tab.slice(1)}`;
+            const fallback = tab === "all" ? "All" : tab === "hosting" ? "Hosting" : tab === "joined" ? "Joined" : "Archive";
+            return (
+              <button
+                key={tab}
+                className={`labs-segmented-btn ${filterTab === tab ? "labs-segmented-btn-active" : ""}`}
+                onClick={() => setFilterTab(tab)}
+                data-testid={`labs-tastings-filter-${tab}`}
+              >
+                {t(labelKey, fallback)}
+              </button>
+            );
+          })}
         </div>
 
+        {filterTab !== "archive" && (
         <div className="labs-tastings-time-chips">
           {(["live", "upcoming"] as const).map((tf) => {
             const isActive = timeFilter === tf;
@@ -408,9 +428,95 @@ export default function LabsTastings() {
             );
           })}
         </div>
+        )}
       </div>
 
-      {isLoading ? (
+      {filterTab === "archive" ? (
+        isHistoryLoading ? (
+          <div className="labs-tastings-skeleton">
+            <div className="labs-skeleton labs-skeleton--h20 labs-skeleton--w60" />
+            <div className="labs-skeleton labs-skeleton--h14 labs-skeleton--w40" />
+            <div className="labs-skeleton labs-skeleton--h14 labs-skeleton--w80 labs-skeleton--mt8" />
+            <div className="labs-skeleton labs-skeleton--h20 labs-skeleton--w55 labs-skeleton--mt12" />
+            <div className="labs-skeleton labs-skeleton--h14 labs-skeleton--w45" />
+            <div className="labs-skeleton labs-skeleton--h14 labs-skeleton--w70 labs-skeleton--mt8" />
+          </div>
+        ) : archiveItems.length === 0 ? (
+          <div className="labs-empty labs-fade-in" data-testid="labs-tastings-archive-empty">
+            <svg className="labs-empty-icon" viewBox="0 0 48 48" fill="none">
+              <rect x="10" y="14" width="28" height="6" rx="2" fill="var(--labs-accent)" opacity="0.25" />
+              <rect x="12" y="20" width="24" height="20" rx="2" fill="var(--labs-accent)" opacity="0.15" stroke="var(--labs-accent)" strokeWidth="1.5" />
+              <path d="M19 28 L29 28" stroke="var(--labs-accent)" strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
+            </svg>
+            <h2 className="labs-empty-title">
+              {searchQuery
+                ? t("tastings.archiveEmptySearch", "No archived tastings match your search.")
+                : t("tastings.archiveEmptyTitle", "No archived tastings yet")}
+            </h2>
+            {!searchQuery && (
+              <p className="labs-empty-sub">
+                {t("tastings.archiveEmptySub", "Once a tasting is closed it will appear here.")}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="labs-grouped-list labs-fade-in labs-stagger-3" data-testid="labs-tastings-archive-list">
+            {archiveItems.map((tasting: any) => {
+              const statusCfg = getStatusConfig(tasting.status);
+              const isHost = tasting.isHost;
+              const formattedDate = formatTastingDate(tasting.date);
+              return (
+                <Link key={tasting.id} href={`/labs/history/${tasting.id}`}>
+                  <div className="labs-list-row" data-testid={`labs-tasting-archive-card-${tasting.id}`}>
+                    <div className="labs-tasting-card-icon labs-tasting-card-icon--default">
+                      <Wine className="labs-tasting-card-icon-sm labs-icon-accent" />
+                    </div>
+                    <div className="labs-tasting-card-body">
+                      <div className="labs-tasting-card-title-row">
+                        <span className="labs-tasting-card-title" data-testid={`labs-tasting-title-${tasting.id}`}>
+                          {String(tasting.title ?? "")}
+                        </span>
+                        <div className="labs-tasting-card-badges">
+                          <span className={statusCfg.cssClass} data-testid={`labs-tasting-status-${tasting.id}`}>
+                            {t(statusCfg.labelKey, statusCfg.fallbackLabel)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="labs-tasting-card-host" data-testid={`labs-tasting-hostname-${tasting.id}`}>
+                        {isHost ? (
+                          <span className="labs-tasting-role-text">{t("tastingStatus.yourTasting", "Your Tasting")}</span>
+                        ) : tasting.hostName ? (
+                          <>
+                            <Crown className="labs-tasting-card-host-icon" />
+                            <span className="labs-tasting-card-host-name">{stripGuestSuffix(tasting.hostName)}</span>
+                          </>
+                        ) : null}
+                      </div>
+                      <div className="labs-tasting-card-meta">
+                        {formattedDate && (
+                          <span className="labs-tasting-card-meta-item">
+                            <Calendar className="labs-tasting-card-meta-icon" />
+                            {formattedDate}
+                          </span>
+                        )}
+                        {tasting.location && (
+                          <span className="labs-tasting-card-meta-item labs-tasting-card-meta-item--location">
+                            <MapPin className="labs-tasting-card-meta-icon" />
+                            <span className="labs-tasting-card-host-name">{String(tasting.location ?? "")}</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="labs-tasting-card-actions">
+                      <ChevronRight className="labs-tasting-chevron" />
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )
+      ) : isLoading ? (
         <div className="labs-tastings-skeleton">
           <div className="labs-skeleton labs-skeleton--h20 labs-skeleton--w60" />
           <div className="labs-skeleton labs-skeleton--h14 labs-skeleton--w40" />
