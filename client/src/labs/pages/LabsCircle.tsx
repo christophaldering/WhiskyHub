@@ -974,7 +974,6 @@ export default function LabsCircle() {
                     style={{
                       gap: 12,
                       ...(isOnline ? { borderLeft: "3px solid var(--labs-success)", background: "color-mix(in srgb, var(--labs-success) 6%, var(--labs-surface))" } : {}),
-                      ...(isInvited ? { borderLeft: "3px solid var(--labs-warning, #f59e0b)" } : {}),
                       cursor: isOnline ? "pointer" : undefined,
                     }}
                     onClick={isOnline && onlineInfo ? () => setSelectedFriend(onlineInfo) : undefined}
@@ -988,15 +987,17 @@ export default function LabsCircle() {
                           className="w-10 h-10 rounded-full"
                           style={{
                             objectFit: "cover",
-                            border: isOnline ? "2px solid var(--labs-success)" : isInvited ? "2px solid var(--labs-warning, #f59e0b)" : "2px solid var(--labs-accent-muted)",
+                            border: isOnline ? "2px solid var(--labs-success)" : isInvited ? "1px solid color-mix(in srgb, var(--labs-warning, #f59e0b) 35%, var(--labs-border-subtle))" : "2px solid var(--labs-accent-muted)",
+                            opacity: isInvited ? 0.85 : 1,
                           }}
                         />
                       ) : (
                       <div
                         className="w-10 h-10 rounded-full flex items-center justify-center labs-serif font-semibold"
                         style={{
-                          background: isOnline ? "color-mix(in srgb, var(--labs-success) 20%, var(--labs-surface))" : isInvited ? "color-mix(in srgb, var(--labs-warning, #f59e0b) 15%, var(--labs-surface))" : "var(--labs-accent-muted)",
-                          color: isOnline ? "var(--labs-success)" : isInvited ? "var(--labs-warning, #f59e0b)" : "var(--labs-accent)",
+                          background: isOnline ? "color-mix(in srgb, var(--labs-success) 20%, var(--labs-surface))" : isInvited ? "color-mix(in srgb, var(--labs-warning, #f59e0b) 8%, var(--labs-surface-elevated))" : "var(--labs-accent-muted)",
+                          color: isOnline ? "var(--labs-success)" : isInvited ? "var(--labs-text-muted)" : "var(--labs-accent)",
+                          border: isInvited ? "1px solid color-mix(in srgb, var(--labs-warning, #f59e0b) 30%, var(--labs-border-subtle))" : undefined,
                         }}
                       >
                         {displayName[0]}
@@ -1011,17 +1012,12 @@ export default function LabsCircle() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="ty-ui truncate" style={{ color: isSelf ? "var(--labs-accent)" : undefined }}>
+                        <span className="ty-ui truncate" style={{ color: isSelf ? "var(--labs-accent)" : isInvited ? "var(--labs-text-secondary)" : undefined }}>
                           {isSelf ? "You ★" : displayName}
                         </span>
                         {isOnline && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: "var(--labs-success)", color: "#fff" }}>
                             ONLINE
-                          </span>
-                        )}
-                        {isInvited && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: "var(--labs-warning, #f59e0b)", color: "#fff" }} data-testid={`labs-circle-invited-badge-${fid}`}>
-                            INVITED
                           </span>
                         )}
                       </div>
@@ -1030,7 +1026,8 @@ export default function LabsCircle() {
                           {t("m2.circle.active")} {timeAgo(onlineInfo?.lastSeenAt, t)}
                         </p>
                       ) : isInvited ? (
-                        <p className="ty-caption mt-0.5" style={{ color: "var(--labs-warning, #f59e0b)" }}>
+                        <p className="ty-caption mt-0.5 flex items-center gap-1.5" style={{ color: "var(--labs-text-muted)" }} data-testid={`labs-circle-invited-badge-${fid}`}>
+                          <Mail className="w-3 h-3" style={{ color: "var(--labs-warning, #f59e0b)", opacity: 0.85 }} />
                           {t("m2.circle.notYetRegistered")}
                         </p>
                       ) : typeof friend.email === "string" && friend.email ? (
@@ -1087,11 +1084,11 @@ export default function LabsCircle() {
                       )}
                       {isInvited && (
                         <button
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+                          className="flex items-center gap-1.5 px-2 sm:px-2.5 h-8 rounded-lg text-[11px] font-medium transition-all"
                           style={{
-                            background: resentSuccess === fid ? "var(--labs-success-muted, rgba(34,197,94,0.15))" : resentError === fid ? "var(--labs-danger-muted, rgba(239,68,68,0.15))" : "color-mix(in srgb, var(--labs-warning, #f59e0b) 15%, var(--labs-surface))",
-                            color: resentSuccess === fid ? "var(--labs-success)" : resentError === fid ? "var(--labs-danger, #ef4444)" : "var(--labs-warning, #f59e0b)",
-                            border: "none",
+                            background: resentSuccess === fid ? "var(--labs-success-muted, rgba(34,197,94,0.15))" : resentError === fid ? "var(--labs-danger-muted, rgba(239,68,68,0.15))" : "transparent",
+                            color: resentSuccess === fid ? "var(--labs-success)" : resentError === fid ? "var(--labs-danger, #ef4444)" : "var(--labs-text-secondary)",
+                            border: `1px solid ${resentSuccess === fid ? "color-mix(in srgb, var(--labs-success) 35%, transparent)" : resentError === fid ? "color-mix(in srgb, var(--labs-danger, #ef4444) 35%, transparent)" : "var(--labs-border-subtle)"}`,
                             cursor: resendingInvite === fid ? "wait" : "pointer",
                           }}
                           disabled={resendingInvite === fid || resentSuccess === fid}
@@ -1101,16 +1098,21 @@ export default function LabsCircle() {
                             setResendingInvite(fid);
                             resendInviteMutation.mutate(fid);
                           }}
+                          title={t("m2.circle.resend")}
+                          aria-label={t("m2.circle.resend")}
                           data-testid={`labs-circle-resend-invite-${fid}`}
                         >
                           {resendingInvite === fid ? (
-                            <>{t("m2.circle.sending")}</>
+                            <>
+                              <Send className="w-3.5 h-3.5 animate-pulse" />
+                              <span className="hidden min-[400px]:inline">{t("m2.circle.sending")}</span>
+                            </>
                           ) : resentSuccess === fid ? (
-                            <><Check className="w-3 h-3" /> {t("m2.circle.sent")}</>
+                            <><Check className="w-3.5 h-3.5" /><span className="hidden min-[400px]:inline">{t("m2.circle.sent")}</span></>
                           ) : resentError === fid ? (
-                            <><X className="w-3 h-3" /> {t("m2.circle.failed")}</>
+                            <><X className="w-3.5 h-3.5" /><span className="hidden min-[400px]:inline">{t("m2.circle.failed")}</span></>
                           ) : (
-                            <><Send className="w-3 h-3" /> {t("m2.circle.resend")}</>
+                            <><Send className="w-3.5 h-3.5" /><span className="hidden min-[400px]:inline">{t("m2.circle.resend")}</span></>
                           )}
                         </button>
                       )}
