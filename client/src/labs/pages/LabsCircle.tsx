@@ -370,8 +370,8 @@ export default function LabsCircle() {
     },
     {
       key: "leaderboard",
-      label: t("m2.circle.navLeaderboard", "Leaderboard"),
-      sublabel: t("m2.circle.navLeaderboardSub", "Ranglisten & Plätze"),
+      label: t("m2.circle.navLeaderboard", "Resonanz"),
+      sublabel: t("m2.circle.navLeaderboardSub", "Was im Kreis Wirkung zeigt"),
       icon: Trophy,
       iconVariant: "success",
       iconColorClass: "labs-icon-success",
