@@ -27,7 +27,7 @@ export default function Background() {
   return (
     <SimpleShell maxWidth={700}>
       <div data-testid="background-page">
-        <BackButton fallback="/discover/rabbit-hole" />
+        <BackButton fallback="/labs/bibliothek" />
 
         <motion.div initial="hidden" animate="visible" variants={fadeUp} className="mb-10">
           <div className="flex items-center gap-3 mb-2">

@@ -107,7 +107,6 @@ const LabsDistilleries = lazy(() => import("@/labs/pages/LabsDistilleries"));
 const LabsBottlers = lazy(() => import("@/labs/pages/LabsBottlers"));
 const LabsGuide = lazy(() => import("@/labs/pages/LabsGuide"));
 const LabsResearch = lazy(() => import("@/labs/pages/LabsResearch"));
-const LabsRabbitHole = lazy(() => import("@/labs/pages/LabsRabbitHole"));
 const LabsThemenspeicher = lazy(() => import("@/labs/pages/LabsThemenspeicher"));
 const LabsMethod = lazy(() => import("@/labs/pages/LabsMethod"));
 const LabsIdeaBehindNumbers = lazy(() => import("@/labs/pages/LabsIdeaBehindNumbers"));
@@ -399,7 +398,7 @@ function SmartRedirectToLabs() {
     "/discover/guide": "/labs/discover/guide",
     "/discover/templates": "/labs/discover/lexicon?tab=templates",
     "/discover/about": "/labs/about",
-    "/discover/rabbit-hole": "/labs/discover/rabbit-hole",
+    "/discover/rabbit-hole": "/labs/discover/rabbit-hole/themenspeicher",
     "/discover/lexicon": "/labs/discover/lexicon",
     "/discover/community": "/labs/community",
     "/discover/distilleries": "/labs/discover/distilleries",
@@ -574,7 +573,7 @@ function Router() {
         <Route path="/m2/discover/templates">{() => <Redirect to="/labs/discover/lexicon?tab=templates" />}</Route>
         <Route path="/m2/discover/guide">{() => <Redirect to="/labs/discover/guide" />}</Route>
         <Route path="/m2/discover/research">{() => <Redirect to="/labs/discover/research" />}</Route>
-        <Route path="/m2/discover/rabbit-hole">{() => <Redirect to="/labs/discover/rabbit-hole" />}</Route>
+        <Route path="/m2/discover/rabbit-hole">{() => <Redirect to="/labs/discover/rabbit-hole/themenspeicher" />}</Route>
         <Route path="/m2/discover/vocabulary">{() => <Redirect to="/labs/discover/lexicon?tab=flavour-map" />}</Route>
         <Route path="/m2/discover/about">{() => <Redirect to="/labs/about" />}</Route>
         <Route path="/m2/discover/donate">{() => <Redirect to="/labs/donate" />}</Route>
@@ -658,7 +657,9 @@ function Router() {
               <Route path="/labs/discover/literature">
                 <Redirect to="/labs/discover/research" />
               </Route>
-              <Route path="/labs/discover/rabbit-hole" component={LabsRabbitHole} />
+              <Route path="/labs/discover/rabbit-hole">
+                <Redirect to="/labs/discover/rabbit-hole/themenspeicher" />
+              </Route>
               <Route path="/labs/discover/rabbit-hole/themenspeicher" component={LabsThemenspeicher} />
               <Route path="/labs/discover/method" component={LabsMethod} />
               <Route path="/labs/discover/idea-behind-numbers" component={LabsIdeaBehindNumbers} />

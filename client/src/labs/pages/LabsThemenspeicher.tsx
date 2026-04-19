@@ -46,9 +46,9 @@ export default function LabsThemenspeicher() {
 
   return (
     <div className="labs-page" data-testid="labs-themenspeicher-page">
-      <BackLink href="/labs/discover/rabbit-hole" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/bibliothek" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-themenspeicher">
-          <ChevronLeft className="w-4 h-4" /> {t("rabbitHole.title", "Rabbit Hole")}
+          <ChevronLeft className="w-4 h-4" /> {t("bibliothek.title", "Library")}
         </button>
       </BackLink>
 

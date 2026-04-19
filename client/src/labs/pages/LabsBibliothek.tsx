@@ -43,18 +43,16 @@ export const SECTIONS: BibliothekSection[] = [
       { icon: BookOpen, labelKey: "discover.lexicon", labelFallback: "Lexicon", descKey: "bibliothek.lexiconDescNav", descFallback: "Dictionary, templates & flavour map", href: "/labs/discover/lexicon", testId: "labs-link-bibliothek-lexicon" },
       { icon: Building2, labelKey: "discover.distilleries", labelFallback: "Distilleries", descKey: "discover.distilleriesDesc", descFallback: "Distillery encyclopedia & map", href: "/labs/discover/distilleries", testId: "labs-link-bibliothek-distilleries" },
       { icon: Package, labelKey: "discover.bottlers", labelFallback: "Bottlers", descKey: "discover.bottlersDesc", descFallback: "Independent bottlers database", href: "/labs/discover/bottlers", testId: "labs-link-bibliothek-bottlers" },
-      { icon: Factory, labelKey: "bibliothek.whiskyProduction", labelFallback: "Background & Methodology", descKey: "bibliothek.whiskyProductionDesc", descFallback: "Tasting, profile calculation, dimensions & statistical engine", href: "/labs/discover/background", testId: "labs-link-bibliothek-production" },
     ],
   },
   {
     titleKey: "bibliothek.sectionTastingWissen",
     titleFallback: "Tasting Knowledge",
     links: [
+      { icon: Factory, labelKey: "bibliothek.whiskyProduction", labelFallback: "Background & Methodology", descKey: "bibliothek.whiskyProductionDesc", descFallback: "Tasting, profile calculation, dimensions & statistical engine", href: "/labs/discover/background", testId: "labs-link-bibliothek-production" },
       { icon: Map, labelKey: "discover.guide", labelFallback: "Tasting Guide", descKey: "discover.guideDesc", descFallback: "Step-by-step tasting guide", href: "/labs/discover/guide", testId: "labs-link-bibliothek-guide" },
       { icon: SlidersHorizontal, labelKey: "bibliothek.howProfileCalculated", labelFallback: "How a Profile Is Calculated", descKey: "bibliothek.howProfileCalculatedDesc", descFallback: "Scoring, profiles & dimensions", href: "/labs/discover/method", testId: "labs-link-bibliothek-profile-calc" },
       { icon: Lightbulb, labelKey: "bibliothek.ideaBehindNumbers", labelFallback: "The Idea Behind the Numbers", descKey: "bibliothek.ideaBehindNumbersDesc", descFallback: "Foundations of taste measurement", href: "/labs/discover/idea-behind-numbers", testId: "labs-link-bibliothek-idea-numbers" },
-      { icon: GraduationCap, labelKey: "bibliothek.testTheory", labelFallback: "Test Theory & Psychometrics", descKey: "bibliothek.testTheoryDesc", descFallback: "The science of good measurement", href: "/labs/discover/test-theory", testId: "labs-link-bibliothek-test-theory" },
-      { icon: TrendingUp, labelKey: "bibliothek.statisticalMethods", labelFallback: "Statistical Methods", descKey: "bibliothek.statisticalMethodsDesc", descFallback: "Patterns, agreement & structure in data", href: "/labs/discover/statistical-methods", testId: "labs-link-bibliothek-stat-methods" },
       { icon: Microscope, labelKey: "bibliothek.researchSensory", labelFallback: "Research & Sensory", descKey: "bibliothek.researchSensoryDesc", descFallback: "Concepts, studies & sensory science", href: "/labs/discover/research", testId: "labs-link-bibliothek-research-sensory" },
     ],
   },
@@ -73,10 +71,12 @@ export const SECTIONS: BibliothekSection[] = [
     ],
   },
   {
-    titleKey: "bibliothek.sectionDeepDive",
-    titleFallback: "Deep Dive",
+    titleKey: "bibliothek.sectionRabbitHole",
+    titleFallback: "Rabbit Hole",
     links: [
-      { icon: BookMarked, labelKey: "discover.rabbitHole", labelFallback: "Rabbit Hole", descKey: "discover.rabbitHoleDesc", descFallback: "Rating models, statistics & deep dives", href: "/labs/discover/rabbit-hole", testId: "labs-link-bibliothek-rabbit-hole" },
+      { icon: Archive, labelKey: "rabbitHole.themenspeicherTitle", labelFallback: "Topic Vault", descKey: "rabbitHole.themenspeicherDesc", descFallback: "Open questions and ideas worth exploring later.", href: "/labs/discover/rabbit-hole/themenspeicher", testId: "labs-link-bibliothek-themenspeicher" },
+      { icon: TrendingUp, labelKey: "bibliothek.statisticalMethods", labelFallback: "Statistical Methods", descKey: "bibliothek.statisticalMethodsDesc", descFallback: "Patterns, agreement & structure in data", href: "/labs/discover/statistical-methods", testId: "labs-link-bibliothek-stat-methods" },
+      { icon: GraduationCap, labelKey: "bibliothek.testTheory", labelFallback: "Test Theory & Psychometrics", descKey: "bibliothek.testTheoryDesc", descFallback: "The science of good measurement", href: "/labs/discover/test-theory", testId: "labs-link-bibliothek-test-theory" },
     ],
   },
 ];

@@ -48,7 +48,7 @@ const SECTIONS: DiscoverSection[] = [
     titleKey: "discover.sectionDeepDive",
     titleFallback: "Deep Dives",
     links: [
-      { icon: BookMarked, labelKey: "discover.rabbitHole", labelFallback: "Rabbit Hole", descKey: "discover.rabbitHoleDesc", descFallback: "Rating models, statistics & deep dives", href: "/labs/discover/rabbit-hole", testId: "labs-link-discover-rabbit-hole" },
+      { icon: BookMarked, labelKey: "discover.rabbitHole", labelFallback: "Rabbit Hole", descKey: "discover.rabbitHoleDesc", descFallback: "Rating models, statistics & deep dives", href: "/labs/discover/rabbit-hole/themenspeicher", testId: "labs-link-discover-rabbit-hole" },
       { icon: Archive, labelKey: "discover.archive", labelFallback: "Archive", descKey: "discover.archiveDesc", descFallback: "Past tastings & cross-tasting insights", href: "/labs/history", testId: "labs-link-discover-archive" },
     ],
   },
