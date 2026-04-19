@@ -234,6 +234,60 @@ export const handoutLibraryApi = {
       headers: { "x-participant-id": hostId },
       body: JSON.stringify({ hostId, whiskyId, visibility }),
     }),
+  setShared: (id: string, hostId: string, isShared: boolean) =>
+    fetchJSON(`/handout-library/${id}/share`, {
+      method: "PATCH",
+      headers: { "x-participant-id": hostId },
+      body: JSON.stringify({ isShared }),
+    }),
+  listCommunity: (hostId: string, search?: string) => {
+    const qs = new URLSearchParams();
+    if (search) qs.set("search", search);
+    return fetchJSON(`/handout-library/community${qs.toString() ? `?${qs.toString()}` : ""}`, {
+      headers: { "x-participant-id": hostId },
+    });
+  },
+  cloneFromCommunity: (id: string, hostId: string) =>
+    fetchJSON(`/handout-library/community/${id}/clone`, {
+      method: "POST",
+      headers: { "x-participant-id": hostId },
+    }),
+  upload: async (
+    hostId: string,
+    file: File,
+    meta: { whiskyName: string; distillery?: string; whiskybaseId?: string; title?: string; author?: string; description?: string },
+  ) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("whiskyName", meta.whiskyName);
+    if (meta.distillery !== undefined) formData.append("distillery", meta.distillery);
+    if (meta.whiskybaseId !== undefined) formData.append("whiskybaseId", meta.whiskybaseId);
+    if (meta.title !== undefined) formData.append("title", meta.title);
+    if (meta.author !== undefined) formData.append("author", meta.author);
+    if (meta.description !== undefined) formData.append("description", meta.description);
+    const res = await fetch(`${API_BASE}/handout-library`, {
+      method: "POST",
+      body: formData,
+      headers: { "x-participant-id": hostId },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+  bulkDelete: (ids: string[], hostId: string) =>
+    fetchJSON(`/handout-library/bulk-delete`, {
+      method: "POST",
+      headers: { "x-participant-id": hostId },
+      body: JSON.stringify({ ids }),
+    }),
+  bulkShare: (ids: string[], hostId: string, isShared: boolean) =>
+    fetchJSON(`/handout-library/bulk-share`, {
+      method: "POST",
+      headers: { "x-participant-id": hostId },
+      body: JSON.stringify({ ids, isShared }),
+    }),
 };
 
 export const tastingHandoutApi = {

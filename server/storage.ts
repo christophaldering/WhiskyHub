@@ -370,6 +370,9 @@ export interface IStorage {
   updateHandoutLibraryEntry(id: string, data: Partial<InsertWhiskyHandoutLibraryEntry>): Promise<WhiskyHandoutLibraryEntry | undefined>;
   deleteHandoutLibraryEntry(id: string): Promise<void>;
   isHandoutFileReferencedByLibrary(fileUrl: string): Promise<boolean>;
+  setHandoutLibraryEntryShared(id: string, isShared: boolean, sharedByName: string | null): Promise<WhiskyHandoutLibraryEntry | undefined>;
+  listSharedHandoutLibrary(opts?: { search?: string; excludeHostId?: string; limit?: number }): Promise<WhiskyHandoutLibraryEntry[]>;
+  setHandoutLibraryEntryAttribution(id: string, data: { clonedFromId?: string | null; sharedByName?: string | null }): Promise<void>;
 
   // PDF Split Sessions (temporary store for splitting multi-page program PDFs)
   createPdfSplitSession(data: { tastingId: string; hostId: string; pages: PdfSplitPage[] }): Promise<PdfSplitSession>;
@@ -1197,6 +1200,44 @@ export class DatabaseStorage implements IStorage {
 
   async deleteHandoutLibraryEntry(id: string): Promise<void> {
     await db.delete(whiskyHandoutLibrary).where(eq(whiskyHandoutLibrary.id, id));
+  }
+
+  async setHandoutLibraryEntryShared(id: string, isShared: boolean, sharedByName: string | null): Promise<WhiskyHandoutLibraryEntry | undefined> {
+    const [row] = await db.update(whiskyHandoutLibrary).set({
+      isShared,
+      sharedAt: isShared ? new Date() : null,
+      sharedByName: isShared ? sharedByName : null,
+    }).where(eq(whiskyHandoutLibrary.id, id)).returning();
+    return row;
+  }
+
+  async setHandoutLibraryEntryAttribution(id: string, data: { clonedFromId?: string | null; sharedByName?: string | null }): Promise<void> {
+    const patch: Record<string, unknown> = {};
+    if (data.clonedFromId !== undefined) patch.clonedFromId = data.clonedFromId;
+    if (data.sharedByName !== undefined) patch.sharedByName = data.sharedByName;
+    if (Object.keys(patch).length === 0) return;
+    await db.update(whiskyHandoutLibrary).set(patch).where(eq(whiskyHandoutLibrary.id, id));
+  }
+
+  async listSharedHandoutLibrary(opts?: { search?: string; excludeHostId?: string; limit?: number }): Promise<WhiskyHandoutLibraryEntry[]> {
+    const filters = [eq(whiskyHandoutLibrary.isShared, true)] as any[];
+    if (opts?.excludeHostId) {
+      filters.push(sql`${whiskyHandoutLibrary.hostId} <> ${opts.excludeHostId}`);
+    }
+    if (opts?.search && opts.search.trim()) {
+      const pattern = `%${opts.search.trim().toLowerCase()}%`;
+      filters.push(sql`(LOWER(${whiskyHandoutLibrary.whiskyName}) LIKE ${pattern}
+        OR LOWER(COALESCE(${whiskyHandoutLibrary.distillery}, '')) LIKE ${pattern}
+        OR LOWER(COALESCE(${whiskyHandoutLibrary.title}, '')) LIKE ${pattern}
+        OR LOWER(COALESCE(${whiskyHandoutLibrary.author}, '')) LIKE ${pattern}
+        OR LOWER(COALESCE(${whiskyHandoutLibrary.whiskybaseId}, '')) LIKE ${pattern}
+        OR LOWER(COALESCE(${whiskyHandoutLibrary.sharedByName}, '')) LIKE ${pattern})`);
+    }
+    const limit = Math.min(Math.max(opts?.limit ?? 100, 1), 200);
+    return db.select().from(whiskyHandoutLibrary)
+      .where(and(...filters))
+      .orderBy(desc(whiskyHandoutLibrary.sharedAt))
+      .limit(limit);
   }
 
   // --- PDF Split Sessions ---

@@ -182,13 +182,18 @@ export const whiskyHandoutLibrary = pgTable("whisky_handout_library", {
   title: text("title"),
   author: text("author"),
   description: text("description"),
+  isShared: boolean("is_shared").default(false).notNull(),
+  sharedAt: timestamp("shared_at"),
+  sharedByName: text("shared_by_name"),
+  clonedFromId: varchar("cloned_from_id"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
   hostIdx: index("idx_whisky_handout_library_host").on(table.hostId),
   hostWbIdx: index("idx_whisky_handout_library_host_wb").on(table.hostId, table.whiskybaseId),
+  sharedIdx: index("idx_whisky_handout_library_shared").on(table.isShared),
 }));
 
-export const insertWhiskyHandoutLibrarySchema = createInsertSchema(whiskyHandoutLibrary).omit({ id: true, createdAt: true });
+export const insertWhiskyHandoutLibrarySchema = createInsertSchema(whiskyHandoutLibrary).omit({ id: true, createdAt: true, isShared: true, sharedAt: true, sharedByName: true, clonedFromId: true });
 export type InsertWhiskyHandoutLibraryEntry = z.infer<typeof insertWhiskyHandoutLibrarySchema>;
 export type WhiskyHandoutLibraryEntry = typeof whiskyHandoutLibrary.$inferSelect;
 
