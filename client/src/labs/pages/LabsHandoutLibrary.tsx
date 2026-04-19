@@ -30,6 +30,7 @@ interface UploadFormState {
   title: string;
   author: string;
   description: string;
+  splitProgramme: boolean;
 }
 
 const emptyUploadForm: UploadFormState = {
@@ -40,6 +41,7 @@ const emptyUploadForm: UploadFormState = {
   title: "",
   author: "",
   description: "",
+  splitProgramme: false,
 };
 
 function fmtDate(d: Date | string | null | undefined): string {
@@ -142,7 +144,11 @@ export default function LabsHandoutLibrary() {
     onError: (e: any) => setError(e?.message || "Übernahme fehlgeschlagen"),
   });
 
-  const uploadMut = useMutation({
+  const uploadMut = useMutation<any, Error, void, { wantsSplit: boolean; isPdf: boolean }>({
+    onMutate: () => ({
+      wantsSplit: !!uploadForm.splitProgramme,
+      isPdf: (uploadForm.file?.type || "").toLowerCase() === "application/pdf",
+    }),
     mutationFn: async () => {
       if (!uploadForm.file) throw new Error("Bitte eine Datei auswählen");
       if (!uploadForm.whiskyName.trim()) throw new Error("Whisky-Name ist erforderlich");
@@ -155,12 +161,15 @@ export default function LabsHandoutLibrary() {
         description: uploadForm.description.trim(),
       });
     },
-    onSuccess: () => {
+    onSuccess: (created: WhiskyHandoutLibraryEntry, _vars, ctx) => {
       setError(null);
       setInfo("Handout in deine Bibliothek hochgeladen.");
       setUploadForm(emptyUploadForm);
       setUploadOpen(false);
       qc.invalidateQueries({ queryKey: ["handout-library", hostId] });
+      if (ctx?.wantsSplit && ctx.isPdf && created?.id) {
+        setSplitTarget(created);
+      }
     },
     onError: (e: any) => setError(e?.message || "Upload fehlgeschlagen"),
   });
@@ -443,6 +452,32 @@ export default function LabsHandoutLibrary() {
                   data-testid="input-upload-description"
                 />
               </label>
+              {(uploadForm.file?.type || "").toLowerCase() === "application/pdf" && (
+                <label
+                  style={{
+                    display: "flex", alignItems: "flex-start", gap: 8,
+                    padding: 10, borderRadius: 8,
+                    border: "1px solid var(--labs-border)",
+                    background: "var(--labs-surface)",
+                    fontSize: 12, color: "var(--labs-text)",
+                  }}
+                  data-testid="label-upload-split-programme"
+                >
+                  <input
+                    type="checkbox"
+                    checked={uploadForm.splitProgramme}
+                    onChange={(e) => setUploadForm({ ...uploadForm, splitProgramme: e.target.checked })}
+                    data-testid="checkbox-upload-split-programme"
+                    style={{ marginTop: 2 }}
+                  />
+                  <span style={{ display: "grid", gap: 2 }}>
+                    <span>Nach dem Upload Seiten Whiskys zuordnen (Programmheft splitten)</span>
+                    <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                      Verfügbar bei mehrseitigen PDFs.
+                    </span>
+                  </span>
+                </label>
+              )}
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                 <button
                   type="button"
