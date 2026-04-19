@@ -1304,6 +1304,35 @@ a.labs-dram-item {
   box-sizing: border-box;
 }
 
+.labs-handout-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .labs-handout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@keyframes labsHandoutSkeletonShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.labs-handout-skeleton-block {
+  background: linear-gradient(
+    90deg,
+    var(--labs-surface-elevated) 0%,
+    var(--labs-accent-muted) 50%,
+    var(--labs-surface-elevated) 100%
+  );
+  background-size: 200% 100%;
+  animation: labsHandoutSkeletonShimmer 1.4s ease-in-out infinite;
+  border-radius: 6px;
+}
+
 @keyframes labsPulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }

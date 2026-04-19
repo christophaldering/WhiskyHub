@@ -52,6 +52,295 @@ function fmtDate(d: Date | string | null | undefined, locale: string): string {
   return date.toLocaleDateString(locale, { year: "numeric", month: "2-digit", day: "2-digit" });
 }
 
+function HandoutSkeletonTile() {
+  return (
+    <div
+      className="labs-card"
+      style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10, minHeight: 200 }}
+      aria-hidden="true"
+      data-testid="handout-library-skeleton-tile"
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+        <div className="labs-handout-skeleton-block" style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0 }} />
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+          <div className="labs-handout-skeleton-block" style={{ height: 14, width: "70%" }} />
+          <div className="labs-handout-skeleton-block" style={{ height: 10, width: "45%" }} />
+        </div>
+      </div>
+      <div className="labs-handout-skeleton-block" style={{ height: 10, width: "85%" }} />
+      <div className="labs-handout-skeleton-block" style={{ height: 10, width: "60%" }} />
+      <div style={{ flex: 1 }} />
+      <div style={{ display: "flex", gap: 6, borderTop: "1px solid var(--labs-border)", paddingTop: 10 }}>
+        <div className="labs-handout-skeleton-block" style={{ height: 22, width: 36 }} />
+        <div className="labs-handout-skeleton-block" style={{ height: 22, width: 36 }} />
+        <div className="labs-handout-skeleton-block" style={{ height: 22, width: 36 }} />
+      </div>
+    </div>
+  );
+}
+
+interface HandoutTileProps {
+  entry: WhiskyHandoutLibraryEntry;
+  metaParts: string[];
+  isPdf: boolean;
+  isSelected: boolean;
+  toggleSelected: (id: string) => void;
+  onOpen: () => void;
+  onDownload: () => void;
+  onShareToggle: () => void;
+  onReplace: () => void;
+  onSplit: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  shareDisabled: boolean;
+  replaceDisabled: boolean;
+  replaceLoading: boolean;
+  deleteDisabled: boolean;
+  t: (key: string, opts?: Record<string, unknown>) => string;
+}
+
+function HandoutTile(props: HandoutTileProps) {
+  const {
+    entry, metaParts, isPdf, isSelected, toggleSelected,
+    onOpen, onDownload, onShareToggle, onReplace, onSplit, onEdit, onDelete,
+    shareDisabled, replaceDisabled, replaceLoading, deleteDisabled, t,
+  } = props;
+  return (
+    <div
+      className="labs-card"
+      style={{
+        border: isSelected ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border)",
+        padding: 14,
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        minHeight: 200,
+        transition: "border-color 0.15s, box-shadow 0.15s",
+        boxShadow: isSelected ? "0 0 0 3px var(--labs-accent-muted)" : undefined,
+      }}
+      data-testid={`handout-library-row-${entry.id}`}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={() => toggleSelected(entry.id)}
+          style={{ flexShrink: 0, marginTop: 4 }}
+          data-testid={`checkbox-handout-${entry.id}`}
+        />
+        <div
+          style={{
+            width: 40, height: 40, borderRadius: 10,
+            background: "var(--labs-accent-muted)",
+            color: "var(--labs-accent)",
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0,
+          }}
+          aria-hidden="true"
+        >
+          {isPdf ? <FileText style={{ width: 20, height: 20 }} /> : <ImageIcon style={{ width: 20, height: 20 }} />}
+        </div>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3, wordBreak: "break-word" }}>
+            {entry.title || entry.whiskyName}
+          </div>
+          {(entry.isProgramme || entry.isShared) && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              {entry.isProgramme && (
+                <span
+                  style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 6px", borderRadius: 999, background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                  data-testid={`badge-programme-${entry.id}`}
+                  title={t("labs.handoutSplitter.programmeBadge")}
+                >
+                  <Library style={{ width: 10, height: 10 }} /> {t("labs.handoutSplitter.programmeBadge")}
+                </span>
+              )}
+              {entry.isShared && (
+                <span
+                  style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 6px", borderRadius: 999, background: "var(--labs-success-muted)", color: "var(--labs-success)" }}
+                  data-testid={`badge-shared-${entry.id}`}
+                  title={t("labs.handoutLibrary.badgeSharedTitle")}
+                >
+                  <Globe style={{ width: 10, height: 10 }} /> {t("labs.handoutLibrary.badgeShared")}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+      {entry.title && entry.whiskyName && entry.title !== entry.whiskyName && (
+        <div style={{ fontSize: 12, color: "var(--labs-text)", fontWeight: 500 }}>{entry.whiskyName}</div>
+      )}
+      {metaParts.length > 0 && (
+        <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.5 }}>{metaParts.join(" \u00b7 ")}</div>
+      )}
+      <div style={{ flex: 1 }} />
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, borderTop: "1px solid var(--labs-border)", paddingTop: 10 }}>
+        <a
+          href={entry.fileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="labs-btn-secondary text-xs"
+          style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px" }}
+          data-testid={`button-handout-open-${entry.id}`}
+          title={t("labs.handoutLibrary.actionOpen")}
+          aria-label={t("labs.handoutLibrary.actionOpen")}
+          onClick={onOpen}
+        >
+          <ExternalLink style={{ width: 12, height: 12 }} />
+        </a>
+        <button
+          type="button"
+          className="labs-btn-secondary text-xs"
+          onClick={onDownload}
+          style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px" }}
+          data-testid={`button-handout-download-${entry.id}`}
+          title={t("labs.handoutLibrary.actionDownload")}
+          aria-label={t("labs.handoutLibrary.actionDownload")}
+        >
+          <Download style={{ width: 12, height: 12 }} />
+        </button>
+        <button
+          type="button"
+          className="labs-btn-secondary text-xs"
+          onClick={onShareToggle}
+          disabled={shareDisabled}
+          style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", color: entry.isShared ? "var(--labs-accent)" : undefined }}
+          data-testid={`button-handout-share-${entry.id}`}
+          title={entry.isShared ? t("labs.handoutLibrary.actionShareOff") : t("labs.handoutLibrary.actionShareOn")}
+          aria-label={entry.isShared ? t("labs.handoutLibrary.actionShareOff") : t("labs.handoutLibrary.actionShareOn")}
+        >
+          {entry.isShared ? <Lock style={{ width: 12, height: 12 }} /> : <Globe style={{ width: 12, height: 12 }} />}
+        </button>
+        <button
+          type="button"
+          className="labs-btn-secondary text-xs"
+          onClick={onReplace}
+          disabled={replaceDisabled}
+          style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px" }}
+          data-testid={`button-handout-replace-${entry.id}`}
+          title={t("labs.handoutLibrary.actionReplace")}
+          aria-label={t("labs.handoutLibrary.actionReplace")}
+        >
+          {replaceLoading
+            ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" />
+            : <RefreshCw style={{ width: 12, height: 12 }} />}
+        </button>
+        {isPdf && (
+          <button
+            type="button"
+            className="labs-btn-secondary text-xs"
+            onClick={onSplit}
+            style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px" }}
+            data-testid={`button-handout-split-${entry.id}`}
+            title={t("labs.handoutSplitter.title")}
+            aria-label={t("labs.handoutSplitter.title")}
+          >
+            <Scissors style={{ width: 12, height: 12 }} />
+          </button>
+        )}
+        <button
+          type="button"
+          className="labs-btn-secondary text-xs"
+          onClick={onEdit}
+          style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px" }}
+          data-testid={`button-handout-edit-${entry.id}`}
+          title={t("labs.handoutLibrary.actionEdit")}
+          aria-label={t("labs.handoutLibrary.actionEdit")}
+        >
+          <Pencil style={{ width: 12, height: 12 }} />
+        </button>
+        <span style={{ flex: 1 }} />
+        <button
+          type="button"
+          className="labs-btn-secondary text-xs"
+          onClick={onDelete}
+          disabled={deleteDisabled}
+          style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", color: "var(--labs-danger)" }}
+          data-testid={`button-handout-delete-${entry.id}`}
+          title={t("labs.handoutLibrary.actionDelete")}
+          aria-label={t("labs.handoutLibrary.actionDelete")}
+        >
+          <Trash2 style={{ width: 12, height: 12 }} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface CommunityHandoutTileProps {
+  entry: WhiskyHandoutLibraryEntry;
+  metaParts: string[];
+  isPdf: boolean;
+  onAdopt: () => void;
+  adoptDisabled: boolean;
+  t: (key: string, opts?: Record<string, unknown>) => string;
+}
+
+function CommunityHandoutTile(props: CommunityHandoutTileProps) {
+  const { entry, metaParts, isPdf, onAdopt, adoptDisabled, t } = props;
+  return (
+    <div
+      className="labs-card"
+      style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10, minHeight: 200 }}
+      data-testid={`handout-community-row-${entry.id}`}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+        <div
+          style={{
+            width: 40, height: 40, borderRadius: 10,
+            background: "var(--labs-accent-muted)",
+            color: "var(--labs-accent)",
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0,
+          }}
+          aria-hidden="true"
+        >
+          {isPdf ? <FileText style={{ width: 20, height: 20 }} /> : <ImageIcon style={{ width: 20, height: 20 }} />}
+        </div>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3, wordBreak: "break-word" }}>
+            {entry.title || entry.whiskyName}
+          </div>
+        </div>
+      </div>
+      {entry.title && entry.whiskyName && entry.title !== entry.whiskyName && (
+        <div style={{ fontSize: 12, color: "var(--labs-text)", fontWeight: 500 }}>{entry.whiskyName}</div>
+      )}
+      {metaParts.length > 0 && (
+        <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.5 }}>{metaParts.join(" \u00b7 ")}</div>
+      )}
+      <div style={{ flex: 1 }} />
+      <div style={{ display: "flex", gap: 6, borderTop: "1px solid var(--labs-border)", paddingTop: 10 }}>
+        <a
+          href={entry.fileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="labs-btn-secondary text-xs"
+          style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px" }}
+          data-testid={`button-community-open-${entry.id}`}
+          title={t("labs.handoutLibrary.communityPreview")}
+          aria-label={t("labs.handoutLibrary.communityPreview")}
+        >
+          <ExternalLink style={{ width: 12, height: 12 }} />
+        </a>
+        <span style={{ flex: 1 }} />
+        <button
+          type="button"
+          className="labs-btn-primary text-xs"
+          onClick={onAdopt}
+          disabled={adoptDisabled}
+          style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px" }}
+          data-testid={`button-community-clone-${entry.id}`}
+          title={t("labs.handoutLibrary.communityAdoptTitle")}
+        >
+          <Plus style={{ width: 12, height: 12 }} /> {t("labs.handoutLibrary.communityAdopt")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function LabsHandoutLibrary() {
   const { t, i18n } = useTranslation();
   const locale = i18n.language || "en";
@@ -337,8 +626,12 @@ export default function LabsHandoutLibrary() {
 
       {tab === "mine" && (
         <>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <div style={{ flex: 1, position: "relative" }}>
+          <div
+            className="labs-card"
+            style={{ padding: 12, marginBottom: 12, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}
+            data-testid="handout-library-toolbar"
+          >
+            <div style={{ flex: "1 1 220px", position: "relative", minWidth: 200 }}>
               <Search style={{ width: 14, height: 14, color: "var(--labs-text-muted)", position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }} />
               <input
                 type="text"
@@ -354,7 +647,7 @@ export default function LabsHandoutLibrary() {
               className="labs-input"
               value={distilleryFilter}
               onChange={(e) => setDistilleryFilter(e.target.value)}
-              style={{ maxWidth: 220, fontSize: 12 }}
+              style={{ flex: "0 1 220px", minWidth: 160, fontSize: 12 }}
               data-testid="select-handout-library-distillery"
               aria-label={t("labs.handoutLibrary.filterDistilleryLabel")}
             >
@@ -597,7 +890,17 @@ export default function LabsHandoutLibrary() {
           )}
 
           {listQuery.isLoading && (
-            <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }} data-testid="text-handout-library-loading">{t("labs.handoutLibrary.loading")}</p>
+            <div
+              className="labs-handout-grid"
+              role="status"
+              aria-live="polite"
+              aria-label={t("labs.handoutLibrary.loading")}
+              data-testid="text-handout-library-loading"
+            >
+              {Array.from({ length: 6 }).map((_, i) => (
+                <HandoutSkeletonTile key={i} />
+              ))}
+            </div>
           )}
 
           {!listQuery.isLoading && filtered.length === 0 && (
@@ -631,7 +934,7 @@ export default function LabsHandoutLibrary() {
             </div>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
+          <div className="labs-handout-grid">
             {filtered.map((entry) => {
               const isEditing = editing?.id === entry.id;
               const isPdf = entry.contentType === "application/pdf";
@@ -639,7 +942,8 @@ export default function LabsHandoutLibrary() {
                 return (
                   <div
                     key={entry.id}
-                    style={{ gridColumn: "1 / -1", border: "1px solid var(--labs-accent, var(--labs-border))", borderRadius: 12, padding: 14, background: "var(--labs-surface)", display: "grid", gap: 8 }}
+                    className="labs-card"
+                    style={{ gridColumn: "1 / -1", padding: 14, display: "grid", gap: 8 }}
                     data-testid={`handout-library-edit-${entry.id}`}
                   >
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -686,187 +990,38 @@ export default function LabsHandoutLibrary() {
                 fmtDate(entry.createdAt, locale),
               ].filter(Boolean) as string[];
               return (
-                <div
+                <HandoutTile
                   key={entry.id}
-                  style={{
-                    border: selected.has(entry.id) ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border)",
-                    borderRadius: 14,
-                    padding: 14,
-                    background: "var(--labs-surface)",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 10,
-                    minHeight: 200,
-                    transition: "border-color 0.15s, box-shadow 0.15s",
-                    boxShadow: selected.has(entry.id) ? "0 0 0 3px var(--labs-accent-muted)" : "none",
+                  entry={entry}
+                  metaParts={metaParts}
+                  isPdf={isPdf}
+                  isSelected={selected.has(entry.id)}
+                  toggleSelected={toggleSelected}
+                  onOpen={() => { /* anchor handles navigation */ }}
+                  onDownload={() => downloadFromEndpoint(entry.fileUrl, entry.title || entry.whiskyName)}
+                  onShareToggle={() => shareMut.mutate({ id: entry.id, isShared: !entry.isShared })}
+                  onReplace={() => { setReplaceTargetId(entry.id); replaceFileInputRef.current?.click(); }}
+                  onSplit={() => { setSplitTarget(entry); setError(null); setInfo(null); }}
+                  onEdit={() => setEditing({
+                    id: entry.id,
+                    whiskyName: entry.whiskyName || "",
+                    distillery: entry.distillery || "",
+                    whiskybaseId: entry.whiskybaseId || "",
+                    title: entry.title || "",
+                    author: entry.author || "",
+                    description: entry.description || "",
+                  })}
+                  onDelete={() => {
+                    if (window.confirm(t("labs.handoutLibrary.confirmDelete"))) {
+                      deleteMut.mutate(entry.id);
+                    }
                   }}
-                  data-testid={`handout-library-row-${entry.id}`}
-                >
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <input
-                      type="checkbox"
-                      checked={selected.has(entry.id)}
-                      onChange={() => toggleSelected(entry.id)}
-                      style={{ flexShrink: 0, marginTop: 4 }}
-                      data-testid={`checkbox-handout-${entry.id}`}
-                    />
-                    <div
-                      style={{
-                        width: 40, height: 40, borderRadius: 10,
-                        background: "var(--labs-accent-muted)",
-                        color: "var(--labs-accent)",
-                        display: "inline-flex", alignItems: "center", justifyContent: "center",
-                        flexShrink: 0,
-                      }}
-                      aria-hidden="true"
-                    >
-                      {isPdf
-                        ? <FileText style={{ width: 20, height: 20 }} />
-                        : <ImageIcon style={{ width: 20, height: 20 }} />}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3, wordBreak: "break-word" }}>
-                        {entry.title || entry.whiskyName}
-                      </div>
-                      {(entry.isProgramme || entry.isShared) && (
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                          {entry.isProgramme && (
-                            <span
-                              style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 6px", borderRadius: 999, background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
-                              data-testid={`badge-programme-${entry.id}`}
-                              title={t("labs.handoutSplitter.programmeBadge")}
-                            >
-                              <Library style={{ width: 10, height: 10 }} /> {t("labs.handoutSplitter.programmeBadge")}
-                            </span>
-                          )}
-                          {entry.isShared && (
-                            <span
-                              style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 6px", borderRadius: 999, background: "var(--labs-success-muted)", color: "var(--labs-success)" }}
-                              data-testid={`badge-shared-${entry.id}`}
-                              title={t("labs.handoutLibrary.badgeSharedTitle")}
-                            >
-                              <Globe style={{ width: 10, height: 10 }} /> {t("labs.handoutLibrary.badgeShared")}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  {entry.title && entry.whiskyName && entry.title !== entry.whiskyName && (
-                    <div style={{ fontSize: 12, color: "var(--labs-text)", fontWeight: 500 }}>
-                      {entry.whiskyName}
-                    </div>
-                  )}
-                  {metaParts.length > 0 && (
-                    <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.5 }}>
-                      {metaParts.join(" · ")}
-                    </div>
-                  )}
-                  <div style={{ flex: 1 }} />
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, borderTop: "1px solid var(--labs-border)", paddingTop: 10 }}>
-                    <a
-                      href={entry.fileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="labs-btn-secondary text-xs"
-                      style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px" }}
-                      data-testid={`button-handout-open-${entry.id}`}
-                      title={t("labs.handoutLibrary.actionOpen")}
-                      aria-label={t("labs.handoutLibrary.actionOpen")}
-                    >
-                      <ExternalLink style={{ width: 12, height: 12 }} />
-                    </a>
-                    <button
-                      type="button"
-                      className="labs-btn-secondary text-xs"
-                      onClick={() => downloadFromEndpoint(entry.fileUrl, entry.title || entry.whiskyName)}
-                      style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px" }}
-                      data-testid={`button-handout-download-${entry.id}`}
-                      title={t("labs.handoutLibrary.actionDownload")}
-                      aria-label={t("labs.handoutLibrary.actionDownload")}
-                    >
-                      <Download style={{ width: 12, height: 12 }} />
-                    </button>
-                    <button
-                      type="button"
-                      className="labs-btn-secondary text-xs"
-                      onClick={() => shareMut.mutate({ id: entry.id, isShared: !entry.isShared })}
-                      disabled={shareMut.isPending}
-                      style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", color: entry.isShared ? "var(--labs-accent)" : undefined }}
-                      data-testid={`button-handout-share-${entry.id}`}
-                      title={entry.isShared ? t("labs.handoutLibrary.actionShareOff") : t("labs.handoutLibrary.actionShareOn")}
-                      aria-label={entry.isShared ? t("labs.handoutLibrary.actionShareOff") : t("labs.handoutLibrary.actionShareOn")}
-                    >
-                      {entry.isShared ? <Lock style={{ width: 12, height: 12 }} /> : <Globe style={{ width: 12, height: 12 }} />}
-                    </button>
-                    <button
-                      type="button"
-                      className="labs-btn-secondary text-xs"
-                      onClick={() => {
-                        setReplaceTargetId(entry.id);
-                        replaceFileInputRef.current?.click();
-                      }}
-                      disabled={replaceFileMut.isPending}
-                      style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px" }}
-                      data-testid={`button-handout-replace-${entry.id}`}
-                      title={t("labs.handoutLibrary.actionReplace")}
-                      aria-label={t("labs.handoutLibrary.actionReplace")}
-                    >
-                      {replaceFileMut.isPending && replaceTargetId === entry.id
-                        ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" />
-                        : <RefreshCw style={{ width: 12, height: 12 }} />}
-                    </button>
-                    {isPdf && (
-                      <button
-                        type="button"
-                        className="labs-btn-secondary text-xs"
-                        onClick={() => { setSplitTarget(entry); setError(null); setInfo(null); }}
-                        style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px" }}
-                        data-testid={`button-handout-split-${entry.id}`}
-                        title={t("labs.handoutSplitter.title")}
-                        aria-label={t("labs.handoutSplitter.title")}
-                      >
-                        <Scissors style={{ width: 12, height: 12 }} />
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      className="labs-btn-secondary text-xs"
-                      onClick={() => setEditing({
-                        id: entry.id,
-                        whiskyName: entry.whiskyName || "",
-                        distillery: entry.distillery || "",
-                        whiskybaseId: entry.whiskybaseId || "",
-                        title: entry.title || "",
-                        author: entry.author || "",
-                        description: entry.description || "",
-                      })}
-                      style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px" }}
-                      data-testid={`button-handout-edit-${entry.id}`}
-                      title={t("labs.handoutLibrary.actionEdit")}
-                      aria-label={t("labs.handoutLibrary.actionEdit")}
-                    >
-                      <Pencil style={{ width: 12, height: 12 }} />
-                    </button>
-                    <span style={{ flex: 1 }} />
-                    <button
-                      type="button"
-                      className="labs-btn-secondary text-xs"
-                      onClick={() => {
-                        if (window.confirm(t("labs.handoutLibrary.confirmDelete"))) {
-                          deleteMut.mutate(entry.id);
-                        }
-                      }}
-                      disabled={deleteMut.isPending}
-                      style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", color: "var(--labs-danger)" }}
-                      data-testid={`button-handout-delete-${entry.id}`}
-                      title={t("labs.handoutLibrary.actionDelete")}
-                      aria-label={t("labs.handoutLibrary.actionDelete")}
-                    >
-                      <Trash2 style={{ width: 12, height: 12 }} />
-                    </button>
-                  </div>
-                </div>
+                  shareDisabled={shareMut.isPending}
+                  replaceDisabled={replaceFileMut.isPending}
+                  replaceLoading={replaceFileMut.isPending && replaceTargetId === entry.id}
+                  deleteDisabled={deleteMut.isPending}
+                  t={t}
+                />
               );
             })}
           </div>
@@ -895,8 +1050,12 @@ export default function LabsHandoutLibrary() {
             .
           </p>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, position: "relative" }}>
-            <Search style={{ width: 14, height: 14, color: "var(--labs-text-muted)", position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }} />
+          <div
+            className="labs-card"
+            style={{ padding: 12, marginBottom: 12, position: "relative" }}
+            data-testid="handout-community-toolbar"
+          >
+            <Search style={{ width: 14, height: 14, color: "var(--labs-text-muted)", position: "absolute", left: 22, top: "50%", transform: "translateY(-50%)" }} />
             <input
               type="text"
               value={communitySearch}
@@ -909,7 +1068,17 @@ export default function LabsHandoutLibrary() {
           </div>
 
           {communityQuery.isLoading && (
-            <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }} data-testid="text-handout-community-loading">{t("labs.handoutLibrary.loading")}</p>
+            <div
+              className="labs-handout-grid"
+              role="status"
+              aria-live="polite"
+              aria-label={t("labs.handoutLibrary.loading")}
+              data-testid="text-handout-community-loading"
+            >
+              {Array.from({ length: 6 }).map((_, i) => (
+                <HandoutSkeletonTile key={i} />
+              ))}
+            </div>
           )}
 
           {!communityQuery.isLoading && community.length === 0 && (
@@ -930,7 +1099,7 @@ export default function LabsHandoutLibrary() {
             </div>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
+          <div className="labs-handout-grid">
             {community.map((entry) => {
               const isPdf = entry.contentType === "application/pdf";
               const metaParts = [
@@ -940,79 +1109,15 @@ export default function LabsHandoutLibrary() {
                 fmtDate(entry.sharedAt ?? entry.createdAt, locale),
               ].filter(Boolean) as string[];
               return (
-                <div
+                <CommunityHandoutTile
                   key={entry.id}
-                  style={{
-                    border: "1px solid var(--labs-border)",
-                    borderRadius: 14,
-                    padding: 14,
-                    background: "var(--labs-surface)",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 10,
-                    minHeight: 200,
-                  }}
-                  data-testid={`handout-community-row-${entry.id}`}
-                >
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <div
-                      style={{
-                        width: 40, height: 40, borderRadius: 10,
-                        background: "var(--labs-accent-muted)",
-                        color: "var(--labs-accent)",
-                        display: "inline-flex", alignItems: "center", justifyContent: "center",
-                        flexShrink: 0,
-                      }}
-                      aria-hidden="true"
-                    >
-                      {isPdf
-                        ? <FileText style={{ width: 20, height: 20 }} />
-                        : <ImageIcon style={{ width: 20, height: 20 }} />}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3, wordBreak: "break-word" }}>
-                        {entry.title || entry.whiskyName}
-                      </div>
-                    </div>
-                  </div>
-                  {entry.title && entry.whiskyName && entry.title !== entry.whiskyName && (
-                    <div style={{ fontSize: 12, color: "var(--labs-text)", fontWeight: 500 }}>
-                      {entry.whiskyName}
-                    </div>
-                  )}
-                  {metaParts.length > 0 && (
-                    <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.5 }}>
-                      {metaParts.join(" · ")}
-                    </div>
-                  )}
-                  <div style={{ flex: 1 }} />
-                  <div style={{ display: "flex", gap: 6, borderTop: "1px solid var(--labs-border)", paddingTop: 10 }}>
-                    <a
-                      href={entry.fileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="labs-btn-secondary text-xs"
-                      style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px" }}
-                      data-testid={`button-community-open-${entry.id}`}
-                      title={t("labs.handoutLibrary.communityPreview")}
-                      aria-label={t("labs.handoutLibrary.communityPreview")}
-                    >
-                      <ExternalLink style={{ width: 12, height: 12 }} />
-                    </a>
-                    <span style={{ flex: 1 }} />
-                    <button
-                      type="button"
-                      className="labs-btn-primary text-xs"
-                      onClick={() => cloneMut.mutate(entry.id)}
-                      disabled={cloneMut.isPending}
-                      style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px" }}
-                      data-testid={`button-community-clone-${entry.id}`}
-                      title={t("labs.handoutLibrary.communityAdoptTitle")}
-                    >
-                      <Plus style={{ width: 12, height: 12 }} /> {t("labs.handoutLibrary.communityAdopt")}
-                    </button>
-                  </div>
-                </div>
+                  entry={entry}
+                  metaParts={metaParts}
+                  isPdf={isPdf}
+                  onAdopt={() => cloneMut.mutate(entry.id)}
+                  adoptDisabled={cloneMut.isPending}
+                  t={t}
+                />
               );
             })}
           </div>
