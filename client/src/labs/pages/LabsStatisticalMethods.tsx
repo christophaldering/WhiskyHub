@@ -114,20 +114,20 @@ export default function LabsStatisticalMethods() {
 
   return (
     <div className="labs-page labs-fade-in" data-testid="labs-statistical-methods-page">
-      <BackLink href="/labs/bibliothek" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/discover/research" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-statistical-methods">
-          <ChevronLeft className="w-4 h-4" /> {t("bibliothek.title", "Library")}
+          <ChevronLeft className="w-4 h-4" /> {t("research.title", "Research")}
         </button>
       </BackLink>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
         <TrendingUp style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />
         <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-statistical-methods-title">
-          {t("bibliothek.statisticalMethods", "Statistical Methods")}
+          {t("research.subStatistischeMethoden", "Statistical Methods")}
         </h1>
       </div>
       <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: "0 0 24px", lineHeight: 1.5 }}>
-        {t("bibliothek.statisticalMethodsDesc", "Patterns, agreement & structure in data")}
+        {t("research.subStatistischeMethodenDesc", "Correlation, Kendall's W, factor analysis, cluster analysis")}
       </p>
 
       <div className="space-y-4">

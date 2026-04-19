@@ -112,20 +112,20 @@ export default function LabsTestTheory() {
 
   return (
     <div className="labs-page labs-fade-in" data-testid="labs-test-theory-page">
-      <BackLink href="/labs/bibliothek" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/discover/research" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-test-theory">
-          <ChevronLeft className="w-4 h-4" /> {t("bibliothek.title", "Library")}
+          <ChevronLeft className="w-4 h-4" /> {t("research.title", "Research")}
         </button>
       </BackLink>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
         <GraduationCap style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />
         <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-test-theory-title">
-          {t("bibliothek.testTheory", "Test Theory & Psychometrics")}
+          {t("research.subTesttheorie", "Test Theory & Psychometrics")}
         </h1>
       </div>
       <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: "0 0 24px", lineHeight: 1.5 }}>
-        {t("bibliothek.testTheoryDesc", "The science of good measurement")}
+        {t("research.subTesttheorieDesc", "Quality criteria, scale levels, measurement error, normalisation")}
       </p>
 
       <div className="space-y-4">

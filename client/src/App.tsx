@@ -114,6 +114,8 @@ const LabsMethod = lazy(() => import("@/labs/pages/LabsMethod"));
 const LabsIdeaBehindNumbers = lazy(() => import("@/labs/pages/LabsIdeaBehindNumbers"));
 const LabsTestTheory = lazy(() => import("@/labs/pages/LabsTestTheory"));
 const LabsStatisticalMethods = lazy(() => import("@/labs/pages/LabsStatisticalMethods"));
+const LabsLiterature = lazy(() => import("@/labs/pages/LabsLiterature"));
+const LabsResearchHintergrund = lazy(() => import("@/labs/pages/LabsResearchHintergrund"));
 const LabsBackground = lazy(() => import("@/labs/pages/LabsBackground"));
 const LabsAbout = lazy(() => import("@/labs/pages/LabsAbout"));
 const LabsDonate = lazy(() => import("@/labs/pages/LabsDonate"));
@@ -656,17 +658,28 @@ function Router() {
               <Route path="/labs/discover/templates">{() => <RedirectWithQuery to="/labs/discover/lexicon" query="tab=templates" />}</Route>
               <Route path="/labs/discover/guide" component={LabsGuide} />
               <Route path="/labs/discover/research" component={LabsResearch} />
+              <Route path="/labs/discover/research/grundlagen" component={LabsIdeaBehindNumbers} />
+              <Route path="/labs/discover/research/testtheorie" component={LabsTestTheory} />
+              <Route path="/labs/discover/research/statistische-methoden" component={LabsStatisticalMethods} />
+              <Route path="/labs/discover/research/literatur" component={LabsLiterature} />
+              <Route path="/labs/discover/research/hintergrund" component={LabsResearchHintergrund} />
               <Route path="/labs/discover/literature">
-                <Redirect to="/labs/discover/research" />
+                <Redirect to="/labs/discover/research/literatur" />
               </Route>
               <Route path="/labs/discover/rabbit-hole">
                 <Redirect to="/labs/discover/rabbit-hole/themenspeicher" />
               </Route>
               <Route path="/labs/discover/rabbit-hole/themenspeicher" component={LabsThemenspeicher} />
               <Route path="/labs/discover/method" component={LabsMethod} />
-              <Route path="/labs/discover/idea-behind-numbers" component={LabsIdeaBehindNumbers} />
-              <Route path="/labs/discover/test-theory" component={LabsTestTheory} />
-              <Route path="/labs/discover/statistical-methods" component={LabsStatisticalMethods} />
+              <Route path="/labs/discover/idea-behind-numbers">
+                <Redirect to="/labs/discover/research/grundlagen" />
+              </Route>
+              <Route path="/labs/discover/test-theory">
+                <Redirect to="/labs/discover/research/testtheorie" />
+              </Route>
+              <Route path="/labs/discover/statistical-methods">
+                <Redirect to="/labs/discover/research/statistische-methoden" />
+              </Route>
               <Route path="/labs/discover/background" component={LabsBackground} />
               <Route path="/labs/discover/flavour-map">{() => <RedirectWithQuery to="/labs/discover/lexicon" query="tab=flavour-map" />}</Route>
               <Route path="/labs/discover/vocabulary">{() => <RedirectWithQuery to="/labs/discover/lexicon" query="tab=flavour-map" />}</Route>

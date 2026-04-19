@@ -17,19 +17,19 @@ export default function LabsLiterature() {
 
   return (
     <div className="px-5 py-6 mx-auto" style={{ maxWidth: 700 }} data-testid="labs-discover-literature-page">
-      <BackLink href="/labs/bibliothek" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/discover/research" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-literature">
-          <ChevronLeft className="w-4 h-4" /> {t("bibliothek.title", "Library")}
+          <ChevronLeft className="w-4 h-4" /> {t("research.title", "Research")}
         </button>
       </BackLink>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
         <BookMarked style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />
         <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-literature-title">
-          {t("bibliothek.literatureStudies", "Literature & Studies")}
+          {t("research.subLiteratur", "Literature & Studies")}
         </h1>
       </div>
       <p style={{ fontSize: 13, color: "var(--labs-text-secondary)", marginBottom: 20, paddingLeft: 30 }} data-testid="text-literature-subtitle">
-        {t("bibliothek.literatureStudiesDesc", "Peer-reviewed research & bibliography")}
+        {t("research.subLiteraturDesc", "Personality, perception & bias, methods, measurement")}
       </p>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>

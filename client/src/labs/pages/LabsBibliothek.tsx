@@ -3,9 +3,9 @@ import { useTranslation } from "react-i18next";
 import BackLink from "@/labs/components/BackLink";
 import {
   BookOpen, Building2, Package, Map,
-  BookMarked, ChevronLeft,
+  ChevronLeft,
   Archive, SlidersHorizontal,
-  Utensils, Brain, Lightbulb, GraduationCap, TrendingUp, Factory,
+  Utensils, Brain, Factory,
   Microscope,
 } from "lucide-react";
 import type { ElementType } from "react";
@@ -51,7 +51,6 @@ export const SECTIONS: BibliothekSection[] = [
       { icon: Factory, labelKey: "bibliothek.whiskyProduction", labelFallback: "Background & Methodology", descKey: "bibliothek.whiskyProductionDesc", descFallback: "Tasting, profile calculation, dimensions & statistical engine", href: "/labs/discover/background", testId: "labs-link-bibliothek-production" },
       { icon: Map, labelKey: "discover.guide", labelFallback: "Tasting Guide", descKey: "discover.guideDesc", descFallback: "Step-by-step tasting guide", href: "/labs/discover/guide", testId: "labs-link-bibliothek-guide" },
       { icon: SlidersHorizontal, labelKey: "bibliothek.howProfileCalculated", labelFallback: "How a Profile Is Calculated", descKey: "bibliothek.howProfileCalculatedDesc", descFallback: "Scoring, profiles & dimensions", href: "/labs/discover/method", testId: "labs-link-bibliothek-profile-calc" },
-      { icon: Lightbulb, labelKey: "bibliothek.ideaBehindNumbers", labelFallback: "The Idea Behind the Numbers", descKey: "bibliothek.ideaBehindNumbersDesc", descFallback: "Foundations of taste measurement", href: "/labs/discover/idea-behind-numbers", testId: "labs-link-bibliothek-idea-numbers" },
       { icon: Microscope, labelKey: "bibliothek.researchSensory", labelFallback: "Research & Sensory", descKey: "bibliothek.researchSensoryDesc", descFallback: "Concepts, studies & sensory science", href: "/labs/discover/research", testId: "labs-link-bibliothek-research-sensory" },
     ],
   },
@@ -74,8 +73,6 @@ export const SECTIONS: BibliothekSection[] = [
     titleFallback: "Rabbit Hole",
     links: [
       { icon: Archive, labelKey: "rabbitHole.themenspeicherTitle", labelFallback: "Topic Vault", descKey: "rabbitHole.themenspeicherDesc", descFallback: "Open questions and ideas worth exploring later.", href: "/labs/discover/rabbit-hole/themenspeicher", testId: "labs-link-bibliothek-themenspeicher" },
-      { icon: TrendingUp, labelKey: "bibliothek.statisticalMethods", labelFallback: "Statistical Methods", descKey: "bibliothek.statisticalMethodsDesc", descFallback: "Patterns, agreement & structure in data", href: "/labs/discover/statistical-methods", testId: "labs-link-bibliothek-stat-methods" },
-      { icon: GraduationCap, labelKey: "bibliothek.testTheory", labelFallback: "Test Theory & Psychometrics", descKey: "bibliothek.testTheoryDesc", descFallback: "The science of good measurement", href: "/labs/discover/test-theory", testId: "labs-link-bibliothek-test-theory" },
     ],
   },
 ];
