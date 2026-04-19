@@ -18,9 +18,11 @@ async function fetchJSON(url: string, options?: RequestInit) {
   const pid = getParticipantId();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (pid) headers["x-participant-id"] = pid;
+  const callerHeaders = (options?.headers as Record<string, string> | undefined) || {};
+  const mergedHeaders = { ...headers, ...callerHeaders };
   const res = await fetch(`${API_BASE}${url}`, {
-    headers,
     ...options,
+    headers: mergedHeaders,
   });
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: res.statusText }));
@@ -157,6 +159,31 @@ export const whiskyApi = {
     fetchJSON(`/whiskies/${id}/handout`, { method: "PATCH", body: JSON.stringify(data) }),
   deleteHandout: (id: string, hostId: string) =>
     fetchJSON(`/whiskies/${id}/handout`, { method: "DELETE", body: JSON.stringify({ hostId }) }),
+};
+
+export const handoutLibraryApi = {
+  list: (hostId: string, search?: string) => {
+    const qs = new URLSearchParams({ hostId });
+    if (search) qs.set("search", search);
+    return fetchJSON(`/handout-library?${qs.toString()}`);
+  },
+  suggest: (hostId: string, opts: { whiskybaseId?: string | null; whiskyName?: string | null; distillery?: string | null }) => {
+    const qs = new URLSearchParams({ hostId });
+    if (opts.whiskybaseId) qs.set("whiskybaseId", opts.whiskybaseId);
+    if (opts.whiskyName) qs.set("whiskyName", opts.whiskyName);
+    if (opts.distillery) qs.set("distillery", opts.distillery);
+    return fetchJSON(`/handout-library/suggest?${qs.toString()}`);
+  },
+  update: (id: string, hostId: string, data: { whiskyName?: string; distillery?: string | null; whiskybaseId?: string | null; title?: string | null; author?: string | null; description?: string | null }) =>
+    fetchJSON(`/handout-library/${id}`, { method: "PATCH", headers: { "x-participant-id": hostId }, body: JSON.stringify({ hostId, ...data }) }),
+  delete: (id: string, hostId: string) =>
+    fetchJSON(`/handout-library/${id}?hostId=${encodeURIComponent(hostId)}`, { method: "DELETE", headers: { "x-participant-id": hostId } }),
+  applyToWhisky: (libraryId: string, hostId: string, whiskyId: string, visibility?: "always" | "after_reveal") =>
+    fetchJSON(`/handout-library/${libraryId}/apply-to-whisky`, {
+      method: "POST",
+      headers: { "x-participant-id": hostId },
+      body: JSON.stringify({ hostId, whiskyId, visibility }),
+    }),
 };
 
 export const tastingHandoutApi = {

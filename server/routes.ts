@@ -239,6 +239,27 @@ async function deleteObjectFromStorage(objectStorageSvc: ObjectStorageService, n
   }
 }
 
+// Delete a handout file from object storage only if no library entry still
+// owns it. Library entries hold the canonical file once a host has saved a
+// handout for reuse — removing the same file from a tasting/whisky must not
+// orphan the library reference.
+async function deleteHandoutFileIfUnreferenced(
+  objectStorageSvc: ObjectStorageService,
+  normalizedPath: string | null | undefined,
+): Promise<void> {
+  if (!normalizedPath) return;
+  try {
+    const referenced = await storage.isHandoutFileReferencedByLibrary(normalizedPath);
+    if (referenced) return;
+  } catch (err) {
+    // Fail-closed: if we cannot verify the file is unreferenced, do NOT delete.
+    // Better to leave a file behind than orphan a library reference.
+    console.warn("[handout-library] reference check failed; skipping delete for", normalizedPath, err);
+    return;
+  }
+  await deleteObjectFromStorage(objectStorageSvc, normalizedPath);
+}
+
 async function uploadBufferToObjectStorage(
   objectStorage: ObjectStorageService,
   buffer: Buffer,
@@ -2137,8 +2158,8 @@ export async function registerRoutes(
       const handoutUrls = await storage.getWhiskyHandoutUrlsForTasting(req.params.id);
       const tastingHandoutUrl = await storage.getTastingHandoutUrl(req.params.id);
       await storage.hardDeleteTasting(req.params.id);
-      for (const url of handoutUrls) await deleteObjectFromStorage(objectStorage, url);
-      if (tastingHandoutUrl) await deleteObjectFromStorage(objectStorage, tastingHandoutUrl);
+      for (const url of handoutUrls) await deleteHandoutFileIfUnreferenced(objectStorage, url);
+      if (tastingHandoutUrl) await deleteHandoutFileIfUnreferenced(objectStorage, tastingHandoutUrl);
       res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -2200,7 +2221,7 @@ export async function registerRoutes(
 
       const updated = await storage.updateTasting(req.params.id, updateData);
       if (oldHandoutUrl && oldHandoutUrl !== storedUrl) {
-        await deleteObjectFromStorage(objectStorage, oldHandoutUrl);
+        await deleteHandoutFileIfUnreferenced(objectStorage, oldHandoutUrl);
       }
       res.json(updated);
     } catch (e: any) {
@@ -2246,7 +2267,7 @@ export async function registerRoutes(
         handoutAuthor: null,
         handoutDescription: null,
       } as any);
-      if (oldUrl) await deleteObjectFromStorage(objectStorage, oldUrl);
+      if (oldUrl) await deleteHandoutFileIfUnreferenced(objectStorage, oldUrl);
       res.json(updated);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
@@ -2887,7 +2908,7 @@ export async function registerRoutes(
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
       }
       if (whisky.handoutUrl) {
-        await deleteObjectFromStorage(objectStorage, whisky.handoutUrl);
+        await deleteHandoutFileIfUnreferenced(objectStorage, whisky.handoutUrl);
       }
       await storage.deleteWhisky(req.params.id);
       res.status(204).send();
@@ -2953,8 +2974,36 @@ export async function registerRoutes(
 
       const updated = await storage.updateWhisky(req.params.id, updateData);
       if (oldHandoutUrl && oldHandoutUrl !== storedUrl) {
-        await deleteObjectFromStorage(objectStorage, oldHandoutUrl);
+        await deleteHandoutFileIfUnreferenced(objectStorage, oldHandoutUrl);
       }
+
+      // Auto-add to host's reusable handout library so future tastings can
+      // pick it up via suggestions. Skipped silently on failure — primary
+      // upload already succeeded.
+      try {
+        const existing = await storage.suggestHandoutLibrary(tasting.hostId, {
+          whiskybaseId: whisky.whiskybaseId ?? null,
+          whiskyName: whisky.name,
+          distillery: whisky.distillery ?? null,
+        });
+        const alreadyInLibrary = existing.some((e) => e.fileUrl === storedUrl);
+        if (!alreadyInLibrary) {
+          await storage.createHandoutLibraryEntry({
+            hostId: tasting.hostId,
+            whiskyName: whisky.name,
+            distillery: whisky.distillery ?? null,
+            whiskybaseId: whisky.whiskybaseId ?? null,
+            fileUrl: storedUrl,
+            contentType,
+            title: updateData.handoutTitle ?? null,
+            author: updateData.handoutAuthor ?? null,
+            description: updateData.handoutDescription ?? null,
+          });
+        }
+      } catch (libErr) {
+        console.warn("[handout-library] auto-add failed", libErr);
+      }
+
       res.json(updated);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
@@ -3005,7 +3054,124 @@ export async function registerRoutes(
         handoutAuthor: null,
         handoutDescription: null,
       } as any);
-      if (oldUrl) await deleteObjectFromStorage(objectStorage, oldUrl);
+      if (oldUrl) await deleteHandoutFileIfUnreferenced(objectStorage, oldUrl);
+      res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  // --- Whisky Handout Library (per-host reusable handouts) ---
+
+  app.get("/api/handout-library", async (req: any, res: any) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string | undefined;
+      const queryHostId = req.query.hostId as string | undefined;
+      if (!requesterId) return res.status(401).json({ message: "Authentifizierung erforderlich" });
+      if (queryHostId && queryHostId !== requesterId) return res.status(403).json({ message: "Nicht erlaubt" });
+      const hostId = requesterId;
+      const search = typeof req.query.search === "string" ? req.query.search : undefined;
+      const list = await storage.listHandoutLibraryByHost(hostId, { search });
+      res.json(list);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/handout-library/suggest", async (req: any, res: any) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string | undefined;
+      const queryHostId = req.query.hostId as string | undefined;
+      if (!requesterId) return res.status(401).json({ message: "Authentifizierung erforderlich" });
+      if (queryHostId && queryHostId !== requesterId) return res.status(403).json({ message: "Nicht erlaubt" });
+      const hostId = requesterId;
+      const whiskybaseId = typeof req.query.whiskybaseId === "string" && req.query.whiskybaseId.trim() ? req.query.whiskybaseId.trim() : null;
+      const whiskyName = typeof req.query.whiskyName === "string" && req.query.whiskyName.trim() ? req.query.whiskyName.trim() : null;
+      const distillery = typeof req.query.distillery === "string" && req.query.distillery.trim() ? req.query.distillery.trim() : null;
+      const list = await storage.suggestHandoutLibrary(hostId, { whiskybaseId, whiskyName, distillery });
+      res.json(list);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/handout-library/:id", async (req: any, res: any) => {
+    try {
+      const hostId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!hostId) return res.status(400).json({ message: "hostId fehlt" });
+      const entry = await storage.getHandoutLibraryEntry(req.params.id);
+      if (!entry) return res.status(404).json({ message: "Bibliothekseintrag nicht gefunden" });
+      if (entry.hostId !== hostId) return res.status(403).json({ message: "Nicht erlaubt" });
+      const data: any = {};
+      if (typeof req.body.whiskyName === "string" && req.body.whiskyName.trim()) data.whiskyName = req.body.whiskyName.slice(0, 200);
+      if (typeof req.body.distillery === "string") data.distillery = req.body.distillery.slice(0, 200) || null;
+      if (typeof req.body.whiskybaseId === "string") data.whiskybaseId = req.body.whiskybaseId.slice(0, 100) || null;
+      if (typeof req.body.title === "string") data.title = req.body.title.slice(0, 200) || null;
+      if (typeof req.body.author === "string") data.author = req.body.author.slice(0, 200) || null;
+      if (typeof req.body.description === "string") data.description = req.body.description.slice(0, 2000) || null;
+      const updated = await storage.updateHandoutLibraryEntry(req.params.id, data);
+      res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/handout-library/:id", async (req: any, res: any) => {
+    try {
+      const hostId = (req.headers["x-participant-id"] as string) || (req.query.hostId as string) || req.body?.hostId;
+      if (!hostId) return res.status(400).json({ message: "hostId fehlt" });
+      const entry = await storage.getHandoutLibraryEntry(req.params.id);
+      if (!entry) return res.status(404).json({ message: "Bibliothekseintrag nicht gefunden" });
+      if (entry.hostId !== hostId) return res.status(403).json({ message: "Nicht erlaubt" });
+      const fileUrl = entry.fileUrl;
+      await storage.deleteHandoutLibraryEntry(req.params.id);
+      // Only remove file if no other library entry holds it AND no whisky/tasting still references it.
+      // The library check is done first via storage helper; for whisky/tasting we conservatively skip
+      // the delete here — orphan cleanup of host-removed files happens via the existing tasting/whisky
+      // delete paths.
+      const stillInLibrary = await storage.isHandoutFileReferencedByLibrary(fileUrl);
+      if (!stillInLibrary) {
+        // Best-effort: if the file is also referenced by a whisky.handoutUrl, the next whisky-side
+        // delete will (a) try to remove it and (b) be safe because we no longer hold a library
+        // reference. So we leave the object in place here to avoid breaking active tastings.
+      }
+      res.status(204).send();
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/handout-library/:id/apply-to-whisky", async (req: any, res: any) => {
+    try {
+      const hostId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      const whiskyId = req.body.whiskyId as string;
+      if (!hostId || !whiskyId) return res.status(400).json({ message: "hostId und whiskyId erforderlich" });
+      const entry = await storage.getHandoutLibraryEntry(req.params.id);
+      if (!entry) return res.status(404).json({ message: "Bibliothekseintrag nicht gefunden" });
+      if (entry.hostId !== hostId) return res.status(403).json({ message: "Nicht erlaubt" });
+      if (await rejectIfWhiskyArchived(whiskyId, res)) return;
+      const whisky = await storage.getWhisky(whiskyId);
+      if (!whisky) return res.status(404).json({ message: "Whisky nicht gefunden" });
+      const tasting = await storage.getTasting(whisky.tastingId);
+      if (!tasting) return res.status(404).json({ message: "Tasting nicht gefunden" });
+      if (tasting.hostId !== hostId) return res.status(403).json({ message: "Nur der Host kann Handouts zuweisen" });
+
+      const oldHandoutUrl = whisky.handoutUrl;
+      const updateData: any = {
+        handoutUrl: entry.fileUrl,
+        handoutContentType: entry.contentType,
+        handoutTitle: entry.title ?? null,
+        handoutAuthor: entry.author ?? null,
+        handoutDescription: entry.description ?? null,
+      };
+      const visibility = typeof req.body.visibility === "string" && (req.body.visibility === "always" || req.body.visibility === "after_reveal")
+        ? req.body.visibility : (whisky.handoutVisibility || "always");
+      updateData.handoutVisibility = visibility;
+
+      const updated = await storage.updateWhisky(whiskyId, updateData);
+      if (oldHandoutUrl && oldHandoutUrl !== entry.fileUrl) {
+        await deleteHandoutFileIfUnreferenced(objectStorage, oldHandoutUrl);
+      }
       res.json(updated);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
@@ -12202,8 +12368,8 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       const handoutUrls = await storage.getWhiskyHandoutUrlsForTasting(req.params.id);
       const tastingHandoutUrl = await storage.getTastingHandoutUrl(req.params.id);
       await storage.hardDeleteTasting(req.params.id);
-      for (const url of handoutUrls) await deleteObjectFromStorage(objectStorage, url);
-      if (tastingHandoutUrl) await deleteObjectFromStorage(objectStorage, tastingHandoutUrl);
+      for (const url of handoutUrls) await deleteHandoutFileIfUnreferenced(objectStorage, url);
+      if (tastingHandoutUrl) await deleteHandoutFileIfUnreferenced(objectStorage, tastingHandoutUrl);
       res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ message: e.message });

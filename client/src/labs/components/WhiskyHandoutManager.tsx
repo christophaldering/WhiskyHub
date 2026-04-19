@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { FileText, Image as ImageIcon, Trash2, Upload, ExternalLink, Download } from "lucide-react";
-import { whiskyApi } from "@/lib/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FileText, Image as ImageIcon, Trash2, Upload, ExternalLink, Download, Library, Check } from "lucide-react";
+import { handoutLibraryApi, whiskyApi } from "@/lib/api";
 import { downloadFromEndpoint } from "@/lib/download";
-import type { Whisky } from "@shared/schema";
+import type { Whisky, WhiskyHandoutLibraryEntry } from "@shared/schema";
 
 async function safeDownload(url: string, filename: string) {
   const ok = await downloadFromEndpoint(url, filename).catch(() => false);
@@ -70,6 +70,37 @@ export default function WhiskyHandoutManager({ whisky, hostId, tastingId }: Prop
   const hasHandout = !!whisky.handoutUrl;
   const isPdf = whisky.handoutContentType === "application/pdf";
 
+  const suggestionsQuery = useQuery<WhiskyHandoutLibraryEntry[]>({
+    queryKey: [
+      "handout-library-suggest",
+      hostId,
+      whisky.whiskybaseId || "",
+      whisky.name || "",
+      whisky.distillery || "",
+    ],
+    queryFn: () =>
+      handoutLibraryApi.suggest(hostId, {
+        whiskybaseId: whisky.whiskybaseId ?? null,
+        whiskyName: whisky.name ?? null,
+        distillery: whisky.distillery ?? null,
+      }),
+    enabled: !hasHandout && !!hostId,
+    staleTime: 60_000,
+  });
+  const suggestions = (suggestionsQuery.data || []).filter(
+    (s) => s.fileUrl !== whisky.handoutUrl,
+  );
+
+  const applyMut = useMutation({
+    mutationFn: (libraryId: string) =>
+      handoutLibraryApi.applyToWhisky(libraryId, hostId, whisky.id, visibility),
+    onSuccess: () => {
+      setError(null);
+      invalidate();
+    },
+    onError: (e: any) => setError(e?.message || "Übernahme fehlgeschlagen"),
+  });
+
   return (
     <div
       className="col-span-2"
@@ -124,6 +155,78 @@ export default function WhiskyHandoutManager({ whisky, hostId, tastingId }: Prop
               style={{ maxHeight: 60, maxWidth: 80, borderRadius: 6, border: "1px solid var(--labs-border)" }}
             />
           )}
+        </div>
+      )}
+
+      {!hasHandout && suggestions.length > 0 && (
+        <div
+          style={{
+            border: "1px dashed var(--labs-border)",
+            borderRadius: 10,
+            padding: 10,
+            background: "var(--labs-surface-2, var(--labs-surface))",
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+          }}
+          data-testid={`handout-suggestions-${whisky.id}`}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Library style={{ width: 12, height: 12, color: "var(--labs-text-muted)" }} />
+            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+              Aus deiner Bibliothek
+            </span>
+          </div>
+          <p style={{ fontSize: 10, color: "var(--labs-text-muted)", margin: 0 }}>
+            Du hast schon Handouts für diesen Whisky/diese Brennerei. Mit einem Klick zuweisen:
+          </p>
+          {suggestions.map((s) => {
+            const sIsPdf = s.contentType === "application/pdf";
+            const matchHints: string[] = [];
+            if (s.whiskybaseId && whisky.whiskybaseId && s.whiskybaseId === whisky.whiskybaseId) matchHints.push("Whiskybase-ID");
+            else if (s.whiskyName && whisky.name && s.whiskyName.toLowerCase() === whisky.name.toLowerCase()) matchHints.push("Whisky-Name");
+            else if (s.distillery && whisky.distillery && s.distillery.toLowerCase() === whisky.distillery.toLowerCase()) matchHints.push("Brennerei");
+            return (
+              <div
+                key={s.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: 8,
+                  border: "1px solid var(--labs-border)",
+                  borderRadius: 8,
+                  background: "var(--labs-surface)",
+                }}
+                data-testid={`handout-suggestion-${whisky.id}-${s.id}`}
+              >
+                {sIsPdf ? (
+                  <FileText style={{ width: 16, height: 16, color: "var(--labs-text-muted)", flexShrink: 0 }} />
+                ) : (
+                  <ImageIcon style={{ width: 16, height: 16, color: "var(--labs-text-muted)", flexShrink: 0 }} />
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {s.title || s.whiskyName}
+                  </div>
+                  <div style={{ fontSize: 10, color: "var(--labs-text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {[s.distillery, s.author && `von ${s.author}`, matchHints[0] && `Match: ${matchHints[0]}`].filter(Boolean).join(" · ")}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="labs-btn-primary text-xs"
+                  onClick={() => applyMut.mutate(s.id)}
+                  disabled={applyMut.isPending}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", flexShrink: 0 }}
+                  data-testid={`handout-suggestion-apply-${whisky.id}-${s.id}`}
+                >
+                  <Check style={{ width: 12, height: 12 }} />
+                  Übernehmen
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
 

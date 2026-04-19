@@ -3,7 +3,7 @@ import { db } from "./db";
 import { markJournalUpdated } from "./whiskyDnaCache";
 import { getParticipantOverallScores, computeStabilityScore } from "./participant-scores";
 import {
-  participants, tastings, tastingParticipants, sharingParticipants, whiskies, ratings,
+  participants, tastings, tastingParticipants, sharingParticipants, whiskies, whiskyHandoutLibrary, ratings,
   profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, whiskyGroups, whiskyGroupMembers, journalEntries, benchmarkEntries, wishlistEntries,
   newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, tastingPhotos, userFeedback,
   type InsertParticipant, type Participant,
@@ -11,6 +11,7 @@ import {
   type InsertTastingParticipant, type TastingParticipant,
   type InsertSharingParticipant, type SharingParticipant,
   type InsertWhisky, type Whisky,
+  type InsertWhiskyHandoutLibraryEntry, type WhiskyHandoutLibraryEntry,
   type InsertRating, type Rating,
   type InsertProfile, type Profile,
   type InsertSessionInvite, type SessionInvite,
@@ -359,6 +360,15 @@ export interface IStorage {
   createWhisky(data: InsertWhisky): Promise<Whisky>;
   updateWhisky(id: string, data: Partial<InsertWhisky>): Promise<Whisky | undefined>;
   deleteWhisky(id: string): Promise<void>;
+
+  // Whisky Handout Library (per-host reusable handouts)
+  listHandoutLibraryByHost(hostId: string, opts?: { search?: string }): Promise<WhiskyHandoutLibraryEntry[]>;
+  suggestHandoutLibrary(hostId: string, match: { whiskybaseId?: string | null; whiskyName?: string | null; distillery?: string | null }): Promise<WhiskyHandoutLibraryEntry[]>;
+  getHandoutLibraryEntry(id: string): Promise<WhiskyHandoutLibraryEntry | undefined>;
+  createHandoutLibraryEntry(data: InsertWhiskyHandoutLibraryEntry): Promise<WhiskyHandoutLibraryEntry>;
+  updateHandoutLibraryEntry(id: string, data: Partial<InsertWhiskyHandoutLibraryEntry>): Promise<WhiskyHandoutLibraryEntry | undefined>;
+  deleteHandoutLibraryEntry(id: string): Promise<void>;
+  isHandoutFileReferencedByLibrary(fileUrl: string): Promise<boolean>;
 
   // Ratings
   getRatingsForWhisky(whiskyId: string): Promise<Rating[]>;
@@ -1107,6 +1117,81 @@ export class DatabaseStorage implements IStorage {
   async deleteWhisky(id: string): Promise<void> {
     await db.delete(ratings).where(eq(ratings.whiskyId, id));
     await db.delete(whiskies).where(eq(whiskies.id, id));
+  }
+
+  // --- Whisky Handout Library ---
+  async listHandoutLibraryByHost(hostId: string, opts?: { search?: string }): Promise<WhiskyHandoutLibraryEntry[]> {
+    const search = opts?.search?.trim();
+    if (search) {
+      const pattern = `%${search.toLowerCase()}%`;
+      return db.select().from(whiskyHandoutLibrary).where(and(
+        eq(whiskyHandoutLibrary.hostId, hostId),
+        sql`(LOWER(${whiskyHandoutLibrary.whiskyName}) LIKE ${pattern} OR LOWER(COALESCE(${whiskyHandoutLibrary.distillery}, '')) LIKE ${pattern} OR LOWER(COALESCE(${whiskyHandoutLibrary.title}, '')) LIKE ${pattern})`
+      )).orderBy(desc(whiskyHandoutLibrary.createdAt));
+    }
+    return db.select().from(whiskyHandoutLibrary)
+      .where(eq(whiskyHandoutLibrary.hostId, hostId))
+      .orderBy(desc(whiskyHandoutLibrary.createdAt));
+  }
+
+  async suggestHandoutLibrary(hostId: string, match: { whiskybaseId?: string | null; whiskyName?: string | null; distillery?: string | null }): Promise<WhiskyHandoutLibraryEntry[]> {
+    const wb = match.whiskybaseId?.trim();
+    const name = match.whiskyName?.trim().toLowerCase();
+    const dist = match.distillery?.trim().toLowerCase();
+    if (!wb && !name && !dist) return [];
+    const ors: any[] = [];
+    if (wb) ors.push(eq(whiskyHandoutLibrary.whiskybaseId, wb));
+    if (name) ors.push(sql`LOWER(${whiskyHandoutLibrary.whiskyName}) = ${name}`);
+    if (dist) ors.push(sql`LOWER(${whiskyHandoutLibrary.distillery}) = ${dist}`);
+    const orExpr = sql.join(ors, sql` OR `);
+    const rows = await db.select().from(whiskyHandoutLibrary).where(and(
+      eq(whiskyHandoutLibrary.hostId, hostId),
+      sql`(${orExpr})`
+    )).orderBy(desc(whiskyHandoutLibrary.createdAt));
+    // Score: wb match = 3, name+dist = 2, name = 1.5, dist = 1
+    const scored = rows.map((r) => {
+      let s = 0;
+      if (wb && r.whiskybaseId && r.whiskybaseId === wb) s += 3;
+      if (name && r.whiskyName.toLowerCase() === name) s += 1.5;
+      if (dist && r.distillery && r.distillery.toLowerCase() === dist) s += 1;
+      return { r, s };
+    });
+    scored.sort((a, b) => b.s - a.s);
+    // Dedupe by file URL keeping highest-scored entry
+    const seen = new Set<string>();
+    const out: WhiskyHandoutLibraryEntry[] = [];
+    for (const { r } of scored) {
+      if (seen.has(r.fileUrl)) continue;
+      seen.add(r.fileUrl);
+      out.push(r);
+    }
+    return out.slice(0, 10);
+  }
+
+  async getHandoutLibraryEntry(id: string): Promise<WhiskyHandoutLibraryEntry | undefined> {
+    const [row] = await db.select().from(whiskyHandoutLibrary).where(eq(whiskyHandoutLibrary.id, id));
+    return row;
+  }
+
+  async createHandoutLibraryEntry(data: InsertWhiskyHandoutLibraryEntry): Promise<WhiskyHandoutLibraryEntry> {
+    const [row] = await db.insert(whiskyHandoutLibrary).values(data).returning();
+    return row;
+  }
+
+  async updateHandoutLibraryEntry(id: string, data: Partial<InsertWhiskyHandoutLibraryEntry>): Promise<WhiskyHandoutLibraryEntry | undefined> {
+    const [row] = await db.update(whiskyHandoutLibrary).set(data).where(eq(whiskyHandoutLibrary.id, id)).returning();
+    return row;
+  }
+
+  async deleteHandoutLibraryEntry(id: string): Promise<void> {
+    await db.delete(whiskyHandoutLibrary).where(eq(whiskyHandoutLibrary.id, id));
+  }
+
+  async isHandoutFileReferencedByLibrary(fileUrl: string): Promise<boolean> {
+    if (!fileUrl) return false;
+    const [row] = await db.select({ id: whiskyHandoutLibrary.id }).from(whiskyHandoutLibrary)
+      .where(eq(whiskyHandoutLibrary.fileUrl, fileUrl)).limit(1);
+    return !!row;
   }
 
   // --- Ratings ---
