@@ -18,6 +18,8 @@ import { type DimKey } from "@/labs/components/LabsRatingPanel";
 import { useRatingScale } from "@/labs/hooks/useRatingScale";
 import { CompactDownloadButton } from "@/components/ParticipantDownloads";
 import LabsRevealMoment from "@/labs/pages/LabsRevealMoment";
+import { WhiskyHandoutViewer } from "@/labs/components/WhiskyHandoutManager";
+import { TastingHandoutViewer } from "@/labs/components/TastingHandoutManager";
 import { useTastingEvents } from "@/labs/hooks/useTastingEvents";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import type { RatingFlowDraftState } from "@/labs/components/rating/RatingFlowV2";
@@ -1144,6 +1146,12 @@ export default function LabsLive({ params }: LabsLiveProps) {
         </div>
       </div>
 
+      {tasting?.handoutUrl && (
+        <div className="mb-4">
+          <TastingHandoutViewer tasting={tasting as Tasting} />
+        </div>
+      )}
+
       {!whiskies || totalWhiskies === 0 ? (
         <div className="labs-empty labs-fade-in">
           <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
@@ -1236,6 +1244,12 @@ export default function LabsLive({ params }: LabsLiveProps) {
               ))}
             </div>
           </div>
+
+          {currentWhisky?.handoutUrl && (currentWhisky.handoutVisibility !== "after_reveal" || !isBlind) && (
+            <div className="mb-4 labs-fade-in labs-stagger-2">
+              <WhiskyHandoutViewer whisky={currentWhisky} />
+            </div>
+          )}
 
           {canRate ? (
             <>

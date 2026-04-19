@@ -1435,6 +1435,27 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                   </div>
                 )}
 
+                {activeWhisky?.handoutUrl && (
+                  <a
+                    href={activeWhisky.handoutUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 6, marginTop: 10,
+                      padding: "5px 10px", borderRadius: 6, background: "var(--labs-surface-elevated)",
+                      border: "1px solid var(--labs-border)", textDecoration: "none",
+                      fontSize: 11, color: "var(--labs-text-secondary)", fontWeight: 500,
+                    }}
+                    data-testid={`cockpit-handout-link-${activeWhisky.id}`}
+                  >
+                    <FileText style={{ width: 12, height: 12, color: "var(--labs-accent)" }} />
+                    {activeWhisky.handoutTitle || "Handout"}
+                    <span style={{ fontSize: 9, color: "var(--labs-text-muted)" }}>
+                      · {activeWhisky.handoutVisibility === "after_reveal" ? "nach Reveal" : "immer sichtbar"}
+                    </span>
+                  </a>
+                )}
+
                 {(() => {
                   const optimisticRevealStep = localRevealStep ?? (rv?.revealStep ?? 0);
                   const isFullyRevealed = !isBlind || (rv && optimisticRevealStep >= rv.maxSteps);

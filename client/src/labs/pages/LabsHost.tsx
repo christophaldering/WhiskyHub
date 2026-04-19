@@ -28,6 +28,8 @@ import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi, c
 import { toast } from "@/hooks/use-toast";
 import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
+import WhiskyHandoutManager from "@/labs/components/WhiskyHandoutManager";
+import TastingHandoutManager from "@/labs/components/TastingHandoutManager";
 import { downloadDataUrl } from "@/lib/download";
 import { compressImage, isAcceptedImageType, fileTooLargeAfterCompression, IMAGE_ACCEPT_STRING } from "@/lib/image-compress";
 import { generateTastingMenu } from "@/components/tasting-menu-pdf";
@@ -5209,6 +5211,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               </div>
             </div>
           )}
+          {tasting && (
+            <TastingHandoutManager tasting={tasting} hostId={tasting.hostId} />
+          )}
           {editTastingError && (
             <p className="text-xs" style={{ color: "var(--labs-danger, #e74c3c)" }} data-testid="labs-edit-tasting-error">{editTastingError}</p>
           )}
@@ -6316,6 +6321,13 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       size="sm"
                       testIdPrefix={`labs-edit-image-${w.id}`}
                     />
+                    {tasting?.hostId && (
+                      <WhiskyHandoutManager
+                        whisky={w}
+                        hostId={tasting.hostId}
+                        tastingId={tastingId}
+                      />
+                    )}
                     <div className="flex gap-2 justify-end">
                       <button className="labs-btn-ghost text-sm" onClick={() => setEditingWhiskyId(null)}>{t("labs.host.cancel")}</button>
                       <button className="labs-btn-primary text-sm" onClick={() => handleSaveEditWhisky(w.id)} disabled={updateWhiskyMutation.isPending} data-testid="labs-edit-whisky-save">

@@ -512,6 +512,8 @@ export interface IStorage {
 
   // Hard Delete (admin only)
   hardDeleteTasting(id: string): Promise<void>;
+  getWhiskyHandoutUrlsForTasting(id: string): Promise<string[]>;
+  getTastingHandoutUrl(id: string): Promise<string | null>;
 
   // Global Averages
   getGlobalAverages(): Promise<{ nose: number; taste: number; finish: number; overall: number; totalRatings: number; totalParticipants: number }>;
@@ -1855,6 +1857,16 @@ export class DatabaseStorage implements IStorage {
       allWhiskies: allWhiskyRows,
       sources: { tastingRatings: ratingCount, journalEntries: journalScoreCount },
     };
+  }
+
+  async getWhiskyHandoutUrlsForTasting(id: string): Promise<string[]> {
+    const rows = await db.select({ url: whiskies.handoutUrl }).from(whiskies).where(eq(whiskies.tastingId, id));
+    return rows.map(r => r.url).filter((u): u is string => !!u);
+  }
+
+  async getTastingHandoutUrl(id: string): Promise<string | null> {
+    const [row] = await db.select({ url: tastings.handoutUrl }).from(tastings).where(eq(tastings.id, id));
+    return row?.url ?? null;
   }
 
   async hardDeleteTasting(id: string): Promise<void> {

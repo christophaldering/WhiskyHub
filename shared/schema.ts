@@ -76,6 +76,13 @@ export const tastings = pgTable("tastings", {
   showReveal: boolean("show_reveal").default(true),
   isTestData: boolean("is_test_data").default(false),
   sharedPrintMaterials: text("shared_print_materials"),
+  // Tasting-wide handout (one per tasting, e.g. "von Rudi" Programmheft)
+  handoutUrl: text("handout_url"), // Object storage path to handout file (PDF or image)
+  handoutContentType: text("handout_content_type"), // MIME type
+  handoutTitle: text("handout_title"),
+  handoutAuthor: text("handout_author"),
+  handoutDescription: text("handout_description"),
+  handoutVisibility: text("handout_visibility").default("always"), // "always" | "after_first_reveal"
   tastingType: text("tasting_type").default("standard"), // standard | bottle-sharing
   visibility: text("visibility").default("private"), // public | private | group
   sharingMessage: text("sharing_message"),
@@ -151,6 +158,12 @@ export const whiskies = pgTable("whiskies", {
   aiFactsCache: text("ai_facts_cache"), // Cached AI-generated interesting facts (JSON)
   aiInsightsCache: text("ai_insights_cache"), // Cached AI-generated whisky insights (text)
   flavorProfile: text("flavor_profile"), // Host-set flavor profile for guided tasting tags
+  handoutUrl: text("handout_url"), // Object storage path to handout file (PDF or image)
+  handoutContentType: text("handout_content_type"), // MIME type (e.g. application/pdf, image/jpeg)
+  handoutTitle: text("handout_title"),
+  handoutAuthor: text("handout_author"),
+  handoutDescription: text("handout_description"),
+  handoutVisibility: text("handout_visibility").default("always"), // "always" | "after_reveal"
 });
 
 export const insertWhiskySchema = createInsertSchema(whiskies).omit({ id: true });

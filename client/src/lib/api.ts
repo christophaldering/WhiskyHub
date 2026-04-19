@@ -138,6 +138,58 @@ export const whiskyApi = {
   },
   deleteImage: (id: string) => fetchJSON(`/whiskies/${id}/image`, { method: "DELETE" }),
   revealPhoto: (id: string, revealed: boolean, hostId: string) => fetchJSON(`/whiskies/${id}/reveal-photo`, { method: "PATCH", body: JSON.stringify({ revealed, hostId }) }),
+  uploadHandout: async (id: string, file: File, meta: { hostId: string; title?: string; author?: string; description?: string; visibility?: "always" | "after_reveal" }) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("hostId", meta.hostId);
+    if (meta.title !== undefined) formData.append("title", meta.title);
+    if (meta.author !== undefined) formData.append("author", meta.author);
+    if (meta.description !== undefined) formData.append("description", meta.description);
+    if (meta.visibility) formData.append("visibility", meta.visibility);
+    const res = await fetch(`${API_BASE}/whiskies/${id}/handout`, { method: "POST", body: formData });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.message || "Upload fehlgeschlagen");
+    }
+    return res.json();
+  },
+  updateHandout: (id: string, data: { hostId: string; title?: string; author?: string; description?: string; visibility?: "always" | "after_reveal" }) =>
+    fetchJSON(`/whiskies/${id}/handout`, { method: "PATCH", body: JSON.stringify(data) }),
+  deleteHandout: (id: string, hostId: string) =>
+    fetchJSON(`/whiskies/${id}/handout`, { method: "DELETE", body: JSON.stringify({ hostId }) }),
+};
+
+export const tastingHandoutApi = {
+  upload: async (
+    tastingId: string,
+    file: File,
+    meta: { hostId: string; title?: string; author?: string; description?: string; visibility?: "always" | "after_first_reveal" }
+  ) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("hostId", meta.hostId);
+    if (meta.title !== undefined) formData.append("title", meta.title);
+    if (meta.author !== undefined) formData.append("author", meta.author);
+    if (meta.description !== undefined) formData.append("description", meta.description);
+    if (meta.visibility !== undefined) formData.append("visibility", meta.visibility);
+    const res = await fetch(`${API_BASE}/tastings/${tastingId}/handout`, {
+      method: "POST",
+      body: formData,
+      headers: { "x-participant-id": meta.hostId },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+  update: (
+    tastingId: string,
+    data: { hostId: string; title?: string; author?: string; description?: string; visibility?: "always" | "after_first_reveal" }
+  ) =>
+    fetchJSON(`/tastings/${tastingId}/handout`, { method: "PATCH", body: JSON.stringify(data) }),
+  delete: (tastingId: string, hostId: string) =>
+    fetchJSON(`/tastings/${tastingId}/handout`, { method: "DELETE", body: JSON.stringify({ hostId }) }),
 };
 
 // ===== Flight Import =====

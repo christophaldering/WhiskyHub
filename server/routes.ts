@@ -214,6 +214,31 @@ async function maybeCompressImage(
   }
 }
 
+const handoutUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (_req: any, file: any, cb: any) => {
+    const allowed = [
+      "application/pdf",
+      "image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif",
+    ];
+    const ext = (file.originalname || "").toLowerCase().split(".").pop();
+    const allowedExts = ["pdf", "jpg", "jpeg", "png", "webp", "gif", "heic", "heif"];
+    if (allowed.includes(file.mimetype) || allowedExts.includes(ext || "")) cb(null, true);
+    else cb(new Error("Nur PDF oder Bild (JPG, PNG, WebP, GIF, HEIC) sind erlaubt."));
+  },
+});
+
+async function deleteObjectFromStorage(objectStorageSvc: ObjectStorageService, normalizedPath: string | null | undefined): Promise<void> {
+  if (!normalizedPath || !normalizedPath.startsWith("/objects/")) return;
+  try {
+    const file = await objectStorageSvc.getObjectEntityFile(normalizedPath);
+    await file.delete();
+  } catch (err) {
+    console.warn("[object-storage] failed to delete", normalizedPath, err);
+  }
+}
+
 async function uploadBufferToObjectStorage(
   objectStorage: ObjectStorageService,
   buffer: Buffer,
@@ -2109,10 +2134,122 @@ export async function registerRoutes(
       if (tasting.status !== "deleted") {
         return res.status(400).json({ message: "Only soft-deleted sessions can be permanently deleted" });
       }
+      const handoutUrls = await storage.getWhiskyHandoutUrlsForTasting(req.params.id);
+      const tastingHandoutUrl = await storage.getTastingHandoutUrl(req.params.id);
       await storage.hardDeleteTasting(req.params.id);
+      for (const url of handoutUrls) await deleteObjectFromStorage(objectStorage, url);
+      if (tastingHandoutUrl) await deleteObjectFromStorage(objectStorage, tastingHandoutUrl);
       res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ===== TASTING HANDOUT (one per tasting, e.g. "von Rudi" Programmheft) =====
+  app.post("/api/tastings/:id/handout", (req: any, res: any, next: any) => {
+    handoutUpload.single("file")(req, res, (err: any) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(413).json({ message: "Datei zu groß (max. 20 MB)" });
+        }
+        return res.status(400).json({ message: err.message || "Upload fehlgeschlagen" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting nicht gefunden" });
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!requesterId || requesterId !== tasting.hostId) {
+        return res.status(403).json({ message: "Nur der Host kann Handouts hochladen" });
+      }
+      if (!req.file) return res.status(400).json({ message: "Keine Datei übermittelt" });
+
+      const buffer = req.file.buffer;
+      let contentType = req.file.mimetype || "application/octet-stream";
+      const lowerName = (req.file.originalname || "").toLowerCase();
+      if (lowerName.endsWith(".pdf")) contentType = "application/pdf";
+
+      const oldHandoutUrl = tasting.handoutUrl;
+
+      let storedUrl: string;
+      if (contentType === "application/pdf") {
+        const uploadURL = await objectStorage.getObjectEntityUploadURL();
+        const resp = await fetch(uploadURL, {
+          method: "PUT",
+          body: buffer,
+          headers: { "Content-Type": contentType },
+        });
+        if (!resp.ok) throw new Error(`Object storage upload failed (${resp.status})`);
+        storedUrl = objectStorage.normalizeObjectEntityPath(uploadURL);
+      } else {
+        storedUrl = await uploadBufferToObjectStorage(objectStorage, buffer, contentType);
+      }
+
+      const updateData: any = {
+        handoutUrl: storedUrl,
+        handoutContentType: contentType,
+      };
+      if (typeof req.body.title === "string") updateData.handoutTitle = req.body.title.slice(0, 200) || null;
+      if (typeof req.body.author === "string") updateData.handoutAuthor = req.body.author.slice(0, 200) || null;
+      if (typeof req.body.description === "string") updateData.handoutDescription = req.body.description.slice(0, 2000) || null;
+      if (req.body.visibility === "always" || req.body.visibility === "after_first_reveal") {
+        updateData.handoutVisibility = req.body.visibility;
+      }
+
+      const updated = await storage.updateTasting(req.params.id, updateData);
+      if (oldHandoutUrl && oldHandoutUrl !== storedUrl) {
+        await deleteObjectFromStorage(objectStorage, oldHandoutUrl);
+      }
+      res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/tastings/:id/handout", async (req: any, res: any) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting nicht gefunden" });
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!requesterId || requesterId !== tasting.hostId) {
+        return res.status(403).json({ message: "Nur der Host kann Handouts bearbeiten" });
+      }
+      const updateData: any = {};
+      if (typeof req.body.title === "string") updateData.handoutTitle = req.body.title.slice(0, 200) || null;
+      if (typeof req.body.author === "string") updateData.handoutAuthor = req.body.author.slice(0, 200) || null;
+      if (typeof req.body.description === "string") updateData.handoutDescription = req.body.description.slice(0, 2000) || null;
+      if (req.body.visibility === "always" || req.body.visibility === "after_first_reveal") {
+        updateData.handoutVisibility = req.body.visibility;
+      }
+      const updated = await storage.updateTasting(req.params.id, updateData);
+      res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/tastings/:id/handout", async (req: any, res: any) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting nicht gefunden" });
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!requesterId || requesterId !== tasting.hostId) {
+        return res.status(403).json({ message: "Nur der Host kann Handouts löschen" });
+      }
+      const oldUrl = tasting.handoutUrl;
+      const updated = await storage.updateTasting(req.params.id, {
+        handoutUrl: null,
+        handoutContentType: null,
+        handoutTitle: null,
+        handoutAuthor: null,
+        handoutDescription: null,
+      } as any);
+      if (oldUrl) await deleteObjectFromStorage(objectStorage, oldUrl);
+      res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
     }
   });
 
@@ -2415,8 +2552,127 @@ export async function registerRoutes(
         const filePath = path.join(process.cwd(), whisky.imageUrl);
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
       }
+      if (whisky.handoutUrl) {
+        await deleteObjectFromStorage(objectStorage, whisky.handoutUrl);
+      }
       await storage.deleteWhisky(req.params.id);
       res.status(204).send();
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/whiskies/:id/handout", (req: any, res: any, next: any) => {
+    handoutUpload.single("file")(req, res, (err: any) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(413).json({ message: "Datei zu groß (max. 20 MB)" });
+        }
+        return res.status(400).json({ message: err.message || "Upload fehlgeschlagen" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      if (await rejectIfWhiskyArchived(req.params.id, res)) return;
+      const whisky = await storage.getWhisky(req.params.id);
+      if (!whisky) return res.status(404).json({ message: "Whisky nicht gefunden" });
+      const tasting = await storage.getTasting(whisky.tastingId);
+      if (!tasting) return res.status(404).json({ message: "Tasting nicht gefunden" });
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!requesterId || requesterId !== tasting.hostId) {
+        return res.status(403).json({ message: "Nur der Host kann Handouts hochladen" });
+      }
+      if (!req.file) return res.status(400).json({ message: "Keine Datei übermittelt" });
+
+      let buffer = req.file.buffer;
+      let contentType = req.file.mimetype || "application/octet-stream";
+      const lowerName = (req.file.originalname || "").toLowerCase();
+      if (lowerName.endsWith(".pdf")) contentType = "application/pdf";
+
+      const oldHandoutUrl = whisky.handoutUrl;
+
+      let storedUrl: string;
+      if (contentType === "application/pdf") {
+        const uploadURL = await objectStorage.getObjectEntityUploadURL();
+        const resp = await fetch(uploadURL, {
+          method: "PUT",
+          body: buffer,
+          headers: { "Content-Type": contentType },
+        });
+        if (!resp.ok) throw new Error(`Object storage upload failed (${resp.status})`);
+        storedUrl = objectStorage.normalizeObjectEntityPath(uploadURL);
+      } else {
+        storedUrl = await uploadBufferToObjectStorage(objectStorage, buffer, contentType);
+      }
+
+      const updateData: any = {
+        handoutUrl: storedUrl,
+        handoutContentType: contentType,
+      };
+      if (typeof req.body.title === "string") updateData.handoutTitle = req.body.title.slice(0, 200) || null;
+      if (typeof req.body.author === "string") updateData.handoutAuthor = req.body.author.slice(0, 200) || null;
+      if (typeof req.body.description === "string") updateData.handoutDescription = req.body.description.slice(0, 2000) || null;
+      if (req.body.visibility === "always" || req.body.visibility === "after_reveal") {
+        updateData.handoutVisibility = req.body.visibility;
+      }
+
+      const updated = await storage.updateWhisky(req.params.id, updateData);
+      if (oldHandoutUrl && oldHandoutUrl !== storedUrl) {
+        await deleteObjectFromStorage(objectStorage, oldHandoutUrl);
+      }
+      res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/whiskies/:id/handout", async (req: any, res: any) => {
+    try {
+      if (await rejectIfWhiskyArchived(req.params.id, res)) return;
+      const whisky = await storage.getWhisky(req.params.id);
+      if (!whisky) return res.status(404).json({ message: "Whisky nicht gefunden" });
+      const tasting = await storage.getTasting(whisky.tastingId);
+      if (!tasting) return res.status(404).json({ message: "Tasting nicht gefunden" });
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!requesterId || requesterId !== tasting.hostId) {
+        return res.status(403).json({ message: "Nur der Host kann Handouts bearbeiten" });
+      }
+      const updateData: any = {};
+      if (typeof req.body.title === "string") updateData.handoutTitle = req.body.title.slice(0, 200) || null;
+      if (typeof req.body.author === "string") updateData.handoutAuthor = req.body.author.slice(0, 200) || null;
+      if (typeof req.body.description === "string") updateData.handoutDescription = req.body.description.slice(0, 2000) || null;
+      if (req.body.visibility === "always" || req.body.visibility === "after_reveal") {
+        updateData.handoutVisibility = req.body.visibility;
+      }
+      const updated = await storage.updateWhisky(req.params.id, updateData);
+      res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/whiskies/:id/handout", async (req: any, res: any) => {
+    try {
+      if (await rejectIfWhiskyArchived(req.params.id, res)) return;
+      const whisky = await storage.getWhisky(req.params.id);
+      if (!whisky) return res.status(404).json({ message: "Whisky nicht gefunden" });
+      const tasting = await storage.getTasting(whisky.tastingId);
+      if (!tasting) return res.status(404).json({ message: "Tasting nicht gefunden" });
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!requesterId || requesterId !== tasting.hostId) {
+        return res.status(403).json({ message: "Nur der Host kann Handouts löschen" });
+      }
+      const oldUrl = whisky.handoutUrl;
+      const updated = await storage.updateWhisky(req.params.id, {
+        handoutUrl: null,
+        handoutContentType: null,
+        handoutTitle: null,
+        handoutAuthor: null,
+        handoutDescription: null,
+      } as any);
+      if (oldUrl) await deleteObjectFromStorage(objectStorage, oldUrl);
+      res.json(updated);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
     }
@@ -11609,7 +11865,11 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       if (!requester || requester.role !== "admin") {
         return res.status(403).json({ message: "Admin access required" });
       }
+      const handoutUrls = await storage.getWhiskyHandoutUrlsForTasting(req.params.id);
+      const tastingHandoutUrl = await storage.getTastingHandoutUrl(req.params.id);
       await storage.hardDeleteTasting(req.params.id);
+      for (const url of handoutUrls) await deleteObjectFromStorage(objectStorage, url);
+      if (tastingHandoutUrl) await deleteObjectFromStorage(objectStorage, tastingHandoutUrl);
       res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
