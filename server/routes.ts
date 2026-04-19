@@ -3802,6 +3802,56 @@ ${compactPages}`;
         dedup.push(r);
       }
 
+      const missingIds = dedup
+        .map((r, idx) => ({ idx, name: r.whiskyName, distillery: r.distillery }))
+        .filter((r) => !dedup[r.idx].whiskybaseId && r.name)
+        .slice(0, 12);
+      if (missingIds.length > 0) {
+        try {
+          const lookupSys = "You look up Whiskybase.com IDs for whiskies using the web. A Whiskybase ID is the numeric segment in URLs like https://www.whiskybase.com/whiskies/whisky/<ID>/<slug>. Use the web search tool. Reply ONLY with strict JSON.";
+          const lookupUser = `For each item below, find the most likely matching Whiskybase.com whisky page and return its numeric ID. If you cannot find a confident match, return null for that item.
+
+Items:
+${missingIds.map((m, i) => `${i + 1}. name="${m.name}"${m.distillery ? `, distillery="${m.distillery}"` : ""}`).join("\n")}
+
+Respond with JSON exactly in this shape (one entry per item, in the same order):
+{"results":[{"index":<int>,"whiskybaseId":<string|null>}]}`;
+          const responsesClient = client as unknown as { responses?: { create: (args: unknown) => Promise<unknown> } };
+          if (responsesClient.responses?.create) {
+            const lookupRes = await responsesClient.responses.create({
+              model: process.env.AI_INTEGRATIONS_OPENAI_MODEL || "gpt-4o-mini",
+              tools: [{ type: "web_search" }],
+              input: [
+                { role: "system", content: lookupSys },
+                { role: "user", content: lookupUser },
+              ],
+            }) as { output_text?: string };
+            const lookupText = lookupRes.output_text || "";
+            const jsonMatch = lookupText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const lookupParsed = JSON.parse(jsonMatch[0]) as { results?: Array<{ index?: number; whiskybaseId?: string | null }> };
+              const lookupSchema = z.object({
+                results: z.array(z.object({
+                  index: z.number().int().min(1),
+                  whiskybaseId: z.string().trim().regex(/^\d+$/).max(20).nullable().optional(),
+                })),
+              });
+              const safeLookup = lookupSchema.safeParse(lookupParsed);
+              if (safeLookup.success) {
+                for (const r of safeLookup.data.results) {
+                  const item = missingIds[r.index - 1];
+                  if (!item) continue;
+                  const id = (r.whiskybaseId || "").trim();
+                  if (id) dedup[item.idx].whiskybaseId = id;
+                }
+              }
+            }
+          }
+        } catch (lookupErr: any) {
+          console.warn("[handout-library] auto-suggest: WB ID web lookup failed (non-fatal)", lookupErr?.message || lookupErr);
+        }
+      }
+
       res.json({ ranges: dedup, pageCount });
     } catch (e: any) {
       console.error("[handout-library] auto-suggest failed", e);
