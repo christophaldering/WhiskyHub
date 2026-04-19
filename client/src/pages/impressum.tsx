@@ -111,6 +111,18 @@ export default function Impressum() {
               </a>
             </p>
           </section>
+
+          <section>
+            <h2 style={{ fontSize: 18, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: c.accent, marginBottom: 8 }}>
+              {t("legal.impressum.communityHandoutsTitle")}
+            </h2>
+            <p
+              style={{ color: c.muted, fontSize: 14, lineHeight: 1.7, margin: 0 }}
+              data-testid="text-impressum-community-handouts"
+            >
+              {t("legal.impressum.communityHandoutsText")}
+            </p>
+          </section>
         </div>
       </div>
     </SimpleShell>

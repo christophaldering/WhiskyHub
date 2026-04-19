@@ -6,7 +6,7 @@ import {
   ChevronLeft,
   Archive, SlidersHorizontal,
   Utensils, Brain, Factory,
-  Microscope,
+  Microscope, Globe,
 } from "lucide-react";
 import type { ElementType } from "react";
 
@@ -33,6 +33,7 @@ export const SECTIONS: BibliothekSection[] = [
     titleFallback: "Community",
     links: [
       { icon: Archive, labelKey: "bibliothek.archive", labelFallback: "Community Archive", descKey: "bibliothek.archiveDesc", descFallback: "Historical tastings & analytics", href: "/labs/history", testId: "labs-link-bibliothek-archive" },
+      { icon: Globe, labelKey: "bibliothek.communityHandouts", labelFallback: "Community Handouts", descKey: "bibliothek.communityHandoutsDesc", descFallback: "Handouts shared by other hosts — adopt with one click", href: "/labs/host/handout-library?tab=community", testId: "labs-link-bibliothek-community-handouts" },
     ],
   },
   {

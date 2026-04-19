@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import {
   ChevronLeft, FileText, Image as ImageIcon, Library, Search, Trash2,
   Pencil, Save, X, ExternalLink, Download, Globe, Lock, Plus, Upload, Loader2, RefreshCw, Scissors,
@@ -56,7 +56,18 @@ export default function LabsHandoutLibrary() {
   const { t } = useTranslation();
   const hostId = getParticipantId() || "";
   const qc = useQueryClient();
-  const [tab, setTab] = useState<TabKey>("mine");
+  const searchStr = useSearch();
+  const initialTab: TabKey = useMemo(() => {
+    try {
+      const params = new URLSearchParams(searchStr);
+      return params.get("tab") === "community" ? "community" : "mine";
+    } catch {
+      return "mine";
+    }
+    // Only the first render — subsequent tab changes are user-driven.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const [tab, setTab] = useState<TabKey>(initialTab);
   const [search, setSearch] = useState("");
   const [communitySearch, setCommunitySearch] = useState("");
   const [editing, setEditing] = useState<EditState | null>(null);
@@ -806,6 +817,15 @@ export default function LabsHandoutLibrary() {
         <>
           <p style={{ color: "var(--labs-text-muted)", fontSize: 12, margin: "0 0 12px" }}>
             Hier siehst du Handouts, die andere Hosts mit der Community geteilt haben. Übernimm einen Eintrag mit einem Klick in deine eigene Bibliothek.
+            {" "}
+            <Link
+              href="/impressum"
+              style={{ color: "var(--labs-accent)", textDecoration: "underline" }}
+              data-testid="link-handout-community-takedown"
+            >
+              Notice & Takedown
+            </Link>
+            .
           </p>
 
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, position: "relative" }}>
