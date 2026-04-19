@@ -454,7 +454,13 @@ export default function LabsHandoutLibrary() {
                   data-testid="input-upload-description"
                 />
               </label>
-              {(uploadForm.file?.type || "").toLowerCase() === "application/pdf" && (
+              {(() => {
+                const f = uploadForm.file;
+                if (!f) return false;
+                const mime = (f.type || "").toLowerCase();
+                const name = (f.name || "").toLowerCase();
+                return mime === "application/pdf" || name.endsWith(".pdf");
+              })() && (
                 <label
                   style={{
                     display: "flex", alignItems: "flex-start", gap: 8,

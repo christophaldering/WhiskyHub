@@ -3522,40 +3522,6 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/handout-library/:id/page-count", async (req: any, res: any) => {
-    try {
-      const hostId = req.headers["x-participant-id"] as string | undefined;
-      if (!hostId) return res.status(401).json({ message: "Authentifizierung erforderlich" });
-      const entry = await storage.getHandoutLibraryEntry(req.params.id);
-      if (!entry) return res.status(404).json({ message: "Bibliothekseintrag nicht gefunden" });
-      if (entry.hostId !== hostId) return res.status(403).json({ message: "Nicht erlaubt" });
-      if (entry.contentType !== "application/pdf") {
-        return res.status(400).json({ message: "Nur PDFs können geteilt werden" });
-      }
-      let buffer: Buffer;
-      try {
-        const file = await objectStorage.getObjectEntityFile(entry.fileUrl);
-        const [data] = await file.download();
-        buffer = data as Buffer;
-      } catch (fetchErr) {
-        console.warn("[handout-library] page-count: failed to read PDF", fetchErr);
-        return res.status(502).json({ message: "PDF konnte nicht geladen werden" });
-      }
-      let doc;
-      try {
-        doc = await PDFDocument.load(buffer, { ignoreEncryption: false });
-      } catch (loadErr: any) {
-        const msg = (loadErr?.message || "").toLowerCase();
-        if (msg.includes("encrypt")) return res.status(400).json({ message: "Verschlüsselte PDFs werden nicht unterstützt" });
-        return res.status(400).json({ message: "PDF konnte nicht gelesen werden" });
-      }
-      res.json({ pageCount: doc.getPageCount() });
-    } catch (e: any) {
-      console.error("[handout-library] page-count failed", e);
-      res.status(500).json({ message: e?.message || "Seitenanzahl konnte nicht ermittelt werden" });
-    }
-  });
-
   app.post("/api/handout-library/:id/split", async (req: any, res: any) => {
     try {
       const hostId = req.headers["x-participant-id"] as string | undefined;

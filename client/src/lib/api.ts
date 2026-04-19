@@ -290,8 +290,6 @@ export const handoutLibraryApi = {
     }
     return res.json();
   },
-  getPageCount: (id: string, hostId: string): Promise<{ pageCount: number }> =>
-    fetchJSON(`/handout-library/${id}/page-count`, { headers: { "x-participant-id": hostId } }),
   split: (
     id: string,
     hostId: string,
