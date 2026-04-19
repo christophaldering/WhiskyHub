@@ -11,7 +11,7 @@
         import CollectionBadge from "@/labs/components/CollectionBadge";
         import { apiUrl } from "@/lib/native";
         import {
-          Search, ChevronRight, ChevronLeft, Wine,
+          Search, ChevronRight, Wine,
           BookOpen, List, BarChart3, MapPin, Building2, Compass, Activity,
           X, ChevronDown, Check, ArrowUp, ArrowDown, Star,
         } from "lucide-react";
@@ -539,7 +539,20 @@
                 <div className="labs-action-bar">
                   <button
                     type="button"
-                    onClick={() => setActiveView("whiskies")}
+                    onClick={() => {
+                      setActiveView("whiskies");
+                      setWhiskyHubMode("hub");
+                      setExpandedFilter(null);
+                      setFilterSearch("");
+                      setSearch("");
+                      setFilters({
+                        region: new Set(),
+                        distillery: new Set(),
+                        category: new Set(),
+                        country: new Set(),
+                        peatLevel: new Set(),
+                      });
+                    }}
                     data-testid="tab-explore-whiskies"
                     className={`labs-action-bar-item labs-action-bar-item--button${activeView === "whiskies" ? " labs-action-bar-item--active" : ""}`}
                   >
@@ -553,7 +566,10 @@
                   </button>
                   <button
                     type="button"
-                    onClick={() => setActiveView("bibliothek")}
+                    onClick={() => {
+                      setActiveView("bibliothek");
+                      setExpandedFilter(null);
+                    }}
                     data-testid="tab-explore-bibliothek"
                     className={`labs-action-bar-item labs-action-bar-item--button${activeView === "bibliothek" ? " labs-action-bar-item--active" : ""}`}
                   >
@@ -639,16 +655,6 @@
 
               {activeView === "whiskies" && whiskyHubMode === "list" && (
               <div className="labs-fade-in labs-stagger-2" style={{ marginBottom: 32 }}>
-                <button
-                  type="button"
-                  onClick={() => { setWhiskyHubMode("hub"); setExpandedFilter(null); }}
-                  data-testid="button-back-whisky-hub"
-                  className="labs-btn-ghost"
-                  style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 10, color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", padding: "4px 0", fontFamily: "inherit", fontSize: 14 }}
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  {t("explore.hub.back", "Whiskies")}
-                </button>
                 <p className="labs-section-label flex items-center gap-2" style={{ marginBottom: 10 }}>
                   <Wine className="w-3.5 h-3.5" />
                   {t("discover.whiskies", "Whiskies")}
