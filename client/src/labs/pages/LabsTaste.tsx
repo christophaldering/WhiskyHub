@@ -1,10 +1,9 @@
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
-import { Archive, Activity, Sparkles, BarChart3 } from "lucide-react";
+import { Archive, Activity, Sparkles, BarChart3, Compass } from "lucide-react";
 import type { ElementType } from "react";
 import { useAppStore } from "@/lib/store";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
-import { Compass } from "lucide-react";
 
 interface HubLink {
   icon: ElementType;
