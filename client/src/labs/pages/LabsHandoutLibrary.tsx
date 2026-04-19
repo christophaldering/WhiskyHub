@@ -334,6 +334,7 @@ export default function LabsHandoutLibrary() {
   const [uploadForm, setUploadForm] = useState<UploadFormState>(emptyUploadForm);
   const [distilleryFilter, setDistilleryFilter] = useState<string>("");
   const replaceFileInputRef = useRef<HTMLInputElement>(null);
+  const uploadFileInputRef = useRef<HTMLInputElement>(null);
   const [replaceTargetId, setReplaceTargetId] = useState<string | null>(null);
   const [splitTarget, setSplitTarget] = useState<WhiskyHandoutLibraryEntry | null>(null);
 
@@ -689,12 +690,28 @@ export default function LabsHandoutLibrary() {
                 </button>
               </div>
               <input
+                ref={uploadFileInputRef}
                 type="file"
                 accept="application/pdf,image/*"
                 onChange={(e) => setUploadForm({ ...uploadForm, file: e.target.files?.[0] || null })}
                 data-testid="input-upload-file"
-                style={{ fontSize: 12 }}
+                style={{ display: "none" }}
               />
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  className="labs-btn-secondary text-xs"
+                  onClick={() => uploadFileInputRef.current?.click()}
+                  data-testid="button-upload-pick-file"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                >
+                  <Upload style={{ width: 12, height: 12 }} />
+                  {uploadForm.file ? t("labs.handoutLibrary.changeFile") : t("labs.handoutLibrary.chooseFile")}
+                </button>
+                <span style={{ fontSize: 12, color: uploadForm.file ? "var(--labs-text)" : "var(--labs-danger)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} data-testid="text-upload-file-name">
+                  {uploadForm.file ? uploadForm.file.name : t("labs.handoutLibrary.noFileChosen")}
+                </span>
+              </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
                   {t("labs.handoutLibrary.fieldWhiskyName")} *
