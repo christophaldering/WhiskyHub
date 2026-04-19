@@ -1680,21 +1680,6 @@
   background: var(--labs-surface-hover);
 }
 
-.labs-tastings-header {
-  margin-bottom: 16px;
-}
-
-.labs-tastings-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--labs-text);
-  margin: 0;
-}
-
-.labs-tastings-live-badge {
-  font-size: 11px;
-}
-
 .labs-tastings-actions {
   margin-bottom: 14px;
 }

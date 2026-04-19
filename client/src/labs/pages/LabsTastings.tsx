@@ -355,17 +355,19 @@ export default function LabsTastings() {
 
   return (
     <div className="labs-page labs-fade-in">
-      <div className="labs-tastings-header">
+      <div style={{ marginBottom: 20 }}>
         <div className="flex items-center justify-between">
           <h1
-            className="labs-serif labs-tastings-title"
+            className="ty-h1"
+            style={{ margin: 0 }}
             data-testid="labs-tastings-title"
           >
-            Tastings
+            {t("tastings.pageTitle", "Tastings")}
           </h1>
           {counts.live > 0 && filterTab !== "archive" && (
             <span
-              className="labs-badge labs-badge-success labs-tastings-live-badge"
+              className="labs-badge labs-badge-success"
+              style={{ fontSize: 11 }}
               data-testid="labs-tastings-live-count"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
@@ -373,6 +375,13 @@ export default function LabsTastings() {
             </span>
           )}
         </div>
+        <p
+          className="ty-sub"
+          style={{ margin: "2px 0 0" }}
+          data-testid="labs-tastings-subtitle"
+        >
+          {t("tastings.pageSubtitle", "Taste, host and share")}
+        </p>
       </div>
 
       <div className="labs-action-bar labs-fade-in labs-stagger-1 labs-tastings-actions" data-testid="labs-tastings-actions">
