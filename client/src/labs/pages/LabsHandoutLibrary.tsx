@@ -3,11 +3,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import {
   ChevronLeft, FileText, Image as ImageIcon, Library, Search, Trash2,
-  Pencil, Save, X, ExternalLink, Download, Globe, Lock, Plus, Upload, Loader2, RefreshCw,
+  Pencil, Save, X, ExternalLink, Download, Globe, Lock, Plus, Upload, Loader2, RefreshCw, Scissors,
 } from "lucide-react";
 import { getParticipantId, handoutLibraryApi } from "@/lib/api";
 import { downloadFromEndpoint } from "@/lib/download";
 import type { WhiskyHandoutLibraryEntry } from "@shared/schema";
+import HandoutLibraryPdfSplitterDialog from "../components/HandoutLibraryPdfSplitterDialog";
 
 interface EditState {
   id: string;
@@ -63,6 +64,7 @@ export default function LabsHandoutLibrary() {
   const [distilleryFilter, setDistilleryFilter] = useState<string>("");
   const replaceFileInputRef = useRef<HTMLInputElement>(null);
   const [replaceTargetId, setReplaceTargetId] = useState<string | null>(null);
+  const [splitTarget, setSplitTarget] = useState<WhiskyHandoutLibraryEntry | null>(null);
 
   const listQuery = useQuery<WhiskyHandoutLibraryEntry[]>({
     queryKey: ["handout-library", hostId, search],
@@ -617,6 +619,15 @@ export default function LabsHandoutLibrary() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 6 }}>
                       {entry.title || entry.whiskyName}
+                      {entry.isProgramme && (
+                        <span
+                          style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 6px", borderRadius: 999, background: "var(--labs-warning-bg, #3a2f15)", color: "var(--labs-warning, #f5b25c)" }}
+                          data-testid={`badge-programme-${entry.id}`}
+                          title="Mehrseitiges Programmheft"
+                        >
+                          <Library style={{ width: 10, height: 10 }} /> Programmheft
+                        </span>
+                      )}
                       {entry.isShared && (
                         <span
                           style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 6px", borderRadius: 999, background: "var(--labs-accent-bg, #1d2c4d)", color: "var(--labs-accent, #7ba8ff)" }}
@@ -686,6 +697,18 @@ export default function LabsHandoutLibrary() {
                         ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" />
                         : <RefreshCw style={{ width: 12, height: 12 }} />}
                     </button>
+                    {isPdf && (
+                      <button
+                        type="button"
+                        className="labs-btn-secondary text-xs"
+                        onClick={() => { setSplitTarget(entry); setError(null); setInfo(null); }}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px" }}
+                        data-testid={`button-handout-split-${entry.id}`}
+                        title="Programmheft seitenweise aufteilen"
+                      >
+                        <Scissors style={{ width: 12, height: 12 }} />
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="labs-btn-secondary text-xs"
@@ -726,6 +749,13 @@ export default function LabsHandoutLibrary() {
           </div>
         </>
       )}
+
+      <HandoutLibraryPdfSplitterDialog
+        open={!!splitTarget}
+        onClose={() => setSplitTarget(null)}
+        entry={splitTarget}
+        hostId={hostId}
+      />
 
       {tab === "community" && (
         <>

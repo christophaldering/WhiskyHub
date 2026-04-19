@@ -9,7 +9,7 @@ import { readExcelBuffer, sheetToArrayOfArrays, sheetToJson, sheetToCsv, jsonToS
 // @ts-ignore
 import AdmZip from "adm-zip";
 import { storage, getUniquePersonCount, deduplicateParticipantList, getAllCommunityRatings, buildCommunityWhiskyKey, invalidateCommunityRatingsCache } from "./storage";
-import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema, insertBenchmarkEntrySchema, type Participant, type WhiskyFriend, type WhiskybaseCollectionItem, type JournalEntry, type PdfSplitPage } from "@shared/schema";
+import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema, insertBenchmarkEntrySchema, type Participant, type WhiskyFriend, type WhiskybaseCollectionItem, type JournalEntry, type PdfSplitPage, type WhiskyHandoutLibraryEntry, type InsertWhiskyHandoutLibraryEntry } from "@shared/schema";
 import OpenAI from "openai";
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
@@ -3519,6 +3519,167 @@ export async function registerRoutes(
     } catch (e: any) {
       console.error("[handout-library] replace-file failed", e);
       res.status(500).json({ message: e?.message || "Upload fehlgeschlagen" });
+    }
+  });
+
+  app.get("/api/handout-library/:id/page-count", async (req: any, res: any) => {
+    try {
+      const hostId = req.headers["x-participant-id"] as string | undefined;
+      if (!hostId) return res.status(401).json({ message: "Authentifizierung erforderlich" });
+      const entry = await storage.getHandoutLibraryEntry(req.params.id);
+      if (!entry) return res.status(404).json({ message: "Bibliothekseintrag nicht gefunden" });
+      if (entry.hostId !== hostId) return res.status(403).json({ message: "Nicht erlaubt" });
+      if (entry.contentType !== "application/pdf") {
+        return res.status(400).json({ message: "Nur PDFs können geteilt werden" });
+      }
+      let buffer: Buffer;
+      try {
+        const file = await objectStorage.getObjectEntityFile(entry.fileUrl);
+        const [data] = await file.download();
+        buffer = data as Buffer;
+      } catch (fetchErr) {
+        console.warn("[handout-library] page-count: failed to read PDF", fetchErr);
+        return res.status(502).json({ message: "PDF konnte nicht geladen werden" });
+      }
+      let doc;
+      try {
+        doc = await PDFDocument.load(buffer, { ignoreEncryption: false });
+      } catch (loadErr: any) {
+        const msg = (loadErr?.message || "").toLowerCase();
+        if (msg.includes("encrypt")) return res.status(400).json({ message: "Verschlüsselte PDFs werden nicht unterstützt" });
+        return res.status(400).json({ message: "PDF konnte nicht gelesen werden" });
+      }
+      res.json({ pageCount: doc.getPageCount() });
+    } catch (e: any) {
+      console.error("[handout-library] page-count failed", e);
+      res.status(500).json({ message: e?.message || "Seitenanzahl konnte nicht ermittelt werden" });
+    }
+  });
+
+  app.post("/api/handout-library/:id/split", async (req: any, res: any) => {
+    try {
+      const hostId = req.headers["x-participant-id"] as string | undefined;
+      if (!hostId) return res.status(401).json({ message: "Authentifizierung erforderlich" });
+      const entry = await storage.getHandoutLibraryEntry(req.params.id);
+      if (!entry) return res.status(404).json({ message: "Bibliothekseintrag nicht gefunden" });
+      if (entry.hostId !== hostId) return res.status(403).json({ message: "Nicht erlaubt" });
+      if (entry.contentType !== "application/pdf") {
+        return res.status(400).json({ message: "Nur PDFs können geteilt werden" });
+      }
+
+      const rangeSchema = z.object({
+        from: z.number().int().min(1),
+        to: z.number().int().min(1),
+        whiskyName: z.string().trim().min(1).max(200),
+        distillery: z.string().trim().max(200).optional(),
+        whiskybaseId: z.string().trim().max(100).optional(),
+        title: z.string().trim().max(200).optional(),
+      }).refine((r) => r.to >= r.from, { message: "to muss >= from sein" });
+      const bodySchema = z.object({ ranges: z.array(rangeSchema).min(1).max(50) });
+      const parsed = bodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Ungültige Bereiche", details: parsed.error.flatten() });
+      }
+      const ranges = parsed.data.ranges;
+
+      let sourceBuffer: Buffer;
+      try {
+        const file = await objectStorage.getObjectEntityFile(entry.fileUrl);
+        const [data] = await file.download();
+        sourceBuffer = data as Buffer;
+      } catch (fetchErr) {
+        console.warn("[handout-library] split: failed to read source PDF", fetchErr);
+        return res.status(502).json({ message: "PDF konnte nicht geladen werden" });
+      }
+      let sourceDoc;
+      try {
+        sourceDoc = await PDFDocument.load(sourceBuffer, { ignoreEncryption: false });
+      } catch (loadErr: any) {
+        const msg = (loadErr?.message || "").toLowerCase();
+        if (msg.includes("encrypt")) return res.status(400).json({ message: "Verschlüsselte PDFs werden nicht unterstützt" });
+        return res.status(400).json({ message: "PDF konnte nicht gelesen werden" });
+      }
+      const pageCount = sourceDoc.getPageCount();
+
+      const used = new Set<number>();
+      for (const r of ranges) {
+        if (r.to > pageCount) {
+          return res.status(400).json({ message: `Bereich ${r.from}-${r.to} liegt außerhalb (PDF hat ${pageCount} Seiten)` });
+        }
+        for (let p = r.from; p <= r.to; p++) {
+          if (used.has(p)) {
+            return res.status(400).json({ message: `Seite ${p} wurde mehreren Bereichen zugewiesen` });
+          }
+          used.add(p);
+        }
+      }
+
+      // Build & upload each part PDF first; track for rollback.
+      const uploaded: { url: string; range: typeof ranges[number] }[] = [];
+      try {
+        for (const r of ranges) {
+          const partDoc = await PDFDocument.create();
+          const indices: number[] = [];
+          for (let p = r.from; p <= r.to; p++) indices.push(p - 1);
+          const copied = await partDoc.copyPages(sourceDoc, indices);
+          for (const page of copied) partDoc.addPage(page);
+          const bytes = await partDoc.save();
+          const buffer = Buffer.from(bytes);
+          const uploadURL = await objectStorage.getObjectEntityUploadURL();
+          const resp = await fetch(uploadURL, {
+            method: "PUT",
+            body: buffer,
+            headers: { "Content-Type": "application/pdf" },
+          });
+          if (!resp.ok) throw new Error(`Object storage upload failed (${resp.status})`);
+          const fileUrl = objectStorage.normalizeObjectEntityPath(uploadURL);
+          uploaded.push({ url: fileUrl, range: r });
+        }
+      } catch (uploadErr) {
+        for (const u of uploaded) {
+          await deleteObjectFromStorage(objectStorage, u.url).catch(() => {});
+        }
+        throw uploadErr;
+      }
+
+      // Persist library entries; on any DB failure, rollback all newly uploaded files
+      // and any already-created entries.
+      const created: WhiskyHandoutLibraryEntry[] = [];
+      try {
+        for (const u of uploaded) {
+          const c = await storage.createHandoutLibraryEntry({
+            hostId,
+            whiskyName: u.range.whiskyName.slice(0, 200),
+            distillery: u.range.distillery ? u.range.distillery.slice(0, 200) : null,
+            whiskybaseId: u.range.whiskybaseId ? u.range.whiskybaseId.slice(0, 100) : null,
+            fileUrl: u.url,
+            contentType: "application/pdf",
+            title: u.range.title ? u.range.title.slice(0, 200) : null,
+            author: null,
+            description: null,
+            isProgramme: false,
+            programmeSourceId: entry.id,
+          } as InsertWhiskyHandoutLibraryEntry);
+          created.push(c);
+        }
+        // Mark original as Programmheft (idempotent).
+        if (!entry.isProgramme) {
+          await storage.updateHandoutLibraryEntry(entry.id, { isProgramme: true });
+        }
+      } catch (dbErr) {
+        for (const c of created) {
+          await storage.deleteHandoutLibraryEntry(c.id).catch(() => {});
+        }
+        for (const u of uploaded) {
+          await deleteHandoutFileIfUnreferenced(objectStorage, u.url).catch(() => {});
+        }
+        throw dbErr;
+      }
+
+      res.status(201).json({ created, programmeId: entry.id });
+    } catch (e: any) {
+      console.error("[handout-library] split failed", e);
+      res.status(500).json({ message: e?.message || "Aufteilen fehlgeschlagen" });
     }
   });
 

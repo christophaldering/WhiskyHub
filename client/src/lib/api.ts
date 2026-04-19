@@ -290,6 +290,18 @@ export const handoutLibraryApi = {
     }
     return res.json();
   },
+  getPageCount: (id: string, hostId: string): Promise<{ pageCount: number }> =>
+    fetchJSON(`/handout-library/${id}/page-count`, { headers: { "x-participant-id": hostId } }),
+  split: (
+    id: string,
+    hostId: string,
+    ranges: Array<{ from: number; to: number; whiskyName: string; distillery?: string; whiskybaseId?: string; title?: string }>,
+  ) =>
+    fetchJSON(`/handout-library/${id}/split`, {
+      method: "POST",
+      headers: { "x-participant-id": hostId },
+      body: JSON.stringify({ ranges }),
+    }),
   bulkDelete: (ids: string[], hostId: string) =>
     fetchJSON(`/handout-library/bulk-delete`, {
       method: "POST",

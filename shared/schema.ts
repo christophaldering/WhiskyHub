@@ -186,6 +186,8 @@ export const whiskyHandoutLibrary = pgTable("whisky_handout_library", {
   sharedAt: timestamp("shared_at"),
   sharedByName: text("shared_by_name"),
   clonedFromId: varchar("cloned_from_id"),
+  isProgramme: boolean("is_programme").default(false).notNull(),
+  programmeSourceId: varchar("programme_source_id"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
   hostIdx: index("idx_whisky_handout_library_host").on(table.hostId),
