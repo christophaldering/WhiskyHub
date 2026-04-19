@@ -130,6 +130,15 @@ export const ANALYTICS_HUB_TILES: HubTileDef[] = [
     href: "/labs/taste/downloads",
     testId: "labs-link-analytics-hub-downloads",
   },
+  {
+    icon: Activity,
+    labelKey: "myTastePage.analyticsHub.palate",
+    labelFallback: "Your Profile / Palate",
+    descKey: "myTastePage.analyticsHub.palateDesc",
+    descFallback: "Your CaskSense flavor profile",
+    href: "/labs/taste/profile",
+    testId: "labs-link-analytics-hub-palate",
+  },
 ];
 
 export function HubTileCard({

@@ -3,7 +3,7 @@ import { Link, useLocation, useSearch } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Archive, Activity, Sparkles, BarChart3, Compass, ChevronRight,
+  Archive, Sparkles, BarChart3, Compass, ChevronRight,
 } from "lucide-react";
 import type { ElementType } from "react";
 import { useAppStore } from "@/lib/store";
@@ -14,11 +14,10 @@ import {
   AI_INSIGHTS_HUB_TILES,
   ANALYTICS_HUB_TILES,
   COLLECTION_HUB_TILES,
-  HubTileCard,
   HubTileGrid,
 } from "./hubTiles";
 
-type Tab = "collection" | "palate" | "ai" | "analytics";
+type Tab = "collection" | "ai" | "analytics";
 
 interface TabDef {
   key: Tab;
@@ -47,18 +46,6 @@ const TABS: TabDef[] = [
     testId: "tile-meine-welt-collection",
   },
   {
-    key: "palate",
-    icon: Activity,
-    iconVariant: "surface",
-    iconColorClass: "labs-icon-text-secondary",
-    labelKey: "myTastePage.tileYourPalate",
-    labelFallback: "Your Palate",
-    descKey: "myTastePage.tileYourPalateDesc",
-    descFallback: "Your flavor profile",
-    href: "/labs/taste/profile",
-    testId: "tile-meine-welt-your-palate",
-  },
-  {
     key: "ai",
     icon: Sparkles,
     iconVariant: "accent",
@@ -84,18 +71,8 @@ const TABS: TabDef[] = [
   },
 ];
 
-const PALATE_TILE = {
-  icon: Activity,
-  labelKey: "myTastePage.tileYourPalate",
-  labelFallback: "Your Palate",
-  descKey: "myTastePage.tileYourPalateDesc",
-  descFallback: "Your CaskSense flavor profile",
-  href: "/labs/taste/profile",
-  testId: "labs-link-meine-welt-palate-open",
-};
-
 function isTab(value: string | null): value is Tab {
-  return value === "collection" || value === "palate" || value === "ai" || value === "analytics";
+  return value === "collection" || value === "ai" || value === "analytics";
 }
 
 export default function LabsTaste() {
@@ -109,6 +86,7 @@ export default function LabsTaste() {
       const params = new URLSearchParams(searchStr);
       const v = params.get("tab");
       if (isTab(v)) return v;
+      if (v === "palate") return "analytics";
     } catch {}
     return "collection";
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -206,16 +184,9 @@ export default function LabsTaste() {
         </div>
       );
     }
-    if (activeTab === "analytics") {
-      return (
-        <div data-testid="meine-welt-inline-analytics">
-          <HubTileGrid tiles={ANALYTICS_HUB_TILES} t={t} testIdPrefix="meine-welt" variant="auto" />
-        </div>
-      );
-    }
     return (
-      <div className="labs-hub-tile-grid labs-hub-tile-grid--auto" data-testid="meine-welt-inline-palate">
-        <HubTileCard tile={PALATE_TILE} t={t} />
+      <div data-testid="meine-welt-inline-analytics">
+        <HubTileGrid tiles={ANALYTICS_HUB_TILES} t={t} testIdPrefix="meine-welt" variant="auto" />
       </div>
     );
   };
@@ -242,14 +213,16 @@ export default function LabsTaste() {
           <span className="labs-meine-welt-section-label">
             {t(activeTab_.labelKey, activeTab_.labelFallback)}
           </span>
-          <Link
-            href={activeTab_.href}
-            className="labs-meine-welt-view-all"
-            data-testid={`link-meine-welt-view-all-${activeTab}`}
-          >
-            {t("myTastePage.viewAll", "View all")}
-            <ChevronRight className="w-3.5 h-3.5" />
-          </Link>
+          {activeTab === "collection" && (
+            <Link
+              href="/labs/taste/drams"
+              className="labs-meine-welt-view-all"
+              data-testid={`link-meine-welt-view-all-${activeTab}`}
+            >
+              {t("myTastePage.viewAll", "View all")}
+              <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          )}
         </div>
         {renderInlineContent()}
       </div>
