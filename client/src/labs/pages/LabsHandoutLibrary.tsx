@@ -424,9 +424,17 @@ export default function LabsHandoutLibrary() {
     }),
     mutationFn: async () => {
       if (!uploadForm.file) throw new Error(t("labs.handoutLibrary.errSelectFile"));
-      if (!uploadForm.whiskyName.trim()) throw new Error(t("labs.handoutLibrary.errWhiskyNameRequired"));
+      const isPdfFile =
+        (uploadForm.file.type || "").toLowerCase() === "application/pdf" ||
+        (uploadForm.file.name || "").toLowerCase().endsWith(".pdf");
+      const sammelMode = !!uploadForm.splitProgramme && isPdfFile;
+      const fallbackName = (uploadForm.file.name || "Sammel-Handout").replace(/\.[^.]+$/, "").trim() || "Sammel-Handout";
+      const effectiveWhiskyName = sammelMode
+        ? (uploadForm.whiskyName.trim() || fallbackName)
+        : uploadForm.whiskyName.trim();
+      if (!effectiveWhiskyName) throw new Error(t("labs.handoutLibrary.errWhiskyNameRequired"));
       return handoutLibraryApi.upload(hostId, uploadForm.file, {
-        whiskyName: uploadForm.whiskyName.trim(),
+        whiskyName: effectiveWhiskyName,
         distillery: uploadForm.distillery.trim(),
         whiskybaseId: uploadForm.whiskybaseId.trim(),
         title: uploadForm.title.trim(),
@@ -712,94 +720,100 @@ export default function LabsHandoutLibrary() {
                   {uploadForm.file ? uploadForm.file.name : t("labs.handoutLibrary.noFileChosen")}
                 </span>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
-                  {t("labs.handoutLibrary.fieldWhiskyName")} *
-                  <input
-                    className="labs-input"
-                    value={uploadForm.whiskyName}
-                    onChange={(e) => setUploadForm({ ...uploadForm, whiskyName: e.target.value })}
-                    data-testid="input-upload-whiskyname"
-                  />
-                </label>
-                <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
-                  {t("labs.handoutLibrary.fieldDistillery")}
-                  <input
-                    className="labs-input"
-                    value={uploadForm.distillery}
-                    onChange={(e) => setUploadForm({ ...uploadForm, distillery: e.target.value })}
-                    data-testid="input-upload-distillery"
-                  />
-                </label>
-                <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
-                  {t("labs.handoutLibrary.fieldWhiskybaseId")}
-                  <input
-                    className="labs-input"
-                    value={uploadForm.whiskybaseId}
-                    onChange={(e) => setUploadForm({ ...uploadForm, whiskybaseId: e.target.value })}
-                    data-testid="input-upload-wbid"
-                  />
-                </label>
-                <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
-                  {t("labs.handoutLibrary.fieldTitle")}
-                  <input
-                    className="labs-input"
-                    value={uploadForm.title}
-                    onChange={(e) => setUploadForm({ ...uploadForm, title: e.target.value })}
-                    data-testid="input-upload-title"
-                  />
-                </label>
-                <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
-                  {t("labs.handoutLibrary.fieldAuthor")}
-                  <input
-                    className="labs-input"
-                    value={uploadForm.author}
-                    onChange={(e) => setUploadForm({ ...uploadForm, author: e.target.value })}
-                    data-testid="input-upload-author"
-                  />
-                </label>
-              </div>
-              <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
-                {t("labs.handoutLibrary.fieldDescription")}
-                <textarea
-                  className="labs-input"
-                  rows={2}
-                  value={uploadForm.description}
-                  onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })}
-                  data-testid="input-upload-description"
-                />
-              </label>
               {(() => {
                 const f = uploadForm.file;
-                if (!f) return false;
+                if (!f) return null;
                 const mime = (f.type || "").toLowerCase();
                 const name = (f.name || "").toLowerCase();
-                return mime === "application/pdf" || name.endsWith(".pdf");
-              })() && (
-                <label
-                  style={{
-                    display: "flex", alignItems: "flex-start", gap: 8,
-                    padding: 10, borderRadius: 8,
-                    border: "1px solid var(--labs-border)",
-                    background: "var(--labs-surface)",
-                    fontSize: 12, color: "var(--labs-text)",
-                  }}
-                  data-testid="label-upload-split-programme"
-                >
-                  <input
-                    type="checkbox"
-                    checked={uploadForm.splitProgramme}
-                    onChange={(e) => setUploadForm({ ...uploadForm, splitProgramme: e.target.checked })}
-                    data-testid="checkbox-upload-split-programme"
-                    style={{ marginTop: 2 }}
-                  />
-                  <span style={{ display: "grid", gap: 2 }}>
-                    <span>{t("labs.handoutSplitter.uploadOption")}</span>
-                    <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
-                      {t("labs.handoutSplitter.uploadOptionHint")}
+                const isPdfFile = mime === "application/pdf" || name.endsWith(".pdf");
+                if (!isPdfFile) return null;
+                return (
+                  <label
+                    style={{
+                      display: "flex", alignItems: "flex-start", gap: 8,
+                      padding: 10, borderRadius: 8,
+                      border: `1px solid ${uploadForm.splitProgramme ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                      background: uploadForm.splitProgramme ? "var(--labs-accent-muted)" : "var(--labs-surface)",
+                      fontSize: 12, color: "var(--labs-text)",
+                    }}
+                    data-testid="label-upload-split-programme"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={uploadForm.splitProgramme}
+                      onChange={(e) => setUploadForm({ ...uploadForm, splitProgramme: e.target.checked })}
+                      data-testid="checkbox-upload-split-programme"
+                      style={{ marginTop: 2 }}
+                    />
+                    <span style={{ display: "grid", gap: 2 }}>
+                      <span style={{ fontWeight: 600 }}>{t("labs.handoutSplitter.uploadOption")}</span>
+                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                        {t("labs.handoutSplitter.uploadOptionHint")}
+                      </span>
                     </span>
-                  </span>
-                </label>
+                  </label>
+                );
+              })()}
+              {!uploadForm.splitProgramme && (
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                      {t("labs.handoutLibrary.fieldWhiskyName")} *
+                      <input
+                        className="labs-input"
+                        value={uploadForm.whiskyName}
+                        onChange={(e) => setUploadForm({ ...uploadForm, whiskyName: e.target.value })}
+                        data-testid="input-upload-whiskyname"
+                      />
+                    </label>
+                    <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                      {t("labs.handoutLibrary.fieldDistillery")}
+                      <input
+                        className="labs-input"
+                        value={uploadForm.distillery}
+                        onChange={(e) => setUploadForm({ ...uploadForm, distillery: e.target.value })}
+                        data-testid="input-upload-distillery"
+                      />
+                    </label>
+                    <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                      {t("labs.handoutLibrary.fieldWhiskybaseId")}
+                      <input
+                        className="labs-input"
+                        value={uploadForm.whiskybaseId}
+                        onChange={(e) => setUploadForm({ ...uploadForm, whiskybaseId: e.target.value })}
+                        data-testid="input-upload-wbid"
+                      />
+                    </label>
+                    <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                      {t("labs.handoutLibrary.fieldTitle")}
+                      <input
+                        className="labs-input"
+                        value={uploadForm.title}
+                        onChange={(e) => setUploadForm({ ...uploadForm, title: e.target.value })}
+                        data-testid="input-upload-title"
+                      />
+                    </label>
+                    <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                      {t("labs.handoutLibrary.fieldAuthor")}
+                      <input
+                        className="labs-input"
+                        value={uploadForm.author}
+                        onChange={(e) => setUploadForm({ ...uploadForm, author: e.target.value })}
+                        data-testid="input-upload-author"
+                      />
+                    </label>
+                  </div>
+                  <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                    {t("labs.handoutLibrary.fieldDescription")}
+                    <textarea
+                      className="labs-input"
+                      rows={2}
+                      value={uploadForm.description}
+                      onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })}
+                      data-testid="input-upload-description"
+                    />
+                  </label>
+                </>
               )}
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                 <button
@@ -814,12 +828,16 @@ export default function LabsHandoutLibrary() {
                   type="button"
                   className="labs-btn-primary text-xs"
                   onClick={() => uploadMut.mutate()}
-                  disabled={uploadMut.isPending || !uploadForm.file || !uploadForm.whiskyName.trim()}
+                  disabled={uploadMut.isPending || !uploadForm.file || (!uploadForm.splitProgramme && !uploadForm.whiskyName.trim())}
                   data-testid="button-upload-submit"
                   style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
                 >
                   {uploadMut.isPending ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> : <Upload style={{ width: 12, height: 12 }} />}
-                  {uploadMut.isPending ? t("labs.handoutLibrary.uploading") : t("labs.handoutLibrary.uploadButton")}
+                  {uploadMut.isPending
+                    ? t("labs.handoutLibrary.uploading")
+                    : uploadForm.splitProgramme
+                      ? t("labs.handoutLibrary.uploadAndSplit")
+                      : t("labs.handoutLibrary.uploadButton")}
                 </button>
               </div>
             </div>
