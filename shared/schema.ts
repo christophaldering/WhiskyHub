@@ -170,6 +170,28 @@ export const insertWhiskySchema = createInsertSchema(whiskies).omit({ id: true }
 export type InsertWhisky = z.infer<typeof insertWhiskySchema>;
 export type Whisky = typeof whiskies.$inferSelect;
 
+// --- Whisky Handout Library (per-host reusable handouts) ---
+export const whiskyHandoutLibrary = pgTable("whisky_handout_library", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  hostId: varchar("host_id").notNull(),
+  whiskyName: text("whisky_name").notNull(),
+  distillery: text("distillery"),
+  whiskybaseId: text("whiskybase_id"),
+  fileUrl: text("file_url").notNull(),
+  contentType: text("content_type").notNull(),
+  title: text("title"),
+  author: text("author"),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  hostIdx: index("idx_whisky_handout_library_host").on(table.hostId),
+  hostWbIdx: index("idx_whisky_handout_library_host_wb").on(table.hostId, table.whiskybaseId),
+}));
+
+export const insertWhiskyHandoutLibrarySchema = createInsertSchema(whiskyHandoutLibrary).omit({ id: true, createdAt: true });
+export type InsertWhiskyHandoutLibraryEntry = z.infer<typeof insertWhiskyHandoutLibrarySchema>;
+export type WhiskyHandoutLibraryEntry = typeof whiskyHandoutLibrary.$inferSelect;
+
 // --- Participant Profiles ---
 export const profiles = pgTable("profiles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
