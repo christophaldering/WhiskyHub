@@ -30,10 +30,6 @@ export function buildRecentRatedItems(
 
   if (historyData?.tastings && Array.isArray(historyData.tastings)) {
     for (const tasting of historyData.tastings) {
-      const status: string = tasting.status || "";
-      const isActive = status === "draft" || status === "open";
-      const originStatus: RecentOriginStatus | undefined =
-        status === "draft" ? "draft" : status === "open" ? "live" : "completed";
       const isSolo = tasting.isHost && (tasting.participantCount ?? 0) <= 1;
       const titleHay = `${tasting.title || ""} ${tasting.location || ""} ${tasting.tastingType || ""}`.toLowerCase();
       const isMesse = /\b(messe|fair|festival)\b/.test(titleHay);
@@ -44,15 +40,15 @@ export function buildRecentRatedItems(
         const myRating = w.myRating || null;
         const score = myRating?.overall ?? 0;
         const hasRating = !!myRating && score > 0;
-        if (!hasRating && !isActive) continue;
+        if (!hasRating) continue;
         items.push({
           id: `t-${tasting.id}-${w.id}`,
           whiskyName: w.name || "Unknown Whisky",
-          score: hasRating ? score : 0,
-          date: hasRating ? (myRating.updatedAt || myRating.createdAt || tastingDate) : tastingDate,
+          score,
+          date: myRating.updatedAt || myRating.createdAt || tastingDate,
           origin,
-          originStatus,
-          rated: hasRating,
+          originStatus: "completed",
+          rated: true,
           originHref: `/labs/tastings/${tasting.id}`,
         });
       }
