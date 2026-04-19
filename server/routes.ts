@@ -321,6 +321,10 @@ async function getOrCacheRemoteImage(
           resumable: false,
           metadata: { cacheControl: "public, max-age=31536000, immutable" },
         });
+        // First-time persistence log so we have a record of which remote
+        // images were cached locally (useful for rights-holder takedown
+        // requests). Hash + URL + size only; nothing personal.
+        console.log(`[img-cache] persisted hash=${hash} bytes=${result.buffer.length} url=${url}`);
       } catch (saveErr) {
         console.warn("[img-cache] save failed, serving without persistence:", saveErr);
       }
