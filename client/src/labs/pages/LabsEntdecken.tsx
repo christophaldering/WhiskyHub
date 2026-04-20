@@ -15,8 +15,8 @@
         import type { ElementType } from "react";
         import {
           Search, ChevronRight, Wine,
-          BookOpen, List, BarChart3, MapPin, Building2, Compass, Activity,
-          X, ChevronDown, Check, ArrowUp, ArrowDown, Star, Archive,
+          BookOpen, List, BarChart3, Compass, Activity,
+          X, ChevronDown, Check, Star, Archive,
           Map as MapIcon, FlaskConical, Heart, Info, Globe, Package,
           SlidersHorizontal, Factory, Microscope, Utensils,
         } from "lucide-react";
@@ -110,19 +110,15 @@
 
         type WhiskyHubMode = "hub" | "list";
         type WhiskyHubPreset =
-          | "all"
           | "topRated"
           | "mostTasted"
-          | "byRegion"
-          | "byDistillery"
+          | "alpha"
           | "flavourMap";
 
         const WHISKY_PILLS: { preset: WhiskyHubPreset; view: string; icon: typeof Wine; labelKey: string; labelFb: string }[] = [
-          { preset: "all", view: "alle", icon: List, labelKey: "explore.hub.allTitle", labelFb: "Alle" },
           { preset: "topRated", view: "top-rated", icon: Star, labelKey: "explore.hub.topTitle", labelFb: "Top Rated" },
           { preset: "mostTasted", view: "most-tasted", icon: Activity, labelKey: "explore.hub.mostTitle", labelFb: "Most Tasted" },
-          { preset: "byRegion", view: "nach-region", icon: MapPin, labelKey: "explore.hub.regionTitle", labelFb: "Nach Region" },
-          { preset: "byDistillery", view: "nach-destillerie", icon: Building2, labelKey: "explore.hub.distilleryTitle", labelFb: "Nach Destillerie" },
+          { preset: "alpha", view: "a-z", icon: List, labelKey: "discover.sortAlpha", labelFb: "A-Z" },
           { preset: "flavourMap", view: "flavour-map", icon: Compass, labelKey: "explore.hub.flavourTitle", labelFb: "Flavour Map" },
         ];
 
@@ -277,11 +273,14 @@
           const [activeView, setActiveView] = useState<"whiskies" | "bibliothek">(
             () => initialTabFromUrl ?? initialSnapshot?.activeView ?? "whiskies",
           );
-          const initialWhiskyView: string = (
-            initialUrlState.view && WHISKY_PILLS.some(p => p.view === initialUrlState.view)
-              ? initialUrlState.view
-              : (initialSnapshot?.whiskyView ?? "alle")
-          );
+          const initialWhiskyView: string = (() => {
+            if (initialUrlState.view && WHISKY_PILLS.some(p => p.view === initialUrlState.view)) {
+              return initialUrlState.view;
+            }
+            const snap = initialSnapshot?.whiskyView;
+            if (snap && WHISKY_PILLS.some(p => p.view === snap)) return snap;
+            return "top-rated";
+          })();
           const [whiskyView, setWhiskyView] = useState<string>(initialWhiskyView);
           const [biblioSection, setBiblioSection] = useState<BibliothekSectionKey | null>(
             () => initialUrlState.section ?? initialSnapshot?.biblioSection ?? null,
@@ -297,7 +296,7 @@
               const params = new URLSearchParams(window.location.search);
               params.set("tab", activeView);
               if (activeView === "whiskies") {
-                if (whiskyView && whiskyView !== "alle") params.set("view", whiskyView);
+                if (whiskyView && WHISKY_PILLS.some(p => p.view === whiskyView)) params.set("view", whiskyView);
                 else params.delete("view");
                 params.delete("section");
                 params.delete("sub");
@@ -639,7 +638,7 @@
               setSort("avg"); setSortDirection("desc");
             } else if (preset === "mostTasted") {
               setSort("most"); setSortDirection("desc");
-            } else if (preset === "byRegion" || preset === "byDistillery") {
+            } else if (preset === "alpha") {
               setSort("alpha"); setSortDirection("asc");
             }
           }, []);
@@ -785,7 +784,14 @@
                       descFallback: "",
                       testId: `pill-explore-whiskies-${pill.view}`,
                     }));
-                    const activeTestId = `pill-explore-whiskies-${whiskyView}`;
+                    const activePillView = whiskyView === "flavour-map"
+                      ? "flavour-map"
+                      : sort === "most"
+                        ? "most-tasted"
+                        : sort === "alpha"
+                          ? "a-z"
+                          : "top-rated";
+                    const activeTestId = `pill-explore-whiskies-${activePillView}`;
                     return (
                       <HubTileGrid
                         tiles={whiskyTiles}
@@ -839,70 +845,7 @@
                     />
                   </div>
 
-                  <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontSize: 11, fontWeight: 500, color: "var(--labs-text-muted)", marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                      {t("discover.sortLabel", "Sortieren")}
-                    </div>
-                    <div
-                      data-testid="sort-segmented-control"
-                      style={{
-                        display: "flex",
-                        background: "var(--labs-surface)",
-                        borderRadius: 10,
-                        border: "1px solid var(--labs-border)",
-                        overflow: "hidden",
-                        padding: 2,
-                      }}
-                    >
-                      {[
-                        ["avg", t("discover.sortAvg", "Avg Score")],
-                        ["most", t("discover.sortMost", "Most Tastings")],
-                        ["alpha", t("discover.sortAlpha", "A-Z")],
-                      ].map(([id, label]) => {
-                        const isActive = sort === id;
-                        return (
-                          <button
-                            key={id}
-                            onClick={() => {
-                              if (sort === id) {
-                                setSortDirection(prev => prev === "desc" ? "asc" : "desc");
-                              } else {
-                                setSort(id as string);
-                                setSortDirection(id === "alpha" ? "asc" : "desc");
-                              }
-                            }}
-                            data-testid={`sort-${id}`}
-                            style={{
-                              flex: 1,
-                              minHeight: 44,
-                              border: "none",
-                              cursor: "pointer",
-                              borderRadius: 8,
-                              background: isActive ? "var(--labs-accent)" : "transparent",
-                              color: isActive ? "var(--labs-on-accent)" : "var(--labs-text-muted)",
-                              fontSize: 12,
-                              fontWeight: isActive ? 700 : 400,
-                              fontFamily: "inherit",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              gap: 3,
-                              transition: "all 150ms",
-                            }}
-                          >
-                            {label}
-                            {isActive && (
-                              sortDirection === "desc"
-                                ? <ArrowDown className="w-3 h-3" />
-                                : <ArrowUp className="w-3 h-3" />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 12, marginBottom: 10 }}>
+                  <div style={{ marginBottom: 10 }}>
                     <div style={{ fontSize: 11, fontWeight: 500, color: "var(--labs-text-muted)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>
                       {t("discover.filterLabel", "Filter")}
                     </div>
