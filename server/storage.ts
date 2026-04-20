@@ -1,6 +1,7 @@
 import { eq, ne, and, or, asc, desc, sql, inArray, gte, isNull, isNotNull, lt, type SQL } from "drizzle-orm";
 import { db } from "./db";
 import { markJournalUpdated } from "./whiskyDnaCache";
+import { canonicalizeDistilleryName } from "@shared/distillery-normalizer";
 import { getParticipantOverallScores, computeStabilityScore } from "./participant-scores";
 import {
   participants, tastings, tastingParticipants, sharingParticipants, whiskies, whiskyHandoutLibrary, pdfSplitSessions, ratings,
@@ -74,6 +75,8 @@ import {
   type InsertFlavourDescriptor, type FlavourDescriptor,
   distilleries,
   type InsertDistillery, type Distillery,
+  distilleryAliases,
+  type DistilleryAlias,
   bottlers,
   type InsertBottler, type Bottler,
   bottleSplits,
@@ -376,6 +379,8 @@ export interface IStorage {
   findWhiskiesByWhiskybaseIdForHost(whiskybaseId: string, hostId: string): Promise<Array<{ id: string; name: string; distillery: string | null; tastingId: string; tastingTitle: string; tastingDate: string | null }>>;
   findDistilleryByName(name: string): Promise<{ id: string; name: string; country: string; region: string } | undefined>;
   findOrCreateDistilleryByName(name: string, fallback?: { country?: string | null; region?: string | null; founded?: number | null; description?: string | null; feature?: string | null }): Promise<{ distillery: Distillery; created: boolean }>;
+  addDistilleryAlias(distilleryId: string, alias: string): Promise<DistilleryAlias | undefined>;
+  listDistilleryAliases(distilleryId: string): Promise<DistilleryAlias[]>;
 
   // PDF Split Sessions (temporary store for splitting multi-page program PDFs)
   createPdfSplitSession(data: { tastingId: string; hostId: string; pages: PdfSplitPage[] }): Promise<PdfSplitSession>;
@@ -1245,12 +1250,52 @@ export class DatabaseStorage implements IStorage {
   async findDistilleryByName(name: string): Promise<{ id: string; name: string; country: string; region: string } | undefined> {
     const trimmed = name.trim();
     if (!trimmed) return undefined;
-    const [row] = await db
-      .select({ id: distilleries.id, name: distilleries.name, country: distilleries.country, region: distilleries.region })
+    const match = await this.lookupDistilleryByCanonicalName(trimmed);
+    if (!match) return undefined;
+    return { id: match.id, name: match.name, country: match.country, region: match.region };
+  }
+
+  // Resolve a distillery row from a free-form name using:
+  //  1) exact case-insensitive name match (fast path)
+  //  2) alias table lookup keyed by canonical form
+  //  3) full canonical scan over all distilleries (handles legacy duplicates)
+  private async lookupDistilleryByCanonicalName(name: string): Promise<Distillery | undefined> {
+    const trimmed = (name || "").trim();
+    if (!trimmed) return undefined;
+
+    const [exact] = await db
+      .select()
       .from(distilleries)
       .where(sql`LOWER(${distilleries.name}) = LOWER(${trimmed})`)
       .limit(1);
-    return row;
+    if (exact) return exact;
+
+    const canonical = canonicalizeDistilleryName(trimmed);
+    if (!canonical) return undefined;
+
+    // Alias lookup is best-effort: if the table is missing (e.g. a deploy
+    // raced ahead of its migration) we degrade to the canonical scan below
+    // instead of breaking distillery resolution entirely.
+    try {
+      const [aliasRow] = await db
+        .select()
+        .from(distilleryAliases)
+        .where(eq(distilleryAliases.alias, canonical))
+        .limit(1);
+      if (aliasRow) {
+        const [byAlias] = await db
+          .select()
+          .from(distilleries)
+          .where(eq(distilleries.id, aliasRow.distilleryId))
+          .limit(1);
+        if (byAlias) return byAlias;
+      }
+    } catch (aliasErr) {
+      console.warn("[distillery] alias lookup failed", aliasErr);
+    }
+
+    const all = await db.select().from(distilleries);
+    return all.find(d => canonicalizeDistilleryName(d.name) === canonical);
   }
 
   async findOrCreateDistilleryByName(
@@ -1259,12 +1304,21 @@ export class DatabaseStorage implements IStorage {
   ): Promise<{ distillery: Distillery; created: boolean }> {
     const trimmed = (name || "").trim();
     if (!trimmed) throw new Error("Distillery name is required");
-    const [existing] = await db
-      .select()
-      .from(distilleries)
-      .where(sql`LOWER(${distilleries.name}) = LOWER(${trimmed})`)
-      .limit(1);
+    const canonical = canonicalizeDistilleryName(trimmed);
+    if (!canonical) throw new Error("Distillery name is required");
+
+    const existing = await this.lookupDistilleryByCanonicalName(trimmed);
     if (existing) {
+      // Remember the variant we just resolved so future lookups skip the scan.
+      if (canonicalizeDistilleryName(existing.name) !== canonical) {
+        try {
+          await db.insert(distilleryAliases)
+            .values({ alias: canonical, distilleryId: existing.id })
+            .onConflictDoNothing();
+        } catch (aliasErr) {
+          console.warn("[distillery] alias insert failed", aliasErr);
+        }
+      }
       const patch: Partial<InsertDistillery> = {};
       if (!existing.description && fallback?.description) patch.description = fallback.description;
       if (!existing.founded && fallback?.founded) patch.founded = fallback.founded;
@@ -1290,6 +1344,30 @@ export class DatabaseStorage implements IStorage {
       } as InsertDistillery)
       .returning();
     return { distillery: created, created: true };
+  }
+
+  async addDistilleryAlias(distilleryId: string, alias: string): Promise<DistilleryAlias | undefined> {
+    const canonical = canonicalizeDistilleryName(alias);
+    if (!canonical) return undefined;
+    try {
+      const [row] = await db.insert(distilleryAliases)
+        .values({ alias: canonical, distilleryId })
+        .onConflictDoNothing()
+        .returning();
+      return row;
+    } catch (aliasErr) {
+      console.warn("[distillery] alias insert failed", aliasErr);
+      return undefined;
+    }
+  }
+
+  async listDistilleryAliases(distilleryId: string): Promise<DistilleryAlias[]> {
+    try {
+      return await db.select().from(distilleryAliases).where(eq(distilleryAliases.distilleryId, distilleryId));
+    } catch (aliasErr) {
+      console.warn("[distillery] alias list failed", aliasErr);
+      return [];
+    }
   }
 
   async listSharedHandoutLibrary(opts?: { search?: string; excludeHostId?: string; limit?: number }): Promise<WhiskyHandoutLibraryEntry[]> {

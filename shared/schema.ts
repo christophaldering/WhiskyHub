@@ -1011,6 +1011,24 @@ export const insertDistillerySchema = createInsertSchema(distilleries).omit({ id
 export type InsertDistillery = z.infer<typeof insertDistillerySchema>;
 export type Distillery = typeof distilleries.$inferSelect;
 
+// --- Distillery name aliases (canonical normalized variants -> distilleryId) ---
+// Used by findOrCreateDistilleryByName to avoid duplicate distillery rows when
+// importers send punctuation/whitespace/article variants ("The Macallan" vs
+// "Macallan", "Caol Ila" vs "Caol-Ila", etc.). The `alias` column stores the
+// already-canonicalized form (see shared/distillery-normalizer.ts).
+export const distilleryAliases = pgTable("distillery_aliases", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  alias: text("alias").notNull(),
+  distilleryId: varchar("distillery_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => ({
+  aliasUnique: uniqueIndex("distillery_aliases_alias_unique").on(t.alias),
+}));
+
+export const insertDistilleryAliasSchema = createInsertSchema(distilleryAliases).omit({ id: true, createdAt: true });
+export type InsertDistilleryAlias = z.infer<typeof insertDistilleryAliasSchema>;
+export type DistilleryAlias = typeof distilleryAliases.$inferSelect;
+
 // --- Bottlers (encyclopedia of independent bottlers) ---
 export const bottlers = pgTable("bottlers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

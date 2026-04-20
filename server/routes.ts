@@ -21750,12 +21750,34 @@ Be accurate. If you cannot read a value, use null. Match whiskies to the known l
       }
 
       const { extractTextFromPdf } = await import("./pdf-utils");
+      const { canonicalizeDistilleryName } = await import("@shared/distillery-normalizer");
       const objectStorage = new ObjectStorageService();
       const existingDistilleries = await storage.getAllDistilleries();
       const existingWhiskies = await storage.getActiveWhiskies();
       const existingLibrary = await storage.listHandoutLibraryByHost(hostId);
 
       const norm = (s: string | null | undefined) => (s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+      // Canonical map: canonical-name -> distillery row (handles "The Macallan" vs "Macallan" etc.).
+      const distilleryByCanonical = new Map<string, typeof existingDistilleries[number]>();
+      for (const d of existingDistilleries) {
+        const c = canonicalizeDistilleryName(d.name);
+        if (c && !distilleryByCanonical.has(c)) distilleryByCanonical.set(c, d);
+      }
+      // Layer alias rows on top so known variants resolve to the same target.
+      try {
+        const { db } = await import("./db");
+        const { distilleryAliases } = await import("@shared/schema");
+        const aliasRows = await db.select().from(distilleryAliases);
+        const distById = new Map(existingDistilleries.map(d => [d.id, d]));
+        for (const a of aliasRows) {
+          const target = distById.get(a.distilleryId);
+          if (target && !distilleryByCanonical.has(a.alias)) {
+            distilleryByCanonical.set(a.alias, target);
+          }
+        }
+      } catch (aliasErr) {
+        console.warn("[batch-import/analyze] alias lookup failed", aliasErr);
+      }
       const distillerySet = new Set(existingDistilleries.map(d => norm(d.name)));
 
       const fileResults: Array<Record<string, any>> = [];
@@ -21842,7 +21864,10 @@ ${cleaned.slice(0, 60000)}`;
           result.distilleries = distRaw.map((d: any) => {
             const dname = String(d?.name || "Unbekannt").trim();
             const dnorm = norm(dname);
-            const existingDistillery = existingDistilleries.find(x => norm(x.name) === dnorm);
+            const dCanonical = canonicalizeDistilleryName(dname);
+            const existingDistillery =
+              (dCanonical ? distilleryByCanonical.get(dCanonical) : undefined)
+              || existingDistilleries.find(x => norm(x.name) === dnorm);
             const whiskies = Array.isArray(d?.whiskies) ? d.whiskies : [];
             return {
               name: dname,
