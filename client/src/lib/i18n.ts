@@ -6516,6 +6516,10 @@ const resources = {
           archiveEmptyTitle: "Your archive is still empty",
           archiveEmptySub: "Once one of your tastings is closed it will appear in your archive.",
           archiveEmptySearch: "No tastings in your archive match your search.",
+          heroEyebrow: "WHISKY TASTING PLATFORM",
+          heroTitle: "Where tasting becomes reflection.",
+          heroBody: "Join a live round, taste solo or host your own — your tastings come together here.",
+          heroHint: "Pick an option above to get started",
         },
         join: {
           subtitle: "Enter the tasting code to join",
@@ -15565,6 +15569,10 @@ const resources = {
           archiveEmptyTitle: "Dein Archiv ist noch leer",
           archiveEmptySub: "Sobald eines deiner Tastings abgeschlossen ist, erscheint es in deinem Archiv.",
           archiveEmptySearch: "Keine Tastings in deinem Archiv passen zu deiner Suche.",
+          heroEyebrow: "WHISKY TASTING PLATTFORM",
+          heroTitle: "Wo Verkostung zur Reflexion wird.",
+          heroBody: "Tritt einer Live-Runde bei, verkoste solo oder hoste selbst — deine Tastings laufen hier zusammen.",
+          heroHint: "Wähle oben eine Option, um zu starten",
         },
         join: {
           subtitle: "Geben Sie den Tasting-Code ein",

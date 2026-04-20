@@ -1810,6 +1810,89 @@ a.labs-dram-item {
   margin-bottom: 14px;
 }
 
+.labs-tastings-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  margin-bottom: 14px;
+  background: linear-gradient(135deg, var(--labs-surface) 0%, var(--labs-surface-elevated) 100%);
+  border: 1px solid var(--labs-border);
+  border-radius: var(--labs-radius-md, 14px);
+  overflow: hidden;
+  position: relative;
+}
+
+.labs-tastings-hero-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.labs-tastings-hero-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--labs-accent);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.labs-tastings-hero-title {
+  font-size: 18px;
+  line-height: 1.25;
+  color: var(--labs-text);
+  margin: 0 0 6px 0;
+  font-weight: 600;
+}
+
+.labs-tastings-hero-body {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--labs-text-muted);
+  margin: 0 0 10px 0;
+}
+
+.labs-tastings-hero-hint {
+  font-size: 11px;
+  color: var(--labs-text-muted);
+  opacity: 0.8;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.labs-tastings-hero-hint::before {
+  content: "↑";
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.labs-tastings-hero-image {
+  flex: 0 0 auto;
+  width: 96px;
+  height: 96px;
+  border-radius: 12px;
+  object-fit: cover;
+  opacity: 0.92;
+}
+
+@media (max-width: 480px) {
+  .labs-tastings-hero {
+    padding: 12px;
+    gap: 12px;
+  }
+  .labs-tastings-hero-image {
+    width: 72px;
+    height: 72px;
+  }
+  .labs-tastings-hero-title {
+    font-size: 16px;
+  }
+  .labs-tastings-hero-body {
+    font-size: 12px;
+  }
+}
+
 .labs-tastings-search-wrapper {
   position: relative;
   margin-bottom: 12px;

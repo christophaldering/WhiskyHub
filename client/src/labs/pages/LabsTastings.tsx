@@ -14,6 +14,7 @@ import LabsHost from "@/labs/pages/LabsHost";
 import LabsBottleSharing from "@/labs/pages/LabsBottleSharing";
 import { EmbeddedTastingsProvider } from "@/labs/embeddedTastingsContext";
 import { RecentRatedList, buildRecentRatedItems } from "@/labs/components/RecentRatedList";
+import heroImage from "@/assets/images/hero-whisky.png";
 
 type TastingsTab = "join" | "solo" | "host" | "share";
 
@@ -423,6 +424,38 @@ export default function LabsTastings() {
             {activeTab === "host" && <LabsHost />}
             {activeTab === "share" && <LabsBottleSharing />}
           </EmbeddedTastingsProvider>
+        </div>
+      )}
+
+      {!activeTab && filterTab === "all" && !timeFilter && !searchQuery.trim() && (
+        <div
+          className="labs-tastings-hero labs-fade-in"
+          data-testid="section-tastings-hero"
+        >
+          <div className="labs-tastings-hero-text">
+            <div className="labs-tastings-hero-eyebrow" data-testid="text-tastings-hero-eyebrow">
+              {t("tastings.heroEyebrow", "WHISKY TASTING PLATFORM")}
+            </div>
+            <h2 className="labs-tastings-hero-title" data-testid="text-tastings-hero-title">
+              {t("tastings.heroTitle", "Where tasting becomes reflection.")}
+            </h2>
+            <p className="labs-tastings-hero-body" data-testid="text-tastings-hero-body">
+              {t(
+                "tastings.heroBody",
+                "Join a live round, taste solo or host your own — your tastings come together here.",
+              )}
+            </p>
+            <span className="labs-tastings-hero-hint" data-testid="text-tastings-hero-hint">
+              {t("tastings.heroHint", "Pick an option above to get started")}
+            </span>
+          </div>
+          <img
+            src={heroImage}
+            alt=""
+            aria-hidden="true"
+            className="labs-tastings-hero-image"
+            data-testid="img-tastings-hero"
+          />
         </div>
       )}
 
