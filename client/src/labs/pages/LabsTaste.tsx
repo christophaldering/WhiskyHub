@@ -182,7 +182,7 @@ export default function LabsTaste() {
           <HubTileGrid
             tiles={TASTINGS_HUB_TILES}
             t={t}
-            variant="auto"
+            variant="four-row"
             activeTestId={activeTile?.testId}
             onTileClick={(tile) => {
               const next = (tile as (typeof TASTINGS_HUB_TILES)[number]).filter;

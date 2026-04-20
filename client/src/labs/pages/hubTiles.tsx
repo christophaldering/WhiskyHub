@@ -245,11 +245,16 @@ export function HubTileGrid({
   tiles: HubTileDef[];
   t: (key: string, fallback: string) => string;
   testIdPrefix?: string;
-  variant?: "two-col" | "auto";
+  variant?: "two-col" | "auto" | "four-row";
   onTileClick?: (tile: HubTileDef) => void;
   activeTestId?: string;
 }) {
-  const className = variant === "auto" ? "labs-hub-tile-grid labs-hub-tile-grid--auto" : "labs-hub-tile-grid";
+  const className =
+    variant === "auto"
+      ? "labs-hub-tile-grid labs-hub-tile-grid--auto"
+      : variant === "four-row"
+        ? "labs-hub-tile-grid labs-hub-tile-grid--four-row"
+        : "labs-hub-tile-grid";
   return (
     <div className={className}>
       {tiles.map((tile) => (

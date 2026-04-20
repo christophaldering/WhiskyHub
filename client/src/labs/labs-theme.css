@@ -1676,6 +1676,37 @@ a.labs-dram-item {
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
 }
 
+.labs-hub-tile-grid--four-row {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.labs-hub-tile-grid--four-row .labs-hub-tile {
+  min-height: 84px;
+  padding: 12px 12px;
+  gap: 10px;
+}
+
+@media (max-width: 720px) {
+  .labs-hub-tile-grid--four-row {
+    gap: 6px;
+  }
+  .labs-hub-tile-grid--four-row .labs-hub-tile {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 6px;
+    padding: 10px 6px;
+    min-height: 92px;
+  }
+  .labs-hub-tile-grid--four-row .labs-hub-tile-label {
+    font-size: 12px;
+  }
+  .labs-hub-tile-grid--four-row .labs-hub-tile-desc {
+    display: none;
+  }
+}
+
 .labs-hub-tile {
   display: flex;
   align-items: flex-start;
