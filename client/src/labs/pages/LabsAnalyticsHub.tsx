@@ -17,7 +17,7 @@ export default function LabsAnalyticsHub() {
         </p>
       </div>
 
-      <HubTileGrid tiles={ANALYTICS_HUB_TILES} t={t} />
+      <HubTileGrid tiles={ANALYTICS_HUB_TILES} t={t} variant="single-row" />
     </div>
   );
 }

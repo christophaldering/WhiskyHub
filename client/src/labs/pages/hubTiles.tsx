@@ -245,18 +245,26 @@ export function HubTileGrid({
   tiles: HubTileDef[];
   t: (key: string, fallback: string) => string;
   testIdPrefix?: string;
-  variant?: "two-col" | "auto" | "four-row";
+  variant?: "two-col" | "auto" | "four-row" | "single-row";
   onTileClick?: (tile: HubTileDef) => void;
   activeTestId?: string;
 }) {
+  const useSingleRow = variant === "single-row" || variant === "four-row";
   const className =
     variant === "auto"
       ? "labs-hub-tile-grid labs-hub-tile-grid--auto"
-      : variant === "four-row"
-        ? "labs-hub-tile-grid labs-hub-tile-grid--four-row"
+      : useSingleRow
+        ? "labs-hub-tile-grid labs-hub-tile-grid--single-row"
         : "labs-hub-tile-grid";
+  const mobileCols = tiles.length >= 5 ? 3 : tiles.length;
+  const style = useSingleRow
+    ? ({
+        ["--hub-cols" as string]: String(tiles.length),
+        ["--hub-mobile-cols" as string]: String(mobileCols),
+      } as React.CSSProperties)
+    : undefined;
   return (
-    <div className={className}>
+    <div className={className} style={style}>
       {tiles.map((tile) => (
         <HubTileCard
           key={tile.testId}

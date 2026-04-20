@@ -294,7 +294,7 @@ export default function LabsTaste() {
             tiles={COLLECTION_HUB_TILES}
             t={t}
             testIdPrefix="meine-welt"
-            variant="auto"
+            variant="single-row"
             activeTestId={activeTestId}
             onTileClick={(tile) =>
               setActiveCollectionTile((prev) => (prev === tile.testId ? null : tile.testId))
@@ -335,7 +335,7 @@ export default function LabsTaste() {
             tiles={AI_INSIGHTS_HUB_TILES}
             t={t}
             testIdPrefix="meine-welt"
-            variant="auto"
+            variant="single-row"
             activeTestId={activeTestId}
             onTileClick={(tile) =>
               setActiveAITile((prev) => (prev === tile.testId ? null : tile.testId))
@@ -367,7 +367,7 @@ export default function LabsTaste() {
           tiles={ANALYTICS_HUB_TILES}
           t={t}
           testIdPrefix="meine-welt"
-          variant="auto"
+          variant="single-row"
           activeTestId={analyticsActiveTestId}
           onTileClick={(tile) =>
             setActiveAnalyticsTile((prev) => (prev === tile.testId ? null : tile.testId))

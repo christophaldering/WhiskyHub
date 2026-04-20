@@ -17,7 +17,7 @@ export default function LabsCollectionHub() {
         </p>
       </div>
 
-      <HubTileGrid tiles={COLLECTION_HUB_TILES} t={t} />
+      <HubTileGrid tiles={COLLECTION_HUB_TILES} t={t} variant="single-row" />
     </div>
   );
 }

@@ -17,7 +17,7 @@ export default function LabsAIInsights() {
         </p>
       </div>
 
-      <HubTileGrid tiles={AI_INSIGHTS_HUB_TILES} t={t} />
+      <HubTileGrid tiles={AI_INSIGHTS_HUB_TILES} t={t} variant="single-row" />
     </div>
   );
 }
