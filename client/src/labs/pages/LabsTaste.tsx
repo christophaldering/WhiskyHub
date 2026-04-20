@@ -281,6 +281,7 @@ export default function LabsTaste() {
               sectionTestId="meine-welt-tastings-recent-section"
               viewAllHref="/labs/taste/drams"
               headerVariant="meine-welt"
+              hideViewAll
             />
           </div>
         </div>
@@ -321,6 +322,7 @@ export default function LabsTaste() {
                 sectionTestId="meine-welt-recent-section"
                 viewAllHref="/labs/taste/drams"
                 headerVariant="meine-welt"
+                hideViewAll
               />
             </div>
           )}
@@ -406,16 +408,6 @@ export default function LabsTaste() {
           {activeTab === "collection" && (
             <Link
               href="/labs/taste/drams"
-              className="labs-meine-welt-view-all"
-              data-testid={`link-meine-welt-view-all-${activeTab}`}
-            >
-              {t("myTastePage.viewAll", "View all")}
-              <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
-          )}
-          {activeTab === "tastings" && (
-            <Link
-              href="/labs/tastings"
               className="labs-meine-welt-view-all"
               data-testid={`link-meine-welt-view-all-${activeTab}`}
             >

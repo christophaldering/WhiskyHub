@@ -87,6 +87,7 @@ interface RecentRatedListProps {
   viewAllHref?: string;
   className?: string;
   headerVariant?: "hub" | "meine-welt";
+  hideViewAll?: boolean;
 }
 
 export function RecentRatedList({
@@ -96,6 +97,7 @@ export function RecentRatedList({
   viewAllHref = "/labs/taste/drams",
   className,
   headerVariant = "hub",
+  hideViewAll = false,
 }: RecentRatedListProps) {
   const { t } = useTranslation();
   const visible = items.slice(0, limit);
@@ -106,28 +108,32 @@ export function RecentRatedList({
       return (
         <div className="labs-meine-welt-section-head">
           <span className="labs-meine-welt-section-label">{t("hub.recentlyRated")}</span>
-          <Link
-            href={viewAllHref}
-            className="labs-meine-welt-view-all"
-            data-testid="link-recent-view-all"
-          >
-            {t("myTastePage.viewAll", "View all")}
-            <ChevronRight className="w-3.5 h-3.5" />
-          </Link>
+          {!hideViewAll && (
+            <Link
+              href={viewAllHref}
+              className="labs-meine-welt-view-all"
+              data-testid="link-recent-view-all"
+            >
+              {t("myTastePage.viewAll", "View all")}
+              <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          )}
         </div>
       );
     }
     return (
       <div className="labs-recent-section-head">
         <span className="labs-section-label">{t("hub.recentlyRated")}</span>
-        <Link
-          href={viewAllHref}
-          className="labs-recent-view-all"
-          data-testid="link-recent-view-all"
-        >
-          {t("myTastePage.viewAll", "View all")}
-          <ChevronRight className="w-3.5 h-3.5" />
-        </Link>
+        {!hideViewAll && (
+          <Link
+            href={viewAllHref}
+            className="labs-recent-view-all"
+            data-testid="link-recent-view-all"
+          >
+            {t("myTastePage.viewAll", "View all")}
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        )}
       </div>
     );
   };
