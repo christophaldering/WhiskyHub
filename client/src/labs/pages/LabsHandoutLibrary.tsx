@@ -698,15 +698,18 @@ export default function LabsHandoutLibrary() {
     }
     setMultiUploading(false);
     qc.invalidateQueries({ queryKey: ["handout-library", hostId] });
-    if (failCount === 0) {
-      setInfo(t("labs.handoutLibrary.multiSummaryAllOk", { count: okCount }));
+    setLastRunSummary({ ok: okCount, fail: failCount, okFiles, failFiles });
+  };
+
+  const dismissUploadSummary = () => {
+    const wasAllOk = !!lastRunSummary && lastRunSummary.fail === 0 && lastRunSummary.ok > 0;
+    setLastRunSummary(null);
+    if (wasAllOk) {
       setMultiItems([]);
       setMultiCommonDistillery("");
       setMultiCommonWhiskybaseId("");
+      setUploadForm(emptyUploadForm);
       setUploadOpen(false);
-      setLastRunSummary(null);
-    } else {
-      setLastRunSummary({ ok: okCount, fail: failCount, okFiles, failFiles });
     }
   };
 
@@ -1292,7 +1295,7 @@ export default function LabsHandoutLibrary() {
                   role="status"
                   aria-live="polite"
                   style={{
-                    border: `1px solid ${lastRunSummary.fail > 0 ? "var(--labs-danger)" : "var(--labs-border)"}`,
+                    border: `1px solid ${lastRunSummary.fail > 0 ? "var(--labs-danger)" : "var(--labs-success)"}`,
                     background: "var(--labs-surface)",
                     borderRadius: 10,
                     padding: 12,
@@ -1304,19 +1307,23 @@ export default function LabsHandoutLibrary() {
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                     <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }} data-testid="text-multi-summary-title">
-                      {lastRunSummary.ok === 0
-                        ? t("labs.handoutLibrary.multiSummaryAllFailed", { count: lastRunSummary.fail })
-                        : t("labs.handoutLibrary.multiSummaryMixed", { ok: lastRunSummary.ok, fail: lastRunSummary.fail })}
+                      {lastRunSummary.fail === 0
+                        ? t("labs.handoutLibrary.multiSummaryAllOk", { count: lastRunSummary.ok })
+                        : lastRunSummary.ok === 0
+                          ? t("labs.handoutLibrary.multiSummaryAllFailed", { count: lastRunSummary.fail })
+                          : t("labs.handoutLibrary.multiSummaryMixed", { ok: lastRunSummary.ok, fail: lastRunSummary.fail })}
                     </span>
                     <button
                       type="button"
-                      onClick={() => setLastRunSummary(null)}
+                      onClick={dismissUploadSummary}
                       className="labs-btn-secondary text-xs"
                       style={{ padding: "2px 8px" }}
                       data-testid="button-multi-summary-dismiss"
                       aria-label={t("labs.handoutLibrary.multiSummaryDismiss")}
                     >
-                      {t("labs.handoutLibrary.multiSummaryDismiss")}
+                      {lastRunSummary.fail === 0
+                        ? t("labs.handoutLibrary.multiSummaryDone")
+                        : t("labs.handoutLibrary.multiSummaryDismiss")}
                     </button>
                   </div>
                   {lastRunSummary.okFiles.length > 0 && (

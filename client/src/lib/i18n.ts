@@ -5900,6 +5900,7 @@ const resources = {
           multiSummaryFailHeader: "Failed ({{count}})",
           multiSummaryRetryFailed: "Retry {{count}} failed",
           multiSummaryDismiss: "Dismiss",
+          multiSummaryDone: "Done",
         },
         handoutSplitter: {
           title: "Split programme PDF page by page",
@@ -14999,6 +15000,7 @@ const resources = {
           multiSummaryFailHeader: "Fehlgeschlagen ({{count}})",
           multiSummaryRetryFailed: "{{count}} fehlgeschlagene erneut versuchen",
           multiSummaryDismiss: "Schließen",
+          multiSummaryDone: "Fertig",
         },
         handoutSplitter: {
           title: "Programmheft seitenweise aufteilen",
