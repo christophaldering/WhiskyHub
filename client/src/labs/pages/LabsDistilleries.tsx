@@ -1,5 +1,6 @@
-import { useState, useMemo, lazy, Suspense } from "react";
+import { useState, useMemo, useEffect, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 import { useAppStore } from "@/lib/store";
@@ -74,7 +75,12 @@ const COUNTRIES = ["All", "Scotland", "Ireland", "Japan", "USA"];
 export default function LabsDistilleries() {
   const { t } = useTranslation();
   const currentParticipant = useAppStore((s) => s.currentParticipant);
-  const [search, setSearch] = useState("");
+  const searchStr = useSearch();
+  const initialSearch = useMemo(() => {
+    try { return new URLSearchParams(searchStr).get("q") || ""; } catch { return ""; }
+  }, [searchStr]);
+  const [search, setSearch] = useState(initialSearch);
+  useEffect(() => { setSearch(initialSearch); }, [initialSearch]);
   const [country, setCountry] = useState("All");
   const [view, setView] = useState<"list" | "map">("list");
   const [sortBy, setSortBy] = useState<"name" | "founded" | "region">("name");

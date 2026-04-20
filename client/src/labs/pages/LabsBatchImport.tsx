@@ -57,6 +57,14 @@ interface CommitSummary {
   handoutsLinked: number;
 }
 
+interface AffectedDistillery {
+  id: string;
+  name: string;
+  isNew: boolean;
+  whiskiesCreated: number;
+  whiskiesUpdated: number;
+}
+
 export default function LabsBatchImport() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
@@ -70,6 +78,7 @@ export default function LabsBatchImport() {
   const [progress, setProgress] = useState<BatchFileResult[] | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [summary, setSummary] = useState<CommitSummary | null>(null);
+  const [affectedDistilleries, setAffectedDistilleries] = useState<AffectedDistillery[]>([]);
   const [error, setError] = useState<string>("");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const inputRef = useRef<HTMLInputElement>(null);
@@ -86,7 +95,7 @@ export default function LabsBatchImport() {
   const removeFile = (i: number) => setFiles(prev => prev.filter((_, idx) => idx !== i));
 
   const analyze = async () => {
-    setError(""); setAnalyzing(true); setResults(null); setSummary(null); setProgress(null); setJobId(null);
+    setError(""); setAnalyzing(true); setResults(null); setSummary(null); setProgress(null); setJobId(null); setAffectedDistilleries([]);
     try {
       const fd = new FormData();
       for (const f of files) fd.append("files", f);
@@ -163,6 +172,7 @@ export default function LabsBatchImport() {
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message || t("batchImport.commitFailed"));
       setSummary(json.summary as CommitSummary);
+      setAffectedDistilleries(Array.isArray(json.affectedDistilleries) ? (json.affectedDistilleries as AffectedDistillery[]) : []);
     } catch (e: any) {
       setError(e?.message || t("batchImport.commitFailed"));
     } finally {
@@ -171,7 +181,7 @@ export default function LabsBatchImport() {
   };
 
   const reset = () => {
-    setFiles([]); setResults(null); setProgress(null); setJobId(null); setSummary(null); setError(""); setExpanded({});
+    setFiles([]); setResults(null); setProgress(null); setJobId(null); setSummary(null); setAffectedDistilleries([]); setError(""); setExpanded({});
     if (inputRef.current) inputRef.current.value = "";
   };
 
@@ -221,9 +231,36 @@ export default function LabsBatchImport() {
             <li>{t("batchImport.summaryWhiskiesUpdated", { count: summary.whiskiesUpdated })}</li>
             <li>{t("batchImport.summaryHandoutsLinked", { count: summary.handoutsLinked })}</li>
           </ul>
+          {affectedDistilleries.length > 0 && (
+            <div className="mt-4" data-testid="list-batch-affected-distilleries">
+              <h3 className="labs-h4 mb-2" style={{ color: "var(--labs-text)", fontSize: 13, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                {t("batchImport.affectedDistilleriesTitle")}
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {affectedDistilleries.map((d) => (
+                  <button
+                    key={d.id}
+                    onClick={() => navigate(`/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=destillerien&q=${encodeURIComponent(d.name)}`)}
+                    className="labs-btn-ghost"
+                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", textAlign: "left", border: "1px solid var(--labs-border)", borderRadius: 8, background: "var(--labs-surface-elevated)" }}
+                    data-testid={`link-affected-distillery-${d.id}`}
+                  >
+                    <Database className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
+                    <span className="flex-1 text-sm font-semibold" style={{ color: "var(--labs-text)" }} data-testid={`text-affected-distillery-name-${d.id}`}>{d.name}</span>
+                    <span className="labs-badge" style={{ background: d.isNew ? "var(--labs-accent)" : "var(--labs-text-muted)", color: "var(--labs-bg)", fontSize: 10 }}>
+                      {d.isNew ? t("batchImport.new") : t("batchImport.merge")}
+                    </span>
+                    <span className="text-xs" style={{ color: "var(--labs-text-muted)" }} data-testid={`text-affected-distillery-counts-${d.id}`}>
+                      {t("batchImport.affectedWhiskyCounts", { created: d.whiskiesCreated, updated: d.whiskiesUpdated })}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="flex gap-2 mt-4">
             <button className="labs-btn-primary" onClick={reset} data-testid="button-batch-import-again">{t("batchImport.importAnother")}</button>
-            <button className="labs-btn-secondary" onClick={() => navigate("/labs/explore?tab=bibliothek&section=brennereien")} data-testid="button-batch-view-distilleries">{t("batchImport.viewDistilleries")}</button>
+            <button className="labs-btn-secondary" onClick={() => navigate("/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=destillerien")} data-testid="button-batch-view-distilleries">{t("batchImport.viewDistilleries")}</button>
           </div>
         </div>
       )}

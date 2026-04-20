@@ -76,6 +76,8 @@ const resources = {
           done: "Done",
           error: "Error",
         },
+        affectedDistilleriesTitle: "Imported distilleries",
+        affectedWhiskyCounts: "{{created}} new · {{updated}} updated",
       },
       
       emptyState: {
@@ -9217,6 +9219,8 @@ const resources = {
           done: "Fertig",
           error: "Fehler",
         },
+        affectedDistilleriesTitle: "Importierte Brennereien",
+        affectedWhiskyCounts: "{{created}} neu · {{updated}} aktualisiert",
       },
       emptyState: {
         dramsTitle: "Noch keine Drams",

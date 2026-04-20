@@ -22034,6 +22034,7 @@ ${cleaned.slice(0, 60000)}`;
         whiskiesUpdated: 0,
         handoutsLinked: 0,
       };
+      const affectedById = new Map<string, { id: string; name: string; isNew: boolean; whiskiesCreated: number; whiskiesUpdated: number }>();
 
       for (const file of filesIn) {
         const fileUrl: string | null = file?.fileUrl || null;
@@ -22053,6 +22054,10 @@ ${cleaned.slice(0, 60000)}`;
             description: dist?.description || null,
           });
           if (created) summary.distilleriesCreated++; else summary.distilleriesMerged++;
+          if (!affectedById.has(distillery.id)) {
+            affectedById.set(distillery.id, { id: distillery.id, name: distillery.name, isNew: created, whiskiesCreated: 0, whiskiesUpdated: 0 });
+          }
+          const distAgg = affectedById.get(distillery.id)!;
 
           const whiskies = Array.isArray(dist?.whiskies) ? dist.whiskies : [];
           for (const w of whiskies) {
@@ -22082,6 +22087,7 @@ ${cleaned.slice(0, 60000)}`;
                 }
                 await storage.updateWhisky(existing.id, patch);
                 summary.whiskiesUpdated++;
+                distAgg.whiskiesUpdated++;
               }
             }
 
@@ -22112,16 +22118,18 @@ ${cleaned.slice(0, 60000)}`;
               await storage.createHandoutLibraryEntry(libPatch);
               summary.whiskiesCreated++;
               summary.handoutsLinked++;
+              distAgg.whiskiesCreated++;
             } else {
               // no file (shouldn't happen) — still count as created via library entry without file
               await storage.createHandoutLibraryEntry({ ...libPatch, fileUrl: "" });
               summary.whiskiesCreated++;
+              distAgg.whiskiesCreated++;
             }
           }
         }
       }
 
-      res.json({ summary });
+      res.json({ summary, affectedDistilleries: Array.from(affectedById.values()) });
     } catch (e: any) {
       console.error("[batch-import/commit] error:", e);
       res.status(500).json({ message: e?.message || "Commit fehlgeschlagen" });
