@@ -452,7 +452,7 @@ const resources = {
         bibliothekCard: "Library",
         bibliothekCardDesc: "Knowledge, guides & reference",
         bibliothekSub: "Knowledge, reference & deep dive",
-        whiskiesExploreDesc: "Explore {{count}} whiskies",
+        whiskiesExploreDesc: "Browse the full catalog",
         libraryExploreDesc: "Knowledge, Reference & Deep Dive",
         hub: {
           back: "Whiskies",
@@ -9495,7 +9495,7 @@ const resources = {
         bibliothekCard: "Bibliothek",
         bibliothekCardDesc: "Wissen, Guides & Nachschlagewerke",
         bibliothekSub: "Wissen, Referenz & Deep Dive",
-        whiskiesExploreDesc: "{{count}} Whiskies entdecken",
+        whiskiesExploreDesc: "Großer Katalog zum Stöbern",
         libraryExploreDesc: "Wissen, Referenz & Deep Dive",
         hub: {
           back: "Whiskies",

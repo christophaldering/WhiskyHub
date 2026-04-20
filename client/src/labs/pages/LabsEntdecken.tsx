@@ -561,7 +561,7 @@
                     </div>
                     <span className="labs-action-bar-label">{t("discover.whiskies", "Whiskies")}</span>
                     <span className="labs-action-bar-sublabel">
-                      {t("explore.whiskiesExploreDesc", "Explore {{count}} whiskies", { count: whiskies.length })}
+                      {t("explore.whiskiesExploreDesc", "Browse the full catalog")}
                     </span>
                   </button>
                   <button
