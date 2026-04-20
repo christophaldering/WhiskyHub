@@ -180,6 +180,47 @@ export default function LabsTaste() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, activeSubForTab]);
 
+  // Reconcile URL → state on subsequent navigations (back/forward, external link)
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(searchStr);
+      const tabParam = params.get("tab");
+      const subParam = params.get("sub");
+      let nextTab: Tab = "tastings";
+      if (subParam) {
+        const inferred = tabForSub(subParam);
+        if (inferred) nextTab = inferred;
+        else if (isTab(tabParam)) nextTab = tabParam;
+      } else if (isTab(tabParam)) {
+        nextTab = tabParam;
+      } else if (tabParam === "palate") {
+        nextTab = "analytics";
+      }
+      if (nextTab !== activeTab) setActiveTab(nextTab);
+      const nextCollection =
+        nextTab === "collection" && subParam && COLLECTION_SUB_IDS.has(subParam) ? subParam : null;
+      const nextAI = nextTab === "ai" && subParam && AI_SUB_IDS.has(subParam) ? subParam : null;
+      const nextAnalytics =
+        nextTab === "analytics" && subParam && ANALYTICS_SUB_IDS.has(subParam) ? subParam : null;
+      if (nextCollection !== activeCollectionTile) setActiveCollectionTile(nextCollection);
+      if (nextAI !== activeAITile) setActiveAITile(nextAI);
+      if (nextAnalytics !== activeAnalyticsTile) setActiveAnalyticsTile(nextAnalytics);
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchStr]);
+
+  const handleSelectTab = (next: Tab) => {
+    if (next === activeTab) {
+      // Re-clicking the active top-level tile clears its sub-tile and returns to hub overview
+      if (next === "collection") setActiveCollectionTile(null);
+      else if (next === "ai") setActiveAITile(null);
+      else if (next === "analytics") setActiveAnalyticsTile(null);
+      else if (next === "tastings") setActiveTastingsFilter("all");
+      return;
+    }
+    setActiveTab(next);
+  };
+
   const { data: historyData } = useQuery({
     queryKey: ["tasting-history", currentParticipant?.id],
     queryFn: () => tastingHistoryApi.get(currentParticipant!.id),
@@ -353,7 +394,7 @@ export default function LabsTaste() {
 
   return (
     <div className="labs-page labs-fade-in" data-testid="labs-taste-page">
-      <MeineWeltActionBar active={activeTab} onSelect={setActiveTab} />
+      <MeineWeltActionBar active={activeTab} onSelect={handleSelectTab} />
 
       <div className="labs-fade-in" data-testid={`meine-welt-content-${activeTab}`}>
         <div className="labs-meine-welt-section-head">
