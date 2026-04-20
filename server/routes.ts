@@ -21855,14 +21855,22 @@ ${cleaned.slice(0, 60000)}`;
               selected: true,
               whiskies: whiskies.map((w: any) => {
                 const wname = String(w?.name || "").trim();
-                const wkey = `${norm(wname)}|${dnorm}`;
-                const dupWhisky = existingWhiskies.find(x => `${norm(x.name)}|${norm(x.distillery || "")}` === wkey);
-                const dupLib = existingLibrary.find(x => `${norm(x.whiskyName)}|${norm(x.distillery || "")}` === wkey);
+                const wAge = w?.age ? String(w.age).trim() : "";
+                const wAbv = typeof w?.abv === "number" ? w.abv : (w?.abv ? Number(String(w.abv).replace(/[^0-9.,]/g, "").replace(",", ".")) || null : null);
+                const ageNorm = (a: string | null | undefined) => String(a || "").replace(/\s+/g, "").toLowerCase();
+                const abvNorm = (v: any) => (v == null ? "" : String(Math.round(Number(v) * 10) / 10));
+                const wkey = `${norm(wname)}|${dnorm}|${ageNorm(wAge)}|${abvNorm(wAbv)}`;
+                const wkeyLoose = `${norm(wname)}|${dnorm}`;
+                const dupWhisky =
+                  existingWhiskies.find(x => `${norm(x.name)}|${norm(x.distillery || "")}|${ageNorm(x.age)}|${abvNorm(x.abv)}` === wkey)
+                  || existingWhiskies.find(x => `${norm(x.name)}|${norm(x.distillery || "")}` === wkeyLoose && !x.age && !x.abv);
+                const dupLib =
+                  existingLibrary.find(x => `${norm(x.whiskyName)}|${norm(x.distillery || "")}` === wkeyLoose);
                 return {
                   name: wname,
                   distillery: dname,
-                  age: w?.age || null,
-                  abv: typeof w?.abv === "number" ? w.abv : (w?.abv ? Number(String(w.abv).replace(/[^0-9.,]/g, "").replace(",", ".")) || null : null),
+                  age: wAge || null,
+                  abv: wAbv,
                   caskType: w?.caskType || null,
                   category: w?.category || null,
                   bottler: w?.bottler || null,
