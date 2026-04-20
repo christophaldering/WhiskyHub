@@ -17,7 +17,9 @@ import {
   COLLECTION_HUB_TILES,
   TASTINGS_HUB_TILES,
   HubTileGrid,
+  type TastingsHubFilter,
 } from "./hubTiles";
+import MeineWeltTastingsList from "@/labs/components/MeineWeltTastingsList";
 
 type Tab = "tastings" | "collection" | "ai" | "analytics";
 
@@ -106,6 +108,7 @@ export default function LabsTaste() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+  const [activeTastingsFilter, setActiveTastingsFilter] = useState<TastingsHubFilter>("all");
 
   useEffect(() => {
     try {
@@ -156,9 +159,25 @@ export default function LabsTaste() {
 
   const renderInlineContent = () => {
     if (activeTab === "tastings") {
+      const activeTile = TASTINGS_HUB_TILES.find((tile) => tile.filter === activeTastingsFilter);
       return (
         <div data-testid="meine-welt-inline-tastings">
-          <HubTileGrid tiles={TASTINGS_HUB_TILES} t={t} variant="auto" />
+          <HubTileGrid
+            tiles={TASTINGS_HUB_TILES}
+            t={t}
+            variant="auto"
+            activeTestId={activeTile?.testId}
+            onTileClick={(tile) => {
+              const next = (tile as (typeof TASTINGS_HUB_TILES)[number]).filter;
+              if (next) setActiveTastingsFilter(next);
+            }}
+          />
+          <div
+            style={{ marginTop: 16 }}
+            data-testid={`meine-welt-tastings-inline-${activeTastingsFilter}`}
+          >
+            <MeineWeltTastingsList filter={activeTastingsFilter} />
+          </div>
           <div style={{ marginTop: 24 }}>
             <RecentRatedList
               items={recentItems}

@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import type { ElementType } from "react";
 import {
   BookOpen, Archive, Heart, Sparkles, Activity, Library, Compass,
-  BarChart3, PieChart, GitCompareArrows, Download, Search, History,
+  BarChart3, PieChart, GitCompareArrows, Download, Layers, Crown, Users,
 } from "lucide-react";
 
 export interface HubTileDef {
@@ -11,28 +11,52 @@ export interface HubTileDef {
   labelFallback: string;
   descKey: string;
   descFallback: string;
-  href: string;
+  href?: string;
   testId: string;
 }
 
-export const TASTINGS_HUB_TILES: HubTileDef[] = [
+export type TastingsHubFilter = "all" | "hosting" | "joined" | "archive";
+
+export interface TastingsHubTileDef extends HubTileDef {
+  filter: TastingsHubFilter;
+}
+
+export const TASTINGS_HUB_TILES: TastingsHubTileDef[] = [
   {
-    icon: Search,
-    labelKey: "myTastePage.tastingsHub.search",
-    labelFallback: "Search",
-    descKey: "myTastePage.tastingsHub.searchDesc",
-    descFallback: "Find tastings",
-    href: "/labs/tastings",
-    testId: "tile-meine-welt-tastings-search",
+    icon: Layers,
+    filter: "all",
+    labelKey: "myTastePage.tastingsHub.all",
+    labelFallback: "All",
+    descKey: "myTastePage.tastingsHub.allDesc",
+    descFallback: "All your tastings",
+    testId: "tile-meine-welt-tastings-all",
   },
   {
-    icon: History,
-    labelKey: "myTastePage.tastingsHub.recent",
-    labelFallback: "Recently Rated",
-    descKey: "myTastePage.tastingsHub.recentDesc",
-    descFallback: "Your last drams",
-    href: "/labs/taste/drams",
-    testId: "tile-meine-welt-tastings-recent",
+    icon: Crown,
+    filter: "hosting",
+    labelKey: "myTastePage.tastingsHub.hosting",
+    labelFallback: "Hosting",
+    descKey: "myTastePage.tastingsHub.hostingDesc",
+    descFallback: "Tastings you host",
+    testId: "tile-meine-welt-tastings-hosting",
+  },
+  {
+    icon: Users,
+    filter: "joined",
+    labelKey: "myTastePage.tastingsHub.joined",
+    labelFallback: "Joined",
+    descKey: "myTastePage.tastingsHub.joinedDesc",
+    descFallback: "Tastings you joined",
+    testId: "tile-meine-welt-tastings-joined",
+  },
+  {
+    icon: Archive,
+    filter: "archive",
+    labelKey: "myTastePage.tastingsHub.archive",
+    labelFallback: "My Archive",
+    descKey: "myTastePage.tastingsHub.archiveDesc",
+    descFallback: "Completed tastings",
+    testId: "tile-meine-welt-tastings-archive",
   },
 ];
 
@@ -166,14 +190,19 @@ export function HubTileCard({
   tile,
   t,
   testIdOverride,
+  onClick,
+  active,
 }: {
   tile: HubTileDef;
   t: (key: string, fallback: string) => string;
   testIdOverride?: string;
+  onClick?: () => void;
+  active?: boolean;
 }) {
   const Icon = tile.icon;
-  return (
-    <Link href={tile.href} className="labs-hub-tile" data-testid={testIdOverride ?? tile.testId}>
+  const className = `labs-hub-tile${onClick ? " labs-hub-tile--button" : ""}${active ? " labs-hub-tile--active" : ""}`;
+  const inner = (
+    <>
       <div className="labs-hub-tile-icon">
         <Icon className="labs-hub-tile-icon-svg" strokeWidth={1.8} />
       </div>
@@ -181,6 +210,26 @@ export function HubTileCard({
         <div className="labs-hub-tile-label">{t(tile.labelKey, tile.labelFallback)}</div>
         <div className="labs-hub-tile-desc">{t(tile.descKey, tile.descFallback)}</div>
       </div>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        className={className}
+        onClick={onClick}
+        data-testid={testIdOverride ?? tile.testId}
+        aria-pressed={active ? true : undefined}
+      >
+        {inner}
+      </button>
+    );
+  }
+
+  return (
+    <Link href={tile.href ?? "#"} className={className} data-testid={testIdOverride ?? tile.testId}>
+      {inner}
     </Link>
   );
 }
@@ -190,11 +239,15 @@ export function HubTileGrid({
   t,
   testIdPrefix,
   variant = "two-col",
+  onTileClick,
+  activeTestId,
 }: {
   tiles: HubTileDef[];
   t: (key: string, fallback: string) => string;
   testIdPrefix?: string;
   variant?: "two-col" | "auto";
+  onTileClick?: (tile: HubTileDef) => void;
+  activeTestId?: string;
 }) {
   const className = variant === "auto" ? "labs-hub-tile-grid labs-hub-tile-grid--auto" : "labs-hub-tile-grid";
   return (
@@ -205,6 +258,8 @@ export function HubTileGrid({
           tile={tile}
           t={t}
           testIdOverride={testIdPrefix ? `${testIdPrefix}-${tile.testId}` : undefined}
+          onClick={onTileClick ? () => onTileClick(tile) : undefined}
+          active={activeTestId === tile.testId}
         />
       ))}
     </div>
