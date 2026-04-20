@@ -105,43 +105,80 @@ function isTab(value: string | null): value is Tab {
   return value === "tastings" || value === "collection" || value === "ai" || value === "analytics";
 }
 
+const COLLECTION_SUB_IDS = new Set(
+  COLLECTION_HUB_TILES.map((tile) => tile.testId),
+);
+const AI_SUB_IDS = new Set(AI_INSIGHTS_HUB_TILES.map((tile) => tile.testId));
+const ANALYTICS_SUB_IDS = new Set(
+  ANALYTICS_HUB_TILES.map((tile) => tile.testId),
+);
+
+function tabForSub(sub: string): Tab | null {
+  if (COLLECTION_SUB_IDS.has(sub)) return "collection";
+  if (AI_SUB_IDS.has(sub)) return "ai";
+  if (ANALYTICS_SUB_IDS.has(sub)) return "analytics";
+  return null;
+}
+
 export default function LabsTaste() {
   const { currentParticipant } = useAppStore();
   const { t } = useTranslation();
   const [, navigate] = useLocation();
   const searchStr = useSearch();
 
-  const initialTab = useMemo<Tab>(() => {
+  const { initialTab, initialSub } = useMemo<{ initialTab: Tab; initialSub: string | null }>(() => {
     try {
       const params = new URLSearchParams(searchStr);
       const v = params.get("tab");
-      if (isTab(v)) return v;
-      if (v === "palate") return "analytics";
+      const sub = params.get("sub");
+      if (sub) {
+        const inferred = tabForSub(sub);
+        if (inferred) return { initialTab: inferred, initialSub: sub };
+      }
+      if (isTab(v)) return { initialTab: v, initialSub: null };
+      if (v === "palate") return { initialTab: "analytics", initialSub: null };
     } catch {}
-    return "tastings";
+    return { initialTab: "tastings", initialSub: null };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const [activeTastingsFilter, setActiveTastingsFilter] = useState<TastingsHubFilter>("all");
-  const [activeCollectionTile, setActiveCollectionTile] = useState<string | null>(null);
-  const [activeAITile, setActiveAITile] = useState<string | null>(null);
-  const [activeAnalyticsTile, setActiveAnalyticsTile] = useState<string | null>(null);
+  const [activeCollectionTile, setActiveCollectionTile] = useState<string | null>(
+    initialTab === "collection" && initialSub && COLLECTION_SUB_IDS.has(initialSub) ? initialSub : null,
+  );
+  const [activeAITile, setActiveAITile] = useState<string | null>(
+    initialTab === "ai" && initialSub && AI_SUB_IDS.has(initialSub) ? initialSub : null,
+  );
+  const [activeAnalyticsTile, setActiveAnalyticsTile] = useState<string | null>(
+    initialTab === "analytics" && initialSub && ANALYTICS_SUB_IDS.has(initialSub) ? initialSub : null,
+  );
+
+  const activeSubForTab: string | null =
+    activeTab === "collection"
+      ? activeCollectionTile
+      : activeTab === "ai"
+        ? activeAITile
+        : activeTab === "analytics"
+          ? activeAnalyticsTile
+          : null;
 
   useEffect(() => {
     try {
       const params = new URLSearchParams(searchStr);
-      const current = params.get("tab");
-      if (current === activeTab) return;
-      if (activeTab === "tastings") {
-        params.delete("tab");
-      } else {
-        params.set("tab", activeTab);
-      }
+      const currentTab = params.get("tab");
+      const currentSub = params.get("sub");
+      const desiredTab = activeTab === "tastings" ? null : activeTab;
+      const desiredSub = activeSubForTab;
+      if ((currentTab ?? null) === desiredTab && (currentSub ?? null) === desiredSub) return;
+      if (!desiredTab) params.delete("tab");
+      else params.set("tab", desiredTab);
+      if (!desiredSub) params.delete("sub");
+      else params.set("sub", desiredSub);
       const qs = params.toString();
       navigate(`/labs/taste${qs ? `?${qs}` : ""}`, { replace: true });
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]);
+  }, [activeTab, activeSubForTab]);
 
   const { data: historyData } = useQuery({
     queryKey: ["tasting-history", currentParticipant?.id],
