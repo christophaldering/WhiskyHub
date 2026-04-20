@@ -625,7 +625,7 @@ export default function LabsHandoutLibrary() {
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
         <Library style={{ width: 20, height: 20, color: "var(--labs-accent, var(--labs-text))" }} />
-        <h1 style={{ fontSize: 22, margin: 0, fontWeight: 600, color: "var(--labs-text)" }} data-testid="text-handout-library-title">
+        <h1 className="labs-h2" style={{ margin: 0, color: "var(--labs-text)" }} data-testid="text-handout-library-title">
           {t("labs.handoutLibrary.title")}
         </h1>
       </div>

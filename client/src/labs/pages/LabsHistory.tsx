@@ -632,8 +632,8 @@ export default function LabsHistory() {
         <DiscoverActionBar active="bibliothek" />
       )}
       <h1
-        className="labs-serif"
-        style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 4px" }}
+        className="labs-h2"
+        style={{ color: "var(--labs-text)", margin: "0 0 4px" }}
         data-testid="history-title"
       >
         {t("history.archiveTitle", "Community Archive")}

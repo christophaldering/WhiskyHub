@@ -1,15 +1,17 @@
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { Archive, Sparkles, BarChart3 } from "lucide-react";
+import HubHeader from "@/labs/components/HubHeader";
 
 type ActiveView = "collection" | "ai" | "analytics";
 
 interface Props {
   active: ActiveView;
   onSelect?: (view: ActiveView) => void;
+  showHubHeader?: boolean;
 }
 
-export default function MeineWeltActionBar({ active, onSelect }: Props) {
+export default function MeineWeltActionBar({ active, onSelect, showHubHeader = true }: Props) {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
 
@@ -19,6 +21,8 @@ export default function MeineWeltActionBar({ active, onSelect }: Props) {
   };
 
   return (
+    <>
+    {showHubHeader && <HubHeader kind="meine-welt" />}
     <div className="labs-fade-in" style={{ marginBottom: 20 }}>
       <div className="labs-action-bar">
         <button
@@ -59,5 +63,6 @@ export default function MeineWeltActionBar({ active, onSelect }: Props) {
         </button>
       </div>
     </div>
+    </>
   );
 }

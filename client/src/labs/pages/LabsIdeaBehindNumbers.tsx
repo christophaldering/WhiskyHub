@@ -126,7 +126,7 @@ export default function LabsIdeaBehindNumbers() {
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
         <BookOpen style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />
-        <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-idea-behind-numbers-title">
+        <h1 className="labs-h2" style={{ color: "var(--labs-text)", margin: 0 }} data-testid="text-idea-behind-numbers-title">
           {t("research.subGrundlagen", "Foundations")}
         </h1>
       </div>

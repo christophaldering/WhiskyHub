@@ -329,7 +329,7 @@ export default function LabsTasteAnalytics() {
     <div className="labs-page" data-testid="labs-taste-analytics">
       <MeineWeltActionBar active="analytics" />
 
-      <h1 style={{ fontFamily: "Playfair Display, serif", fontSize: 26, fontWeight: 600, color: th.text, marginBottom: SP.xs }} data-testid="text-analytics-title">
+      <h1 className="labs-h2" style={{ color: th.text, marginBottom: SP.xs }} data-testid="text-analytics-title">
         {t("analytics.title", "Analytics")}
       </h1>
       <p style={{ fontSize: 14, color: th.muted, marginBottom: SP.md }}>

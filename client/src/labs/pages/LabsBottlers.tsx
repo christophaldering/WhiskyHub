@@ -110,7 +110,7 @@ export default function LabsBottlers() {
       <DiscoverActionBar active="bibliothek" />
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-        <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-bottlers-title">Independent Bottlers</h1>
+        <h1 className="labs-h2" style={{ color: "var(--labs-text)", margin: 0 }} data-testid="text-bottlers-title">Independent Bottlers</h1>
         {currentParticipant && <SuggestEntryDialog type="bottler" />}
       </div>
       <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "0 0 16px" }}>{isLoading ? t("discover.loading", "Loading...") : t("discover.bottlersSubtitle", { count: bottlersList.length })}</p>

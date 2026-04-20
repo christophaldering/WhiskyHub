@@ -117,7 +117,7 @@ export default function LabsLexicon() {
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
         <BookOpen style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />
-        <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-lexicon-title">
+        <h1 className="labs-h2" style={{ color: "var(--labs-text)", margin: 0 }} data-testid="text-lexicon-title">
           {t("discover.lexicon", "Lexicon")}
         </h1>
       </div>

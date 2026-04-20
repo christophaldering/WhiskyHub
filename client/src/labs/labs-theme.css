@@ -1640,6 +1640,18 @@ a.labs-dram-item {
   gap: 14px;
 }
 
+.labs-hub-header {
+  margin-bottom: 20px;
+}
+
+.labs-hub-header-title {
+  margin: 0;
+}
+
+.labs-hub-header-subtitle {
+  margin: 2px 0 0;
+}
+
 .labs-hub-tile-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

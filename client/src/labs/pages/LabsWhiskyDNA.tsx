@@ -589,7 +589,7 @@ export default function LabsWhiskyDNA() {
       </BackLink>
 
       <div className="labs-fade-in" style={{ marginBottom: 16 }}>
-        <h1 className="labs-h1" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <h1 className="labs-h2" style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <Activity className="w-6 h-6" style={{ color: "var(--labs-gold)" }} />
           <span data-testid="text-page-title">{t("whiskyDna", "Your Whisky DNA")}</span>
         </h1>

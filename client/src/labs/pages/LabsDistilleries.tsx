@@ -103,7 +103,7 @@ export default function LabsDistilleries() {
 
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between mb-6">
         <div className="flex flex-col gap-2 min-w-0">
-          <h1 className="labs-serif" style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)", margin: 0, lineHeight: 1.15, letterSpacing: "-0.01em" }} data-testid="text-distilleries-title">{t("discover.distilleries", "Distilleries")}</h1>
+          <h1 className="labs-h2" style={{ color: "var(--labs-text)", margin: 0 }} data-testid="text-distilleries-title">{t("discover.distilleries", "Distilleries")}</h1>
           <p style={{ fontSize: 14, color: "var(--labs-text-muted)", margin: 0, lineHeight: 1.4 }}>{isLoading ? t("discover.loading", "Loading...") : t("m2.discover.distilleriesSubtitle", "Explore {{count}} distilleries worldwide", { count: distilleries.length })}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-end sm:flex-shrink-0">

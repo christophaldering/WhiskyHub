@@ -9,6 +9,7 @@
         import { wishlistKey, useWishlistKeys, useCollectionKeys } from "@/lib/wishlistKey";
         import WishlistBadge from "@/labs/components/WishlistBadge";
         import CollectionBadge from "@/labs/components/CollectionBadge";
+        import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
         import { apiUrl } from "@/lib/native";
         import {
           Search, ChevronRight, Wine,
@@ -526,63 +527,28 @@
 
           return (
             <div className="labs-page labs-fade-in" data-testid="labs-entdecken-page">
-              <div style={{ marginBottom: 20 }}>
-                <h1 className="ty-h1" style={{ margin: 0 }} data-testid="labs-entdecken-title">
-                  {t("explore.title", "Explore")}
-                </h1>
-                <p className="ty-sub" style={{ margin: "2px 0 0" }}>
-                  {t("explore.subtitle", "Find whiskies")}
-                </p>
-              </div>
-
-              <div className="labs-fade-in" style={{ marginBottom: 20 }}>
-                <div className="labs-action-bar">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveView("whiskies");
-                      setWhiskyHubMode("hub");
-                      setExpandedFilter(null);
-                      setFilterSearch("");
-                      setSearch("");
-                      setFilters({
-                        region: new Set(),
-                        distillery: new Set(),
-                        category: new Set(),
-                        country: new Set(),
-                        peatLevel: new Set(),
-                      });
-                    }}
-                    data-testid="tab-explore-whiskies"
-                    className={`labs-action-bar-item labs-action-bar-item--button${activeView === "whiskies" ? " labs-action-bar-item--active" : ""}`}
-                  >
-                    <div className="labs-action-bar-icon labs-action-bar-icon--accent">
-                      <Wine className="w-5 h-5 labs-icon-accent" />
-                    </div>
-                    <span className="labs-action-bar-label">{t("discover.whiskies", "Whiskies")}</span>
-                    <span className="labs-action-bar-sublabel">
-                      {t("explore.whiskiesExploreDesc", "Browse the full catalog")}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveView("bibliothek");
-                      setExpandedFilter(null);
-                    }}
-                    data-testid="tab-explore-bibliothek"
-                    className={`labs-action-bar-item labs-action-bar-item--button${activeView === "bibliothek" ? " labs-action-bar-item--active" : ""}`}
-                  >
-                    <div className="labs-action-bar-icon labs-action-bar-icon--surface">
-                      <BookOpen className="w-5 h-5 labs-icon-accent" />
-                    </div>
-                    <span className="labs-action-bar-label">{t("bibliothek.title", "Library")}</span>
-                    <span className="labs-action-bar-sublabel">
-                      {t("explore.libraryExploreDesc", "Knowledge, Reference & Deep Dive")}
-                    </span>
-                  </button>
-                </div>
-              </div>
+              <DiscoverActionBar
+                active={activeView}
+                onSelect={(view) => {
+                  if (view === "whiskies") {
+                    setActiveView("whiskies");
+                    setWhiskyHubMode("hub");
+                    setExpandedFilter(null);
+                    setFilterSearch("");
+                    setSearch("");
+                    setFilters({
+                      region: new Set(),
+                      distillery: new Set(),
+                      category: new Set(),
+                      country: new Set(),
+                      peatLevel: new Set(),
+                    });
+                  } else {
+                    setActiveView("bibliothek");
+                    setExpandedFilter(null);
+                  }
+                }}
+              />
 
               {activeView === "bibliothek" && (
                 <div className="labs-fade-in labs-stagger-2" data-testid="explore-bibliothek-inline" style={{ display: "flex", flexDirection: "column", gap: 24 }}>

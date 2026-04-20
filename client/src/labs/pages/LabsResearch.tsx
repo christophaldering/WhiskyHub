@@ -30,7 +30,7 @@ export default function LabsResearch() {
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
           <FlaskConical style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />
-          <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-research-title">
+          <h1 className="labs-h2" style={{ color: "var(--labs-text)", margin: 0 }} data-testid="text-research-title">
             {t("research.title", "Research & Sensory Science")}
           </h1>
         </div>

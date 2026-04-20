@@ -26,7 +26,7 @@ export default function LabsLiterature() {
       </BackLink>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
         <BookMarked style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />
-        <h1 className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="text-literature-title">
+        <h1 className="labs-h2" style={{ color: "var(--labs-text)", margin: 0 }} data-testid="text-literature-title">
           {t("research.subLiteratur", "Literature & Studies")}
         </h1>
       </div>

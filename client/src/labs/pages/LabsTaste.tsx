@@ -174,15 +174,6 @@ export default function LabsTaste() {
 
   return (
     <div className="labs-page labs-fade-in" data-testid="labs-taste-page">
-      <div style={{ marginBottom: 20 }}>
-        <h1 className="ty-h1" style={{ margin: 0 }} data-testid="labs-taste-title">
-          {t("myTastePage.title", "My World")}
-        </h1>
-        <p className="ty-sub" style={{ margin: "2px 0 0" }}>
-          {t("myTastePage.subtitle", "Your personal whisky collection & insights")}
-        </p>
-      </div>
-
       <MeineWeltActionBar active={activeTab} onSelect={setActiveTab} />
 
       <div className="labs-fade-in" data-testid={`meine-welt-content-${activeTab}`}>

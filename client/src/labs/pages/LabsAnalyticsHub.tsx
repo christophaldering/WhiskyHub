@@ -9,7 +9,7 @@ export default function LabsAnalyticsHub() {
       <MeineWeltActionBar active="analytics" />
 
       <div style={{ marginBottom: 24 }}>
-        <h1 className="labs-serif" style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-text)", margin: "0 0 2px" }} data-testid="text-analytics-hub-title">
+        <h1 className="labs-h2" style={{ color: "var(--labs-text)", margin: "0 0 2px" }} data-testid="text-analytics-hub-title">
           {t("myTastePage.analyticsHub.title", "Profile & Analytics")}
         </h1>
         <p style={{ fontSize: 14, color: "var(--labs-text-muted)", margin: 0 }}>

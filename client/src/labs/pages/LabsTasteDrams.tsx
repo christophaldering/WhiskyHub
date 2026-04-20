@@ -1056,7 +1056,7 @@ export default function LabsTasteDrams() {
       <MeineWeltActionBar active="collection" />
       <div>
         <div style={{ marginBottom: 16 }}>
-          <h1 className="labs-serif" style={{ fontSize: 26, fontWeight: 700, color: "var(--labs-text)", margin: 0 }} data-testid="labs-drams-title">{t("drams.title")}</h1>
+          <h1 className="labs-h2" style={{ color: "var(--labs-text)", margin: 0 }} data-testid="labs-drams-title">{t("drams.title")}</h1>
           <button
             type="button"
             onClick={() => navigate("/labs/solo")}

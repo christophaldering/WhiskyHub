@@ -314,7 +314,7 @@ export default function LabsCollectionAnalysis() {
       <div style={{ marginBottom: SP.lg }}>
         <div style={{ display: "flex", alignItems: "center", gap: SP.md, marginBottom: SP.xs }}>
           <Library style={{ width: 20, height: 20, color: th.gold }} />
-          <h1 style={{ fontFamily: "Playfair Display, serif", fontSize: 26, fontWeight: 600, color: th.text, margin: 0 }} data-testid="text-collection-analysis-title">
+          <h1 className="labs-h2" style={{ color: th.text, margin: 0 }} data-testid="text-collection-analysis-title">
             {t("labs.collection.title", "Collection Analysis")}
           </h1>
         </div>
