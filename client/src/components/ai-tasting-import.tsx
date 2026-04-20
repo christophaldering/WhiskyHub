@@ -343,7 +343,7 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
                   ref={fileInputRef}
                   type="file"
                   multiple
-                  accept=".xlsx,.xls,.csv,.pdf,.txt,.jpg,.jpeg,.png,.webp,.gif"
+                  accept=".xlsx,.xls,.csv,.pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp,.gif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   onChange={handleFileSelect}
                   style={{ display: "none" }}
                   data-testid="input-import-files"

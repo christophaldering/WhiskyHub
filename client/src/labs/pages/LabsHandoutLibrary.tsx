@@ -882,7 +882,7 @@ export default function LabsHandoutLibrary() {
           <input
             ref={replaceFileInputRef}
             type="file"
-            accept="application/pdf,image/*"
+            accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.pdf,.doc,.docx,image/*"
             style={{ display: "none" }}
             onChange={(e) => {
               const file = e.target.files?.[0];
@@ -937,7 +937,7 @@ export default function LabsHandoutLibrary() {
               <input
                 ref={uploadFileInputRef}
                 type="file"
-                accept="application/pdf,image/*"
+                accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.pdf,.doc,.docx,image/*"
                 multiple
                 onChange={(e) => {
                   const files = Array.from(e.target.files || []);

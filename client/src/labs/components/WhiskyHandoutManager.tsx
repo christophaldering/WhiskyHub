@@ -19,7 +19,7 @@ interface Props {
   tastingId: string;
 }
 
-const HANDOUT_ACCEPT = "application/pdf,image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.pdf,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif";
+const HANDOUT_ACCEPT = "application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif";
 
 export default function WhiskyHandoutManager({ whisky, hostId, tastingId }: Props) {
   const qc = useQueryClient();

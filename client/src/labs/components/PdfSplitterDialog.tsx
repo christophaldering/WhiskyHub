@@ -175,7 +175,7 @@ export default function PdfSplitterDialog({ open, onClose, tastingId, hostId, wh
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="application/pdf,.pdf"
+                  accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.pdf,.doc,.docx"
                   style={{ display: "none" }}
                   onChange={(e) => {
                     const f = e.target.files?.[0];

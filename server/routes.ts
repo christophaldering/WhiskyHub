@@ -27,6 +27,7 @@ import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, Headi
 import sharp from "sharp";
 import { PDFDocument } from "pdf-lib";
 import { extractTextFromImage } from "./lib/ocr.js";
+import { isWordFile, maybeConvertWordFileToPdf } from "./lib/wordToPdf.js";
 import { getWhiskyIndex } from "./lib/whiskyIndex.js";
 import { scoreWhiskies, scoreWhiskiesMultiLine, extractHints, detectMode } from "./lib/matching.js";
 import { LRUCache as LRUCacheImpl } from "./lib/cache.js";
@@ -168,13 +169,15 @@ const docUpload = multer({
       "application/csv",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "application/vnd.ms-excel",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       "application/octet-stream",
       "image/jpeg", "image/png", "image/webp",
     ];
     const ext = (file.originalname || "").toLowerCase().split(".").pop();
-    const allowedExts = ["pdf", "txt", "csv", "xlsx", "xls", "jpg", "jpeg", "png", "webp"];
+    const allowedExts = ["pdf", "doc", "docx", "txt", "csv", "xlsx", "xls", "jpg", "jpeg", "png", "webp"];
     if (allowed.includes(file.mimetype) || allowedExts.includes(ext || "")) cb(null, true);
-    else cb(new Error("Unsupported file type. Allowed: PDF, TXT, CSV, Excel, JPG, PNG, WebP"));
+    else cb(new Error("Unsupported file type. Allowed: PDF, Word, TXT, CSV, Excel, JPG, PNG, WebP"));
   },
 });
 
@@ -222,12 +225,14 @@ const handoutUpload = multer({
   fileFilter: (_req: any, file: any, cb: any) => {
     const allowed = [
       "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       "image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif",
     ];
     const ext = (file.originalname || "").toLowerCase().split(".").pop();
-    const allowedExts = ["pdf", "jpg", "jpeg", "png", "webp", "gif", "heic", "heif"];
+    const allowedExts = ["pdf", "doc", "docx", "jpg", "jpeg", "png", "webp", "gif", "heic", "heif"];
     if (allowed.includes(file.mimetype) || allowedExts.includes(ext || "")) cb(null, true);
-    else cb(new Error("Nur PDF oder Bild (JPG, PNG, WebP, GIF, HEIC) sind erlaubt."));
+    else cb(new Error("Nur PDF, Word oder Bild (JPG, PNG, WebP, GIF, HEIC) sind erlaubt."));
   },
 });
 
@@ -2189,6 +2194,15 @@ export async function registerRoutes(
       }
       if (!req.file) return res.status(400).json({ message: "Keine Datei übermittelt" });
 
+      if (isWordFile(req.file)) {
+        try {
+          await maybeConvertWordFileToPdf(req.file);
+        } catch (convErr) {
+          console.error("[tastings/handout] word->pdf failed", convErr);
+          return res.status(400).json({ message: "Word-Datei konnte nicht konvertiert werden — bitte als PDF hochladen." });
+        }
+      }
+
       const buffer = req.file.buffer;
       let contentType = req.file.mimetype || "application/octet-stream";
       const lowerName = (req.file.originalname || "").toLowerCase();
@@ -2942,6 +2956,15 @@ export async function registerRoutes(
       }
       if (!req.file) return res.status(400).json({ message: "Keine Datei übermittelt" });
 
+      if (isWordFile(req.file)) {
+        try {
+          await maybeConvertWordFileToPdf(req.file);
+        } catch (convErr) {
+          console.error("[whiskies/handout] word->pdf failed", convErr);
+          return res.status(400).json({ message: "Word-Datei konnte nicht konvertiert werden — bitte als PDF hochladen." });
+        }
+      }
+
       let buffer = req.file.buffer;
       let contentType = req.file.mimetype || "application/octet-stream";
       const lowerName = (req.file.originalname || "").toLowerCase();
@@ -3104,6 +3127,16 @@ export async function registerRoutes(
       }
       if (!req.file) return res.status(400).json({ message: "Keine Datei übermittelt" });
 
+      if (isWordFile(req.file)) {
+        try {
+          await maybeConvertWordFileToPdf(req.file);
+        } catch (convErr: any) {
+          console.error("[handout-pdf-split] word->pdf failed", convErr);
+          return res.status(400).json({
+            message: "Word-Datei konnte nicht konvertiert werden — bitte als PDF hochladen.",
+          });
+        }
+      }
       const fileName = (req.file.originalname || "").toLowerCase();
       const isPdf = req.file.mimetype === "application/pdf" || fileName.endsWith(".pdf");
       if (!isPdf) return res.status(400).json({ message: "Nur PDF kann aufgeteilt werden" });
@@ -3429,6 +3462,16 @@ export async function registerRoutes(
       const whiskyName = typeof req.body.whiskyName === "string" ? req.body.whiskyName.trim() : "";
       if (!whiskyName) return res.status(400).json({ message: "Whisky-Name ist erforderlich" });
 
+      if (isWordFile(req.file)) {
+        try {
+          await maybeConvertWordFileToPdf(req.file);
+        } catch (convErr) {
+          console.error("[handout-library] word->pdf failed", convErr);
+          return res.status(400).json({
+            message: "Word-Datei konnte nicht konvertiert werden — bitte als PDF hochladen.",
+          });
+        }
+      }
       let buffer = req.file.buffer;
       let contentType = req.file.mimetype || "application/octet-stream";
       const lowerName = (req.file.originalname || "").toLowerCase();
@@ -3502,6 +3545,16 @@ export async function registerRoutes(
       if (!entry) return res.status(404).json({ message: "Bibliothekseintrag nicht gefunden" });
       if (entry.hostId !== hostId) return res.status(403).json({ message: "Nicht erlaubt" });
 
+      if (isWordFile(req.file)) {
+        try {
+          await maybeConvertWordFileToPdf(req.file);
+        } catch (convErr) {
+          console.error("[handout-library] word->pdf failed", convErr);
+          return res.status(400).json({
+            message: "Word-Datei konnte nicht konvertiert werden — bitte als PDF hochladen.",
+          });
+        }
+      }
       const buffer = req.file.buffer;
       let contentType = req.file.mimetype || "application/octet-stream";
       const lowerName = (req.file.originalname || "").toLowerCase();
@@ -15440,6 +15493,17 @@ Key CaskSense Features:
       const file = (req as any).file;
       if (!file) return res.status(400).json({ message: "No file uploaded" });
 
+      if (isWordFile(file)) {
+        try {
+          await maybeConvertWordFileToPdf(file);
+        } catch (convErr) {
+          console.error("[benchmark/analyze] word->pdf failed", convErr);
+          return res.status(400).json({
+            message: "Word-Datei konnte nicht konvertiert werden — bitte als PDF hochladen.",
+          });
+        }
+      }
+
       const allWhiskies = await storage.getActiveWhiskies();
       const benchmarks = await storage.getBenchmarkEntries();
 
@@ -16147,16 +16211,18 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
     fileFilter: (_req: any, file: any, cb: any) => {
       const allowedMimes = [
         "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "text/plain", "text/csv",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "application/vnd.ms-excel",
         "image/jpeg", "image/png", "image/webp", "image/gif",
         "application/octet-stream",
       ];
-      const allowedExts = [".xlsx", ".xls", ".csv", ".pdf", ".txt", ".jpg", ".jpeg", ".png", ".webp", ".gif"];
+      const allowedExts = [".xlsx", ".xls", ".csv", ".pdf", ".doc", ".docx", ".txt", ".jpg", ".jpeg", ".png", ".webp", ".gif"];
       const ext = path.extname(file.originalname).toLowerCase();
       if (allowedMimes.includes(file.mimetype) || allowedExts.includes(ext)) cb(null, true);
-      else cb(new Error("Unsupported file type. Allowed: Excel, CSV, PDF, TXT, JPG, PNG, WebP, GIF"));
+      else cb(new Error("Unsupported file type. Allowed: Excel, CSV, PDF, Word, TXT, JPG, PNG, WebP, GIF"));
     },
   });
 
@@ -16483,6 +16549,16 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       let textContent = pastedText.trim();
 
       for (const file of files) {
+        if (isWordFile(file)) {
+          try {
+            await maybeConvertWordFileToPdf(file);
+          } catch (convErr) {
+            console.error("[ai-import] word->pdf failed", convErr);
+            return res.status(400).json({
+              message: `Word-Datei "${file.originalname}" konnte nicht konvertiert werden — bitte als PDF hochladen.`,
+            });
+          }
+        }
         const ext = path.extname(file.originalname).toLowerCase();
         if (ext === ".xlsx" || ext === ".xls" || ext === ".csv") {
           excelResult = await parseTransposedExcel(file.buffer);
@@ -19498,9 +19574,16 @@ User's style request: ${sanitizedPrompt}`;
     storage: multer.memoryStorage(),
     limits: { fileSize: 20 * 1024 * 1024 },
     fileFilter: (_req: any, file: any, cb: any) => {
-      const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
-      if (allowed.includes(file.mimetype)) cb(null, true);
-      else cb(new Error("Only image or PDF files are allowed"));
+      const allowed = [
+        "image/jpeg", "image/png", "image/webp", "image/gif",
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ];
+      const ext = (file.originalname || "").toLowerCase().split(".").pop();
+      const allowedExts = ["jpg", "jpeg", "png", "webp", "gif", "pdf", "doc", "docx"];
+      if (allowed.includes(file.mimetype) || allowedExts.includes(ext || "")) cb(null, true);
+      else cb(new Error("Only image, PDF or Word files are allowed"));
     },
   });
 
@@ -19527,6 +19610,19 @@ User's style request: ${sanitizedPrompt}`;
       const files = (req as any).files as Express.Multer.File[];
       if (!files || files.length === 0) {
         return res.status(400).json({ message: "At least one photo or PDF is required" });
+      }
+
+      for (const f of files) {
+        if (isWordFile(f)) {
+          try {
+            await maybeConvertWordFileToPdf(f);
+          } catch (convErr) {
+            console.error("[scan-sheet] word->pdf failed", convErr);
+            return res.status(400).json({
+              message: `Word-Datei "${f.originalname}" konnte nicht konvertiert werden — bitte als PDF hochladen.`,
+            });
+          }
+        }
       }
 
       const participantId = req.body.participantId || req.headers["x-participant-id"] as string || null;

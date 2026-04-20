@@ -1684,7 +1684,7 @@ function MobileCompanion({
                     <label className="labs-btn-ghost text-xs cursor-pointer flex items-center gap-1.5">
                       <Upload className="w-3 h-3" />
                       Browse
-                      <input type="file" accept="image/*,.pdf,.csv,.txt,.xlsx" multiple style={{ display: "none" }} onChange={e => { if (e.target.files) setMobileAiFiles(prev => [...prev, ...Array.from(e.target.files!)]); }} />
+                      <input type="file" accept="image/*,.pdf,.doc,.docx,.csv,.txt,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple style={{ display: "none" }} onChange={e => { if (e.target.files) setMobileAiFiles(prev => [...prev, ...Array.from(e.target.files!)]); }} />
                     </label>
                   </div>
                   <p className="text-[11px] mt-2" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }} data-testid="text-upload-rights-hint">{t("common.uploadRightsHint")}</p>
@@ -6018,7 +6018,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   Browse
                   <input
                     type="file"
-                    accept="image/*,.pdf,.csv,.txt,.xlsx"
+                    accept="image/*,.pdf,.doc,.docx,.csv,.txt,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     multiple
                     style={{ display: "none" }}
                     onChange={e => { if (e.target.files) setAiImportFiles(prev => [...prev, ...Array.from(e.target.files!)]); }}

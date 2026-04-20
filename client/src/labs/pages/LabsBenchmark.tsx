@@ -300,7 +300,7 @@ export default function LabsBenchmark() {
                   <span key={fmt} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 9999, border: "1px solid var(--labs-border)", color: "var(--labs-text-muted)" }}>{fmt}</span>
                 ))}
               </div>
-              <input ref={fileInputRef} type="file" accept=".pdf,.xlsx,.xls,.csv,.txt,.jpg,.jpeg,.png,.webp" style={{ display: "none" }} onChange={handleFileUpload} data-testid="input-file-upload" />
+              <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.xlsx,.xls,.csv,.txt,.jpg,.jpeg,.png,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style={{ display: "none" }} onChange={handleFileUpload} data-testid="input-file-upload" />
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={analyzing || aiDisabled}

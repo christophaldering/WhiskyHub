@@ -295,7 +295,7 @@ export default function LabsPaperScan() {
             <input
               ref={fileRef}
               type="file"
-              accept="image/*,.pdf,application/pdf"
+              accept="image/*,.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               multiple
               onChange={handleFileSelect}
               style={{ display: "none" }}

@@ -107,6 +107,7 @@
     "jsdom": "^28.1.0",
     "jspdf": "^4.2.0",
     "leaflet": "^1.9.4",
+    "libreoffice-convert": "^1.8.1",
     "lucide-react": "^0.545.0",
     "memorystore": "^1.6.7",
     "mime-types": "^3.0.2",
