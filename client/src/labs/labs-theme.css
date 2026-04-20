@@ -1811,85 +1811,95 @@ a.labs-dram-item {
 }
 
 .labs-tastings-hero {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px;
-  margin-bottom: 14px;
-  background: linear-gradient(135deg, var(--labs-surface) 0%, var(--labs-surface-elevated) 100%);
-  border: 1px solid var(--labs-border);
-  border-radius: var(--labs-radius-md, 14px);
-  overflow: hidden;
   position: relative;
-}
-
-.labs-tastings-hero-text {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.labs-tastings-hero-eyebrow {
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  color: var(--labs-accent);
-  text-transform: uppercase;
-  margin-bottom: 6px;
-  font-weight: 600;
-}
-
-.labs-tastings-hero-title {
-  font-size: 18px;
-  line-height: 1.25;
-  color: var(--labs-text);
-  margin: 0 0 6px 0;
-  font-weight: 600;
-}
-
-.labs-tastings-hero-body {
-  font-size: 13px;
-  line-height: 1.45;
-  color: var(--labs-text-muted);
-  margin: 0 0 10px 0;
-}
-
-.labs-tastings-hero-hint {
-  font-size: 11px;
-  color: var(--labs-text-muted);
-  opacity: 0.8;
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
+  text-align: center;
+  padding: 16px 16px 28px;
+  margin-bottom: 18px;
+  overflow: hidden;
+  isolation: isolate;
 }
 
-.labs-tastings-hero-hint::before {
-  content: "↑";
-  font-size: 12px;
-  opacity: 0.7;
+.labs-tastings-hero-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 40%, color-mix(in srgb, var(--labs-accent) 8%, transparent) 0%, transparent 70%),
+    radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--labs-accent) 6%, transparent) 0%, transparent 60%);
+}
+
+.labs-tastings-hero-image-wrap {
+  width: min(420px, 80vw);
+  margin-bottom: -18px;
+  position: relative;
+  z-index: 1;
 }
 
 .labs-tastings-hero-image {
-  flex: 0 0 auto;
-  width: 96px;
-  height: 96px;
-  border-radius: 12px;
+  width: 100%;
+  height: auto;
+  display: block;
   object-fit: cover;
-  opacity: 0.92;
+  opacity: 0.45;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 45%, black 30%, transparent 75%);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 45%, black 30%, transparent 75%);
+}
+
+.labs-tastings-hero-eyebrow {
+  position: relative;
+  z-index: 2;
+  font-family: var(--font-ui, 'DM Sans', sans-serif);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--labs-accent);
+  margin-bottom: 14px;
+}
+
+.labs-tastings-hero-brand {
+  position: relative;
+  z-index: 2;
+  font-family: var(--font-display, 'Playfair Display', Georgia, serif);
+  font-size: clamp(44px, 9vw, 80px);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: var(--labs-text);
+  margin: 0 0 14px 0;
+}
+
+.labs-tastings-hero-tagline {
+  position: relative;
+  z-index: 2;
+  font-family: var(--font-display, 'Playfair Display', Georgia, serif);
+  font-size: clamp(16px, 2.4vw, 22px);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--labs-text-muted);
+  margin: 0;
+  letter-spacing: 0.01em;
 }
 
 @media (max-width: 480px) {
   .labs-tastings-hero {
-    padding: 12px;
-    gap: 12px;
+    padding: 8px 12px 20px;
+    margin-bottom: 14px;
   }
-  .labs-tastings-hero-image {
-    width: 72px;
-    height: 72px;
+  .labs-tastings-hero-image-wrap {
+    width: min(320px, 78vw);
+    margin-bottom: -12px;
   }
-  .labs-tastings-hero-title {
-    font-size: 16px;
+  .labs-tastings-hero-eyebrow {
+    font-size: 11px;
+    margin-bottom: 10px;
   }
-  .labs-tastings-hero-body {
-    font-size: 12px;
+  .labs-tastings-hero-brand {
+    margin-bottom: 10px;
   }
 }
 

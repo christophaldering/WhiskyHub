@@ -428,35 +428,30 @@ export default function LabsTastings() {
       )}
 
       {!activeTab && filterTab === "all" && !timeFilter && !searchQuery.trim() && (
-        <div
+        <section
           className="labs-tastings-hero labs-fade-in"
           data-testid="section-tastings-hero"
         >
-          <div className="labs-tastings-hero-text">
-            <div className="labs-tastings-hero-eyebrow" data-testid="text-tastings-hero-eyebrow">
-              {t("tastings.heroEyebrow", "WHISKY TASTING PLATFORM")}
-            </div>
-            <h2 className="labs-tastings-hero-title" data-testid="text-tastings-hero-title">
-              {t("tastings.heroTitle", "Where tasting becomes reflection.")}
-            </h2>
-            <p className="labs-tastings-hero-body" data-testid="text-tastings-hero-body">
-              {t(
-                "tastings.heroBody",
-                "Join a live round, taste solo or host your own — your tastings come together here.",
-              )}
-            </p>
-            <span className="labs-tastings-hero-hint" data-testid="text-tastings-hero-hint">
-              {t("tastings.heroHint", "Pick an option above to get started")}
-            </span>
+          <div className="labs-tastings-hero-glow" aria-hidden="true" />
+          <div className="labs-tastings-hero-image-wrap">
+            <img
+              src={heroImage}
+              alt=""
+              aria-hidden="true"
+              className="labs-tastings-hero-image"
+              data-testid="img-tastings-hero"
+            />
           </div>
-          <img
-            src={heroImage}
-            alt=""
-            aria-hidden="true"
-            className="labs-tastings-hero-image"
-            data-testid="img-tastings-hero"
-          />
-        </div>
+          <div className="labs-tastings-hero-eyebrow" data-testid="text-tastings-hero-eyebrow">
+            {t("tastings.heroEyebrow", "WHISKY TASTING PLATFORM")}
+          </div>
+          <h1 className="labs-tastings-hero-brand" data-testid="text-tastings-hero-brand">
+            {t("tastings.heroBrand", "CaskSense")}
+          </h1>
+          <p className="labs-tastings-hero-tagline" data-testid="text-tastings-hero-tagline">
+            {t("tastings.heroTitle", "Where tasting becomes reflection.")}
+          </p>
+        </section>
       )}
 
       {!activeTab && (
