@@ -67,6 +67,15 @@ const resources = {
         summaryHandoutsLinked: "Handouts linked",
         importAnother: "Import more",
         viewDistilleries: "View distilleries",
+        progressCount: "{{done}} / {{total}} processed",
+        stage: {
+          queued: "Queued",
+          uploading: "Uploading",
+          extracting: "Extracting text",
+          analyzing: "AI analyzing",
+          done: "Done",
+          error: "Error",
+        },
       },
       
       emptyState: {
@@ -9199,6 +9208,15 @@ const resources = {
         summaryHandoutsLinked: "Handouts verknüpft",
         importAnother: "Weitere importieren",
         viewDistilleries: "Brennereien ansehen",
+        progressCount: "{{done}} / {{total}} verarbeitet",
+        stage: {
+          queued: "Wartet",
+          uploading: "Lade hoch",
+          extracting: "Extrahiere Text",
+          analyzing: "KI analysiert",
+          done: "Fertig",
+          error: "Fehler",
+        },
       },
       emptyState: {
         dramsTitle: "Noch keine Drams",

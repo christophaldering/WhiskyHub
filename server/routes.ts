@@ -21729,6 +21729,36 @@ Be accurate. If you cannot read a value, use null. Match whiskies to the known l
   // ============================================================
   // BATCH IMPORT — multi-file PDF/Word -> distilleries + whiskies + handouts
   // ============================================================
+  // In-memory job store for background analyze processing.
+  // Jobs auto-expire after 1 hour; sweep on every read.
+  type BatchFileStage = "queued" | "uploading" | "extracting" | "analyzing" | "done" | "error";
+  interface BatchFileState {
+    filename: string;
+    status: "ok" | "error" | "pending";
+    stage: BatchFileStage;
+    error: string | null;
+    fileUrl: string | null;
+    contentType: string | null;
+    distilleries: any[];
+  }
+  interface BatchJob {
+    id: string;
+    hostId: string;
+    createdAt: number;
+    updatedAt: number;
+    overallStatus: "running" | "done" | "error";
+    files: BatchFileState[];
+  }
+  const batchJobs: Map<string, BatchJob> = (globalThis as any).__batchImportJobs || new Map();
+  (globalThis as any).__batchImportJobs = batchJobs;
+  const BATCH_JOB_TTL_MS = 60 * 60 * 1000;
+  const sweepBatchJobs = () => {
+    const now = Date.now();
+    for (const [id, j] of Array.from(batchJobs.entries())) {
+      if (now - j.updatedAt > BATCH_JOB_TTL_MS) batchJobs.delete(id);
+    }
+  };
+
   app.post("/api/labs/batch-import/analyze", docUpload.array("files", 25), async (req: Request, res: Response) => {
     try {
       if (await isAIDisabled("benchmark_analyze")) {
@@ -21749,70 +21779,95 @@ Be accurate. If you cannot read a value, use null. Match whiskies to the known l
         return res.status(503).json({ message: "Keine KI verfügbar" });
       }
 
-      const { extractTextFromPdf } = await import("./pdf-utils");
-      const { canonicalizeDistilleryName } = await import("@shared/distillery-normalizer");
-      const objectStorage = new ObjectStorageService();
-      const existingDistilleries = await storage.getAllDistilleries();
-      const existingWhiskies = await storage.getActiveWhiskies();
-      const existingLibrary = await storage.listHandoutLibraryByHost(hostId);
+      // Create job and respond immediately with jobId; processing runs in background.
+      sweepBatchJobs();
+      const jobId = `bj_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      const job: BatchJob = {
+        id: jobId,
+        hostId,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        overallStatus: "running",
+        files: files.map(f => ({
+          filename: f.originalname,
+          status: "pending",
+          stage: "queued",
+          error: null,
+          fileUrl: null,
+          contentType: null,
+          distilleries: [],
+        })),
+      };
+      batchJobs.set(jobId, job);
+      res.json({ jobId, fileCount: files.length });
 
-      const norm = (s: string | null | undefined) => (s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-      // Canonical map: canonical-name -> distillery row (handles "The Macallan" vs "Macallan" etc.).
-      const distilleryByCanonical = new Map<string, typeof existingDistilleries[number]>();
-      for (const d of existingDistilleries) {
-        const c = canonicalizeDistilleryName(d.name);
-        if (c && !distilleryByCanonical.has(c)) distilleryByCanonical.set(c, d);
-      }
-      // Layer alias rows on top so known variants resolve to the same target.
-      try {
-        const { db } = await import("./db");
-        const { distilleryAliases } = await import("@shared/schema");
-        const aliasRows = await db.select().from(distilleryAliases);
-        const distById = new Map(existingDistilleries.map(d => [d.id, d]));
-        for (const a of aliasRows) {
-          const target = distById.get(a.distilleryId);
-          if (target && !distilleryByCanonical.has(a.alias)) {
-            distilleryByCanonical.set(a.alias, target);
-          }
-        }
-      } catch (aliasErr) {
-        console.warn("[batch-import/analyze] alias lookup failed", aliasErr);
-      }
-      const distillerySet = new Set(existingDistilleries.map(d => norm(d.name)));
-
-      const fileResults: Array<Record<string, any>> = [];
-
-      for (const file of files) {
-        const result: Record<string, any> = {
-          filename: file.originalname,
-          status: "ok" as string,
-          error: null as string | null,
-          fileUrl: null as string | null,
-          contentType: null as string | null,
-          distilleries: [] as any[],
-        };
+      // ----- background processing -----
+      (async () => {
         try {
-          if (isWordFile(file)) {
-            await maybeConvertWordFileToPdf(file);
-          }
-          const isPdf = file.mimetype === "application/pdf" || file.originalname.toLowerCase().endsWith(".pdf");
-          if (!isPdf) throw new Error("Nicht unterstützter Dateityp (nur PDF und Word)");
+          const { extractTextFromPdf } = await import("./pdf-utils");
+          const { canonicalizeDistilleryName } = await import("@shared/distillery-normalizer");
+          const objectStorage = new ObjectStorageService();
+          const existingDistilleries = await storage.getAllDistilleries();
+          const existingWhiskies = await storage.getActiveWhiskies();
+          const existingLibrary = await storage.listHandoutLibraryByHost(hostId);
 
-          let text = "";
+          const norm = (s: string | null | undefined) => (s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+          // Canonical map: canonical-name -> distillery row (handles "The Macallan" vs "Macallan" etc.).
+          const distilleryByCanonical = new Map<string, typeof existingDistilleries[number]>();
+          for (const d of existingDistilleries) {
+            const c = canonicalizeDistilleryName(d.name);
+            if (c && !distilleryByCanonical.has(c)) distilleryByCanonical.set(c, d);
+          }
+          // Layer alias rows on top so known variants resolve to the same target.
           try {
-            text = (await extractTextFromPdf(file.buffer)) || "";
-          } catch (extractErr: any) {
-            throw new Error("Text konnte nicht extrahiert werden: " + (extractErr?.message || "unbekannt"));
+            const { db } = await import("./db");
+            const { distilleryAliases } = await import("@shared/schema");
+            const aliasRows = await db.select().from(distilleryAliases);
+            const distById = new Map(existingDistilleries.map(d => [d.id, d]));
+            for (const a of aliasRows) {
+              const target = distById.get(a.distilleryId);
+              if (target && !distilleryByCanonical.has(a.alias)) {
+                distilleryByCanonical.set(a.alias, target);
+              }
+            }
+          } catch (aliasErr) {
+            console.warn("[batch-import/analyze] alias lookup failed", aliasErr);
           }
-          const cleaned = text.replace(/\s+/g, " ").trim();
-          if (cleaned.length < 30) throw new Error("Datei enthält keinen lesbaren Text");
 
-          const fileUrl = await uploadBufferToObjectStorage(objectStorage, file.buffer, "application/pdf");
-          result.fileUrl = fileUrl;
-          result.contentType = "application/pdf";
+          const touch = () => { job.updatedAt = Date.now(); };
+          const setStage = (idx: number, stage: BatchFileStage) => {
+            const s = job.files[idx];
+            if (s) { s.stage = stage; touch(); }
+          };
+
+          for (let fIdx = 0; fIdx < files.length; fIdx++) {
+            const file = files[fIdx];
+            const state = job.files[fIdx];
+            try {
+              if (isWordFile(file)) {
+                await maybeConvertWordFileToPdf(file);
+              }
+              const isPdf = file.mimetype === "application/pdf" || file.originalname.toLowerCase().endsWith(".pdf");
+              if (!isPdf) throw new Error("Nicht unterstützter Dateityp (nur PDF und Word)");
+
+              setStage(fIdx, "extracting");
+              let text = "";
+              try {
+                text = (await extractTextFromPdf(file.buffer)) || "";
+              } catch (extractErr: any) {
+                throw new Error("Text konnte nicht extrahiert werden: " + (extractErr?.message || "unbekannt"));
+              }
+              const cleaned = text.replace(/\s+/g, " ").trim();
+              if (cleaned.length < 30) throw new Error("Datei enthält keinen lesbaren Text");
+
+              setStage(fIdx, "uploading");
+              const fileUrl = await uploadBufferToObjectStorage(objectStorage, file.buffer, "application/pdf");
+              state.fileUrl = fileUrl;
+              state.contentType = "application/pdf";
+              setStage(fIdx, "analyzing");
 
           const sysPrompt = "Du bist ein Experte für Whisky-Tastinghefte. Du erhältst den extrahierten Text einer PDF (oft Deutsch) und gibst eine strukturierte Übersicht aller darin beschriebenen Brennereien und ihrer Whiskys zurück. Antworte ausschließlich mit gültigem JSON nach dem Schema. Wenn ein Heft mehrere Brennereien beschreibt, liste sie alle einzeln. Wenn ein Block ohne Brennereiname auftritt, erfinde KEINEN Namen — gruppiere sie unter dem Pseudonamen 'Unbekannt'.";
-          const userPrompt = `Antworte mit JSON dieses Schemas:
+              const userPrompt = `Antworte mit JSON dieses Schemas:
 {
   "distilleries": [
     {
@@ -21847,89 +21902,120 @@ DATEINAME: ${file.originalname}
 TEXT:
 ${cleaned.slice(0, 60000)}`;
 
-          const completion = await openai.chat.completions.create({
-            model: process.env.AI_INTEGRATIONS_OPENAI_MODEL || "gpt-4o",
-            temperature: 0.1,
-            response_format: { type: "json_object" },
-            messages: [
-              { role: "system", content: sysPrompt },
-              { role: "user", content: userPrompt },
-            ],
-          });
-          const aiText = completion.choices[0]?.message?.content || "{}";
-          let parsed: any;
-          try { parsed = JSON.parse(aiText); } catch { throw new Error("KI-Antwort konnte nicht gelesen werden"); }
-          const distRaw = Array.isArray(parsed?.distilleries) ? parsed.distilleries : [];
+              const completion = await openai.chat.completions.create({
+                model: process.env.AI_INTEGRATIONS_OPENAI_MODEL || "gpt-4o",
+                temperature: 0.1,
+                response_format: { type: "json_object" },
+                messages: [
+                  { role: "system", content: sysPrompt },
+                  { role: "user", content: userPrompt },
+                ],
+              });
+              const aiText = completion.choices[0]?.message?.content || "{}";
+              let parsed: any;
+              try { parsed = JSON.parse(aiText); } catch { throw new Error("KI-Antwort konnte nicht gelesen werden"); }
+              const distRaw = Array.isArray(parsed?.distilleries) ? parsed.distilleries : [];
 
-          result.distilleries = distRaw.map((d: any) => {
-            const dname = String(d?.name || "Unbekannt").trim();
-            const dnorm = norm(dname);
-            const dCanonical = canonicalizeDistilleryName(dname);
-            const existingDistillery =
-              (dCanonical ? distilleryByCanonical.get(dCanonical) : undefined)
-              || existingDistilleries.find(x => norm(x.name) === dnorm);
-            const whiskies = Array.isArray(d?.whiskies) ? d.whiskies : [];
-            return {
-              name: dname,
-              country: d?.country || null,
-              region: d?.region || null,
-              founded: typeof d?.founded === "number" ? d.founded : null,
-              description: d?.description || null,
-              existingDistilleryId: existingDistillery?.id || null,
-              isNewDistillery: !existingDistillery,
-              selected: true,
-              whiskies: whiskies.map((w: any) => {
-                const wname = String(w?.name || "").trim();
-                const wAge = w?.age ? String(w.age).trim() : "";
-                const wAbv = typeof w?.abv === "number" ? w.abv : (w?.abv ? Number(String(w.abv).replace(/[^0-9.,]/g, "").replace(",", ".")) || null : null);
-                const ageNorm = (a: string | null | undefined) => String(a || "").replace(/\s+/g, "").toLowerCase();
-                const abvNorm = (v: any) => (v == null ? "" : String(Math.round(Number(v) * 10) / 10));
-                const wkey = `${norm(wname)}|${dnorm}|${ageNorm(wAge)}|${abvNorm(wAbv)}`;
-                const wkeyLoose = `${norm(wname)}|${dnorm}`;
-                const dupWhisky =
-                  existingWhiskies.find(x => `${norm(x.name)}|${norm(x.distillery || "")}|${ageNorm(x.age)}|${abvNorm(x.abv)}` === wkey)
-                  || existingWhiskies.find(x => `${norm(x.name)}|${norm(x.distillery || "")}` === wkeyLoose && !x.age && !x.abv);
-                const dupLib =
-                  existingLibrary.find(x => `${norm(x.whiskyName)}|${norm(x.distillery || "")}` === wkeyLoose);
+              state.distilleries = distRaw.map((d: any) => {
+                const dname = String(d?.name || "Unbekannt").trim();
+                const dnorm = norm(dname);
+                const dCanonical = canonicalizeDistilleryName(dname);
+                const existingDistillery =
+                  (dCanonical ? distilleryByCanonical.get(dCanonical) : undefined)
+                  || existingDistilleries.find(x => norm(x.name) === dnorm);
+                const whiskies = Array.isArray(d?.whiskies) ? d.whiskies : [];
                 return {
-                  name: wname,
-                  distillery: dname,
-                  age: wAge || null,
-                  abv: wAbv,
-                  caskType: w?.caskType || null,
-                  category: w?.category || null,
-                  bottler: w?.bottler || null,
-                  distilledYear: w?.distilledYear || null,
-                  bottledYear: w?.bottledYear || null,
-                  ppm: typeof w?.ppm === "number" ? w.ppm : null,
-                  noseNotes: w?.noseNotes || null,
-                  tasteNotes: w?.tasteNotes || null,
-                  finishNotes: w?.finishNotes || null,
-                  hostSummary: w?.hostSummary || null,
-                  existingWhiskyId: dupWhisky?.id || null,
-                  existingLibraryId: dupLib?.id || null,
-                  isNew: !dupWhisky && !dupLib,
+                  name: dname,
+                  country: d?.country || null,
+                  region: d?.region || null,
+                  founded: typeof d?.founded === "number" ? d.founded : null,
+                  description: d?.description || null,
+                  existingDistilleryId: existingDistillery?.id || null,
+                  isNewDistillery: !existingDistillery,
                   selected: true,
+                  whiskies: whiskies.map((w: any) => {
+                    const wname = String(w?.name || "").trim();
+                    const wAge = w?.age ? String(w.age).trim() : "";
+                    const wAbv = typeof w?.abv === "number" ? w.abv : (w?.abv ? Number(String(w.abv).replace(/[^0-9.,]/g, "").replace(",", ".")) || null : null);
+                    const ageNorm = (a: string | null | undefined) => String(a || "").replace(/\s+/g, "").toLowerCase();
+                    const abvNorm = (v: any) => (v == null ? "" : String(Math.round(Number(v) * 10) / 10));
+                    const wkey = `${norm(wname)}|${dnorm}|${ageNorm(wAge)}|${abvNorm(wAbv)}`;
+                    const wkeyLoose = `${norm(wname)}|${dnorm}`;
+                    const dupWhisky =
+                      existingWhiskies.find(x => `${norm(x.name)}|${norm(x.distillery || "")}|${ageNorm(x.age)}|${abvNorm(x.abv)}` === wkey)
+                      || existingWhiskies.find(x => `${norm(x.name)}|${norm(x.distillery || "")}` === wkeyLoose && !x.age && !x.abv);
+                    const dupLib =
+                      existingLibrary.find(x => `${norm(x.whiskyName)}|${norm(x.distillery || "")}` === wkeyLoose);
+                    return {
+                      name: wname,
+                      distillery: dname,
+                      age: wAge || null,
+                      abv: wAbv,
+                      caskType: w?.caskType || null,
+                      category: w?.category || null,
+                      bottler: w?.bottler || null,
+                      distilledYear: w?.distilledYear || null,
+                      bottledYear: w?.bottledYear || null,
+                      ppm: typeof w?.ppm === "number" ? w.ppm : null,
+                      noseNotes: w?.noseNotes || null,
+                      tasteNotes: w?.tasteNotes || null,
+                      finishNotes: w?.finishNotes || null,
+                      hostSummary: w?.hostSummary || null,
+                      existingWhiskyId: dupWhisky?.id || null,
+                      existingLibraryId: dupLib?.id || null,
+                      isNew: !dupWhisky && !dupLib,
+                      selected: true,
+                    };
+                  }),
                 };
-              }),
-            };
-          });
-        } catch (err: any) {
-          result.status = "error";
-          result.error = err?.message || "Verarbeitung fehlgeschlagen";
-        }
-        fileResults.push(result);
-        if (result.status === "ok") {
-          for (const d of result.distilleries) {
-            distillerySet.add(norm(d.name));
+              });
+              state.status = "ok";
+              state.stage = "done";
+              touch();
+            } catch (err: any) {
+              state.status = "error";
+              state.stage = "error";
+              state.error = err?.message || "Verarbeitung fehlgeschlagen";
+              touch();
+            }
           }
+          job.overallStatus = "done";
+          touch();
+        } catch (e: any) {
+          console.error("[batch-import/analyze] background error:", e);
+          job.overallStatus = "error";
+          for (const s of job.files) {
+            if (s.status === "pending") {
+              s.status = "error";
+              s.stage = "error";
+              s.error = e?.message || "Analyse fehlgeschlagen";
+            }
+          }
+          job.updatedAt = Date.now();
         }
-      }
-
-      res.json({ files: fileResults });
+      })();
     } catch (e: any) {
       console.error("[batch-import/analyze] error:", e);
-      res.status(500).json({ message: e?.message || "Analyse fehlgeschlagen" });
+      if (!res.headersSent) res.status(500).json({ message: e?.message || "Analyse fehlgeschlagen" });
+    }
+  });
+
+  app.get("/api/labs/batch-import/jobs/:jobId", async (req: Request, res: Response) => {
+    try {
+      const hostId = (req.headers["x-participant-id"] as string) || "";
+      if (!hostId) return res.status(401).json({ message: "Authentifizierung erforderlich" });
+      sweepBatchJobs();
+      const job = batchJobs.get(req.params.jobId);
+      if (!job) return res.status(404).json({ message: "Job nicht gefunden" });
+      if (job.hostId !== hostId) return res.status(403).json({ message: "Kein Zugriff auf diesen Job" });
+      res.json({
+        id: job.id,
+        overallStatus: job.overallStatus,
+        files: job.files,
+      });
+    } catch (e: any) {
+      console.error("[batch-import/jobs] error:", e);
+      res.status(500).json({ message: e?.message || "Job-Status fehlgeschlagen" });
     }
   });
 

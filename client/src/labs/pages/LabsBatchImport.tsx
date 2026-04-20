@@ -1,8 +1,10 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { useSession } from "@/lib/session";
 import { Upload, Loader2, Check, X, AlertCircle, FileText, Database, Wine, ChevronDown, ChevronUp, ArrowLeft } from "lucide-react";
+
+type BatchFileStage = "queued" | "uploading" | "extracting" | "analyzing" | "done" | "error";
 
 interface BatchWhisky {
   name: string;
@@ -39,7 +41,8 @@ interface BatchDistillery {
 
 interface BatchFileResult {
   filename: string;
-  status: "ok" | "error";
+  status: "ok" | "error" | "pending";
+  stage: BatchFileStage;
   error: string | null;
   fileUrl: string | null;
   contentType: string | null;
@@ -64,6 +67,8 @@ export default function LabsBatchImport() {
   const [analyzing, setAnalyzing] = useState(false);
   const [committing, setCommitting] = useState(false);
   const [results, setResults] = useState<BatchFileResult[] | null>(null);
+  const [progress, setProgress] = useState<BatchFileResult[] | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
   const [summary, setSummary] = useState<CommitSummary | null>(null);
   const [error, setError] = useState<string>("");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -81,7 +86,7 @@ export default function LabsBatchImport() {
   const removeFile = (i: number) => setFiles(prev => prev.filter((_, idx) => idx !== i));
 
   const analyze = async () => {
-    setError(""); setAnalyzing(true); setResults(null); setSummary(null);
+    setError(""); setAnalyzing(true); setResults(null); setSummary(null); setProgress(null); setJobId(null);
     try {
       const fd = new FormData();
       for (const f of files) fd.append("files", f);
@@ -93,13 +98,51 @@ export default function LabsBatchImport() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message || t("batchImport.analysisFailed"));
-      setResults(json.files as BatchFileResult[]);
+      setJobId(json.jobId as string);
+      setProgress(files.map(f => ({
+        filename: f.name, status: "pending", stage: "queued",
+        error: null, fileUrl: null, contentType: null, distilleries: [],
+      })));
     } catch (e: any) {
       setError(e?.message || t("batchImport.analysisFailed"));
-    } finally {
       setAnalyzing(false);
     }
   };
+
+  // Poll job status while analyzing.
+  useEffect(() => {
+    if (!jobId || !analyzing) return;
+    let stopped = false;
+    const tick = async () => {
+      try {
+        const r = await fetch(`/api/labs/batch-import/jobs/${jobId}`, {
+          headers: { "x-participant-id": pid },
+        });
+        if (!r.ok) {
+          const j = await r.json().catch(() => ({}));
+          throw new Error(j?.message || t("batchImport.analysisFailed"));
+        }
+        const j = await r.json();
+        if (stopped) return;
+        setProgress(j.files as BatchFileResult[]);
+        if (j.overallStatus !== "running") {
+          setResults(j.files as BatchFileResult[]);
+          setAnalyzing(false);
+          stopped = true;
+          return;
+        }
+      } catch (e: any) {
+        if (stopped) return;
+        setError(e?.message || t("batchImport.analysisFailed"));
+        setAnalyzing(false);
+        stopped = true;
+        return;
+      }
+      if (!stopped) setTimeout(tick, 1500);
+    };
+    const id = setTimeout(tick, 800);
+    return () => { stopped = true; clearTimeout(id); };
+  }, [jobId, analyzing, pid, t]);
 
   const updateDist = (fi: number, di: number, patch: Partial<BatchDistillery>) => {
     setResults(prev => prev ? prev.map((f, i) => i !== fi ? f : { ...f, distilleries: f.distilleries.map((d, j) => j !== di ? d : { ...d, ...patch }) }) : prev);
@@ -128,7 +171,7 @@ export default function LabsBatchImport() {
   };
 
   const reset = () => {
-    setFiles([]); setResults(null); setSummary(null); setError(""); setExpanded({});
+    setFiles([]); setResults(null); setProgress(null); setJobId(null); setSummary(null); setError(""); setExpanded({});
     if (inputRef.current) inputRef.current.value = "";
   };
 
@@ -185,7 +228,37 @@ export default function LabsBatchImport() {
         </div>
       )}
 
-      {!results && !summary && (
+      {analyzing && progress && (
+        <div className="labs-card p-4 mb-4" data-testid="card-batch-progress">
+          <div className="flex items-center gap-2 mb-3">
+            <Loader2 className="w-4 h-4" style={{ color: "var(--labs-accent)", animation: "spin 1s linear infinite" }} />
+            <span className="labs-serif text-sm font-semibold">{t("batchImport.analyzing")}</span>
+            <span className="text-xs" style={{ color: "var(--labs-text-muted)" }} data-testid="text-batch-progress-count">
+              {t("batchImport.progressCount", { done: progress.filter(p => p.stage === "done" || p.stage === "error").length, total: progress.length })}
+            </span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {progress.map((p, i) => {
+              const isDone = p.stage === "done";
+              const isErr = p.stage === "error";
+              const color = isErr ? "var(--labs-danger)" : isDone ? "var(--labs-success)" : "var(--labs-text-muted)";
+              return (
+                <div key={i} className="flex items-center gap-2 px-3 py-2 rounded" style={{ background: "var(--labs-surface-elevated)" }} data-testid={`item-batch-progress-${i}`}>
+                  {isErr ? <X className="w-4 h-4 flex-shrink-0" style={{ color }} />
+                    : isDone ? <Check className="w-4 h-4 flex-shrink-0" style={{ color }} />
+                    : <Loader2 className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-accent)", animation: "spin 1s linear infinite" }} />}
+                  <span className="flex-1 text-sm truncate" style={{ color: "var(--labs-text)" }} data-testid={`text-batch-progress-name-${i}`}>{p.filename}</span>
+                  <span className="text-xs" style={{ color }} data-testid={`text-batch-progress-stage-${i}`}>
+                    {isErr && p.error ? p.error : t(`batchImport.stage.${p.stage}`)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {!results && !summary && !analyzing && (
         <div className="labs-card p-6 text-center" style={{ marginBottom: 16 }}>
           <div
             onDrop={onDrop}
