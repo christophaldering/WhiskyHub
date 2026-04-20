@@ -851,7 +851,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
       <MenuButton theme={tv}
         icon={<HandHeart style={{ width: 18, height: 18, color: tv.accent }} />}
         label={t("m2.profile.support", "Support Us")}
-        onClick={() => { onClose(); navigate(isLabs ? "/labs/donate" : "/m2/discover/donate"); }}
+        onClick={() => { onClose(); navigate(isLabs ? "/labs/about#support" : "/m2/discover/about"); }}
         testId="m2-profile-support"
       />
 

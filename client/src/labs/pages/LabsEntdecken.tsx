@@ -31,7 +31,6 @@
         import LabsPairings from "@/labs/pages/LabsPairings";
         import LabsThemenspeicher from "@/labs/pages/LabsThemenspeicher";
         import LabsAbout from "@/labs/pages/LabsAbout";
-        import LabsDonate from "@/labs/pages/LabsDonate";
 
         type BibliothekSectionKey = "nachschlagewerk" | "tasting-wissen" | "rabbit-hole" | "ueber-casksense";
 
@@ -97,13 +96,12 @@
           {
             key: "ueber-casksense",
             icon: Info,
-            labelKey: "explore.bibliothek.ueberTitle",
+            labelKey: "about.title",
             labelFb: "Über CaskSense",
-            descKey: "explore.bibliothek.ueberDesc",
-            descFb: "About & Donate",
+            descKey: "m2.discover.aboutSubtitle",
+            descFb: "The story behind CaskSense",
             subs: [
               { sub: "about", labelKey: "about.title", labelFb: "About", icon: Info, Component: LabsAbout },
-              { sub: "donate", labelKey: "donate.title", labelFb: "Donate", icon: Heart, Component: LabsDonate },
             ],
           },
         ];
@@ -728,6 +726,7 @@
                     {activeSection && (
                       <div data-testid={`explore-bibliothek-section-${activeSection.key}`}>
                         {(() => {
+                          if (activeSection.subs.length <= 1) return null;
                           const subTiles: HubTileDef[] = activeSection.subs.map((s) => ({
                             icon: s.icon,
                             labelKey: s.labelKey,

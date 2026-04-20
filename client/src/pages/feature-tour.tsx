@@ -100,7 +100,6 @@ function buildSlides(): SlideData[] {
         { icon: Sun, titleKey: "themes", descKey: "themesDesc", color: "text-orange-600" },
         { icon: Globe, titleKey: "languages", descKey: "languagesDesc", color: "text-blue-600" },
         { icon: Smartphone, titleKey: "pwa", descKey: "pwaDesc", color: "text-green-600" },
-        { icon: Heart, titleKey: "donate", descKey: "donateDesc", color: "text-red-600" },
       ],
     },
   ];

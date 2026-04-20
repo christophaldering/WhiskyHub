@@ -118,7 +118,6 @@ const LabsStatisticalMethods = lazy(() => import("@/labs/pages/LabsStatisticalMe
 const LabsLiterature = lazy(() => import("@/labs/pages/LabsLiterature"));
 const LabsBackground = lazy(() => import("@/labs/pages/LabsBackground"));
 const LabsAbout = lazy(() => import("@/labs/pages/LabsAbout"));
-const LabsDonate = lazy(() => import("@/labs/pages/LabsDonate"));
 const LabsImpressum = lazy(() => import("@/labs/pages/LabsImpressum"));
 const LabsPrivacy = lazy(() => import("@/labs/pages/LabsPrivacy"));
 const LabsTerms = lazy(() => import("@/labs/pages/LabsTerms"));
@@ -407,7 +406,7 @@ function SmartRedirectToLabs() {
     "/discover/community": "/labs/community",
     "/discover/distilleries": "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=destillerien",
     "/discover/bottlers": "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=bottlers",
-    "/discover/donate": "/labs/explore?tab=bibliothek&section=ueber-casksense&sub=donate",
+    "/discover/donate": "/labs/explore?tab=bibliothek&section=ueber-casksense&sub=about",
     "/discover/activity": "/labs/activity",
     "/discover/recommendations": "/labs/taste/recommendations",
     "/discover/database": "/labs/explore",
@@ -455,7 +454,7 @@ function SmartRedirectToLabs() {
     "/help": "/labs/explore?tab=bibliothek&section=ueber-casksense&sub=about",
     "/about": "/labs/explore?tab=bibliothek&section=ueber-casksense&sub=about",
     "/features": "/labs/explore?tab=bibliothek&section=ueber-casksense&sub=about",
-    "/donate": "/labs/explore?tab=bibliothek&section=ueber-casksense&sub=donate",
+    "/donate": "/labs/explore?tab=bibliothek&section=ueber-casksense&sub=about",
     "/reminders": "/labs/tastings",
     "/simple-host": "/labs/host",
   };
@@ -580,7 +579,7 @@ function Router() {
         <Route path="/m2/discover/rabbit-hole">{() => <Redirect to="/labs/discover/rabbit-hole/themenspeicher" />}</Route>
         <Route path="/m2/discover/vocabulary">{() => <Redirect to="/labs/discover/lexicon?tab=flavour-map" />}</Route>
         <Route path="/m2/discover/about">{() => <Redirect to="/labs/about" />}</Route>
-        <Route path="/m2/discover/donate">{() => <Redirect to="/labs/donate" />}</Route>
+        <Route path="/m2/discover/donate">{() => <Redirect to="/labs/about#support" />}</Route>
         <Route path="/m2/discover/activity">{() => <Redirect to="/labs/activity" />}</Route>
         <Route path="/m2/discover/community">{() => <Redirect to="/labs/community" />}</Route>
         <Route path="/m2/discover">{() => <Redirect to="/labs/explore" />}</Route>
@@ -715,7 +714,7 @@ function Router() {
               <Route path="/labs/solo">{() => <RedirectWithQuery to="/labs/tastings" query="tab=solo" />}</Route>
               <Route path="/labs/fair-mode" component={LabsFairMode} />
               <Route path="/labs/about">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=ueber-casksense&sub=about" />}</Route>
-              <Route path="/labs/donate">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=ueber-casksense&sub=donate" />}</Route>
+              <Route path="/labs/donate">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=ueber-casksense&sub=about" />}</Route>
               <Route path="/labs/impressum" component={LabsImpressum} />
               <Route path="/labs/privacy" component={LabsPrivacy} />
               <Route path="/labs/terms" component={LabsTerms} />

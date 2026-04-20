@@ -1,15 +1,16 @@
 import { useTranslation } from "react-i18next";
-import { useLocation } from "wouter";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
-import { Heart, Info, ChevronLeft } from "lucide-react";
+import { Heart, Info, ChevronLeft, ExternalLink } from "lucide-react";
 import { useIsEmbeddedInExplore } from "@/labs/embeddedExploreContext";
 import authorPhoto from "@assets/22A3ABF8-0085-4C82-97DF-EAA0ACD46B4E_1771448218726.png";
 
 type Block = { heading?: string; lines: string[]; italic?: boolean; accent?: boolean };
 
+const HOSPIZ_NAME = "Christina-Kleintjes-Hospiz-Stiftung";
+const HOSPIZ_URL = "https://c-kleintjes-hospiz-stiftung.de";
+
 export default function LabsAbout() {
   const { t } = useTranslation();
-  const [, navigate] = useLocation();
   const goBackToDiscover = useBackNavigation("/labs/explore");
   const blocks = t("about.blocks", { returnObjects: true }) as Block[];
   const embedded = useIsEmbeddedInExplore();
@@ -90,20 +91,45 @@ export default function LabsAbout() {
         </div>
       </div>
 
-      <button
-        onClick={() => navigate("/labs/donate")}
-        className="w-full mt-4 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all"
-        style={{
-          background: "var(--labs-accent-muted)",
-          border: "1px solid var(--labs-accent)",
-          color: "var(--labs-accent)",
-          cursor: "pointer",
-        }}
-        data-testid="labs-about-donate-btn"
-      >
-        <Heart className="w-4 h-4" />
-        {t("m2.discover.aboutDonateButton", "Donate / Hospice")}
-      </button>
+      <div id="support" className="labs-card p-4 mt-5" data-testid="labs-about-support">
+        <div className="flex items-center gap-2 mb-2">
+          <Heart className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+          <h3 className="labs-serif text-sm font-semibold" style={{ color: "var(--labs-accent)" }}>
+            {t("about.supportTitle", "Support the project")}
+          </h3>
+        </div>
+        <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)", lineHeight: 1.6 }} data-testid="labs-about-support-intro">
+          {t("about.supportIntro")}
+        </p>
+        <a
+          href={HOSPIZ_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-xs mb-3"
+          style={{ color: "var(--labs-accent)", textDecoration: "none" }}
+          data-testid="labs-about-hospiz-link"
+        >
+          {HOSPIZ_NAME} <ExternalLink className="w-3 h-3" />
+        </a>
+
+        <div className="flex justify-center w-full mt-3" data-testid="labs-about-paypal">
+          <div className="w-full max-w-[382px]">
+            <iframe
+              src="https://www.paypal.com/giving/campaigns?campaign_id=XGB4YN3CQEMFE"
+              title={t("m2.discover.donatePaypalTitle", "PayPal donate")}
+              frameBorder="0"
+              width="100%"
+              height={550}
+              scrolling="no"
+              className="rounded-2xl border-none"
+            />
+          </div>
+        </div>
+
+        <p className="text-center text-[11px] italic mt-3" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }} data-testid="labs-about-disclaimer">
+          {t("donate.disclaimer")}
+        </p>
+      </div>
     </div>
   );
 }

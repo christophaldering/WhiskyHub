@@ -60,7 +60,6 @@ export const SECTIONS: BibliothekSection[] = [
     titleFallback: "About",
     links: [
       { icon: BookOpen, labelKey: "about.title", labelFallback: "About CaskSense", descKey: "m2.discover.aboutSubtitle", descFallback: "The story behind CaskSense", href: "/labs/about", testId: "labs-link-bibliothek-about" },
-      { icon: Brain, labelKey: "donate.title", labelFallback: "Donate", descKey: "donate.whyTitle", descFallback: "Why donate?", href: "/labs/donate", testId: "labs-link-bibliothek-donate" },
     ],
   },
 ];

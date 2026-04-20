@@ -376,7 +376,6 @@ const resources = {
         searchPlaceholder: "Search...",
         noResults: "No results found",
         aboutSubtitle: "The story behind CaskSense",
-        aboutDonateButton: "Donate / Hospice",
         activitySignInPrompt: "Sign in to see your friends' activity.",
         aiCurationLoading: "Loading…",
         aiCurationLineup: "Lineup",
@@ -2516,14 +2515,6 @@ const resources = {
         },
       },
       donate: {
-        title: "Support CaskSense",
-        whyTitle: "Why Donate?",
-        whyText: "CaskSense is free and will stay that way. No ads, no premium tiers, no hidden costs. Development and operation of the app take time and resources — which the developer happily invests*, because he enjoys it.\n\nStill: a small token of appreciation in the form of a donation is always welcome. 100 % of it goes to a good cause.\n\n*Hoping that hosting fees and computing costs won't overwhelm him someday. But he'll let you know in time! Promise :-)",
-        charityTitle: "100% Goes to Charity",
-        charityText: "Every donation is forwarded in full to {{name}} — a foundation building a residential hospice in Emmerich, Germany, providing compassionate care, comfort, and dignity to the terminally ill in their final days.",
-        transparencyTitle: "Full Transparency",
-        transparencyText: "We publish the total amount donated on this page. Donor names are never shared — your privacy is respected. Only the cumulative total is made visible so you can see the collective impact.",
-        donateButton: "Donate via PayPal",
         disclaimer: "CaskSense does not retain any portion of the donations. All contributions are forwarded to the charitable organization mentioned above.",
       },
       donationPrompt: {
@@ -2596,6 +2587,8 @@ const resources = {
         contactLinkedIn: "LinkedIn Profile",
         contactLinkedInUrl: "https://www.linkedin.com/in/aldering",
         donationHint: "If you'd like to support a good cause, donations to the hospice are always appreciated.",
+        supportTitle: "Support the project",
+        supportIntro: "100% of your donation goes directly to the Christina-Kleintjes-Hospiz-Stiftung via PayPal Giving Fund — no fees, no detours.",
         blocks: [
           { heading: "How CaskSense came to be", lines: [] },
           { lines: ["As a psychologist, I've spent years studying perception, judgments, and decision-making processes. I'm fascinated by how differently people experience the same situation — and how much context, expectation, and experience shape our judgments."] },
@@ -9479,7 +9472,6 @@ const resources = {
         searchPlaceholder: "Suchen...",
         noResults: "Keine Ergebnisse",
         aboutSubtitle: "Die Geschichte hinter CaskSense",
-        aboutDonateButton: "Spenden / Hospiz",
         activitySignInPrompt: "Melde dich an, um die Aktivitäten deiner Freunde zu sehen.",
         aiCurationLoading: "Laden…",
         aiCurationLineup: "Lineup",
@@ -11619,14 +11611,6 @@ const resources = {
         },
       },
       donate: {
-        title: "CaskSense unterstützen",
-        whyTitle: "Warum spenden?",
-        whyText: "CaskSense ist kostenlos und wird es bleiben. Keine Werbung, keine Premium-Stufen, keine versteckten Kosten. Entwicklung und Betrieb der App kosten Zeit und Ressourcen — die werden vom Entwickler gerne investiert*, weil es ihm Spaß macht.\n\nDennoch: eine kleine Wertschätzung in Form einer Spende wird natürlich gerne gesehen. Die wird zu 100 % für einen guten Zweck verwendet.\n\n*In der Hoffnung, dass ihn die Hosting-Gebühren und die Kosten für Rechenleistung nicht doch irgendwann überfordern. Dann meldet er sich aber rechtzeitig! Versprochen :-)",
-        charityTitle: "100% gehen an die Wohltätigkeit",
-        charityText: "Jede Spende wird vollständig an die {{name}} weitergeleitet — eine Stiftung, die in Emmerich ein stationäres Hospiz baut und schwerstkranken Menschen in ihrer letzten Lebensphase Zuwendung, Geborgenheit und würdevolle Begleitung bietet.",
-        transparencyTitle: "Volle Transparenz",
-        transparencyText: "Wir veröffentlichen den Gesamtbetrag der Spenden auf dieser Seite. Spendernamen werden nie weitergegeben — Ihre Privatsphäre wird respektiert. Nur die Gesamtsumme wird sichtbar gemacht, damit Sie die gemeinsame Wirkung sehen können.",
-        donateButton: "Über PayPal spenden",
         disclaimer: "CaskSense behält keinen Teil der Spenden ein. Alle Beiträge werden an die oben genannte gemeinnützige Organisation weitergeleitet.",
       },
       donationPrompt: {
@@ -11699,6 +11683,8 @@ const resources = {
         contactLinkedIn: "LinkedIn-Profil",
         contactLinkedInUrl: "https://www.linkedin.com/in/aldering",
         donationHint: "Wenn du etwas Gutes tun möchtest, freue ich mich über Spenden für das Hospiz.",
+        supportTitle: "Projekt unterstützen",
+        supportIntro: "100 % deiner Spende fließen über den PayPal Giving Fund direkt an die Christina-Kleintjes-Hospiz-Stiftung — keine Gebühren, keine Umwege.",
         blocks: [
           { heading: "Wie CaskSense entstanden ist", lines: [] },
           { lines: ["Als Psychologe beschäftige ich mich seit Jahren mit Wahrnehmung, Urteilen und Entscheidungsprozessen. Mich interessiert, wie unterschiedlich Menschen dieselbe Situation erleben – und wie sehr Kontext, Erwartung und Erfahrung unser Urteil formen."] },

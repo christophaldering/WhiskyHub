@@ -56,7 +56,6 @@ const SECTIONS: DiscoverSection[] = [
     titleFallback: "More",
     links: [
       { icon: Info, labelKey: "discover.about", labelFallback: "About", descKey: "discover.aboutDesc", descFallback: "Story, founder info & contact", href: "/labs/about", testId: "labs-link-discover-about" },
-      { icon: Heart, labelKey: "discover.donate", labelFallback: "Donate", descKey: "discover.donateDesc", descFallback: "Support CaskSense & Hospice", href: "/labs/donate", testId: "labs-link-discover-donate" },
     ],
   },
 ];
