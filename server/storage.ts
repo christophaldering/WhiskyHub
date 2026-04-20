@@ -375,6 +375,7 @@ export interface IStorage {
   setHandoutLibraryEntryAttribution(id: string, data: { clonedFromId?: string | null; sharedByName?: string | null }): Promise<void>;
   findWhiskiesByWhiskybaseIdForHost(whiskybaseId: string, hostId: string): Promise<Array<{ id: string; name: string; distillery: string | null; tastingId: string; tastingTitle: string; tastingDate: string | null }>>;
   findDistilleryByName(name: string): Promise<{ id: string; name: string; country: string; region: string } | undefined>;
+  findOrCreateDistilleryByName(name: string, fallback?: { country?: string | null; region?: string | null; founded?: number | null; description?: string | null; feature?: string | null }): Promise<{ distillery: Distillery; created: boolean }>;
 
   // PDF Split Sessions (temporary store for splitting multi-page program PDFs)
   createPdfSplitSession(data: { tastingId: string; hostId: string; pages: PdfSplitPage[] }): Promise<PdfSplitSession>;
@@ -1250,6 +1251,45 @@ export class DatabaseStorage implements IStorage {
       .where(sql`LOWER(${distilleries.name}) = LOWER(${trimmed})`)
       .limit(1);
     return row;
+  }
+
+  async findOrCreateDistilleryByName(
+    name: string,
+    fallback?: { country?: string | null; region?: string | null; founded?: number | null; description?: string | null; feature?: string | null },
+  ): Promise<{ distillery: Distillery; created: boolean }> {
+    const trimmed = (name || "").trim();
+    if (!trimmed) throw new Error("Distillery name is required");
+    const [existing] = await db
+      .select()
+      .from(distilleries)
+      .where(sql`LOWER(${distilleries.name}) = LOWER(${trimmed})`)
+      .limit(1);
+    if (existing) {
+      const patch: Partial<InsertDistillery> = {};
+      if (!existing.description && fallback?.description) patch.description = fallback.description;
+      if (!existing.founded && fallback?.founded) patch.founded = fallback.founded;
+      if (!existing.feature && fallback?.feature) patch.feature = fallback.feature;
+      if ((existing.region === "Unknown" || !existing.region) && fallback?.region) patch.region = fallback.region;
+      if ((existing.country === "Unknown" || !existing.country) && fallback?.country) patch.country = fallback.country;
+      if (Object.keys(patch).length > 0) {
+        const [updated] = await db.update(distilleries).set(patch).where(eq(distilleries.id, existing.id)).returning();
+        return { distillery: updated ?? existing, created: false };
+      }
+      return { distillery: existing, created: false };
+    }
+    const [created] = await db
+      .insert(distilleries)
+      .values({
+        name: trimmed,
+        country: (fallback?.country || "Unknown").slice(0, 100),
+        region: (fallback?.region || "Unknown").slice(0, 100),
+        founded: fallback?.founded ?? null,
+        description: fallback?.description ?? null,
+        feature: fallback?.feature ?? null,
+        status: "active",
+      } as InsertDistillery)
+      .returning();
+    return { distillery: created, created: true };
   }
 
   async listSharedHandoutLibrary(opts?: { search?: string; excludeHostId?: string; limit?: number }): Promise<WhiskyHandoutLibraryEntry[]> {

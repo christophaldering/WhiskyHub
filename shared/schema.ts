@@ -164,6 +164,7 @@ export const whiskies = pgTable("whiskies", {
   handoutAuthor: text("handout_author"),
   handoutDescription: text("handout_description"),
   handoutVisibility: text("handout_visibility").default("always"), // "always" | "after_reveal"
+  distilleryId: varchar("distillery_id"), // optional FK -> distilleries.id (kept nullable for back-compat)
 });
 
 export const insertWhiskySchema = createInsertSchema(whiskies).omit({ id: true });
@@ -188,6 +189,7 @@ export const whiskyHandoutLibrary = pgTable("whisky_handout_library", {
   clonedFromId: varchar("cloned_from_id"),
   isProgramme: boolean("is_programme").default(false).notNull(),
   programmeSourceId: varchar("programme_source_id"),
+  distilleryId: varchar("distillery_id"), // optional FK -> distilleries.id
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
   hostIdx: index("idx_whisky_handout_library_host").on(table.hostId),

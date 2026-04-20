@@ -982,6 +982,7 @@ export default function LabsHostDashboard() {
             { href: "/labs/host/calendar", icon: Calendar, label: t("m2.hostDash.fullCalendar", "Full Calendar"), desc: "View all events" },
             { href: "/labs/host/history", icon: Archive, label: t("m2.hostDash.archive", "Archive"), desc: "Past events & insights" },
             { href: "/labs/host/handout-library", icon: BookOpen, label: t("m2.hostDash.handoutLibrary", "Handout-Bibliothek"), desc: "Reusable whisky handouts" },
+            { href: "/labs/host/batch-import", icon: Sparkles, label: t("batchImport.toolLabel", "Batch-Import"), desc: t("batchImport.toolDesc", "PDFs/Word in einem Schwung importieren") },
           ].map(({ href, icon: Icon, label, desc }) => (
             <Link key={href} href={href}>
               <div

@@ -21726,5 +21726,288 @@ Be accurate. If you cannot read a value, use null. Match whiskies to the known l
     }
   });
 
+  // ============================================================
+  // BATCH IMPORT — multi-file PDF/Word -> distilleries + whiskies + handouts
+  // ============================================================
+  app.post("/api/labs/batch-import/analyze", docUpload.array("files", 25), async (req: Request, res: Response) => {
+    try {
+      if (await isAIDisabled("benchmark_analyze")) {
+        return res.status(503).json({ message: "KI-Funktion vom Admin deaktiviert" });
+      }
+      const hostId = (req.headers["x-participant-id"] as string) || (req.body?.hostId as string);
+      if (!hostId) return res.status(401).json({ message: "Authentifizierung erforderlich" });
+      const auth = await verifyHostOrAdmin(hostId);
+      if (!auth) return res.status(403).json({ message: "Nur Hosts und Admins dürfen importieren" });
+
+      const files = (req as any).files as Express.Multer.File[] | undefined;
+      if (!files || files.length === 0) return res.status(400).json({ message: "Keine Dateien hochgeladen" });
+
+      const { client: openai, error: aiError, quotaInfo } = await getAIClient(hostId, "benchmark_analyze");
+      if (!openai) {
+        if (aiError === "AI_LIMIT_EXCEEDED") return res.status(429).json({ message: "KI-Kontingent erschöpft", quotaInfo });
+        if (aiError === "AI_DISABLED") return res.status(503).json({ message: "KI deaktiviert" });
+        return res.status(503).json({ message: "Keine KI verfügbar" });
+      }
+
+      const { extractTextFromPdf } = await import("./pdf-utils");
+      const objectStorage = new ObjectStorageService();
+      const existingDistilleries = await storage.getAllDistilleries();
+      const existingWhiskies = await storage.getActiveWhiskies();
+      const existingLibrary = await storage.listHandoutLibraryByHost(hostId);
+
+      const norm = (s: string | null | undefined) => (s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+      const distillerySet = new Set(existingDistilleries.map(d => norm(d.name)));
+
+      const fileResults: Array<Record<string, any>> = [];
+
+      for (const file of files) {
+        const result: Record<string, any> = {
+          filename: file.originalname,
+          status: "ok" as string,
+          error: null as string | null,
+          fileUrl: null as string | null,
+          contentType: null as string | null,
+          distilleries: [] as any[],
+        };
+        try {
+          if (isWordFile(file)) {
+            await maybeConvertWordFileToPdf(file);
+          }
+          const isPdf = file.mimetype === "application/pdf" || file.originalname.toLowerCase().endsWith(".pdf");
+          if (!isPdf) throw new Error("Nicht unterstützter Dateityp (nur PDF und Word)");
+
+          let text = "";
+          try {
+            text = (await extractTextFromPdf(file.buffer)) || "";
+          } catch (extractErr: any) {
+            throw new Error("Text konnte nicht extrahiert werden: " + (extractErr?.message || "unbekannt"));
+          }
+          const cleaned = text.replace(/\s+/g, " ").trim();
+          if (cleaned.length < 30) throw new Error("Datei enthält keinen lesbaren Text");
+
+          const fileUrl = await uploadBufferToObjectStorage(objectStorage, file.buffer, "application/pdf");
+          result.fileUrl = fileUrl;
+          result.contentType = "application/pdf";
+
+          const sysPrompt = "Du bist ein Experte für Whisky-Tastinghefte. Du erhältst den extrahierten Text einer PDF (oft Deutsch) und gibst eine strukturierte Übersicht aller darin beschriebenen Brennereien und ihrer Whiskys zurück. Antworte ausschließlich mit gültigem JSON nach dem Schema. Wenn ein Heft mehrere Brennereien beschreibt, liste sie alle einzeln. Wenn ein Block ohne Brennereiname auftritt, erfinde KEINEN Namen — gruppiere sie unter dem Pseudonamen 'Unbekannt'.";
+          const userPrompt = `Antworte mit JSON dieses Schemas:
+{
+  "distilleries": [
+    {
+      "name": "<Brennereiname>",
+      "country": "<Land oder null>",
+      "region": "<Region oder null, z.B. Islay/Speyside/Highland/Campbeltown>",
+      "founded": <Gründungsjahr als Zahl oder null>,
+      "description": "<Kurztext zur Brennerei oder null>",
+      "whiskies": [
+        {
+          "name": "<vollständiger Whiskyname>",
+          "age": "<Alter oder null, z.B. '12' oder 'NAS'>",
+          "abv": <ABV in Prozent als Zahl oder null>,
+          "caskType": "<Fasstyp oder null>",
+          "category": "<Single Malt/Blended/Bourbon/Rye/... oder null>",
+          "bottler": "<Abfüller oder 'OA' oder null>",
+          "distilledYear": "<Jahr oder null>",
+          "bottledYear": "<Jahr oder null>",
+          "ppm": <Phenol ppm als Zahl oder null>,
+          "noseNotes": "<Nase oder null>",
+          "tasteNotes": "<Geschmack oder null>",
+          "finishNotes": "<Abgang oder null>",
+          "hostSummary": "<Gesamtbeschreibung oder null>"
+        }
+      ]
+    }
+  ]
+}
+Nur das JSON, keine weiteren Worte.
+
+DATEINAME: ${file.originalname}
+TEXT:
+${cleaned.slice(0, 60000)}`;
+
+          const completion = await openai.chat.completions.create({
+            model: process.env.AI_INTEGRATIONS_OPENAI_MODEL || "gpt-4o",
+            temperature: 0.1,
+            response_format: { type: "json_object" },
+            messages: [
+              { role: "system", content: sysPrompt },
+              { role: "user", content: userPrompt },
+            ],
+          });
+          const aiText = completion.choices[0]?.message?.content || "{}";
+          let parsed: any;
+          try { parsed = JSON.parse(aiText); } catch { throw new Error("KI-Antwort konnte nicht gelesen werden"); }
+          const distRaw = Array.isArray(parsed?.distilleries) ? parsed.distilleries : [];
+
+          result.distilleries = distRaw.map((d: any) => {
+            const dname = String(d?.name || "Unbekannt").trim();
+            const dnorm = norm(dname);
+            const existingDistillery = existingDistilleries.find(x => norm(x.name) === dnorm);
+            const whiskies = Array.isArray(d?.whiskies) ? d.whiskies : [];
+            return {
+              name: dname,
+              country: d?.country || null,
+              region: d?.region || null,
+              founded: typeof d?.founded === "number" ? d.founded : null,
+              description: d?.description || null,
+              existingDistilleryId: existingDistillery?.id || null,
+              isNewDistillery: !existingDistillery,
+              selected: true,
+              whiskies: whiskies.map((w: any) => {
+                const wname = String(w?.name || "").trim();
+                const wkey = `${norm(wname)}|${dnorm}`;
+                const dupWhisky = existingWhiskies.find(x => `${norm(x.name)}|${norm(x.distillery || "")}` === wkey);
+                const dupLib = existingLibrary.find(x => `${norm(x.whiskyName)}|${norm(x.distillery || "")}` === wkey);
+                return {
+                  name: wname,
+                  distillery: dname,
+                  age: w?.age || null,
+                  abv: typeof w?.abv === "number" ? w.abv : (w?.abv ? Number(String(w.abv).replace(/[^0-9.,]/g, "").replace(",", ".")) || null : null),
+                  caskType: w?.caskType || null,
+                  category: w?.category || null,
+                  bottler: w?.bottler || null,
+                  distilledYear: w?.distilledYear || null,
+                  bottledYear: w?.bottledYear || null,
+                  ppm: typeof w?.ppm === "number" ? w.ppm : null,
+                  noseNotes: w?.noseNotes || null,
+                  tasteNotes: w?.tasteNotes || null,
+                  finishNotes: w?.finishNotes || null,
+                  hostSummary: w?.hostSummary || null,
+                  existingWhiskyId: dupWhisky?.id || null,
+                  existingLibraryId: dupLib?.id || null,
+                  isNew: !dupWhisky && !dupLib,
+                  selected: true,
+                };
+              }),
+            };
+          });
+        } catch (err: any) {
+          result.status = "error";
+          result.error = err?.message || "Verarbeitung fehlgeschlagen";
+        }
+        fileResults.push(result);
+        if (result.status === "ok") {
+          for (const d of result.distilleries) {
+            distillerySet.add(norm(d.name));
+          }
+        }
+      }
+
+      res.json({ files: fileResults });
+    } catch (e: any) {
+      console.error("[batch-import/analyze] error:", e);
+      res.status(500).json({ message: e?.message || "Analyse fehlgeschlagen" });
+    }
+  });
+
+  app.post("/api/labs/batch-import/commit", async (req: Request, res: Response) => {
+    try {
+      const hostId = (req.headers["x-participant-id"] as string) || (req.body?.hostId as string);
+      if (!hostId) return res.status(401).json({ message: "Authentifizierung erforderlich" });
+      const auth = await verifyHostOrAdmin(hostId);
+      if (!auth) return res.status(403).json({ message: "Nur Hosts und Admins dürfen importieren" });
+
+      const filesIn = Array.isArray(req.body?.files) ? req.body.files : [];
+      const summary = {
+        distilleriesCreated: 0,
+        distilleriesMerged: 0,
+        whiskiesCreated: 0,
+        whiskiesUpdated: 0,
+        handoutsLinked: 0,
+      };
+
+      for (const file of filesIn) {
+        const fileUrl: string | null = file?.fileUrl || null;
+        const contentType: string = file?.contentType || "application/pdf";
+        const filename: string = file?.filename || "Import";
+        const distilleries = Array.isArray(file?.distilleries) ? file.distilleries : [];
+
+        for (const dist of distilleries) {
+          if (!dist?.selected) continue;
+          const dname = String(dist?.name || "").trim();
+          if (!dname) continue;
+
+          const { distillery, created } = await storage.findOrCreateDistilleryByName(dname, {
+            country: dist?.country || null,
+            region: dist?.region || null,
+            founded: typeof dist?.founded === "number" ? dist.founded : null,
+            description: dist?.description || null,
+          });
+          if (created) summary.distilleriesCreated++; else summary.distilleriesMerged++;
+
+          const whiskies = Array.isArray(dist?.whiskies) ? dist.whiskies : [];
+          for (const w of whiskies) {
+            if (!w?.selected) continue;
+            const wname = String(w?.name || "").trim();
+            if (!wname) continue;
+
+            // 1) update existing whisky if matched (non-destructive: fill empty fields only)
+            if (w?.existingWhiskyId) {
+              const existing = await storage.getWhisky(w.existingWhiskyId);
+              // Ownership check: whisky must belong to a tasting hosted by the requester
+              let allowedWhisky = false;
+              if (existing) {
+                const owningTasting = await storage.getTasting(existing.tastingId);
+                allowedWhisky = !!owningTasting && owningTasting.hostId === hostId;
+              }
+              if (existing && allowedWhisky) {
+                const patch: Record<string, any> = { distilleryId: distillery.id };
+                const fields: Array<[string, any]> = [
+                  ["age", w.age], ["abv", w.abv], ["caskType", w.caskType], ["category", w.category],
+                  ["bottler", w.bottler], ["distilledYear", w.distilledYear], ["bottledYear", w.bottledYear],
+                  ["ppm", w.ppm], ["region", dist?.region], ["country", dist?.country],
+                  ["hostSummary", w.hostSummary], ["distillery", dname],
+                ];
+                for (const [k, v] of fields) {
+                  if (v != null && v !== "" && (existing as any)[k] == null) patch[k] = v;
+                }
+                await storage.updateWhisky(existing.id, patch);
+                summary.whiskiesUpdated++;
+              }
+            }
+
+            // 2) upsert into handout library (acts as the per-host whisky catalog entry + handout)
+            const libPatch: any = {
+              hostId,
+              whiskyName: wname,
+              distillery: dname,
+              distilleryId: distillery.id,
+              fileUrl: fileUrl || "",
+              contentType,
+              title: filename,
+              author: null,
+              description: [w.hostSummary, w.noseNotes && `Nase: ${w.noseNotes}`, w.tasteNotes && `Geschmack: ${w.tasteNotes}`, w.finishNotes && `Abgang: ${w.finishNotes}`].filter(Boolean).join("\n\n") || null,
+              isProgramme: false,
+            };
+            let updatedExisting = false;
+            if (w?.existingLibraryId) {
+              const existingLib = await storage.getHandoutLibraryEntry(w.existingLibraryId);
+              if (existingLib && existingLib.hostId === hostId) {
+                await storage.updateHandoutLibraryEntry(w.existingLibraryId, libPatch);
+                updatedExisting = true;
+              }
+            }
+            if (updatedExisting) {
+              // already updated above
+            } else if (fileUrl) {
+              await storage.createHandoutLibraryEntry(libPatch);
+              summary.whiskiesCreated++;
+              summary.handoutsLinked++;
+            } else {
+              // no file (shouldn't happen) — still count as created via library entry without file
+              await storage.createHandoutLibraryEntry({ ...libPatch, fileUrl: "" });
+              summary.whiskiesCreated++;
+            }
+          }
+        }
+      }
+
+      res.json({ summary });
+    } catch (e: any) {
+      console.error("[batch-import/commit] error:", e);
+      res.status(500).json({ message: e?.message || "Commit fehlgeschlagen" });
+    }
+  });
+
   return httpServer;
 }

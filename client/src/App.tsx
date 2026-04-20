@@ -105,6 +105,7 @@ const LabsBottleSplitDetail = lazy(() => import("@/labs/pages/LabsBottleSplitDet
 const LabsInvite = lazy(() => import("@/labs/pages/LabsInvite"));
 const LabsEntdecken = lazy(() => import("@/labs/pages/LabsEntdecken"));
 const LabsBibliothek = lazy(() => import("@/labs/pages/LabsBibliothek"));
+const LabsBatchImport = lazy(() => import("@/labs/pages/LabsBatchImport"));
 const LabsLexicon = lazy(() => import("@/labs/pages/LabsLexicon"));
 const LabsDistilleries = lazy(() => import("@/labs/pages/LabsDistilleries"));
 const LabsBottlers = lazy(() => import("@/labs/pages/LabsBottlers"));
@@ -632,6 +633,7 @@ function Router() {
               <Route path="/labs/join/:code" component={LabsJoin} />
               <Route path="/labs/join">{() => <RedirectWithQuery to="/labs/tastings" query="tab=join" />}</Route>
               <Route path="/labs/host/dashboard" component={LabsHostDashboard} />
+              <Route path="/labs/host/batch-import" component={LabsBatchImport} />
               <Route path="/labs/host/handout-library" component={LabsHandoutLibrary} />
               <Route path="/labs/host/handout-library/community">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=nachschlagewerk&sub=community-handouts" />}</Route>
               <Route path="/labs/host/calendar" component={LabsCalendar} />
