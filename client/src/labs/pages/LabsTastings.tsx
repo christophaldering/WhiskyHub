@@ -456,16 +456,18 @@ export default function LabsTastings() {
 
       {!activeTab && (
       <>
-      <div className="labs-tastings-search-wrapper labs-fade-in labs-stagger-1">
-        <Search className="labs-tastings-search-icon w-4 h-4" />
-        <input
-          className="labs-input labs-tastings-search-input"
-          placeholder={filterTab === "archive" ? t("tastings.archiveSearchPlaceholder", "Search my archive...") : "Search tastings..."}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          data-testid="labs-tastings-search"
-        />
-      </div>
+      {!(filterTab === "all" && !timeFilter && !searchQuery.trim()) && (
+        <div className="labs-tastings-search-wrapper labs-fade-in labs-stagger-1">
+          <Search className="labs-tastings-search-icon w-4 h-4" />
+          <input
+            className="labs-input labs-tastings-search-input"
+            placeholder={filterTab === "archive" ? t("tastings.archiveSearchPlaceholder", "Search my archive...") : "Search tastings..."}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            data-testid="labs-tastings-search"
+          />
+        </div>
+      )}
 
       <div className="labs-tastings-filter-zone labs-fade-in labs-stagger-2">
         <div className="labs-segmented">
