@@ -62,7 +62,7 @@ export default function AdminDistilleryAliases() {
       queryClient.invalidateQueries({ queryKey });
       toast({ title: t("adminAliases.addedToast", { defaultValue: "Alias added" }) });
     },
-    onError: (e: any) => toast({ title: t("adminAliases.errorTitle", { defaultValue: "Error" }), description: e?.message, variant: "destructive" }),
+    onError: (e: unknown) => toast({ title: t("adminAliases.errorTitle", { defaultValue: "Error" }), description: e instanceof Error ? e.message : String(e), variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
@@ -78,7 +78,7 @@ export default function AdminDistilleryAliases() {
       queryClient.invalidateQueries({ queryKey });
       toast({ title: t("adminAliases.removedToast", { defaultValue: "Alias removed" }) });
     },
-    onError: (e: any) => toast({ title: t("adminAliases.errorTitle", { defaultValue: "Error" }), description: e?.message, variant: "destructive" }),
+    onError: (e: unknown) => toast({ title: t("adminAliases.errorTitle", { defaultValue: "Error" }), description: e instanceof Error ? e.message : String(e), variant: "destructive" }),
   });
 
   const filtered = useMemo(() => {
