@@ -469,143 +469,8 @@ export default function LabsTastings() {
         </div>
       )}
 
-      <div className="labs-tastings-filter-zone labs-fade-in labs-stagger-2">
-        <div className="labs-segmented">
-          {(["all", "hosting", "joined", "archive"] as const).map((tab) => {
-            const labelKey = `tastings.tab${tab.charAt(0).toUpperCase()}${tab.slice(1)}`;
-            const fallback = tab === "all" ? "All" : tab === "hosting" ? "Hosting" : tab === "joined" ? "Joined" : "My Archive";
-            return (
-              <button
-                key={tab}
-                className={`labs-segmented-btn ${filterTab === tab ? "labs-segmented-btn-active" : ""}`}
-                onClick={() => setFilterTab(tab)}
-                data-testid={`labs-tastings-filter-${tab}`}
-              >
-                {t(labelKey, fallback)}
-              </button>
-            );
-          })}
-        </div>
 
-        {filterTab !== "archive" && (
-        <div className="labs-tastings-time-chips">
-          {(["live", "upcoming"] as const).map((tf) => {
-            const isActive = timeFilter === tf;
-            const count = counts[tf];
-            return (
-              <button
-                key={tf}
-                className={`labs-chip ${isActive ? "labs-chip-active" : ""}`}
-                onClick={() => setTimeFilter(isActive ? null : tf)}
-                data-testid={`labs-tastings-time-${tf}`}
-              >
-                {tf.charAt(0).toUpperCase() + tf.slice(1)}
-                {count > 0 && (
-                  <span
-                    className={`labs-tastings-chip-count ${
-                      tf === "live"
-                        ? "labs-tastings-chip-count--live"
-                        : isActive
-                          ? "labs-tastings-chip-count--active"
-                          : "labs-tastings-chip-count--default"
-                    }`}
-                  >
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-        )}
-      </div>
-
-      {filterTab === "archive" ? (
-        isHistoryLoading ? (
-          <div className="labs-tastings-skeleton">
-            <div className="labs-skeleton labs-skeleton--h20 labs-skeleton--w60" />
-            <div className="labs-skeleton labs-skeleton--h14 labs-skeleton--w40" />
-            <div className="labs-skeleton labs-skeleton--h14 labs-skeleton--w80 labs-skeleton--mt8" />
-            <div className="labs-skeleton labs-skeleton--h20 labs-skeleton--w55 labs-skeleton--mt12" />
-            <div className="labs-skeleton labs-skeleton--h14 labs-skeleton--w45" />
-            <div className="labs-skeleton labs-skeleton--h14 labs-skeleton--w70 labs-skeleton--mt8" />
-          </div>
-        ) : archiveItems.length === 0 ? (
-          <div className="labs-empty labs-fade-in" data-testid="labs-tastings-archive-empty">
-            <svg className="labs-empty-icon" viewBox="0 0 48 48" fill="none">
-              <rect x="10" y="14" width="28" height="6" rx="2" fill="var(--labs-accent)" opacity="0.25" />
-              <rect x="12" y="20" width="24" height="20" rx="2" fill="var(--labs-accent)" opacity="0.15" stroke="var(--labs-accent)" strokeWidth="1.5" />
-              <path d="M19 28 L29 28" stroke="var(--labs-accent)" strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
-            </svg>
-            <h2 className="labs-empty-title">
-              {searchQuery
-                ? t("tastings.archiveEmptySearch", "No tastings in your archive match your search.")
-                : t("tastings.archiveEmptyTitle", "Your archive is still empty")}
-            </h2>
-            {!searchQuery && (
-              <p className="labs-empty-sub">
-                {t("tastings.archiveEmptySub", "Once one of your tastings is closed it will appear in your archive.")}
-              </p>
-            )}
-          </div>
-        ) : (
-          <div className="labs-grouped-list labs-fade-in labs-stagger-3" data-testid="labs-tastings-archive-list">
-            {archiveItems.map((tasting: any) => {
-              const statusCfg = getStatusConfig(tasting.status);
-              const isHost = tasting.isHost;
-              const formattedDate = formatTastingDate(tasting.date);
-              return (
-                <Link key={tasting.id} href={`/labs/history/${tasting.id}`}>
-                  <div className="labs-list-row" data-testid={`labs-tasting-archive-card-${tasting.id}`}>
-                    <div className="labs-tasting-card-icon labs-tasting-card-icon--default">
-                      <Wine className="labs-tasting-card-icon-sm labs-icon-accent" />
-                    </div>
-                    <div className="labs-tasting-card-body">
-                      <div className="labs-tasting-card-title-row">
-                        <span className="labs-tasting-card-title" data-testid={`labs-tasting-title-${tasting.id}`}>
-                          {String(tasting.title ?? "")}
-                        </span>
-                        <div className="labs-tasting-card-badges">
-                          <span className={statusCfg.cssClass} data-testid={`labs-tasting-status-${tasting.id}`}>
-                            {t(statusCfg.labelKey, statusCfg.fallbackLabel)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="labs-tasting-card-host" data-testid={`labs-tasting-hostname-${tasting.id}`}>
-                        {isHost ? (
-                          <span className="labs-tasting-role-text">{t("tastingStatus.yourTasting", "Your Tasting")}</span>
-                        ) : tasting.hostName ? (
-                          <>
-                            <Crown className="labs-tasting-card-host-icon" />
-                            <span className="labs-tasting-card-host-name">{stripGuestSuffix(tasting.hostName)}</span>
-                          </>
-                        ) : null}
-                      </div>
-                      <div className="labs-tasting-card-meta">
-                        {formattedDate && (
-                          <span className="labs-tasting-card-meta-item">
-                            <Calendar className="labs-tasting-card-meta-icon" />
-                            {formattedDate}
-                          </span>
-                        )}
-                        {tasting.location && (
-                          <span className="labs-tasting-card-meta-item labs-tasting-card-meta-item--location">
-                            <MapPin className="labs-tasting-card-meta-icon" />
-                            <span className="labs-tasting-card-host-name">{String(tasting.location ?? "")}</span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="labs-tasting-card-actions">
-                      <ChevronRight className="labs-tasting-chevron" />
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )
-      ) : isLoading ? (
+      {isLoading ? (
         <div className="labs-tastings-skeleton">
           <div className="labs-skeleton labs-skeleton--h20 labs-skeleton--w60" />
           <div className="labs-skeleton labs-skeleton--h14 labs-skeleton--w40" />
@@ -613,87 +478,6 @@ export default function LabsTastings() {
           <div className="labs-skeleton labs-skeleton--h20 labs-skeleton--w55 labs-skeleton--mt12" />
           <div className="labs-skeleton labs-skeleton--h14 labs-skeleton--w45" />
           <div className="labs-skeleton labs-skeleton--h14 labs-skeleton--w70 labs-skeleton--mt8" />
-        </div>
-      ) : filtered.length === 0 && invitations.length === 0 && (searchQuery || timeFilter) ? (
-        <div className="labs-empty labs-fade-in" data-testid="labs-tastings-empty">
-          <svg className="labs-empty-icon" viewBox="0 0 48 48" fill="none">
-            <path d="M14 16 Q13 23 13 30 L13 39 Q13 42 16 42 L32 42 Q35 42 35 39 L35 30 Q35 23 34 16 Z"
-              fill="var(--labs-accent)" opacity="0.18"/>
-            <path d="M14 16 Q13 23 13 30 L13 39 Q13 42 16 42 L32 42 Q35 42 35 39 L35 30 Q35 23 34 16 Z"
-              stroke="var(--labs-accent)" strokeWidth="1.5" fill="none" opacity="0.6"/>
-            <rect x="18" y="9" width="12" height="9" rx="2.5" fill="var(--labs-accent)" opacity="0.25"/>
-            <path d="M20 26 Q24 30 28 26" stroke="var(--labs-accent)" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.5"/>
-          </svg>
-          <h2 className="labs-empty-title">
-            {searchQuery ? "Keine Ergebnisse" : "Bereit für dein erstes Tasting?"}
-          </h2>
-          <p className="labs-empty-sub">
-            {searchQuery
-              ? "Versuche einen anderen Suchbegriff."
-              : `Keine ${timeFilter === "live" ? "Live" : "geplanten"} Tastings gefunden.`}
-          </p>
-        </div>
-      ) : filtered.length === 0 && invitations.length === 0 ? (
-        <div className="labs-empty labs-fade-in" data-testid="labs-tastings-empty">
-          {isHistoryLoading ? (
-            <>
-              <svg className="labs-empty-icon" viewBox="0 0 48 48" fill="none">
-                <circle cx="24" cy="24" r="18" fill="var(--labs-accent)" opacity="0.10"/>
-              </svg>
-              <h2 className="labs-empty-title" data-testid="text-empty-title">
-                {t("tastings.emptyReturningTitle", "Keine aktiven Tastings")}
-              </h2>
-              <p className="labs-empty-sub" data-testid="text-empty-sub">
-                {t("tastings.emptyReturningSub", "Starte ein neues Tasting oder tritt einem bei.")}
-              </p>
-            </>
-          ) : recentDrams.length > 0 || (historyData?.tastings?.length ?? 0) > 0 ? (
-            <>
-              <svg className="labs-empty-icon" viewBox="0 0 48 48" fill="none">
-                <circle cx="24" cy="24" r="18" fill="var(--labs-accent)" opacity="0.10"/>
-                <path d="M16 24 L22 30 L32 18" stroke="var(--labs-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.5"/>
-              </svg>
-              <h2 className="labs-empty-title" data-testid="text-empty-title">
-                {t("tastings.emptyReturningTitle", "Keine aktiven Tastings")}
-              </h2>
-              <p className="labs-empty-sub" data-testid="text-empty-sub">
-                {t("tastings.emptyReturningSub", "Starte ein neues Tasting oder tritt einem bei.")}
-              </p>
-              <button
-                className="labs-btn-primary"
-                style={{ marginTop: 16, padding: "10px 24px", fontSize: 14 }}
-                onClick={() => navigate("/labs/solo")}
-                data-testid="button-empty-start-solo"
-              >
-                {t("tastings.emptyReturningAction", "Neues Tasting starten")}
-              </button>
-            </>
-          ) : (
-            <>
-              <svg className="labs-empty-icon" viewBox="0 0 48 48" fill="none">
-                <path d="M14 16 Q13 23 13 30 L13 39 Q13 42 16 42 L32 42 Q35 42 35 39 L35 30 Q35 23 34 16 Z"
-                  fill="var(--labs-accent)" opacity="0.18"/>
-                <path d="M14 16 Q13 23 13 30 L13 39 Q13 42 16 42 L32 42 Q35 42 35 39 L35 30 Q35 23 34 16 Z"
-                  stroke="var(--labs-accent)" strokeWidth="1.5" fill="none" opacity="0.6"/>
-                <rect x="18" y="9" width="12" height="9" rx="2.5" fill="var(--labs-accent)" opacity="0.25"/>
-                <path d="M20 26 Q24 30 28 26" stroke="var(--labs-accent)" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.5"/>
-              </svg>
-              <h2 className="labs-empty-title" data-testid="text-empty-title">
-                {t("tastings.emptyTitle", "Dein erstes Dram wartet")}
-              </h2>
-              <p className="labs-empty-sub" data-testid="text-empty-sub">
-                {t("tastings.emptySub", "Starte ein Solo-Tasting oder tritt einem bei — deine Bewertungen erscheinen dann hier.")}
-              </p>
-              <button
-                className="labs-btn-primary"
-                style={{ marginTop: 16, padding: "10px 24px", fontSize: 14 }}
-                onClick={() => navigate("/labs/solo")}
-                data-testid="button-empty-start-solo"
-              >
-                {t("tastings.emptyAction", "Solo starten")}
-              </button>
-            </>
-          )}
         </div>
       ) : (
         <>
@@ -770,8 +554,30 @@ export default function LabsTastings() {
             </div>
           )}
 
-          {filtered.length > 0 && (
-            <div className="labs-grouped-list labs-fade-in labs-stagger-3">
+          <div className="labs-recent-section-head labs-fade-in labs-stagger-3" data-testid="section-upcoming-head">
+            <span className="labs-section-label">
+              {t("tastings.upcomingHeader", "Upcoming Tastings")}
+            </span>
+            <Link
+              href="/labs/taste?tab=tastings"
+              className="labs-recent-view-all"
+              data-testid="link-upcoming-view-all"
+            >
+              {t("myTastePage.viewAll", "View all")}
+              <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {filtered.length === 0 ? (
+            <div className="labs-empty labs-fade-in" data-testid="labs-tastings-upcoming-empty">
+              <p className="labs-empty-sub">
+                {searchQuery
+                  ? t("tastings.upcomingEmptySearch", "Keine passenden Tastings gefunden.")
+                  : t("tastings.upcomingEmpty", "Keine anstehenden Tastings.")}
+              </p>
+            </div>
+          ) : (
+            <div className="labs-grouped-list labs-fade-in">
               {filtered.map((tasting: any) => {
                 const statusCfg = getStatusConfig(tasting.status);
                 const isHost = tasting.hostId === currentParticipant?.id;

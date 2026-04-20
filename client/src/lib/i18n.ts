@@ -6533,6 +6533,9 @@ const resources = {
           heroTitle: "Where tasting becomes reflection.",
           heroBody: "Join a live round, taste solo or host your own — your tastings come together here.",
           heroHint: "Pick an option above to get started",
+          upcomingHeader: "Upcoming Tastings",
+          upcomingEmpty: "No upcoming tastings.",
+          upcomingEmptySearch: "No matching tastings found.",
         },
         join: {
           subtitle: "Enter the tasting code to join",
@@ -15611,6 +15614,9 @@ const resources = {
           heroTitle: "Wo Verkostung zur Reflexion wird.",
           heroBody: "Tritt einer Live-Runde bei, verkoste solo oder hoste selbst — deine Tastings laufen hier zusammen.",
           heroHint: "Wähle oben eine Option, um zu starten",
+          upcomingHeader: "Anstehende Tastings",
+          upcomingEmpty: "Keine anstehenden Tastings.",
+          upcomingEmptySearch: "Keine passenden Tastings gefunden.",
         },
         join: {
           subtitle: "Geben Sie den Tasting-Code ein",
