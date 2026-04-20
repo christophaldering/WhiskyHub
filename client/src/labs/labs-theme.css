@@ -1618,6 +1618,20 @@ a.labs-dram-item {
   hyphens: none;
 }
 
+.labs-action-bar--meine-welt .labs-action-bar-item {
+  justify-content: flex-start;
+}
+
+.labs-action-bar--meine-welt .labs-action-bar-label {
+  height: calc(1.15em * 2);
+  min-height: calc(1.15em * 2);
+}
+
+.labs-action-bar--meine-welt .labs-action-bar-sublabel {
+  height: calc(1.25em * 2);
+  min-height: calc(1.25em * 2);
+}
+
 .labs-action-bar-item--active {
   background: color-mix(in srgb, var(--labs-accent) 10%, var(--labs-surface));
 }

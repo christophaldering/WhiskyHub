@@ -24,7 +24,7 @@ export default function MeineWeltActionBar({ active, onSelect, showHubHeader = t
     <>
     {showHubHeader && <HubHeader kind="meine-welt" />}
     <div className="labs-fade-in" style={{ marginBottom: 20 }}>
-      <div className="labs-action-bar">
+      <div className="labs-action-bar labs-action-bar--meine-welt">
         <button
           type="button"
           onClick={() => go("tastings")}
