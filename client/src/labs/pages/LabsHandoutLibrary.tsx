@@ -4,13 +4,14 @@ import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useSearch } from "wouter";
 import {
-  ChevronLeft, FileText, Image as ImageIcon, Library, Search, Trash2,
+  FileText, Image as ImageIcon, Library, Search, Trash2,
   Pencil, Save, X, ExternalLink, Download, Globe, Lock, Plus, Upload, Loader2, RefreshCw, Scissors, Building2,
 } from "lucide-react";
 import { getParticipantId, handoutLibraryApi } from "@/lib/api";
 import { downloadFromEndpoint } from "@/lib/download";
 import type { WhiskyHandoutLibraryEntry } from "@shared/schema";
 import HandoutLibraryPdfSplitterDialog from "../components/HandoutLibraryPdfSplitterDialog";
+import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 
 interface EditState {
   id: string;
@@ -620,23 +621,7 @@ export default function LabsHandoutLibrary() {
 
   return (
     <div style={{ padding: "24px 16px 64px", maxWidth: 1100, margin: "0 auto", color: "var(--labs-text)" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-        <button
-          type="button"
-          onClick={() => {
-            if (typeof window !== "undefined" && window.history.length > 1) {
-              window.history.back();
-            } else {
-              setLocation("/labs/host");
-            }
-          }}
-          style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--labs-text-muted)", background: "transparent", border: "none", padding: 0, cursor: "pointer", fontSize: 13 }}
-          data-testid="link-back-host"
-        >
-          <ChevronLeft style={{ width: 14, height: 14 }} />
-          {t("labs.handoutLibrary.back")}
-        </button>
-      </div>
+      <DiscoverActionBar active="bibliothek" />
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
         <Library style={{ width: 20, height: 20, color: "var(--labs-accent, var(--labs-text))" }} />
