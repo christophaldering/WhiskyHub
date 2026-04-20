@@ -1,9 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
-import { Archive, Sparkles, BarChart3 } from "lucide-react";
+import { Archive, Sparkles, BarChart3, GlassWater } from "lucide-react";
 import HubHeader from "@/labs/components/HubHeader";
 
-type ActiveView = "collection" | "ai" | "analytics";
+type ActiveView = "tastings" | "collection" | "ai" | "analytics";
 
 interface Props {
   active: ActiveView;
@@ -25,6 +25,18 @@ export default function MeineWeltActionBar({ active, onSelect, showHubHeader = t
     {showHubHeader && <HubHeader kind="meine-welt" />}
     <div className="labs-fade-in" style={{ marginBottom: 20 }}>
       <div className="labs-action-bar">
+        <button
+          type="button"
+          onClick={() => go("tastings")}
+          data-testid="tab-meine-welt-tastings"
+          className={`labs-action-bar-item labs-action-bar-item--button${active === "tastings" ? " labs-action-bar-item--active" : ""}`}
+        >
+          <div className="labs-action-bar-icon labs-action-bar-icon--accent">
+            <GlassWater className="w-5 h-5 labs-icon-accent" />
+          </div>
+          <span className="labs-action-bar-label">{t("myTastePage.tileMyTastings", "My Tastings")}</span>
+          <span className="labs-action-bar-sublabel">{t("myTastePage.tileMyTastingsDesc", "Search & history")}</span>
+        </button>
         <button
           type="button"
           onClick={() => go("collection")}

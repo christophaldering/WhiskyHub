@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import type { ElementType } from "react";
 import {
   BookOpen, Archive, Heart, Sparkles, Activity, Library, Compass,
-  BarChart3, PieChart, GitCompareArrows, Download,
+  BarChart3, PieChart, GitCompareArrows, Download, Search, History,
 } from "lucide-react";
 
 export interface HubTileDef {
@@ -14,6 +14,27 @@ export interface HubTileDef {
   href: string;
   testId: string;
 }
+
+export const TASTINGS_HUB_TILES: HubTileDef[] = [
+  {
+    icon: Search,
+    labelKey: "myTastePage.tastingsHub.search",
+    labelFallback: "Search",
+    descKey: "myTastePage.tastingsHub.searchDesc",
+    descFallback: "Find tastings",
+    href: "/labs/tastings",
+    testId: "tile-meine-welt-tastings-search",
+  },
+  {
+    icon: History,
+    labelKey: "myTastePage.tastingsHub.recent",
+    labelFallback: "Recently Rated",
+    descKey: "myTastePage.tastingsHub.recentDesc",
+    descFallback: "Your last drams",
+    href: "/labs/taste/drams",
+    testId: "tile-meine-welt-tastings-recent",
+  },
+];
 
 export const COLLECTION_HUB_TILES: HubTileDef[] = [
   {

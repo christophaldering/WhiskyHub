@@ -3,7 +3,7 @@ import { Link, useLocation, useSearch } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Archive, Sparkles, BarChart3, Compass, ChevronRight,
+  Archive, Sparkles, BarChart3, Compass, ChevronRight, GlassWater,
 } from "lucide-react";
 import type { ElementType } from "react";
 import { useAppStore } from "@/lib/store";
@@ -15,10 +15,11 @@ import {
   AI_INSIGHTS_HUB_TILES,
   ANALYTICS_HUB_TILES,
   COLLECTION_HUB_TILES,
+  TASTINGS_HUB_TILES,
   HubTileGrid,
 } from "./hubTiles";
 
-type Tab = "collection" | "ai" | "analytics";
+type Tab = "tastings" | "collection" | "ai" | "analytics";
 
 interface TabDef {
   key: Tab;
@@ -34,6 +35,18 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
+  {
+    key: "tastings",
+    icon: GlassWater,
+    iconVariant: "accent",
+    iconColorClass: "labs-icon-accent",
+    labelKey: "myTastePage.tileMyTastings",
+    labelFallback: "My Tastings",
+    descKey: "myTastePage.tileMyTastingsDesc",
+    descFallback: "Search & history",
+    href: "/labs/tastings",
+    testId: "tile-meine-welt-tastings",
+  },
   {
     key: "collection",
     icon: Archive,
@@ -73,7 +86,7 @@ const TABS: TabDef[] = [
 ];
 
 function isTab(value: string | null): value is Tab {
-  return value === "collection" || value === "ai" || value === "analytics";
+  return value === "tastings" || value === "collection" || value === "ai" || value === "analytics";
 }
 
 export default function LabsTaste() {
@@ -89,7 +102,7 @@ export default function LabsTaste() {
       if (isTab(v)) return v;
       if (v === "palate") return "analytics";
     } catch {}
-    return "collection";
+    return "tastings";
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
@@ -99,7 +112,7 @@ export default function LabsTaste() {
       const params = new URLSearchParams(searchStr);
       const current = params.get("tab");
       if (current === activeTab) return;
-      if (activeTab === "collection") {
+      if (activeTab === "tastings") {
         params.delete("tab");
       } else {
         params.set("tab", activeTab);
@@ -113,14 +126,14 @@ export default function LabsTaste() {
   const { data: historyData } = useQuery({
     queryKey: ["tasting-history", currentParticipant?.id],
     queryFn: () => tastingHistoryApi.get(currentParticipant!.id),
-    enabled: !!currentParticipant?.id && activeTab === "collection",
+    enabled: !!currentParticipant?.id && (activeTab === "collection" || activeTab === "tastings"),
     staleTime: 60_000,
   });
 
   const { data: journalData } = useQuery({
     queryKey: ["journal-entries", currentParticipant?.id],
     queryFn: () => journalApi.getAll(currentParticipant!.id),
-    enabled: !!currentParticipant?.id && activeTab === "collection",
+    enabled: !!currentParticipant?.id && (activeTab === "collection" || activeTab === "tastings"),
     staleTime: 60_000,
   });
 
@@ -142,6 +155,22 @@ export default function LabsTaste() {
   const activeTab_ = TABS.find((tab) => tab.key === activeTab) ?? TABS[0];
 
   const renderInlineContent = () => {
+    if (activeTab === "tastings") {
+      return (
+        <div data-testid="meine-welt-inline-tastings">
+          <HubTileGrid tiles={TASTINGS_HUB_TILES} t={t} variant="auto" />
+          <div style={{ marginTop: 24 }}>
+            <RecentRatedList
+              items={recentItems}
+              limit={12}
+              sectionTestId="meine-welt-tastings-recent-section"
+              viewAllHref="/labs/taste/drams"
+              headerVariant="meine-welt"
+            />
+          </div>
+        </div>
+      );
+    }
     if (activeTab === "collection") {
       return (
         <div data-testid="meine-welt-inline-collection">
@@ -184,6 +213,16 @@ export default function LabsTaste() {
           {activeTab === "collection" && (
             <Link
               href="/labs/taste/drams"
+              className="labs-meine-welt-view-all"
+              data-testid={`link-meine-welt-view-all-${activeTab}`}
+            >
+              {t("myTastePage.viewAll", "View all")}
+              <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          )}
+          {activeTab === "tastings" && (
+            <Link
+              href="/labs/tastings"
               className="labs-meine-welt-view-all"
               data-testid={`link-meine-welt-view-all-${activeTab}`}
             >

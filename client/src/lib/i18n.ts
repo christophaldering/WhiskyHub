@@ -4686,6 +4686,8 @@ const resources = {
       myTastePage: {
         title: "My World",
         subtitle: "Your personal whisky collection & insights",
+        tileMyTastings: "My Tastings",
+        tileMyTastingsDesc: "Search & history",
         tileMyCollection: "Collection",
         tileMyCollectionDesc: "Drams",
         tileYourPalate: "Palate",
@@ -4695,6 +4697,12 @@ const resources = {
         tileProfileAnalytics: "Analytics",
         tileProfileAnalyticsDesc: "Aromas",
         viewAll: "View all",
+        tastingsHub: {
+          search: "Search",
+          searchDesc: "Find tastings & filter",
+          recent: "Recently Rated",
+          recentDesc: "Your last drams",
+        },
         collectionHub: {
           title: "My Collection",
           subtitle: "Your drams, bottles & wishlist",
@@ -13733,6 +13741,8 @@ const resources = {
       myTastePage: {
         title: "Meine Welt",
         subtitle: "Dein persönliches Whisky-Universum",
+        tileMyTastings: "Meine Tastings",
+        tileMyTastingsDesc: "Suchen & Verlauf",
         tileMyCollection: "Sammlung",
         tileMyCollectionDesc: "Drams",
         tileYourPalate: "Gaumen",
@@ -13742,6 +13752,12 @@ const resources = {
         tileProfileAnalytics: "Analyse",
         tileProfileAnalyticsDesc: "Aromen",
         viewAll: "Alle ansehen",
+        tastingsHub: {
+          search: "Suchen",
+          searchDesc: "Tastings finden & filtern",
+          recent: "Zuletzt bewertet",
+          recentDesc: "Deine letzten Drams",
+        },
         collectionHub: {
           title: "Meine Sammlung",
           subtitle: "Deine Drams, Flaschen & Wunschliste",
