@@ -11,6 +11,8 @@
         import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
         import { EmbeddedExploreProvider } from "@/labs/embeddedExploreContext";
         import { apiUrl } from "@/lib/native";
+        import { HubTileGrid, type HubTileDef } from "@/labs/pages/hubTiles";
+        import type { ElementType } from "react";
         import {
           Search, ChevronRight, Wine,
           BookOpen, List, BarChart3, MapPin, Building2, Compass, Activity,
@@ -37,6 +39,7 @@
           sub: string;
           labelKey: string;
           labelFb: string;
+          icon: ElementType;
           Component: React.ComponentType;
         }
 
@@ -59,10 +62,10 @@
             descKey: "explore.bibliothek.nachschlagewerkDesc",
             descFb: "Lexikon, Destillerien, Bottlers",
             subs: [
-              { sub: "lexikon", labelKey: "discover.lexicon", labelFb: "Lexikon", Component: LabsLexicon },
-              { sub: "destillerien", labelKey: "discover.distilleries", labelFb: "Destillerien", Component: LabsDistilleries },
-              { sub: "bottlers", labelKey: "discover.bottlers", labelFb: "Bottlers", Component: LabsBottlers },
-              { sub: "community-handouts", labelKey: "bibliothek.communityHandouts", labelFb: "Community Handouts", Component: LabsHandoutLibrary },
+              { sub: "lexikon", labelKey: "discover.lexicon", labelFb: "Lexikon", icon: BookOpen, Component: LabsLexicon },
+              { sub: "destillerien", labelKey: "discover.distilleries", labelFb: "Destillerien", icon: Factory, Component: LabsDistilleries },
+              { sub: "bottlers", labelKey: "discover.bottlers", labelFb: "Bottlers", icon: Package, Component: LabsBottlers },
+              { sub: "community-handouts", labelKey: "bibliothek.communityHandouts", labelFb: "Community Handouts", icon: Globe, Component: LabsHandoutLibrary },
             ],
           },
           {
@@ -73,11 +76,11 @@
             descKey: "explore.bibliothek.tastingWissenDesc",
             descFb: "Guide, Hintergrund, Profilberechnung, Research, Pairings",
             subs: [
-              { sub: "guide", labelKey: "discover.guide", labelFb: "Guide", Component: LabsGuide },
-              { sub: "hintergrund", labelKey: "bibliothek.whiskyProduction", labelFb: "Hintergrund", Component: LabsBackground },
-              { sub: "profilberechnung", labelKey: "bibliothek.howProfileCalculated", labelFb: "Profilberechnung", Component: LabsMethod },
-              { sub: "research", labelKey: "bibliothek.researchSensory", labelFb: "Research", Component: LabsResearch },
-              { sub: "pairings", labelKey: "bibliothek.pairings", labelFb: "Pairings", Component: LabsPairings },
+              { sub: "guide", labelKey: "discover.guide", labelFb: "Guide", icon: Compass, Component: LabsGuide },
+              { sub: "hintergrund", labelKey: "bibliothek.whiskyProduction", labelFb: "Hintergrund", icon: BookOpen, Component: LabsBackground },
+              { sub: "profilberechnung", labelKey: "bibliothek.howProfileCalculated", labelFb: "Profilberechnung", icon: Activity, Component: LabsMethod },
+              { sub: "research", labelKey: "bibliothek.researchSensory", labelFb: "Research", icon: Microscope, Component: LabsResearch },
+              { sub: "pairings", labelKey: "bibliothek.pairings", labelFb: "Pairings", icon: Utensils, Component: LabsPairings },
             ],
           },
           {
@@ -88,7 +91,7 @@
             descKey: "rabbitHole.themenspeicherDesc",
             descFb: "Themenspeicher",
             subs: [
-              { sub: "themenspeicher", labelKey: "rabbitHole.themenspeicherTitle", labelFb: "Themenspeicher", Component: LabsThemenspeicher },
+              { sub: "themenspeicher", labelKey: "rabbitHole.themenspeicherTitle", labelFb: "Themenspeicher", icon: Archive, Component: LabsThemenspeicher },
             ],
           },
           {
@@ -99,8 +102,8 @@
             descKey: "explore.bibliothek.ueberDesc",
             descFb: "About & Donate",
             subs: [
-              { sub: "about", labelKey: "about.title", labelFb: "About", Component: LabsAbout },
-              { sub: "donate", labelKey: "donate.title", labelFb: "Donate", Component: LabsDonate },
+              { sub: "about", labelKey: "about.title", labelFb: "About", icon: Info, Component: LabsAbout },
+              { sub: "donate", labelKey: "donate.title", labelFb: "Donate", icon: Heart, Component: LabsDonate },
             ],
           },
         ];
@@ -725,45 +728,33 @@
 
                     {activeSection && (
                       <div data-testid={`explore-bibliothek-section-${activeSection.key}`}>
-                        <div
-                          role="tablist"
-                          style={{
-                            display: "flex",
-                            gap: 6,
-                            overflowX: "auto",
-                            paddingBottom: 8,
-                            marginBottom: 12,
-                            scrollbarWidth: "none",
-                          }}
-                        >
-                          {activeSection.subs.map((s) => {
-                            const isActive = (activeSub?.sub ?? activeSection.subs[0].sub) === s.sub;
-                            return (
-                              <button
-                                key={s.sub}
-                                role="tab"
-                                aria-selected={isActive}
-                                onClick={() => setBiblioSub(s.sub)}
-                                data-testid={`tab-explore-bibliothek-${activeSection.key}-${s.sub}`}
-                                style={{
-                                  padding: "6px 12px",
-                                  borderRadius: 999,
-                                  border: `1px solid ${isActive ? "var(--labs-accent)" : "var(--labs-border)"}`,
-                                  background: isActive ? "var(--labs-accent)" : "transparent",
-                                  color: isActive ? "#fff" : "var(--labs-text)",
-                                  fontSize: 13,
-                                  fontWeight: 500,
-                                  whiteSpace: "nowrap",
-                                  cursor: "pointer",
-                                  fontFamily: "inherit",
-                                  flexShrink: 0,
+                        {(() => {
+                          const subTiles: HubTileDef[] = activeSection.subs.map((s) => ({
+                            icon: s.icon,
+                            labelKey: s.labelKey,
+                            labelFallback: s.labelFb,
+                            descKey: "",
+                            descFallback: "",
+                            testId: `tab-explore-bibliothek-${activeSection.key}-${s.sub}`,
+                          }));
+                          const activeTestId = `tab-explore-bibliothek-${activeSection.key}-${activeSub?.sub ?? activeSection.subs[0].sub}`;
+                          return (
+                            <div style={{ marginBottom: 12 }}>
+                              <HubTileGrid
+                                tiles={subTiles}
+                                t={t}
+                                variant="single-row"
+                                activeTestId={activeTestId}
+                                onTileClick={(tile) => {
+                                  const sub = activeSection.subs.find(
+                                    (s) => `tab-explore-bibliothek-${activeSection.key}-${s.sub}` === tile.testId,
+                                  );
+                                  if (sub) setBiblioSub(sub.sub);
                                 }}
-                              >
-                                {t(s.labelKey, s.labelFb)}
-                              </button>
-                            );
-                          })}
-                        </div>
+                              />
+                            </div>
+                          );
+                        })()}
                         {ActiveComponent && (
                           <div data-testid={`explore-inline-${activeSection.key}-${activeSub?.sub}`}>
                             <EmbeddedExploreProvider>
@@ -784,48 +775,32 @@
                   {t("discover.whiskies", "Whiskies")}
                 </p>
 
-                <div
-                  data-testid="explore-whiskies-pills"
-                  style={{
-                    display: "flex",
-                    gap: 6,
-                    overflowX: "auto",
-                    paddingBottom: 8,
-                    marginBottom: 14,
-                    scrollbarWidth: "none",
-                  }}
-                >
-                  {WHISKY_PILLS.map((pill) => {
-                    const Icon = pill.icon;
-                    const isActive = whiskyView === pill.view;
+                <div data-testid="explore-whiskies-pills" style={{ marginBottom: 14 }}>
+                  {(() => {
+                    const whiskyTiles: HubTileDef[] = WHISKY_PILLS.map((pill) => ({
+                      icon: pill.icon,
+                      labelKey: pill.labelKey,
+                      labelFallback: pill.labelFb,
+                      descKey: "",
+                      descFallback: "",
+                      testId: `pill-explore-whiskies-${pill.view}`,
+                    }));
+                    const activeTestId = `pill-explore-whiskies-${whiskyView}`;
                     return (
-                      <button
-                        key={pill.view}
-                        type="button"
-                        onClick={() => applyWhiskyHubPreset(pill.preset)}
-                        data-testid={`pill-explore-whiskies-${pill.view}`}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 6,
-                          padding: "6px 12px",
-                          borderRadius: 999,
-                          border: `1px solid ${isActive ? "var(--labs-accent)" : "var(--labs-border)"}`,
-                          background: isActive ? "var(--labs-accent)" : "transparent",
-                          color: isActive ? "#fff" : "var(--labs-text)",
-                          fontSize: 13,
-                          fontWeight: 500,
-                          whiteSpace: "nowrap",
-                          cursor: "pointer",
-                          fontFamily: "inherit",
-                          flexShrink: 0,
+                      <HubTileGrid
+                        tiles={whiskyTiles}
+                        t={t}
+                        variant="single-row"
+                        activeTestId={activeTestId}
+                        onTileClick={(tile) => {
+                          const pill = WHISKY_PILLS.find(
+                            (p) => `pill-explore-whiskies-${p.view}` === tile.testId,
+                          );
+                          if (pill) applyWhiskyHubPreset(pill.preset);
                         }}
-                      >
-                        <Icon style={{ width: 14, height: 14 }} strokeWidth={2} />
-                        {t(pill.labelKey, pill.labelFb)}
-                      </button>
+                      />
                     );
-                  })}
+                  })()}
                 </div>
 
                 {whiskyView === "flavour-map" && (
