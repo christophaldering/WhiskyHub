@@ -20,6 +20,20 @@ import {
   type TastingsHubFilter,
 } from "./hubTiles";
 import MeineWeltTastingsList from "@/labs/components/MeineWeltTastingsList";
+import { EmbeddedMeineWeltProvider } from "@/labs/embeddedMeineWeltContext";
+import LabsTasteDrams from "./LabsTasteDrams";
+import LabsTasteCollection from "./LabsTasteCollection";
+import LabsTasteWishlist from "./LabsTasteWishlist";
+import LabsConnoisseur from "./LabsConnoisseur";
+import LabsWhiskyDNA from "./LabsWhiskyDNA";
+import LabsRecommendations from "./LabsRecommendations";
+import LabsCollectionAnalysis from "./LabsCollectionAnalysis";
+import LabsAICuration from "./LabsAICuration";
+import LabsTasteAnalytics from "./LabsTasteAnalytics";
+import LabsTasteWheel from "./LabsTasteWheel";
+import LabsTasteCompare from "./LabsTasteCompare";
+import LabsTasteDownloads from "./LabsTasteDownloads";
+import LabsTasteProfile from "./LabsTasteProfile";
 
 type Tab = "tastings" | "collection" | "ai" | "analytics";
 
@@ -109,6 +123,9 @@ export default function LabsTaste() {
   }, []);
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const [activeTastingsFilter, setActiveTastingsFilter] = useState<TastingsHubFilter>("all");
+  const [activeCollectionTile, setActiveCollectionTile] = useState<string | null>(null);
+  const [activeAITile, setActiveAITile] = useState<string | null>(null);
+  const [activeAnalyticsTile, setActiveAnalyticsTile] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -191,31 +208,108 @@ export default function LabsTaste() {
       );
     }
     if (activeTab === "collection") {
+      const activeTile = COLLECTION_HUB_TILES.find((tile) => tile.testId === activeCollectionTile);
+      const activeTestId = activeTile?.testId;
       return (
         <div data-testid="meine-welt-inline-collection">
-          <HubTileGrid tiles={COLLECTION_HUB_TILES} t={t} testIdPrefix="meine-welt" variant="auto" />
-          <div style={{ marginTop: 24 }}>
-            <RecentRatedList
-              items={recentItems}
-              limit={12}
-              sectionTestId="meine-welt-recent-section"
-              viewAllHref="/labs/taste/drams"
-              headerVariant="meine-welt"
-            />
-          </div>
+          <HubTileGrid
+            tiles={COLLECTION_HUB_TILES}
+            t={t}
+            testIdPrefix="meine-welt"
+            variant="auto"
+            activeTestId={activeTestId}
+            onTileClick={(tile) =>
+              setActiveCollectionTile((prev) => (prev === tile.testId ? null : tile.testId))
+            }
+          />
+          {activeCollectionTile ? (
+            <div
+              className="labs-tastings-inline-content labs-fade-in"
+              style={{ marginTop: 16 }}
+              data-testid={`meine-welt-collection-inline-${activeCollectionTile}`}
+            >
+              <EmbeddedMeineWeltProvider>
+                {activeCollectionTile === "labs-link-collection-hub-drams" && <LabsTasteDrams />}
+                {activeCollectionTile === "labs-link-collection-hub-bottles" && <LabsTasteCollection />}
+                {activeCollectionTile === "labs-link-collection-hub-wishlist" && <LabsTasteWishlist />}
+              </EmbeddedMeineWeltProvider>
+            </div>
+          ) : (
+            <div style={{ marginTop: 24 }}>
+              <RecentRatedList
+                items={recentItems}
+                limit={12}
+                sectionTestId="meine-welt-recent-section"
+                viewAllHref="/labs/taste/drams"
+                headerVariant="meine-welt"
+              />
+            </div>
+          )}
         </div>
       );
     }
     if (activeTab === "ai") {
+      const activeTile = AI_INSIGHTS_HUB_TILES.find((tile) => tile.testId === activeAITile);
+      const activeTestId = activeTile?.testId;
       return (
         <div data-testid="meine-welt-inline-ai">
-          <HubTileGrid tiles={AI_INSIGHTS_HUB_TILES} t={t} testIdPrefix="meine-welt" variant="auto" />
+          <HubTileGrid
+            tiles={AI_INSIGHTS_HUB_TILES}
+            t={t}
+            testIdPrefix="meine-welt"
+            variant="auto"
+            activeTestId={activeTestId}
+            onTileClick={(tile) =>
+              setActiveAITile((prev) => (prev === tile.testId ? null : tile.testId))
+            }
+          />
+          {activeAITile && (
+            <div
+              className="labs-tastings-inline-content labs-fade-in"
+              style={{ marginTop: 16 }}
+              data-testid={`meine-welt-ai-inline-${activeAITile}`}
+            >
+              <EmbeddedMeineWeltProvider>
+                {activeAITile === "labs-link-ai-insights-connoisseur" && <LabsConnoisseur />}
+                {activeAITile === "labs-link-ai-insights-dna" && <LabsWhiskyDNA />}
+                {activeAITile === "labs-link-ai-insights-recommendations" && <LabsRecommendations />}
+                {activeAITile === "labs-link-ai-insights-collection-analysis" && <LabsCollectionAnalysis />}
+                {activeAITile === "labs-link-ai-insights-ai-curation" && <LabsAICuration />}
+              </EmbeddedMeineWeltProvider>
+            </div>
+          )}
         </div>
       );
     }
+    const activeAnalyticsTileDef = ANALYTICS_HUB_TILES.find((tile) => tile.testId === activeAnalyticsTile);
+    const analyticsActiveTestId = activeAnalyticsTileDef?.testId;
     return (
       <div data-testid="meine-welt-inline-analytics">
-        <HubTileGrid tiles={ANALYTICS_HUB_TILES} t={t} testIdPrefix="meine-welt" variant="auto" />
+        <HubTileGrid
+          tiles={ANALYTICS_HUB_TILES}
+          t={t}
+          testIdPrefix="meine-welt"
+          variant="auto"
+          activeTestId={analyticsActiveTestId}
+          onTileClick={(tile) =>
+            setActiveAnalyticsTile((prev) => (prev === tile.testId ? null : tile.testId))
+          }
+        />
+        {activeAnalyticsTile && (
+          <div
+            className="labs-tastings-inline-content labs-fade-in"
+            style={{ marginTop: 16 }}
+            data-testid={`meine-welt-analytics-inline-${activeAnalyticsTile}`}
+          >
+            <EmbeddedMeineWeltProvider>
+              {activeAnalyticsTile === "labs-link-analytics-hub-analytics" && <LabsTasteAnalytics />}
+              {activeAnalyticsTile === "labs-link-analytics-hub-wheel" && <LabsTasteWheel />}
+              {activeAnalyticsTile === "labs-link-analytics-hub-compare" && <LabsTasteCompare />}
+              {activeAnalyticsTile === "labs-link-analytics-hub-downloads" && <LabsTasteDownloads />}
+              {activeAnalyticsTile === "labs-link-analytics-hub-palate" && <LabsTasteProfile />}
+            </EmbeddedMeineWeltProvider>
+          </div>
+        )}
       </div>
     );
   };

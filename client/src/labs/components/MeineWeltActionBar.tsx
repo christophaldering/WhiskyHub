@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { Archive, Sparkles, BarChart3, GlassWater } from "lucide-react";
 import HubHeader from "@/labs/components/HubHeader";
+import { useIsEmbeddedInMeineWelt } from "@/labs/embeddedMeineWeltContext";
 
 type ActiveView = "tastings" | "collection" | "ai" | "analytics";
 
@@ -14,6 +15,8 @@ interface Props {
 export default function MeineWeltActionBar({ active, onSelect, showHubHeader = true }: Props) {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
+  const isEmbedded = useIsEmbeddedInMeineWelt();
+  if (isEmbedded) return null;
 
   const go = (view: ActiveView) => {
     if (onSelect) onSelect(view);
