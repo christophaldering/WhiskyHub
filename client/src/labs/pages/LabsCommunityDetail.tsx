@@ -7,9 +7,10 @@ import { getSession } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
 import {
   Users, ChevronLeft, UserPlus, Shield, Crown, Eye, Trash2, Mail, ChevronDown, Edit2, Save, X,
-  Wine, Calendar, User, GlassWater, Plus, Loader2,
+  Wine, Calendar, User, GlassWater, Plus, Loader2, BarChart3, Activity, Trophy,
 } from "lucide-react";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import HubHeader from "@/labs/components/HubHeader";
 import { stripGuestSuffix } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
@@ -255,8 +256,48 @@ export default function LabsCommunityDetail() {
     isAlreadyMember: !!(f.matchedParticipantId && memberIds.has(f.matchedParticipantId)),
   }));
 
+  const circleTiles: { key: string; label: string; sublabel: string; icon: typeof Wine; href: string; testId: string }[] = [
+    { key: "friends", label: t("m2.circle.navFriends", "Friends"), sublabel: t("m2.circle.navFriendsSub", "Your network"), icon: Users, href: "/labs/circle?tab=friends", testId: "labs-circle-shell-tab-friends" },
+    { key: "stats", label: t("m2.circle.navStats", "Stats"), sublabel: t("m2.circle.navStatsSub", "Insights"), icon: BarChart3, href: "/labs/circle?tab=stats", testId: "labs-circle-shell-tab-stats" },
+    { key: "community", label: t("communityUi.communities", "Communities"), sublabel: t("m2.circle.navCommunitySub", "Groups"), icon: Shield, href: "/labs/circle?tab=community", testId: "labs-circle-shell-tab-community" },
+    { key: "activity", label: t("m2.circle.navActivity", "Activity"), sublabel: t("m2.circle.navActivitySub", "Recent"), icon: Activity, href: "/labs/circle?tab=activity", testId: "labs-circle-shell-tab-activity" },
+    { key: "leaderboard", label: t("m2.circle.navLeaderboard", "Leaderboard"), sublabel: t("m2.circle.navLeaderboardSub", "Rankings"), icon: Trophy, href: "/labs/circle?tab=leaderboard", testId: "labs-circle-shell-tab-leaderboard" },
+    { key: "sessions", label: t("m2.circle.navSessions", "Sessions"), sublabel: t("m2.circle.navSessionsSub", "Tastings"), icon: Wine, href: "/labs/circle?tab=sessions", testId: "labs-circle-shell-tab-sessions" },
+  ];
+  const renderCircleShellHeader = () => (
+    <>
+      <HubHeader kind="circle" />
+      <div className="labs-fade-in" style={{ marginBottom: 20, display: "flex", flexDirection: "column", gap: 8 }} data-testid="labs-circle-shell-tabs">
+        {[circleTiles.slice(0, 3), circleTiles.slice(3, 6)].map((row, ri) => (
+          <div className="labs-action-bar" key={ri}>
+            {row.map((tile) => {
+              const isActive = tile.key === "community";
+              const Icon = tile.icon;
+              return (
+                <a
+                  key={tile.key}
+                  href={tile.href}
+                  className={`labs-action-bar-item labs-action-bar-item--button${isActive ? " labs-action-bar-item--active" : ""}`}
+                  data-testid={tile.testId}
+                  onClick={(e) => { e.preventDefault(); navigate(tile.href); }}
+                >
+                  <div className={`labs-action-bar-icon labs-action-bar-icon--accent`}>
+                    <Icon className="w-5 h-5 labs-icon-accent" />
+                  </div>
+                  <span className="labs-action-bar-label">{tile.label}</span>
+                  <span className="labs-action-bar-sublabel">{tile.sublabel}</span>
+                </a>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </>
+  );
+
   return (
     <div className="labs-page labs-fade-in" data-testid="community-detail-page">
+      {renderCircleShellHeader()}
       <button onClick={goBack} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="btn-back-communities">
         <ChevronLeft className="w-4 h-4" /> {t("communityUi.communities")}
       </button>
