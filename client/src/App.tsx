@@ -51,6 +51,7 @@ const Tour = lazy(() => import("@/pages/tour"));
 const Background = lazy(() => import("@/pages/background"));
 const Intro = lazy(() => import("@/pages/intro"));
 const AdminPanel = lazy(() => import("@/pages/admin-panel"));
+const AdminDistilleryAliases = lazy(() => import("@/pages/admin-distillery-aliases"));
 const SupportConsole = lazy(() => import("@/pages/support-console"));
 const Landing = lazy(() => import("@/pages/landing"));
 const SimpleFeedbackPage = lazy(() => import("@/pages/simple-feedback"));
@@ -531,6 +532,11 @@ function Router() {
         <Route path="/admin/funnel-live">
           <AdminLayout>
             <FunnelLivePage />
+          </AdminLayout>
+        </Route>
+        <Route path="/admin/distillery-aliases">
+          <AdminLayout>
+            <AdminDistilleryAliases />
           </AdminLayout>
         </Route>
         <Route path="/admin">

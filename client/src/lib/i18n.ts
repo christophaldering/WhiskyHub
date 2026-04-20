@@ -3886,6 +3886,7 @@ const resources = {
       admin: {
         title: "Admin Panel",
         subtitle: "Manage all participants, hosts, and tastings in one place.",
+        linkDistilleryAliases: "Distillery aliases",
         loginRequired: "Please log in to access the admin panel.",
         accessDenied: "You do not have admin privileges to access this page.",
         tabParticipants: "Participants",
@@ -13028,6 +13029,7 @@ const resources = {
       admin: {
         title: "Admin-Bereich",
         subtitle: "Verwalten Sie alle Teilnehmer, Hosts und Tastings an einem Ort.",
+        linkDistilleryAliases: "Brennerei-Aliase",
         loginRequired: "Bitte melden Sie sich an, um den Admin-Bereich zu nutzen.",
         accessDenied: "Sie haben keine Admin-Rechte für diese Seite.",
         tabParticipants: "Teilnehmer",

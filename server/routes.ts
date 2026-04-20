@@ -12400,6 +12400,103 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
+  // --- Distillery name aliases (admin) ---
+  // Aliases let imports collapse spelling variants ("Glen Garioch" vs "Glengarioch")
+  // onto the same distillery row. Stored canonicalized; we still show the raw input
+  // to admins so they can spot typos.
+  app.get("/api/admin/distillery-aliases", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.query.participantId as string;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const [distilleries, aliases] = await Promise.all([
+        storage.getAllDistilleries(),
+        storage.listAllDistilleryAliases(),
+      ]);
+      const aliasesByDistillery = new Map<string, Array<{ id: string; alias: string; createdAt: string | null }>>();
+      for (const a of aliases) {
+        const arr = aliasesByDistillery.get(a.distilleryId) || [];
+        arr.push({ id: a.id, alias: a.alias, createdAt: a.createdAt ? new Date(a.createdAt).toISOString() : null });
+        aliasesByDistillery.set(a.distilleryId, arr);
+      }
+      const rows = distilleries
+        .map(d => ({
+          id: d.id,
+          name: d.name,
+          country: d.country || null,
+          region: d.region || null,
+          aliases: (aliasesByDistillery.get(d.id) || []).sort((x, y) => x.alias.localeCompare(y.alias)),
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      res.json({ distilleries: rows });
+    } catch (e: any) {
+      console.error("[admin/distillery-aliases] list error:", e);
+      res.status(500).json({ message: e?.message || "Failed to load aliases" });
+    }
+  });
+
+  app.post("/api/admin/distilleries/:id/aliases", async (req: Request, res: Response) => {
+    try {
+      const { participantId, alias } = req.body || {};
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const aliasInput = typeof alias === "string" ? alias.trim() : "";
+      if (!aliasInput) return res.status(400).json({ message: "alias required" });
+      const distilleries = await storage.getAllDistilleries();
+      const target = distilleries.find(d => d.id === req.params.id);
+      if (!target) return res.status(404).json({ message: "Distillery not found" });
+      const { canonicalizeDistilleryName } = await import("@shared/distillery-normalizer");
+      const canonical = canonicalizeDistilleryName(aliasInput);
+      if (!canonical) return res.status(400).json({ message: "Alias could not be normalized" });
+      const all = await storage.listAllDistilleryAliases();
+      const existing = all.find(a => a.alias === canonical);
+      if (existing && existing.distilleryId !== target.id) {
+        const owner = distilleries.find(d => d.id === existing.distilleryId);
+        return res.status(409).json({
+          message: `Alias '${canonical}' already maps to '${owner?.name || existing.distilleryId}'`,
+        });
+      }
+      const created = await storage.addDistilleryAlias(target.id, aliasInput);
+      if (!created) {
+        const after = await storage.listAllDistilleryAliases();
+        const owned = after.find(a => a.alias === canonical);
+        if (owned && owned.distilleryId !== target.id) {
+          const owner = distilleries.find(d => d.id === owned.distilleryId);
+          return res.status(409).json({
+            message: `Alias '${canonical}' already maps to '${owner?.name || owned.distilleryId}'`,
+          });
+        }
+        return res.status(409).json({ message: "Alias already exists for this distillery" });
+      }
+      res.status(201).json({
+        id: created.id,
+        alias: created.alias,
+        distilleryId: created.distilleryId,
+        createdAt: created.createdAt ? new Date(created.createdAt).toISOString() : null,
+      });
+    } catch (e: any) {
+      console.error("[admin/distillery-aliases] add error:", e);
+      res.status(500).json({ message: e?.message || "Failed to add alias" });
+    }
+  });
+
+  app.delete("/api/admin/distillery-aliases/:aliasId", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.query.participantId as string;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const ok = await storage.removeDistilleryAlias(req.params.aliasId);
+      if (!ok) return res.status(404).json({ message: "Alias not found" });
+      res.json({ success: true });
+    } catch (e: any) {
+      console.error("[admin/distillery-aliases] delete error:", e);
+      res.status(500).json({ message: e?.message || "Failed to remove alias" });
+    }
+  });
+
   // --- Flavour Categories & Descriptors (public read, admin write) ---
   app.get("/api/flavour-categories", async (_req: Request, res: Response) => {
     try {

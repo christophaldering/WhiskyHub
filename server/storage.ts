@@ -381,6 +381,8 @@ export interface IStorage {
   findOrCreateDistilleryByName(name: string, fallback?: { country?: string | null; region?: string | null; founded?: number | null; description?: string | null; feature?: string | null }): Promise<{ distillery: Distillery; created: boolean }>;
   addDistilleryAlias(distilleryId: string, alias: string): Promise<DistilleryAlias | undefined>;
   listDistilleryAliases(distilleryId: string): Promise<DistilleryAlias[]>;
+  listAllDistilleryAliases(): Promise<DistilleryAlias[]>;
+  removeDistilleryAlias(aliasId: string): Promise<boolean>;
 
   // PDF Split Sessions (temporary store for splitting multi-page program PDFs)
   createPdfSplitSession(data: { tastingId: string; hostId: string; pages: PdfSplitPage[] }): Promise<PdfSplitSession>;
@@ -1368,6 +1370,15 @@ export class DatabaseStorage implements IStorage {
       console.warn("[distillery] alias list failed", aliasErr);
       return [];
     }
+  }
+
+  async listAllDistilleryAliases(): Promise<DistilleryAlias[]> {
+    return await db.select().from(distilleryAliases);
+  }
+
+  async removeDistilleryAlias(aliasId: string): Promise<boolean> {
+    const result = await db.delete(distilleryAliases).where(eq(distilleryAliases.id, aliasId)).returning({ id: distilleryAliases.id });
+    return result.length > 0;
   }
 
   async listSharedHandoutLibrary(opts?: { search?: string; excludeHostId?: string; limit?: number }): Promise<WhiskyHandoutLibraryEntry[]> {

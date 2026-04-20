@@ -848,6 +848,12 @@ export default function AdminPanel() {
         <p className="text-sm text-muted-foreground" data-testid="text-admin-subtitle">
           {t("admin.subtitle")}
         </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <a href="/admin/distillery-aliases" className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-secondary/40 hover:bg-secondary/60 transition-colors" data-testid="link-distillery-aliases">
+            <Database className="w-3 h-3" />
+            {t("admin.linkDistilleryAliases", { defaultValue: "Distillery aliases" })}
+          </a>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-8">
