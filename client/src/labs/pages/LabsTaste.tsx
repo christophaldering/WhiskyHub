@@ -34,6 +34,7 @@ import LabsTasteWheel from "./LabsTasteWheel";
 import LabsTasteCompare from "./LabsTasteCompare";
 import LabsTasteDownloads from "./LabsTasteDownloads";
 import LabsTasteProfile from "./LabsTasteProfile";
+import LabsBenchmark from "./LabsBenchmark";
 
 type Tab = "tastings" | "collection" | "ai" | "analytics";
 
@@ -385,6 +386,7 @@ export default function LabsTaste() {
               {activeAnalyticsTile === "labs-link-analytics-hub-compare" && <LabsTasteCompare />}
               {activeAnalyticsTile === "labs-link-analytics-hub-downloads" && <LabsTasteDownloads />}
               {activeAnalyticsTile === "labs-link-analytics-hub-palate" && <LabsTasteProfile />}
+              {activeAnalyticsTile === "labs-link-analytics-hub-benchmark" && <LabsBenchmark />}
             </EmbeddedMeineWeltProvider>
           </div>
         )}

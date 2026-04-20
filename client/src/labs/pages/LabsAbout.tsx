@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { Heart, Info, ChevronLeft } from "lucide-react";
+import { useIsEmbeddedInExplore } from "@/labs/embeddedExploreContext";
 import authorPhoto from "@assets/22A3ABF8-0085-4C82-97DF-EAA0ACD46B4E_1771448218726.png";
 
 type Block = { heading?: string; lines: string[]; italic?: boolean; accent?: boolean };
@@ -11,17 +12,20 @@ export default function LabsAbout() {
   const [, navigate] = useLocation();
   const goBackToDiscover = useBackNavigation("/labs/explore");
   const blocks = t("about.blocks", { returnObjects: true }) as Block[];
+  const embedded = useIsEmbeddedInExplore();
 
   return (
-    <div className="labs-page labs-fade-in" data-testid="labs-about-page">
-      <button
-        onClick={goBackToDiscover}
-        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
-        style={{ color: "var(--labs-text-muted)" }}
-        data-testid="labs-about-back"
-      >
-        <ChevronLeft className="w-4 h-4" /> {t("discover.title", "Discover")}
-      </button>
+    <div className={embedded ? "labs-fade-in" : "labs-page labs-fade-in"} data-testid="labs-about-page">
+      {!embedded && (
+        <button
+          onClick={goBackToDiscover}
+          className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+          style={{ color: "var(--labs-text-muted)" }}
+          data-testid="labs-about-back"
+        >
+          <ChevronLeft className="w-4 h-4" /> {t("discover.title", "Discover")}
+        </button>
+      )}
 
       <div className="flex items-center gap-2.5 mb-1">
         <Info className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />

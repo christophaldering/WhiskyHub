@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { Wine, BookOpen } from "lucide-react";
 import HubHeader from "@/labs/components/HubHeader";
+import { useIsEmbeddedInExplore } from "@/labs/embeddedExploreContext";
 
 type ActiveView = "whiskies" | "bibliothek";
 
@@ -14,6 +15,8 @@ interface Props {
 export default function DiscoverActionBar({ active, onSelect, showHubHeader = true }: Props) {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
+  const isEmbedded = useIsEmbeddedInExplore();
+  if (isEmbedded) return null;
 
   const go = (view: ActiveView) => {
     if (onSelect) onSelect(view);

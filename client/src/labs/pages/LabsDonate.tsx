@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { Heart, ExternalLink, HandHeart, Eye, ChevronLeft } from "lucide-react";
+import { useIsEmbeddedInExplore } from "@/labs/embeddedExploreContext";
 
 const HOSPIZ_NAME = "Christina-Kleintjes-Hospiz-Stiftung";
 const HOSPIZ_URL = "https://c-kleintjes-hospiz-stiftung.de";
@@ -8,17 +9,20 @@ const HOSPIZ_URL = "https://c-kleintjes-hospiz-stiftung.de";
 export default function LabsDonate() {
   const goBackToAbout = useBackNavigation("/labs/about");
   const { t } = useTranslation();
+  const embedded = useIsEmbeddedInExplore();
 
   return (
-    <div className="labs-page labs-fade-in" data-testid="labs-donate-page">
-      <button
-        onClick={goBackToAbout}
-        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
-        style={{ color: "var(--labs-text-muted)" }}
-        data-testid="labs-donate-back"
-      >
-        <ChevronLeft className="w-4 h-4" /> About
-      </button>
+    <div className={embedded ? "labs-fade-in" : "labs-page labs-fade-in"} data-testid="labs-donate-page">
+      {!embedded && (
+        <button
+          onClick={goBackToAbout}
+          className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+          style={{ color: "var(--labs-text-muted)" }}
+          data-testid="labs-donate-back"
+        >
+          <ChevronLeft className="w-4 h-4" /> About
+        </button>
+      )}
 
       <div className="flex items-center gap-2.5 mb-1">
         <Heart className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />

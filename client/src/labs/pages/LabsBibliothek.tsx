@@ -28,44 +28,24 @@ export interface BibliothekSection {
 
 export const SECTIONS: BibliothekSection[] = [
   {
-    titleKey: "bibliothek.sectionCommunity",
-    titleFallback: "Community",
-    links: [
-      { icon: Archive, labelKey: "bibliothek.archive", labelFallback: "Community Archive", descKey: "bibliothek.archiveDesc", descFallback: "Historical tastings & analytics", href: "/labs/history", testId: "labs-link-bibliothek-archive" },
-      { icon: Globe, labelKey: "bibliothek.communityHandouts", labelFallback: "Community Handouts", descKey: "bibliothek.communityHandoutsDesc", descFallback: "Handouts shared by other hosts — adopt with one click", href: "/labs/host/handout-library?tab=community", testId: "labs-link-bibliothek-community-handouts" },
-    ],
-  },
-  {
     titleKey: "bibliothek.sectionReference",
     titleFallback: "Reference",
     links: [
       { icon: BookOpen, labelKey: "discover.lexicon", labelFallback: "Lexicon", descKey: "bibliothek.lexiconDescNav", descFallback: "Dictionary, templates & flavour map", href: "/labs/discover/lexicon", testId: "labs-link-bibliothek-lexicon" },
       { icon: Building2, labelKey: "discover.distilleries", labelFallback: "Distilleries", descKey: "discover.distilleriesDesc", descFallback: "Distillery encyclopedia & map", href: "/labs/discover/distilleries", testId: "labs-link-bibliothek-distilleries" },
       { icon: Package, labelKey: "discover.bottlers", labelFallback: "Bottlers", descKey: "discover.bottlersDesc", descFallback: "Independent bottlers database", href: "/labs/discover/bottlers", testId: "labs-link-bibliothek-bottlers" },
+      { icon: Globe, labelKey: "bibliothek.communityHandouts", labelFallback: "Community Handouts", descKey: "bibliothek.communityHandoutsDesc", descFallback: "Handouts shared by other hosts — adopt with one click", href: "/labs/host/handout-library?tab=community", testId: "labs-link-bibliothek-community-handouts" },
     ],
   },
   {
     titleKey: "bibliothek.sectionTastingWissen",
     titleFallback: "Tasting Knowledge",
     links: [
-      { icon: Factory, labelKey: "bibliothek.whiskyProduction", labelFallback: "Background & Methodology", descKey: "bibliothek.whiskyProductionDesc", descFallback: "Tasting, profile calculation, dimensions & statistical engine", href: "/labs/discover/background", testId: "labs-link-bibliothek-production" },
       { icon: Map, labelKey: "discover.guide", labelFallback: "Tasting Guide", descKey: "discover.guideDesc", descFallback: "Step-by-step tasting guide", href: "/labs/discover/guide", testId: "labs-link-bibliothek-guide" },
+      { icon: Factory, labelKey: "bibliothek.whiskyProduction", labelFallback: "Background & Methodology", descKey: "bibliothek.whiskyProductionDesc", descFallback: "Tasting, profile calculation, dimensions & statistical engine", href: "/labs/discover/background", testId: "labs-link-bibliothek-production" },
       { icon: SlidersHorizontal, labelKey: "bibliothek.howProfileCalculated", labelFallback: "How a Profile Is Calculated", descKey: "bibliothek.howProfileCalculatedDesc", descFallback: "Scoring, profiles & dimensions", href: "/labs/discover/method", testId: "labs-link-bibliothek-profile-calc" },
       { icon: Microscope, labelKey: "bibliothek.researchSensory", labelFallback: "Research & Sensory", descKey: "bibliothek.researchSensoryDesc", descFallback: "Concepts, studies & sensory science", href: "/labs/discover/research", testId: "labs-link-bibliothek-research-sensory" },
-    ],
-  },
-  {
-    titleKey: "bibliothek.sectionPairings",
-    titleFallback: "Pairings",
-    links: [
       { icon: Utensils, labelKey: "bibliothek.pairings", labelFallback: "Whisky & Food Pairings", descKey: "bibliothek.pairingsDesc", descFallback: "Combine whisky with food", href: "/labs/taste/pairings?from=bibliothek", testId: "labs-link-bibliothek-pairings" },
-    ],
-  },
-  {
-    titleKey: "bibliothek.sectionBenchmark",
-    titleFallback: "Benchmark",
-    links: [
-      { icon: Brain, labelKey: "bibliothek.benchmark", labelFallback: "Benchmark", descKey: "bibliothek.benchmarkDesc", descFallback: "External tasting data & comparison", href: "/labs/taste/benchmark?from=bibliothek", testId: "labs-link-bibliothek-benchmark" },
     ],
   },
   {
@@ -73,6 +53,14 @@ export const SECTIONS: BibliothekSection[] = [
     titleFallback: "Rabbit Hole",
     links: [
       { icon: Archive, labelKey: "rabbitHole.themenspeicherTitle", labelFallback: "Topic Vault", descKey: "rabbitHole.themenspeicherDesc", descFallback: "Open questions and ideas worth exploring later.", href: "/labs/discover/rabbit-hole/themenspeicher", testId: "labs-link-bibliothek-themenspeicher" },
+    ],
+  },
+  {
+    titleKey: "bibliothek.sectionAbout",
+    titleFallback: "About",
+    links: [
+      { icon: BookOpen, labelKey: "about.title", labelFallback: "About CaskSense", descKey: "m2.discover.aboutSubtitle", descFallback: "The story behind CaskSense", href: "/labs/about", testId: "labs-link-bibliothek-about" },
+      { icon: Brain, labelKey: "donate.title", labelFallback: "Donate", descKey: "donate.whyTitle", descFallback: "Why donate?", href: "/labs/donate", testId: "labs-link-bibliothek-donate" },
     ],
   },
 ];

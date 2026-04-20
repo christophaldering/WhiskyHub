@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import type { ElementType } from "react";
 import {
   BookOpen, Archive, Heart, Sparkles, Activity, Library, Compass,
-  BarChart3, PieChart, GitCompareArrows, Download, Layers, Crown, Users,
+  BarChart3, PieChart, GitCompareArrows, Download, Layers, Crown, Users, Brain,
 } from "lucide-react";
 
 export interface HubTileDef {
@@ -183,6 +183,15 @@ export const ANALYTICS_HUB_TILES: HubTileDef[] = [
     descFallback: "Your CaskSense flavor profile",
     href: "/labs/taste/profile",
     testId: "labs-link-analytics-hub-palate",
+  },
+  {
+    icon: Brain,
+    labelKey: "bibliothek.benchmark",
+    labelFallback: "Benchmark",
+    descKey: "bibliothek.benchmarkDesc",
+    descFallback: "External tasting data & comparison",
+    href: "/labs/taste/benchmark",
+    testId: "labs-link-analytics-hub-benchmark",
   },
 ];
 

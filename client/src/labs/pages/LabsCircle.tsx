@@ -8,7 +8,8 @@ import {
   Globe, Mail, Send, BarChart3, Plus,
 } from "lucide-react";
 import CommunityInsights from "@/labs/components/CommunityInsights";
-import { LabsHistoryInsights } from "@/labs/pages/LabsHistory";
+import LabsHistory, { LabsHistoryInsights } from "@/labs/pages/LabsHistory";
+import { EmbeddedExploreProvider } from "@/labs/embeddedExploreContext";
 import { useAppStore } from "@/lib/store";
 import { stripGuestSuffix, formatScore } from "@/lib/utils";
 import { friendsApi, activityApi, tastingApi, leaderboardApi, communityApi, pidHeaders } from "@/lib/api";
@@ -1258,6 +1259,18 @@ export default function LabsCircle() {
             </button>
           </EmptyState>
         )}
+
+        <div style={{ marginTop: 32 }} data-testid="labs-circle-sessions-archive">
+          <div
+            className="labs-section-label"
+            style={{ fontSize: 11, letterSpacing: "0.08em", color: "var(--labs-text-muted)", marginBottom: 12, paddingLeft: 4, textTransform: "uppercase" }}
+          >
+            {t("bibliothek.archive", "Community Archive")}
+          </div>
+          <EmbeddedExploreProvider>
+            <LabsHistory />
+          </EmbeddedExploreProvider>
+        </div>
       </div>
     );
   }

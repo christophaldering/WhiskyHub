@@ -3,19 +3,107 @@
         import { useTranslation } from "react-i18next";
         import { useLocation, useSearch, Link } from "wouter";
         import { useQuery } from "@tanstack/react-query";
-        import { SECTIONS as BIBLIOTHEK_SECTIONS, BibliothekTile } from "@/labs/pages/LabsBibliothek";
         import { useSession } from "@/lib/session";
         import { pidHeaders } from "@/lib/api";
         import { wishlistKey, useWishlistKeys, useCollectionKeys } from "@/lib/wishlistKey";
         import WishlistBadge from "@/labs/components/WishlistBadge";
         import CollectionBadge from "@/labs/components/CollectionBadge";
         import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
+        import { EmbeddedExploreProvider } from "@/labs/embeddedExploreContext";
         import { apiUrl } from "@/lib/native";
         import {
           Search, ChevronRight, Wine,
           BookOpen, List, BarChart3, MapPin, Building2, Compass, Activity,
-          X, ChevronDown, Check, ArrowUp, ArrowDown, Star,
+          X, ChevronDown, Check, ArrowUp, ArrowDown, Star, Archive,
+          Map as MapIcon, FlaskConical, Heart, Info, Globe, Package,
+          SlidersHorizontal, Factory, Microscope, Utensils,
         } from "lucide-react";
+        import LabsLexicon from "@/labs/pages/LabsLexicon";
+        import LabsDistilleries from "@/labs/pages/LabsDistilleries";
+        import LabsBottlers from "@/labs/pages/LabsBottlers";
+        import LabsHandoutLibrary from "@/labs/pages/LabsHandoutLibrary";
+        import LabsGuide from "@/labs/pages/LabsGuide";
+        import LabsBackground from "@/labs/pages/LabsBackground";
+        import LabsMethod from "@/labs/pages/LabsMethod";
+        import LabsResearch from "@/labs/pages/LabsResearch";
+        import LabsPairings from "@/labs/pages/LabsPairings";
+        import LabsThemenspeicher from "@/labs/pages/LabsThemenspeicher";
+        import LabsAbout from "@/labs/pages/LabsAbout";
+        import LabsDonate from "@/labs/pages/LabsDonate";
+
+        type BibliothekSectionKey = "nachschlagewerk" | "tasting-wissen" | "rabbit-hole" | "ueber-casksense";
+
+        interface BibliothekSubDef {
+          sub: string;
+          labelKey: string;
+          labelFb: string;
+          Component: React.ComponentType;
+        }
+
+        interface BibliothekSectionDef {
+          key: BibliothekSectionKey;
+          icon: React.ComponentType<{ className?: string; style?: React.CSSProperties; strokeWidth?: number }>;
+          labelKey: string;
+          labelFb: string;
+          descKey: string;
+          descFb: string;
+          subs: BibliothekSubDef[];
+        }
+
+        const BIBLIOTHEK_TILES: BibliothekSectionDef[] = [
+          {
+            key: "nachschlagewerk",
+            icon: BookOpen,
+            labelKey: "explore.bibliothek.nachschlagewerkTitle",
+            labelFb: "Nachschlagewerk",
+            descKey: "explore.bibliothek.nachschlagewerkDesc",
+            descFb: "Lexikon, Destillerien, Bottlers",
+            subs: [
+              { sub: "lexikon", labelKey: "discover.lexicon", labelFb: "Lexikon", Component: LabsLexicon },
+              { sub: "destillerien", labelKey: "discover.distilleries", labelFb: "Destillerien", Component: LabsDistilleries },
+              { sub: "bottlers", labelKey: "discover.bottlers", labelFb: "Bottlers", Component: LabsBottlers },
+              { sub: "community-handouts", labelKey: "bibliothek.communityHandouts", labelFb: "Community Handouts", Component: LabsHandoutLibrary },
+            ],
+          },
+          {
+            key: "tasting-wissen",
+            icon: FlaskConical,
+            labelKey: "explore.bibliothek.tastingWissenTitle",
+            labelFb: "Tasting-Wissen",
+            descKey: "explore.bibliothek.tastingWissenDesc",
+            descFb: "Guide, Hintergrund, Profilberechnung, Research, Pairings",
+            subs: [
+              { sub: "guide", labelKey: "discover.guide", labelFb: "Guide", Component: LabsGuide },
+              { sub: "hintergrund", labelKey: "bibliothek.whiskyProduction", labelFb: "Hintergrund", Component: LabsBackground },
+              { sub: "profilberechnung", labelKey: "bibliothek.howProfileCalculated", labelFb: "Profilberechnung", Component: LabsMethod },
+              { sub: "research", labelKey: "bibliothek.researchSensory", labelFb: "Research", Component: LabsResearch },
+              { sub: "pairings", labelKey: "bibliothek.pairings", labelFb: "Pairings", Component: LabsPairings },
+            ],
+          },
+          {
+            key: "rabbit-hole",
+            icon: Archive,
+            labelKey: "rabbitHole.themenspeicherTitle",
+            labelFb: "Rabbit Hole",
+            descKey: "rabbitHole.themenspeicherDesc",
+            descFb: "Themenspeicher",
+            subs: [
+              { sub: "themenspeicher", labelKey: "rabbitHole.themenspeicherTitle", labelFb: "Themenspeicher", Component: LabsThemenspeicher },
+            ],
+          },
+          {
+            key: "ueber-casksense",
+            icon: Info,
+            labelKey: "explore.bibliothek.ueberTitle",
+            labelFb: "Über CaskSense",
+            descKey: "explore.bibliothek.ueberDesc",
+            descFb: "About & Donate",
+            subs: [
+              { sub: "about", labelKey: "about.title", labelFb: "About", Component: LabsAbout },
+              { sub: "donate", labelKey: "donate.title", labelFb: "Donate", Component: LabsDonate },
+            ],
+          },
+        ];
 
         type WhiskyHubMode = "hub" | "list";
         type WhiskyHubPreset =
@@ -25,6 +113,15 @@
           | "byRegion"
           | "byDistillery"
           | "flavourMap";
+
+        const WHISKY_PILLS: { preset: WhiskyHubPreset; view: string; icon: typeof Wine; labelKey: string; labelFb: string }[] = [
+          { preset: "all", view: "alle", icon: List, labelKey: "explore.hub.allTitle", labelFb: "Alle" },
+          { preset: "topRated", view: "top-rated", icon: Star, labelKey: "explore.hub.topTitle", labelFb: "Top Rated" },
+          { preset: "mostTasted", view: "most-tasted", icon: Activity, labelKey: "explore.hub.mostTitle", labelFb: "Most Tasted" },
+          { preset: "byRegion", view: "nach-region", icon: MapPin, labelKey: "explore.hub.regionTitle", labelFb: "Nach Region" },
+          { preset: "byDistillery", view: "nach-destillerie", icon: Building2, labelKey: "explore.hub.distilleryTitle", labelFb: "Nach Destillerie" },
+          { preset: "flavourMap", view: "flavour-map", icon: Compass, labelKey: "explore.hub.flavourTitle", labelFb: "Flavour Map" },
+        ];
 
         type DistilleryGroup = {
           key: string;
@@ -102,6 +199,9 @@
         type ExploreSnapshot = {
           activeView: "whiskies" | "bibliothek";
           whiskyHubMode: WhiskyHubMode;
+          whiskyView: string | null;
+          biblioSection: BibliothekSectionKey | null;
+          biblioSub: string | null;
           search: string;
           visibleCount: number;
           sort: string;
@@ -146,14 +246,23 @@
           const { t, i18n } = useTranslation();
           const [, navigate] = useLocation();
           const searchStr = useSearch();
-          const initialTabFromUrl = useMemo<"whiskies" | "bibliothek" | null>(() => {
+          const initialUrlState = useMemo(() => {
             try {
               const params = new URLSearchParams(searchStr);
               const tab = params.get("tab");
-              if (tab === "whiskies" || tab === "bibliothek") return tab;
+              const view = params.get("view");
+              const section = params.get("section");
+              const sub = params.get("sub");
+              return {
+                tab: (tab === "whiskies" || tab === "bibliothek") ? tab as "whiskies" | "bibliothek" : null,
+                view,
+                section: (section === "nachschlagewerk" || section === "tasting-wissen" || section === "rabbit-hole" || section === "ueber-casksense") ? section as BibliothekSectionKey : null,
+                sub,
+              };
             } catch {}
-            return null;
+            return { tab: null as null | "whiskies" | "bibliothek", view: null as string | null, section: null as BibliothekSectionKey | null, sub: null as string | null };
           }, []);
+          const initialTabFromUrl = initialUrlState.tab;
           const { currentParticipant } = useSession();
           const pid = currentParticipant?.id;
           const savedKeys = useWishlistKeys(pid);
@@ -165,21 +274,46 @@
           const [activeView, setActiveView] = useState<"whiskies" | "bibliothek">(
             () => initialTabFromUrl ?? initialSnapshot?.activeView ?? "whiskies",
           );
-          const [whiskyHubMode, setWhiskyHubMode] = useState<WhiskyHubMode>(
-            () => initialSnapshot?.whiskyHubMode ?? "hub",
+          const initialWhiskyView: string = (
+            initialUrlState.view && WHISKY_PILLS.some(p => p.view === initialUrlState.view)
+              ? initialUrlState.view
+              : (initialSnapshot?.whiskyView ?? "alle")
           );
+          const [whiskyView, setWhiskyView] = useState<string>(initialWhiskyView);
+          const [biblioSection, setBiblioSection] = useState<BibliothekSectionKey | null>(
+            () => initialUrlState.section ?? initialSnapshot?.biblioSection ?? null,
+          );
+          const [biblioSub, setBiblioSub] = useState<string | null>(
+            () => initialUrlState.sub ?? initialSnapshot?.biblioSub ?? null,
+          );
+          const [whiskyHubMode] = useState<WhiskyHubMode>("list");
 
           useEffect(() => {
             if (typeof window === "undefined") return;
             try {
               const params = new URLSearchParams(window.location.search);
-              if (params.get("tab") === activeView) return;
               params.set("tab", activeView);
+              if (activeView === "whiskies") {
+                if (whiskyView && whiskyView !== "alle") params.set("view", whiskyView);
+                else params.delete("view");
+                params.delete("section");
+                params.delete("sub");
+              } else {
+                params.delete("view");
+                if (biblioSection) {
+                  params.set("section", biblioSection);
+                  if (biblioSub) params.set("sub", biblioSub);
+                  else params.delete("sub");
+                } else {
+                  params.delete("section");
+                  params.delete("sub");
+                }
+              }
               const qs = params.toString();
               const newUrl = `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`;
               window.history.replaceState(window.history.state, "", newUrl);
             } catch {}
-          }, [activeView]);
+          }, [activeView, whiskyView, biblioSection, biblioSub]);
           const [search, setSearch] = useState<string>(() => initialSnapshot?.search ?? "");
           const [visibleCount, setVisibleCount] = useState<number>(() => initialSnapshot?.visibleCount ?? 20);
           const [sort, setSort] = useState<string>(() => initialSnapshot?.sort ?? "avg");
@@ -473,6 +607,9 @@
             writeExploreSnapshot({
               activeView,
               whiskyHubMode,
+              whiskyView,
+              biblioSection,
+              biblioSub,
               search,
               visibleCount,
               sort,
@@ -487,33 +624,22 @@
               },
               expandedGroups: Array.from(expandedGroups),
             });
-          }, [activeView, whiskyHubMode, search, visibleCount, sort, sortDirection, filterSearch, filters, expandedGroups]);
+          }, [activeView, whiskyHubMode, whiskyView, biblioSection, biblioSub, search, visibleCount, sort, sortDirection, filterSearch, filters, expandedGroups]);
 
           const applyWhiskyHubPreset = useCallback((preset: WhiskyHubPreset) => {
+            const pill = WHISKY_PILLS.find(p => p.preset === preset);
+            if (pill) setWhiskyView(pill.view);
             if (preset === "flavourMap") {
-              navigate("/labs/discover/lexicon?tab=flavour-map");
               return;
             }
-            setSearch("");
-            setVisibleCount(20);
-            setFilters({
-              region: new Set(), distillery: new Set(), category: new Set(),
-              country: new Set(), peatLevel: new Set(),
-            });
-            setExpandedGroups(new Set());
             if (preset === "topRated") {
-              setSort("avg"); setSortDirection("desc"); setExpandedFilter(null);
+              setSort("avg"); setSortDirection("desc");
             } else if (preset === "mostTasted") {
-              setSort("most"); setSortDirection("desc"); setExpandedFilter(null);
-            } else if (preset === "byRegion") {
-              setSort("alpha"); setSortDirection("asc"); setExpandedFilter("region");
-            } else if (preset === "byDistillery") {
-              setSort("alpha"); setSortDirection("asc"); setExpandedFilter("distillery");
-            } else {
-              setSort("alpha"); setSortDirection("asc"); setExpandedFilter(null);
+              setSort("most"); setSortDirection("desc");
+            } else if (preset === "byRegion" || preset === "byDistillery") {
+              setSort("alpha"); setSortDirection("asc");
             }
-            setWhiskyHubMode("list");
-          }, [navigate]);
+          }, []);
 
           useEffect(() => {
             if (prevWhiskyCountRef.current !== null && prevWhiskyCountRef.current !== whiskies.length) {
@@ -532,17 +658,7 @@
                 onSelect={(view) => {
                   if (view === "whiskies") {
                     setActiveView("whiskies");
-                    setWhiskyHubMode("hub");
                     setExpandedFilter(null);
-                    setFilterSearch("");
-                    setSearch("");
-                    setFilters({
-                      region: new Set(),
-                      distillery: new Set(),
-                      category: new Set(),
-                      country: new Set(),
-                      peatLevel: new Set(),
-                    });
                   } else {
                     setActiveView("bibliothek");
                     setExpandedFilter(null);
@@ -550,81 +666,179 @@
                 }}
               />
 
-              {activeView === "bibliothek" && (
-                <div className="labs-fade-in labs-stagger-2" data-testid="explore-bibliothek-inline" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                  {BIBLIOTHEK_SECTIONS.map((section) => (
-                    <div key={section.titleKey}>
-                      <div className="labs-section-label" style={{ fontSize: 11, letterSpacing: "0.08em", color: "var(--labs-text-muted)", marginBottom: 8, paddingLeft: 4, textTransform: "uppercase" }}>
-                        {t(section.titleKey, section.titleFallback)}
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                        {section.links.map((link) => (
-                          <BibliothekTile key={link.testId} link={link} t={t} />
-                        ))}
-                      </div>
+              {activeView === "bibliothek" && (() => {
+                const activeSection = biblioSection ? BIBLIOTHEK_TILES.find(s => s.key === biblioSection) ?? null : null;
+                const activeSub = activeSection
+                  ? (activeSection.subs.find(sb => sb.sub === biblioSub) ?? activeSection.subs[0])
+                  : null;
+                const ActiveComponent = activeSub?.Component ?? null;
+                return (
+                  <div className="labs-fade-in labs-stagger-2" data-testid="explore-bibliothek-inline" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      {BIBLIOTHEK_TILES.map((section) => {
+                        const Icon = section.icon;
+                        const isActive = biblioSection === section.key;
+                        return (
+                          <button
+                            key={section.key}
+                            type="button"
+                            onClick={() => {
+                              if (biblioSection === section.key) {
+                                setBiblioSection(null);
+                                setBiblioSub(null);
+                              } else {
+                                setBiblioSection(section.key);
+                                setBiblioSub(section.subs[0]?.sub ?? null);
+                              }
+                            }}
+                            data-testid={`tile-explore-bibliothek-${section.key}`}
+                            className="labs-card"
+                            style={{
+                              minHeight: 92,
+                              padding: "14px 16px",
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: 12,
+                              cursor: "pointer",
+                              height: "100%",
+                              textAlign: "left",
+                              background: isActive ? "var(--labs-surface-elevated)" : "var(--labs-surface)",
+                              border: `1px solid ${isActive ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                              fontFamily: "inherit",
+                            }}
+                          >
+                            <div style={{ width: 38, height: 38, borderRadius: 10, background: "var(--labs-surface-elevated)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              <Icon style={{ width: 18, height: 18, color: "var(--labs-accent)" }} strokeWidth={1.8} />
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.25 }}>
+                                {t(section.labelKey, section.labelFb)}
+                              </div>
+                              <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 3, lineHeight: 1.35 }}>
+                                {t(section.descKey, section.descFb)}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
-                  ))}
-                </div>
-              )}
 
-              {activeView === "whiskies" && whiskyHubMode === "hub" && (
-                <div className="labs-fade-in labs-stagger-2" data-testid="explore-whiskies-hub" style={{ marginBottom: 32 }}>
-                  <p className="labs-section-label flex items-center gap-2" style={{ marginBottom: 10 }}>
-                    <Wine className="w-3.5 h-3.5" />
-                    {t("discover.whiskies", "Whiskies")}
-                  </p>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    {([
-                      { preset: "all", icon: List, labelKey: "explore.hub.allTitle", labelFb: "Alle Whiskies", descKey: "explore.hub.allDesc", descFb: "Stöbern, suchen, filtern", testId: "tile-whisky-all" },
-                      { preset: "topRated", icon: Star, labelKey: "explore.hub.topTitle", labelFb: "Top bewertet", descKey: "explore.hub.topDesc", descFb: "Höchste Ø Scores", testId: "tile-whisky-top" },
-                      { preset: "byRegion", icon: MapPin, labelKey: "explore.hub.regionTitle", labelFb: "Nach Region", descKey: "explore.hub.regionDesc", descFb: "Schottland, Japan, Irland \u2026", testId: "tile-whisky-region" },
-                      { preset: "byDistillery", icon: Building2, labelKey: "explore.hub.distilleryTitle", labelFb: "Nach Brennerei", descKey: "explore.hub.distilleryDesc", descFb: "207 Destillerien", testId: "tile-whisky-distillery" },
-                      { preset: "flavourMap", icon: Compass, labelKey: "explore.hub.flavourTitle", labelFb: "Flavour Map", descKey: "explore.hub.flavourDesc", descFb: "Geschmacksprofile visualisiert", testId: "tile-whisky-flavour" },
-                      { preset: "mostTasted", icon: Activity, labelKey: "explore.hub.mostTitle", labelFb: "Meist verkostet", descKey: "explore.hub.mostDesc", descFb: "Was die Community oft im Glas hat", testId: "tile-whisky-most" },
-                    ] as { preset: WhiskyHubPreset; icon: typeof Wine; labelKey: string; labelFb: string; descKey: string; descFb: string; testId: string }[]).map((tile) => (
-                      <button
-                        key={tile.preset}
-                        type="button"
-                        onClick={() => applyWhiskyHubPreset(tile.preset)}
-                        data-testid={tile.testId}
-                        className="labs-card"
-                        style={{
-                          minHeight: 92,
-                          padding: "14px 16px",
-                          display: "flex",
-                          alignItems: "flex-start",
-                          gap: 12,
-                          cursor: "pointer",
-                          height: "100%",
-                          textAlign: "left",
-                          background: "var(--labs-surface)",
-                          border: "1px solid var(--labs-border)",
-                          fontFamily: "inherit",
-                        }}
-                      >
-                        <div style={{ width: 38, height: 38, borderRadius: 10, background: "var(--labs-surface-elevated)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                          <tile.icon style={{ width: 18, height: 18, color: "var(--labs-accent)" }} strokeWidth={1.8} />
+                    {activeSection && (
+                      <div data-testid={`explore-bibliothek-section-${activeSection.key}`}>
+                        <div
+                          role="tablist"
+                          style={{
+                            display: "flex",
+                            gap: 6,
+                            overflowX: "auto",
+                            paddingBottom: 8,
+                            marginBottom: 12,
+                            scrollbarWidth: "none",
+                          }}
+                        >
+                          {activeSection.subs.map((s) => {
+                            const isActive = (activeSub?.sub ?? activeSection.subs[0].sub) === s.sub;
+                            return (
+                              <button
+                                key={s.sub}
+                                role="tab"
+                                aria-selected={isActive}
+                                onClick={() => setBiblioSub(s.sub)}
+                                data-testid={`tab-explore-bibliothek-${activeSection.key}-${s.sub}`}
+                                style={{
+                                  padding: "6px 12px",
+                                  borderRadius: 999,
+                                  border: `1px solid ${isActive ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                                  background: isActive ? "var(--labs-accent)" : "transparent",
+                                  color: isActive ? "#fff" : "var(--labs-text)",
+                                  fontSize: 13,
+                                  fontWeight: 500,
+                                  whiteSpace: "nowrap",
+                                  cursor: "pointer",
+                                  fontFamily: "inherit",
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {t(s.labelKey, s.labelFb)}
+                              </button>
+                            );
+                          })}
                         </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.25 }}>
-                            {t(tile.labelKey, tile.labelFb)}
+                        {ActiveComponent && (
+                          <div data-testid={`explore-inline-${activeSection.key}-${activeSub?.sub}`}>
+                            <EmbeddedExploreProvider>
+                              <ActiveComponent />
+                            </EmbeddedExploreProvider>
                           </div>
-                          <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 3, lineHeight: 1.35 }}>
-                            {t(tile.descKey, tile.descFb)}
-                          </div>
-                        </div>
-                      </button>
-                    ))}
+                        )}
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
-              {activeView === "whiskies" && whiskyHubMode === "list" && (
+              {activeView === "whiskies" && (
               <div className="labs-fade-in labs-stagger-2" style={{ marginBottom: 32 }}>
                 <p className="labs-section-label flex items-center gap-2" style={{ marginBottom: 10 }}>
                   <Wine className="w-3.5 h-3.5" />
                   {t("discover.whiskies", "Whiskies")}
                 </p>
+
+                <div
+                  data-testid="explore-whiskies-pills"
+                  style={{
+                    display: "flex",
+                    gap: 6,
+                    overflowX: "auto",
+                    paddingBottom: 8,
+                    marginBottom: 14,
+                    scrollbarWidth: "none",
+                  }}
+                >
+                  {WHISKY_PILLS.map((pill) => {
+                    const Icon = pill.icon;
+                    const isActive = whiskyView === pill.view;
+                    return (
+                      <button
+                        key={pill.view}
+                        type="button"
+                        onClick={() => applyWhiskyHubPreset(pill.preset)}
+                        data-testid={`pill-explore-whiskies-${pill.view}`}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          padding: "6px 12px",
+                          borderRadius: 999,
+                          border: `1px solid ${isActive ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                          background: isActive ? "var(--labs-accent)" : "transparent",
+                          color: isActive ? "#fff" : "var(--labs-text)",
+                          fontSize: 13,
+                          fontWeight: 500,
+                          whiteSpace: "nowrap",
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Icon style={{ width: 14, height: 14 }} strokeWidth={2} />
+                        {t(pill.labelKey, pill.labelFb)}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {whiskyView === "flavour-map" && (
+                  <div data-testid="explore-inline-whiskies-flavour-map">
+                    <EmbeddedExploreProvider>
+                      <LabsLexicon forceTab="flavour-map" />
+                    </EmbeddedExploreProvider>
+                  </div>
+                )}
+
+                {whiskyView !== "flavour-map" && (
+                <>
+
 
                 <div>
                   <div style={{ position: "relative", marginBottom: 10 }}>
@@ -1235,6 +1449,8 @@
                     </button>
                   )}
                 </div>
+                </>
+                )}
               </div>
               )}
             </div>

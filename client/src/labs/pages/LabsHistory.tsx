@@ -16,6 +16,7 @@ import {
   LogIn, MapPin, Flame, Droplets, TrendingUp,
   Loader2, UserCheck, Users,
 } from "lucide-react";
+import { useIsEmbeddedInExplore } from "@/labs/embeddedExploreContext";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, RadarChart, Radar, PolarGrid,
@@ -609,16 +610,17 @@ export default function LabsHistory() {
   const isInsights = isInsightsNew || isInsightsOld;
   const [, navigate] = useLocation();
   const { t } = useTranslation();
+  const embedded = useIsEmbeddedInExplore();
 
   const isHostRoute = window.location.pathname.startsWith("/labs/host/");
-  const backFallback = isHostRoute ? "/labs/host/dashboard" : "/labs/bibliothek";
+  const backFallback = isHostRoute ? "/labs/host/dashboard" : "/labs/circle?tab=sessions";
   const goBack = useLabsBack(backFallback);
   const tastingsPath = isHostRoute ? "/labs/host/history" : "/labs/history";
   const insightsPath = isHostRoute ? "/labs/host/history/insights" : "/labs/history/insights";
 
   return (
-    <div className="labs-page labs-fade-in" data-testid="labs-history-page">
-      {isHostRoute ? (
+    <div className={embedded ? "labs-fade-in" : "labs-page labs-fade-in"} data-testid="labs-history-page">
+      {!embedded && (isHostRoute ? (
         <button
           onClick={goBack}
           className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
@@ -630,17 +632,21 @@ export default function LabsHistory() {
         </button>
       ) : (
         <DiscoverActionBar active="bibliothek" />
+      ))}
+      {!embedded && (
+        <>
+          <h1
+            className="labs-h2"
+            style={{ color: "var(--labs-text)", margin: "0 0 4px" }}
+            data-testid="history-title"
+          >
+            {t("history.archiveTitle", "Community Archive")}
+          </h1>
+          <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: "0 0 12px" }}>
+            {t("history.archiveSubtitle", "Historical tastings & results")}
+          </p>
+        </>
       )}
-      <h1
-        className="labs-h2"
-        style={{ color: "var(--labs-text)", margin: "0 0 4px" }}
-        data-testid="history-title"
-      >
-        {t("history.archiveTitle", "Community Archive")}
-      </h1>
-      <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: "0 0 12px" }}>
-        {t("history.archiveSubtitle", "Historical tastings & results")}
-      </p>
 
       <div
         style={{

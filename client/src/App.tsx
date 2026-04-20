@@ -385,7 +385,7 @@ function SmartRedirectToLabs() {
     "/my-taste/flavors": "/labs/taste/profile",
     "/my-taste/analytics": "/labs/taste/analytics",
     "/my-taste/compare": "/labs/taste/compare",
-    "/my-taste/benchmark": "/labs/taste/benchmark",
+    "/my-taste/benchmark": "/labs/taste?tab=analytics&sub=benchmark",
     "/my-taste/wheel": "/labs/taste/wheel",
     "/my-taste/recommendations": "/labs/taste/recommendations",
     "/my-taste/pairings": "/labs/taste/pairings",
@@ -394,20 +394,20 @@ function SmartRedirectToLabs() {
     "/my-taste/export": "/labs/taste/downloads",
     "/my-taste/knowledge": "/labs/taste",
     "/my-taste/community": "/labs/community",
-    "/vocabulary": "/labs/discover/lexicon?tab=flavour-map",
+    "/vocabulary": "/labs/explore?tab=whiskies&view=flavour-map",
     "/ai-curation": "/labs/taste/ai-curation",
-    "/guide": "/labs/discover/guide",
-    "/research": "/labs/discover/research",
+    "/guide": "/labs/explore?tab=bibliothek&section=tasting-wissen&sub=guide",
+    "/research": "/labs/explore?tab=bibliothek&section=tasting-wissen&sub=research",
     "/discover": "/labs/explore",
-    "/discover/guide": "/labs/discover/guide",
+    "/discover/guide": "/labs/explore?tab=bibliothek&section=tasting-wissen&sub=guide",
     "/discover/templates": "/labs/discover/lexicon?tab=templates",
-    "/discover/about": "/labs/about",
-    "/discover/rabbit-hole": "/labs/discover/rabbit-hole/themenspeicher",
-    "/discover/lexicon": "/labs/discover/lexicon",
+    "/discover/about": "/labs/explore?tab=bibliothek&section=ueber-casksense&sub=about",
+    "/discover/rabbit-hole": "/labs/explore?tab=bibliothek&section=rabbit-hole&sub=themenspeicher",
+    "/discover/lexicon": "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=lexikon",
     "/discover/community": "/labs/community",
-    "/discover/distilleries": "/labs/discover/distilleries",
-    "/discover/bottlers": "/labs/discover/bottlers",
-    "/discover/donate": "/labs/donate",
+    "/discover/distilleries": "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=destillerien",
+    "/discover/bottlers": "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=bottlers",
+    "/discover/donate": "/labs/explore?tab=bibliothek&section=ueber-casksense&sub=donate",
     "/discover/activity": "/labs/activity",
     "/discover/recommendations": "/labs/taste/recommendations",
     "/discover/database": "/labs/explore",
@@ -420,13 +420,13 @@ function SmartRedirectToLabs() {
     "/tasting/join": "/labs/join",
     "/profile": "/labs/taste",
     "/profile/account": "/labs/taste/settings",
-    "/profile/help": "/labs/about",
+    "/profile/help": "/labs/explore?tab=bibliothek&section=ueber-casksense&sub=about",
     "/news": "/labs/activity",
     "/badges": "/labs/taste",
     "/flavor-profile": "/labs/taste/profile",
     "/flavor-wheel": "/labs/taste/wheel",
     "/photo-tasting": "/labs/tastings",
-    "/method": "/labs/discover/method",
+    "/method": "/labs/explore?tab=bibliothek&section=tasting-wissen&sub=profilberechnung",
     "/journal": "/labs/taste/drams",
     "/my-whiskies": "/labs/taste/drams",
     "/collection": "/labs/taste/collection",
@@ -438,7 +438,7 @@ function SmartRedirectToLabs() {
     "/comparison": "/labs/taste/compare",
     "/tasting-templates": "/labs/discover/lexicon?tab=templates",
     "/pairings": "/labs/taste/pairings",
-    "/benchmark": "/labs/taste/benchmark",
+    "/benchmark": "/labs/taste?tab=analytics&sub=benchmark",
     "/whisky-database": "/labs/explore",
     "/analytics": "/labs/taste/analytics",
     "/recommendations": "/labs/taste/recommendations",
@@ -448,14 +448,14 @@ function SmartRedirectToLabs() {
     "/activity": "/labs/activity",
     "/leaderboard": "/labs/community",
     "/account": "/labs/taste/settings",
-    "/lexicon": "/labs/discover/lexicon",
-    "/distilleries": "/labs/discover/distilleries",
-    "/distillery-map": "/labs/discover/distilleries",
-    "/bottlers": "/labs/discover/bottlers",
-    "/help": "/labs/about",
-    "/about": "/labs/about",
-    "/features": "/labs/about",
-    "/donate": "/labs/donate",
+    "/lexicon": "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=lexikon",
+    "/distilleries": "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=destillerien",
+    "/distillery-map": "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=destillerien",
+    "/bottlers": "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=bottlers",
+    "/help": "/labs/explore?tab=bibliothek&section=ueber-casksense&sub=about",
+    "/about": "/labs/explore?tab=bibliothek&section=ueber-casksense&sub=about",
+    "/features": "/labs/explore?tab=bibliothek&section=ueber-casksense&sub=about",
+    "/donate": "/labs/explore?tab=bibliothek&section=ueber-casksense&sub=donate",
     "/reminders": "/labs/tastings",
     "/simple-host": "/labs/host",
   };
@@ -634,10 +634,11 @@ function Router() {
               <Route path="/labs/join">{() => <RedirectWithQuery to="/labs/tastings" query="tab=join" />}</Route>
               <Route path="/labs/host/dashboard" component={LabsHostDashboard} />
               <Route path="/labs/host/handout-library" component={LabsHandoutLibrary} />
+              <Route path="/labs/host/handout-library/community">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=nachschlagewerk&sub=community-handouts" />}</Route>
               <Route path="/labs/host/calendar" component={LabsCalendar} />
               <Route path="/labs/history/insights" component={LabsHistory} />
               <Route path="/labs/history/:id" component={LabsHistoricalDetail} />
-              <Route path="/labs/history" component={LabsHistory} />
+              <Route path="/labs/history">{() => <RedirectWithQuery to="/labs/circle" query="tab=sessions" />}</Route>
               <Route path="/labs/host/history/insights" component={LabsHistory} />
               <Route path="/labs/host/history/:id" component={LabsHistoricalDetail} />
               <Route path="/labs/host/history" component={LabsHistory} />
@@ -652,13 +653,13 @@ function Router() {
               <Route path="/labs/explore/bottles/:id" component={LabsBottleDetail} />
               <Route path="/labs/explore" component={LabsEntdecken} />
               <Route path="/labs/bibliothek/insights">{() => <RedirectWithQuery to="/labs/circle" query="tab=stats" />}</Route>
-              <Route path="/labs/bibliothek" component={LabsBibliothek} />
-              <Route path="/labs/discover/lexicon" component={LabsLexicon} />
-              <Route path="/labs/discover/distilleries" component={LabsDistilleries} />
-              <Route path="/labs/discover/bottlers" component={LabsBottlers} />
+              <Route path="/labs/bibliothek">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek" />}</Route>
+              <Route path="/labs/discover/lexicon">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=nachschlagewerk&sub=lexikon" />}</Route>
+              <Route path="/labs/discover/distilleries">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=nachschlagewerk&sub=destillerien" />}</Route>
+              <Route path="/labs/discover/bottlers">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=nachschlagewerk&sub=bottlers" />}</Route>
               <Route path="/labs/discover/templates">{() => <RedirectWithQuery to="/labs/discover/lexicon" query="tab=templates" />}</Route>
-              <Route path="/labs/discover/guide" component={LabsGuide} />
-              <Route path="/labs/discover/research" component={LabsResearch} />
+              <Route path="/labs/discover/guide">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=tasting-wissen&sub=guide" />}</Route>
+              <Route path="/labs/discover/research">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=tasting-wissen&sub=research" />}</Route>
               <Route path="/labs/discover/research/grundlagen" component={LabsIdeaBehindNumbers} />
               <Route path="/labs/discover/research/testtheorie" component={LabsTestTheory} />
               <Route path="/labs/discover/research/statistische-methoden" component={LabsStatisticalMethods} />
@@ -669,8 +670,8 @@ function Router() {
               <Route path="/labs/discover/rabbit-hole">
                 <Redirect to="/labs/discover/rabbit-hole/themenspeicher" />
               </Route>
-              <Route path="/labs/discover/rabbit-hole/themenspeicher" component={LabsThemenspeicher} />
-              <Route path="/labs/discover/method" component={LabsMethod} />
+              <Route path="/labs/discover/rabbit-hole/themenspeicher">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=rabbit-hole&sub=themenspeicher" />}</Route>
+              <Route path="/labs/discover/method">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=tasting-wissen&sub=profilberechnung" />}</Route>
               <Route path="/labs/discover/idea-behind-numbers">
                 <Redirect to="/labs/discover/research/grundlagen" />
               </Route>
@@ -680,9 +681,9 @@ function Router() {
               <Route path="/labs/discover/statistical-methods">
                 <Redirect to="/labs/discover/research/statistische-methoden" />
               </Route>
-              <Route path="/labs/discover/background" component={LabsBackground} />
-              <Route path="/labs/discover/flavour-map">{() => <RedirectWithQuery to="/labs/discover/lexicon" query="tab=flavour-map" />}</Route>
-              <Route path="/labs/discover/vocabulary">{() => <RedirectWithQuery to="/labs/discover/lexicon" query="tab=flavour-map" />}</Route>
+              <Route path="/labs/discover/background">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=tasting-wissen&sub=hintergrund" />}</Route>
+              <Route path="/labs/discover/flavour-map">{() => <RedirectWithQuery to="/labs/explore" query="tab=whiskies&view=flavour-map" />}</Route>
+              <Route path="/labs/discover/vocabulary">{() => <RedirectWithQuery to="/labs/explore" query="tab=whiskies&view=flavour-map" />}</Route>
               <Route path="/labs/discover">{() => <Redirect to="/labs/explore" />}</Route>
               <Route path="/labs/entdecken">{() => <Redirect to="/labs/explore" />}</Route>
               <Route path="/labs/taste/profile">{() => <RedirectWithQuery to="/labs/taste" query="tab=analytics&sub=labs-link-analytics-hub-palate" />}</Route>
@@ -697,7 +698,7 @@ function Router() {
               <Route path="/labs/taste/settings" component={LabsTasteSettings} />
               <Route path="/labs/taste/recommendations">{() => <RedirectWithQuery to="/labs/taste" query="tab=ai&sub=labs-link-ai-insights-recommendations" />}</Route>
               <Route path="/labs/taste/pairings" component={LabsPairings} />
-              <Route path="/labs/taste/benchmark" component={LabsBenchmark} />
+              <Route path="/labs/taste/benchmark">{() => <RedirectWithQuery to="/labs/taste" query="tab=analytics&sub=benchmark" />}</Route>
               <Route path="/labs/taste/collection-analysis">{() => <RedirectWithQuery to="/labs/taste" query="tab=ai&sub=labs-link-ai-insights-collection-analysis" />}</Route>
               <Route path="/labs/taste/connoisseur">{() => <RedirectWithQuery to="/labs/taste" query="tab=ai&sub=labs-link-ai-insights-connoisseur" />}</Route>
               <Route path="/labs/taste/ai-curation">{() => <RedirectWithQuery to="/labs/taste" query="tab=ai&sub=labs-link-ai-insights-ai-curation" />}</Route>
@@ -713,8 +714,8 @@ function Router() {
               <Route path="/labs/circle" component={LabsCircle} />
               <Route path="/labs/solo">{() => <RedirectWithQuery to="/labs/tastings" query="tab=solo" />}</Route>
               <Route path="/labs/fair-mode" component={LabsFairMode} />
-              <Route path="/labs/about" component={LabsAbout} />
-              <Route path="/labs/donate" component={LabsDonate} />
+              <Route path="/labs/about">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=ueber-casksense&sub=about" />}</Route>
+              <Route path="/labs/donate">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=ueber-casksense&sub=donate" />}</Route>
               <Route path="/labs/impressum" component={LabsImpressum} />
               <Route path="/labs/privacy" component={LabsPrivacy} />
               <Route path="/labs/terms" component={LabsTerms} />

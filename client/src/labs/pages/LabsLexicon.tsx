@@ -86,13 +86,13 @@ function DictionaryContent() {
   );
 }
 
-export default function LabsLexicon() {
+export default function LabsLexicon({ forceTab }: { forceTab?: TabId } = {}) {
   const { t } = useTranslation();
   const searchStr = useSearch();
   const params = new URLSearchParams(searchStr);
   const tabParam = params.get("tab");
   const [, navigate] = useLocation();
-  const resolvedTab: TabId = tabParam === "templates" ? "templates" : tabParam === "flavour-map" ? "flavour-map" : "dictionary";
+  const resolvedTab: TabId = forceTab ?? (tabParam === "templates" ? "templates" : tabParam === "flavour-map" ? "flavour-map" : "dictionary");
   const [activeTab, setActiveTab] = useState<TabId>(resolvedTab);
 
   useEffect(() => {
