@@ -25,6 +25,12 @@ interface MultiUploadItem {
   description: string;
   date: string;
   recognized: boolean;
+  autoFilled: {
+    date: boolean;
+    whiskyName: boolean;
+    tastingTitle: boolean;
+    author: boolean;
+  };
   status: MultiUploadStatus;
   errorMessage?: string;
 }
@@ -42,6 +48,7 @@ function makeMultiItem(file: File): MultiUploadItem {
     description: "",
     date: parsed.date || "",
     recognized: parsed.recognized,
+    autoFilled: { ...parsed.autoFilled },
     status: "pending",
   };
 }
@@ -1188,16 +1195,37 @@ export default function LabsHandoutLibrary() {
                         item.status === "error" ? "var(--labs-danger)" :
                         item.status === "uploading" ? "var(--labs-accent)" :
                         "var(--labs-text-muted)";
+                      const autoFilledCount =
+                        (item.autoFilled.date ? 1 : 0) +
+                        (item.autoFilled.whiskyName ? 1 : 0) +
+                        (item.autoFilled.tastingTitle ? 1 : 0) +
+                        (item.autoFilled.author ? 1 : 0);
                       const statusLabel =
                         item.status === "done" ? t("labs.handoutLibrary.multiStatusDone") :
                         item.status === "error" ? (item.errorMessage || t("labs.handoutLibrary.multiStatusError")) :
                         item.status === "uploading" ? t("labs.handoutLibrary.multiStatusUploading") :
-                        item.recognized ? t("labs.handoutLibrary.multiStatusParsed") : t("labs.handoutLibrary.multiStatusManual");
+                        autoFilledCount === 0
+                          ? t("labs.handoutLibrary.multiStatusManual")
+                          : t("labs.handoutLibrary.multiStatusAutoFilled", { count: autoFilledCount, total: 4 });
                       const update = (patch: Partial<MultiUploadItem>) => {
                         if (multiUploading) return;
                         setLastRunSummary(null);
-                        setMultiItems((prev) => prev.map((it) => it.id === item.id ? { ...it, ...patch } : it));
+                        setMultiItems((prev) => prev.map((it) => {
+                          if (it.id !== item.id) return it;
+                          const nextAuto = { ...it.autoFilled };
+                          if ("whiskyName" in patch) nextAuto.whiskyName = false;
+                          if ("title" in patch) nextAuto.tastingTitle = false;
+                          if ("author" in patch) nextAuto.author = false;
+                          if ("date" in patch) nextAuto.date = false;
+                          return { ...it, ...patch, autoFilled: nextAuto };
+                        }));
                       };
+                      const autoStyle = (filled: boolean): React.CSSProperties => filled
+                        ? { fontSize: 12, borderColor: "var(--labs-accent)", boxShadow: "inset 3px 0 0 var(--labs-accent)" }
+                        : { fontSize: 12 };
+                      const autoTitle = (filled: boolean): string => filled
+                        ? t("labs.handoutLibrary.multiFieldAuto")
+                        : t("labs.handoutLibrary.multiFieldBlank");
                       return (
                         <div
                           key={item.id}
@@ -1243,8 +1271,10 @@ export default function LabsHandoutLibrary() {
                               value={item.whiskyName}
                               onChange={(e) => update({ whiskyName: e.target.value })}
                               data-testid={`input-multi-whiskyname-${idx}`}
+                              data-autofilled={item.autoFilled.whiskyName ? "true" : "false"}
                               disabled={multiUploading || item.status === "done"}
-                              style={{ fontSize: 12 }}
+                              style={autoStyle(item.autoFilled.whiskyName)}
+                              title={autoTitle(item.autoFilled.whiskyName)}
                             />
                             <input
                               className="labs-input"
@@ -1252,8 +1282,10 @@ export default function LabsHandoutLibrary() {
                               value={item.title}
                               onChange={(e) => update({ title: e.target.value })}
                               data-testid={`input-multi-title-${idx}`}
+                              data-autofilled={item.autoFilled.tastingTitle ? "true" : "false"}
                               disabled={multiUploading || item.status === "done"}
-                              style={{ fontSize: 12 }}
+                              style={autoStyle(item.autoFilled.tastingTitle)}
+                              title={autoTitle(item.autoFilled.tastingTitle)}
                             />
                             <input
                               type="date"
@@ -1261,8 +1293,10 @@ export default function LabsHandoutLibrary() {
                               value={item.date}
                               onChange={(e) => update({ date: e.target.value })}
                               data-testid={`input-multi-date-${idx}`}
+                              data-autofilled={item.autoFilled.date ? "true" : "false"}
                               disabled={multiUploading || item.status === "done"}
-                              style={{ fontSize: 12 }}
+                              style={autoStyle(item.autoFilled.date)}
+                              title={autoTitle(item.autoFilled.date)}
                             />
                           </div>
                           <input
@@ -1271,8 +1305,10 @@ export default function LabsHandoutLibrary() {
                             value={item.author}
                             onChange={(e) => update({ author: e.target.value })}
                             data-testid={`input-multi-author-${idx}`}
+                            data-autofilled={item.autoFilled.author ? "true" : "false"}
                             disabled={multiUploading || item.status === "done"}
-                            style={{ fontSize: 12 }}
+                            style={autoStyle(item.autoFilled.author)}
+                            title={autoTitle(item.autoFilled.author)}
                           />
                           <textarea
                             className="labs-input"
