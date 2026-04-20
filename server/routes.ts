@@ -12436,6 +12436,49 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
+  app.get("/api/admin/distilleries/:id/aliases", async (req: Request, res: Response) => {
+    try {
+      const participantId = (req.query.participantId as string) || "";
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const distilleries = await storage.getAllDistilleries();
+      const target = distilleries.find(d => d.id === req.params.id);
+      if (!target) return res.status(404).json({ message: "Distillery not found" });
+      const aliases = await storage.listDistilleryAliases(target.id);
+      res.json({
+        distillery: { id: target.id, name: target.name },
+        aliases: aliases.map(a => ({
+          id: a.id,
+          alias: a.alias,
+          distilleryId: a.distilleryId,
+          createdAt: a.createdAt ? new Date(a.createdAt).toISOString() : null,
+        })),
+      });
+    } catch (e: any) {
+      console.error("[admin/distilleries/:id/aliases] list error:", e);
+      res.status(500).json({ message: e?.message || "Failed to list aliases" });
+    }
+  });
+
+  app.delete("/api/admin/distilleries/:id/aliases/:aliasId", async (req: Request, res: Response) => {
+    try {
+      const participantId = (req.query.participantId as string) || "";
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const aliases = await storage.listDistilleryAliases(req.params.id);
+      const owned = aliases.find(a => a.id === req.params.aliasId);
+      if (!owned) return res.status(404).json({ message: "Alias not found for this distillery" });
+      const ok = await storage.removeDistilleryAlias(req.params.aliasId);
+      if (!ok) return res.status(404).json({ message: "Alias not found" });
+      res.json({ success: true });
+    } catch (e: any) {
+      console.error("[admin/distilleries/:id/aliases] delete error:", e);
+      res.status(500).json({ message: e?.message || "Failed to remove alias" });
+    }
+  });
+
   app.post("/api/admin/distilleries/:id/aliases", async (req: Request, res: Response) => {
     try {
       const { participantId, alias } = req.body || {};
