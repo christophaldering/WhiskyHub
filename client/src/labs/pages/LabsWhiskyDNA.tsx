@@ -11,7 +11,7 @@ import { queryClient } from "@/lib/queryClient";
 import { wishlistKey, useCollectionKeys } from "@/lib/wishlistKey";
 import CollectionBadge from "@/labs/components/CollectionBadge";
 import type { WishlistEntry } from "@shared/schema";
-import { Activity, Download, Copy, Check, TrendingUp, Sparkles, ChevronLeft, Compass, BookmarkPlus, BookmarkCheck, X, Database, Bot, RefreshCw, ExternalLink } from "lucide-react";
+import { Activity, Download, Copy, Check, TrendingUp, Sparkles, ChevronLeft, Compass, BookmarkPlus, BookmarkCheck, X, Database, Bot, RefreshCw, ExternalLink, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 
 interface DnaCategory {
