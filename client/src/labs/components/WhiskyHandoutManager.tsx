@@ -331,9 +331,15 @@ export default function WhiskyHandoutManager({ whisky, hostId, tastingId }: Prop
       )}
 
       {!hasHandout && (
-        <p style={{ fontSize: 10, color: "var(--labs-text-muted)", margin: 0 }}>
-          PDF oder Bild bis 20 MB. Wird Gästen im Cockpit zu diesem Dram angezeigt.
-        </p>
+        <>
+          <p style={{ fontSize: 10, color: "var(--labs-text-muted)", margin: 0 }}>
+            PDF oder Bild bis 20 MB. Wird Gästen im Cockpit zu diesem Dram angezeigt.
+          </p>
+          <p style={{ fontSize: 10, color: "var(--labs-text-muted)", margin: 0 }}>
+            Tipp: Für Mehrfach-Upload mit automatischem Erkennen aus dem Dateinamen
+            (JAHR_MONAT_TAG_NAME_TASTING_NAME_AUTOR) nutze die Handout-Bibliothek.
+          </p>
+        </>
       )}
     </div>
   );

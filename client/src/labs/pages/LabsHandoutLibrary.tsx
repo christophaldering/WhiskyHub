@@ -12,6 +12,39 @@ import { downloadFromEndpoint } from "@/lib/download";
 import type { WhiskyHandoutLibraryEntry } from "@shared/schema";
 import HandoutLibraryPdfSplitterDialog from "../components/HandoutLibraryPdfSplitterDialog";
 import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
+import { parseHandoutFilename } from "@/labs/utils/parseHandoutFilename";
+
+type MultiUploadStatus = "pending" | "uploading" | "done" | "error";
+
+interface MultiUploadItem {
+  id: string;
+  file: File;
+  whiskyName: string;
+  title: string;
+  author: string;
+  description: string;
+  date: string;
+  recognized: boolean;
+  status: MultiUploadStatus;
+  errorMessage?: string;
+}
+
+let multiItemSeq = 0;
+function makeMultiItem(file: File): MultiUploadItem {
+  const parsed = parseHandoutFilename(file.name);
+  multiItemSeq += 1;
+  return {
+    id: `mu-${Date.now()}-${multiItemSeq}`,
+    file,
+    whiskyName: parsed.whiskyName,
+    title: parsed.tastingTitle,
+    author: parsed.author,
+    description: "",
+    date: parsed.date || "",
+    recognized: parsed.recognized,
+    status: "pending",
+  };
+}
 
 interface EditState {
   id: string;
@@ -429,6 +462,11 @@ export default function LabsHandoutLibrary() {
   const [communityDetailEntry, setCommunityDetailEntry] = useState<WhiskyHandoutLibraryEntry | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadForm, setUploadForm] = useState<UploadFormState>(emptyUploadForm);
+  const [multiItems, setMultiItems] = useState<MultiUploadItem[]>([]);
+  const [multiCommonDistillery, setMultiCommonDistillery] = useState("");
+  const [multiCommonWhiskybaseId, setMultiCommonWhiskybaseId] = useState("");
+  const [multiUploading, setMultiUploading] = useState(false);
+  const [multiDragOver, setMultiDragOver] = useState(false);
   const [distilleryFilter, setDistilleryFilter] = useState<string>("");
   const replaceFileInputRef = useRef<HTMLInputElement>(null);
   const uploadFileInputRef = useRef<HTMLInputElement>(null);
@@ -596,6 +634,66 @@ export default function LabsHandoutLibrary() {
     },
     onError: (e: any) => setError(e?.message || t("labs.handoutLibrary.errShare")),
   });
+
+  const multiPendingCount = useMemo(
+    () => multiItems.filter((it) => it.status !== "done").length,
+    [multiItems],
+  );
+  const canRunMultiUpload = useMemo(
+    () => multiPendingCount > 0 && multiItems.filter((it) => it.status !== "done").every((it) => it.whiskyName.trim().length > 0),
+    [multiItems, multiPendingCount],
+  );
+
+  const runMultiUpload = async () => {
+    if (multiUploading) return;
+    const queue = multiItems.filter((it) => it.status !== "done");
+    if (queue.length === 0) return;
+    setError(null);
+    setInfo(null);
+    setMultiUploading(true);
+    let okCount = 0;
+    let failCount = 0;
+    for (const item of queue) {
+      const whiskyName = item.whiskyName.trim();
+      if (!whiskyName) {
+        failCount += 1;
+        setMultiItems((prev) => prev.map((it) => it.id === item.id ? { ...it, status: "error", errorMessage: t("labs.handoutLibrary.errWhiskyNameRequired") } : it));
+        continue;
+      }
+      setMultiItems((prev) => prev.map((it) => it.id === item.id ? { ...it, status: "uploading", errorMessage: undefined } : it));
+      try {
+        const datePrefix = item.date ? `${t("labs.handoutLibrary.fieldProgrammeDate")}: ${item.date}\n\n` : "";
+        const description = (datePrefix + (item.description || "")).trim();
+        await handoutLibraryApi.upload(hostId, item.file, {
+          whiskyName,
+          distillery: multiCommonDistillery.trim(),
+          whiskybaseId: multiCommonWhiskybaseId.trim(),
+          title: item.title.trim(),
+          author: item.author.trim(),
+          description,
+        });
+        okCount += 1;
+        setMultiItems((prev) => prev.map((it) => it.id === item.id ? { ...it, status: "done", errorMessage: undefined } : it));
+      } catch (e: any) {
+        failCount += 1;
+        const msg = e?.message || t("labs.handoutLibrary.errUpload");
+        setMultiItems((prev) => prev.map((it) => it.id === item.id ? { ...it, status: "error", errorMessage: msg } : it));
+      }
+    }
+    setMultiUploading(false);
+    qc.invalidateQueries({ queryKey: ["handout-library", hostId] });
+    if (failCount === 0) {
+      setInfo(t("labs.handoutLibrary.multiSummaryAllOk", { count: okCount }));
+      setMultiItems([]);
+      setMultiCommonDistillery("");
+      setMultiCommonWhiskybaseId("");
+      setUploadOpen(false);
+    } else if (okCount === 0) {
+      setError(t("labs.handoutLibrary.multiSummaryAllFailed", { count: failCount }));
+    } else {
+      setInfo(t("labs.handoutLibrary.multiSummaryMixed", { ok: okCount, fail: failCount }));
+    }
+  };
 
   const toggleSelected = (id: string) => {
     setSelected((prev) => {
@@ -773,7 +871,14 @@ export default function LabsHandoutLibrary() {
                 <button
                   type="button"
                   className="labs-btn-ghost text-xs"
-                  onClick={() => { setUploadOpen(false); setUploadForm(emptyUploadForm); }}
+                  onClick={() => {
+                    if (multiUploading) return;
+                    setUploadOpen(false);
+                    setUploadForm(emptyUploadForm);
+                    setMultiItems([]);
+                    setMultiCommonDistillery("");
+                    setMultiCommonWhiskybaseId("");
+                  }}
                   data-testid="button-upload-form-close"
                   style={{ padding: 4 }}
                   aria-label={t("labs.handoutLibrary.cancel")}
@@ -782,30 +887,92 @@ export default function LabsHandoutLibrary() {
                   <X style={{ width: 14, height: 14 }} />
                 </button>
               </div>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "var(--labs-text-muted)",
+                  background: "var(--labs-surface-elevated, var(--labs-surface))",
+                  border: "1px dashed var(--labs-border)",
+                  padding: 8,
+                  borderRadius: 8,
+                  lineHeight: 1.5,
+                }}
+                data-testid="text-upload-naming-hint"
+              >
+                {t("labs.handoutLibrary.namingHint")}
+              </div>
               <input
                 ref={uploadFileInputRef}
                 type="file"
                 accept="application/pdf,image/*"
-                onChange={(e) => setUploadForm({ ...uploadForm, file: e.target.files?.[0] || null })}
+                multiple
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  if (e.target) e.target.value = "";
+                  if (files.length === 0) return;
+                  if (files.length === 1 && multiItems.length === 0 && !uploadForm.file) {
+                    setUploadForm({ ...uploadForm, file: files[0] });
+                  } else {
+                    if (uploadForm.file) {
+                      setMultiItems((prev) => [makeMultiItem(uploadForm.file as File), ...prev, ...files.map(makeMultiItem)]);
+                      setUploadForm({ ...uploadForm, file: null });
+                    } else {
+                      setMultiItems((prev) => [...prev, ...files.map(makeMultiItem)]);
+                    }
+                  }
+                }}
                 data-testid="input-upload-file"
                 style={{ display: "none" }}
               />
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <div
+                onDragOver={(e) => { e.preventDefault(); setMultiDragOver(true); }}
+                onDragLeave={() => setMultiDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setMultiDragOver(false);
+                  if (multiUploading) return;
+                  const dropped = Array.from(e.dataTransfer.files || []);
+                  if (dropped.length === 0) return;
+                  if (dropped.length === 1 && multiItems.length === 0 && !uploadForm.file) {
+                    setUploadForm({ ...uploadForm, file: dropped[0] });
+                  } else {
+                    if (uploadForm.file) {
+                      setMultiItems((prev) => [makeMultiItem(uploadForm.file as File), ...prev, ...dropped.map(makeMultiItem)]);
+                      setUploadForm({ ...uploadForm, file: null });
+                    } else {
+                      setMultiItems((prev) => [...prev, ...dropped.map(makeMultiItem)]);
+                    }
+                  }
+                }}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
+                  padding: 10, borderRadius: 8,
+                  border: `1px dashed ${multiDragOver ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                  background: multiDragOver ? "var(--labs-accent-muted)" : "transparent",
+                  transition: "background 120ms, border-color 120ms",
+                }}
+                data-testid="dropzone-upload-files"
+              >
                 <button
                   type="button"
                   className="labs-btn-secondary text-xs"
                   onClick={() => uploadFileInputRef.current?.click()}
                   data-testid="button-upload-pick-file"
                   style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                  disabled={multiUploading}
                 >
                   <Upload style={{ width: 12, height: 12 }} />
-                  {uploadForm.file ? t("labs.handoutLibrary.changeFile") : t("labs.handoutLibrary.chooseFile")}
+                  {multiItems.length > 0
+                    ? t("labs.handoutLibrary.addMoreFiles")
+                    : uploadForm.file ? t("labs.handoutLibrary.changeFile") : t("labs.handoutLibrary.chooseFiles")}
                 </button>
-                <span style={{ fontSize: 12, color: uploadForm.file ? "var(--labs-text)" : "var(--labs-danger)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} data-testid="text-upload-file-name">
-                  {uploadForm.file ? uploadForm.file.name : t("labs.handoutLibrary.noFileChosen")}
+                <span style={{ fontSize: 12, color: (uploadForm.file || multiItems.length > 0) ? "var(--labs-text-muted)" : "var(--labs-danger)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} data-testid="text-upload-file-name">
+                  {multiItems.length > 0
+                    ? t("labs.handoutLibrary.multiSelectedCount", { count: multiItems.length })
+                    : uploadForm.file ? uploadForm.file.name : t("labs.handoutLibrary.dropOrChooseHint")}
                 </span>
               </div>
-              {(() => {
+              {multiItems.length === 0 && (() => {
                 const f = uploadForm.file;
                 if (!f) return null;
                 const mime = (f.type || "").toLowerCase();
@@ -839,7 +1006,7 @@ export default function LabsHandoutLibrary() {
                   </label>
                 );
               })()}
-              {uploadForm.splitProgramme && (
+              {multiItems.length === 0 && uploadForm.splitProgramme && (
                 <div style={{ display: "grid", gap: 8 }}>
                   <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
                     {t("labs.handoutLibrary.programmeMetaHint")}
@@ -899,7 +1066,7 @@ export default function LabsHandoutLibrary() {
                   </label>
                 </div>
               )}
-              {!uploadForm.splitProgramme && (
+              {multiItems.length === 0 && !uploadForm.splitProgramme && (
                 <>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                     <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
@@ -960,30 +1127,197 @@ export default function LabsHandoutLibrary() {
                   </label>
                 </>
               )}
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              {multiItems.length > 0 && (
+                <div style={{ display: "grid", gap: 10 }} data-testid="handout-multi-upload-list">
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                      {t("labs.handoutLibrary.multiCommonDistillery")}
+                      <input
+                        className="labs-input"
+                        value={multiCommonDistillery}
+                        onChange={(e) => setMultiCommonDistillery(e.target.value)}
+                        placeholder={t("labs.handoutLibrary.multiCommonDistilleryPlaceholder")}
+                        data-testid="input-multi-common-distillery"
+                        disabled={multiUploading}
+                      />
+                    </label>
+                    <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                      {t("labs.handoutLibrary.multiCommonWhiskybaseId")}
+                      <input
+                        className="labs-input"
+                        value={multiCommonWhiskybaseId}
+                        onChange={(e) => setMultiCommonWhiskybaseId(e.target.value)}
+                        placeholder={t("labs.handoutLibrary.multiCommonWhiskybaseIdPlaceholder")}
+                        data-testid="input-multi-common-wbid"
+                        disabled={multiUploading}
+                      />
+                    </label>
+                  </div>
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {multiItems.map((item, idx) => {
+                      const statusColor =
+                        item.status === "done" ? "var(--labs-success)" :
+                        item.status === "error" ? "var(--labs-danger)" :
+                        item.status === "uploading" ? "var(--labs-accent)" :
+                        "var(--labs-text-muted)";
+                      const statusLabel =
+                        item.status === "done" ? t("labs.handoutLibrary.multiStatusDone") :
+                        item.status === "error" ? (item.errorMessage || t("labs.handoutLibrary.multiStatusError")) :
+                        item.status === "uploading" ? t("labs.handoutLibrary.multiStatusUploading") :
+                        item.recognized ? t("labs.handoutLibrary.multiStatusParsed") : t("labs.handoutLibrary.multiStatusManual");
+                      const update = (patch: Partial<MultiUploadItem>) => {
+                        if (multiUploading) return;
+                        setMultiItems((prev) => prev.map((it) => it.id === item.id ? { ...it, ...patch } : it));
+                      };
+                      return (
+                        <div
+                          key={item.id}
+                          style={{
+                            border: `1px solid ${item.status === "error" ? "var(--labs-danger)" : "var(--labs-border)"}`,
+                            borderRadius: 10,
+                            padding: 10,
+                            background: "var(--labs-surface)",
+                            display: "grid", gap: 8,
+                          }}
+                          data-testid={`handout-multi-item-${idx}`}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                            <FileText style={{ width: 14, height: 14, color: "var(--labs-text-muted)", flexShrink: 0 }} />
+                            <span style={{ fontSize: 12, color: "var(--labs-text)", fontWeight: 500, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={item.file.name}>
+                              {item.file.name}
+                            </span>
+                            <span style={{ fontSize: 10, color: statusColor, fontWeight: 600 }} data-testid={`text-multi-status-${idx}`}>
+                              {item.status === "uploading" && <Loader2 style={{ width: 10, height: 10, marginRight: 4, display: "inline" }} className="animate-spin" />}
+                              {statusLabel}
+                            </span>
+                            <button
+                              type="button"
+                              className="labs-btn-ghost text-xs"
+                              onClick={() => {
+                                if (multiUploading) return;
+                                setMultiItems((prev) => prev.filter((it) => it.id !== item.id));
+                              }}
+                              disabled={multiUploading}
+                              style={{ padding: 2, color: "var(--labs-text-muted)" }}
+                              aria-label={t("labs.handoutLibrary.multiRemove")}
+                              title={t("labs.handoutLibrary.multiRemove")}
+                              data-testid={`button-multi-remove-${idx}`}
+                            >
+                              <X style={{ width: 12, height: 12 }} />
+                            </button>
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "2fr 2fr 1fr", gap: 6 }}>
+                            <input
+                              className="labs-input"
+                              placeholder={t("labs.handoutLibrary.fieldWhiskyName") + " *"}
+                              value={item.whiskyName}
+                              onChange={(e) => update({ whiskyName: e.target.value })}
+                              data-testid={`input-multi-whiskyname-${idx}`}
+                              disabled={multiUploading || item.status === "done"}
+                              style={{ fontSize: 12 }}
+                            />
+                            <input
+                              className="labs-input"
+                              placeholder={t("labs.handoutLibrary.fieldTitle")}
+                              value={item.title}
+                              onChange={(e) => update({ title: e.target.value })}
+                              data-testid={`input-multi-title-${idx}`}
+                              disabled={multiUploading || item.status === "done"}
+                              style={{ fontSize: 12 }}
+                            />
+                            <input
+                              type="date"
+                              className="labs-input"
+                              value={item.date}
+                              onChange={(e) => update({ date: e.target.value })}
+                              data-testid={`input-multi-date-${idx}`}
+                              disabled={multiUploading || item.status === "done"}
+                              style={{ fontSize: 12 }}
+                            />
+                          </div>
+                          <input
+                            className="labs-input"
+                            placeholder={t("labs.handoutLibrary.fieldAuthor")}
+                            value={item.author}
+                            onChange={(e) => update({ author: e.target.value })}
+                            data-testid={`input-multi-author-${idx}`}
+                            disabled={multiUploading || item.status === "done"}
+                            style={{ fontSize: 12 }}
+                          />
+                          <textarea
+                            className="labs-input"
+                            placeholder={t("labs.handoutLibrary.fieldDescription")}
+                            rows={2}
+                            value={item.description}
+                            onChange={(e) => update({ description: e.target.value })}
+                            data-testid={`input-multi-description-${idx}`}
+                            disabled={multiUploading || item.status === "done"}
+                            style={{ fontSize: 12 }}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, alignItems: "center" }}>
+                {multiItems.length > 0 && (() => {
+                  const total = multiItems.length;
+                  const done = multiItems.filter((it) => it.status === "done").length;
+                  const failed = multiItems.filter((it) => it.status === "error").length;
+                  return (
+                    <span style={{ fontSize: 11, color: "var(--labs-text-muted)", marginRight: "auto" }} data-testid="text-multi-progress">
+                      {t("labs.handoutLibrary.multiProgress", { done, total, failed })}
+                    </span>
+                  );
+                })()}
                 <button
                   type="button"
                   className="labs-btn-secondary text-xs"
-                  onClick={() => { setUploadOpen(false); setUploadForm(emptyUploadForm); }}
+                  onClick={() => {
+                    if (multiUploading) return;
+                    setUploadOpen(false);
+                    setUploadForm(emptyUploadForm);
+                    setMultiItems([]);
+                    setMultiCommonDistillery("");
+                    setMultiCommonWhiskybaseId("");
+                  }}
                   data-testid="button-upload-cancel"
+                  disabled={multiUploading}
                 >
                   {t("labs.handoutLibrary.cancel")}
                 </button>
-                <button
-                  type="button"
-                  className="labs-btn-primary text-xs"
-                  onClick={() => uploadMut.mutate()}
-                  disabled={uploadMut.isPending || !uploadForm.file || (!uploadForm.splitProgramme && !uploadForm.whiskyName.trim())}
-                  data-testid="button-upload-submit"
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-                >
-                  {uploadMut.isPending ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> : <Upload style={{ width: 12, height: 12 }} />}
-                  {uploadMut.isPending
-                    ? t("labs.handoutLibrary.uploading")
-                    : uploadForm.splitProgramme
-                      ? t("labs.handoutLibrary.uploadAndSplit")
-                      : t("labs.handoutLibrary.uploadButton")}
-                </button>
+                {multiItems.length === 0 ? (
+                  <button
+                    type="button"
+                    className="labs-btn-primary text-xs"
+                    onClick={() => uploadMut.mutate()}
+                    disabled={uploadMut.isPending || !uploadForm.file || (!uploadForm.splitProgramme && !uploadForm.whiskyName.trim())}
+                    data-testid="button-upload-submit"
+                    style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                  >
+                    {uploadMut.isPending ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> : <Upload style={{ width: 12, height: 12 }} />}
+                    {uploadMut.isPending
+                      ? t("labs.handoutLibrary.uploading")
+                      : uploadForm.splitProgramme
+                        ? t("labs.handoutLibrary.uploadAndSplit")
+                        : t("labs.handoutLibrary.uploadButton")}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="labs-btn-primary text-xs"
+                    onClick={runMultiUpload}
+                    disabled={multiUploading || !canRunMultiUpload}
+                    data-testid="button-multi-upload-submit"
+                    style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                  >
+                    {multiUploading ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> : <Upload style={{ width: 12, height: 12 }} />}
+                    {multiUploading
+                      ? t("labs.handoutLibrary.uploading")
+                      : t("labs.handoutLibrary.multiUploadButton", { count: multiPendingCount })}
+                  </button>
+                )}
               </div>
             </div>
           )}
