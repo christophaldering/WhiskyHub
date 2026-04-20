@@ -467,6 +467,12 @@ export default function LabsHandoutLibrary() {
   const [multiCommonWhiskybaseId, setMultiCommonWhiskybaseId] = useState("");
   const [multiUploading, setMultiUploading] = useState(false);
   const [multiDragOver, setMultiDragOver] = useState(false);
+  const [lastRunSummary, setLastRunSummary] = useState<{
+    ok: number;
+    fail: number;
+    okFiles: string[];
+    failFiles: { name: string; error: string }[];
+  } | null>(null);
   const [distilleryFilter, setDistilleryFilter] = useState<string>("");
   const replaceFileInputRef = useRef<HTMLInputElement>(null);
   const uploadFileInputRef = useRef<HTMLInputElement>(null);
@@ -644,20 +650,28 @@ export default function LabsHandoutLibrary() {
     [multiItems, multiPendingCount],
   );
 
-  const runMultiUpload = async () => {
+  const runMultiUpload = async (targetIds?: string[]) => {
     if (multiUploading) return;
-    const queue = multiItems.filter((it) => it.status !== "done");
+    const queue = targetIds
+      ? multiItems.filter((it) => targetIds.includes(it.id))
+      : multiItems.filter((it) => it.status !== "done");
     if (queue.length === 0) return;
     setError(null);
     setInfo(null);
+    setLastRunSummary(null);
     setMultiUploading(true);
     let okCount = 0;
     let failCount = 0;
+    const okFiles: string[] = [];
+    const failFiles: { name: string; error: string }[] = [];
     for (const item of queue) {
+      const fileName = item.file.name;
       const whiskyName = item.whiskyName.trim();
       if (!whiskyName) {
+        const errMsg = t("labs.handoutLibrary.errWhiskyNameRequired");
         failCount += 1;
-        setMultiItems((prev) => prev.map((it) => it.id === item.id ? { ...it, status: "error", errorMessage: t("labs.handoutLibrary.errWhiskyNameRequired") } : it));
+        failFiles.push({ name: fileName, error: errMsg });
+        setMultiItems((prev) => prev.map((it) => it.id === item.id ? { ...it, status: "error", errorMessage: errMsg } : it));
         continue;
       }
       setMultiItems((prev) => prev.map((it) => it.id === item.id ? { ...it, status: "uploading", errorMessage: undefined } : it));
@@ -673,10 +687,12 @@ export default function LabsHandoutLibrary() {
           description,
         });
         okCount += 1;
+        okFiles.push(fileName);
         setMultiItems((prev) => prev.map((it) => it.id === item.id ? { ...it, status: "done", errorMessage: undefined } : it));
       } catch (e: any) {
         failCount += 1;
         const msg = e?.message || t("labs.handoutLibrary.errUpload");
+        failFiles.push({ name: fileName, error: msg });
         setMultiItems((prev) => prev.map((it) => it.id === item.id ? { ...it, status: "error", errorMessage: msg } : it));
       }
     }
@@ -688,11 +704,17 @@ export default function LabsHandoutLibrary() {
       setMultiCommonDistillery("");
       setMultiCommonWhiskybaseId("");
       setUploadOpen(false);
-    } else if (okCount === 0) {
-      setError(t("labs.handoutLibrary.multiSummaryAllFailed", { count: failCount }));
+      setLastRunSummary(null);
     } else {
-      setInfo(t("labs.handoutLibrary.multiSummaryMixed", { ok: okCount, fail: failCount }));
+      setLastRunSummary({ ok: okCount, fail: failCount, okFiles, failFiles });
     }
+  };
+
+  const retryFailedUploads = () => {
+    if (multiUploading) return;
+    const failedIds = multiItems.filter((it) => it.status === "error").map((it) => it.id);
+    if (failedIds.length === 0) return;
+    void runMultiUpload(failedIds);
   };
 
   const toggleSelected = (id: string) => {
@@ -878,6 +900,7 @@ export default function LabsHandoutLibrary() {
                     setMultiItems([]);
                     setMultiCommonDistillery("");
                     setMultiCommonWhiskybaseId("");
+                    setLastRunSummary(null);
                   }}
                   data-testid="button-upload-form-close"
                   style={{ padding: 4 }}
@@ -910,6 +933,7 @@ export default function LabsHandoutLibrary() {
                   const files = Array.from(e.target.files || []);
                   if (e.target) e.target.value = "";
                   if (files.length === 0) return;
+                  setLastRunSummary(null);
                   if (files.length === 1 && multiItems.length === 0 && !uploadForm.file) {
                     setUploadForm({ ...uploadForm, file: files[0] });
                   } else {
@@ -933,6 +957,7 @@ export default function LabsHandoutLibrary() {
                   if (multiUploading) return;
                   const dropped = Array.from(e.dataTransfer.files || []);
                   if (dropped.length === 0) return;
+                  setLastRunSummary(null);
                   if (dropped.length === 1 && multiItems.length === 0 && !uploadForm.file) {
                     setUploadForm({ ...uploadForm, file: dropped[0] });
                   } else {
@@ -1167,6 +1192,7 @@ export default function LabsHandoutLibrary() {
                         item.recognized ? t("labs.handoutLibrary.multiStatusParsed") : t("labs.handoutLibrary.multiStatusManual");
                       const update = (patch: Partial<MultiUploadItem>) => {
                         if (multiUploading) return;
+                        setLastRunSummary(null);
                         setMultiItems((prev) => prev.map((it) => it.id === item.id ? { ...it, ...patch } : it));
                       };
                       return (
@@ -1195,6 +1221,7 @@ export default function LabsHandoutLibrary() {
                               className="labs-btn-ghost text-xs"
                               onClick={() => {
                                 if (multiUploading) return;
+                                setLastRunSummary(null);
                                 setMultiItems((prev) => prev.filter((it) => it.id !== item.id));
                               }}
                               disabled={multiUploading}
@@ -1260,6 +1287,87 @@ export default function LabsHandoutLibrary() {
                   </div>
                 </div>
               )}
+              {lastRunSummary && !multiUploading && (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  style={{
+                    border: `1px solid ${lastRunSummary.fail > 0 ? "var(--labs-danger)" : "var(--labs-border)"}`,
+                    background: "var(--labs-surface)",
+                    borderRadius: 10,
+                    padding: 12,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                  }}
+                  data-testid="panel-multi-summary"
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }} data-testid="text-multi-summary-title">
+                      {lastRunSummary.ok === 0
+                        ? t("labs.handoutLibrary.multiSummaryAllFailed", { count: lastRunSummary.fail })
+                        : t("labs.handoutLibrary.multiSummaryMixed", { ok: lastRunSummary.ok, fail: lastRunSummary.fail })}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setLastRunSummary(null)}
+                      className="labs-btn-secondary text-xs"
+                      style={{ padding: "2px 8px" }}
+                      data-testid="button-multi-summary-dismiss"
+                      aria-label={t("labs.handoutLibrary.multiSummaryDismiss")}
+                    >
+                      {t("labs.handoutLibrary.multiSummaryDismiss")}
+                    </button>
+                  </div>
+                  {lastRunSummary.okFiles.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 2 }} data-testid="list-multi-summary-ok">
+                      <span style={{ fontSize: 11, color: "var(--labs-success)", fontWeight: 600 }}>
+                        {t("labs.handoutLibrary.multiSummaryOkHeader", { count: lastRunSummary.ok })}
+                      </span>
+                      {lastRunSummary.okFiles.map((name, i) => (
+                        <span
+                          key={`ok-${i}`}
+                          style={{ fontSize: 11, color: "var(--labs-text-muted)", paddingLeft: 8 }}
+                          data-testid={`text-multi-summary-ok-${i}`}
+                        >
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {lastRunSummary.failFiles.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 2 }} data-testid="list-multi-summary-fail">
+                      <span style={{ fontSize: 11, color: "var(--labs-danger)", fontWeight: 600 }}>
+                        {t("labs.handoutLibrary.multiSummaryFailHeader", { count: lastRunSummary.fail })}
+                      </span>
+                      {lastRunSummary.failFiles.map((f, i) => (
+                        <span
+                          key={`fail-${i}`}
+                          style={{ fontSize: 11, color: "var(--labs-text-muted)", paddingLeft: 8 }}
+                          data-testid={`text-multi-summary-fail-${i}`}
+                        >
+                          {f.name} — {f.error}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {lastRunSummary.fail > 0 && (
+                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                      <button
+                        type="button"
+                        className="labs-btn-primary text-xs"
+                        onClick={retryFailedUploads}
+                        disabled={multiUploading}
+                        data-testid="button-multi-summary-retry"
+                        style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                      >
+                        <Upload style={{ width: 12, height: 12 }} />
+                        {t("labs.handoutLibrary.multiSummaryRetryFailed", { count: lastRunSummary.fail })}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, alignItems: "center" }}>
                 {multiItems.length > 0 && (() => {
                   const total = multiItems.length;
@@ -1281,6 +1389,7 @@ export default function LabsHandoutLibrary() {
                     setMultiItems([]);
                     setMultiCommonDistillery("");
                     setMultiCommonWhiskybaseId("");
+                    setLastRunSummary(null);
                   }}
                   data-testid="button-upload-cancel"
                   disabled={multiUploading}
@@ -1307,7 +1416,7 @@ export default function LabsHandoutLibrary() {
                   <button
                     type="button"
                     className="labs-btn-primary text-xs"
-                    onClick={runMultiUpload}
+                    onClick={() => { void runMultiUpload(); }}
                     disabled={multiUploading || !canRunMultiUpload}
                     data-testid="button-multi-upload-submit"
                     style={{ display: "inline-flex", alignItems: "center", gap: 6 }}

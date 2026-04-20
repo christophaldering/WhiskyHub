@@ -5896,6 +5896,10 @@ const resources = {
           multiSummaryAllOk: "All {{count}} handouts uploaded.",
           multiSummaryAllFailed: "All {{count}} uploads failed.",
           multiSummaryMixed: "{{ok}} uploaded, {{fail}} failed — review the failures and retry.",
+          multiSummaryOkHeader: "Uploaded ({{count}})",
+          multiSummaryFailHeader: "Failed ({{count}})",
+          multiSummaryRetryFailed: "Retry {{count}} failed",
+          multiSummaryDismiss: "Dismiss",
         },
         handoutSplitter: {
           title: "Split programme PDF page by page",
@@ -14991,6 +14995,10 @@ const resources = {
           multiSummaryAllOk: "Alle {{count}} Handouts hochgeladen.",
           multiSummaryAllFailed: "Alle {{count}} Uploads fehlgeschlagen.",
           multiSummaryMixed: "{{ok}} hochgeladen, {{fail}} fehlgeschlagen — bitte Fehler prüfen und erneut versuchen.",
+          multiSummaryOkHeader: "Hochgeladen ({{count}})",
+          multiSummaryFailHeader: "Fehlgeschlagen ({{count}})",
+          multiSummaryRetryFailed: "{{count}} fehlgeschlagene erneut versuchen",
+          multiSummaryDismiss: "Schließen",
         },
         handoutSplitter: {
           title: "Programmheft seitenweise aufteilen",
