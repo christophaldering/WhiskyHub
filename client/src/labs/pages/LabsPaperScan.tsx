@@ -316,7 +316,7 @@ export default function LabsPaperScan() {
                 onClick={() => {
                   const pdfInput = document.createElement("input");
                   pdfInput.type = "file";
-                  pdfInput.accept = ".pdf,application/pdf";
+                  pdfInput.accept = ".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
                   pdfInput.multiple = true;
                   pdfInput.onchange = (e: any) => {
                     const files = Array.from(e.target.files || []) as File[];
