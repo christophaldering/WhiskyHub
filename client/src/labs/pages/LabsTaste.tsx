@@ -251,8 +251,6 @@ export default function LabsTaste() {
     );
   }
 
-  const activeTab_ = TABS.find((tab) => tab.key === activeTab) ?? TABS[0];
-
   const renderInlineContent = () => {
     if (activeTab === "tastings") {
       const activeTile = TASTINGS_HUB_TILES.find((tile) => tile.filter === activeTastingsFilter);
@@ -401,11 +399,8 @@ export default function LabsTaste() {
       <MeineWeltActionBar active={activeTab} onSelect={handleSelectTab} />
 
       <div className="labs-fade-in" data-testid={`meine-welt-content-${activeTab}`}>
-        <div className="labs-meine-welt-section-head">
-          <span className="labs-meine-welt-section-label">
-            {t(activeTab_.labelKey, activeTab_.labelFallback)}
-          </span>
-          {activeTab === "collection" && (
+        {activeTab === "collection" && (
+          <div className="labs-meine-welt-section-head" style={{ justifyContent: "flex-end" }}>
             <Link
               href="/labs/taste/drams"
               className="labs-meine-welt-view-all"
@@ -414,8 +409,8 @@ export default function LabsTaste() {
               {t("myTastePage.viewAll", "View all")}
               <ChevronRight className="w-3.5 h-3.5" />
             </Link>
-          )}
-        </div>
+          </div>
+        )}
         {renderInlineContent()}
       </div>
     </div>

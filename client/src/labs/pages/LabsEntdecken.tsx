@@ -768,11 +768,6 @@
 
               {activeView === "whiskies" && (
               <div className="labs-fade-in labs-stagger-2" style={{ marginBottom: 32 }}>
-                <p className="labs-section-label flex items-center gap-2" style={{ marginBottom: 10 }}>
-                  <Wine className="w-3.5 h-3.5" />
-                  {t("discover.whiskies", "Whiskies")}
-                </p>
-
                 <div data-testid="explore-whiskies-pills" style={{ marginBottom: 14 }}>
                   {(() => {
                     const whiskyTiles: HubTileDef[] = WHISKY_PILLS.map((pill) => ({
