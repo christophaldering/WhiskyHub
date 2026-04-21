@@ -11,7 +11,7 @@
         import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
         import { EmbeddedExploreProvider } from "@/labs/embeddedExploreContext";
         import { apiUrl } from "@/lib/native";
-        import { HubTileGrid, type HubTileDef } from "@/labs/pages/hubTiles";
+        import { HubTileGrid, HubTileCollapsible, type HubTileDef } from "@/labs/pages/hubTiles";
         import type { ElementType } from "react";
         import {
           Search, ChevronRight, Wine,
@@ -683,22 +683,13 @@
               <DiscoverActionBar
                 active={activeView}
                 onSelect={(view) => {
-                  if (view === "whiskies") {
-                    // Role B: tab-switch resets sub-tiles to default (closed)
-                    if (activeView !== "whiskies") {
-                      setBiblioSection(null);
-                      setBiblioSub(null);
-                    }
-                    setActiveView("whiskies");
-                    setExpandedFilter(null);
-                  } else {
-                    if (activeView !== "bibliothek") {
-                      setBiblioSection(null);
-                      setBiblioSub(null);
-                    }
-                    setActiveView("bibliothek");
-                    setExpandedFilter(null);
-                  }
+                  // Role B: re-click on the active top-tab is a strict no-op
+                  if (view === activeView) return;
+                  // Tab-switch resets sub-tiles to default (closed)
+                  setBiblioSection(null);
+                  setBiblioSub(null);
+                  setActiveView(view);
+                  setExpandedFilter(null);
                 }}
               />
 
@@ -747,13 +738,16 @@
                       }}
                     />
 
-                    {activeSection && (
-                      <div
-                        ref={biblioContentRef}
-                        className="labs-hub-tile-content-zone"
-                        data-testid={`explore-bibliothek-section-${activeSection.key}`}
-                      >
-                        {(() => {
+                    <HubTileCollapsible
+                      open={activeSection !== null}
+                      innerRef={biblioContentRef}
+                      testId={
+                        activeSection
+                          ? `explore-bibliothek-section-${activeSection.key}`
+                          : undefined
+                      }
+                    >
+                      {activeSection && (() => {
                           if (activeSection.subs.length <= 1) return null;
                           const subTiles: HubTileDef[] = activeSection.subs.map((s) => ({
                             icon: s.icon,
@@ -788,15 +782,14 @@
                             </div>
                           );
                         })()}
-                        {ActiveComponent && activeSub && (
-                          <div data-testid={`explore-inline-${activeSection.key}-${activeSub.sub}`}>
-                            <EmbeddedExploreProvider>
-                              <ActiveComponent />
-                            </EmbeddedExploreProvider>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                      {ActiveComponent && activeSub && activeSection && (
+                        <div data-testid={`explore-inline-${activeSection.key}-${activeSub.sub}`}>
+                          <EmbeddedExploreProvider>
+                            <ActiveComponent />
+                          </EmbeddedExploreProvider>
+                        </div>
+                      )}
+                    </HubTileCollapsible>
                   </div>
                 );
               })()}

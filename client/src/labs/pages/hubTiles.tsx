@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import type { ElementType } from "react";
+import { useEffect, useState, type ElementType, type ReactNode, type CSSProperties, type Ref } from "react";
 import {
   BookOpen, Archive, Heart, Sparkles, Activity, Library, Compass,
   BarChart3, PieChart, GitCompareArrows, Download, Layers, Crown, Users, Brain,
@@ -262,6 +262,57 @@ export function HubTileCard({
     <Link href={tile.href ?? "#"} className={className} data-testid={testIdOverride ?? tile.testId}>
       {inner}
     </Link>
+  );
+}
+
+export function HubTileCollapsible({
+  open,
+  children,
+  className,
+  style,
+  testId,
+  innerRef,
+}: {
+  open: boolean;
+  children: ReactNode;
+  className?: string;
+  style?: CSSProperties;
+  testId?: string;
+  innerRef?: Ref<HTMLDivElement>;
+}) {
+  const [mounted, setMounted] = useState(open);
+  const [closing, setClosing] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      setClosing(false);
+      return;
+    }
+    if (!mounted) return;
+    setClosing(true);
+    const id = window.setTimeout(() => {
+      setMounted(false);
+      setClosing(false);
+    }, 200);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  if (!mounted) return null;
+
+  const cls = [
+    "labs-hub-tile-content-zone",
+    closing ? "labs-hub-tile-content-zone--closing" : "",
+    className ?? "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <div ref={innerRef} className={cls} style={style} data-testid={testId}>
+      {children}
+    </div>
   );
 }
 

@@ -1819,9 +1819,19 @@ a.labs-dram-item {
   scroll-margin-top: 60px;
 }
 
+.labs-hub-tile-content-zone--closing {
+  animation: labsHubTileCollapse 200ms ease-out forwards;
+  pointer-events: none;
+}
+
 @keyframes labsHubTileExpand {
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes labsHubTileCollapse {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-4px); }
 }
 
 .labs-hub-tile:active {

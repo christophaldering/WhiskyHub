@@ -17,6 +17,7 @@ import {
   COLLECTION_HUB_TILES,
   TASTINGS_HUB_TILES,
   HubTileGrid,
+  HubTileCollapsible,
   type TastingsHubFilter,
 } from "./hubTiles";
 import MeineWeltTastingsList from "@/labs/components/MeineWeltTastingsList";
@@ -337,20 +338,24 @@ export default function LabsTaste() {
               setActiveCollectionTile((prev) => (prev === tile.testId ? null : tile.testId))
             }
           />
-          {activeCollectionTile ? (
-            <div
-              ref={inlineContentRef}
-              className="labs-tastings-inline-content labs-hub-tile-content-zone"
-              style={{ marginTop: 16 }}
-              data-testid={`meine-welt-collection-inline-${activeCollectionTile}`}
-            >
-              <EmbeddedMeineWeltProvider>
-                {activeCollectionTile === "labs-link-collection-hub-drams" && <LabsTasteDrams />}
-                {activeCollectionTile === "labs-link-collection-hub-bottles" && <LabsTasteCollection />}
-                {activeCollectionTile === "labs-link-collection-hub-wishlist" && <LabsTasteWishlist />}
-              </EmbeddedMeineWeltProvider>
-            </div>
-          ) : (
+          <HubTileCollapsible
+            open={activeCollectionTile !== null}
+            innerRef={inlineContentRef}
+            className="labs-tastings-inline-content"
+            style={{ marginTop: 16 }}
+            testId={
+              activeCollectionTile
+                ? `meine-welt-collection-inline-${activeCollectionTile}`
+                : undefined
+            }
+          >
+            <EmbeddedMeineWeltProvider>
+              {activeCollectionTile === "labs-link-collection-hub-drams" && <LabsTasteDrams />}
+              {activeCollectionTile === "labs-link-collection-hub-bottles" && <LabsTasteCollection />}
+              {activeCollectionTile === "labs-link-collection-hub-wishlist" && <LabsTasteWishlist />}
+            </EmbeddedMeineWeltProvider>
+          </HubTileCollapsible>
+          {!activeCollectionTile && (
             <div style={{ marginTop: 24 }}>
               <RecentRatedList
                 items={recentItems}
@@ -381,22 +386,21 @@ export default function LabsTaste() {
               setActiveAITile((prev) => (prev === tile.testId ? null : tile.testId))
             }
           />
-          {activeAITile && (
-            <div
-              ref={inlineContentRef}
-              className="labs-tastings-inline-content labs-hub-tile-content-zone"
-              style={{ marginTop: 16 }}
-              data-testid={`meine-welt-ai-inline-${activeAITile}`}
-            >
-              <EmbeddedMeineWeltProvider>
-                {activeAITile === "labs-link-ai-insights-connoisseur" && <LabsConnoisseur />}
-                {activeAITile === "labs-link-ai-insights-dna" && <LabsWhiskyDNA />}
-                {activeAITile === "labs-link-ai-insights-recommendations" && <LabsRecommendations />}
-                {activeAITile === "labs-link-ai-insights-collection-analysis" && <LabsCollectionAnalysis />}
-                {activeAITile === "labs-link-ai-insights-ai-curation" && <LabsAICuration />}
-              </EmbeddedMeineWeltProvider>
-            </div>
-          )}
+          <HubTileCollapsible
+            open={activeAITile !== null}
+            innerRef={inlineContentRef}
+            className="labs-tastings-inline-content"
+            style={{ marginTop: 16 }}
+            testId={activeAITile ? `meine-welt-ai-inline-${activeAITile}` : undefined}
+          >
+            <EmbeddedMeineWeltProvider>
+              {activeAITile === "labs-link-ai-insights-connoisseur" && <LabsConnoisseur />}
+              {activeAITile === "labs-link-ai-insights-dna" && <LabsWhiskyDNA />}
+              {activeAITile === "labs-link-ai-insights-recommendations" && <LabsRecommendations />}
+              {activeAITile === "labs-link-ai-insights-collection-analysis" && <LabsCollectionAnalysis />}
+              {activeAITile === "labs-link-ai-insights-ai-curation" && <LabsAICuration />}
+            </EmbeddedMeineWeltProvider>
+          </HubTileCollapsible>
         </div>
       );
     }
@@ -415,23 +419,26 @@ export default function LabsTaste() {
             setActiveAnalyticsTile((prev) => (prev === tile.testId ? null : tile.testId))
           }
         />
-        {activeAnalyticsTile && (
-          <div
-            ref={inlineContentRef}
-            className="labs-tastings-inline-content labs-hub-tile-content-zone"
-            style={{ marginTop: 16 }}
-            data-testid={`meine-welt-analytics-inline-${activeAnalyticsTile}`}
-          >
-            <EmbeddedMeineWeltProvider>
-              {activeAnalyticsTile === "labs-link-analytics-hub-analytics" && <LabsTasteAnalytics />}
-              {activeAnalyticsTile === "labs-link-analytics-hub-wheel" && <LabsTasteWheel />}
-              {activeAnalyticsTile === "labs-link-analytics-hub-compare" && <LabsTasteCompare />}
-              {activeAnalyticsTile === "labs-link-analytics-hub-downloads" && <LabsTasteDownloads />}
-              {activeAnalyticsTile === "labs-link-analytics-hub-palate" && <LabsTasteProfile />}
-              {activeAnalyticsTile === "labs-link-analytics-hub-benchmark" && <LabsBenchmark />}
-            </EmbeddedMeineWeltProvider>
-          </div>
-        )}
+        <HubTileCollapsible
+          open={activeAnalyticsTile !== null}
+          innerRef={inlineContentRef}
+          className="labs-tastings-inline-content"
+          style={{ marginTop: 16 }}
+          testId={
+            activeAnalyticsTile
+              ? `meine-welt-analytics-inline-${activeAnalyticsTile}`
+              : undefined
+          }
+        >
+          <EmbeddedMeineWeltProvider>
+            {activeAnalyticsTile === "labs-link-analytics-hub-analytics" && <LabsTasteAnalytics />}
+            {activeAnalyticsTile === "labs-link-analytics-hub-wheel" && <LabsTasteWheel />}
+            {activeAnalyticsTile === "labs-link-analytics-hub-compare" && <LabsTasteCompare />}
+            {activeAnalyticsTile === "labs-link-analytics-hub-downloads" && <LabsTasteDownloads />}
+            {activeAnalyticsTile === "labs-link-analytics-hub-palate" && <LabsTasteProfile />}
+            {activeAnalyticsTile === "labs-link-analytics-hub-benchmark" && <LabsBenchmark />}
+          </EmbeddedMeineWeltProvider>
+        </HubTileCollapsible>
       </div>
     );
   };
