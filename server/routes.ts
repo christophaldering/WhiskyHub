@@ -3086,6 +3086,412 @@ export async function registerRoutes(
     }
   });
 
+  // ============================================================
+  // --- Multi-Handouts (n:m): Whisky / Tasting / Distillery ---
+  // ============================================================
+
+  // Common helpers
+  function clampStr(s: any, n: number): string | null {
+    if (typeof s !== "string") return null;
+    return s.slice(0, n) || null;
+  }
+  function parseVisibilityWhisky(v: any): "always" | "after_reveal" | undefined {
+    if (v === "always" || v === "after_reveal") return v;
+    return undefined;
+  }
+  function parseVisibilityTasting(v: any): "always" | "after_first_reveal" | undefined {
+    if (v === "always" || v === "after_first_reveal") return v;
+    return undefined;
+  }
+  async function uploadHandoutFile(file: any): Promise<{ url: string; contentType: string }> {
+    if (isWordFile(file)) {
+      try { await maybeConvertWordFileToPdf(file); }
+      catch (convErr) {
+        console.error("[multi-handout] word->pdf failed", convErr);
+        throw new Error("Word-Datei konnte nicht konvertiert werden — bitte als PDF hochladen.");
+      }
+    }
+    let buffer = file.buffer;
+    let contentType = file.mimetype || "application/octet-stream";
+    const lowerName = (file.originalname || "").toLowerCase();
+    if (lowerName.endsWith(".pdf")) contentType = "application/pdf";
+    let storedUrl: string;
+    if (contentType === "application/pdf") {
+      const uploadURL = await objectStorage.getObjectEntityUploadURL();
+      const resp = await fetch(uploadURL, { method: "PUT", body: buffer, headers: { "Content-Type": contentType } });
+      if (!resp.ok) throw new Error(`Object storage upload failed (${resp.status})`);
+      storedUrl = objectStorage.normalizeObjectEntityPath(uploadURL);
+    } else {
+      storedUrl = await uploadBufferToObjectStorage(objectStorage, buffer, contentType);
+    }
+    return { url: storedUrl, contentType };
+  }
+
+  // ----- Whisky handouts -----
+  app.get("/api/whiskies/:id/handouts", async (req: any, res: any) => {
+    try {
+      const list = await storage.listWhiskyHandouts(req.params.id);
+      res.json(list);
+    } catch (e: any) { res.status(400).json({ message: e.message }); }
+  });
+
+  app.get("/api/whiskies/:id/effective-handouts", async (req: any, res: any) => {
+    try {
+      const list = await storage.getEffectiveWhiskyHandouts(req.params.id);
+      const flat = list.map((row) => ({
+        ...(row.handout as any),
+        source: row.kind,
+        distilleryName: row.distilleryName ?? null,
+      }));
+      res.json(flat);
+    } catch (e: any) { res.status(400).json({ message: e.message }); }
+  });
+
+  app.post("/api/whiskies/:id/handouts", (req: any, res: any, next: any) => {
+    handoutUpload.single("file")(req, res, (err: any) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ message: "Datei zu groß (max. 20 MB)" });
+        return res.status(400).json({ message: err.message || "Upload fehlgeschlagen" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      if (await rejectIfWhiskyArchived(req.params.id, res)) return;
+      const whisky = await storage.getWhisky(req.params.id);
+      if (!whisky) return res.status(404).json({ message: "Whisky nicht gefunden" });
+      const tasting = await storage.getTasting(whisky.tastingId);
+      if (!tasting) return res.status(404).json({ message: "Tasting nicht gefunden" });
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!requesterId || requesterId !== tasting.hostId) return res.status(403).json({ message: "Nur der Host kann Handouts hochladen" });
+      if (!req.file) return res.status(400).json({ message: "Keine Datei übermittelt" });
+      const { url, contentType } = await uploadHandoutFile(req.file);
+      const created = await storage.createWhiskyHandout({
+        whiskyId: whisky.id,
+        visibility: parseVisibilityWhisky(req.body.visibility) ?? "always",
+        fileUrl: url,
+        contentType,
+        title: clampStr(req.body.title, 200),
+        author: clampStr(req.body.author, 200),
+        description: clampStr(req.body.description, 2000),
+      });
+      // Best-effort add to library so future tastings get suggestions
+      try {
+        const existing = await storage.suggestHandoutLibrary(tasting.hostId, {
+          whiskybaseId: whisky.whiskybaseId ?? null,
+          whiskyName: whisky.name,
+          distillery: whisky.distillery ?? null,
+        });
+        if (!existing.some((e) => e.fileUrl === url)) {
+          await storage.createHandoutLibraryEntry({
+            hostId: tasting.hostId,
+            whiskyName: whisky.name,
+            distillery: whisky.distillery ?? null,
+            whiskybaseId: whisky.whiskybaseId ?? null,
+            fileUrl: url,
+            contentType,
+            title: created.title ?? null,
+            author: created.author ?? null,
+            description: created.description ?? null,
+          });
+        }
+      } catch (libErr) { console.warn("[handout-library] auto-add failed", libErr); }
+      res.json(created);
+    } catch (e: any) { res.status(400).json({ message: e.message }); }
+  });
+
+  app.patch("/api/whiskies/:id/handouts/:hid", async (req: any, res: any) => {
+    try {
+      const handout = await storage.getWhiskyHandout(req.params.hid);
+      if (!handout || handout.whiskyId !== req.params.id) return res.status(404).json({ message: "Handout nicht gefunden" });
+      const whisky = await storage.getWhisky(req.params.id);
+      if (!whisky) return res.status(404).json({ message: "Whisky nicht gefunden" });
+      const tasting = await storage.getTasting(whisky.tastingId);
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!tasting || !requesterId || requesterId !== tasting.hostId) return res.status(403).json({ message: "Nur der Host kann Handouts bearbeiten" });
+      const data: any = {};
+      if ("title" in req.body) data.title = clampStr(req.body.title, 200);
+      if ("author" in req.body) data.author = clampStr(req.body.author, 200);
+      if ("description" in req.body) data.description = clampStr(req.body.description, 2000);
+      const vis = parseVisibilityWhisky(req.body.visibility);
+      if (vis) data.visibility = vis;
+      const updated = await storage.updateWhiskyHandout(req.params.hid, data);
+      res.json(updated);
+    } catch (e: any) { res.status(400).json({ message: e.message }); }
+  });
+
+  app.delete("/api/whiskies/:id/handouts/:hid", async (req: any, res: any) => {
+    try {
+      const handout = await storage.getWhiskyHandout(req.params.hid);
+      if (!handout || handout.whiskyId !== req.params.id) return res.status(404).json({ message: "Handout nicht gefunden" });
+      const whisky = await storage.getWhisky(req.params.id);
+      if (!whisky) return res.status(404).json({ message: "Whisky nicht gefunden" });
+      const tasting = await storage.getTasting(whisky.tastingId);
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!tasting || !requesterId || requesterId !== tasting.hostId) return res.status(403).json({ message: "Nur der Host kann Handouts löschen" });
+      await storage.deleteWhiskyHandout(req.params.hid);
+      await deleteHandoutFileIfUnreferenced(objectStorage, handout.fileUrl);
+      res.json({ ok: true });
+    } catch (e: any) { res.status(400).json({ message: e.message }); }
+  });
+
+  app.post("/api/whiskies/:id/handouts/reorder", async (req: any, res: any) => {
+    try {
+      const whisky = await storage.getWhisky(req.params.id);
+      if (!whisky) return res.status(404).json({ message: "Whisky nicht gefunden" });
+      const tasting = await storage.getTasting(whisky.tastingId);
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!tasting || !requesterId || requesterId !== tasting.hostId) return res.status(403).json({ message: "Nur der Host kann Handouts neu sortieren" });
+      const ids = Array.isArray(req.body.orderedIds) ? req.body.orderedIds.filter((v: any) => typeof v === "string") : [];
+      await storage.reorderWhiskyHandouts(req.params.id, ids);
+      const list = await storage.listWhiskyHandouts(req.params.id);
+      res.json(list);
+    } catch (e: any) { res.status(400).json({ message: e.message }); }
+  });
+
+  // ----- Tasting handouts -----
+  app.get("/api/tastings/:id/handouts", async (req: any, res: any) => {
+    try {
+      const list = await storage.listTastingHandouts(req.params.id);
+      res.json(list);
+    } catch (e: any) { res.status(400).json({ message: e.message }); }
+  });
+
+  app.post("/api/tastings/:id/handouts", (req: any, res: any, next: any) => {
+    handoutUpload.single("file")(req, res, (err: any) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ message: "Datei zu groß (max. 20 MB)" });
+        return res.status(400).json({ message: err.message || "Upload fehlgeschlagen" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting nicht gefunden" });
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!requesterId || requesterId !== tasting.hostId) return res.status(403).json({ message: "Nur der Host kann Handouts hochladen" });
+      if (!req.file) return res.status(400).json({ message: "Keine Datei übermittelt" });
+      const { url, contentType } = await uploadHandoutFile(req.file);
+      const created = await storage.createTastingHandout({
+        tastingId: tasting.id,
+        visibility: parseVisibilityTasting(req.body.visibility) ?? "always",
+        fileUrl: url,
+        contentType,
+        title: clampStr(req.body.title, 200),
+        author: clampStr(req.body.author, 200),
+        description: clampStr(req.body.description, 2000),
+      });
+      res.json(created);
+    } catch (e: any) { res.status(400).json({ message: e.message }); }
+  });
+
+  app.patch("/api/tastings/:id/handouts/:hid", async (req: any, res: any) => {
+    try {
+      const handout = await storage.getTastingHandout(req.params.hid);
+      if (!handout || handout.tastingId !== req.params.id) return res.status(404).json({ message: "Handout nicht gefunden" });
+      const tasting = await storage.getTasting(req.params.id);
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!tasting || !requesterId || requesterId !== tasting.hostId) return res.status(403).json({ message: "Nur der Host kann Handouts bearbeiten" });
+      const data: any = {};
+      if ("title" in req.body) data.title = clampStr(req.body.title, 200);
+      if ("author" in req.body) data.author = clampStr(req.body.author, 200);
+      if ("description" in req.body) data.description = clampStr(req.body.description, 2000);
+      const vis = parseVisibilityTasting(req.body.visibility);
+      if (vis) data.visibility = vis;
+      const updated = await storage.updateTastingHandout(req.params.hid, data);
+      res.json(updated);
+    } catch (e: any) { res.status(400).json({ message: e.message }); }
+  });
+
+  app.delete("/api/tastings/:id/handouts/:hid", async (req: any, res: any) => {
+    try {
+      const handout = await storage.getTastingHandout(req.params.hid);
+      if (!handout || handout.tastingId !== req.params.id) return res.status(404).json({ message: "Handout nicht gefunden" });
+      const tasting = await storage.getTasting(req.params.id);
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!tasting || !requesterId || requesterId !== tasting.hostId) return res.status(403).json({ message: "Nur der Host kann Handouts löschen" });
+      await storage.deleteTastingHandout(req.params.hid);
+      await deleteHandoutFileIfUnreferenced(objectStorage, handout.fileUrl);
+      res.json({ ok: true });
+    } catch (e: any) { res.status(400).json({ message: e.message }); }
+  });
+
+  app.post("/api/tastings/:id/handouts/reorder", async (req: any, res: any) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting nicht gefunden" });
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!requesterId || requesterId !== tasting.hostId) return res.status(403).json({ message: "Nur der Host kann Handouts neu sortieren" });
+      const ids = Array.isArray(req.body.orderedIds) ? req.body.orderedIds.filter((v: any) => typeof v === "string") : [];
+      await storage.reorderTastingHandouts(req.params.id, ids);
+      const list = await storage.listTastingHandouts(req.params.id);
+      res.json(list);
+    } catch (e: any) { res.status(400).json({ message: e.message }); }
+  });
+
+  // ----- Distillery handouts (per-host) -----
+  // Per-host listing only — distillery handouts are scoped to the requesting host
+  // to avoid exposing other hosts' library content via this endpoint.
+  app.get("/api/distilleries/:id/handouts", async (req: any, res: any) => {
+    try {
+      const hostId = req.headers["x-participant-id"] as string | undefined;
+      if (!hostId) return res.json([]);
+      const list = await storage.listDistilleryHandoutsByHost(hostId, req.params.id);
+      res.json(list);
+    } catch (e: any) { res.status(400).json({ message: e.message }); }
+  });
+
+  app.post("/api/distilleries/:id/handouts", (req: any, res: any, next: any) => {
+    handoutUpload.single("file")(req, res, (err: any) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ message: "Datei zu groß (max. 20 MB)" });
+        return res.status(400).json({ message: err.message || "Upload fehlgeschlagen" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      const hostId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!hostId) return res.status(401).json({ message: "Authentifizierung erforderlich" });
+      if (!req.file) return res.status(400).json({ message: "Keine Datei übermittelt" });
+      const { url, contentType } = await uploadHandoutFile(req.file);
+      const created = await storage.createDistilleryHandout({
+        distilleryId: req.params.id,
+        hostId,
+        visibility: parseVisibilityWhisky(req.body.visibility) ?? "always",
+        fileUrl: url,
+        contentType,
+        title: clampStr(req.body.title, 200),
+        author: clampStr(req.body.author, 200),
+        description: clampStr(req.body.description, 2000),
+      });
+      res.json(created);
+    } catch (e: any) { res.status(400).json({ message: e.message }); }
+  });
+
+  app.patch("/api/distilleries/:id/handouts/:hid", async (req: any, res: any) => {
+    try {
+      const handout = await storage.getDistilleryHandout(req.params.hid);
+      if (!handout || handout.distilleryId !== req.params.id) return res.status(404).json({ message: "Handout nicht gefunden" });
+      const hostId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!hostId || hostId !== handout.hostId) return res.status(403).json({ message: "Nicht erlaubt" });
+      const data: any = {};
+      if ("title" in req.body) data.title = clampStr(req.body.title, 200);
+      if ("author" in req.body) data.author = clampStr(req.body.author, 200);
+      if ("description" in req.body) data.description = clampStr(req.body.description, 2000);
+      const vis = parseVisibilityWhisky(req.body.visibility);
+      if (vis) data.visibility = vis;
+      const updated = await storage.updateDistilleryHandout(req.params.hid, data);
+      res.json(updated);
+    } catch (e: any) { res.status(400).json({ message: e.message }); }
+  });
+
+  app.delete("/api/distilleries/:id/handouts/:hid", async (req: any, res: any) => {
+    try {
+      const handout = await storage.getDistilleryHandout(req.params.hid);
+      if (!handout || handout.distilleryId !== req.params.id) return res.status(404).json({ message: "Handout nicht gefunden" });
+      const hostId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!hostId || hostId !== handout.hostId) return res.status(403).json({ message: "Nicht erlaubt" });
+      await storage.deleteDistilleryHandout(req.params.hid);
+      await deleteHandoutFileIfUnreferenced(objectStorage, handout.fileUrl);
+      res.json({ ok: true });
+    } catch (e: any) { res.status(400).json({ message: e.message }); }
+  });
+
+  app.post("/api/distilleries/:id/handouts/reorder", async (req: any, res: any) => {
+    try {
+      const hostId = (req.headers["x-participant-id"] as string) || req.body.hostId;
+      if (!hostId) return res.status(401).json({ message: "Authentifizierung erforderlich" });
+      const ids = Array.isArray(req.body.orderedIds) ? req.body.orderedIds.filter((v: any) => typeof v === "string") : [];
+      await storage.reorderDistilleryHandouts(req.params.id, hostId, ids);
+      const list = await storage.listDistilleryHandoutsByHost(hostId, req.params.id);
+      res.json(list);
+    } catch (e: any) { res.status(400).json({ message: e.message }); }
+  });
+
+  // ----- Library: append to whisky/tasting/distillery (n:m apply) -----
+  app.post("/api/handout-library/:id/append-to-whisky", async (req: any, res: any) => {
+    try {
+      const hostId = req.headers["x-participant-id"] as string | undefined;
+      if (!hostId) return res.status(401).json({ message: "Authentifizierung erforderlich" });
+      const whiskyId = req.body.whiskyId as string;
+      if (!whiskyId) return res.status(400).json({ message: "whiskyId erforderlich" });
+      const entry = await storage.getHandoutLibraryEntry(req.params.id);
+      if (!entry) return res.status(404).json({ message: "Bibliothekseintrag nicht gefunden" });
+      if (entry.hostId !== hostId) return res.status(403).json({ message: "Nicht erlaubt" });
+      if (await rejectIfWhiskyArchived(whiskyId, res)) return;
+      const whisky = await storage.getWhisky(whiskyId);
+      if (!whisky) return res.status(404).json({ message: "Whisky nicht gefunden" });
+      const tasting = await storage.getTasting(whisky.tastingId);
+      if (!tasting || tasting.hostId !== hostId) return res.status(403).json({ message: "Nur der Host kann Handouts zuweisen" });
+      const visibility = parseVisibilityWhisky(req.body.visibility) ?? "always";
+      const created = await storage.createWhiskyHandout({
+        whiskyId,
+        visibility,
+        fileUrl: entry.fileUrl,
+        contentType: entry.contentType,
+        title: entry.title ?? null,
+        author: entry.author ?? null,
+        description: entry.description ?? null,
+        sourceLibraryId: entry.id,
+      });
+      res.json(created);
+    } catch (e: any) { res.status(400).json({ message: e.message }); }
+  });
+
+  app.post("/api/handout-library/:id/append-to-tasting", async (req: any, res: any) => {
+    try {
+      const hostId = req.headers["x-participant-id"] as string | undefined;
+      if (!hostId) return res.status(401).json({ message: "Authentifizierung erforderlich" });
+      const tastingId = req.body.tastingId as string;
+      if (!tastingId) return res.status(400).json({ message: "tastingId erforderlich" });
+      const entry = await storage.getHandoutLibraryEntry(req.params.id);
+      if (!entry) return res.status(404).json({ message: "Bibliothekseintrag nicht gefunden" });
+      if (entry.hostId !== hostId) return res.status(403).json({ message: "Nicht erlaubt" });
+      const tasting = await storage.getTasting(tastingId);
+      if (!tasting) return res.status(404).json({ message: "Tasting nicht gefunden" });
+      if (tasting.hostId !== hostId) return res.status(403).json({ message: "Nur der Host kann Handouts zuweisen" });
+      const visibility = parseVisibilityTasting(req.body.visibility) ?? "always";
+      const created = await storage.createTastingHandout({
+        tastingId,
+        visibility,
+        fileUrl: entry.fileUrl,
+        contentType: entry.contentType,
+        title: entry.title ?? null,
+        author: entry.author ?? null,
+        description: entry.description ?? null,
+        sourceLibraryId: entry.id,
+      });
+      res.json(created);
+    } catch (e: any) { res.status(400).json({ message: e.message }); }
+  });
+
+  app.post("/api/handout-library/:id/append-to-distillery", async (req: any, res: any) => {
+    try {
+      const hostId = req.headers["x-participant-id"] as string | undefined;
+      if (!hostId) return res.status(401).json({ message: "Authentifizierung erforderlich" });
+      const distilleryId = req.body.distilleryId as string;
+      if (!distilleryId) return res.status(400).json({ message: "distilleryId erforderlich" });
+      const entry = await storage.getHandoutLibraryEntry(req.params.id);
+      if (!entry) return res.status(404).json({ message: "Bibliothekseintrag nicht gefunden" });
+      if (entry.hostId !== hostId) return res.status(403).json({ message: "Nicht erlaubt" });
+      const visibility = parseVisibilityWhisky(req.body.visibility) ?? "always";
+      const created = await storage.createDistilleryHandout({
+        distilleryId,
+        hostId,
+        visibility,
+        fileUrl: entry.fileUrl,
+        contentType: entry.contentType,
+        title: entry.title ?? null,
+        author: entry.author ?? null,
+        description: entry.description ?? null,
+        sourceLibraryId: entry.id,
+      });
+      res.json(created);
+    } catch (e: any) { res.status(400).json({ message: e.message }); }
+  });
+
   // --- PDF Splitter: split a multi-page program PDF into per-whisky handouts ---
 
   // Best-effort cleanup of expired split sessions and their orphaned page files.

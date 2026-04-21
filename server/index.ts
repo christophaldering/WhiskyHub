@@ -577,6 +577,41 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       await dbJournal.execute(sqlJ`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS tasting_invite_enabled boolean DEFAULT true`);
       log("Ensured profiles has all schema columns", "startup");
 
+      // One-time migration: copy legacy 1:1 handout columns into the new
+      // n:m whisky_handouts / tasting_handouts tables, only when no row yet
+      // exists for the source. Idempotent — safe to run on every boot.
+      try {
+        const whiskyMig = await dbJournal.execute(sqlJ`
+          INSERT INTO whisky_handouts (whisky_id, position, visibility, file_url, content_type, title, author, description)
+          SELECT w.id, 0,
+                 COALESCE(w.handout_visibility, 'always'),
+                 w.handout_url,
+                 COALESCE(w.handout_content_type, 'application/octet-stream'),
+                 w.handout_title, w.handout_author, w.handout_description
+          FROM whiskies w
+          WHERE w.handout_url IS NOT NULL
+            AND NOT EXISTS (SELECT 1 FROM whisky_handouts wh WHERE wh.whisky_id = w.id)
+        `);
+        const tastingMig = await dbJournal.execute(sqlJ`
+          INSERT INTO tasting_handouts (tasting_id, position, visibility, file_url, content_type, title, author, description)
+          SELECT t.id, 0,
+                 COALESCE(t.handout_visibility, 'always'),
+                 t.handout_url,
+                 COALESCE(t.handout_content_type, 'application/octet-stream'),
+                 t.handout_title, t.handout_author, t.handout_description
+          FROM tastings t
+          WHERE t.handout_url IS NOT NULL
+            AND NOT EXISTS (SELECT 1 FROM tasting_handouts th WHERE th.tasting_id = t.id)
+        `);
+        const wRows = (whiskyMig as any).rowCount ?? 0;
+        const tRows = (tastingMig as any).rowCount ?? 0;
+        if (wRows > 0 || tRows > 0) {
+          log(`Migrated legacy handouts: ${wRows} whisky, ${tRows} tasting`, "startup");
+        }
+      } catch (migErr: any) {
+        log(`Handout legacy migration skipped: ${migErr.message}`, "startup");
+      }
+
       const rows = await dbJournal.execute(sqlJ`
         SELECT id, nose_notes FROM journal_entries
         WHERE nose_notes LIKE '%[SCORES]%'

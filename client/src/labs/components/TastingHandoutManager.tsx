@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { FileText, Image as ImageIcon, Trash2, Upload, ExternalLink, Download } from "lucide-react";
+import { useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FileText, Image as ImageIcon, Trash2, Upload, ExternalLink, Download, ArrowUp, ArrowDown, Pencil, X } from "lucide-react";
 import { tastingHandoutApi } from "@/lib/api";
 import { downloadFromEndpoint } from "@/lib/download";
-import type { Tasting } from "@shared/schema";
+import type { Tasting, TastingHandout } from "@shared/schema";
 
 async function safeDownload(url: string, filename: string) {
   const ok = await downloadFromEndpoint(url, filename).catch(() => false);
@@ -24,52 +24,73 @@ type Vis = "always" | "after_first_reveal";
 export default function TastingHandoutManager({ tasting, hostId }: Props) {
   const qc = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [title, setTitle] = useState(tasting.handoutTitle || "");
-  const [author, setAuthor] = useState(tasting.handoutAuthor || "");
-  const [description, setDescription] = useState(tasting.handoutDescription || "");
-  const [visibility, setVisibility] = useState<Vis>((tasting.handoutVisibility as Vis) || "always");
+  const [title, setTitle] = useState("");
+  const [author, setAuthor] = useState("");
+  const [description, setDescription] = useState("");
+  const [visibility, setVisibility] = useState<Vis>("always");
   const [error, setError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editAuthor, setEditAuthor] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editVisibility, setEditVisibility] = useState<Vis>("always");
 
-  useEffect(() => {
-    setTitle(tasting.handoutTitle || "");
-    setAuthor(tasting.handoutAuthor || "");
-    setDescription(tasting.handoutDescription || "");
-    setVisibility((tasting.handoutVisibility as Vis) || "always");
-  }, [tasting.id, tasting.handoutTitle, tasting.handoutAuthor, tasting.handoutDescription, tasting.handoutVisibility]);
+  const listQuery = useQuery<TastingHandout[]>({
+    queryKey: ["tasting-handouts", tasting.id],
+    queryFn: () => tastingHandoutApi.list(tasting.id),
+    enabled: !!tasting.id,
+    staleTime: 10_000,
+  });
+  const handouts = listQuery.data || [];
 
   const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["tasting-handouts", tasting.id] });
     qc.invalidateQueries({ queryKey: ["tasting", tasting.id] });
-    qc.invalidateQueries({ queryKey: ["/api/tastings", tasting.id] });
-    qc.invalidateQueries({ queryKey: [`/api/tastings/${tasting.id}`] });
   };
 
   const uploadMut = useMutation({
     mutationFn: (file: File) =>
-      tastingHandoutApi.upload(tasting.id, file, { hostId, title, author, description, visibility }),
-    onSuccess: () => { setError(null); invalidate(); },
+      tastingHandoutApi.uploadItem(tasting.id, file, { hostId, title, author, description, visibility }),
+    onSuccess: () => { setError(null); setTitle(""); setAuthor(""); setDescription(""); invalidate(); },
     onError: (e: any) => setError(e?.message || "Upload fehlgeschlagen"),
   });
 
   const updateMut = useMutation({
-    mutationFn: () =>
-      tastingHandoutApi.update(tasting.id, { hostId, title, author, description, visibility }),
-    onSuccess: () => { setError(null); invalidate(); },
+    mutationFn: (vars: { id: string; data: { title?: string | null; author?: string | null; description?: string | null; visibility?: Vis } }) =>
+      tastingHandoutApi.updateItem(tasting.id, vars.id, { hostId, ...vars.data }),
+    onSuccess: () => { setError(null); setEditingId(null); invalidate(); },
     onError: (e: any) => setError(e?.message || "Speichern fehlgeschlagen"),
   });
 
   const deleteMut = useMutation({
-    mutationFn: () => tastingHandoutApi.delete(tasting.id, hostId),
-    onSuccess: () => {
-      setError(null);
-      setTitle(""); setAuthor(""); setDescription(""); setVisibility("always");
-      invalidate();
-    },
+    mutationFn: (id: string) => tastingHandoutApi.deleteItem(tasting.id, id, hostId),
+    onSuccess: () => { setError(null); invalidate(); },
     onError: (e: any) => setError(e?.message || "Löschen fehlgeschlagen"),
   });
 
-  const hasHandout = !!tasting.handoutUrl;
-  const isPdf = tasting.handoutContentType === "application/pdf";
+  const reorderMut = useMutation({
+    mutationFn: (orderedIds: string[]) => tastingHandoutApi.reorder(tasting.id, hostId, orderedIds),
+    onSuccess: () => { setError(null); invalidate(); },
+    onError: (e: any) => setError(e?.message || "Sortierung fehlgeschlagen"),
+  });
+
+  function move(id: string, dir: -1 | 1) {
+    const ids = handouts.map((h) => h.id);
+    const idx = ids.indexOf(id);
+    const j = idx + dir;
+    if (idx < 0 || j < 0 || j >= ids.length) return;
+    [ids[idx], ids[j]] = [ids[j], ids[idx]];
+    reorderMut.mutate(ids);
+  }
+
+  function startEdit(h: TastingHandout) {
+    setEditingId(h.id);
+    setEditTitle(h.title || "");
+    setEditAuthor(h.author || "");
+    setEditDescription(h.description || "");
+    setEditVisibility((h.visibility as Vis) || "always");
+  }
 
   return (
     <div
@@ -87,47 +108,84 @@ export default function TastingHandoutManager({ tasting, hostId }: Props) {
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <FileText style={{ width: 16, height: 16, color: "var(--labs-text-muted)" }} />
         <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
-          Handout zur Verkostung
+          Handouts zur Verkostung
         </span>
-        {hasHandout && (
-          <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "var(--labs-success-muted)", color: "var(--labs-success)", fontWeight: 600 }}>
-            {isPdf ? "PDF" : "Bild"}
+        {handouts.length > 0 && (
+          <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "var(--labs-accent-muted, var(--labs-surface-2, var(--labs-surface)))", color: "var(--labs-text-secondary)", fontWeight: 600 }}>
+            {handouts.length}
           </span>
         )}
       </div>
 
       <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: 0 }}>
-        Ein Handout für die ganze Verkostung (z.B. Programmheft, Begrüßungsbrief). Whisky-spezifische Handouts werden separat in jedem Whisky verwaltet.
+        Handouts für die ganze Verkostung (z.B. Programmheft, Begrüßungsbrief). Whisky-spezifische Handouts werden separat in jedem Whisky verwaltet.
       </p>
 
-      {hasHandout && (
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <a
-            href={tasting.handoutUrl!}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="labs-btn-ghost text-xs"
-            style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px" }}
-            data-testid="tasting-handout-open"
-          >
-            <ExternalLink style={{ width: 12, height: 12 }} /> Öffnen
-          </a>
-          <button
-            type="button"
-            onClick={() => safeDownload(tasting.handoutUrl!, (title || "handout") + (isPdf ? ".pdf" : ""))}
-            className="labs-btn-ghost text-xs"
-            style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", cursor: "pointer", border: "none", background: "transparent", fontFamily: "inherit", color: "inherit" }}
-            data-testid="tasting-handout-download"
-          >
-            <Download style={{ width: 12, height: 12 }} /> Download
-          </button>
-          {!isPdf && (
-            <img
-              src={tasting.handoutUrl!}
-              alt="Handout preview"
-              style={{ maxHeight: 60, maxWidth: 80, borderRadius: 6, border: "1px solid var(--labs-border)" }}
-            />
-          )}
+      {handouts.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }} data-testid="tasting-handout-list">
+          {handouts.map((h, i) => {
+            const isPdf = h.contentType === "application/pdf";
+            const isEditing = editingId === h.id;
+            return (
+              <div
+                key={h.id}
+                style={{ border: "1px solid var(--labs-border)", borderRadius: 10, padding: 8, background: "var(--labs-surface)", display: "flex", flexDirection: "column", gap: 6 }}
+                data-testid={`tasting-handout-row-${h.id}`}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {isPdf ? <FileText style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} /> : <ImageIcon style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {h.title || (isPdf ? "PDF" : "Bild")}
+                    </div>
+                    <div style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>
+                      {[h.author && `von ${h.author}`, h.visibility === "after_first_reveal" ? "nach erstem Reveal" : "immer sichtbar"].filter(Boolean).join(" · ")}
+                    </div>
+                  </div>
+                  <button type="button" className="labs-btn-ghost text-xs" onClick={() => move(h.id, -1)} disabled={i === 0 || reorderMut.isPending} title="Nach oben" style={{ padding: "4px 6px" }} data-testid={`tasting-handout-up-${h.id}`}>
+                    <ArrowUp style={{ width: 12, height: 12 }} />
+                  </button>
+                  <button type="button" className="labs-btn-ghost text-xs" onClick={() => move(h.id, 1)} disabled={i === handouts.length - 1 || reorderMut.isPending} title="Nach unten" style={{ padding: "4px 6px" }} data-testid={`tasting-handout-down-${h.id}`}>
+                    <ArrowDown style={{ width: 12, height: 12 }} />
+                  </button>
+                  <a href={h.fileUrl} target="_blank" rel="noopener noreferrer" className="labs-btn-ghost text-xs" style={{ padding: "4px 6px" }} title="Öffnen" data-testid={`tasting-handout-open-${h.id}`}>
+                    <ExternalLink style={{ width: 12, height: 12 }} />
+                  </a>
+                  <button type="button" className="labs-btn-ghost text-xs" onClick={() => startEdit(h)} style={{ padding: "4px 6px" }} title="Bearbeiten" data-testid={`tasting-handout-edit-${h.id}`}>
+                    <Pencil style={{ width: 12, height: 12 }} />
+                  </button>
+                  <button type="button" className="labs-btn-ghost text-xs" onClick={() => { if (confirm("Handout wirklich löschen?")) deleteMut.mutate(h.id); }} disabled={deleteMut.isPending} style={{ padding: "4px 6px", color: "var(--labs-danger, #ef4444)" }} title="Löschen" data-testid={`tasting-handout-delete-${h.id}`}>
+                    <Trash2 style={{ width: 12, height: 12 }} />
+                  </button>
+                </div>
+                {isEditing && (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, paddingTop: 6, borderTop: "1px dashed var(--labs-border)" }}>
+                    <input className="labs-input" placeholder="Titel" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} data-testid={`tasting-handout-edit-title-${h.id}`} />
+                    <input className="labs-input" placeholder="Autor / Quelle" value={editAuthor} onChange={(e) => setEditAuthor(e.target.value)} data-testid={`tasting-handout-edit-author-${h.id}`} />
+                    <textarea className="labs-input" rows={2} placeholder="Beschreibung" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} style={{ gridColumn: "1 / -1", resize: "vertical" }} data-testid={`tasting-handout-edit-description-${h.id}`} />
+                    <select className="labs-input" value={editVisibility} onChange={(e) => setEditVisibility(e.target.value as Vis)} style={{ gridColumn: "1 / -1" }} data-testid={`tasting-handout-edit-visibility-${h.id}`}>
+                      <option value="always">Immer sichtbar für Gäste</option>
+                      <option value="after_first_reveal">Erst nach erstem Reveal</option>
+                    </select>
+                    <div style={{ gridColumn: "1 / -1", display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                      <button type="button" className="labs-btn-ghost text-xs" onClick={() => setEditingId(null)} data-testid={`tasting-handout-edit-cancel-${h.id}`}>
+                        <X style={{ width: 12, height: 12 }} /> Abbrechen
+                      </button>
+                      <button
+                        type="button"
+                        className="labs-btn-primary text-xs"
+                        onClick={() => updateMut.mutate({ id: h.id, data: { title: editTitle || null, author: editAuthor || null, description: editDescription || null, visibility: editVisibility } })}
+                        disabled={updateMut.isPending}
+                        data-testid={`tasting-handout-edit-save-${h.id}`}
+                      >
+                        {updateMut.isPending ? "Speichere…" : "Speichern"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -171,81 +229,17 @@ export default function TastingHandoutManager({ tasting, hostId }: Props) {
         data-testid="tasting-handout-dropzone"
       >
         <Upload style={{ width: 14, height: 14, display: "inline-block", verticalAlign: "middle", marginRight: 6 }} />
-        {uploadMut.isPending
-          ? "Lade hoch…"
-          : hasHandout
-            ? "Datei hier ablegen oder klicken, um zu ersetzen"
-            : "PDF / Bild hierher ziehen oder klicken zum Hochladen"}
+        {uploadMut.isPending ? "Lade hoch…" : "Weiteres Handout per Drag&Drop oder Klick hochladen"}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        <input
-          className="labs-input"
-          placeholder="Titel (z.B. Programmheft)"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          data-testid="tasting-handout-title"
-        />
-        <input
-          className="labs-input"
-          placeholder="Autor (z.B. von Rudi)"
-          value={author}
-          onChange={(e) => setAuthor(e.target.value)}
-          data-testid="tasting-handout-author"
-        />
-        <textarea
-          className="labs-input"
-          placeholder="Beschreibung (optional)"
-          rows={2}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          style={{ gridColumn: "1 / -1", resize: "vertical" }}
-          data-testid="tasting-handout-description"
-        />
-        <select
-          className="labs-input"
-          value={visibility}
-          onChange={(e) => setVisibility(e.target.value as Vis)}
-          style={{ gridColumn: "1 / -1" }}
-          data-testid="tasting-handout-visibility"
-        >
+        <input className="labs-input" placeholder="Titel (für neuen Upload)" value={title} onChange={(e) => setTitle(e.target.value)} data-testid="tasting-handout-title" />
+        <input className="labs-input" placeholder="Autor / Quelle" value={author} onChange={(e) => setAuthor(e.target.value)} data-testid="tasting-handout-author" />
+        <textarea className="labs-input" placeholder="Beschreibung (optional)" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} style={{ gridColumn: "1 / -1", resize: "vertical" }} data-testid="tasting-handout-description" />
+        <select className="labs-input" value={visibility} onChange={(e) => setVisibility(e.target.value as Vis)} style={{ gridColumn: "1 / -1" }} data-testid="tasting-handout-visibility">
           <option value="always">Immer sichtbar für Gäste</option>
           <option value="after_first_reveal">Erst nach erstem Reveal</option>
         </select>
-      </div>
-
-      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
-        <button
-          className="labs-btn-ghost text-xs"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploadMut.isPending}
-          style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
-          data-testid="tasting-handout-upload-btn"
-        >
-          <Upload style={{ width: 12, height: 12 }} />
-          {uploadMut.isPending ? "Lade hoch…" : hasHandout ? "Datei ersetzen" : "PDF / Bild hochladen"}
-        </button>
-        {hasHandout && (
-          <>
-            <button
-              className="labs-btn-primary text-xs"
-              onClick={() => updateMut.mutate()}
-              disabled={updateMut.isPending}
-              data-testid="tasting-handout-save-meta"
-            >
-              {updateMut.isPending ? "Speichere…" : "Speichern"}
-            </button>
-            <button
-              className="labs-btn-ghost text-xs"
-              onClick={() => { if (confirm("Handout wirklich löschen?")) deleteMut.mutate(); }}
-              disabled={deleteMut.isPending}
-              style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--labs-danger, #ef4444)" }}
-              data-testid="tasting-handout-delete"
-            >
-              <Trash2 style={{ width: 12, height: 12 }} /> Löschen
-            </button>
-          </>
-        )}
       </div>
 
       {error && (
@@ -258,86 +252,88 @@ export default function TastingHandoutManager({ tasting, hostId }: Props) {
 }
 
 export function TastingHandoutViewer({ tasting }: { tasting: Tasting }) {
-  if (!tasting.handoutUrl) return null;
+  const listQuery = useQuery<TastingHandout[]>({
+    queryKey: ["tasting-handouts", tasting.id],
+    queryFn: () => tastingHandoutApi.list(tasting.id),
+    enabled: !!tasting.id,
+    staleTime: 10_000,
+  });
 
-  const visibility = (tasting.handoutVisibility as Vis) || "always";
   const firstRevealHappened =
     !!tasting.revealedAt ||
     (tasting.revealIndex ?? 0) > 0 ||
     ((tasting.revealStep ?? 0) > 0 && (tasting.revealIndex ?? -1) >= 0) ||
     ((tasting.guidedRevealStep ?? 0) > 0 && (tasting.guidedWhiskyIndex ?? -1) >= 0);
-  if (visibility === "after_first_reveal" && !firstRevealHappened) return null;
 
-  const isPdf = tasting.handoutContentType === "application/pdf";
+  const all = listQuery.data || [];
+  const visible = all.filter((h) => h.visibility !== "after_first_reveal" || firstRevealHappened);
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  if (visible.length === 0) {
+    if (!tasting.handoutUrl) return null;
+    const visibility = (tasting.handoutVisibility as Vis) || "always";
+    if (visibility === "after_first_reveal" && !firstRevealHappened) return null;
+    const isPdf = tasting.handoutContentType === "application/pdf";
+    return <SingleHandoutCard fileUrl={tasting.handoutUrl} contentType={tasting.handoutContentType || ""} title={tasting.handoutTitle || "Handout zur Verkostung"} author={tasting.handoutAuthor} description={tasting.handoutDescription} testId="tasting-handout-viewer" isPdf={isPdf} />;
+  }
+
+  const idx = Math.min(activeIdx, visible.length - 1);
+  const active = visible[idx];
+  const activeIsPdf = active.contentType === "application/pdf";
+
   return (
-    <div
-      className="labs-card p-4"
-      style={{ display: "flex", flexDirection: "column", gap: 10 }}
-      data-testid="tasting-handout-viewer"
-    >
+    <div className="labs-card p-4" style={{ display: "flex", flexDirection: "column", gap: 10 }} data-testid="tasting-handout-viewer">
+      {visible.length > 1 && (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} data-testid="tasting-handout-tabs">
+          {visible.map((h, i) => {
+            const isActive = i === idx;
+            return (
+              <button
+                key={h.id}
+                type="button"
+                onClick={() => setActiveIdx(i)}
+                className={isActive ? "labs-btn-primary text-xs" : "labs-btn-ghost text-xs"}
+                style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 9999 }}
+                data-testid={`tasting-handout-tab-${i}`}
+              >
+                <FileText style={{ width: 11, height: 11 }} />
+                <span style={{ maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {h.title || (h.contentType === "application/pdf" ? `Handout ${i + 1}` : `Bild ${i + 1}`)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <SingleHandoutCard fileUrl={active.fileUrl} contentType={active.contentType} title={active.title || "Handout"} author={active.author} description={active.description} testId={`tasting-handout-viewer-item-${active.id}`} isPdf={activeIsPdf} />
+    </div>
+  );
+}
+
+function SingleHandoutCard({ fileUrl, contentType, title, author, description, testId, isPdf }: { fileUrl: string; contentType: string; title?: string | null; author?: string | null; description?: string | null; testId: string; isPdf: boolean }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }} data-testid={testId}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        {isPdf ? (
-          <FileText style={{ width: 18, height: 18, color: "var(--labs-accent)" }} />
-        ) : (
-          <ImageIcon style={{ width: 18, height: 18, color: "var(--labs-accent)" }} />
-        )}
+        {isPdf ? <FileText style={{ width: 18, height: 18, color: "var(--labs-accent)" }} /> : <ImageIcon style={{ width: 18, height: 18, color: "var(--labs-accent)" }} />}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
-            {tasting.handoutTitle || "Handout zur Verkostung"}
-          </div>
-          {tasting.handoutAuthor && (
-            <div style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>
-              von {tasting.handoutAuthor}
-            </div>
-          )}
+          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>{title || "Handout"}</div>
+          {author && <div style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>von {author}</div>}
         </div>
       </div>
-
-      {tasting.handoutDescription && (
-        <p style={{ fontSize: 12, color: "var(--labs-text-secondary)", margin: 0, lineHeight: 1.5 }}>
-          {tasting.handoutDescription}
-        </p>
-      )}
-
+      {description && <p style={{ fontSize: 12, color: "var(--labs-text-secondary)", margin: 0, lineHeight: 1.5 }}>{description}</p>}
       {!isPdf ? (
-        <img
-          src={tasting.handoutUrl}
-          alt={tasting.handoutTitle || "Handout"}
-          style={{ width: "100%", borderRadius: 8, border: "1px solid var(--labs-border)" }}
-        />
+        <img src={fileUrl} alt={title || "Handout"} style={{ width: "100%", borderRadius: 8, border: "1px solid var(--labs-border)" }} />
       ) : (
-        <object
-          data={tasting.handoutUrl}
-          type="application/pdf"
-          style={{ width: "100%", height: 420, borderRadius: 8, border: "1px solid var(--labs-border)", background: "var(--labs-surface)" }}
-          aria-label={tasting.handoutTitle || "Handout PDF"}
-          data-testid="tasting-handout-viewer-pdf-embed"
-        >
-          <p style={{ fontSize: 12, color: "var(--labs-text-muted)", padding: 12 }}>
-            PDF kann hier nicht inline angezeigt werden. Nutze „PDF öffnen" oder „Download".
-          </p>
+        <object data={fileUrl} type="application/pdf" style={{ width: "100%", height: 420, borderRadius: 8, border: "1px solid var(--labs-border)", background: "var(--labs-surface)" }} aria-label={title || "Handout PDF"}>
+          <p style={{ fontSize: 12, color: "var(--labs-text-muted)", padding: 12 }}>PDF kann hier nicht inline angezeigt werden. Nutze „Öffnen" oder „Download".</p>
         </object>
       )}
-
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <a
-          href={tasting.handoutUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="labs-btn-primary text-xs"
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 9999, textDecoration: "none" }}
-          data-testid="tasting-handout-viewer-open"
-        >
+        <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="labs-btn-primary text-xs" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 9999, textDecoration: "none" }}>
           <ExternalLink style={{ width: 12, height: 12 }} />
           {isPdf ? "PDF öffnen" : "Bild öffnen"}
         </a>
-        <button
-          type="button"
-          onClick={() => safeDownload(tasting.handoutUrl!, (tasting.handoutTitle || "handout") + (isPdf ? ".pdf" : ""))}
-          className="labs-btn-ghost text-xs"
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 9999, cursor: "pointer", border: "1px solid var(--labs-border)", background: "transparent", fontFamily: "inherit", color: "inherit" }}
-          data-testid="tasting-handout-viewer-download"
-        >
+        <button type="button" onClick={() => safeDownload(fileUrl, (title || "handout") + (isPdf ? ".pdf" : ""))} className="labs-btn-ghost text-xs" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 9999, cursor: "pointer", border: "1px solid var(--labs-border)", background: "transparent", fontFamily: "inherit", color: "inherit" }}>
           <Download style={{ width: 12, height: 12 }} />
           Download
         </button>

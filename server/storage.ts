@@ -376,6 +376,28 @@ export interface IStorage {
   updateHandoutLibraryEntry(id: string, data: Partial<InsertWhiskyHandoutLibraryEntry>): Promise<WhiskyHandoutLibraryEntry | undefined>;
   deleteHandoutLibraryEntry(id: string): Promise<void>;
   isHandoutFileReferencedByLibrary(fileUrl: string): Promise<boolean>;
+  // Multi-Handouts (n:m for whisky / tasting / distillery)
+  listWhiskyHandouts(whiskyId: string): Promise<WhiskyHandout[]>;
+  getWhiskyHandout(id: string): Promise<WhiskyHandout | undefined>;
+  createWhiskyHandout(data: Omit<InsertWhiskyHandout, "position"> & { position?: number }): Promise<WhiskyHandout>;
+  updateWhiskyHandout(id: string, data: Partial<Omit<InsertWhiskyHandout, "whiskyId">>): Promise<WhiskyHandout | undefined>;
+  deleteWhiskyHandout(id: string): Promise<WhiskyHandout | undefined>;
+  reorderWhiskyHandouts(whiskyId: string, orderedIds: string[]): Promise<void>;
+  listTastingHandouts(tastingId: string): Promise<TastingHandout[]>;
+  getTastingHandout(id: string): Promise<TastingHandout | undefined>;
+  createTastingHandout(data: Omit<InsertTastingHandout, "position"> & { position?: number }): Promise<TastingHandout>;
+  updateTastingHandout(id: string, data: Partial<Omit<InsertTastingHandout, "tastingId">>): Promise<TastingHandout | undefined>;
+  deleteTastingHandout(id: string): Promise<TastingHandout | undefined>;
+  reorderTastingHandouts(tastingId: string, orderedIds: string[]): Promise<void>;
+  listDistilleryHandouts(distilleryId: string): Promise<DistilleryHandout[]>;
+  listDistilleryHandoutsByHost(hostId: string, distilleryId: string): Promise<DistilleryHandout[]>;
+  getDistilleryHandout(id: string): Promise<DistilleryHandout | undefined>;
+  createDistilleryHandout(data: Omit<InsertDistilleryHandout, "position"> & { position?: number }): Promise<DistilleryHandout>;
+  updateDistilleryHandout(id: string, data: Partial<Omit<InsertDistilleryHandout, "distilleryId" | "hostId">>): Promise<DistilleryHandout | undefined>;
+  deleteDistilleryHandout(id: string): Promise<DistilleryHandout | undefined>;
+  reorderDistilleryHandouts(distilleryId: string, hostId: string, orderedIds: string[]): Promise<void>;
+  // Combined effective handouts for whisky viewer (whisky-specific + distillery-specific filtered by host)
+  getEffectiveWhiskyHandouts(whiskyId: string): Promise<Array<{ kind: "whisky" | "distillery"; handout: WhiskyHandout | DistilleryHandout; distilleryName?: string }>>;
   setHandoutLibraryEntryShared(id: string, isShared: boolean, sharedByName: string | null): Promise<WhiskyHandoutLibraryEntry | undefined>;
   listSharedHandoutLibrary(opts?: { search?: string; excludeHostId?: string; limit?: number }): Promise<WhiskyHandoutLibraryEntry[]>;
   setHandoutLibraryEntryAttribution(id: string, data: { clonedFromId?: string | null; sharedByName?: string | null }): Promise<void>;
@@ -1438,7 +1460,156 @@ export class DatabaseStorage implements IStorage {
     if (whiskyRow) return true;
     const [tastingRow] = await db.select({ id: tastings.id }).from(tastings)
       .where(eq(tastings.handoutUrl, fileUrl)).limit(1);
-    return !!tastingRow;
+    if (tastingRow) return true;
+    // Multi-handout tables
+    const [wh] = await db.select({ id: whiskyHandouts.id }).from(whiskyHandouts)
+      .where(eq(whiskyHandouts.fileUrl, fileUrl)).limit(1);
+    if (wh) return true;
+    const [th] = await db.select({ id: tastingHandouts.id }).from(tastingHandouts)
+      .where(eq(tastingHandouts.fileUrl, fileUrl)).limit(1);
+    if (th) return true;
+    const [dh] = await db.select({ id: distilleryHandouts.id }).from(distilleryHandouts)
+      .where(eq(distilleryHandouts.fileUrl, fileUrl)).limit(1);
+    return !!dh;
+  }
+
+  // --- Multi-Handouts ---
+  async listWhiskyHandouts(whiskyId: string): Promise<WhiskyHandout[]> {
+    return db.select().from(whiskyHandouts)
+      .where(eq(whiskyHandouts.whiskyId, whiskyId))
+      .orderBy(asc(whiskyHandouts.position), asc(whiskyHandouts.createdAt));
+  }
+  async getWhiskyHandout(id: string): Promise<WhiskyHandout | undefined> {
+    const [row] = await db.select().from(whiskyHandouts).where(eq(whiskyHandouts.id, id)).limit(1);
+    return row;
+  }
+  async createWhiskyHandout(data: Omit<InsertWhiskyHandout, "position"> & { position?: number }): Promise<WhiskyHandout> {
+    let position = data.position;
+    if (position === undefined || position === null) {
+      const [maxRow] = await db.select({ maxPos: sql<number>`COALESCE(MAX(${whiskyHandouts.position}), -1)` })
+        .from(whiskyHandouts).where(eq(whiskyHandouts.whiskyId, data.whiskyId));
+      position = (maxRow?.maxPos ?? -1) + 1;
+    }
+    const [row] = await db.insert(whiskyHandouts).values({ ...data, position }).returning();
+    return row;
+  }
+  async updateWhiskyHandout(id: string, data: Partial<Omit<InsertWhiskyHandout, "whiskyId">>): Promise<WhiskyHandout | undefined> {
+    const [row] = await db.update(whiskyHandouts).set(data).where(eq(whiskyHandouts.id, id)).returning();
+    return row;
+  }
+  async deleteWhiskyHandout(id: string): Promise<WhiskyHandout | undefined> {
+    const [row] = await db.delete(whiskyHandouts).where(eq(whiskyHandouts.id, id)).returning();
+    return row;
+  }
+  async reorderWhiskyHandouts(whiskyId: string, orderedIds: string[]): Promise<void> {
+    for (let i = 0; i < orderedIds.length; i++) {
+      await db.update(whiskyHandouts).set({ position: i })
+        .where(and(eq(whiskyHandouts.id, orderedIds[i]), eq(whiskyHandouts.whiskyId, whiskyId)));
+    }
+  }
+
+  async listTastingHandouts(tastingId: string): Promise<TastingHandout[]> {
+    return db.select().from(tastingHandouts)
+      .where(eq(tastingHandouts.tastingId, tastingId))
+      .orderBy(asc(tastingHandouts.position), asc(tastingHandouts.createdAt));
+  }
+  async getTastingHandout(id: string): Promise<TastingHandout | undefined> {
+    const [row] = await db.select().from(tastingHandouts).where(eq(tastingHandouts.id, id)).limit(1);
+    return row;
+  }
+  async createTastingHandout(data: Omit<InsertTastingHandout, "position"> & { position?: number }): Promise<TastingHandout> {
+    let position = data.position;
+    if (position === undefined || position === null) {
+      const [maxRow] = await db.select({ maxPos: sql<number>`COALESCE(MAX(${tastingHandouts.position}), -1)` })
+        .from(tastingHandouts).where(eq(tastingHandouts.tastingId, data.tastingId));
+      position = (maxRow?.maxPos ?? -1) + 1;
+    }
+    const [row] = await db.insert(tastingHandouts).values({ ...data, position }).returning();
+    return row;
+  }
+  async updateTastingHandout(id: string, data: Partial<Omit<InsertTastingHandout, "tastingId">>): Promise<TastingHandout | undefined> {
+    const [row] = await db.update(tastingHandouts).set(data).where(eq(tastingHandouts.id, id)).returning();
+    return row;
+  }
+  async deleteTastingHandout(id: string): Promise<TastingHandout | undefined> {
+    const [row] = await db.delete(tastingHandouts).where(eq(tastingHandouts.id, id)).returning();
+    return row;
+  }
+  async reorderTastingHandouts(tastingId: string, orderedIds: string[]): Promise<void> {
+    for (let i = 0; i < orderedIds.length; i++) {
+      await db.update(tastingHandouts).set({ position: i })
+        .where(and(eq(tastingHandouts.id, orderedIds[i]), eq(tastingHandouts.tastingId, tastingId)));
+    }
+  }
+
+  async listDistilleryHandouts(distilleryId: string): Promise<DistilleryHandout[]> {
+    return db.select().from(distilleryHandouts)
+      .where(eq(distilleryHandouts.distilleryId, distilleryId))
+      .orderBy(asc(distilleryHandouts.position), asc(distilleryHandouts.createdAt));
+  }
+  async listDistilleryHandoutsByHost(hostId: string, distilleryId: string): Promise<DistilleryHandout[]> {
+    return db.select().from(distilleryHandouts)
+      .where(and(eq(distilleryHandouts.distilleryId, distilleryId), eq(distilleryHandouts.hostId, hostId)))
+      .orderBy(asc(distilleryHandouts.position), asc(distilleryHandouts.createdAt));
+  }
+  async getDistilleryHandout(id: string): Promise<DistilleryHandout | undefined> {
+    const [row] = await db.select().from(distilleryHandouts).where(eq(distilleryHandouts.id, id)).limit(1);
+    return row;
+  }
+  async createDistilleryHandout(data: Omit<InsertDistilleryHandout, "position"> & { position?: number }): Promise<DistilleryHandout> {
+    let position = data.position;
+    if (position === undefined || position === null) {
+      const [maxRow] = await db.select({ maxPos: sql<number>`COALESCE(MAX(${distilleryHandouts.position}), -1)` })
+        .from(distilleryHandouts).where(and(eq(distilleryHandouts.distilleryId, data.distilleryId), eq(distilleryHandouts.hostId, data.hostId)));
+      position = (maxRow?.maxPos ?? -1) + 1;
+    }
+    const [row] = await db.insert(distilleryHandouts).values({ ...data, position }).returning();
+    return row;
+  }
+  async updateDistilleryHandout(id: string, data: Partial<Omit<InsertDistilleryHandout, "distilleryId" | "hostId">>): Promise<DistilleryHandout | undefined> {
+    const [row] = await db.update(distilleryHandouts).set(data).where(eq(distilleryHandouts.id, id)).returning();
+    return row;
+  }
+  async deleteDistilleryHandout(id: string): Promise<DistilleryHandout | undefined> {
+    const [row] = await db.delete(distilleryHandouts).where(eq(distilleryHandouts.id, id)).returning();
+    return row;
+  }
+  async reorderDistilleryHandouts(distilleryId: string, hostId: string, orderedIds: string[]): Promise<void> {
+    for (let i = 0; i < orderedIds.length; i++) {
+      await db.update(distilleryHandouts).set({ position: i })
+        .where(and(
+          eq(distilleryHandouts.id, orderedIds[i]),
+          eq(distilleryHandouts.distilleryId, distilleryId),
+          eq(distilleryHandouts.hostId, hostId),
+        ));
+    }
+  }
+
+  async getEffectiveWhiskyHandouts(whiskyId: string): Promise<Array<{ kind: "whisky" | "distillery"; handout: WhiskyHandout | DistilleryHandout; distilleryName?: string }>> {
+    const [whiskyRow] = await db.select().from(whiskies).where(eq(whiskies.id, whiskyId)).limit(1);
+    if (!whiskyRow) return [];
+    const [tastingRow] = await db.select().from(tastings).where(eq(tastings.id, whiskyRow.tastingId)).limit(1);
+    const whiskySpecific = await this.listWhiskyHandouts(whiskyId);
+    const result: Array<{ kind: "whisky" | "distillery"; handout: WhiskyHandout | DistilleryHandout; distilleryName?: string }> = [];
+    for (const h of whiskySpecific) result.push({ kind: "whisky", handout: h });
+    // Add distillery-specific handouts of the tasting host (if distilleryId resolvable)
+    let distilleryId = whiskyRow.distilleryId;
+    let distilleryName: string | undefined;
+    if (!distilleryId && whiskyRow.distillery) {
+      const matched = await this.findDistilleryByName(whiskyRow.distillery);
+      if (matched) {
+        distilleryId = matched.id;
+        distilleryName = matched.name;
+      }
+    } else if (distilleryId) {
+      const [d] = await db.select({ name: distilleries.name }).from(distilleries).where(eq(distilleries.id, distilleryId)).limit(1);
+      distilleryName = d?.name;
+    }
+    if (distilleryId && tastingRow) {
+      const distHandouts = await this.listDistilleryHandoutsByHost(tastingRow.hostId, distilleryId);
+      for (const h of distHandouts) result.push({ kind: "distillery", handout: h, distilleryName: distilleryName ?? whiskyRow.distillery ?? undefined });
+    }
+    return result;
   }
 
   // --- Ratings ---

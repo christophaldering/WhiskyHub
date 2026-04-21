@@ -6,6 +6,7 @@ import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 import { useAppStore } from "@/lib/store";
 import { SuggestEntryDialog } from "@/components/suggest-entry-dialog";
 import { Building2, MapPin, Calendar, ChevronDown, List, Map as MapIcon, ExternalLink } from "lucide-react";
+import DistilleryHandoutManager from "@/labs/components/DistilleryHandoutManager";
 
 const DistilleryMap = lazy(() => import("@/pages/distillery-map"));
 const MiniMap = lazy(() => import("@/labs/components/MiniMap"));
@@ -23,7 +24,7 @@ interface Distillery {
   lng: number | null;
 }
 
-function Card({ d, t }: { d: Distillery; t: (key: string, fallback?: string, opts?: any) => string }) {
+function Card({ d, t, hostId }: { d: Distillery; t: (key: string, fallback?: string, opts?: any) => string; hostId: string | null }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="labs-card" style={{ overflow: "hidden" }} data-testid={`labs-distillery-${d.name.toLowerCase().replace(/\s+/g, "-")}`}>
@@ -63,6 +64,9 @@ function Card({ d, t }: { d: Distillery; t: (key: string, fallback?: string, opt
             <Suspense fallback={<div style={{ width: "100%", height: 200, borderRadius: 10, marginTop: 10, background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)" }} />}>
               <MiniMap lat={d.lat} lng={d.lng} />
             </Suspense>
+          )}
+          {hostId && (
+            <DistilleryHandoutManager distilleryId={d.id} distilleryName={d.name} hostId={hostId} />
           )}
         </div>
       )}
@@ -145,7 +149,7 @@ export default function LabsDistilleries() {
           </div>
           <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 10 }}>{t("discover.found", "{{count}} found", { count: filtered.length })}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {filtered.map((d) => <Card key={d.id} d={d} t={t} />)}
+            {filtered.map((d) => <Card key={d.id} d={d} t={t} hostId={currentParticipant?.id ?? null} />)}
             {filtered.length === 0 && <div className="labs-empty" data-testid="text-distilleries-empty">{t("discover.noMatch", "No distilleries match your search.")}</div>}
           </div>
         </>

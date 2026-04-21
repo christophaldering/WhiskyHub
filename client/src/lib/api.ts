@@ -236,6 +236,24 @@ export const handoutLibraryApi = {
       headers: { "x-participant-id": hostId },
       body: JSON.stringify({ hostId, whiskyId, visibility }),
     }),
+  appendToWhisky: (libraryId: string, hostId: string, whiskyId: string, visibility?: "always" | "after_reveal") =>
+    fetchJSON(`/handout-library/${libraryId}/append-to-whisky`, {
+      method: "POST",
+      headers: { "x-participant-id": hostId },
+      body: JSON.stringify({ whiskyId, visibility }),
+    }),
+  appendToTasting: (libraryId: string, hostId: string, tastingId: string, visibility?: "always" | "after_first_reveal") =>
+    fetchJSON(`/handout-library/${libraryId}/append-to-tasting`, {
+      method: "POST",
+      headers: { "x-participant-id": hostId },
+      body: JSON.stringify({ tastingId, visibility }),
+    }),
+  appendToDistillery: (libraryId: string, hostId: string, distilleryId: string, visibility?: "always" | "after_reveal") =>
+    fetchJSON(`/handout-library/${libraryId}/append-to-distillery`, {
+      method: "POST",
+      headers: { "x-participant-id": hostId },
+      body: JSON.stringify({ distilleryId, visibility }),
+    }),
   setShared: (id: string, hostId: string, isShared: boolean) =>
     fetchJSON(`/handout-library/${id}/share`, {
       method: "PATCH",
@@ -356,6 +374,156 @@ export const tastingHandoutApi = {
     fetchJSON(`/tastings/${tastingId}/handout`, { method: "PATCH", body: JSON.stringify(data) }),
   delete: (tastingId: string, hostId: string) =>
     fetchJSON(`/tastings/${tastingId}/handout`, { method: "DELETE", body: JSON.stringify({ hostId }) }),
+
+  // ----- Multi-handout (n:m) -----
+  list: (tastingId: string) => fetchJSON(`/tastings/${tastingId}/handouts`),
+  uploadItem: async (
+    tastingId: string,
+    file: File,
+    meta: { hostId: string; title?: string; author?: string; description?: string; visibility?: "always" | "after_first_reveal" }
+  ) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("hostId", meta.hostId);
+    if (meta.title !== undefined) formData.append("title", meta.title);
+    if (meta.author !== undefined) formData.append("author", meta.author);
+    if (meta.description !== undefined) formData.append("description", meta.description);
+    if (meta.visibility !== undefined) formData.append("visibility", meta.visibility);
+    const res = await fetch(`${API_BASE}/tastings/${tastingId}/handouts`, {
+      method: "POST",
+      body: formData,
+      headers: { "x-participant-id": meta.hostId },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+  updateItem: (
+    tastingId: string,
+    handoutId: string,
+    data: { hostId: string; title?: string | null; author?: string | null; description?: string | null; visibility?: "always" | "after_first_reveal" }
+  ) =>
+    fetchJSON(`/tastings/${tastingId}/handouts/${handoutId}`, {
+      method: "PATCH",
+      headers: { "x-participant-id": data.hostId },
+      body: JSON.stringify(data),
+    }),
+  deleteItem: (tastingId: string, handoutId: string, hostId: string) =>
+    fetchJSON(`/tastings/${tastingId}/handouts/${handoutId}`, {
+      method: "DELETE",
+      headers: { "x-participant-id": hostId },
+      body: JSON.stringify({ hostId }),
+    }),
+  reorder: (tastingId: string, hostId: string, orderedIds: string[]) =>
+    fetchJSON(`/tastings/${tastingId}/handouts/reorder`, {
+      method: "POST",
+      headers: { "x-participant-id": hostId },
+      body: JSON.stringify({ hostId, orderedIds }),
+    }),
+};
+
+// ===== Whisky multi-handouts (n:m) =====
+export const whiskyHandoutApi = {
+  list: (whiskyId: string) => fetchJSON(`/whiskies/${whiskyId}/handouts`),
+  listEffective: (whiskyId: string) => fetchJSON(`/whiskies/${whiskyId}/effective-handouts`),
+  upload: async (
+    whiskyId: string,
+    file: File,
+    meta: { hostId: string; title?: string; author?: string; description?: string; visibility?: "always" | "after_reveal" }
+  ) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("hostId", meta.hostId);
+    if (meta.title !== undefined) formData.append("title", meta.title);
+    if (meta.author !== undefined) formData.append("author", meta.author);
+    if (meta.description !== undefined) formData.append("description", meta.description);
+    if (meta.visibility !== undefined) formData.append("visibility", meta.visibility);
+    const res = await fetch(`${API_BASE}/whiskies/${whiskyId}/handouts`, {
+      method: "POST",
+      body: formData,
+      headers: { "x-participant-id": meta.hostId },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+  update: (
+    whiskyId: string,
+    handoutId: string,
+    data: { hostId: string; title?: string | null; author?: string | null; description?: string | null; visibility?: "always" | "after_reveal" }
+  ) =>
+    fetchJSON(`/whiskies/${whiskyId}/handouts/${handoutId}`, {
+      method: "PATCH",
+      headers: { "x-participant-id": data.hostId },
+      body: JSON.stringify(data),
+    }),
+  delete: (whiskyId: string, handoutId: string, hostId: string) =>
+    fetchJSON(`/whiskies/${whiskyId}/handouts/${handoutId}`, {
+      method: "DELETE",
+      headers: { "x-participant-id": hostId },
+      body: JSON.stringify({ hostId }),
+    }),
+  reorder: (whiskyId: string, hostId: string, orderedIds: string[]) =>
+    fetchJSON(`/whiskies/${whiskyId}/handouts/reorder`, {
+      method: "POST",
+      headers: { "x-participant-id": hostId },
+      body: JSON.stringify({ hostId, orderedIds }),
+    }),
+};
+
+// ===== Distillery handouts (per-host, auto-attach) =====
+export const distilleryHandoutApi = {
+  list: (distilleryId: string, hostId?: string) =>
+    fetchJSON(`/distilleries/${encodeURIComponent(distilleryId)}/handouts`, hostId ? { headers: { "x-participant-id": hostId } } : undefined),
+  upload: async (
+    distilleryId: string,
+    file: File,
+    meta: { hostId: string; title?: string; author?: string; description?: string; visibility?: "always" | "after_reveal" }
+  ) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("hostId", meta.hostId);
+    if (meta.title !== undefined) formData.append("title", meta.title);
+    if (meta.author !== undefined) formData.append("author", meta.author);
+    if (meta.description !== undefined) formData.append("description", meta.description);
+    if (meta.visibility !== undefined) formData.append("visibility", meta.visibility);
+    const res = await fetch(`${API_BASE}/distilleries/${encodeURIComponent(distilleryId)}/handouts`, {
+      method: "POST",
+      body: formData,
+      headers: { "x-participant-id": meta.hostId },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+  update: (
+    distilleryId: string,
+    handoutId: string,
+    data: { hostId: string; title?: string | null; author?: string | null; description?: string | null; visibility?: "always" | "after_reveal" }
+  ) =>
+    fetchJSON(`/distilleries/${encodeURIComponent(distilleryId)}/handouts/${handoutId}`, {
+      method: "PATCH",
+      headers: { "x-participant-id": data.hostId },
+      body: JSON.stringify(data),
+    }),
+  delete: (distilleryId: string, handoutId: string, hostId: string) =>
+    fetchJSON(`/distilleries/${encodeURIComponent(distilleryId)}/handouts/${handoutId}`, {
+      method: "DELETE",
+      headers: { "x-participant-id": hostId },
+      body: JSON.stringify({ hostId }),
+    }),
+  reorder: (distilleryId: string, hostId: string, orderedIds: string[]) =>
+    fetchJSON(`/distilleries/${encodeURIComponent(distilleryId)}/handouts/reorder`, {
+      method: "POST",
+      headers: { "x-participant-id": hostId },
+      body: JSON.stringify({ hostId, orderedIds }),
+    }),
 };
 
 // ===== Auto-Handout Generator =====

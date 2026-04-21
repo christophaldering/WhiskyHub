@@ -1147,7 +1147,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
         </div>
       </div>
 
-      {tasting?.handoutUrl && (
+      {tasting && (
         <div className="mb-4">
           <TastingHandoutViewer tasting={tasting as Tasting} />
         </div>
@@ -1259,9 +1259,9 @@ export default function LabsLive({ params }: LabsLiveProps) {
             </div>
           </div>
 
-          {currentWhisky?.handoutUrl && (currentWhisky.handoutVisibility !== "after_reveal" || !isBlind) && (
+          {currentWhisky && (
             <div className="mb-4 labs-fade-in labs-stagger-2">
-              <WhiskyHandoutViewer whisky={currentWhisky} />
+              <WhiskyHandoutViewer whisky={currentWhisky} isRevealed={!isBlind} />
             </div>
           )}
 
