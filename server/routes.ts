@@ -3801,6 +3801,18 @@ export async function registerRoutes(
       if (typeof req.body.title === "string") data.title = req.body.title.slice(0, 200) || null;
       if (typeof req.body.author === "string") data.author = req.body.author.slice(0, 200) || null;
       if (typeof req.body.description === "string") data.description = req.body.description.slice(0, 2000) || null;
+      if (typeof req.body.documentDate === "string") {
+        const trimmed = req.body.documentDate.trim();
+        if (trimmed === "") {
+          data.documentDate = null;
+        } else if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+          data.documentDate = trimmed;
+        } else {
+          return res.status(400).json({ message: "Ungültiges Dokumentdatum (erwartet YYYY-MM-DD)" });
+        }
+      } else if (req.body.documentDate === null) {
+        data.documentDate = null;
+      }
       const updated = await storage.updateHandoutLibraryEntry(req.params.id, data);
       res.json(updated);
     } catch (e: any) {
@@ -3904,6 +3916,8 @@ export async function registerRoutes(
       const title = typeof req.body.title === "string" ? req.body.title.slice(0, 200) : "";
       const author = typeof req.body.author === "string" ? req.body.author.slice(0, 200) : "";
       const description = typeof req.body.description === "string" ? req.body.description.slice(0, 2000) : "";
+      const documentDateRaw = typeof req.body.documentDate === "string" ? req.body.documentDate.trim() : "";
+      const documentDate = /^\d{4}-\d{2}-\d{2}$/.test(documentDateRaw) ? documentDateRaw : null;
 
       let created;
       try {
@@ -3918,6 +3932,7 @@ export async function registerRoutes(
           title: title || null,
           author: author || null,
           description: description || null,
+          documentDate,
         });
       } catch (dbErr) {
         // Roll back orphaned upload — fail-closed cleanup ensures no leak

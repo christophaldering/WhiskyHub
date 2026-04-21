@@ -224,7 +224,7 @@ export const handoutLibraryApi = {
     if (opts.distillery) qs.set("distillery", opts.distillery);
     return fetchJSON(`/handout-library/suggest?${qs.toString()}`);
   },
-  update: (id: string, hostId: string, data: { whiskyName?: string; distillery?: string | null; whiskybaseId?: string | null; title?: string | null; author?: string | null; description?: string | null }) =>
+  update: (id: string, hostId: string, data: { whiskyName?: string; distillery?: string | null; whiskybaseId?: string | null; title?: string | null; author?: string | null; description?: string | null; documentDate?: string | null }) =>
     fetchJSON(`/handout-library/${id}`, { method: "PATCH", headers: { "x-participant-id": hostId }, body: JSON.stringify({ hostId, ...data }) }),
   delete: (id: string, hostId: string) =>
     fetchJSON(`/handout-library/${id}?hostId=${encodeURIComponent(hostId)}`, { method: "DELETE", headers: { "x-participant-id": hostId } }),
@@ -275,7 +275,7 @@ export const handoutLibraryApi = {
   upload: async (
     hostId: string,
     file: File,
-    meta: { whiskyName: string; distillery?: string; whiskybaseId?: string; title?: string; author?: string; description?: string },
+    meta: { whiskyName: string; distillery?: string; whiskybaseId?: string; title?: string; author?: string; description?: string; documentDate?: string },
   ) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -285,6 +285,7 @@ export const handoutLibraryApi = {
     if (meta.title !== undefined) formData.append("title", meta.title);
     if (meta.author !== undefined) formData.append("author", meta.author);
     if (meta.description !== undefined) formData.append("description", meta.description);
+    if (meta.documentDate !== undefined) formData.append("documentDate", meta.documentDate);
     const res = await fetch(`${API_BASE}/handout-library`, {
       method: "POST",
       body: formData,

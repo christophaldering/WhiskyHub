@@ -74,8 +74,10 @@ interface UploadFormState {
   title: string;
   author: string;
   description: string;
+  documentDate: string;
   splitProgramme: boolean;
   programmeDate: string;
+  shareWithCommunity: boolean;
 }
 
 const emptyUploadForm: UploadFormState = {
@@ -86,8 +88,10 @@ const emptyUploadForm: UploadFormState = {
   title: "",
   author: "",
   description: "",
+  documentDate: "",
   splitProgramme: false,
   programmeDate: "",
+  shareWithCommunity: false,
 };
 
 function fmtDate(d: Date | string | null | undefined, locale: string): string {
@@ -797,6 +801,7 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
   const [detailEntry, setDetailEntry] = useState<WhiskyHandoutLibraryEntry | null>(null);
   const [communityDetailEntry, setCommunityDetailEntry] = useState<WhiskyHandoutLibraryEntry | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [entryView, setEntryView] = useState<"hub" | "library">(mode === "workspace" ? "hub" : "library");
   const [uploadForm, setUploadForm] = useState<UploadFormState>(emptyUploadForm);
   const [multiItems, setMultiItems] = useState<MultiUploadItem[]>([]);
   const [multiCommonDistillery, setMultiCommonDistillery] = useState("");
@@ -969,14 +974,19 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
         title: uploadForm.title.trim(),
         author: uploadForm.author.trim(),
         description: effectiveDescription,
+        documentDate: uploadForm.documentDate.trim(),
       });
     },
     onSuccess: (created: WhiskyHandoutLibraryEntry, _vars, ctx) => {
       setError(null);
       setInfo(t("labs.handoutLibrary.msgUploaded"));
+      const wantsShare = uploadForm.shareWithCommunity;
       setUploadForm(emptyUploadForm);
       setUploadOpen(false);
       qc.invalidateQueries({ queryKey: ["handout-library", hostId] });
+      if (wantsShare && created?.id) {
+        shareMut.mutate({ id: created.id, isShared: true });
+      }
       if (ctx?.wantsSplit && ctx.isPdf && created?.id) {
         setSplitTarget(created);
       }
@@ -1204,8 +1214,67 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
         </div>
       )}
 
-      {tab === "mine" && (
+      {tab === "mine" && mode === "workspace" && entryView === "hub" && (
+        <div
+          style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, marginBottom: 14 }}
+          data-testid="handout-hub-tiles"
+        >
+          <button
+            type="button"
+            className="labs-card"
+            onClick={() => { setEntryView("library"); setError(null); setInfo(null); }}
+            style={{ padding: 18, display: "grid", gap: 8, textAlign: "left", cursor: "pointer", border: "1px solid var(--labs-border)", background: "var(--labs-surface)", color: "var(--labs-text)" }}
+            data-testid="tile-handout-discover"
+          >
+            <Library style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />
+            <span style={{ fontWeight: 600, fontSize: 15 }}>
+              {t("labs.taste.myHandouts.tile.discover", { defaultValue: "Entdecken" })}
+            </span>
+            <span style={{ fontSize: 12, color: "var(--labs-text-muted)", lineHeight: 1.4 }}>
+              {t("labs.taste.myHandouts.tile.discoverHint", { defaultValue: "Deine Bibliothek durchsuchen, filtern und verwalten." })}
+            </span>
+          </button>
+          <button
+            type="button"
+            className="labs-card"
+            onClick={() => {
+              setEntryView("library");
+              setUploadOpen(true);
+              setUploadIntent("single");
+              setUploadForm({ ...emptyUploadForm });
+              setMultiItems([]);
+              setUploadValidationError(null);
+              setError(null);
+              setInfo(null);
+              setTimeout(() => uploadFileInputRef.current?.click(), 0);
+            }}
+            style={{ padding: 18, display: "grid", gap: 8, textAlign: "left", cursor: "pointer", border: "1px solid var(--labs-accent)", background: "var(--labs-surface)", color: "var(--labs-text)" }}
+            data-testid="tile-handout-upload-analyze"
+          >
+            <Upload style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />
+            <span style={{ fontWeight: 600, fontSize: 15 }}>
+              {t("labs.taste.myHandouts.tile.uploadAnalyze", { defaultValue: "Hochladen und Analysieren" })}
+            </span>
+            <span style={{ fontSize: 12, color: "var(--labs-text-muted)", lineHeight: 1.4 }}>
+              {t("labs.taste.myHandouts.tile.uploadAnalyzeHint", { defaultValue: "PDF oder Word-Dokument hochladen — Felder werden automatisch erkannt." })}
+            </span>
+          </button>
+        </div>
+      )}
+
+      {tab === "mine" && (mode !== "workspace" || entryView === "library") && (
         <>
+          {mode === "workspace" && (
+            <button
+              type="button"
+              className="labs-btn-ghost text-xs"
+              onClick={() => { setEntryView("hub"); setUploadOpen(false); }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 8, padding: "4px 8px" }}
+              data-testid="button-handout-back-to-hub"
+            >
+              <X style={{ width: 12, height: 12 }} /> {t("labs.taste.myHandouts.backToHub", { defaultValue: "Zurück zur Übersicht" })}
+            </button>
+          )}
           <div
             className="labs-card"
             style={{ padding: 12, marginBottom: 12, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}
@@ -1292,7 +1361,16 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
               <button
                 type="button"
                 className="labs-btn-primary text-xs"
-                onClick={() => { setUploadOpen(true); setUploadIntent(null); setUploadValidationError(null); setError(null); setInfo(null); }}
+                onClick={() => {
+                  setUploadOpen(true);
+                  setUploadIntent("single");
+                  setUploadForm({ ...emptyUploadForm });
+                  setMultiItems([]);
+                  setUploadValidationError(null);
+                  setError(null);
+                  setInfo(null);
+                  setTimeout(() => uploadFileInputRef.current?.click(), 0);
+                }}
                 style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", whiteSpace: "nowrap" }}
                 data-testid="button-handout-library-upload"
               >
@@ -1349,7 +1427,7 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                   <X style={{ width: 14, height: 14 }} />
                 </button>
               </div>
-              {uploadIntent === null && (
+              {false && uploadIntent === null && (
                 <div style={{ display: "grid", gap: 8 }} data-testid="upload-intent-picker">
                   <p style={{ margin: 0, fontSize: 12, color: "var(--labs-text-muted)" }}>
                     {t("labs.handoutLibrary.uploadIntent.pickerHint", { defaultValue: "Wähle den passenden Pfad — jeder ist für genau einen Anwendungsfall optimiert." })}
@@ -1628,7 +1706,17 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                         className="labs-input"
                         value={uploadForm.author}
                         onChange={(e) => setUploadForm({ ...uploadForm, author: e.target.value })}
-                        data-testid="input-upload-author"
+                        data-testid="input-handout-author"
+                      />
+                    </label>
+                    <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                      {t("labs.handoutLibrary.fieldDocumentDate", { defaultValue: "Dokumentdatum" })}
+                      <input
+                        type="date"
+                        className="labs-input"
+                        value={uploadForm.documentDate}
+                        onChange={(e) => setUploadForm({ ...uploadForm, documentDate: e.target.value })}
+                        data-testid="input-handout-date"
                       />
                     </label>
                   </div>
@@ -1641,6 +1729,15 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                       onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })}
                       data-testid="input-upload-description"
                     />
+                  </label>
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--labs-text)", cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={uploadForm.shareWithCommunity}
+                      onChange={(e) => setUploadForm({ ...uploadForm, shareWithCommunity: e.target.checked })}
+                      data-testid="checkbox-share-community"
+                    />
+                    {t("labs.handoutLibrary.shareWithCommunity", { defaultValue: "Mit Community teilen" })}
                   </label>
                 </>
               )}
@@ -2083,7 +2180,16 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                 <button
                   type="button"
                   className="labs-btn-primary text-xs"
-                  onClick={() => { setUploadOpen(true); setError(null); setInfo(null); }}
+                  onClick={() => {
+                    setUploadOpen(true);
+                    setUploadIntent("single");
+                    setUploadForm({ ...emptyUploadForm });
+                    setMultiItems([]);
+                    setUploadValidationError(null);
+                    setError(null);
+                    setInfo(null);
+                    setTimeout(() => uploadFileInputRef.current?.click(), 0);
+                  }}
                   style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 16px", marginTop: 4 }}
                   data-testid="button-handout-library-empty-upload"
                 >

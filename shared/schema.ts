@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, real, doublePrecision, timestamp, boolean, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, real, doublePrecision, timestamp, boolean, jsonb, date, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -184,6 +184,7 @@ export const whiskyHandoutLibrary = pgTable("whisky_handout_library", {
   title: text("title"),
   author: text("author"),
   description: text("description"),
+  documentDate: date("document_date"),
   isShared: boolean("is_shared").default(false).notNull(),
   sharedAt: timestamp("shared_at"),
   sharedByName: text("shared_by_name"),
@@ -213,6 +214,7 @@ export const whiskyHandouts = pgTable("whisky_handouts", {
   title: text("title"),
   author: text("author"),
   description: text("description"),
+  documentDate: date("document_date"),
   sourceLibraryId: varchar("source_library_id"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (t) => ({
@@ -233,6 +235,7 @@ export const tastingHandouts = pgTable("tasting_handouts", {
   title: text("title"),
   author: text("author"),
   description: text("description"),
+  documentDate: date("document_date"),
   sourceLibraryId: varchar("source_library_id"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (t) => ({
@@ -255,6 +258,7 @@ export const distilleryHandouts = pgTable("distillery_handouts", {
   title: text("title"),
   author: text("author"),
   description: text("description"),
+  documentDate: date("document_date"),
   sourceLibraryId: varchar("source_library_id"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (t) => ({
