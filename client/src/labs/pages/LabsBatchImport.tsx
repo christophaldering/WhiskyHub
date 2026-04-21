@@ -106,7 +106,12 @@ export default function LabsBatchImport() {
         body: fd,
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json?.message || t("batchImport.analysisFailed"));
+      if (!res.ok) {
+        if (res.status === 429 && (json?.reason === "host_concurrency" || json?.reason === "global_concurrency")) {
+          throw new Error(t("batchImport.throttled", { defaultValue: json?.message || "Too many imports running. Please wait until a current import finishes." }));
+        }
+        throw new Error(json?.message || t("batchImport.analysisFailed"));
+      }
       setJobId(json.jobId as string);
       setProgress(files.map(f => ({
         filename: f.name, status: "pending", stage: "queued",

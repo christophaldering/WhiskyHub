@@ -21892,12 +21892,43 @@ Be accurate. If you cannot read a value, use null. Match whiskies to the known l
   const batchJobs: Map<string, BatchJob> = (globalThis as any).__batchImportJobs || new Map();
   (globalThis as any).__batchImportJobs = batchJobs;
   const BATCH_JOB_TTL_MS = 60 * 60 * 1000;
+  const BATCH_JOB_MAX_TOTAL = 200;
+  const BATCH_JOB_MAX_PER_HOST_RUNNING = 2;
+  const BATCH_JOB_MAX_GLOBAL_RUNNING = 8;
+  const BATCH_JOB_SWEEP_INTERVAL_MS = 5 * 60 * 1000;
   const sweepBatchJobs = () => {
     const now = Date.now();
     for (const [id, j] of Array.from(batchJobs.entries())) {
       if (now - j.updatedAt > BATCH_JOB_TTL_MS) batchJobs.delete(id);
     }
+    if (batchJobs.size > BATCH_JOB_MAX_TOTAL) {
+      const sorted = Array.from(batchJobs.entries()).sort((a, b) => a[1].updatedAt - b[1].updatedAt);
+      const overflow = batchJobs.size - BATCH_JOB_MAX_TOTAL;
+      let evicted = 0;
+      for (const [id, j] of sorted) {
+        if (evicted >= overflow) break;
+        if (j.overallStatus !== "running") {
+          batchJobs.delete(id);
+          evicted++;
+        }
+      }
+    }
   };
+  const countRunning = (hostId?: string) => {
+    let n = 0;
+    for (const j of batchJobs.values()) {
+      if (j.overallStatus !== "running") continue;
+      if (hostId && j.hostId !== hostId) continue;
+      n++;
+    }
+    return n;
+  };
+  if (!(globalThis as any).__batchImportSweepTimer) {
+    (globalThis as any).__batchImportSweepTimer = setInterval(sweepBatchJobs, BATCH_JOB_SWEEP_INTERVAL_MS);
+    if (typeof (globalThis as any).__batchImportSweepTimer.unref === "function") {
+      (globalThis as any).__batchImportSweepTimer.unref();
+    }
+  }
 
   app.post("/api/labs/batch-import/analyze", docUpload.array("files", 25), async (req: Request, res: Response) => {
     try {
@@ -21912,15 +21943,24 @@ Be accurate. If you cannot read a value, use null. Match whiskies to the known l
       const files = (req as any).files as Express.Multer.File[] | undefined;
       if (!files || files.length === 0) return res.status(400).json({ message: "Keine Dateien hochgeladen" });
 
-      const { client: openai, error: aiError, quotaInfo } = await getAIClient(hostId, "benchmark_analyze");
-      if (!openai) {
-        if (aiError === "AI_LIMIT_EXCEEDED") return res.status(429).json({ message: "KI-Kontingent erschöpft", quotaInfo });
-        if (aiError === "AI_DISABLED") return res.status(503).json({ message: "KI deaktiviert" });
-        return res.status(503).json({ message: "Keine KI verfügbar" });
-      }
-
-      // Create job and respond immediately with jobId; processing runs in background.
+      // Atomically reserve a job slot before any await so concurrency caps are race-safe.
       sweepBatchJobs();
+      if (countRunning(hostId) >= BATCH_JOB_MAX_PER_HOST_RUNNING) {
+        return res.status(429).json({
+          message: "Zu viele parallele Importe. Bitte warten Sie, bis ein laufender Import abgeschlossen ist.",
+          reason: "host_concurrency",
+          limit: BATCH_JOB_MAX_PER_HOST_RUNNING,
+          retryAfterSeconds: 30,
+        });
+      }
+      if (countRunning() >= BATCH_JOB_MAX_GLOBAL_RUNNING) {
+        return res.status(429).json({
+          message: "Der Server verarbeitet gerade viele Importe. Bitte versuchen Sie es in Kürze erneut.",
+          reason: "global_concurrency",
+          limit: BATCH_JOB_MAX_GLOBAL_RUNNING,
+          retryAfterSeconds: 60,
+        });
+      }
       const jobId = `bj_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
       const job: BatchJob = {
         id: jobId,
@@ -21939,6 +21979,15 @@ Be accurate. If you cannot read a value, use null. Match whiskies to the known l
         })),
       };
       batchJobs.set(jobId, job);
+
+      const { client: openai, error: aiError, quotaInfo } = await getAIClient(hostId, "benchmark_analyze");
+      if (!openai) {
+        batchJobs.delete(jobId);
+        if (aiError === "AI_LIMIT_EXCEEDED") return res.status(429).json({ message: "KI-Kontingent erschöpft", quotaInfo });
+        if (aiError === "AI_DISABLED") return res.status(503).json({ message: "KI deaktiviert" });
+        return res.status(503).json({ message: "Keine KI verfügbar" });
+      }
+
       res.json({ jobId, fileCount: files.length });
 
       // ----- background processing -----
