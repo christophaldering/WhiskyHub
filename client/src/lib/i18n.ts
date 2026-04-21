@@ -5840,6 +5840,8 @@ const resources = {
           subtitle: "All handouts you've ever uploaded for a whisky. When you create new whiskies, matching entries are suggested automatically.",
           tabMine: "My Library",
           tabCommunity: "Community",
+          fieldDocumentDate: "Document date",
+          shareWithCommunity: "Share with community",
           uploadIntent: {
             pickerTitle: "How do you want to upload?",
             pickerHint: "Pick the path that fits — each one is optimised for one job.",
@@ -14997,6 +14999,8 @@ const resources = {
           subtitle: "Alle Handouts, die du je zu einem Whisky hochgeladen hast. Beim Anlegen neuer Whiskys werden passende Einträge automatisch vorgeschlagen.",
           tabMine: "Meine Bibliothek",
           tabCommunity: "Community",
+          fieldDocumentDate: "Dokumentdatum",
+          shareWithCommunity: "Mit Community teilen",
           uploadIntent: {
             pickerTitle: "Wie möchtest du hochladen?",
             pickerHint: "Wähle den passenden Pfad — jeder ist für genau einen Anwendungsfall optimiert.",

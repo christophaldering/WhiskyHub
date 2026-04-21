@@ -1527,15 +1527,24 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                   if (e.target) e.target.value = "";
                   if (files.length === 0) return;
                   setLastRunSummary(null);
-                  if (files.length === 1 && multiItems.length === 0 && !uploadForm.file) {
-                    setUploadForm({ ...uploadForm, file: files[0] });
-                  } else {
+                  if (files.length > 1 || multiItems.length > 0) {
+                    setUploadIntent("multi");
                     if (uploadForm.file) {
                       setMultiItems((prev) => [makeMultiItem(uploadForm.file as File), ...prev, ...files.map(makeMultiItem)]);
                       setUploadForm({ ...uploadForm, file: null });
                     } else {
                       setMultiItems((prev) => [...prev, ...files.map(makeMultiItem)]);
                     }
+                  } else {
+                    const f = files[0];
+                    const parsed = parseHandoutFilename(f.name);
+                    setUploadForm({
+                      ...uploadForm,
+                      file: f,
+                      whiskyName: uploadForm.whiskyName || parsed.whiskyName || "",
+                      author: uploadForm.author || parsed.author || "",
+                      documentDate: uploadForm.documentDate || parsed.date || "",
+                    });
                   }
                 }}
                 data-testid="input-upload-file"
@@ -1551,15 +1560,24 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                   const dropped = Array.from(e.dataTransfer.files || []);
                   if (dropped.length === 0) return;
                   setLastRunSummary(null);
-                  if (dropped.length === 1 && multiItems.length === 0 && !uploadForm.file) {
-                    setUploadForm({ ...uploadForm, file: dropped[0] });
-                  } else {
+                  if (dropped.length > 1 || multiItems.length > 0) {
+                    setUploadIntent("multi");
                     if (uploadForm.file) {
                       setMultiItems((prev) => [makeMultiItem(uploadForm.file as File), ...prev, ...dropped.map(makeMultiItem)]);
                       setUploadForm({ ...uploadForm, file: null });
                     } else {
                       setMultiItems((prev) => [...prev, ...dropped.map(makeMultiItem)]);
                     }
+                  } else {
+                    const f = dropped[0];
+                    const parsed = parseHandoutFilename(f.name);
+                    setUploadForm({
+                      ...uploadForm,
+                      file: f,
+                      whiskyName: uploadForm.whiskyName || parsed.whiskyName || "",
+                      author: uploadForm.author || parsed.author || "",
+                      documentDate: uploadForm.documentDate || parsed.date || "",
+                    });
                   }
                 }}
                 style={{
