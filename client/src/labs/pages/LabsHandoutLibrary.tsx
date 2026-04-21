@@ -815,6 +815,7 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
     failFiles: { name: string; error: string }[];
   } | null>(null);
   const [distilleryFilter, setDistilleryFilter] = useState<string>("");
+  const [typeFilter, setTypeFilter] = useState<"" | "pdf" | "doc" | "image">("");
   const replaceFileInputRef = useRef<HTMLInputElement>(null);
   const uploadFileInputRef = useRef<HTMLInputElement>(null);
   const [replaceTargetId, setReplaceTargetId] = useState<string | null>(null);
@@ -865,10 +866,22 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
     return Array.from(set).sort((a, b) => a.localeCompare(b, locale));
   }, [allEntries]);
   const filtered = useMemo(() => {
-    if (!distilleryFilter) return allEntries;
-    const f = distilleryFilter.trim().toLowerCase();
-    return allEntries.filter((e) => (e.distillery || "").trim().toLowerCase() === f);
-  }, [allEntries, distilleryFilter]);
+    let arr = allEntries;
+    if (distilleryFilter) {
+      const f = distilleryFilter.trim().toLowerCase();
+      arr = arr.filter((e) => (e.distillery || "").trim().toLowerCase() === f);
+    }
+    if (typeFilter) {
+      arr = arr.filter((e) => {
+        const ct = (e.contentType || "").toLowerCase();
+        if (typeFilter === "pdf") return ct === "application/pdf";
+        if (typeFilter === "doc") return ct.includes("word") || ct.includes("officedocument.wordprocessing");
+        if (typeFilter === "image") return ct.startsWith("image/");
+        return true;
+      });
+    }
+    return arr;
+  }, [allEntries, distilleryFilter, typeFilter]);
 
   const sortedFiltered = useMemo(() => {
     const arr = [...filtered];
@@ -1306,6 +1319,19 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                 <option key={d} value={d}>{d}</option>
               ))}
             </select>
+            <select
+              className="labs-input"
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value as "" | "pdf" | "doc" | "image")}
+              style={{ flex: "0 1 160px", minWidth: 120, fontSize: 12 }}
+              data-testid="select-handout-library-type"
+              aria-label={t("labs.handoutLibrary.filterTypeLabel", { defaultValue: "Typ filtern" })}
+            >
+              <option value="">{t("labs.handoutLibrary.filterTypeAll", { defaultValue: "Alle Typen" })}</option>
+              <option value="pdf">PDF</option>
+              <option value="doc">Word</option>
+              <option value="image">{t("labs.handoutLibrary.filterTypeImage", { defaultValue: "Bild" })}</option>
+            </select>
             <button
               type="button"
               className="labs-btn-secondary text-xs"
@@ -1539,7 +1565,17 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                     : uploadForm.file ? uploadForm.file.name : t("labs.handoutLibrary.dropOrChooseHint")}
                 </span>
               </div>
-              {/* Intent picker now drives splitProgramme — checkbox removed for clarity */}
+              {multiItems.length === 0 && (
+                <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--labs-text)", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={uploadForm.splitProgramme}
+                    onChange={(e) => setUploadForm({ ...uploadForm, splitProgramme: e.target.checked })}
+                    data-testid="checkbox-handout-as-programme"
+                  />
+                  {t("labs.handoutLibrary.uploadIntent.sammelTitle", { defaultValue: "Sammel-PDF zerlegen" })}
+                </label>
+              )}
               {multiItems.length === 0 && uploadForm.splitProgramme && (
                 <div style={{ display: "grid", gap: 8 }}>
                   <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
