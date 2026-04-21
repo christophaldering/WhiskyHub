@@ -637,7 +637,12 @@ export default function ExploreStatistics({ whiskies }: { whiskies: ExploreWhisk
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                           {noseTopWhiskies.slice(0, 3).map((w) => (
                             <WhiskyRow key={w.id} w={w} extra={
-                              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-accent)" }}>{w.avgNose?.toFixed(1)}</span>
+                              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1 }}>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-accent)" }}>{w.avgNose?.toFixed(1)}</span>
+                                <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }} data-testid={`text-overall-best-nose-${w.id}`}>
+                                  {t("exploreStats.overallShort", "Overall")} {w.avgOverall != null ? w.avgOverall.toFixed(1) : "—"}
+                                </span>
+                              </div>
                             } />
                           ))}
                         </div>
@@ -649,7 +654,12 @@ export default function ExploreStatistics({ whiskies }: { whiskies: ExploreWhisk
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                           {tasteTopWhiskies.slice(0, 3).map((w) => (
                             <WhiskyRow key={w.id} w={w} extra={
-                              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-accent)" }}>{w.avgTaste?.toFixed(1)}</span>
+                              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1 }}>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-accent)" }}>{w.avgTaste?.toFixed(1)}</span>
+                                <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }} data-testid={`text-overall-best-taste-${w.id}`}>
+                                  {t("exploreStats.overallShort", "Overall")} {w.avgOverall != null ? w.avgOverall.toFixed(1) : "—"}
+                                </span>
+                              </div>
                             } />
                           ))}
                         </div>
@@ -661,7 +671,12 @@ export default function ExploreStatistics({ whiskies }: { whiskies: ExploreWhisk
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                           {finishTopWhiskies.slice(0, 3).map((w) => (
                             <WhiskyRow key={w.id} w={w} extra={
-                              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-accent)" }}>{w.avgFinish?.toFixed(1)}</span>
+                              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1 }}>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-accent)" }}>{w.avgFinish?.toFixed(1)}</span>
+                                <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }} data-testid={`text-overall-best-finish-${w.id}`}>
+                                  {t("exploreStats.overallShort", "Overall")} {w.avgOverall != null ? w.avgOverall.toFixed(1) : "—"}
+                                </span>
+                              </div>
                             } />
                           ))}
                         </div>

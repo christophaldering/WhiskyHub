@@ -1360,15 +1360,26 @@ export default function LabsResults({ params }: LabsResultsProps) {
                 >
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                     {[
+                      { label: t("resultsUi.overall", "Overall"), value: w.avgOverall, isOverall: true },
                       { label: t("resultsUi.nose"), value: w.avgNose },
                       { label: t("resultsUi.taste"), value: w.avgTaste },
                       { label: t("resultsUi.finish"), value: w.avgFinish },
                     ].map((dim) => (
-                      <div key={dim.label} className="flex items-center justify-between">
-                        <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                      <div
+                        key={dim.label}
+                        className="flex items-center justify-between"
+                        data-testid={dim.isOverall ? `text-overall-results-${w.id}` : undefined}
+                      >
+                        <span
+                          className="text-xs"
+                          style={{ color: "var(--labs-text-muted)", fontWeight: dim.isOverall ? 600 : undefined }}
+                        >
                           {dim.label}
                         </span>
-                        <span className="text-sm font-semibold" style={{ color: "var(--labs-text-secondary)" }}>
+                        <span
+                          className="text-sm font-semibold"
+                          style={{ color: dim.isOverall ? "var(--labs-accent)" : "var(--labs-text-secondary)" }}
+                        >
                           {dim.value != null ? fmt(dim.value) : "—"}
                         </span>
                       </div>

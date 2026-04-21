@@ -189,6 +189,30 @@ function WhiskyResultCard({ result, rank, inCollection, onAddToCollection, addPe
 
           {expanded && (
             <div style={{ marginTop: 10, padding: "12px 0 0", borderTop: `1px solid ${c.border}` }}>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}
+                data-testid={`text-overall-tasting-${result.whiskyId}`}
+              >
+                <span style={{ fontSize: 12, color: c.muted, width: 52, flexShrink: 0, fontWeight: 600 }}>
+                  {t("tastingResults.overall", "Overall")}
+                </span>
+                <div style={{ flex: 1, height: 6, background: c.bg, borderRadius: 3, overflow: "hidden" }}>
+                  {result.avgOverall != null && (
+                    <div
+                      style={{
+                        width: `${Math.min(result.avgOverall, 10) * 10}%`,
+                        height: "100%",
+                        background: c.accent,
+                        borderRadius: 3,
+                        transition: "width 0.3s",
+                      }}
+                    />
+                  )}
+                </div>
+                <span style={{ fontSize: 12, color: c.text, fontFamily: "monospace", width: 28, textAlign: "right", flexShrink: 0, fontWeight: 600 }}>
+                  {result.avgOverall != null ? formatScore(result.avgOverall) : "—"}
+                </span>
+              </div>
               <ScoreBar label={t("tastingResults.nose")} value={result.avgNose} />
               <ScoreBar label={t("tastingResults.taste")} value={result.avgTaste} />
               <ScoreBar label={t("tastingResults.finish")} value={result.avgFinish} />
