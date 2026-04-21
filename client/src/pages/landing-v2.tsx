@@ -111,11 +111,6 @@ function Hero() {
         </div>
       </FadeUp>
 
-      <FadeUp delay={0.1}>
-        <div style={{ fontSize: 13, fontFamily: font.body, fontWeight: 500, letterSpacing: "0.15em", textTransform: "uppercase", color: v.accent, marginBottom: 24, position: "relative", zIndex: 2 }}>
-          Whisky Tasting Platform
-        </div>
-      </FadeUp>
       <FadeUp delay={0.15}>
         <h1 style={{ fontFamily: font.display, fontSize: "clamp(48px, 8vw, 88px)", fontWeight: 400, color: v.text, letterSpacing: "-0.02em", lineHeight: 1.05, marginBottom: 24 }}>
           CaskSense

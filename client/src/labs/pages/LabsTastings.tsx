@@ -442,9 +442,6 @@ export default function LabsTastings() {
               data-testid="img-tastings-hero"
             />
           </div>
-          <div className="labs-tastings-hero-eyebrow" data-testid="text-tastings-hero-eyebrow">
-            {t("tastings.heroEyebrow", "WHISKY TASTING PLATFORM")}
-          </div>
           <h1 className="labs-tastings-hero-brand" data-testid="text-tastings-hero-brand">
             {t("tastings.heroBrand", "CaskSense")}
           </h1>

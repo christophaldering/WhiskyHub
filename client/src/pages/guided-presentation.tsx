@@ -128,15 +128,6 @@ function HeroSection() {
         pointerEvents: "none",
       }} />
 
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.2 }}
-        style={{
-          fontSize: 12, fontFamily: font.body, fontWeight: 500,
-          letterSpacing: "0.2em", textTransform: "uppercase",
-          color: A, marginBottom: 32,
-        }}>
-        Whisky Tasting Platform
-      </motion.div>
-
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>
         {letters.map((l, i) => (
           <motion.span key={i} initial={{ opacity: 0, y: 30 }}

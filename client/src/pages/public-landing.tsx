@@ -128,21 +128,6 @@ function HeroSection() {
         </div>
       </FadeUp>
 
-      <FadeUp delay={0.1}>
-        <div style={{
-          fontSize: 13,
-          fontFamily: font.body,
-          fontWeight: 500,
-          letterSpacing: "0.15em",
-          textTransform: "uppercase",
-          color: v.accent,
-          marginBottom: 24,
-          position: "relative",
-          zIndex: 2,
-        }}>
-          Whisky Tasting Platform
-        </div>
-      </FadeUp>
 
       <FadeUp delay={0.15}>
         <h1 style={{

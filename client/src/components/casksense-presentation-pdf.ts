@@ -206,7 +206,6 @@ function drawCover(doc: jsPDF) {
 
   drawGlow(doc, pw / 2, ph / 2 - 8, 45);
 
-  drawText(doc, "WHISKY TASTING PLATFORM", pw / 2, ph / 2 - 36, 11, ACCENT_DIM, "bold", "center");
   drawText(doc, "CaskSense", pw / 2, ph / 2 - 10, 52, TEXT, "bold", "center");
   drawAccentLine(doc, ph / 2, 60);
   drawText(doc, "Where tasting becomes reflection.", pw / 2, ph / 2 + 16, 16, MUTED, "italic", "center");

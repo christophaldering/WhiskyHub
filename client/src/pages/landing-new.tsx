@@ -289,24 +289,6 @@ function HeroSection() {
         </div>
       </FadeUp>
 
-      <FadeUp delay={0.1}>
-        <p
-          style={{
-            fontFamily: font.body,
-            fontSize: 12,
-            fontWeight: 600,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: ACCENT_DIM,
-            marginBottom: 20,
-            position: "relative",
-            zIndex: 2,
-          }}
-        >
-          {t("landing.hero.eyebrow")}
-        </p>
-      </FadeUp>
-
       <FadeUp delay={0.15}>
         <h1
           style={{
