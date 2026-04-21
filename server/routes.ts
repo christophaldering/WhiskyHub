@@ -3647,7 +3647,6 @@ export async function registerRoutes(
       const whiskyMap = new Map(whiskies.map((w) => [w.id, w]));
 
       const usedPages = new Set<number>();
-      const usedWhiskies = new Set<string>();
       for (const a of assignments) {
         if (!pageMap.has(a.pageNumber)) {
           return res.status(400).json({ message: `Seite ${a.pageNumber} ist nicht Teil dieser Aufteilung` });
@@ -3659,59 +3658,59 @@ export async function registerRoutes(
         if (!whiskyMap.has(a.whiskyId)) {
           return res.status(400).json({ message: "Whisky gehört nicht zu diesem Tasting" });
         }
-        if (usedWhiskies.has(a.whiskyId)) {
-          return res.status(400).json({ message: "Jeder Whisky darf nur eine Seite zugewiesen bekommen" });
-        }
-        usedWhiskies.add(a.whiskyId);
       }
 
-      // Apply assignments
+      // Apply assignments — append as new whisky_handouts entries (n:m), do NOT overwrite existing.
       let assigned = 0;
       for (const a of assignments) {
         const page = pageMap.get(a.pageNumber)!;
         const whisky = whiskyMap.get(a.whiskyId)!;
-        const oldHandoutUrl = whisky.handoutUrl;
 
-        const updateData: Partial<typeof whisky> = {
-          handoutUrl: page.fileUrl,
-          handoutContentType: "application/pdf",
-        } as any;
-        if (typeof a.title === "string") (updateData as any).handoutTitle = a.title.slice(0, 200) || null;
-        if (typeof a.author === "string") (updateData as any).handoutAuthor = a.author.slice(0, 200) || null;
-        if (typeof a.description === "string") (updateData as any).handoutDescription = a.description.slice(0, 2000) || null;
-        if (a.visibility === "always" || a.visibility === "after_reveal") {
-          (updateData as any).handoutVisibility = a.visibility;
-        }
+        const title = typeof a.title === "string" ? (a.title.slice(0, 200) || null) : null;
+        const author = typeof a.author === "string" ? (a.author.slice(0, 200) || null) : null;
+        const description = typeof a.description === "string" ? (a.description.slice(0, 2000) || null) : null;
+        const visibility: "always" | "after_reveal" =
+          a.visibility === "after_reveal" ? "after_reveal" : "always";
 
-        await storage.updateWhisky(whisky.id, updateData as any);
-        if (oldHandoutUrl && oldHandoutUrl !== page.fileUrl) {
-          await deleteHandoutFileIfUnreferenced(objectStorage, oldHandoutUrl);
-        }
-
-        // Auto-add to host's library, mirroring single-handout-upload behaviour
+        // Auto-add to host's library first so we can link sourceLibraryId for ref-counting.
+        let sourceLibraryId: string | null = null;
         try {
           const existing = await storage.suggestHandoutLibrary(tasting.hostId, {
             whiskybaseId: whisky.whiskybaseId ?? null,
             whiskyName: whisky.name,
             distillery: whisky.distillery ?? null,
           });
-          const alreadyInLibrary = existing.some((e) => e.fileUrl === page.fileUrl);
-          if (!alreadyInLibrary) {
-            await storage.createHandoutLibraryEntry({
+          const match = existing.find((e) => e.fileUrl === page.fileUrl);
+          if (match) {
+            sourceLibraryId = match.id;
+          } else {
+            const lib = await storage.createHandoutLibraryEntry({
               hostId: tasting.hostId,
               whiskyName: whisky.name,
               distillery: whisky.distillery ?? null,
               whiskybaseId: whisky.whiskybaseId ?? null,
               fileUrl: page.fileUrl,
               contentType: "application/pdf",
-              title: (updateData as any).handoutTitle ?? null,
-              author: (updateData as any).handoutAuthor ?? null,
-              description: (updateData as any).handoutDescription ?? null,
+              title,
+              author,
+              description,
             });
+            sourceLibraryId = lib.id;
           }
         } catch (libErr) {
           console.warn("[handout-library] auto-add from pdf-split failed", libErr);
         }
+
+        await storage.createWhiskyHandout({
+          whiskyId: whisky.id,
+          fileUrl: page.fileUrl,
+          contentType: "application/pdf",
+          title,
+          author,
+          description,
+          visibility,
+          sourceLibraryId,
+        });
         assigned++;
       }
 

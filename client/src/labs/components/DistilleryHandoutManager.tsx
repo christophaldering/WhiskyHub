@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, Image as ImageIcon, Trash2, Upload, ExternalLink, Pencil, X, ArrowUp, ArrowDown, Building2 } from "lucide-react";
-import { distilleryHandoutApi } from "@/lib/api";
-import type { DistilleryHandout } from "@shared/schema";
+import { FileText, Image as ImageIcon, Trash2, Upload, ExternalLink, Pencil, X, ArrowUp, ArrowDown, Building2, Library, Check } from "lucide-react";
+import { distilleryHandoutApi, handoutLibraryApi } from "@/lib/api";
+import type { DistilleryHandout, WhiskyHandoutLibraryEntry } from "@shared/schema";
 
 interface Props {
   distilleryId: string;
@@ -64,6 +64,22 @@ export default function DistilleryHandoutManager({ distilleryId, distilleryName,
     mutationFn: (orderedIds: string[]) => distilleryHandoutApi.reorder(distilleryId, hostId, orderedIds),
     onSuccess: () => { setError(null); invalidate(); },
     onError: (e: any) => setError(e?.message || "Sortierung fehlgeschlagen"),
+  });
+
+  const libraryQuery = useQuery<WhiskyHandoutLibraryEntry[]>({
+    queryKey: ["handout-library", hostId, "for-distillery", distilleryName],
+    queryFn: () => handoutLibraryApi.list(hostId, distilleryName),
+    enabled: !!hostId,
+    staleTime: 30_000,
+  });
+  const usedFileUrls = new Set(handouts.map((h) => h.fileUrl));
+  const libraryAvailable = (libraryQuery.data || []).filter((e) => !usedFileUrls.has(e.fileUrl));
+
+  const appendFromLibraryMut = useMutation({
+    mutationFn: (libraryId: string) =>
+      handoutLibraryApi.appendToDistillery(libraryId, hostId, distilleryId, visibility),
+    onSuccess: () => { setError(null); invalidate(); },
+    onError: (e: any) => setError(e?.message || "Aus Bibliothek übernehmen fehlgeschlagen"),
   });
 
   function move(id: string, dir: -1 | 1) {
@@ -216,6 +232,56 @@ export default function DistilleryHandoutManager({ distilleryId, distilleryName,
           {uploadMut.isPending ? "Lade hoch…" : "Brennerei-Handout hinzufügen"}
         </button>
       </div>
+
+      {libraryAvailable.length > 0 && (
+        <div
+          style={{
+            border: "1px dashed var(--labs-border)",
+            borderRadius: 10,
+            padding: 8,
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+          }}
+          data-testid={`distillery-handout-library-picker-${distilleryId}`}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Library style={{ width: 12, height: 12, color: "var(--labs-text-muted)" }} />
+            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              Aus deiner Bibliothek hinzufügen (gefiltert auf „{distilleryName}")
+            </span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 180, overflowY: "auto" }}>
+            {libraryAvailable.slice(0, 30).map((s) => (
+              <div
+                key={s.id}
+                style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 6px", border: "1px solid var(--labs-border)", borderRadius: 8, background: "var(--labs-surface)" }}
+                data-testid={`distillery-handout-library-row-${s.id}`}
+              >
+                <FileText style={{ width: 12, height: 12, color: "var(--labs-text-muted)" }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {s.title || s.whiskyName || "Bibliothekseintrag"}
+                  </div>
+                  <div style={{ fontSize: 10, color: "var(--labs-text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {[s.distillery, s.author].filter(Boolean).join(" · ")}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="labs-btn-ghost text-xs"
+                  onClick={() => appendFromLibraryMut.mutate(s.id)}
+                  disabled={appendFromLibraryMut.isPending}
+                  style={{ padding: "4px 8px", display: "inline-flex", alignItems: "center", gap: 4 }}
+                  data-testid={`distillery-handout-library-append-${s.id}`}
+                >
+                  <Check style={{ width: 11, height: 11 }} /> Hinzufügen
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {error && (
         <div style={{ fontSize: 11, color: "var(--labs-danger, #ef4444)" }} data-testid={`distillery-handout-error-${distilleryId}`}>
