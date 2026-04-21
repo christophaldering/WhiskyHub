@@ -314,7 +314,7 @@ export const handoutLibraryApi = {
   split: (
     id: string,
     hostId: string,
-    ranges: Array<{ from: number; to: number; whiskyName: string; distillery?: string; whiskybaseId?: string; title?: string }>,
+    ranges: Array<{ from: number; to: number; whiskyName: string; distillery?: string; whiskybaseId?: string; title?: string; documentDate?: string }>,
   ) =>
     fetchJSON(`/handout-library/${id}/split`, {
       method: "POST",

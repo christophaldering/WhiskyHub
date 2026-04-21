@@ -1079,6 +1079,7 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
           title: item.title.trim(),
           author: item.author.trim(),
           description,
+          documentDate: item.date || "",
         });
         okCount += 1;
         okFiles.push(fileName);
@@ -1427,77 +1428,7 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                   <X style={{ width: 14, height: 14 }} />
                 </button>
               </div>
-              {false && uploadIntent === null && (
-                <div style={{ display: "grid", gap: 8 }} data-testid="upload-intent-picker">
-                  <p style={{ margin: 0, fontSize: 12, color: "var(--labs-text-muted)" }}>
-                    {t("labs.handoutLibrary.uploadIntent.pickerHint", { defaultValue: "Wähle den passenden Pfad — jeder ist für genau einen Anwendungsfall optimiert." })}
-                  </p>
-                  <button
-                    type="button"
-                    className="labs-btn-secondary text-xs"
-                    onClick={() => {
-                      setUploadIntent("sammel");
-                      setUploadForm({ ...emptyUploadForm, splitProgramme: true });
-                      setMultiItems([]);
-                      setUploadValidationError(null);
-                      setTimeout(() => uploadFileInputRef.current?.click(), 0);
-                    }}
-                    style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 10, padding: 12, textAlign: "left", alignItems: "start" }}
-                    data-testid="button-upload-intent-sammel"
-                  >
-                    <Scissors style={{ width: 16, height: 16, color: "var(--labs-accent)", marginTop: 2 }} />
-                    <span style={{ display: "grid", gap: 2 }}>
-                      <span style={{ fontWeight: 600, fontSize: 13 }}>{t("labs.handoutLibrary.uploadIntent.sammelTitle", { defaultValue: "Sammel-PDF zerlegen" })}</span>
-                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
-                        {t("labs.handoutLibrary.uploadIntent.sammelHint", { defaultValue: "Ein Programm-PDF mit mehreren Whiskys — wird nach dem Hochladen automatisch im Splitter geöffnet." })}
-                      </span>
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    className="labs-btn-secondary text-xs"
-                    onClick={() => {
-                      setUploadIntent("single");
-                      setUploadForm({ ...emptyUploadForm, splitProgramme: false });
-                      setMultiItems([]);
-                      setUploadValidationError(null);
-                      setTimeout(() => uploadFileInputRef.current?.click(), 0);
-                    }}
-                    style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 10, padding: 12, textAlign: "left", alignItems: "start" }}
-                    data-testid="button-upload-intent-single"
-                  >
-                    <FileText style={{ width: 16, height: 16, color: "var(--labs-accent)", marginTop: 2 }} />
-                    <span style={{ display: "grid", gap: 2 }}>
-                      <span style={{ fontWeight: 600, fontSize: 13 }}>{t("labs.handoutLibrary.uploadIntent.singleTitle", { defaultValue: "Einzel-Handout für einen Whisky" })}</span>
-                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
-                        {t("labs.handoutLibrary.uploadIntent.singleHint", { defaultValue: "Ein Dokument für genau einen Whisky — mit Vorschlägen aus deiner Bibliothek." })}
-                      </span>
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    className="labs-btn-secondary text-xs"
-                    onClick={() => {
-                      setUploadIntent("multi");
-                      setUploadForm(emptyUploadForm);
-                      setMultiItems([]);
-                      setUploadValidationError(null);
-                      setTimeout(() => uploadFileInputRef.current?.click(), 0);
-                    }}
-                    style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 10, padding: 12, textAlign: "left", alignItems: "start" }}
-                    data-testid="button-upload-intent-multi"
-                  >
-                    <Library style={{ width: 16, height: 16, color: "var(--labs-accent)", marginTop: 2 }} />
-                    <span style={{ display: "grid", gap: 2 }}>
-                      <span style={{ fontWeight: 600, fontSize: 13 }}>{t("labs.handoutLibrary.uploadIntent.multiTitle", { defaultValue: "Mehrere Handouts auf einmal" })}</span>
-                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
-                        {t("labs.handoutLibrary.uploadIntent.multiHint", { defaultValue: "Mehrere fertige Handouts gleichzeitig — Felder werden aus den Dateinamen erkannt." })}
-                      </span>
-                    </span>
-                  </button>
-                </div>
-              )}
-              {uploadIntent !== null && (
+              {(
                 <>
               <div
                 style={{

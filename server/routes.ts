@@ -4041,6 +4041,7 @@ export async function registerRoutes(
         distillery: z.string().trim().max(200).optional(),
         whiskybaseId: z.string().trim().max(100).optional(),
         title: z.string().trim().max(200).optional(),
+        documentDate: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
       }).refine((r) => r.to >= r.from, { message: "to muss >= from sein" });
       const bodySchema = z.object({ ranges: z.array(rangeSchema).min(1).max(50) });
       const parsed = bodySchema.safeParse(req.body);
@@ -4125,6 +4126,7 @@ export async function registerRoutes(
             title: u.range.title ? u.range.title.slice(0, 200) : null,
             author: null,
             description: null,
+            documentDate: u.range.documentDate ?? entry.documentDate ?? null,
             isProgramme: false,
             programmeSourceId: entry.id,
           } as InsertWhiskyHandoutLibraryEntry);
