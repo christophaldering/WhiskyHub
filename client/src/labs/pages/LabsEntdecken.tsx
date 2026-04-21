@@ -57,7 +57,7 @@
             key: "nachschlagewerk",
             icon: BookOpen,
             labelKey: "explore.bibliothek.nachschlagewerkTitle",
-            labelFb: "Nachschlagewerk",
+            labelFb: "Nach­schlage­werk",
             descKey: "explore.bibliothek.nachschlagewerkDesc",
             descFb: "Lexikon, Destillerien, Bottlers",
             subs: [

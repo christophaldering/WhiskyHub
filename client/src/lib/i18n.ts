@@ -9264,7 +9264,7 @@ const resources = {
         statisticsDesc: "Normen, Mediane und robuste Auswertung unter der Haube.",
         researchTitle: "Forschung & Quellen",
         researchDesc: "Studien, Sensorik-Wissenschaft und Wissenskonzepte.",
-        themenspeicherTitle: "Themenspeicher",
+        themenspeicherTitle: "Themen­speicher",
         themenspeicherDesc: "Offene Fragen und Ideen zur späteren Vertiefung.",
         themenspeicher: {
           entry1: {
@@ -9479,7 +9479,7 @@ const resources = {
         communityInsightsDesc: "Trends, Top-Whiskies & Regionen",
         archive: "Community-Archiv",
         archiveDesc: "Historische Tastings & Analysen",
-        communityHandouts: "Community-Handouts",
+        communityHandouts: "Com­munity-Hand­outs",
         communityHandoutsDesc: "Handouts anderer Hosts — mit einem Klick übernehmen",
         sectionReference: "Nachschlagewerke",
         sectionTastingWissen: "Tasting-Wissen",
@@ -9531,7 +9531,7 @@ const resources = {
         lexicon: "Lexikon",
         lexiconDesc: "Durchsuchbares Whisky-Wörterbuch",
         lexiconSub: "Begriffe & Definitionen",
-        distilleries: "Brennereien",
+        distilleries: "Brenne­reien",
         distilleriesDesc: "Brennerei-Enzyklopädie & Karte",
         distilleriesSub: "Karte & Details",
         bottlers: "Abfüller",
