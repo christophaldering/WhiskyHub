@@ -8,9 +8,20 @@ import {
 } from "lucide-react";
 import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 import type { ElementType } from "react";
+import conceptPerceiving from "@/assets/images/concept-perceiving.png";
+import conceptClusterAnalysis from "@/assets/images/concept-cluster-analysis.png";
+import conceptQualityCriteria from "@/assets/images/concept-quality-criteria.png";
 
 interface StepCard { key: string; icon: ElementType; num: string; }
 interface ItemCard { key: string; icon: ElementType; }
+
+function SectionHero({ src, alt }: { src: string; alt: string }) {
+  return (
+    <div style={{ borderRadius: 12, overflow: "hidden", marginBottom: 16 }}>
+      <img src={src} alt={alt} style={{ width: "100%", height: "auto", display: "block" }} loading="lazy" />
+    </div>
+  );
+}
 
 function SectionHeader({ icon: Icon, title, tagline, color }: { icon: ElementType; title: string; tagline: string; color: string }) {
   return (
@@ -66,6 +77,7 @@ export default function LabsBackground() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
         <section id="tasting" style={{ scrollMarginTop: 80 }}>
+          <SectionHero src={conceptPerceiving} alt={t("background.tasting.title")} />
           <SectionHeader icon={Wine} title={t("background.tasting.title")} tagline={t("background.tasting.tagline")} color="#6ec177" />
           <p style={{ fontSize: 13, color: "var(--labs-text-secondary)", lineHeight: 1.6, marginBottom: 14 }}>{t("background.tasting.intro")}</p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -89,6 +101,7 @@ export default function LabsBackground() {
         </section>
 
         <section id="profile" style={{ scrollMarginTop: 80 }}>
+          <SectionHero src={conceptClusterAnalysis} alt={t("background.profile.title")} />
           <SectionHeader icon={Search} title={t("background.profile.title")} tagline={t("background.profile.tagline")} color="#5b9bd5" />
           <p style={{ fontSize: 13, color: "var(--labs-text-secondary)", lineHeight: 1.6, marginBottom: 14 }}>{t("background.profile.intro")}</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -106,6 +119,7 @@ export default function LabsBackground() {
         </section>
 
         <section id="dimensions" style={{ scrollMarginTop: 80 }}>
+          <SectionHero src={conceptQualityCriteria} alt={t("background.dimensions.title")} />
           <SectionHeader icon={Star} title={t("background.dimensions.title")} tagline={t("background.dimensions.tagline")} color="var(--labs-accent)" />
           <Link href="/labs/discover/method" style={{ textDecoration: "none" }}>
             <div

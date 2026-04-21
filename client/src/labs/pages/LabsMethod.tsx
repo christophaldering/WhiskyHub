@@ -2,6 +2,16 @@ import { useTranslation } from "react-i18next";
 import { BookOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
+import conceptNormalization from "@/assets/images/concept-normalization.png";
+import conceptFactorAnalysis from "@/assets/images/concept-factor-analysis.png";
+
+function SectionHero({ src, alt }: { src: string; alt: string }) {
+  return (
+    <div style={{ borderRadius: 12, overflow: "hidden", marginBottom: 12 }}>
+      <img src={src} alt={alt} style={{ width: "100%", height: "auto", display: "block" }} loading="lazy" />
+    </div>
+  );
+}
 
 function Section({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -33,7 +43,9 @@ export default function LabsMethod() {
         {t("bibliothek.howProfileCalculatedDesc", "Scoring, profiles & dimensions")}
       </p>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+        <div>
+          <SectionHero src={conceptNormalization} alt={t("methodPage.forEnthusiasts", "For Enthusiasts")} />
         <Section title={t("methodPage.forEnthusiasts", "For Enthusiasts")}>
           <p style={{ fontSize: 13, color: "var(--labs-text-secondary)", lineHeight: 1.6, margin: 0 }}>
             {t("methodPage.introText", "CaskSense builds your taste profile from your actual tasting behaviour — your scores, your notes, and the whiskies you choose. There are no quizzes, no self-assessments, and no assumptions. Everything is derived from real data you generate during tastings.")}
@@ -52,7 +64,10 @@ export default function LabsMethod() {
             {t("methodPage.livingDocument", "This methodology is a living document. As CaskSense evolves, so does the way we analyse and present your data — always transparently.")}
           </p>
         </Section>
+        </div>
 
+        <div>
+          <SectionHero src={conceptFactorAnalysis} alt={t("methodPage.forExperts", "For Experts")} />
         <Section title={t("methodPage.forExperts", "For Experts")} defaultOpen={false}>
           {[
             { title: "dimensionalModel", titleFb: "Dimensional Scoring Model", text: "dimensionalModelText", textFb: "Each whisky is scored across three dimensions: Nose, Taste, and Finish. These are not arbitrary — they reflect the standard evaluation framework used by professional blenders and competition judges." },
@@ -113,6 +128,7 @@ export default function LabsMethod() {
             </div>
           ))}
         </Section>
+        </div>
       </div>
     </div>
   );
