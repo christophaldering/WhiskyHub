@@ -1,5 +1,22 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "GkLgXBviP7Ba4qb67RJkO"
+uri = "file://client/src/assets/images/about-reflect.png"
+type = "image"
+title = "about reflect painted"
+
+[[generated]]
+id = "ppFbincyDqHDBJ-xGIuN1"
+uri = "file://client/src/assets/images/concept-kendall.png"
+type = "image"
+title = "concept kendall painted"
+
+[[generated]]
+id = "A0_xeRn1vdUst9qcL-5ap"
+uri = "file://client/src/assets/images/concept-measuring.png"
+type = "image"
+title = "concept measuring painted"
 
 [[outputs]]
 id = "LfBQXI4Ptd9oMsgu5cPah"
