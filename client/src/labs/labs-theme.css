@@ -1825,7 +1825,7 @@ a.labs-dram-item {
 
 .labs-hub-tile--active {
   background: color-mix(in srgb, var(--labs-accent) 10%, var(--labs-surface));
-  border-color: color-mix(in srgb, var(--labs-accent) 40%, var(--labs-border));
+  border-color: var(--labs-border);
 }
 
 .labs-hub-tile--active .labs-hub-tile-label {
