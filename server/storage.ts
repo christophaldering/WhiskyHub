@@ -366,7 +366,7 @@ export interface IStorage {
   getWhisky(id: string): Promise<Whisky | undefined>;
   createWhisky(data: InsertWhisky): Promise<Whisky>;
   updateWhisky(id: string, data: Partial<InsertWhisky>): Promise<Whisky | undefined>;
-  deleteWhisky(id: string): Promise<void>;
+  deleteWhisky(id: string): Promise<{ removedHandoutFileUrls: string[] }>;
 
   // Whisky Handout Library (per-host reusable handouts)
   listHandoutLibraryByHost(hostId: string, opts?: { search?: string }): Promise<WhiskyHandoutLibraryEntry[]>;
@@ -1159,9 +1159,14 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async deleteWhisky(id: string): Promise<void> {
+  async deleteWhisky(id: string): Promise<{ removedHandoutFileUrls: string[] }> {
+    const removed = await db.select({ fileUrl: whiskyHandouts.fileUrl })
+      .from(whiskyHandouts).where(eq(whiskyHandouts.whiskyId, id));
+    const removedHandoutFileUrls = removed.map((r) => r.fileUrl).filter(Boolean) as string[];
+    await db.delete(whiskyHandouts).where(eq(whiskyHandouts.whiskyId, id));
     await db.delete(ratings).where(eq(ratings.whiskyId, id));
     await db.delete(whiskies).where(eq(whiskies.id, id));
+    return { removedHandoutFileUrls };
   }
 
   // --- Whisky Handout Library ---
@@ -2363,8 +2368,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWhiskyHandoutUrlsForTasting(id: string): Promise<string[]> {
-    const rows = await db.select({ url: whiskies.handoutUrl }).from(whiskies).where(eq(whiskies.tastingId, id));
-    return rows.map(r => r.url).filter((u): u is string => !!u);
+    const legacyRows = await db.select({ url: whiskies.handoutUrl }).from(whiskies).where(eq(whiskies.tastingId, id));
+    const legacy = legacyRows.map(r => r.url).filter((u): u is string => !!u);
+    const whiskyIds = (await db.select({ id: whiskies.id }).from(whiskies).where(eq(whiskies.tastingId, id))).map(w => w.id);
+    let multi: string[] = [];
+    if (whiskyIds.length > 0) {
+      const rows = await db.select({ url: whiskyHandouts.fileUrl }).from(whiskyHandouts).where(inArray(whiskyHandouts.whiskyId, whiskyIds));
+      multi = rows.map(r => r.url).filter((u): u is string => !!u);
+    }
+    const tastingHandoutRows = await db.select({ url: tastingHandouts.fileUrl }).from(tastingHandouts).where(eq(tastingHandouts.tastingId, id));
+    const tastingMulti = tastingHandoutRows.map(r => r.url).filter((u): u is string => !!u);
+    return [...legacy, ...multi, ...tastingMulti];
   }
 
   async getTastingHandoutUrl(id: string): Promise<string | null> {
@@ -2373,6 +2387,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async hardDeleteTasting(id: string): Promise<void> {
+    const whiskyIds = (await db.select({ id: whiskies.id }).from(whiskies).where(eq(whiskies.tastingId, id))).map(w => w.id);
+    if (whiskyIds.length > 0) {
+      await db.delete(whiskyHandouts).where(inArray(whiskyHandouts.whiskyId, whiskyIds));
+    }
+    await db.delete(tastingHandouts).where(eq(tastingHandouts.tastingId, id));
     await db.delete(voiceMemos).where(eq(voiceMemos.tastingId, id));
     await db.delete(tastingPhotos).where(eq(tastingPhotos.tastingId, id));
     await db.delete(sharingParticipants).where(eq(sharingParticipants.tastingId, id));

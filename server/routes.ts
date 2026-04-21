@@ -2926,7 +2926,10 @@ export async function registerRoutes(
       if (whisky.handoutUrl) {
         await deleteHandoutFileIfUnreferenced(objectStorage, whisky.handoutUrl);
       }
-      await storage.deleteWhisky(req.params.id);
+      const { removedHandoutFileUrls } = await storage.deleteWhisky(req.params.id);
+      for (const url of removedHandoutFileUrls) {
+        await deleteHandoutFileIfUnreferenced(objectStorage, url);
+      }
       res.status(204).send();
     } catch (e: any) {
       res.status(400).json({ message: e.message });
