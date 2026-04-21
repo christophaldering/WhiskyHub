@@ -2016,7 +2016,7 @@ export default function LabsHandoutLibrary() {
                 description: e.description || "",
               })}
               onShareToggle={(e) => shareMut.mutate({ id: e.id, isShared: !e.isShared })}
-              onDownload={(e) => downloadFromEndpoint(e.fileUrl, hostId)}
+              onDownload={(e) => downloadFromEndpoint(e.fileUrl, e.title || e.whiskyName)}
               onReplace={(e) => { setReplaceTargetId(e.id); replaceFileInputRef.current?.click(); }}
               onSplit={(e) => setSplitTarget(e)}
               onDelete={(e) => {
