@@ -85,7 +85,7 @@ function TasteEvolutionCard({ pid }: { pid: string }) {
       if (!monthMap.has(key)) monthMap.set(key, []);
       monthMap.get(key)!.push(dp.score);
     }
-    const months = t("analytics.months", "Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec").split(",");
+    const months = t("labs.analytics.months", "Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec").split(",");
     for (const key of Array.from(monthMap.keys()).sort()) {
       const scores = monthMap.get(key)!;
       const [y, m] = key.split("-");
@@ -96,11 +96,11 @@ function TasteEvolutionCard({ pid }: { pid: string }) {
   if (grouped.length < 2) {
     return (
       <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.lg }} data-testid="card-taste-evolution">
-        <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: th.muted, marginBottom: SP.sm }}>{t("analytics.evolution", "Taste Evolution")}</p>
+        <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: th.muted, marginBottom: SP.sm }}>{t("labs.analytics.evolution", "Taste Evolution")}</p>
         <p style={{ fontSize: 13, color: th.faint }}>
           {dataPoints.length === 0
-            ? t("analytics.evolutionEmpty", "Start rating whiskies to see how your taste evolves.")
-            : t("analytics.evolutionNeedMore", "Keep tasting — your evolution chart appears after 2+ months of data.")}
+            ? t("labs.analytics.evolutionEmpty", "Start rating whiskies to see how your taste evolves.")
+            : t("labs.analytics.evolutionNeedMore", "Keep tasting — your evolution chart appears after 2+ months of data.")}
         </p>
       </div>
     );
@@ -124,8 +124,8 @@ function TasteEvolutionCard({ pid }: { pid: string }) {
 
   return (
     <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.lg }} data-testid="card-taste-evolution">
-      <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: th.muted, marginBottom: SP.xs }}>{t("analytics.evolution", "Taste Evolution")}</p>
-      <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>{t("analytics.evolutionDesc", "How your average rating has developed over time")}</p>
+      <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: th.muted, marginBottom: SP.xs }}>{t("labs.analytics.evolution", "Taste Evolution")}</p>
+      <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>{t("labs.analytics.evolutionDesc", "How your average rating has developed over time")}</p>
       <div style={{ display: "flex", justifyContent: "center" }}>
         <svg width={chartW} height={chartH} viewBox={`0 0 ${chartW} ${chartH}`} style={{ maxWidth: "100%" }}>
           <path d={pathD} fill="none" stroke={th.gold} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
@@ -138,17 +138,17 @@ function TasteEvolutionCard({ pid }: { pid: string }) {
         </svg>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: SP.sm }}>
-        <span style={{ fontSize: 11, color: th.faint }}>{grouped[0].label}: {t("analytics.avg", "avg")} {Math.round(grouped[0].avg)}/100</span>
-        <span style={{ fontSize: 11, color: th.faint }}>{grouped[grouped.length - 1].label}: {t("analytics.avg", "avg")} {Math.round(grouped[grouped.length - 1].avg)}/100</span>
+        <span style={{ fontSize: 11, color: th.faint }}>{grouped[0].label}: {t("labs.analytics.avg", "avg")} {Math.round(grouped[0].avg)}/100</span>
+        <span style={{ fontSize: 11, color: th.faint }}>{grouped[grouped.length - 1].label}: {t("labs.analytics.avg", "avg")} {Math.round(grouped[grouped.length - 1].avg)}/100</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: SP.md, fontSize: 12, color: trendColor }}>
         <TrendIcon style={{ width: 14, height: 14 }} />
         <span>
           {delta > 0.5
-            ? t("analytics.risen", "Your average has risen by {{pts}} pts", { pts: Math.round(delta) })
+            ? t("labs.analytics.risen", "Your average has risen by {{pts}} pts", { pts: Math.round(delta) })
             : delta < -0.5
-              ? t("analytics.dropped", "Your average has shifted down by {{pts}} pts", { pts: Math.round(Math.abs(delta)) })
-              : t("analytics.consistent", "Your average has stayed consistent")}
+              ? t("labs.analytics.dropped", "Your average has shifted down by {{pts}} pts", { pts: Math.round(Math.abs(delta)) })
+              : t("labs.analytics.consistent", "Your average has stayed consistent")}
         </span>
       </div>
     </div>
@@ -185,18 +185,18 @@ function RatingConsistencyCard({ pid }: { pid: string }) {
   let consistencyLabel = "—";
   let consistencyColor = th.muted;
   if (stability != null) {
-    if (stability >= 8) { consistencyLabel = t("analytics.veryConsistent", "Very Consistent"); consistencyColor = th.green; }
-    else if (stability >= 6) { consistencyLabel = t("analytics.consistentLabel", "Consistent"); consistencyColor = th.gold; }
-    else if (stability >= 4) { consistencyLabel = t("analytics.variable", "Variable"); consistencyColor = th.gold; }
-    else { consistencyLabel = t("analytics.highlyVariable", "Highly Variable"); consistencyColor = "#e06060"; }
+    if (stability >= 8) { consistencyLabel = t("labs.analytics.veryConsistent", "Very Consistent"); consistencyColor = th.green; }
+    else if (stability >= 6) { consistencyLabel = t("labs.analytics.consistentLabel", "Consistent"); consistencyColor = th.gold; }
+    else if (stability >= 4) { consistencyLabel = t("labs.analytics.variable", "Variable"); consistencyColor = th.gold; }
+    else { consistencyLabel = t("labs.analytics.highlyVariable", "Highly Variable"); consistencyColor = "#e06060"; }
   }
 
   return (
     <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.lg }} data-testid="card-rating-consistency">
-      <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: th.muted, marginBottom: SP.xs }}>{t("analytics.consistency", "Rating Consistency")}</p>
-      <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>{t("analytics.consistencyDesc", "How stable and predictable your scoring pattern is")}</p>
+      <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: th.muted, marginBottom: SP.xs }}>{t("labs.analytics.consistency", "Rating Consistency")}</p>
+      <p style={{ fontSize: 13, color: th.faint, marginBottom: SP.md }}>{t("labs.analytics.consistencyDesc", "How stable and predictable your scoring pattern is")}</p>
       {!hasData ? (
-        <p style={{ fontSize: 13, color: th.faint }}>{t("analytics.consistencyEmpty", "Rate more whiskies to see your consistency score.")}</p>
+        <p style={{ fontSize: 13, color: th.faint }}>{t("labs.analytics.consistencyEmpty", "Rate more whiskies to see your consistency score.")}</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {stability != null && (
@@ -210,24 +210,24 @@ function RatingConsistencyCard({ pid }: { pid: string }) {
               <div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: consistencyColor }}>{consistencyLabel}</div>
                 <div style={{ fontSize: 13, marginTop: 2, color: th.faint }}>
-                  {t("analytics.patternIs", "Your scoring pattern is {{label}}", { label: consistencyLabel.toLowerCase() })}
+                  {t("labs.analytics.patternIs", "Your scoring pattern is {{label}}", { label: consistencyLabel.toLowerCase() })}
                 </div>
               </div>
             </div>
           )}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: SP.sm }}>
-            {mean != null && <StatMini value={mean.toFixed(1)} label={t("analytics.avgScore", "Avg Score")} />}
-            {stdDev != null && <StatMini value={stdDev.toFixed(1)} label={t("analytics.spread", "Spread (StdDev)")} />}
-            {min != null && max != null && <StatMini value={`${min.toFixed(0)}–${max.toFixed(0)}`} label={t("analytics.range", "Range")} />}
-            {n != null && <StatMini value={String(n)} label={t("analytics.ratings", "Ratings")} />}
+            {mean != null && <StatMini value={mean.toFixed(1)} label={t("labs.analytics.avgScore", "Avg Score")} />}
+            {stdDev != null && <StatMini value={stdDev.toFixed(1)} label={t("labs.analytics.spread", "Spread (StdDev)")} />}
+            {min != null && max != null && <StatMini value={`${min.toFixed(0)}–${max.toFixed(0)}`} label={t("labs.analytics.range", "Range")} />}
+            {n != null && <StatMini value={String(n)} label={t("labs.analytics.ratings", "Ratings")} />}
           </div>
           {stdDev != null && (
             <p style={{ fontSize: 13, color: th.faint, lineHeight: 1.5 }}>
               {stdDev < 8
-                ? t("analytics.spreadLow", "You tend to rate quite consistently — your scores stay close together.")
+                ? t("labs.analytics.spreadLow", "You tend to rate quite consistently — your scores stay close together.")
                 : stdDev < 15
-                  ? t("analytics.spreadMedium", "You have a healthy spread in your ratings, showing nuanced preferences.")
-                  : t("analytics.spreadHigh", "Your ratings vary a lot — you clearly distinguish between whiskies you love and those you don't.")}
+                  ? t("labs.analytics.spreadMedium", "You have a healthy spread in your ratings, showing nuanced preferences.")
+                  : t("labs.analytics.spreadHigh", "Your ratings vary a lot — you clearly distinguish between whiskies you love and those you don't.")}
             </p>
           )}
         </div>
@@ -254,7 +254,7 @@ function AIInsightCard({ pid }: { pid: string }) {
     <div style={{ background: th.bgCard, border: `1px solid ${th.border}`, borderRadius: 20, padding: SP.lg }} data-testid="card-ai-insight">
       <div style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.md }}>
         <Sparkles style={{ width: 16, height: 16, color: th.gold }} />
-        <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: th.muted, margin: 0 }}>{t("analytics.aiInsight", "AI Insight")}</p>
+        <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: th.muted, margin: 0 }}>{t("labs.analytics.aiInsight", "AI Insight")}</p>
       </div>
       <p style={{ fontSize: 14, color: th.text, lineHeight: 1.7 }} data-testid="text-ai-insight-message">
         {insight.message}
@@ -293,7 +293,7 @@ function UnlockBanner() {
       background: withAlpha(th.gold, 0.08),
       border: `1px solid ${th.gold}`, borderRadius: 20, padding: `${SP.md}px ${SP.lg}px`, textAlign: "center",
     }}>
-      <span style={{ fontSize: 13, fontWeight: 600, color: th.gold }}>{t("analytics.unlocked", "Your Analytics are ready.")}</span>
+      <span style={{ fontSize: 13, fontWeight: 600, color: th.gold }}>{t("labs.analytics.unlocked", "Your Analytics are ready.")}</span>
     </div>
   );
 }
@@ -330,10 +330,10 @@ export default function LabsTasteAnalytics() {
       <MeineWeltActionBar active="analytics" />
 
       <h1 className="labs-h2" style={{ color: th.text, marginBottom: SP.xs }} data-testid="text-analytics-title">
-        {t("analytics.title", "Analytics")}
+        {t("labs.analytics.title", "Analytics")}
       </h1>
       <p style={{ fontSize: 14, color: th.muted, marginBottom: SP.md }}>
-        {t("analytics.subtitle", "Your taste evolution & rating consistency")}
+        {t("labs.analytics.subtitle", "Your taste evolution & rating consistency")}
       </p>
       {scaleInfo?.hasMultipleScales && (
         <p style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 4, marginBottom: SP.lg, color: th.faint }} data-testid="analytics-normalized-hint">
@@ -363,15 +363,15 @@ export default function LabsTasteAnalytics() {
             <Lock style={{ width: 22, height: 22, color: th.gold }} />
           </div>
           <h3 style={{ fontFamily: "Playfair Display, serif", fontSize: 16, fontWeight: 600, color: th.text, marginBottom: SP.sm }}>
-            {t("analytics.lockedTitle", "Your Analytics unlock after {{n}} whiskies", { n: THRESHOLD })}
+            {t("labs.analytics.lockedTitle", "Your Analytics unlock after {{n}} whiskies", { n: THRESHOLD })}
           </h3>
-          <p style={{ fontSize: 14, color: th.muted, marginBottom: SP.lg }}>{t("analytics.lockedDesc", "Build your tasting history to unlock deeper insights.")}</p>
+          <p style={{ fontSize: 14, color: th.muted, marginBottom: SP.lg }}>{t("labs.analytics.lockedDesc", "Build your tasting history to unlock deeper insights.")}</p>
           <div style={{ maxWidth: 220, margin: `0 auto ${SP.sm}px` }}>
             <div style={{ height: 6, background: th.border, borderRadius: 3, overflow: "hidden" }}>
               <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg, ${th.amber}, ${th.gold})`, borderRadius: 3, transition: "width 0.5s ease" }} />
             </div>
             <div style={{ fontSize: 13, marginTop: 6, fontWeight: 600, color: th.gold }} data-testid="text-progress">
-              {totalRatings} / {THRESHOLD} {t("analytics.whiskiesLogged", "whiskies logged")}
+              {totalRatings} / {THRESHOLD} {t("labs.analytics.whiskiesLogged", "whiskies logged")}
             </div>
           </div>
           <button
@@ -381,7 +381,7 @@ export default function LabsTasteAnalytics() {
             data-testid="button-log-whisky"
           >
             <PenLine style={{ width: 14, height: 14 }} />
-            {t("analytics.logAnother", "Log another whisky")}
+            {t("labs.analytics.logAnother", "Log another whisky")}
           </button>
         </div>
       ) : (

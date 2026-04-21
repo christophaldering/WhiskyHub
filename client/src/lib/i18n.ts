@@ -13956,7 +13956,7 @@ const resources = {
         flavorProfileDesc: "Dein persönliches Geschmacksprofil basierend auf Bewertungen",
         whiskyDna: "Whisky-DNA",
         sectionAnalytics: "Auswertungen",
-        myAnalytics: "Analytics",
+        myAnalytics: "Analytik",
         analyticsLocked: "{{count}} / {{threshold}} Whiskys zum Freischalten",
         analyticsUnlocked: "Deine Bewertungsstatistiken & Trends",
         comparison: "Vergleich",
