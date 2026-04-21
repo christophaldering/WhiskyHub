@@ -111,6 +111,16 @@ export default function LabsLexicon({ forceTab }: { forceTab?: TabId } = {}) {
     { id: "flavour-map", label: t("bibliothek.tabFlavourMap", "Flavour Map") },
   ];
 
+  const hideChrome = forceTab === "flavour-map";
+
+  if (hideChrome) {
+    return (
+      <div className="labs-page" data-testid="labs-discover-lexicon-page">
+        <VocabularyContent />
+      </div>
+    );
+  }
+
   return (
     <div className="labs-page" data-testid="labs-discover-lexicon-page">
       <DiscoverActionBar active="bibliothek" />
