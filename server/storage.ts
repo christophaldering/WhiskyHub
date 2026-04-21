@@ -369,7 +369,7 @@ export interface IStorage {
   deleteWhisky(id: string): Promise<{ removedHandoutFileUrls: string[] }>;
 
   // Whisky Handout Library (per-host reusable handouts)
-  listHandoutLibraryByHost(hostId: string, opts?: { search?: string }): Promise<WhiskyHandoutLibraryEntry[]>;
+  listHandoutLibraryByHost(hostId: string, opts?: { search?: string }): Promise<(WhiskyHandoutLibraryEntry & { usageCount: number })[]>;
   suggestHandoutLibrary(hostId: string, match: { whiskybaseId?: string | null; whiskyName?: string | null; distillery?: string | null }): Promise<WhiskyHandoutLibraryEntry[]>;
   getHandoutLibraryEntry(id: string): Promise<WhiskyHandoutLibraryEntry | undefined>;
   createHandoutLibraryEntry(data: InsertWhiskyHandoutLibraryEntry): Promise<WhiskyHandoutLibraryEntry>;
@@ -1170,22 +1170,51 @@ export class DatabaseStorage implements IStorage {
   }
 
   // --- Whisky Handout Library ---
-  async listHandoutLibraryByHost(hostId: string, opts?: { search?: string }): Promise<WhiskyHandoutLibraryEntry[]> {
+  async listHandoutLibraryByHost(hostId: string, opts?: { search?: string }): Promise<(WhiskyHandoutLibraryEntry & { usageCount: number })[]> {
     const search = opts?.search?.trim();
-    if (search) {
-      const pattern = `%${search.toLowerCase()}%`;
-      return db.select().from(whiskyHandoutLibrary).where(and(
-        eq(whiskyHandoutLibrary.hostId, hostId),
-        sql`(LOWER(${whiskyHandoutLibrary.whiskyName}) LIKE ${pattern}
-          OR LOWER(COALESCE(${whiskyHandoutLibrary.distillery}, '')) LIKE ${pattern}
-          OR LOWER(COALESCE(${whiskyHandoutLibrary.title}, '')) LIKE ${pattern}
-          OR LOWER(COALESCE(${whiskyHandoutLibrary.author}, '')) LIKE ${pattern}
-          OR LOWER(COALESCE(${whiskyHandoutLibrary.whiskybaseId}, '')) LIKE ${pattern})`
-      )).orderBy(desc(whiskyHandoutLibrary.createdAt));
-    }
-    return db.select().from(whiskyHandoutLibrary)
-      .where(eq(whiskyHandoutLibrary.hostId, hostId))
+    const baseFilter = search
+      ? and(
+          eq(whiskyHandoutLibrary.hostId, hostId),
+          sql`(LOWER(${whiskyHandoutLibrary.whiskyName}) LIKE ${`%${search.toLowerCase()}%`}
+            OR LOWER(COALESCE(${whiskyHandoutLibrary.distillery}, '')) LIKE ${`%${search.toLowerCase()}%`}
+            OR LOWER(COALESCE(${whiskyHandoutLibrary.title}, '')) LIKE ${`%${search.toLowerCase()}%`}
+            OR LOWER(COALESCE(${whiskyHandoutLibrary.author}, '')) LIKE ${`%${search.toLowerCase()}%`}
+            OR LOWER(COALESCE(${whiskyHandoutLibrary.whiskybaseId}, '')) LIKE ${`%${search.toLowerCase()}%`})`,
+        )
+      : eq(whiskyHandoutLibrary.hostId, hostId);
+    const rows = await db.select().from(whiskyHandoutLibrary)
+      .where(baseFilter)
       .orderBy(desc(whiskyHandoutLibrary.createdAt));
+    if (rows.length === 0) return [];
+    const ids = rows.map((r) => r.id);
+    const usage = new Map<string, number>();
+    const [whiskyRefs, tastingRefs, distRefs] = await Promise.all([
+      db.select({ sourceLibraryId: whiskyHandouts.sourceLibraryId, c: sql<number>`count(*)::int` })
+        .from(whiskyHandouts)
+        .where(inArray(whiskyHandouts.sourceLibraryId, ids))
+        .groupBy(whiskyHandouts.sourceLibraryId),
+      db.select({ sourceLibraryId: tastingHandouts.sourceLibraryId, c: sql<number>`count(*)::int` })
+        .from(tastingHandouts)
+        .where(inArray(tastingHandouts.sourceLibraryId, ids))
+        .groupBy(tastingHandouts.sourceLibraryId),
+      db.select({ sourceLibraryId: distilleryHandouts.sourceLibraryId, c: sql<number>`count(*)::int` })
+        .from(distilleryHandouts)
+        .where(inArray(distilleryHandouts.sourceLibraryId, ids))
+        .groupBy(distilleryHandouts.sourceLibraryId),
+    ]);
+    for (const r of whiskyRefs) {
+      if (!r.sourceLibraryId) continue;
+      usage.set(r.sourceLibraryId, (usage.get(r.sourceLibraryId) || 0) + Number(r.c || 0));
+    }
+    for (const r of tastingRefs) {
+      if (!r.sourceLibraryId) continue;
+      usage.set(r.sourceLibraryId, (usage.get(r.sourceLibraryId) || 0) + Number(r.c || 0));
+    }
+    for (const r of distRefs) {
+      if (!r.sourceLibraryId) continue;
+      usage.set(r.sourceLibraryId, (usage.get(r.sourceLibraryId) || 0) + Number(r.c || 0));
+    }
+    return rows.map((r) => ({ ...r, usageCount: usage.get(r.id) || 0 }));
   }
 
   async suggestHandoutLibrary(hostId: string, match: { whiskybaseId?: string | null; whiskyName?: string | null; distillery?: string | null }): Promise<WhiskyHandoutLibraryEntry[]> {

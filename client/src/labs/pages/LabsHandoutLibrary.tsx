@@ -1,11 +1,12 @@
 import type React from "react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useSearch } from "wouter";
 import {
   FileText, Image as ImageIcon, Library, Search, Trash2,
   Pencil, Save, X, ExternalLink, Download, Globe, Lock, Plus, Upload, Loader2, RefreshCw, Scissors, Building2,
+  LayoutGrid, Table as TableIcon, ArrowUp, ArrowDown, ArrowUpDown, MoreHorizontal,
 } from "lucide-react";
 import { getParticipantId, handoutLibraryApi } from "@/lib/api";
 import { downloadFromEndpoint } from "@/lib/download";
@@ -111,6 +112,26 @@ function HandoutSkeletonTile() {
       </div>
     </div>
   );
+}
+
+function formatBytes(bytes: number | null | undefined, locale: string): string {
+  if (!bytes || bytes <= 0) return "—";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toLocaleString(locale, { maximumFractionDigits: 0 })} KB`;
+  }
+  return `${(bytes / (1024 * 1024)).toLocaleString(locale, { maximumFractionDigits: 1 })} MB`;
+}
+
+function formatDateShort(value: Date | string | null | undefined, locale: string): string {
+  if (!value) return "—";
+  try {
+    const d = value instanceof Date ? value : new Date(value);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
+  } catch {
+    return "—";
+  }
 }
 
 function tileSubline(entry: WhiskyHandoutLibraryEntry, t: (k: string, opts?: any) => string): string {
@@ -440,6 +461,302 @@ function HandoutDetailSheet({ entry, isPdf, metaParts, actions, onClose, t, host
 }
 
 
+type LibraryRowAug = WhiskyHandoutLibraryEntry & { usageCount?: number; fileSize?: number | null };
+type SortKey = "whisky" | "distillery" | "author" | "shared" | "usage" | "date" | "fileSize";
+
+interface HandoutLibraryTableViewProps {
+  entries: LibraryRowAug[];
+  t: (key: string, opts?: any) => string;
+  locale: string;
+  selected: Set<string>;
+  selectMode: boolean;
+  onToggleSelect: (id: string) => void;
+  onToggleSelectAll: () => void;
+  allSelected: boolean;
+  sortKey: SortKey;
+  sortDir: "asc" | "desc";
+  onSort: (key: SortKey) => void;
+  openMenuId: string | null;
+  setOpenMenuId: (id: string | null) => void;
+  onOpenDetail: (entry: LibraryRowAug) => void;
+  onEdit: (entry: LibraryRowAug) => void;
+  onShareToggle: (entry: LibraryRowAug) => void;
+  onDownload: (entry: LibraryRowAug) => void;
+  onReplace: (entry: LibraryRowAug) => void;
+  onSplit: (entry: LibraryRowAug) => void;
+  onDelete: (entry: LibraryRowAug) => void;
+}
+
+function SortHeader({ label, active, dir, onClick, testId }: { label: string; active: boolean; dir: "asc" | "desc"; onClick: () => void; testId: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-testid={testId}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 4, padding: 0, background: "transparent",
+        border: "none", color: active ? "var(--labs-text)" : "var(--labs-text-muted)",
+        fontWeight: active ? 600 : 500, fontSize: 12, cursor: "pointer", textAlign: "left",
+      }}
+    >
+      {label}
+      {active
+        ? (dir === "asc"
+            ? <ArrowUp style={{ width: 12, height: 12 }} />
+            : <ArrowDown style={{ width: 12, height: 12 }} />)
+        : <ArrowUpDown style={{ width: 12, height: 12, opacity: 0.5 }} />}
+    </button>
+  );
+}
+
+function ariaSortFor(key: SortKey, current: SortKey, dir: "asc" | "desc"): "ascending" | "descending" | "none" {
+  if (key !== current) return "none";
+  return dir === "asc" ? "ascending" : "descending";
+}
+
+function HandoutLibraryTableView(props: HandoutLibraryTableViewProps) {
+  const {
+    entries, t, locale, selected, selectMode, onToggleSelect, onToggleSelectAll, allSelected,
+    sortKey, sortDir, onSort, openMenuId, setOpenMenuId,
+    onOpenDetail, onEdit, onShareToggle, onDownload, onReplace, onSplit, onDelete,
+  } = props;
+
+  const thStyle: React.CSSProperties = {
+    textAlign: "left", padding: "10px 12px", borderBottom: "1px solid var(--labs-border)",
+    fontSize: 12, color: "var(--labs-text-muted)", whiteSpace: "nowrap", background: "var(--labs-surface)",
+    position: "sticky", top: 0, zIndex: 1,
+  };
+  const tdStyle: React.CSSProperties = {
+    padding: "10px 12px", borderBottom: "1px solid var(--labs-border)",
+    fontSize: 13, color: "var(--labs-text)", verticalAlign: "middle",
+  };
+
+  return (
+    <div
+      className="labs-card"
+      style={{ padding: 0, overflowX: "auto" }}
+      data-testid="handout-library-table"
+    >
+      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 880 }}>
+        <thead>
+          <tr>
+            {selectMode && (
+              <th style={{ ...thStyle, width: 36 }}>
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={onToggleSelectAll}
+                  aria-label={t("labs.handoutLibrary.selectAll")}
+                  data-testid="checkbox-table-select-all"
+                />
+              </th>
+            )}
+            <th style={thStyle} aria-sort={ariaSortFor("whisky", sortKey, sortDir)}><SortHeader label={t("labs.handoutLibrary.colWhisky", { defaultValue: t("labs.handoutLibrary.fieldWhiskyName") })} active={sortKey === "whisky"} dir={sortDir} onClick={() => onSort("whisky")} testId="th-sort-whisky" /></th>
+            <th style={thStyle} aria-sort={ariaSortFor("distillery", sortKey, sortDir)}><SortHeader label={t("labs.handoutLibrary.colDistillery", { defaultValue: t("labs.handoutLibrary.fieldDistillery") })} active={sortKey === "distillery"} dir={sortDir} onClick={() => onSort("distillery")} testId="th-sort-distillery" /></th>
+            <th style={thStyle} aria-sort={ariaSortFor("author", sortKey, sortDir)}><SortHeader label={t("labs.handoutLibrary.colAuthor", { defaultValue: t("labs.handoutLibrary.fieldAuthor") })} active={sortKey === "author"} dir={sortDir} onClick={() => onSort("author")} testId="th-sort-author" /></th>
+            <th style={thStyle} aria-sort={ariaSortFor("shared", sortKey, sortDir)}><SortHeader label={t("labs.handoutLibrary.colShared", { defaultValue: t("labs.handoutLibrary.badgeShared") })} active={sortKey === "shared"} dir={sortDir} onClick={() => onSort("shared")} testId="th-sort-shared" /></th>
+            <th style={{ ...thStyle, textAlign: "right" }} aria-sort={ariaSortFor("usage", sortKey, sortDir)}><SortHeader label={t("labs.handoutLibrary.colUsage", { defaultValue: "Used in" })} active={sortKey === "usage"} dir={sortDir} onClick={() => onSort("usage")} testId="th-sort-usage" /></th>
+            <th style={thStyle} aria-sort={ariaSortFor("date", sortKey, sortDir)}><SortHeader label={t("labs.handoutLibrary.colDate", { defaultValue: "Added" })} active={sortKey === "date"} dir={sortDir} onClick={() => onSort("date")} testId="th-sort-date" /></th>
+            <th style={{ ...thStyle, textAlign: "right" }} aria-sort={ariaSortFor("fileSize", sortKey, sortDir)}><SortHeader label={t("labs.handoutLibrary.colFileSize", { defaultValue: "Size" })} active={sortKey === "fileSize"} dir={sortDir} onClick={() => onSort("fileSize")} testId="th-sort-filesize" /></th>
+            <th style={{ ...thStyle, width: 56 }} aria-label={t("labs.handoutLibrary.colActions", { defaultValue: "Actions" })} />
+          </tr>
+        </thead>
+        <tbody>
+          {entries.map((entry) => {
+            const isPdf = entry.contentType === "application/pdf";
+            const isSelected = selected.has(entry.id);
+            const menuOpen = openMenuId === entry.id;
+            return (
+              <tr
+                key={entry.id}
+                data-testid={`row-handout-${entry.id}`}
+                style={{ background: isSelected ? "var(--labs-accent-muted)" : "transparent" }}
+              >
+                {selectMode && (
+                  <td style={tdStyle}>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => onToggleSelect(entry.id)}
+                      aria-label={t("labs.handoutLibrary.selectAll")}
+                      data-testid={`checkbox-row-${entry.id}`}
+                    />
+                  </td>
+                )}
+                <td style={tdStyle}>
+                  <button
+                    type="button"
+                    onClick={() => (selectMode ? onToggleSelect(entry.id) : onOpenDetail(entry))}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 8, background: "transparent", border: "none",
+                      cursor: "pointer", padding: 0, color: "var(--labs-text)", fontWeight: 500, textAlign: "left",
+                    }}
+                    data-testid={`link-handout-name-${entry.id}`}
+                  >
+                    {isPdf
+                      ? <FileText style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
+                      : <ImageIcon style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />}
+                    <span>{entry.whiskyName || entry.title || "—"}</span>
+                  </button>
+                </td>
+                <td style={tdStyle} data-testid={`text-distillery-${entry.id}`}>{entry.distillery || "—"}</td>
+                <td style={tdStyle} data-testid={`text-author-${entry.id}`}>{entry.author || "—"}</td>
+                <td style={tdStyle} data-testid={`text-shared-${entry.id}`}>
+                  {entry.isShared
+                    ? <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--labs-accent)" }}><Globe style={{ width: 12, height: 12 }} /> {t("labs.handoutLibrary.badgeShared")}</span>
+                    : <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--labs-text-muted)" }}><Lock style={{ width: 12, height: 12 }} /> {t("labs.handoutLibrary.bulkUnshare")}</span>}
+                </td>
+                <td style={{ ...tdStyle, textAlign: "right" }} data-testid={`text-usage-${entry.id}`}>{entry.usageCount ?? 0}</td>
+                <td style={tdStyle} data-testid={`text-date-${entry.id}`}>{formatDateShort(entry.createdAt as any, locale)}</td>
+                <td style={{ ...tdStyle, textAlign: "right" }} data-testid={`text-filesize-${entry.id}`}>{formatBytes(entry.fileSize ?? null, locale)}</td>
+                <td style={{ ...tdStyle, textAlign: "right", position: "relative" }}>
+                  <RowActionMenu
+                    entry={entry}
+                    isPdf={isPdf}
+                    open={menuOpen}
+                    setOpen={(o) => setOpenMenuId(o ? entry.id : null)}
+                    t={t}
+                    onOpenDetail={onOpenDetail}
+                    onEdit={onEdit}
+                    onShareToggle={onShareToggle}
+                    onDownload={onDownload}
+                    onReplace={onReplace}
+                    onSplit={onSplit}
+                    onDelete={onDelete}
+                  />
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+interface RowActionMenuProps {
+  entry: LibraryRowAug;
+  isPdf: boolean;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  t: (k: string, opts?: any) => string;
+  onOpenDetail: (e: LibraryRowAug) => void;
+  onEdit: (e: LibraryRowAug) => void;
+  onShareToggle: (e: LibraryRowAug) => void;
+  onDownload: (e: LibraryRowAug) => void;
+  onReplace: (e: LibraryRowAug) => void;
+  onSplit: (e: LibraryRowAug) => void;
+  onDelete: (e: LibraryRowAug) => void;
+}
+
+function RowActionMenu(props: RowActionMenuProps) {
+  const { entry, isPdf, open, setOpen, t, onOpenDetail, onEdit, onShareToggle, onDownload, onReplace, onSplit, onDelete } = props;
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const first = menuRef.current?.querySelector<HTMLButtonElement>("button[role=menuitem]");
+    first?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        setOpen(false);
+        triggerRef.current?.focus();
+      } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        const items = Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>("button[role=menuitem]") || []);
+        if (items.length === 0) return;
+        const active = document.activeElement as HTMLElement | null;
+        const idx = items.findIndex((el) => el === active);
+        const next = e.key === "ArrowDown"
+          ? items[(idx + 1 + items.length) % items.length]
+          : items[(idx - 1 + items.length) % items.length];
+        next?.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, setOpen]);
+
+  const closeAndRun = (fn: () => void) => {
+    setOpen(false);
+    triggerRef.current?.focus();
+    fn();
+  };
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => setOpen(!open)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={t("labs.handoutLibrary.colActions", { defaultValue: "Actions" })}
+        data-testid={`button-row-menu-${entry.id}`}
+        style={{
+          display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28,
+          background: "transparent", border: "1px solid var(--labs-border)", borderRadius: 6,
+          cursor: "pointer", color: "var(--labs-text)",
+        }}
+      >
+        <MoreHorizontal style={{ width: 14, height: 14 }} />
+      </button>
+      {open && (
+        <>
+          <div
+            onClick={() => { setOpen(false); triggerRef.current?.focus(); }}
+            style={{ position: "fixed", inset: 0, zIndex: 20, background: "transparent" }}
+            aria-hidden="true"
+          />
+          <div
+            ref={menuRef}
+            role="menu"
+            data-testid={`menu-row-${entry.id}`}
+            style={{
+              position: "absolute", right: 12, top: "100%", marginTop: 4, zIndex: 21,
+              minWidth: 200, background: "var(--labs-surface)",
+              border: "1px solid var(--labs-border)", borderRadius: 8,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.18)", padding: 4, textAlign: "left",
+            }}
+          >
+            <MenuItem testId={`menu-open-${entry.id}`} onClick={() => closeAndRun(() => onOpenDetail(entry))} icon={<ExternalLink style={{ width: 12, height: 12 }} />} label={t("labs.handoutLibrary.actionOpen")} />
+            <MenuItem testId={`menu-download-${entry.id}`} onClick={() => closeAndRun(() => onDownload(entry))} icon={<Download style={{ width: 12, height: 12 }} />} label={t("labs.handoutLibrary.actionDownload")} />
+            <MenuItem testId={`menu-share-${entry.id}`} onClick={() => closeAndRun(() => onShareToggle(entry))} icon={entry.isShared ? <Lock style={{ width: 12, height: 12 }} /> : <Globe style={{ width: 12, height: 12 }} />} label={entry.isShared ? t("labs.handoutLibrary.actionShareOff") : t("labs.handoutLibrary.actionShareOn")} />
+            <MenuItem testId={`menu-replace-${entry.id}`} onClick={() => closeAndRun(() => onReplace(entry))} icon={<RefreshCw style={{ width: 12, height: 12 }} />} label={t("labs.handoutLibrary.actionReplace")} />
+            {isPdf && (
+              <MenuItem testId={`menu-split-${entry.id}`} onClick={() => closeAndRun(() => onSplit(entry))} icon={<Scissors style={{ width: 12, height: 12 }} />} label={t("labs.handoutLibrary.actionSplit", { defaultValue: t("labs.handoutLibrary.uploadAndSplit") })} />
+            )}
+            <MenuItem testId={`menu-edit-${entry.id}`} onClick={() => closeAndRun(() => onEdit(entry))} icon={<Pencil style={{ width: 12, height: 12 }} />} label={t("labs.handoutLibrary.actionEdit")} />
+            <MenuItem testId={`menu-delete-${entry.id}`} danger onClick={() => closeAndRun(() => onDelete(entry))} icon={<Trash2 style={{ width: 12, height: 12 }} />} label={t("labs.handoutLibrary.actionDelete")} />
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
+function MenuItem({ icon, label, onClick, testId, danger }: { icon: React.ReactNode; label: string; onClick: () => void; testId: string; danger?: boolean }) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      data-testid={testId}
+      style={{
+        display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 10px",
+        background: "transparent", border: "none", borderRadius: 6, cursor: "pointer",
+        fontSize: 12, color: danger ? "var(--labs-danger)" : "var(--labs-text)", textAlign: "left",
+      }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--labs-accent-muted)"; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+    >
+      {icon} {label}
+    </button>
+  );
+}
+
 export default function LabsHandoutLibrary() {
   const { t, i18n } = useTranslation();
   const [, setLocation] = useLocation();
@@ -485,8 +802,31 @@ export default function LabsHandoutLibrary() {
   const uploadFileInputRef = useRef<HTMLInputElement>(null);
   const [replaceTargetId, setReplaceTargetId] = useState<string | null>(null);
   const [splitTarget, setSplitTarget] = useState<WhiskyHandoutLibraryEntry | null>(null);
+  const [viewMode, setViewMode] = useState<"cards" | "table">(() => {
+    if (typeof window === "undefined") return "cards";
+    try {
+      const v = window.localStorage.getItem("labs-handout-library-view");
+      return v === "table" ? "table" : "cards";
+    } catch {
+      return "cards";
+    }
+  });
+  const [sortKey, setSortKey] = useState<"whisky" | "distillery" | "author" | "shared" | "usage" | "date" | "fileSize">("date");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [openRowMenuId, setOpenRowMenuId] = useState<string | null>(null);
 
-  const listQuery = useQuery<WhiskyHandoutLibraryEntry[]>({
+  const updateViewMode = (mode: "cards" | "table") => {
+    setViewMode(mode);
+    try { window.localStorage.setItem("labs-handout-library-view", mode); } catch {}
+  };
+
+  const toggleSort = (key: typeof sortKey) => {
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(key); setSortDir(key === "date" || key === "usage" || key === "fileSize" ? "desc" : "asc"); }
+  };
+
+  type LibraryRow = WhiskyHandoutLibraryEntry & { usageCount?: number; fileSize?: number | null };
+  const listQuery = useQuery<LibraryRow[]>({
     queryKey: ["handout-library", hostId, search],
     queryFn: () => handoutLibraryApi.list(hostId, search.trim() || undefined),
     enabled: !!hostId,
@@ -512,6 +852,31 @@ export default function LabsHandoutLibrary() {
     const f = distilleryFilter.trim().toLowerCase();
     return allEntries.filter((e) => (e.distillery || "").trim().toLowerCase() === f);
   }, [allEntries, distilleryFilter]);
+
+  const sortedFiltered = useMemo(() => {
+    const arr = [...filtered];
+    const dir = sortDir === "asc" ? 1 : -1;
+    const cmpStr = (a: string | null | undefined, b: string | null | undefined) =>
+      (a || "").localeCompare(b || "", locale, { sensitivity: "base" }) * dir;
+    const cmpNum = (a: number, b: number) => (a - b) * dir;
+    arr.sort((a, b) => {
+      switch (sortKey) {
+        case "whisky": return cmpStr(a.whiskyName || a.title, b.whiskyName || b.title);
+        case "distillery": return cmpStr(a.distillery, b.distillery);
+        case "author": return cmpStr(a.author, b.author);
+        case "shared": return cmpNum(a.isShared ? 1 : 0, b.isShared ? 1 : 0);
+        case "usage": return cmpNum((a as LibraryRow).usageCount || 0, (b as LibraryRow).usageCount || 0);
+        case "fileSize": return cmpNum((a as LibraryRow).fileSize || 0, (b as LibraryRow).fileSize || 0);
+        case "date":
+        default: {
+          const ad = a.createdAt ? new Date(a.createdAt as any).getTime() : 0;
+          const bd = b.createdAt ? new Date(b.createdAt as any).getTime() : 0;
+          return cmpNum(ad, bd);
+        }
+      }
+    });
+    return arr;
+  }, [filtered, sortKey, sortDir, locale]);
   const community = useMemo(() => communityQuery.data || [], [communityQuery.data]);
 
   const updateMut = useMutation({
@@ -868,6 +1233,43 @@ export default function LabsHandoutLibrary() {
             >
               {selectMode ? t("labs.handoutLibrary.selectModeOff") : t("labs.handoutLibrary.selectModeOn")}
             </button>
+            <div
+              role="group"
+              aria-label={t("labs.handoutLibrary.viewToggleLabel", { defaultValue: "View" })}
+              style={{ display: "inline-flex", border: "1px solid var(--labs-border)", borderRadius: 8, overflow: "hidden" }}
+              data-testid="handout-library-view-toggle"
+            >
+              <button
+                type="button"
+                onClick={() => updateViewMode("cards")}
+                aria-pressed={viewMode === "cards"}
+                title={t("labs.handoutLibrary.viewToggleCards", { defaultValue: "Cards" })}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 4, padding: "8px 10px", fontSize: 12,
+                  background: viewMode === "cards" ? "var(--labs-accent-muted)" : "transparent",
+                  color: viewMode === "cards" ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                  border: "none", cursor: "pointer", whiteSpace: "nowrap",
+                }}
+                data-testid="button-view-cards"
+              >
+                <LayoutGrid style={{ width: 13, height: 13 }} /> {t("labs.handoutLibrary.viewToggleCards", { defaultValue: "Cards" })}
+              </button>
+              <button
+                type="button"
+                onClick={() => updateViewMode("table")}
+                aria-pressed={viewMode === "table"}
+                title={t("labs.handoutLibrary.viewToggleTable", { defaultValue: "Table" })}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 4, padding: "8px 10px", fontSize: 12,
+                  background: viewMode === "table" ? "var(--labs-accent-muted)" : "transparent",
+                  color: viewMode === "table" ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                  border: "none", borderLeft: "1px solid var(--labs-border)", cursor: "pointer", whiteSpace: "nowrap",
+                }}
+                data-testid="button-view-table"
+              >
+                <TableIcon style={{ width: 13, height: 13 }} /> {t("labs.handoutLibrary.viewToggleTable", { defaultValue: "Table" })}
+              </button>
+            </div>
             <button
               type="button"
               className="labs-btn-primary text-xs"
@@ -1588,8 +1990,43 @@ export default function LabsHandoutLibrary() {
             </div>
           )}
 
+          {viewMode === "table" && !listQuery.isLoading && sortedFiltered.length > 0 && (
+            <HandoutLibraryTableView
+              entries={sortedFiltered}
+              t={t}
+              locale={locale}
+              selected={selected}
+              selectMode={selectMode}
+              onToggleSelect={toggleSelected}
+              onToggleSelectAll={toggleSelectAll}
+              allSelected={allSelected}
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={toggleSort}
+              openMenuId={openRowMenuId}
+              setOpenMenuId={setOpenRowMenuId}
+              onOpenDetail={(e) => setDetailEntry(e)}
+              onEdit={(e) => setEditing({
+                id: e.id,
+                whiskyName: e.whiskyName || "",
+                distillery: e.distillery || "",
+                whiskybaseId: e.whiskybaseId || "",
+                title: e.title || "",
+                author: e.author || "",
+                description: e.description || "",
+              })}
+              onShareToggle={(e) => shareMut.mutate({ id: e.id, isShared: !e.isShared })}
+              onDownload={(e) => downloadFromEndpoint(e.fileUrl, hostId)}
+              onReplace={(e) => { setReplaceTargetId(e.id); replaceFileInputRef.current?.click(); }}
+              onSplit={(e) => setSplitTarget(e)}
+              onDelete={(e) => {
+                if (window.confirm(t("labs.handoutLibrary.confirmDelete"))) deleteMut.mutate(e.id);
+              }}
+            />
+          )}
+          {viewMode === "cards" && (
           <div className="labs-handout-grid">
-            {filtered.map((entry) => {
+            {sortedFiltered.map((entry) => {
               const isEditing = editing?.id === entry.id;
               const isPdf = entry.contentType === "application/pdf";
               if (isEditing) {
@@ -1656,6 +2093,7 @@ export default function LabsHandoutLibrary() {
               );
             })}
           </div>
+          )}
         </>
       )}
 

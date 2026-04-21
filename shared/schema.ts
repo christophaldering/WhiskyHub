@@ -180,6 +180,7 @@ export const whiskyHandoutLibrary = pgTable("whisky_handout_library", {
   whiskybaseId: text("whiskybase_id"),
   fileUrl: text("file_url").notNull(),
   contentType: text("content_type").notNull(),
+  fileSize: integer("file_size"),
   title: text("title"),
   author: text("author"),
   description: text("description"),

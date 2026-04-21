@@ -3914,6 +3914,7 @@ export async function registerRoutes(
           whiskybaseId: whiskybaseId || null,
           fileUrl: storedUrl,
           contentType,
+          fileSize: typeof req.file?.size === "number" ? req.file.size : (buffer ? buffer.length : null),
           title: title || null,
           author: author || null,
           description: description || null,
@@ -3981,7 +3982,11 @@ export async function registerRoutes(
       const oldUrl = entry.fileUrl;
       let updated;
       try {
-        updated = await storage.updateHandoutLibraryEntry(req.params.id, { fileUrl: storedUrl, contentType });
+        updated = await storage.updateHandoutLibraryEntry(req.params.id, {
+          fileUrl: storedUrl,
+          contentType,
+          fileSize: typeof req.file?.size === "number" ? req.file.size : (buffer ? buffer.length : null),
+        });
       } catch (dbErr) {
         try {
           await deleteHandoutFileIfUnreferenced(objectStorage, storedUrl);
@@ -4062,7 +4067,7 @@ export async function registerRoutes(
       }
 
       // Build & upload each part PDF first; track for rollback.
-      const uploaded: { url: string; range: typeof ranges[number] }[] = [];
+      const uploaded: { url: string; size: number; range: typeof ranges[number] }[] = [];
       try {
         for (const r of ranges) {
           const partDoc = await PDFDocument.create();
@@ -4080,7 +4085,7 @@ export async function registerRoutes(
           });
           if (!resp.ok) throw new Error(`Object storage upload failed (${resp.status})`);
           const fileUrl = objectStorage.normalizeObjectEntityPath(uploadURL);
-          uploaded.push({ url: fileUrl, range: r });
+          uploaded.push({ url: fileUrl, size: buffer.length, range: r });
         }
       } catch (uploadErr) {
         for (const u of uploaded) {
@@ -4101,6 +4106,7 @@ export async function registerRoutes(
             whiskybaseId: u.range.whiskybaseId ? u.range.whiskybaseId.slice(0, 100) : null,
             fileUrl: u.url,
             contentType: "application/pdf",
+            fileSize: u.size,
             title: u.range.title ? u.range.title.slice(0, 200) : null,
             author: null,
             description: null,
