@@ -841,7 +841,7 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
   const listQuery = useQuery<LibraryRow[]>({
     queryKey: ["handout-library", hostId, search],
     queryFn: () => handoutLibraryApi.list(hostId, search.trim() || undefined),
-    enabled: !!hostId,
+    enabled: !!hostId && !readonly,
   });
 
   const communityQuery = useQuery<WhiskyHandoutLibraryEntry[]>({
