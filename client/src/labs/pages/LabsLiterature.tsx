@@ -2,6 +2,7 @@ import { useState } from "react";
 import { BookMarked, ChevronLeft, Users, Brain, Microscope, Scale } from "lucide-react";
 import BackLink from "@/labs/components/BackLink";
 import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
+import { useIsEmbeddedInExplore } from "@/labs/embeddedExploreContext";
 import { useTranslation } from "react-i18next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -14,16 +15,19 @@ import {
 
 export default function LabsLiterature() {
   const { t } = useTranslation();
+  const embedded = useIsEmbeddedInExplore();
   const [activeTab, setActiveTab] = useState("personality");
 
   return (
     <div className="px-5 py-6 mx-auto" style={{ maxWidth: 700 }} data-testid="labs-discover-literature-page">
-      <DiscoverActionBar active="bibliothek" />
-      <BackLink href="/labs/discover/research" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-literature">
-          <ChevronLeft className="w-4 h-4" /> {t("research.title", "Research")}
-        </button>
-      </BackLink>
+      {!embedded && <DiscoverActionBar active="bibliothek" />}
+      {!embedded && (
+        <BackLink href="/labs/discover/research" style={{ textDecoration: "none" }}>
+          <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-literature">
+            <ChevronLeft className="w-4 h-4" /> {t("research.title", "Research")}
+          </button>
+        </BackLink>
+      )}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
         <BookMarked style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />
         <h1 className="labs-h2" style={{ color: "var(--labs-text)", margin: 0 }} data-testid="text-literature-title">

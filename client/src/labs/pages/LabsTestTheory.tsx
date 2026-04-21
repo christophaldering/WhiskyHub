@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import BackLink from "@/labs/components/BackLink";
 import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
+import { useIsEmbeddedInExplore } from "@/labs/embeddedExploreContext";
 
 import conceptTesting from "@/assets/images/concept-testing.png";
 import conceptQualityCriteria from "@/assets/images/concept-quality-criteria.png";
@@ -107,18 +108,21 @@ function ConceptCard({ concept, index }: { concept: Concept; index: number }) {
 
 export default function LabsTestTheory() {
   const { t } = useTranslation();
+  const embedded = useIsEmbeddedInExplore();
 
   const concepts = t("research.concepts", { returnObjects: true }) as Concept[];
   const testTheoryConcepts = concepts.filter((c) => c.section === "testTheory");
 
   return (
     <div className="labs-page labs-fade-in" data-testid="labs-test-theory-page">
-      <DiscoverActionBar active="bibliothek" />
-      <BackLink href="/labs/discover/research" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-test-theory">
-          <ChevronLeft className="w-4 h-4" /> {t("research.title", "Research")}
-        </button>
-      </BackLink>
+      {!embedded && <DiscoverActionBar active="bibliothek" />}
+      {!embedded && (
+        <BackLink href="/labs/discover/research" style={{ textDecoration: "none" }}>
+          <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-test-theory">
+            <ChevronLeft className="w-4 h-4" /> {t("research.title", "Research")}
+          </button>
+        </BackLink>
+      )}
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
         <GraduationCap style={{ width: 22, height: 22, color: "var(--labs-accent)" }} />

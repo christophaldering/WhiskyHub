@@ -1,28 +1,53 @@
-import { Link } from "wouter";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FlaskConical, BookOpen, GraduationCap, TrendingUp, BookMarked } from "lucide-react";
-import type { ElementType } from "react";
+import type { ComponentType, ElementType } from "react";
 import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
+import { HubTileGrid, HubTileCollapsible, type HubTileDef } from "@/labs/pages/hubTiles";
+import { EmbeddedExploreProvider } from "@/labs/embeddedExploreContext";
+import LabsIdeaBehindNumbers from "@/labs/pages/LabsIdeaBehindNumbers";
+import LabsTestTheory from "@/labs/pages/LabsTestTheory";
+import LabsStatisticalMethods from "@/labs/pages/LabsStatisticalMethods";
+import LabsLiterature from "@/labs/pages/LabsLiterature";
 
-interface HubLink {
+type SubKey = "grundlagen" | "testtheorie" | "statistische-methoden" | "literatur";
+
+interface ResearchSub {
+  key: SubKey;
   icon: ElementType;
   labelKey: string;
   labelFallback: string;
   descKey: string;
   descFallback: string;
-  href: string;
   testId: string;
+  Component: ComponentType;
 }
 
-const HUB_LINKS: HubLink[] = [
-  { icon: BookOpen, labelKey: "research.subGrundlagen", labelFallback: "Foundations", descKey: "research.subGrundlagenDesc", descFallback: "Measuring, testing, perceiving, observing, judging, evaluating, predicting", href: "/labs/discover/research/grundlagen", testId: "labs-link-research-grundlagen" },
-  { icon: GraduationCap, labelKey: "research.subTesttheorie", labelFallback: "Test Theory & Psychometrics", descKey: "research.subTesttheorieDesc", descFallback: "Quality criteria, scale levels, measurement error, normalisation", href: "/labs/discover/research/testtheorie", testId: "labs-link-research-testtheorie" },
-  { icon: TrendingUp, labelKey: "research.subStatistischeMethoden", labelFallback: "Statistical Methods", descKey: "research.subStatistischeMethodenDesc", descFallback: "Correlation, Kendall's W, factor analysis, cluster analysis", href: "/labs/discover/research/statistische-methoden", testId: "labs-link-research-statistische-methoden" },
-  { icon: BookMarked, labelKey: "research.subLiteratur", labelFallback: "Literature & Studies", descKey: "research.subLiteraturDesc", descFallback: "Personality, perception & bias, methods, measurement", href: "/labs/discover/research/literatur", testId: "labs-link-research-literatur" },
+const RESEARCH_SUBS: ResearchSub[] = [
+  { key: "grundlagen", icon: BookOpen, labelKey: "research.subGrundlagen", labelFallback: "Foundations", descKey: "research.subGrundlagenDesc", descFallback: "Measuring, testing, perceiving, observing, judging, evaluating, predicting", testId: "tile-research-grundlagen", Component: LabsIdeaBehindNumbers },
+  { key: "testtheorie", icon: GraduationCap, labelKey: "research.subTesttheorie", labelFallback: "Test Theory & Psychometrics", descKey: "research.subTesttheorieDesc", descFallback: "Quality criteria, scale levels, measurement error, normalisation", testId: "tile-research-testtheorie", Component: LabsTestTheory },
+  { key: "statistische-methoden", icon: TrendingUp, labelKey: "research.subStatistischeMethoden", labelFallback: "Statistical Methods", descKey: "research.subStatistischeMethodenDesc", descFallback: "Correlation, Kendall's W, factor analysis, cluster analysis", testId: "tile-research-statistische-methoden", Component: LabsStatisticalMethods },
+  { key: "literatur", icon: BookMarked, labelKey: "research.subLiteratur", labelFallback: "Literature & Studies", descKey: "research.subLiteraturDesc", descFallback: "Personality, perception & bias, methods, measurement", testId: "tile-research-literatur", Component: LabsLiterature },
 ];
 
 export default function LabsResearch() {
   const { t } = useTranslation();
+  const [activeSub, setActiveSub] = useState<SubKey | null>(null);
+
+  const tiles: HubTileDef[] = RESEARCH_SUBS.map((s) => ({
+    icon: s.icon,
+    labelKey: s.labelKey,
+    labelFallback: s.labelFallback,
+    descKey: s.descKey,
+    descFallback: s.descFallback,
+    testId: s.testId,
+    role: "nav",
+  }));
+
+  const active = activeSub ? RESEARCH_SUBS.find((s) => s.key === activeSub) ?? null : null;
+  const ActiveComponent = active?.Component ?? null;
+  const activeTestId = active ? active.testId : undefined;
+
   return (
     <div className="labs-page" data-testid="labs-discover-research-page">
       <DiscoverActionBar active="bibliothek" />
@@ -39,28 +64,32 @@ export default function LabsResearch() {
         </p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        {HUB_LINKS.map((link) => (
-          <Link key={link.testId} href={link.href} style={{ textDecoration: "none" }}>
-            <div
-              className="labs-card"
-              data-testid={link.testId}
-              style={{ minHeight: 92, padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer", height: "100%" }}
-            >
-              <div style={{ width: 38, height: 38, borderRadius: 10, background: "var(--labs-surface-elevated)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <link.icon style={{ width: 18, height: 18, color: "var(--labs-accent)" }} strokeWidth={1.8} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.25 }}>
-                  {t(link.labelKey, link.labelFallback)}
-                </div>
-                <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 3, lineHeight: 1.35 }}>
-                  {t(link.descKey, link.descFallback)}
-                </div>
-              </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <HubTileGrid
+          tiles={tiles}
+          t={t}
+          variant="four-row"
+          role="nav"
+          activeTestId={activeTestId}
+          onTileClick={(tile) => {
+            const sub = RESEARCH_SUBS.find((s) => s.testId === tile.testId);
+            if (!sub) return;
+            setActiveSub((curr) => (curr === sub.key ? null : sub.key));
+          }}
+        />
+
+        <HubTileCollapsible
+          open={active !== null}
+          testId={active ? `research-inline-${active.key}` : undefined}
+        >
+          {ActiveComponent && active && (
+            <div data-testid={`research-inline-content-${active.key}`}>
+              <EmbeddedExploreProvider>
+                <ActiveComponent />
+              </EmbeddedExploreProvider>
             </div>
-          </Link>
-        ))}
+          )}
+        </HubTileCollapsible>
       </div>
     </div>
   );
