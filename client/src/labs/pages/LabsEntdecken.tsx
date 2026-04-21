@@ -337,9 +337,6 @@
           const filterPanelRef = useRef<HTMLDivElement>(null);
           const biblioContentRef = useRef<HTMLDivElement>(null);
 
-          // No automatic scrolling when a bibliothek section opens — content
-          // expands in place so the page does not jump on the user.
-
           // Role A: ESC closes the active bibliothek section on desktop
           useEffect(() => {
             if (!biblioSection) return;

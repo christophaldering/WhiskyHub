@@ -240,8 +240,6 @@ export default function LabsTaste() {
     return () => window.removeEventListener("keydown", handler);
   }, [activeCollectionTile, activeAITile, activeAnalyticsTile]);
 
-  // No automatic scrolling when a sub-tile opens — content expands in place
-  // so the page does not jump on the user. The user keeps full control of scroll.
   const inlineContentRef = useRef<HTMLDivElement | null>(null);
 
   const { data: historyData } = useQuery({
