@@ -1202,7 +1202,6 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
               setUploadValidationError(null);
               setError(null);
               setInfo(null);
-              setTimeout(() => uploadFileInputRef.current?.click(), 0);
             }}
             style={{ padding: 18, display: "grid", gap: 8, textAlign: "left", cursor: "pointer", border: "1px solid var(--labs-accent)", background: "var(--labs-surface)", color: "var(--labs-text)" }}
             data-testid="tile-handout-upload-analyze"
