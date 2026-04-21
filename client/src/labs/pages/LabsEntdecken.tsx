@@ -335,6 +335,33 @@
           const filterDropdownRef = useRef<HTMLDivElement>(null);
 
           const filterPanelRef = useRef<HTMLDivElement>(null);
+          const biblioContentRef = useRef<HTMLDivElement>(null);
+
+          // Role A: smooth auto-scroll for bibliothek section content (~60px offset)
+          useEffect(() => {
+            if (!biblioSection) return;
+            const el = biblioContentRef.current;
+            if (!el) return;
+            const id = window.setTimeout(() => {
+              try {
+                el.scrollIntoView({ behavior: "smooth", block: "start" });
+              } catch {}
+            }, 50);
+            return () => window.clearTimeout(id);
+          }, [biblioSection, biblioSub]);
+
+          // Role A: ESC closes the active bibliothek section on desktop
+          useEffect(() => {
+            if (!biblioSection) return;
+            const handler = (e: KeyboardEvent) => {
+              if (e.key !== "Escape") return;
+              if (window.matchMedia("(hover: none)").matches) return;
+              setBiblioSection(null);
+              setBiblioSub(null);
+            };
+            window.addEventListener("keydown", handler);
+            return () => window.removeEventListener("keydown", handler);
+          }, [biblioSection]);
           useEffect(() => {
             const handleClickOutside = (e: MouseEvent) => {
               const target = e.target as Node;
@@ -672,59 +699,47 @@
                   ? (activeSection.subs.find(sb => sb.sub === biblioSub) ?? activeSection.subs[0])
                   : null;
                 const ActiveComponent = activeSub?.Component ?? null;
+                const headTiles: HubTileDef[] = BIBLIOTHEK_TILES.map((section) => ({
+                  icon: section.icon,
+                  labelKey: section.labelKey,
+                  labelFallback: section.labelFb,
+                  descKey: section.descKey,
+                  descFallback: section.descFb,
+                  testId: `tile-explore-bibliothek-${section.key}`,
+                  role: "nav",
+                }));
+                const activeHeadTestId = activeSection
+                  ? `tile-explore-bibliothek-${activeSection.key}`
+                  : undefined;
                 return (
                   <div className="labs-fade-in labs-stagger-2" data-testid="explore-bibliothek-inline" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
-                      {BIBLIOTHEK_TILES.map((section) => {
-                        const Icon = section.icon;
-                        const isActive = biblioSection === section.key;
-                        return (
-                          <button
-                            key={section.key}
-                            type="button"
-                            onClick={() => {
-                              if (biblioSection === section.key) {
-                                setBiblioSection(null);
-                                setBiblioSub(null);
-                              } else {
-                                setBiblioSection(section.key);
-                                setBiblioSub(section.subs[0]?.sub ?? null);
-                              }
-                            }}
-                            data-testid={`tile-explore-bibliothek-${section.key}`}
-                            className="labs-card"
-                            style={{
-                              minHeight: 92,
-                              padding: "14px 16px",
-                              display: "flex",
-                              alignItems: "flex-start",
-                              gap: 12,
-                              cursor: "pointer",
-                              height: "100%",
-                              textAlign: "left",
-                              background: isActive ? "var(--labs-surface-elevated)" : "var(--labs-surface)",
-                              border: `1px solid ${isActive ? "var(--labs-accent)" : "var(--labs-border)"}`,
-                              fontFamily: "inherit",
-                            }}
-                          >
-                            <div style={{ width: 38, height: 38, borderRadius: 10, background: "var(--labs-surface-elevated)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                              <Icon style={{ width: 18, height: 18, color: "var(--labs-accent)" }} strokeWidth={1.8} />
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.25 }}>
-                                {t(section.labelKey, section.labelFb)}
-                              </div>
-                              <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 3, lineHeight: 1.35 }}>
-                                {t(section.descKey, section.descFb)}
-                              </div>
-                            </div>
-                          </button>
+                    <HubTileGrid
+                      tiles={headTiles}
+                      t={t}
+                      variant="four-row"
+                      role="nav"
+                      activeTestId={activeHeadTestId}
+                      onTileClick={(tile) => {
+                        const section = BIBLIOTHEK_TILES.find(
+                          (s) => `tile-explore-bibliothek-${s.key}` === tile.testId,
                         );
-                      })}
-                    </div>
+                        if (!section) return;
+                        if (biblioSection === section.key) {
+                          setBiblioSection(null);
+                          setBiblioSub(null);
+                        } else {
+                          setBiblioSection(section.key);
+                          setBiblioSub(section.subs[0]?.sub ?? null);
+                        }
+                      }}
+                    />
 
                     {activeSection && (
-                      <div data-testid={`explore-bibliothek-section-${activeSection.key}`}>
+                      <div
+                        ref={biblioContentRef}
+                        className="labs-hub-tile-content-zone"
+                        data-testid={`explore-bibliothek-section-${activeSection.key}`}
+                      >
                         {(() => {
                           if (activeSection.subs.length <= 1) return null;
                           const subTiles: HubTileDef[] = activeSection.subs.map((s) => ({
@@ -734,27 +749,34 @@
                             descKey: "",
                             descFallback: "",
                             testId: `tab-explore-bibliothek-${activeSection.key}-${s.sub}`,
+                            role: "nav",
                           }));
-                          const activeTestId = `tab-explore-bibliothek-${activeSection.key}-${activeSub?.sub ?? activeSection.subs[0].sub}`;
+                          const activeTestId = activeSub
+                            ? `tab-explore-bibliothek-${activeSection.key}-${activeSub.sub}`
+                            : undefined;
                           return (
                             <div style={{ marginBottom: 12 }}>
                               <HubTileGrid
                                 tiles={subTiles}
                                 t={t}
                                 variant="single-row"
+                                role="nav"
                                 activeTestId={activeTestId}
                                 onTileClick={(tile) => {
                                   const sub = activeSection.subs.find(
                                     (s) => `tab-explore-bibliothek-${activeSection.key}-${s.sub}` === tile.testId,
                                   );
-                                  if (sub) setBiblioSub(sub.sub);
+                                  if (!sub) return;
+                                  // Role A: re-click closes the active sub-tile
+                                  if (biblioSub === sub.sub) setBiblioSub(null);
+                                  else setBiblioSub(sub.sub);
                                 }}
                               />
                             </div>
                           );
                         })()}
-                        {ActiveComponent && (
-                          <div data-testid={`explore-inline-${activeSection.key}-${activeSub?.sub}`}>
+                        {ActiveComponent && activeSub && (
+                          <div data-testid={`explore-inline-${activeSection.key}-${activeSub.sub}`}>
                             <EmbeddedExploreProvider>
                               <ActiveComponent />
                             </EmbeddedExploreProvider>

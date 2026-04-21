@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
@@ -211,16 +211,48 @@ export default function LabsTaste() {
   }, [searchStr]);
 
   const handleSelectTab = (next: Tab) => {
-    if (next === activeTab) {
-      // Re-clicking the active top-level tile clears its sub-tile and returns to hub overview
-      if (next === "collection") setActiveCollectionTile(null);
-      else if (next === "ai") setActiveAITile(null);
-      else if (next === "analytics") setActiveAnalyticsTile(null);
-      else if (next === "tastings") setActiveTastingsFilter("all");
-      return;
-    }
+    // Role B: re-click on active top-level tab is a no-op
+    if (next === activeTab) return;
+    // Tab switch resets all sub-tiles ("alle zu") and the tastings filter to default
+    setActiveCollectionTile(null);
+    setActiveAITile(null);
+    setActiveAnalyticsTile(null);
+    setActiveTastingsFilter("all");
     setActiveTab(next);
   };
+
+  // Role A: ESC closes active sub-tile on desktop
+  useEffect(() => {
+    const hasActiveSub =
+      activeCollectionTile !== null ||
+      activeAITile !== null ||
+      activeAnalyticsTile !== null;
+    if (!hasActiveSub) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (window.matchMedia("(hover: none)").matches) return;
+      setActiveCollectionTile(null);
+      setActiveAITile(null);
+      setActiveAnalyticsTile(null);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [activeCollectionTile, activeAITile, activeAnalyticsTile]);
+
+  // Role A: smooth auto-scroll content zone into view (~60px offset) when a sub-tile opens
+  const inlineContentRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const sub = activeCollectionTile ?? activeAITile ?? activeAnalyticsTile;
+    if (!sub) return;
+    const el = inlineContentRef.current;
+    if (!el) return;
+    const id = window.setTimeout(() => {
+      try {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      } catch {}
+    }, 50);
+    return () => window.clearTimeout(id);
+  }, [activeCollectionTile, activeAITile, activeAnalyticsTile]);
 
   const { data: historyData } = useQuery({
     queryKey: ["tasting-history", currentParticipant?.id],
@@ -260,10 +292,14 @@ export default function LabsTaste() {
             tiles={TASTINGS_HUB_TILES}
             t={t}
             variant="four-row"
+            role="filter"
             activeTestId={activeTile?.testId}
             onTileClick={(tile) => {
               const next = (tile as (typeof TASTINGS_HUB_TILES)[number]).filter;
-              if (next) setActiveTastingsFilter(next);
+              if (!next) return;
+              // Role C: re-click on active filter resets to default "all"
+              if (next === activeTastingsFilter) setActiveTastingsFilter("all");
+              else setActiveTastingsFilter(next);
             }}
           />
           <div
@@ -295,6 +331,7 @@ export default function LabsTaste() {
             t={t}
             testIdPrefix="meine-welt"
             variant="single-row"
+            role="nav"
             activeTestId={activeTestId}
             onTileClick={(tile) =>
               setActiveCollectionTile((prev) => (prev === tile.testId ? null : tile.testId))
@@ -302,7 +339,8 @@ export default function LabsTaste() {
           />
           {activeCollectionTile ? (
             <div
-              className="labs-tastings-inline-content labs-fade-in"
+              ref={inlineContentRef}
+              className="labs-tastings-inline-content labs-hub-tile-content-zone"
               style={{ marginTop: 16 }}
               data-testid={`meine-welt-collection-inline-${activeCollectionTile}`}
             >
@@ -337,6 +375,7 @@ export default function LabsTaste() {
             t={t}
             testIdPrefix="meine-welt"
             variant="single-row"
+            role="nav"
             activeTestId={activeTestId}
             onTileClick={(tile) =>
               setActiveAITile((prev) => (prev === tile.testId ? null : tile.testId))
@@ -344,7 +383,8 @@ export default function LabsTaste() {
           />
           {activeAITile && (
             <div
-              className="labs-tastings-inline-content labs-fade-in"
+              ref={inlineContentRef}
+              className="labs-tastings-inline-content labs-hub-tile-content-zone"
               style={{ marginTop: 16 }}
               data-testid={`meine-welt-ai-inline-${activeAITile}`}
             >
@@ -369,6 +409,7 @@ export default function LabsTaste() {
           t={t}
           testIdPrefix="meine-welt"
           variant="single-row"
+          role="nav"
           activeTestId={analyticsActiveTestId}
           onTileClick={(tile) =>
             setActiveAnalyticsTile((prev) => (prev === tile.testId ? null : tile.testId))
@@ -376,7 +417,8 @@ export default function LabsTaste() {
         />
         {activeAnalyticsTile && (
           <div
-            className="labs-tastings-inline-content labs-fade-in"
+            ref={inlineContentRef}
+            className="labs-tastings-inline-content labs-hub-tile-content-zone"
             style={{ marginTop: 16 }}
             data-testid={`meine-welt-analytics-inline-${activeAnalyticsTile}`}
           >

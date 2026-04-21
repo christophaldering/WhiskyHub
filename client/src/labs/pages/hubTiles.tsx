@@ -3,7 +3,10 @@ import type { ElementType } from "react";
 import {
   BookOpen, Archive, Heart, Sparkles, Activity, Library, Compass,
   BarChart3, PieChart, GitCompareArrows, Download, Layers, Crown, Users, Brain,
+  ChevronDown,
 } from "lucide-react";
+
+export type HubTileRole = "nav" | "tab" | "filter";
 
 export interface HubTileDef {
   icon: ElementType;
@@ -13,6 +16,7 @@ export interface HubTileDef {
   descFallback: string;
   href?: string;
   testId: string;
+  role?: HubTileRole;
 }
 
 export type TastingsHubFilter = "all" | "hosting" | "joined" | "archive";
@@ -201,15 +205,25 @@ export function HubTileCard({
   testIdOverride,
   onClick,
   active,
+  role,
 }: {
   tile: HubTileDef;
   t: (key: string, fallback: string) => string;
   testIdOverride?: string;
   onClick?: () => void;
   active?: boolean;
+  role?: HubTileRole;
 }) {
   const Icon = tile.icon;
-  const className = `labs-hub-tile${onClick ? " labs-hub-tile--button" : ""}${active ? " labs-hub-tile--active" : ""}`;
+  const effectiveRole: HubTileRole = role ?? tile.role ?? "nav";
+  const showChevron = effectiveRole === "nav" && !!onClick;
+  const roleClass =
+    effectiveRole === "filter"
+      ? " labs-hub-tile--pill"
+      : effectiveRole === "tab"
+        ? " labs-hub-tile--tab"
+        : " labs-hub-tile--nav";
+  const className = `labs-hub-tile${onClick ? " labs-hub-tile--button" : ""}${active ? " labs-hub-tile--active" : ""}${roleClass}`;
   const inner = (
     <>
       <div className="labs-hub-tile-icon">
@@ -219,6 +233,14 @@ export function HubTileCard({
         <div className="labs-hub-tile-label">{t(tile.labelKey, tile.labelFallback)}</div>
         <div className="labs-hub-tile-desc">{t(tile.descKey, tile.descFallback)}</div>
       </div>
+      {showChevron && (
+        <span
+          className={`labs-hub-tile-chevron${active ? " labs-hub-tile-chevron--open" : ""}`}
+          aria-hidden="true"
+        >
+          <ChevronDown className="labs-hub-tile-chevron-svg" strokeWidth={2} />
+        </span>
+      )}
     </>
   );
 
@@ -250,6 +272,7 @@ export function HubTileGrid({
   variant = "two-col",
   onTileClick,
   activeTestId,
+  role,
 }: {
   tiles: HubTileDef[];
   t: (key: string, fallback: string) => string;
@@ -257,6 +280,7 @@ export function HubTileGrid({
   variant?: "two-col" | "auto" | "four-row" | "single-row";
   onTileClick?: (tile: HubTileDef) => void;
   activeTestId?: string;
+  role?: HubTileRole;
 }) {
   const useSingleRow = variant === "single-row" || variant === "four-row";
   const className =
@@ -282,6 +306,7 @@ export function HubTileGrid({
           testIdOverride={testIdPrefix ? `${testIdPrefix}-${tile.testId}` : undefined}
           onClick={onTileClick ? () => onTileClick(tile) : undefined}
           active={activeTestId === tile.testId}
+          role={role}
         />
       ))}
     </div>
