@@ -607,7 +607,7 @@ function HandoutLibraryTableView(props: HandoutLibraryTableViewProps) {
                     : <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--labs-text-muted)" }}><Lock style={{ width: 12, height: 12 }} /> {t("labs.handoutLibrary.bulkUnshare")}</span>}
                 </td>
                 <td style={{ ...tdStyle, textAlign: "right" }} data-testid={`text-usage-${entry.id}`}>{entry.usageCount ?? 0}</td>
-                <td style={tdStyle} data-testid={`text-date-${entry.id}`}>{formatDateShort(entry.createdAt as any, locale)}</td>
+                <td style={tdStyle} data-testid={`text-date-${entry.id}`}>{formatDateShort(entry.createdAt, locale)}</td>
                 <td style={{ ...tdStyle, textAlign: "right" }} data-testid={`text-filesize-${entry.id}`}>{formatBytes(entry.fileSize ?? null, locale)}</td>
                 <td style={{ ...tdStyle, textAlign: "right", position: "relative" }}>
                   <RowActionMenu
@@ -865,12 +865,12 @@ export default function LabsHandoutLibrary() {
         case "distillery": return cmpStr(a.distillery, b.distillery);
         case "author": return cmpStr(a.author, b.author);
         case "shared": return cmpNum(a.isShared ? 1 : 0, b.isShared ? 1 : 0);
-        case "usage": return cmpNum((a as LibraryRow).usageCount || 0, (b as LibraryRow).usageCount || 0);
-        case "fileSize": return cmpNum((a as LibraryRow).fileSize || 0, (b as LibraryRow).fileSize || 0);
+        case "usage": return cmpNum(a.usageCount || 0, b.usageCount || 0);
+        case "fileSize": return cmpNum(a.fileSize || 0, b.fileSize || 0);
         case "date":
         default: {
-          const ad = a.createdAt ? new Date(a.createdAt as any).getTime() : 0;
-          const bd = b.createdAt ? new Date(b.createdAt as any).getTime() : 0;
+          const ad = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const bd = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           return cmpNum(ad, bd);
         }
       }
