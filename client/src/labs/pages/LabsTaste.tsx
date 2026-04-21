@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useSearch } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Archive, Sparkles, BarChart3, Compass, ChevronRight, GlassWater,
+  Archive, Sparkles, BarChart3, Compass, GlassWater,
 } from "lucide-react";
 import type { ElementType } from "react";
 import { useAppStore } from "@/lib/store";
@@ -437,18 +437,6 @@ export default function LabsTaste() {
       <MeineWeltActionBar active={activeTab} onSelect={handleSelectTab} />
 
       <div className="labs-fade-in" data-testid={`meine-welt-content-${activeTab}`}>
-        {activeTab === "collection" && (
-          <div className="labs-meine-welt-section-head" style={{ justifyContent: "flex-end" }}>
-            <Link
-              href="/labs/taste/drams"
-              className="labs-meine-welt-view-all"
-              data-testid={`link-meine-welt-view-all-${activeTab}`}
-            >
-              {t("myTastePage.viewAll", "View all")}
-              <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        )}
         {renderInlineContent()}
       </div>
     </div>
