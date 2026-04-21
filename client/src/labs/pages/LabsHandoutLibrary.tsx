@@ -13,6 +13,7 @@ import { downloadFromEndpoint } from "@/lib/download";
 import type { WhiskyHandoutLibraryEntry } from "@shared/schema";
 import HandoutLibraryPdfSplitterDialog from "../components/HandoutLibraryPdfSplitterDialog";
 import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
+import { useIsEmbeddedInMeineWelt } from "@/labs/embeddedMeineWeltContext";
 import { parseHandoutFilename } from "@/labs/utils/parseHandoutFilename";
 
 type MultiUploadStatus = "pending" | "uploading" | "done" | "error";
@@ -769,6 +770,8 @@ interface LabsHandoutLibraryProps {
 
 export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLibraryProps = {}) {
   const readonly = mode === "community-readonly";
+  const isEmbeddedInMeineWelt = useIsEmbeddedInMeineWelt();
+  const hideDiscoverChrome = readonly || isEmbeddedInMeineWelt;
   const { t, i18n } = useTranslation();
   const [, setLocation] = useLocation();
   const locale = i18n.language || "en";
@@ -1136,10 +1139,10 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
   }
 
   return (
-    <div style={{ padding: readonly ? "8px 0 32px" : "24px 16px 64px", maxWidth: 1100, margin: "0 auto", color: "var(--labs-text)" }}>
-      {!readonly && <DiscoverActionBar active="bibliothek" />}
+    <div style={{ padding: hideDiscoverChrome ? "8px 0 32px" : "24px 16px 64px", maxWidth: 1100, margin: "0 auto", color: "var(--labs-text)" }}>
+      {!hideDiscoverChrome && <DiscoverActionBar active="bibliothek" />}
 
-      {!readonly && (
+      {!hideDiscoverChrome && (
         <>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
             <Library style={{ width: 20, height: 20, color: "var(--labs-accent, var(--labs-text))" }} />
