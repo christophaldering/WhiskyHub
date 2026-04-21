@@ -240,20 +240,9 @@ export default function LabsTaste() {
     return () => window.removeEventListener("keydown", handler);
   }, [activeCollectionTile, activeAITile, activeAnalyticsTile]);
 
-  // Role A: smooth auto-scroll content zone into view (~60px offset) when a sub-tile opens
+  // No automatic scrolling when a sub-tile opens — content expands in place
+  // so the page does not jump on the user. The user keeps full control of scroll.
   const inlineContentRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    const sub = activeCollectionTile ?? activeAITile ?? activeAnalyticsTile;
-    if (!sub) return;
-    const el = inlineContentRef.current;
-    if (!el) return;
-    const id = window.setTimeout(() => {
-      try {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
-      } catch {}
-    }, 50);
-    return () => window.clearTimeout(id);
-  }, [activeCollectionTile, activeAITile, activeAnalyticsTile]);
 
   const { data: historyData } = useQuery({
     queryKey: ["tasting-history", currentParticipant?.id],

@@ -337,18 +337,8 @@
           const filterPanelRef = useRef<HTMLDivElement>(null);
           const biblioContentRef = useRef<HTMLDivElement>(null);
 
-          // Role A: smooth auto-scroll for bibliothek section content (~60px offset)
-          useEffect(() => {
-            if (!biblioSection) return;
-            const el = biblioContentRef.current;
-            if (!el) return;
-            const id = window.setTimeout(() => {
-              try {
-                el.scrollIntoView({ behavior: "smooth", block: "start" });
-              } catch {}
-            }, 50);
-            return () => window.clearTimeout(id);
-          }, [biblioSection, biblioSub]);
+          // No automatic scrolling when a bibliothek section opens — content
+          // expands in place so the page does not jump on the user.
 
           // Role A: ESC closes the active bibliothek section on desktop
           useEffect(() => {
