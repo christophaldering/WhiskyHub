@@ -5838,8 +5838,6 @@ const resources = {
           loginRequired: "Please sign in to view your handout library.",
           title: "Handout Library",
           subtitle: "All handouts you've ever uploaded for a whisky. When you create new whiskies, matching entries are suggested automatically.",
-          tabMine: "My Library",
-          tabCommunity: "Community",
           fieldDocumentDate: "Document date",
           shareWithCommunity: "Share with community",
           uploadIntent: {
@@ -14997,8 +14995,6 @@ const resources = {
           loginRequired: "Bitte melde dich an, um deine Handout-Bibliothek zu sehen.",
           title: "Handout-Bibliothek",
           subtitle: "Alle Handouts, die du je zu einem Whisky hochgeladen hast. Beim Anlegen neuer Whiskys werden passende Einträge automatisch vorgeschlagen.",
-          tabMine: "Meine Bibliothek",
-          tabCommunity: "Community",
           fieldDocumentDate: "Dokumentdatum",
           shareWithCommunity: "Mit Community teilen",
           uploadIntent: {

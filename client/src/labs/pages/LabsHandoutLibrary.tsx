@@ -2,7 +2,7 @@ import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useLocation, useSearch } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   FileText, Image as ImageIcon, Library, Search, Trash2,
   Pencil, Save, X, ExternalLink, Download, Globe, Lock, Plus, Upload, Loader2, RefreshCw, Scissors, Building2,
@@ -63,8 +63,6 @@ interface EditState {
   author: string;
   description: string;
 }
-
-type TabKey = "mine" | "community";
 
 interface UploadFormState {
   file: File | null;
@@ -776,19 +774,6 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
   const locale = i18n.language || "en";
   const hostId = getParticipantId() || "";
   const qc = useQueryClient();
-  const searchStr = useSearch();
-  const initialTab: TabKey = useMemo(() => {
-    if (readonly) return "community";
-    try {
-      const params = new URLSearchParams(searchStr);
-      return params.get("tab") === "community" ? "community" : "mine";
-    } catch {
-      return "mine";
-    }
-    // Only the first render — subsequent tab changes are user-driven.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  const [tab, setTab] = useState<TabKey>(initialTab);
   const [uploadIntent, setUploadIntent] = useState<UploadIntent | null>(null);
   const [uploadValidationError, setUploadValidationError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -853,7 +838,7 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
   const communityQuery = useQuery<WhiskyHandoutLibraryEntry[]>({
     queryKey: ["handout-library-community", hostId, communitySearch],
     queryFn: () => handoutLibraryApi.listCommunity(hostId, communitySearch.trim() || undefined),
-    enabled: !!hostId && tab === "community",
+    enabled: !!hostId && readonly,
   });
 
   const allEntries = useMemo(() => listQuery.data || [], [listQuery.data]);
@@ -1168,49 +1153,6 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
         </>
       )}
 
-      {!readonly && (
-      <div role="tablist" style={{ display: "flex", gap: 4, marginBottom: 14, borderBottom: "1px solid var(--labs-border)" }}>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "mine"}
-          onClick={() => { setTab("mine"); setError(null); setInfo(null); }}
-          className="labs-btn-ghost text-xs"
-          style={{
-            padding: "8px 12px",
-            borderRadius: 0,
-            borderBottom: tab === "mine" ? "2px solid var(--labs-accent)" : "2px solid transparent",
-            color: tab === "mine" ? "var(--labs-text)" : "var(--labs-text-muted)",
-            fontWeight: tab === "mine" ? 600 : 400,
-          }}
-          data-testid="tab-handout-library-mine"
-        >
-          {t("labs.handoutLibrary.tabMine")}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "community"}
-          onClick={() => { setTab("community"); setError(null); setInfo(null); }}
-          className="labs-btn-ghost text-xs"
-          style={{
-            padding: "8px 12px",
-            borderRadius: 0,
-            borderBottom: tab === "community" ? "2px solid var(--labs-accent)" : "2px solid transparent",
-            color: tab === "community" ? "var(--labs-text)" : "var(--labs-text-muted)",
-            fontWeight: tab === "community" ? 600 : 400,
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-          }}
-          data-testid="tab-handout-library-community"
-        >
-          <Globe style={{ width: 13, height: 13 }} />
-          {t("labs.handoutLibrary.tabCommunity")}
-        </button>
-      </div>
-      )}
-
       {error && (
         <div
           style={{ background: "var(--labs-danger-muted)", color: "var(--labs-danger)", padding: 10, borderRadius: 8, marginBottom: 12, fontSize: 13, border: "1px solid var(--labs-border)" }}
@@ -1228,7 +1170,7 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
         </div>
       )}
 
-      {tab === "mine" && mode === "workspace" && entryView === "hub" && (
+      {!readonly && entryView === "hub" && (
         <div
           style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, marginBottom: 14 }}
           data-testid="handout-hub-tiles"
@@ -1276,7 +1218,7 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
         </div>
       )}
 
-      {tab === "mine" && (mode !== "workspace" || entryView === "library") && (
+      {!readonly && entryView === "library" && (
         <>
           {mode === "workspace" && (
             <button
@@ -2298,7 +2240,7 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
         hostId={hostId}
       />
 
-      {tab === "community" && (
+      {readonly && (
         <>
           <p style={{ color: "var(--labs-text-muted)", fontSize: 12, margin: "0 0 12px" }}>
             {t("labs.handoutCommunity.intro")}
