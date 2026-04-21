@@ -1791,28 +1791,6 @@ a.labs-dram-item {
   color: var(--labs-accent);
 }
 
-.labs-hub-tile--pill {
-  border-radius: 999px;
-  min-height: 44px;
-  padding: 10px 14px;
-}
-
-.labs-hub-tile--pill .labs-hub-tile-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
-}
-
-.labs-hub-tile--pill .labs-hub-tile-icon-svg {
-  width: 14px;
-  height: 14px;
-}
-
-.labs-hub-tile-grid--single-row .labs-hub-tile--pill,
-.labs-hub-tile-grid--four-row .labs-hub-tile--pill {
-  border-radius: 999px;
-}
-
 .labs-hub-tile-content-zone {
   overflow: hidden;
   animation: labsHubTileExpand 200ms ease-out both;

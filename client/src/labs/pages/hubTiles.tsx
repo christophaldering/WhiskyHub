@@ -218,11 +218,9 @@ export function HubTileCard({
   const effectiveRole: HubTileRole = role ?? tile.role ?? "nav";
   const showChevron = effectiveRole === "nav" && !!onClick;
   const roleClass =
-    effectiveRole === "filter"
-      ? " labs-hub-tile--pill"
-      : effectiveRole === "tab"
-        ? " labs-hub-tile--tab"
-        : " labs-hub-tile--nav";
+    effectiveRole === "tab" || effectiveRole === "filter"
+      ? " labs-hub-tile--tab"
+      : " labs-hub-tile--nav";
   const className = `labs-hub-tile${onClick ? " labs-hub-tile--button" : ""}${active ? " labs-hub-tile--active" : ""}${roleClass}`;
   const inner = (
     <>
