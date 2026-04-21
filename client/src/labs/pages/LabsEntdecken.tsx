@@ -684,9 +684,18 @@
                 active={activeView}
                 onSelect={(view) => {
                   if (view === "whiskies") {
+                    // Role B: tab-switch resets sub-tiles to default (closed)
+                    if (activeView !== "whiskies") {
+                      setBiblioSection(null);
+                      setBiblioSub(null);
+                    }
                     setActiveView("whiskies");
                     setExpandedFilter(null);
                   } else {
+                    if (activeView !== "bibliothek") {
+                      setBiblioSection(null);
+                      setBiblioSub(null);
+                    }
                     setActiveView("bibliothek");
                     setExpandedFilter(null);
                   }
@@ -695,8 +704,12 @@
 
               {activeView === "bibliothek" && (() => {
                 const activeSection = biblioSection ? BIBLIOTHEK_TILES.find(s => s.key === biblioSection) ?? null : null;
+                // Role A: when biblioSub is null, no sub is active and content stays closed.
+                // For sections with exactly one sub we keep the legacy behaviour and auto-select it.
                 const activeSub = activeSection
-                  ? (activeSection.subs.find(sb => sb.sub === biblioSub) ?? activeSection.subs[0])
+                  ? (biblioSub
+                      ? (activeSection.subs.find(sb => sb.sub === biblioSub) ?? null)
+                      : (activeSection.subs.length === 1 ? activeSection.subs[0] : null))
                   : null;
                 const ActiveComponent = activeSub?.Component ?? null;
                 const headTiles: HubTileDef[] = BIBLIOTHEK_TILES.map((section) => ({
@@ -813,12 +826,19 @@
                         tiles={whiskyTiles}
                         t={t}
                         variant="single-row"
+                        role="filter"
                         activeTestId={activeTestId}
                         onTileClick={(tile) => {
                           const pill = WHISKY_PILLS.find(
                             (p) => `pill-explore-whiskies-${p.view}` === tile.testId,
                           );
-                          if (pill) applyWhiskyHubPreset(pill.preset);
+                          if (!pill) return;
+                          // Role C: re-click on the active pill resets to default ("Top Rated")
+                          if (`pill-explore-whiskies-${pill.view}` === activeTestId) {
+                            applyWhiskyHubPreset("topRated");
+                          } else {
+                            applyWhiskyHubPreset(pill.preset);
+                          }
                         }}
                       />
                     );
