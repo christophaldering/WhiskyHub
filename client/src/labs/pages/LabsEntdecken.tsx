@@ -674,7 +674,7 @@
                 const ActiveComponent = activeSub?.Component ?? null;
                 return (
                   <div className="labs-fade-in labs-stagger-2" data-testid="explore-bibliothek-inline" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
                       {BIBLIOTHEK_TILES.map((section) => {
                         const Icon = section.icon;
                         const isActive = biblioSection === section.key;
