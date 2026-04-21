@@ -4,7 +4,7 @@ import { markJournalUpdated } from "./whiskyDnaCache";
 import { canonicalizeDistilleryName } from "@shared/distillery-normalizer";
 import { getParticipantOverallScores, computeStabilityScore } from "./participant-scores";
 import {
-  participants, tastings, tastingParticipants, sharingParticipants, whiskies, whiskyHandoutLibrary, pdfSplitSessions, ratings,
+  participants, tastings, tastingParticipants, sharingParticipants, whiskies, whiskyHandoutLibrary, whiskyHandouts, tastingHandouts, distilleryHandouts, pdfSplitSessions, ratings,
   profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, whiskyGroups, whiskyGroupMembers, journalEntries, benchmarkEntries, wishlistEntries,
   newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, tastingPhotos, userFeedback,
   type InsertParticipant, type Participant,
@@ -13,6 +13,9 @@ import {
   type InsertSharingParticipant, type SharingParticipant,
   type InsertWhisky, type Whisky,
   type InsertWhiskyHandoutLibraryEntry, type WhiskyHandoutLibraryEntry,
+  type InsertWhiskyHandout, type WhiskyHandout,
+  type InsertTastingHandout, type TastingHandout,
+  type InsertDistilleryHandout, type DistilleryHandout,
   type PdfSplitSession, type PdfSplitPage,
   type InsertRating, type Rating,
   type InsertProfile, type Profile,

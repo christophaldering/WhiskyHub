@@ -201,6 +201,69 @@ export const insertWhiskyHandoutLibrarySchema = createInsertSchema(whiskyHandout
 export type InsertWhiskyHandoutLibraryEntry = z.infer<typeof insertWhiskyHandoutLibrarySchema>;
 export type WhiskyHandoutLibraryEntry = typeof whiskyHandoutLibrary.$inferSelect;
 
+// --- Multi-Handouts: per-whisky n:m handout entries ---
+export const whiskyHandouts = pgTable("whisky_handouts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  whiskyId: varchar("whisky_id").notNull(),
+  position: integer("position").notNull().default(0),
+  visibility: text("visibility").notNull().default("always"), // "always" | "after_reveal"
+  fileUrl: text("file_url").notNull(),
+  contentType: text("content_type").notNull(),
+  title: text("title"),
+  author: text("author"),
+  description: text("description"),
+  sourceLibraryId: varchar("source_library_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => ({
+  whiskyIdx: index("idx_whisky_handouts_whisky").on(t.whiskyId, t.position),
+}));
+export const insertWhiskyHandoutSchema = createInsertSchema(whiskyHandouts).omit({ id: true, createdAt: true });
+export type InsertWhiskyHandout = z.infer<typeof insertWhiskyHandoutSchema>;
+export type WhiskyHandout = typeof whiskyHandouts.$inferSelect;
+
+// --- Multi-Handouts: per-tasting n:m handout entries ---
+export const tastingHandouts = pgTable("tasting_handouts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tastingId: varchar("tasting_id").notNull(),
+  position: integer("position").notNull().default(0),
+  visibility: text("visibility").notNull().default("always"), // "always" | "after_first_reveal"
+  fileUrl: text("file_url").notNull(),
+  contentType: text("content_type").notNull(),
+  title: text("title"),
+  author: text("author"),
+  description: text("description"),
+  sourceLibraryId: varchar("source_library_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => ({
+  tastingIdx: index("idx_tasting_handouts_tasting").on(t.tastingId, t.position),
+}));
+export const insertTastingHandoutSchema = createInsertSchema(tastingHandouts).omit({ id: true, createdAt: true });
+export type InsertTastingHandout = z.infer<typeof insertTastingHandoutSchema>;
+export type TastingHandout = typeof tastingHandouts.$inferSelect;
+
+// --- Multi-Handouts: per-distillery n:m handout entries ---
+// These are auto-attached to every whisky of the same distillery in the viewer.
+export const distilleryHandouts = pgTable("distillery_handouts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  distilleryId: varchar("distillery_id").notNull(),
+  hostId: varchar("host_id").notNull(),
+  position: integer("position").notNull().default(0),
+  visibility: text("visibility").notNull().default("always"), // "always" | "after_reveal"
+  fileUrl: text("file_url").notNull(),
+  contentType: text("content_type").notNull(),
+  title: text("title"),
+  author: text("author"),
+  description: text("description"),
+  sourceLibraryId: varchar("source_library_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => ({
+  distilleryIdx: index("idx_distillery_handouts_distillery").on(t.distilleryId, t.position),
+  hostIdx: index("idx_distillery_handouts_host").on(t.hostId),
+}));
+export const insertDistilleryHandoutSchema = createInsertSchema(distilleryHandouts).omit({ id: true, createdAt: true });
+export type InsertDistilleryHandout = z.infer<typeof insertDistilleryHandoutSchema>;
+export type DistilleryHandout = typeof distilleryHandouts.$inferSelect;
+
 // --- PDF Split Sessions (temporary store for split program PDFs awaiting assignment) ---
 export interface PdfSplitPage {
   pageNumber: number;
