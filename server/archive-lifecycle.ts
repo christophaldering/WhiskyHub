@@ -7,6 +7,7 @@ import {
 } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import { normalizeKey, normalizeText, parseAge, parseAbv, parseSmoky } from "./historical-import";
+import { clampNormalized } from "@shared/score-utils";
 
 export interface ArchiveSnapshotResult {
   historicalTastingId: string;
@@ -94,10 +95,10 @@ export async function createArchiveSnapshot(
 
     const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
 
-    const noseScores = whiskyRatings.map(r => (r.normalizedNose ?? (r.nose != null ? r.nose * normFactor : null))).filter((v): v is number => v != null);
-    const tasteScores = whiskyRatings.map(r => (r.normalizedTaste ?? (r.taste != null ? r.taste * normFactor : null))).filter((v): v is number => v != null);
-    const finishScores = whiskyRatings.map(r => (r.normalizedFinish ?? (r.finish != null ? r.finish * normFactor : null))).filter((v): v is number => v != null);
-    const overallScores = whiskyRatings.map(r => (r.normalizedScore ?? (r.overall != null ? r.overall * normFactor : null))).filter((v): v is number => v != null);
+    const noseScores = whiskyRatings.map(r => (r.normalizedNose ?? (r.nose != null ? r.nose * normFactor : null))).filter((v): v is number => v != null).map(clampNormalized);
+    const tasteScores = whiskyRatings.map(r => (r.normalizedTaste ?? (r.taste != null ? r.taste * normFactor : null))).filter((v): v is number => v != null).map(clampNormalized);
+    const finishScores = whiskyRatings.map(r => (r.normalizedFinish ?? (r.finish != null ? r.finish * normFactor : null))).filter((v): v is number => v != null).map(clampNormalized);
+    const overallScores = whiskyRatings.map(r => (r.normalizedScore ?? (r.overall != null ? r.overall * normFactor : null))).filter((v): v is number => v != null).map(clampNormalized);
 
     const avgNose = avg(noseScores);
     const avgTaste = avg(tasteScores);
@@ -175,10 +176,10 @@ function computeRanks(
 
   const whiskyAvgs = allWhiskies.map(w => {
     const wRatings = allRatings.filter(r => r.whiskyId === w.id);
-    const noseScores = wRatings.map(r => r.normalizedNose ?? (r.nose != null ? r.nose * normFactor : null)).filter((v): v is number => v != null);
-    const tasteScores = wRatings.map(r => r.normalizedTaste ?? (r.taste != null ? r.taste * normFactor : null)).filter((v): v is number => v != null);
-    const finishScores = wRatings.map(r => r.normalizedFinish ?? (r.finish != null ? r.finish * normFactor : null)).filter((v): v is number => v != null);
-    const overallScores = wRatings.map(r => r.normalizedScore ?? (r.overall != null ? r.overall * normFactor : null)).filter((v): v is number => v != null);
+    const noseScores = wRatings.map(r => r.normalizedNose ?? (r.nose != null ? r.nose * normFactor : null)).filter((v): v is number => v != null).map(clampNormalized);
+    const tasteScores = wRatings.map(r => r.normalizedTaste ?? (r.taste != null ? r.taste * normFactor : null)).filter((v): v is number => v != null).map(clampNormalized);
+    const finishScores = wRatings.map(r => r.normalizedFinish ?? (r.finish != null ? r.finish * normFactor : null)).filter((v): v is number => v != null).map(clampNormalized);
+    const overallScores = wRatings.map(r => r.normalizedScore ?? (r.overall != null ? r.overall * normFactor : null)).filter((v): v is number => v != null).map(clampNormalized);
     return {
       id: w.id,
       avgNose: avg(noseScores),

@@ -122,19 +122,27 @@ function WhiskyRow({ w, rank, extra }: { w: ExploreWhisky; rank?: number; extra?
   );
 }
 
+function clampDisplay(v: number): number {
+  if (v == null || isNaN(v as number)) return 0;
+  if (v < 0) return 0;
+  if (v > 100) return 100;
+  return v;
+}
+
 function BarRow({ label, value, maxValue, count }: { label: string; value: number; maxValue: number; count?: number }) {
+  const safeValue = clampDisplay(value);
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>{label}</span>
-        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-accent)" }}>{value.toFixed(1)}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-accent)" }}>{safeValue.toFixed(1)}</span>
       </div>
       <div style={{ height: 7, borderRadius: 4, background: "var(--labs-border)", overflow: "hidden" }}>
         <div style={{
           height: "100%",
           borderRadius: 4,
           background: "var(--labs-accent)",
-          width: `${Math.max(5, (value / maxValue) * 100)}%`,
+          width: `${Math.max(5, Math.min(100, (safeValue / maxValue) * 100))}%`,
           transition: "width 0.4s ease-out",
         }} />
       </div>
@@ -146,10 +154,11 @@ function BarRow({ label, value, maxValue, count }: { label: string; value: numbe
 }
 
 function ScoreBadge({ score }: { score: number }) {
+  const safeScore = clampDisplay(score);
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
       <Star style={{ width: 13, height: 13, color: "var(--labs-accent)", fill: "var(--labs-accent)" }} />
-      <span style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-accent)" }}>{score.toFixed(1)}</span>
+      <span style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-accent)" }}>{safeScore.toFixed(1)}</span>
     </div>
   );
 }

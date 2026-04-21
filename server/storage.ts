@@ -2,6 +2,7 @@ import { eq, ne, and, or, asc, desc, sql, inArray, gte, isNull, isNotNull, lt, t
 import { db } from "./db";
 import { markJournalUpdated } from "./whiskyDnaCache";
 import { canonicalizeDistilleryName } from "@shared/distillery-normalizer";
+import { clampNormalized } from "@shared/score-utils";
 import { getParticipantOverallScores, computeStabilityScore } from "./participant-scores";
 import {
   participants, tastings, tastingParticipants, sharingParticipants, whiskies, whiskyHandoutLibrary, whiskyHandouts, tastingHandouts, distilleryHandouts, pdfSplitSessions, ratings,
@@ -195,8 +196,9 @@ export async function getAllCommunityRatings(): Promise<CommunityRatingEntry[]> 
     const w = whiskyMap.get(r.whiskyId);
     if (!w) continue;
     const scale = 100 / (tastingScale.get(r.tastingId) ?? 100);
-    const score = r.normalizedScore ?? (r.overall != null ? r.overall * scale : null);
-    if (score == null) continue;
+    const rawScore = r.normalizedScore ?? (r.overall != null ? r.overall * scale : null);
+    if (rawScore == null) continue;
+    const score = clampNormalized(rawScore);
     pushEntry({
       source: 'rating',
       whiskyKey: buildCommunityWhiskyKey(w.name, w.distillery, w.whiskybaseId),
@@ -2160,7 +2162,7 @@ export class DatabaseStorage implements IStorage {
       for (const r of allRatings) {
         const w = whiskyMap.get(r.whiskyId);
         if (!w || !w.peatLevel) continue;
-        const score = r.normalizedScore ?? r.overall * (100 / (tastingScaleMap.get(r.tastingId) ?? 100));
+        const score = clampNormalized(r.normalizedScore ?? r.overall * (100 / (tastingScaleMap.get(r.tastingId) ?? 100)));
         const level = w.peatLevel.toLowerCase();
         if (level === "medium" || level === "heavy") {
           smokyScores.push(score);
@@ -2193,7 +2195,7 @@ export class DatabaseStorage implements IStorage {
       for (const r of allRatings) {
         const w = whiskyMap.get(r.whiskyId);
         if (!w || !w.caskType) continue;
-        const score = r.normalizedScore ?? r.overall * (100 / (tastingScaleMap.get(r.tastingId) ?? 100));
+        const score = clampNormalized(r.normalizedScore ?? r.overall * (100 / (tastingScaleMap.get(r.tastingId) ?? 100)));
         const cask = w.caskType.toLowerCase();
         if (cask.includes("sherry") || cask.includes("port") || cask.includes("wine") || cask.includes("madeira") || cask.includes("rum")) {
           sherryScores.push(score);
@@ -2272,15 +2274,15 @@ export class DatabaseStorage implements IStorage {
     for (const r of allRatings) {
       const scale = tastingScaleMap.get(r.tastingId) ?? 100;
       const norm = 100 / scale;
-      const nNose = r.normalizedNose ?? r.nose * norm;
-      const nTaste = r.normalizedTaste ?? r.taste * norm;
-      const nFinish = r.normalizedFinish ?? r.finish * norm;
-      const nOverall = r.normalizedScore ?? r.overall * norm;
+      const nNose = clampNormalized(r.normalizedNose ?? r.nose * norm);
+      const nTaste = clampNormalized(r.normalizedTaste ?? r.taste * norm);
+      const nFinish = clampNormalized(r.normalizedFinish ?? r.finish * norm);
+      const nOverall = clampNormalized(r.normalizedScore ?? r.overall * norm);
       sumNose += nNose; sumTaste += nTaste; sumFinish += nFinish; sumOverall += nOverall;
       noseScores.push(nNose); tasteScores.push(nTaste); finishScores.push(nFinish); overallScores.push(nOverall);
       const w = whiskyMap.get(r.whiskyId);
       if (w) {
-        const normOverall = (r.normalizedScore ?? r.overall * norm);
+        const normOverall = clampNormalized(r.normalizedScore ?? r.overall * norm);
         if (w.region) {
           if (!regionAcc[w.region]) regionAcc[w.region] = { total: 0, count: 0 };
           regionAcc[w.region].total += normOverall; regionAcc[w.region].count++;
@@ -2453,8 +2455,8 @@ export class DatabaseStorage implements IStorage {
     for (const r of filteredRatings) {
       const scale = tastingScaleMap.get(r.tastingId) ?? 100;
       const norm = 100 / scale;
-      sumNose += (r.normalizedNose ?? r.nose * norm); sumTaste += (r.normalizedTaste ?? r.taste * norm); sumFinish += (r.normalizedFinish ?? r.finish * norm);
-      sumOverall += (r.normalizedScore ?? r.overall * norm);
+      sumNose += clampNormalized(r.normalizedNose ?? r.nose * norm); sumTaste += clampNormalized(r.normalizedTaste ?? r.taste * norm); sumFinish += clampNormalized(r.normalizedFinish ?? r.finish * norm);
+      sumOverall += clampNormalized(r.normalizedScore ?? r.overall * norm);
       noseCount++;
       participantIds.add(r.participantId);
     }

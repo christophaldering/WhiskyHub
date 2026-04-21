@@ -195,9 +195,9 @@ function WhiskyCard({ entry, t, isTied, myRating }: { entry: HistoricalEntry; t:
       </div>
       {(entry.noseScore != null || entry.tasteScore != null || entry.finishScore != null) && (
         <div style={{ paddingLeft: 52 }}>
-          <ScoreBar label={t("m2.historicalDetail.nose", "Nose")} value={entry.normalizedNose ?? (entry.noseScore != null ? entry.noseScore * 10 : null)} />
-          <ScoreBar label={t("m2.historicalDetail.taste", "Taste")} value={entry.normalizedTaste ?? (entry.tasteScore != null ? entry.tasteScore * 10 : null)} />
-          <ScoreBar label={t("m2.historicalDetail.finish", "Finish")} value={entry.normalizedFinish ?? (entry.finishScore != null ? entry.finishScore * 10 : null)} />
+          <ScoreBar label={t("m2.historicalDetail.nose", "Nose")} value={(() => { const v = entry.normalizedNose ?? (entry.noseScore != null ? entry.noseScore * 10 : null); return v != null ? Math.max(0, Math.min(100, v)) : null; })()} />
+          <ScoreBar label={t("m2.historicalDetail.taste", "Taste")} value={(() => { const v = entry.normalizedTaste ?? (entry.tasteScore != null ? entry.tasteScore * 10 : null); return v != null ? Math.max(0, Math.min(100, v)) : null; })()} />
+          <ScoreBar label={t("m2.historicalDetail.finish", "Finish")} value={(() => { const v = entry.normalizedFinish ?? (entry.finishScore != null ? entry.finishScore * 10 : null); return v != null ? Math.max(0, Math.min(100, v)) : null; })()} />
         </div>
       )}
     </div>

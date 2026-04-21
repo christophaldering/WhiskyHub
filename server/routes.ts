@@ -13,6 +13,7 @@ import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertPart
 import OpenAI from "openai";
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
+import { clampNormalized } from "@shared/score-utils";
 import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail, buildThankYouEmail, buildAdminLoginNotification, buildFriendInviteEmail, buildCommunityInviteEmail } from "./email";
 import { extractPagesText } from "./pdf-utils";
 import { registerObjectStorageRoutes, ObjectStorageService, objectStorageClient } from "./replit_integrations/object_storage";
@@ -5362,10 +5363,10 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
 
       const results = allWhiskies.map((w) => {
         const rats = grouped[w.id] || [];
-        const overalls = rats.map((r) => r.normalizedScore ?? r.overall * normFactor).filter((v): v is number => v != null);
-        const noses = rats.map((r) => r.normalizedNose ?? r.nose * normFactor).filter((v): v is number => v != null);
-        const tastes = rats.map((r) => r.normalizedTaste ?? r.taste * normFactor).filter((v): v is number => v != null);
-        const finishes = rats.map((r) => r.normalizedFinish ?? r.finish * normFactor).filter((v): v is number => v != null);
+        const overalls = rats.map((r) => r.normalizedScore ?? r.overall * normFactor).filter((v): v is number => v != null).map(clampNormalized);
+        const noses = rats.map((r) => r.normalizedNose ?? r.nose * normFactor).filter((v): v is number => v != null).map(clampNormalized);
+        const tastes = rats.map((r) => r.normalizedTaste ?? r.taste * normFactor).filter((v): v is number => v != null).map(clampNormalized);
+        const finishes = rats.map((r) => r.normalizedFinish ?? r.finish * normFactor).filter((v): v is number => v != null).map(clampNormalized);
 
         return {
           whiskyId: w.id,
@@ -5383,10 +5384,10 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
           avgFinish: avg(finishes),
           ratings: rats.map((r) => ({
             participantId: r.participantId,
-            overall: r.normalizedScore ?? r.overall * normFactor,
-            nose: r.normalizedNose ?? r.nose * normFactor,
-            taste: r.normalizedTaste ?? r.taste * normFactor,
-            finish: r.normalizedFinish ?? r.finish * normFactor,
+            overall: clampNormalized(r.normalizedScore ?? r.overall * normFactor),
+            nose: clampNormalized(r.normalizedNose ?? r.nose * normFactor),
+            taste: clampNormalized(r.normalizedTaste ?? r.taste * normFactor),
+            finish: clampNormalized(r.normalizedFinish ?? r.finish * normFactor),
             notes: r.notes,
           })),
         };
@@ -5494,7 +5495,8 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const normalizeDim = (v: number | null | undefined): number | null => {
         if (v == null) return null;
         const clamped = Math.max(0, Math.min(v, maxScale));
-        return maxScale === 100 ? clamped : Math.round((clamped / maxScale) * 1000) / 10;
+        const norm = maxScale === 100 ? clamped : Math.round((clamped / maxScale) * 1000) / 10;
+        return clampNormalized(norm);
       };
       const normalizedScore = normalizeDim(data.overall);
       const normalizedNose = normalizeDim(data.nose);
@@ -11266,8 +11268,8 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           const norm = 100 / scale;
           return {
             whiskyId: r.whiskyId,
-            nose: r.normalizedNose ?? r.nose * norm, taste: r.normalizedTaste ?? r.taste * norm, finish: r.normalizedFinish ?? r.finish * norm,
-            overall: r.normalizedScore ?? r.overall * norm,
+            nose: clampNormalized(r.normalizedNose ?? r.nose * norm), taste: clampNormalized(r.normalizedTaste ?? r.taste * norm), finish: clampNormalized(r.normalizedFinish ?? r.finish * norm),
+            overall: clampNormalized(r.normalizedScore ?? r.overall * norm),
             ratedAt: r.updatedAt || null,
           };
         });
@@ -11337,7 +11339,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         if (!completedTastingStatuses.has(tastingStatusMap.get(r.tastingId) ?? "")) continue;
         const scale = tastingScaleMap.get(r.tastingId) ?? 100;
         const norm = 100 / scale;
-        const normOverall = r.normalizedScore ?? r.overall * norm;
+        const normOverall = clampNormalized(r.normalizedScore ?? r.overall * norm);
         platformAllOveralls.push(normOverall);
         platformParticipantIds.add(r.participantId);
 
@@ -11345,9 +11347,9 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           platformByWhisky[r.whiskyId] = { overalls: [], nose: [], taste: [], finish: [] };
         }
         platformByWhisky[r.whiskyId].overalls.push(normOverall);
-        platformByWhisky[r.whiskyId].nose.push(r.normalizedNose ?? r.nose * norm);
-        platformByWhisky[r.whiskyId].taste.push(r.normalizedTaste ?? r.taste * norm);
-        platformByWhisky[r.whiskyId].finish.push(r.normalizedFinish ?? r.finish * norm);
+        platformByWhisky[r.whiskyId].nose.push(clampNormalized(r.normalizedNose ?? r.nose * norm));
+        platformByWhisky[r.whiskyId].taste.push(clampNormalized(r.normalizedTaste ?? r.taste * norm));
+        platformByWhisky[r.whiskyId].finish.push(clampNormalized(r.normalizedFinish ?? r.finish * norm));
       }
 
       const platformMedianOverall = calcMedian(platformAllOveralls);
@@ -11442,10 +11444,10 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
             for (const r of friendRatings) {
               const scale = tastingScaleMap.get(r.tastingId) ?? 100;
               const norm = 100 / scale;
-              friendDimScores.nose.push(r.normalizedNose ?? r.nose * norm);
-              friendDimScores.taste.push(r.normalizedTaste ?? r.taste * norm);
-              friendDimScores.finish.push(r.normalizedFinish ?? r.finish * norm);
-              friendDimScores.overall.push(r.normalizedScore ?? r.overall * norm);
+              friendDimScores.nose.push(clampNormalized(r.normalizedNose ?? r.nose * norm));
+              friendDimScores.taste.push(clampNormalized(r.normalizedTaste ?? r.taste * norm));
+              friendDimScores.finish.push(clampNormalized(r.normalizedFinish ?? r.finish * norm));
+              friendDimScores.overall.push(clampNormalized(r.normalizedScore ?? r.overall * norm));
             }
             const friendMedians: Record<string, number> = {};
             for (const dim of dims) {
@@ -11465,10 +11467,10 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           if (!completedTastingStatuses.has(tastingStatusMap.get(r.tastingId) ?? "")) continue;
           const scale = tastingScaleMap.get(r.tastingId) ?? 100;
           const norm = 100 / scale;
-          platformDimScores.nose.push(r.normalizedNose ?? r.nose * norm);
-          platformDimScores.taste.push(r.normalizedTaste ?? r.taste * norm);
-          platformDimScores.finish.push(r.normalizedFinish ?? r.finish * norm);
-          platformDimScores.overall.push(r.normalizedScore ?? r.overall * norm);
+          platformDimScores.nose.push(clampNormalized(r.normalizedNose ?? r.nose * norm));
+          platformDimScores.taste.push(clampNormalized(r.normalizedTaste ?? r.taste * norm));
+          platformDimScores.finish.push(clampNormalized(r.normalizedFinish ?? r.finish * norm));
+          platformDimScores.overall.push(clampNormalized(r.normalizedScore ?? r.overall * norm));
         }
         const platformMedians: Record<string, number> = {};
         for (const dim of dims) {
@@ -11559,10 +11561,10 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           const scale = scaleMap.get(r.tastingId) ?? 100;
           const factor = scale === 100 ? 1 : 100 / scale;
           return {
-            nose: (r.normalizedNose ?? (r.nose ?? 50) * factor),
-            taste: (r.normalizedTaste ?? (r.taste ?? 50) * factor),
-            finish: (r.normalizedFinish ?? (r.finish ?? 50) * factor),
-            overall: (r.normalizedScore ?? (r.overall ?? 50) * factor),
+            nose: clampNormalized(r.normalizedNose ?? (r.nose ?? 50) * factor),
+            taste: clampNormalized(r.normalizedTaste ?? (r.taste ?? 50) * factor),
+            finish: clampNormalized(r.normalizedFinish ?? (r.finish ?? 50) * factor),
+            overall: clampNormalized(r.normalizedScore ?? (r.overall ?? 50) * factor),
           };
         };
 
@@ -11698,7 +11700,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
       const normalizeScore = (r: typeof userRatings[0]) => {
         const scale = scaleMap.get(r.tastingId) ?? 100;
-        return r.normalizedScore ?? (r.overall ?? 50) * (100 / scale);
+        return clampNormalized(r.normalizedScore ?? (r.overall ?? 50) * (100 / scale));
       };
 
       const getMonthKey = (r: typeof userRatings[0]) => {
@@ -14011,7 +14013,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       const detailNorm = 100 / detailScale;
       const whiskyDetails = whiskiesData.map(w => {
         const wRatings = ratingsData.filter(r => r.whiskyId === w.id);
-        const overallScores = wRatings.map(r => r.normalizedScore ?? r.overall * detailNorm).filter((v): v is number => v != null);
+        const overallScores = wRatings.map(r => r.normalizedScore ?? r.overall * detailNorm).filter((v): v is number => v != null).map(clampNormalized);
         const avgOverall = overallScores.length > 0 ? overallScores.reduce((a, b) => a + b, 0) / overallScores.length : null;
 
         return {
@@ -14029,10 +14031,10 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           ratings: wRatings.map(r => ({
             participantName: participantMap.get(r.participantId) || "Unknown",
             participantId: r.participantId,
-            nose: r.normalizedNose ?? r.nose * detailNorm,
-            taste: r.normalizedTaste ?? r.taste * detailNorm,
-            finish: r.normalizedFinish ?? r.finish * detailNorm,
-            overall: r.normalizedScore ?? r.overall * detailNorm,
+            nose: clampNormalized(r.normalizedNose ?? r.nose * detailNorm),
+            taste: clampNormalized(r.normalizedTaste ?? r.taste * detailNorm),
+            finish: clampNormalized(r.normalizedFinish ?? r.finish * detailNorm),
+            overall: clampNormalized(r.normalizedScore ?? r.overall * detailNorm),
             notes: r.notes,
           })),
         };
@@ -17399,7 +17401,7 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
           rows.push({
             Tasting: t.title, Date: t.date, Location: t.location, Status: t.status,
             Whisky: w?.name || "", Distillery: w?.distillery || "", Age: w?.age || "", ABV: w?.abv || "",
-            Nose: r.normalizedNose ?? r.nose * exportNorm, Taste: r.normalizedTaste ?? r.taste * exportNorm, Finish: r.normalizedFinish ?? r.finish * exportNorm, Overall: r.normalizedScore ?? r.overall * exportNorm,
+            Nose: clampNormalized(r.normalizedNose ?? r.nose * exportNorm), Taste: clampNormalized(r.normalizedTaste ?? r.taste * exportNorm), Finish: clampNormalized(r.normalizedFinish ?? r.finish * exportNorm), Overall: clampNormalized(r.normalizedScore ?? r.overall * exportNorm),
             Notes: r.notes || ""
           });
         }
@@ -17541,7 +17543,7 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
           const w = whiskies.find((w: any) => w.id === r.whiskyId);
           tastingRows.push({
             Tasting: t.title, Date: t.date, Whisky: w?.name || "", Distillery: w?.distillery || "",
-            ABV: w?.abv || "", Nose: r.normalizedNose ?? r.nose * expNorm, Taste: r.normalizedTaste ?? r.taste * expNorm, Finish: r.normalizedFinish ?? r.finish * expNorm, Overall: r.normalizedScore ?? r.overall * expNorm, Notes: r.notes || ""
+            ABV: w?.abv || "", Nose: clampNormalized(r.normalizedNose ?? r.nose * expNorm), Taste: clampNormalized(r.normalizedTaste ?? r.taste * expNorm), Finish: clampNormalized(r.normalizedFinish ?? r.finish * expNorm), Overall: clampNormalized(r.normalizedScore ?? r.overall * expNorm), Notes: r.notes || ""
           });
         }
       }
@@ -18337,7 +18339,7 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
       // 2a. Category Correlations: Pearson correlation between sub-scores and overall
       const corrData = allRatings.map(r => {
         const norm = 100 / r.scale;
-        return { nose: r.normalizedNose ?? r.nose * norm, taste: r.normalizedTaste ?? r.taste * norm, finish: r.normalizedFinish ?? r.finish * norm, overall: r.normalizedScore ?? r.overall * norm };
+        return { nose: clampNormalized(r.normalizedNose ?? r.nose * norm), taste: clampNormalized(r.normalizedTaste ?? r.taste * norm), finish: clampNormalized(r.normalizedFinish ?? r.finish * norm), overall: clampNormalized(r.normalizedScore ?? r.overall * norm) };
       });
       const pearson = (xs: number[], ys: number[]): number => {
         const n = xs.length;
@@ -18369,7 +18371,7 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
           const val = w[prop];
           if (!val) continue;
           if (!acc[val]) acc[val] = { total: 0, count: 0 };
-          acc[val].total += (r.normalizedScore ?? r.overall * (100 / r.scale));
+          acc[val].total += clampNormalized(r.normalizedScore ?? r.overall * (100 / r.scale));
           acc[val].count++;
         }
         const values = Object.entries(acc)
@@ -20397,7 +20399,9 @@ Rules:
 
         const normDim = (v: number | null): number | null => {
           if (v == null) return null;
-          return maxScale === 100 ? v : Math.round((v / maxScale) * 1000) / 10;
+          const clampedRaw = Math.max(0, Math.min(v, maxScale));
+          const norm = maxScale === 100 ? clampedRaw : Math.round((clampedRaw / maxScale) * 1000) / 10;
+          return clampNormalized(norm);
         };
         const normalizedScore = normDim(overall);
         const normalizedNose = normDim(nose);
@@ -20840,10 +20844,10 @@ Rules:
         const exploreNorm = (r: typeof relevantRatings[0]) => 100 / (tastingScaleExplore.get(r.tastingId) ?? 100);
 
         for (const r of relevantRatings) {
-          const n = r.normalizedNose ?? r.nose * exploreNorm(r);
-          const t = r.normalizedTaste ?? r.taste * exploreNorm(r);
-          const f = r.normalizedFinish ?? r.finish * exploreNorm(r);
-          const o = r.normalizedScore ?? r.overall * exploreNorm(r);
+          const n = r.normalizedNose != null ? clampNormalized(r.normalizedNose) : (r.nose != null ? clampNormalized(r.nose * exploreNorm(r)) : null);
+          const t = r.normalizedTaste != null ? clampNormalized(r.normalizedTaste) : (r.taste != null ? clampNormalized(r.taste * exploreNorm(r)) : null);
+          const f = r.normalizedFinish != null ? clampNormalized(r.normalizedFinish) : (r.finish != null ? clampNormalized(r.finish * exploreNorm(r)) : null);
+          const o = r.normalizedScore != null ? clampNormalized(r.normalizedScore) : (r.overall != null ? clampNormalized(r.overall * exploreNorm(r)) : null);
           if (n != null && n > 0) crossNoseScores.push(n);
           if (t != null && t > 0) crossTasteScores.push(t);
           if (f != null && f > 0) crossFinishScores.push(f);
@@ -20855,10 +20859,10 @@ Rules:
           primaryRatings = primaryWhiskyRatings.map(r => ({
             id: r.id,
             participantId: r.participantId,
-            nose: r.normalizedNose ?? r.nose * exploreNorm(r),
-            taste: r.normalizedTaste ?? r.taste * exploreNorm(r),
-            finish: r.normalizedFinish ?? r.finish * exploreNorm(r),
-            overall: r.normalizedScore ?? r.overall * exploreNorm(r),
+            nose: clampNormalized(r.normalizedNose ?? r.nose * exploreNorm(r)),
+            taste: clampNormalized(r.normalizedTaste ?? r.taste * exploreNorm(r)),
+            finish: clampNormalized(r.normalizedFinish ?? r.finish * exploreNorm(r)),
+            overall: clampNormalized(r.normalizedScore ?? r.overall * exploreNorm(r)),
           }));
         }
       }

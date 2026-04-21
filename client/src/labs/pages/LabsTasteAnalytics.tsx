@@ -65,8 +65,11 @@ function TasteEvolutionCard({ pid }: { pid: string }) {
   const dataPoints: { date: string; score: number }[] = [];
   if (Array.isArray(notes)) {
     for (const n of notes as RatingNote[]) {
-      const score = n.normalizedScore ?? n.overall;
-      if (score && n.createdAt) dataPoints.push({ date: n.createdAt, score: Number(score) });
+      const rawScore = n.normalizedScore ?? n.overall;
+      if (rawScore && n.createdAt) {
+        const score = Math.max(0, Math.min(100, Number(rawScore)));
+        dataPoints.push({ date: n.createdAt, score });
+      }
     }
   }
   if (Array.isArray(journal)) {

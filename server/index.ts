@@ -612,6 +612,28 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
         log(`Handout legacy migration skipped: ${migErr.message}`, "startup");
       }
 
+      // One-time data correction: clamp historical normalized rating scores
+      // into [0, 100]. Idempotent — values already in range are untouched.
+      try {
+        const clampRes = await dbJournal.execute(sqlJ`
+          UPDATE ratings SET
+            normalized_score  = CASE WHEN normalized_score  > 100 THEN 100 WHEN normalized_score  < 0 THEN 0 ELSE normalized_score  END,
+            normalized_nose   = CASE WHEN normalized_nose   > 100 THEN 100 WHEN normalized_nose   < 0 THEN 0 ELSE normalized_nose   END,
+            normalized_taste  = CASE WHEN normalized_taste  > 100 THEN 100 WHEN normalized_taste  < 0 THEN 0 ELSE normalized_taste  END,
+            normalized_finish = CASE WHEN normalized_finish > 100 THEN 100 WHEN normalized_finish < 0 THEN 0 ELSE normalized_finish END
+          WHERE normalized_score  > 100 OR normalized_score  < 0
+             OR normalized_nose   > 100 OR normalized_nose   < 0
+             OR normalized_taste  > 100 OR normalized_taste  < 0
+             OR normalized_finish > 100 OR normalized_finish < 0
+        `);
+        const clampedRows = (clampRes as any).rowCount ?? 0;
+        if (clampedRows > 0) {
+          log(`Clamped ${clampedRows} ratings rows with out-of-range normalized scores`, "startup");
+        }
+      } catch (clampErr: any) {
+        log(`Normalized-score clamp migration skipped: ${clampErr.message}`, "startup");
+      }
+
       const rows = await dbJournal.execute(sqlJ`
         SELECT id, nose_notes FROM journal_entries
         WHERE nose_notes LIKE '%[SCORES]%'

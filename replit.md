@@ -1,5 +1,8 @@
 # CaskSense - Whisky Tasting Application
 
+## Checkpoint: "Score-Clamp" (21.04.2026)
+Task #787: Normalisierte Scores (`normalized_score`, `normalized_nose`, `normalized_taste`, `normalized_finish`) werden jetzt durchgaengig auf [0,100] geklemmt. Neuer Helper `shared/score-utils.ts` (`clampNormalized`) wird in allen `?? overall * norm`-Pfaden in `server/storage.ts`, `server/routes.ts`, `server/archive-lifecycle.ts` angewendet. `normalizeDim` (Rating-Submit) und `normDim` (CSV-Import) clampen Roh- und normalisierten Wert. Frontend `ScoreBadge` und `BarRow` in `ExploreStatistics.tsx` clampen als letzte Verteidigung; `LabsHistoricalDetail` und `LabsTasteAnalytics` ebenso. Startup-Migration in `server/index.ts` korrigiert bestehende DB-Zeilen (idempotent), zusaetzliche SQL-Datei `migrations/0023_clamp_normalized_scores.sql`.
+
 ## Checkpoint: "Daily Report" (18.04.2026)
 Automatisierter Tagesbericht per Mail an christoph.aldering@googlemail.com:
 - **Modul `server/daily-report.ts`**: Sammelt Metriken (neue Teilnehmer/Tastings/Bewertungen/Journal-Eintraege, Page Views, eindeutige Besucher, Sessions, Top-Seiten, 7-Tage-Vergleich, Gesamtbestaende) und versendet stilisiertes HTML-Mail via Gmail-Connector.
