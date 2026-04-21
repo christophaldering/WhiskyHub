@@ -3,7 +3,7 @@ import { useEffect, useState, type ElementType, type ReactNode, type CSSProperti
 import {
   BookOpen, Archive, Heart, Sparkles, Activity, Library, Compass,
   BarChart3, PieChart, GitCompareArrows, Download, Layers, Crown, Users, Brain,
-  ChevronDown,
+  ChevronDown, FileText,
 } from "lucide-react";
 
 export type HubTileRole = "nav" | "tab" | "filter";
@@ -91,6 +91,15 @@ export const COLLECTION_HUB_TILES: HubTileDef[] = [
     descFallback: "Whiskies to try",
     href: "/labs/taste/wishlist",
     testId: "labs-link-collection-hub-wishlist",
+  },
+  {
+    icon: FileText,
+    labelKey: "myTastePage.myHandouts",
+    labelFallback: "My Handouts",
+    descKey: "myTastePage.myHandoutsNavDesc",
+    descFallback: "Your handout library",
+    href: "/labs/taste/my-handouts",
+    testId: "labs-link-collection-hub-handouts",
   },
 ];
 

@@ -34,7 +34,7 @@ export const SECTIONS: BibliothekSection[] = [
       { icon: BookOpen, labelKey: "discover.lexicon", labelFallback: "Lexicon", descKey: "bibliothek.lexiconDescNav", descFallback: "Dictionary, templates & flavour map", href: "/labs/discover/lexicon", testId: "labs-link-bibliothek-lexicon" },
       { icon: Building2, labelKey: "discover.distilleries", labelFallback: "Distilleries", descKey: "discover.distilleriesDesc", descFallback: "Distillery encyclopedia & map", href: "/labs/discover/distilleries", testId: "labs-link-bibliothek-distilleries" },
       { icon: Package, labelKey: "discover.bottlers", labelFallback: "Bottlers", descKey: "discover.bottlersDesc", descFallback: "Independent bottlers database", href: "/labs/discover/bottlers", testId: "labs-link-bibliothek-bottlers" },
-      { icon: Globe, labelKey: "bibliothek.communityHandouts", labelFallback: "Community Handouts", descKey: "bibliothek.communityHandoutsDesc", descFallback: "Handouts shared by other hosts — adopt with one click", href: "/labs/host/handout-library?tab=community", testId: "labs-link-bibliothek-community-handouts" },
+      { icon: Globe, labelKey: "bibliothek.communityHandouts", labelFallback: "Community Handouts", descKey: "bibliothek.communityHandoutsDesc", descFallback: "Handouts shared by other hosts — adopt with one click", href: "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=community-handouts", testId: "labs-link-bibliothek-community-handouts" },
     ],
   },
   {

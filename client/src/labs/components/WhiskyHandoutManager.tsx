@@ -150,7 +150,7 @@ export default function WhiskyHandoutManager({ whisky, hostId, tastingId }: Prop
         )}
         <span style={{ flex: 1 }} />
         <Link
-          href="/labs/host/handout-library"
+          href="/labs/taste/my-handouts"
           style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--labs-text-muted)", textDecoration: "none" }}
           data-testid={`link-handout-library-${whisky.id}`}
           title="Alle deine gespeicherten Handouts verwalten"

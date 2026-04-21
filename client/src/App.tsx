@@ -640,8 +640,20 @@ function Router() {
               <Route path="/labs/join">{() => <RedirectWithQuery to="/labs/tastings" query="tab=join" />}</Route>
               <Route path="/labs/host/dashboard" component={LabsHostDashboard} />
               <Route path="/labs/host/batch-import" component={LabsBatchImport} />
-              <Route path="/labs/host/handout-library" component={LabsHandoutLibrary} />
+              <Route path="/labs/host/handout-library">
+                {() => {
+                  let toCommunity = false;
+                  try {
+                    const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+                    toCommunity = params.get("tab") === "community";
+                  } catch {}
+                  return toCommunity
+                    ? <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=nachschlagewerk&sub=community-handouts" />
+                    : <RedirectWithQuery to="/labs/taste" query="tab=collection&sub=labs-link-collection-hub-handouts" />;
+                }}
+              </Route>
               <Route path="/labs/host/handout-library/community">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=nachschlagewerk&sub=community-handouts" />}</Route>
+              <Route path="/labs/taste/my-handouts">{() => <RedirectWithQuery to="/labs/taste" query="tab=collection&sub=labs-link-collection-hub-handouts" />}</Route>
               <Route path="/labs/host/calendar" component={LabsCalendar} />
               <Route path="/labs/history/insights" component={LabsHistory} />
               <Route path="/labs/history/:id" component={LabsHistoricalDetail} />

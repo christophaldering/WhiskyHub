@@ -757,7 +757,16 @@ function MenuItem({ icon, label, onClick, testId, danger }: { icon: React.ReactN
   );
 }
 
-export default function LabsHandoutLibrary() {
+type LabsHandoutLibraryMode = "workspace" | "community-readonly";
+
+type UploadIntent = "sammel" | "single" | "multi";
+
+interface LabsHandoutLibraryProps {
+  mode?: LabsHandoutLibraryMode;
+}
+
+export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLibraryProps = {}) {
+  const readonly = mode === "community-readonly";
   const { t, i18n } = useTranslation();
   const [, setLocation] = useLocation();
   const locale = i18n.language || "en";
@@ -765,6 +774,7 @@ export default function LabsHandoutLibrary() {
   const qc = useQueryClient();
   const searchStr = useSearch();
   const initialTab: TabKey = useMemo(() => {
+    if (readonly) return "community";
     try {
       const params = new URLSearchParams(searchStr);
       return params.get("tab") === "community" ? "community" : "mine";
@@ -775,6 +785,8 @@ export default function LabsHandoutLibrary() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [tab, setTab] = useState<TabKey>(initialTab);
+  const [uploadIntent, setUploadIntent] = useState<UploadIntent | null>(null);
+  const [uploadValidationError, setUploadValidationError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [communitySearch, setCommunitySearch] = useState("");
   const [editing, setEditing] = useState<EditState | null>(null);
@@ -1115,19 +1127,24 @@ export default function LabsHandoutLibrary() {
   }
 
   return (
-    <div style={{ padding: "24px 16px 64px", maxWidth: 1100, margin: "0 auto", color: "var(--labs-text)" }}>
-      <DiscoverActionBar active="bibliothek" />
+    <div style={{ padding: readonly ? "8px 0 32px" : "24px 16px 64px", maxWidth: 1100, margin: "0 auto", color: "var(--labs-text)" }}>
+      {!readonly && <DiscoverActionBar active="bibliothek" />}
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-        <Library style={{ width: 20, height: 20, color: "var(--labs-accent, var(--labs-text))" }} />
-        <h1 className="labs-h2" style={{ margin: 0, color: "var(--labs-text)" }} data-testid="text-handout-library-title">
-          {t("labs.handoutLibrary.title")}
-        </h1>
-      </div>
-      <p style={{ color: "var(--labs-text-muted)", fontSize: 13, margin: "0 0 16px" }}>
-        {t("labs.handoutLibrary.subtitle")}
-      </p>
+      {!readonly && (
+        <>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+            <Library style={{ width: 20, height: 20, color: "var(--labs-accent, var(--labs-text))" }} />
+            <h1 className="labs-h2" style={{ margin: 0, color: "var(--labs-text)" }} data-testid="text-handout-library-title">
+              {t("labs.handoutLibrary.title")}
+            </h1>
+          </div>
+          <p style={{ color: "var(--labs-text-muted)", fontSize: 13, margin: "0 0 16px" }}>
+            {t("labs.handoutLibrary.subtitle")}
+          </p>
+        </>
+      )}
 
+      {!readonly && (
       <div role="tablist" style={{ display: "flex", gap: 4, marginBottom: 14, borderBottom: "1px solid var(--labs-border)" }}>
         <button
           type="button"
@@ -1168,6 +1185,7 @@ export default function LabsHandoutLibrary() {
           {t("labs.handoutLibrary.tabCommunity")}
         </button>
       </div>
+      )}
 
       {error && (
         <div
@@ -1270,15 +1288,17 @@ export default function LabsHandoutLibrary() {
                 <TableIcon style={{ width: 13, height: 13 }} /> {t("labs.handoutLibrary.viewToggleTable", { defaultValue: "Table" })}
               </button>
             </div>
-            <button
-              type="button"
-              className="labs-btn-primary text-xs"
-              onClick={() => { setUploadOpen(true); setError(null); setInfo(null); }}
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", whiteSpace: "nowrap" }}
-              data-testid="button-handout-library-upload"
-            >
-              <Upload style={{ width: 13, height: 13 }} /> {t("labs.handoutLibrary.uploadButton")}
-            </button>
+            {!readonly && (
+              <button
+                type="button"
+                className="labs-btn-primary text-xs"
+                onClick={() => { setUploadOpen(true); setUploadIntent(null); setUploadValidationError(null); setError(null); setInfo(null); }}
+                style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", whiteSpace: "nowrap" }}
+                data-testid="button-handout-library-upload"
+              >
+                <Upload style={{ width: 13, height: 13 }} /> {t("labs.handoutLibrary.uploadButton")}
+              </button>
+            )}
           </div>
 
           <input
@@ -1295,19 +1315,26 @@ export default function LabsHandoutLibrary() {
             data-testid="input-handout-library-replace-file"
           />
 
-          {uploadOpen && (
+          {uploadOpen && !readonly && (
             <div
               style={{ border: "1px solid var(--labs-accent, var(--labs-border))", borderRadius: 12, padding: 14, background: "var(--labs-surface)", display: "grid", gap: 10, marginBottom: 14 }}
               data-testid="handout-library-upload-form"
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <strong style={{ fontSize: 13, color: "var(--labs-text)" }}>{t("labs.handoutLibrary.uploadFormTitle")}</strong>
+                <strong style={{ fontSize: 13, color: "var(--labs-text)" }}>
+                  {uploadIntent === "sammel" ? t("labs.handoutLibrary.uploadIntent.sammelTitle", { defaultValue: "Sammel-PDF zerlegen" })
+                    : uploadIntent === "single" ? t("labs.handoutLibrary.uploadIntent.singleTitle", { defaultValue: "Einzel-Handout für einen Whisky" })
+                    : uploadIntent === "multi" ? t("labs.handoutLibrary.uploadIntent.multiTitle", { defaultValue: "Mehrere Handouts auf einmal" })
+                    : t("labs.handoutLibrary.uploadIntent.pickerTitle", { defaultValue: "Wie möchtest du hochladen?" })}
+                </strong>
                 <button
                   type="button"
                   className="labs-btn-ghost text-xs"
                   onClick={() => {
                     if (multiUploading) return;
                     setUploadOpen(false);
+                    setUploadIntent(null);
+                    setUploadValidationError(null);
                     setUploadForm(emptyUploadForm);
                     setMultiItems([]);
                     setMultiCommonDistillery("");
@@ -1322,6 +1349,78 @@ export default function LabsHandoutLibrary() {
                   <X style={{ width: 14, height: 14 }} />
                 </button>
               </div>
+              {uploadIntent === null && (
+                <div style={{ display: "grid", gap: 8 }} data-testid="upload-intent-picker">
+                  <p style={{ margin: 0, fontSize: 12, color: "var(--labs-text-muted)" }}>
+                    {t("labs.handoutLibrary.uploadIntent.pickerHint", { defaultValue: "Wähle den passenden Pfad — jeder ist für genau einen Anwendungsfall optimiert." })}
+                  </p>
+                  <button
+                    type="button"
+                    className="labs-btn-secondary text-xs"
+                    onClick={() => {
+                      setUploadIntent("sammel");
+                      setUploadForm({ ...emptyUploadForm, splitProgramme: true });
+                      setMultiItems([]);
+                      setUploadValidationError(null);
+                      setTimeout(() => uploadFileInputRef.current?.click(), 0);
+                    }}
+                    style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 10, padding: 12, textAlign: "left", alignItems: "start" }}
+                    data-testid="button-upload-intent-sammel"
+                  >
+                    <Scissors style={{ width: 16, height: 16, color: "var(--labs-accent)", marginTop: 2 }} />
+                    <span style={{ display: "grid", gap: 2 }}>
+                      <span style={{ fontWeight: 600, fontSize: 13 }}>{t("labs.handoutLibrary.uploadIntent.sammelTitle", { defaultValue: "Sammel-PDF zerlegen" })}</span>
+                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                        {t("labs.handoutLibrary.uploadIntent.sammelHint", { defaultValue: "Ein Programm-PDF mit mehreren Whiskys — wird nach dem Hochladen automatisch im Splitter geöffnet." })}
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="labs-btn-secondary text-xs"
+                    onClick={() => {
+                      setUploadIntent("single");
+                      setUploadForm({ ...emptyUploadForm, splitProgramme: false });
+                      setMultiItems([]);
+                      setUploadValidationError(null);
+                      setTimeout(() => uploadFileInputRef.current?.click(), 0);
+                    }}
+                    style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 10, padding: 12, textAlign: "left", alignItems: "start" }}
+                    data-testid="button-upload-intent-single"
+                  >
+                    <FileText style={{ width: 16, height: 16, color: "var(--labs-accent)", marginTop: 2 }} />
+                    <span style={{ display: "grid", gap: 2 }}>
+                      <span style={{ fontWeight: 600, fontSize: 13 }}>{t("labs.handoutLibrary.uploadIntent.singleTitle", { defaultValue: "Einzel-Handout für einen Whisky" })}</span>
+                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                        {t("labs.handoutLibrary.uploadIntent.singleHint", { defaultValue: "Ein Dokument für genau einen Whisky — mit Vorschlägen aus deiner Bibliothek." })}
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="labs-btn-secondary text-xs"
+                    onClick={() => {
+                      setUploadIntent("multi");
+                      setUploadForm(emptyUploadForm);
+                      setMultiItems([]);
+                      setUploadValidationError(null);
+                      setTimeout(() => uploadFileInputRef.current?.click(), 0);
+                    }}
+                    style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 10, padding: 12, textAlign: "left", alignItems: "start" }}
+                    data-testid="button-upload-intent-multi"
+                  >
+                    <Library style={{ width: 16, height: 16, color: "var(--labs-accent)", marginTop: 2 }} />
+                    <span style={{ display: "grid", gap: 2 }}>
+                      <span style={{ fontWeight: 600, fontSize: 13 }}>{t("labs.handoutLibrary.uploadIntent.multiTitle", { defaultValue: "Mehrere Handouts auf einmal" })}</span>
+                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                        {t("labs.handoutLibrary.uploadIntent.multiHint", { defaultValue: "Mehrere fertige Handouts gleichzeitig — Felder werden aus den Dateinamen erkannt." })}
+                      </span>
+                    </span>
+                  </button>
+                </div>
+              )}
+              {uploadIntent !== null && (
+                <>
               <div
                 style={{
                   fontSize: 11,
@@ -1334,7 +1433,11 @@ export default function LabsHandoutLibrary() {
                 }}
                 data-testid="text-upload-naming-hint"
               >
-                {t("labs.handoutLibrary.namingHint")}
+                {uploadIntent === "multi"
+                  ? t("labs.handoutLibrary.namingHint")
+                  : uploadIntent === "sammel"
+                    ? t("labs.handoutLibrary.uploadIntent.sammelHint", { defaultValue: "Ein Programm-PDF mit mehreren Whiskys — wird nach dem Hochladen automatisch im Splitter geöffnet." })
+                    : t("labs.handoutLibrary.uploadIntent.singleHint", { defaultValue: "Ein Dokument für genau einen Whisky — mit Vorschlägen aus deiner Bibliothek." })}
               </div>
               <input
                 ref={uploadFileInputRef}
@@ -1409,40 +1512,7 @@ export default function LabsHandoutLibrary() {
                     : uploadForm.file ? uploadForm.file.name : t("labs.handoutLibrary.dropOrChooseHint")}
                 </span>
               </div>
-              {multiItems.length === 0 && (() => {
-                const f = uploadForm.file;
-                if (!f) return null;
-                const mime = (f.type || "").toLowerCase();
-                const name = (f.name || "").toLowerCase();
-                const isPdfFile = mime === "application/pdf" || name.endsWith(".pdf");
-                if (!isPdfFile) return null;
-                return (
-                  <label
-                    style={{
-                      display: "flex", alignItems: "flex-start", gap: 8,
-                      padding: 10, borderRadius: 8,
-                      border: `1px solid ${uploadForm.splitProgramme ? "var(--labs-accent)" : "var(--labs-border)"}`,
-                      background: uploadForm.splitProgramme ? "var(--labs-accent-muted)" : "var(--labs-surface)",
-                      fontSize: 12, color: "var(--labs-text)",
-                    }}
-                    data-testid="label-upload-split-programme"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={uploadForm.splitProgramme}
-                      onChange={(e) => setUploadForm({ ...uploadForm, splitProgramme: e.target.checked })}
-                      data-testid="checkbox-upload-split-programme"
-                      style={{ marginTop: 2 }}
-                    />
-                    <span style={{ display: "grid", gap: 2 }}>
-                      <span style={{ fontWeight: 600 }}>{t("labs.handoutSplitter.uploadOption")}</span>
-                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
-                        {t("labs.handoutSplitter.uploadOptionHint")}
-                      </span>
-                    </span>
-                  </label>
-                );
-              })()}
+              {/* Intent picker now drives splitProgramme — checkbox removed for clarity */}
               {multiItems.length === 0 && uploadForm.splitProgramme && (
                 <div style={{ display: "grid", gap: 8 }}>
                   <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
@@ -1505,14 +1575,24 @@ export default function LabsHandoutLibrary() {
               )}
               {multiItems.length === 0 && !uploadForm.splitProgramme && (
                 <>
+                  <datalist id="handout-upload-whisky-name-suggestions">
+                    {Array.from(new Set(allEntries.map((e) => (e.whiskyName || "").trim()).filter((n) => n.length > 0)))
+                      .sort((a, b) => a.localeCompare(b, locale))
+                      .map((name) => (
+                        <option key={name} value={name} />
+                      ))}
+                  </datalist>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                     <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
                       {t("labs.handoutLibrary.fieldWhiskyName")} *
                       <input
                         className="labs-input"
+                        list="handout-upload-whisky-name-suggestions"
+                        autoComplete="off"
                         value={uploadForm.whiskyName}
-                        onChange={(e) => setUploadForm({ ...uploadForm, whiskyName: e.target.value })}
+                        onChange={(e) => { setUploadForm({ ...uploadForm, whiskyName: e.target.value }); if (uploadValidationError) setUploadValidationError(null); }}
                         data-testid="input-upload-whiskyname"
+                        placeholder={t("labs.handoutLibrary.uploadIntent.singleWhiskyNamePlaceholder", { defaultValue: "z.B. Lagavulin 16 — tippe los, Vorschläge erscheinen" })}
                       />
                     </label>
                     <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
@@ -1845,8 +1925,20 @@ export default function LabsHandoutLibrary() {
                   <button
                     type="button"
                     className="labs-btn-primary text-xs"
-                    onClick={() => uploadMut.mutate()}
-                    disabled={uploadMut.isPending || !uploadForm.file || (!uploadForm.splitProgramme && !uploadForm.whiskyName.trim())}
+                    onClick={() => {
+                      if (uploadMut.isPending) return;
+                      if (!uploadForm.file) {
+                        setUploadValidationError(t("labs.handoutLibrary.errSelectFile"));
+                        return;
+                      }
+                      if (!uploadForm.splitProgramme && !uploadForm.whiskyName.trim()) {
+                        setUploadValidationError(t("labs.handoutLibrary.errWhiskyNameRequired"));
+                        return;
+                      }
+                      setUploadValidationError(null);
+                      uploadMut.mutate();
+                    }}
+                    disabled={uploadMut.isPending}
                     data-testid="button-upload-submit"
                     style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
                   >
@@ -1873,6 +1965,17 @@ export default function LabsHandoutLibrary() {
                   </button>
                 )}
               </div>
+              {uploadValidationError && (
+                <div
+                  style={{ background: "var(--labs-danger-muted)", color: "var(--labs-danger)", padding: 8, borderRadius: 8, fontSize: 12, border: "1px solid var(--labs-border)" }}
+                  data-testid="text-upload-validation-error"
+                  role="alert"
+                >
+                  {uploadValidationError}
+                </div>
+              )}
+                </>
+              )}
             </div>
           )}
 

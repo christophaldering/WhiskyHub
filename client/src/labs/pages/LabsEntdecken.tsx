@@ -64,7 +64,7 @@
               { sub: "lexikon", labelKey: "discover.lexicon", labelFb: "Lexikon", icon: BookOpen, Component: LabsLexicon },
               { sub: "destillerien", labelKey: "discover.distilleries", labelFb: "Destillerien", icon: Factory, Component: LabsDistilleries },
               { sub: "bottlers", labelKey: "discover.bottlers", labelFb: "Bottlers", icon: Package, Component: LabsBottlers },
-              { sub: "community-handouts", labelKey: "bibliothek.communityHandouts", labelFb: "Community Handouts", icon: Globe, Component: LabsHandoutLibrary },
+              { sub: "community-handouts", labelKey: "bibliothek.communityHandouts", labelFb: "Community Handouts", icon: Globe, Component: () => <LabsHandoutLibrary mode="community-readonly" /> },
             ],
           },
           {
