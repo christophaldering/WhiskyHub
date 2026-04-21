@@ -1963,7 +1963,7 @@ a.labs-dram-item {
 
 .labs-tastings-hero-image-wrap {
   width: min(420px, 80vw);
-  margin-bottom: -18px;
+  margin-bottom: 8px;
   position: relative;
   z-index: 1;
 }
@@ -2021,7 +2021,7 @@ a.labs-dram-item {
   }
   .labs-tastings-hero-image-wrap {
     width: min(320px, 78vw);
-    margin-bottom: -12px;
+    margin-bottom: 4px;
   }
   .labs-tastings-hero-eyebrow {
     font-size: 11px;

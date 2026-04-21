@@ -272,7 +272,7 @@ function HeroSection() {
       />
 
       <FadeUp>
-        <div style={{ width: "min(280px, 60vw)", marginBottom: -12, position: "relative", zIndex: 1 }}>
+        <div style={{ width: "min(280px, 60vw)", marginBottom: 16, position: "relative", zIndex: 1 }}>
           <img
             src={heroImage}
             alt=""

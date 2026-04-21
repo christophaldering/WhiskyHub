@@ -91,7 +91,7 @@ function Hero() {
       <FadeUp>
         <div style={{
           width: "min(420px, 80vw)",
-          marginBottom: -24,
+          marginBottom: 8,
           position: "relative",
           zIndex: 1,
         }}>

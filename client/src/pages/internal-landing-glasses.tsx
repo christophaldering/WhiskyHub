@@ -90,7 +90,7 @@ export default function InternalLandingGlasses() {
           <FadeUp>
             <div style={{
               width: "min(420px, 80vw)",
-              marginBottom: -24,
+              marginBottom: 8,
               marginLeft: "auto",
               marginRight: "auto",
             }}>

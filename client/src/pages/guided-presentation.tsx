@@ -128,7 +128,7 @@ function HeroSection() {
         pointerEvents: "none",
       }} />
 
-      <div style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>
+      <div style={{ display: "flex", justifyContent: "center", marginTop: 32, marginBottom: 28 }}>
         {letters.map((l, i) => (
           <motion.span key={i} initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
