@@ -1564,7 +1564,17 @@ export default function LabsLive({ params }: LabsLiveProps) {
                                   style={{ width: 13, height: 13, flexShrink: 0, color: "var(--labs-text-muted)", transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }}
                                 />
                               </button>
-                              {isExpanded && (
+                              <div
+                                aria-hidden={!isExpanded}
+                                {...(!isExpanded ? { inert: "" as any } : {})}
+                                style={{
+                                  maxHeight: isExpanded ? 999 : 0,
+                                  opacity: isExpanded ? 1 : 0,
+                                  overflow: "hidden",
+                                  transition: "max-height 200ms ease, opacity 200ms ease",
+                                  pointerEvents: isExpanded ? "auto" : "none",
+                                }}
+                              >
                                 <div style={{ padding: "10px 10px 12px", borderTop: "1px solid var(--labs-border-subtle, var(--labs-border))", background: "var(--labs-surface-alt, rgba(255,255,255,0.02))" }} data-testid={`calibration-detail-${idx}`}>
                                   {rating ? (
                                     <>
@@ -1625,7 +1635,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                                     </div>
                                   )}
                                 </div>
-                              )}
+                              </div>
                             </div>
                           );
                         })}
