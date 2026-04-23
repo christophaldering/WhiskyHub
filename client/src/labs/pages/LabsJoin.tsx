@@ -833,6 +833,27 @@ export default function LabsJoin() {
           >
             Back
           </button>
+
+          <div
+            className="flex items-center justify-center gap-3 pt-2 text-xs"
+            style={{ color: "var(--labs-text-muted)" }}
+          >
+            <a
+              href="/login"
+              data-testid="labs-join-link-login-page"
+              style={{ color: "var(--labs-text-muted)", textDecoration: "underline", textUnderlineOffset: 4 }}
+            >
+              {t("auth.openSignInPage", "Anmeldeseite öffnen")}
+            </a>
+            <span style={{ opacity: 0.5 }}>·</span>
+            <a
+              href="/register"
+              data-testid="labs-join-link-register-page"
+              style={{ color: "var(--labs-text-muted)", textDecoration: "underline", textUnderlineOffset: 4 }}
+            >
+              {t("auth.openRegisterPage", "Registrierungsseite öffnen")}
+            </a>
+          </div>
         </div>
       </div>
     );

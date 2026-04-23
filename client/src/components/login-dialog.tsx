@@ -13,6 +13,19 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
   const { authDialogTab } = useAppStore();
   const [, navigate] = useLocation();
 
+  const handleDismiss = useCallback(() => {
+    let returnFrom: string | null = null;
+    try {
+      returnFrom = sessionStorage.getItem("returnFrom");
+      sessionStorage.removeItem("returnFrom");
+      sessionStorage.removeItem("returnTo");
+    } catch {}
+    onClose();
+    if (returnFrom && returnFrom.startsWith("/labs/")) {
+      navigate(returnFrom);
+    }
+  }, [onClose, navigate]);
+
   const handleSuccess = useCallback(
     (returnTo: string | null) => {
       onClose();
@@ -24,13 +37,13 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
   );
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => !v && handleDismiss()}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto bg-card border-border">
         <AuthFlowPanel
           dialogMode
           initialTab={authDialogTab}
           onSuccess={handleSuccess}
-          onClose={onClose}
+          onClose={handleDismiss}
           showOpenOnPageLink
         />
       </DialogContent>

@@ -674,7 +674,9 @@ export function AuthFlowPanel({
 
   // ===== Main signin / register form =====
   const handleOpenOnPage = () => {
-    handleClose();
+    // Preserve returnTo/returnFrom in sessionStorage so the dedicated page
+    // can complete the same post-auth navigation flow.
+    if (onClose) onClose();
     navigate(isReturning ? "/login" : "/register");
   };
 
