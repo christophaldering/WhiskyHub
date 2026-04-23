@@ -3,7 +3,7 @@ import { useEffect, useState, type ElementType, type ReactNode, type CSSProperti
 import {
   BookOpen, Archive, Heart, Sparkles, Activity, Library, Compass,
   BarChart3, PieChart, GitCompareArrows, Download, Layers, Crown, Users, Brain,
-  ChevronDown, FileText,
+  ChevronDown, FileText, Image as ImageIcon,
 } from "lucide-react";
 
 export type HubTileRole = "nav" | "tab" | "filter";
@@ -100,6 +100,15 @@ export const COLLECTION_HUB_TILES: HubTileDef[] = [
     descFallback: "Your handout library",
     href: "/labs/taste/my-handouts",
     testId: "labs-link-collection-hub-handouts",
+  },
+  {
+    icon: ImageIcon,
+    labelKey: "labs.aiImages.tileLabel",
+    labelFallback: "AI Bilder",
+    descKey: "labs.aiImages.tileDesc",
+    descFallback: "Galerie deiner KI-Cover",
+    href: "/labs/taste/ai-images",
+    testId: "labs-link-collection-hub-ai-images",
   },
 ];
 

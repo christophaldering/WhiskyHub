@@ -11,7 +11,7 @@ import {
   ChevronDown, ChevronUp, ChevronRight, Compass, SkipForward, StopCircle, AlertTriangle,
   QrCode, Mail, Send, Star, Monitor, Gauge, Globe, Sliders,
   MessageCircle, Video, FileText, FileSpreadsheet, Settings, Upload, Share2,
-  Sparkles, RefreshCw, Camera, BookOpen, Heart, Pencil, Image,
+  Sparkles, RefreshCw, Camera, BookOpen, Heart, Pencil, Image, Image as ImageIcon,
   Download, ExternalLink, Lock, Printer, ScanLine, GripVertical, Layers, ArrowRightLeft, Archive, Info,
   Crown, Scissors,
 } from "lucide-react";
@@ -3930,6 +3930,7 @@ function GuidedTastingEngine({
 
 function CoverImageManager({
   tasting,
+  pid,
   localCoverUrl,
   coverUploadError,
   coverActionError,
@@ -3953,6 +3954,7 @@ function CoverImageManager({
   handleDeleteSlot,
 }: {
   tasting: Record<string, unknown>;
+  pid: string;
   localCoverUrl: string | null;
   coverUploadError: string | null;
   coverActionError: string | null;
@@ -3977,6 +3979,9 @@ function CoverImageManager({
 }) {
   const { t } = useTranslation();
   const aiPromptRef = useRef<HTMLTextAreaElement>(null);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryItems, setGalleryItems] = useState<Array<{ id: string; imageUrl: string; prompt: string; mimeType: string; createdAt: string }>>([]);
+  const [galleryLoading, setGalleryLoading] = useState(false);
   const aiUrl = (tasting.coverImageAiUrl as string | null) || null;
   const currentCoverUrl = (tasting.coverImageUrl as string | null) || null;
   let uploadUrl = (tasting.coverImageUploadUrl as string | null) || null;
@@ -4271,6 +4276,65 @@ function CoverImageManager({
                 </div>
               </div>
             )}
+            <div className="mb-3">
+              <button
+                type="button"
+                className="labs-btn-ghost text-xs px-2 py-1 flex items-center gap-1"
+                onClick={async () => {
+                  const next = !galleryOpen;
+                  setGalleryOpen(next);
+                  if (next && galleryItems.length === 0 && pid) {
+                    setGalleryLoading(true);
+                    try {
+                      const r = await fetch(`/api/ai-images?scope=mine&limit=24`, { headers: { "x-participant-id": pid } });
+                      if (r.ok) {
+                        const data = await r.json();
+                        setGalleryItems(data.items || []);
+                      }
+                    } catch {} finally { setGalleryLoading(false); }
+                  }
+                }}
+                disabled={aiGenerating || aiSaving}
+                data-testid="labs-cover-ai-gallery-toggle"
+              >
+                <ImageIcon className="w-3 h-3" />
+                {t("labs.host.coverAiPickFromGallery")}
+              </button>
+              {galleryOpen && (
+                <div className="mt-2" data-testid="labs-cover-ai-gallery">
+                  {galleryLoading ? (
+                    <div className="flex items-center gap-2 text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                      <Loader2 className="w-3 h-3 animate-spin" /> {t("labs.host.loadingEllipsis")}
+                    </div>
+                  ) : galleryItems.length === 0 ? (
+                    <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("labs.aiImages.emptyMine")}</p>
+                  ) : (
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {galleryItems.map((g) => {
+                        const selected = aiPreview?.url === g.imageUrl;
+                        return (
+                          <button
+                            type="button"
+                            key={g.id}
+                            onClick={() => setAiPreview({ url: g.imageUrl, prompt: g.prompt, mimeType: g.mimeType, generatedAt: g.createdAt })}
+                            className="rounded-md flex-shrink-0 overflow-hidden"
+                            style={{
+                              width: 96, height: 54,
+                              border: selected ? "2px solid var(--labs-accent)" : "1px solid var(--labs-border)",
+                              padding: 0, background: "var(--labs-surface)", cursor: "pointer",
+                            }}
+                            title={g.prompt}
+                            data-testid={`labs-cover-ai-gallery-item-${g.id}`}
+                          >
+                            <img src={g.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
             <label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>
               {t("labs.host.coverAiPromptLabel")}
             </label>
@@ -4841,6 +4905,7 @@ function TastingSetupSection({
 
           <CoverImageManager
             tasting={tasting}
+            pid={pid}
             localCoverUrl={localCoverUrl}
             coverUploadError={coverUploadError}
             coverActionError={coverActionError}

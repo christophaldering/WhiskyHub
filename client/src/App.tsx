@@ -132,6 +132,7 @@ const LabsMakingOf = lazy(() => import("@/labs/pages/LabsMakingOf"));
 const LabsAdmin = lazy(() => import("@/labs/pages/LabsAdmin"));
 const LabsOnboarding = lazy(() => import("@/labs/pages/LabsOnboarding"));
 const LabsResultsPresent = lazy(() => import("@/labs/pages/LabsResultsPresent"));
+const LabsAiImages = lazy(() => import("@/labs/pages/LabsAiImages"));
 
 
 function LazyFallback() {
@@ -732,6 +733,7 @@ function Router() {
               <Route path="/labs/taste/ai-insights">{() => <Redirect to="/labs/taste?tab=ai" />}</Route>
               <Route path="/labs/taste/analytics-hub">{() => <Redirect to="/labs/taste?tab=analytics" />}</Route>
               <Route path="/labs/invite/:token" component={LabsInvite} />
+              <Route path="/labs/taste/ai-images" component={LabsAiImages} />
               <Route path="/labs/taste" component={LabsTaste} />
               <Route path="/labs/bottle-sharing/:id">{(params: any) => <LabsBottleSharingDetail id={params.id} />}</Route>
               <Route path="/labs/bottle-sharing">{() => <RedirectWithQuery to="/labs/tastings" query="tab=share" />}</Route>

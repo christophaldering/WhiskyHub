@@ -2244,6 +2244,92 @@ export async function registerRoutes(
     }
   });
 
+  // ===== AI Image Gallery =====
+  app.get("/api/ai-images", async (req: any, res: any) => {
+    try {
+      const requesterId = (req.headers["x-participant-id"] as string) || "";
+      if (!requesterId) return res.status(401).json({ message: "Sign in required" });
+      const scope = (req.query.scope as string) || "mine";
+      const search = (req.query.q as string) || "";
+      const limit = Math.min(parseInt((req.query.limit as string) || "60", 10) || 60, 200);
+      const offset = Math.max(parseInt((req.query.offset as string) || "0", 10) || 0, 0);
+      let rows;
+      if (scope === "community") {
+        rows = await storage.listCommunityAiImages({ search, limit, offset });
+      } else {
+        rows = await storage.listAiImagesByOwner(requesterId, { search, limit, offset });
+      }
+      res.json({ items: rows, hasMore: rows.length >= limit });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Failed to load AI images" });
+    }
+  });
+
+  app.patch("/api/ai-images/:id", async (req: any, res: any) => {
+    try {
+      const requesterId = (req.headers["x-participant-id"] as string) || "";
+      if (!requesterId) return res.status(401).json({ message: "Sign in required" });
+      const existing = await storage.getAiImage(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Image not found" });
+      if (existing.ownerId !== requesterId) {
+        const requester = await storage.getParticipant(requesterId);
+        if (!requester || requester.role !== "admin") {
+          return res.status(403).json({ message: "Only the owner can update this image" });
+        }
+      }
+      const { visibility } = req.body || {};
+      if (visibility !== "private" && visibility !== "community") {
+        return res.status(400).json({ message: "visibility must be 'private' or 'community'" });
+      }
+      const updated = await storage.updateAiImageVisibility(req.params.id, visibility);
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Failed to update image" });
+    }
+  });
+
+  app.delete("/api/ai-images/:id", async (req: any, res: any) => {
+    try {
+      const requesterId = (req.headers["x-participant-id"] as string) || "";
+      if (!requesterId) return res.status(401).json({ message: "Sign in required" });
+      const existing = await storage.getAiImage(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Image not found" });
+      if (existing.ownerId !== requesterId) {
+        const requester = await storage.getParticipant(requesterId);
+        if (!requester || requester.role !== "admin") {
+          return res.status(403).json({ message: "Only the owner can delete this image" });
+        }
+      }
+      await storage.deleteAiImage(req.params.id);
+      // Best-effort: remove the underlying object if nothing else references it.
+      try {
+        const url = existing.imageUrl;
+        if (url && url.startsWith("/objects/")) {
+          // Skip if any tasting still references it as a candidate or active cover.
+          const allTastings = await storage.getAllTastings();
+          const stillReferencedByTasting = allTastings.some((t) =>
+            t.coverImageUrl === url ||
+            t.coverImageAiUrl === url ||
+            t.coverImageUploadUrl === url ||
+            (Array.isArray(t.coverImageAiCandidates) && t.coverImageAiCandidates.some((c) => c?.url === url))
+          );
+          // Also check for other ai_images rows referencing the same URL (any owner).
+          const remainingAiImages = await storage.listAiImagesByImageUrl(url);
+          const stillReferenced = stillReferencedByTasting || remainingAiImages.length > 0;
+          if (!stillReferenced) {
+            const file = await objectStorage.getObjectEntityFile(url);
+            await file.delete().catch(() => {});
+          }
+        }
+      } catch (cleanupErr) {
+        console.warn("AI image storage cleanup skipped:", cleanupErr);
+      }
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Failed to delete image" });
+    }
+  });
+
   // Switch which slot is the active cover (upload | ai)
   app.post("/api/tastings/:id/cover-image-source", async (req: any, res: any) => {
     try {
@@ -20221,6 +20307,30 @@ User's style request: ${sanitizedPrompt}`;
           message: "Cover image generated but could not be saved: " + (persistErr?.message || "unknown error"),
           url,
         });
+      }
+
+      // Persist into the AI Image Gallery so the host can re-use it later.
+      try {
+        const galleryTags = Array.from(new Set([
+          ...Array.from(regions),
+          ...Array.from(caskTypes),
+          ...(tasting.title ? [tasting.title] : []),
+          season,
+        ].filter(Boolean))).slice(0, 12);
+        await storage.createAiImage({
+          ownerId: tasting.hostId,
+          imageUrl: url,
+          mimeType: "image/jpeg",
+          prompt: finalPrompt,
+          promptHint: typeof customPromptHint === "string" && customPromptHint.trim() ? customPromptHint.trim() : null,
+          sourceContext: "tasting_cover",
+          tastingId,
+          tags: galleryTags,
+          visibility: "private",
+        });
+      } catch (galleryErr) {
+        // Non-fatal — gallery is a convenience, the cover candidate is already saved.
+        console.warn("Failed to persist AI image into gallery:", galleryErr);
       }
 
       res.json({

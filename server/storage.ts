@@ -69,6 +69,8 @@ import {
   type InsertVoiceMemo, type VoiceMemo,
   whiskyGallery,
   type InsertWhiskyGallery, type WhiskyGalleryPhoto,
+  aiImages,
+  type InsertAiImage, type AiImage,
   userActivitySessions,
   type UserActivitySession,
   pageViews,
@@ -347,6 +349,15 @@ export interface IStorage {
   updateTastingReflection(id: string, reflection: string): Promise<Tasting | undefined>;
   updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; description: string; blindMode: boolean; ratingScale: number; guidedMode: boolean; ratingPrompt: string | null; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean; coverImageUploadUrl: string | null; coverImageAiUrl: string | null; coverImageSource: string | null; coverImageAiPrompt: string | null; coverImageAiCandidates: { url: string; prompt: string; mimeType: string; generatedAt: string }[] | null; videoLink: string | null; guestMode: string; sessionUiMode: string | null; showRanking: boolean; showGroupAvg: boolean; showReveal: boolean; lockedDrams: string | null; targetCommunityIds: string | null; visibility: string }>): Promise<Tasting | undefined>;
   appendAiCoverCandidate(tastingId: string, candidate: { url: string; prompt: string; mimeType: string; generatedAt: string }): Promise<Tasting | undefined>;
+
+  // AI Images Gallery
+  createAiImage(data: InsertAiImage): Promise<AiImage>;
+  getAiImage(id: string): Promise<AiImage | undefined>;
+  listAiImagesByOwner(ownerId: string, opts?: { search?: string; limit?: number; offset?: number }): Promise<AiImage[]>;
+  listCommunityAiImages(opts?: { search?: string; limit?: number; offset?: number }): Promise<AiImage[]>;
+  listAiImagesByImageUrl(imageUrl: string): Promise<AiImage[]>;
+  updateAiImageVisibility(id: string, visibility: "private" | "community"): Promise<AiImage | undefined>;
+  deleteAiImage(id: string): Promise<AiImage | undefined>;
   updateTasting(id: string, data: Partial<Record<string, any>>): Promise<Tasting | undefined>;
   transferTastingHost(id: string, newHostId: string): Promise<Tasting | undefined>;
   duplicateTasting(id: string, hostId: string): Promise<Tasting>;
@@ -1026,6 +1037,54 @@ export class DatabaseStorage implements IStorage {
     const next = [candidate, ...existing.filter((c) => c && c.url !== candidate.url)].slice(0, 12);
     const [result] = await db.update(tastings).set({ coverImageAiCandidates: next }).where(eq(tastings.id, tastingId)).returning();
     return result;
+  }
+
+  async createAiImage(data: InsertAiImage): Promise<AiImage> {
+    const [row] = await db.insert(aiImages).values(data).returning();
+    return row;
+  }
+
+  async getAiImage(id: string): Promise<AiImage | undefined> {
+    const [row] = await db.select().from(aiImages).where(eq(aiImages.id, id));
+    return row;
+  }
+
+  async listAiImagesByOwner(ownerId: string, opts?: { search?: string; limit?: number; offset?: number }): Promise<AiImage[]> {
+    const limit = Math.min(Math.max(opts?.limit ?? 60, 1), 200);
+    const offset = Math.max(opts?.offset ?? 0, 0);
+    const conditions: SQL[] = [eq(aiImages.ownerId, ownerId)];
+    const search = (opts?.search || "").trim();
+    if (search) {
+      const like = `%${search.toLowerCase()}%`;
+      conditions.push(sql`(lower(${aiImages.prompt}) LIKE ${like} OR lower(coalesce(${aiImages.promptHint}, '')) LIKE ${like} OR EXISTS (SELECT 1 FROM unnest(${aiImages.tags}) tag WHERE lower(tag) LIKE ${like}))`);
+    }
+    return db.select().from(aiImages).where(and(...conditions)).orderBy(desc(aiImages.createdAt)).limit(limit).offset(offset);
+  }
+
+  async listCommunityAiImages(opts?: { search?: string; limit?: number; offset?: number }): Promise<AiImage[]> {
+    const limit = Math.min(Math.max(opts?.limit ?? 60, 1), 200);
+    const offset = Math.max(opts?.offset ?? 0, 0);
+    const conditions: SQL[] = [eq(aiImages.visibility, "community")];
+    const search = (opts?.search || "").trim();
+    if (search) {
+      const like = `%${search.toLowerCase()}%`;
+      conditions.push(sql`(lower(${aiImages.prompt}) LIKE ${like} OR lower(coalesce(${aiImages.promptHint}, '')) LIKE ${like} OR EXISTS (SELECT 1 FROM unnest(${aiImages.tags}) tag WHERE lower(tag) LIKE ${like}))`);
+    }
+    return db.select().from(aiImages).where(and(...conditions)).orderBy(desc(aiImages.createdAt)).limit(limit).offset(offset);
+  }
+
+  async listAiImagesByImageUrl(imageUrl: string): Promise<AiImage[]> {
+    return db.select().from(aiImages).where(eq(aiImages.imageUrl, imageUrl));
+  }
+
+  async updateAiImageVisibility(id: string, visibility: "private" | "community"): Promise<AiImage | undefined> {
+    const [row] = await db.update(aiImages).set({ visibility }).where(eq(aiImages.id, id)).returning();
+    return row;
+  }
+
+  async deleteAiImage(id: string): Promise<AiImage | undefined> {
+    const [row] = await db.delete(aiImages).where(eq(aiImages.id, id)).returning();
+    return row;
   }
 
   async transferTastingHost(id: string, newHostId: string): Promise<Tasting | undefined> {

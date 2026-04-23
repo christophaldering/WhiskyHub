@@ -105,6 +105,31 @@ export const insertTastingSchema = createInsertSchema(tastings).omit({ id: true,
 export type InsertTasting = z.infer<typeof insertTastingSchema>;
 export type Tasting = typeof tastings.$inferSelect;
 
+// --- AI Images Gallery ---
+// Stores every AI-generated image (currently tasting cover candidates) so
+// users can browse, reuse and optionally share them with the community.
+export const aiImages = pgTable("ai_images", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ownerId: varchar("owner_id").notNull(),
+  imageUrl: text("image_url").notNull(),
+  mimeType: text("mime_type").notNull().default("image/jpeg"),
+  prompt: text("prompt").notNull(),
+  promptHint: text("prompt_hint"),
+  sourceContext: text("source_context").notNull().default("tasting_cover"), // tasting_cover | other
+  tastingId: varchar("tasting_id"),
+  tags: text("tags").array().notNull().default(sql`ARRAY[]::text[]`),
+  visibility: text("visibility").notNull().default("private"), // private | community
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  ownerIdx: index("idx_ai_images_owner").on(t.ownerId, t.createdAt),
+  visibilityIdx: index("idx_ai_images_visibility").on(t.visibility, t.createdAt),
+  tastingIdx: index("idx_ai_images_tasting").on(t.tastingId),
+}));
+
+export const insertAiImageSchema = createInsertSchema(aiImages).omit({ id: true, createdAt: true });
+export type InsertAiImage = z.infer<typeof insertAiImageSchema>;
+export type AiImage = typeof aiImages.$inferSelect;
+
 // --- Tasting Participants (join table) ---
 export const tastingParticipants = pgTable("tasting_participants", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
