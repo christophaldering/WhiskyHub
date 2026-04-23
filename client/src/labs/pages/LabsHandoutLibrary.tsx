@@ -1690,24 +1690,6 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
               </div>
               {(
                 <>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "var(--labs-text-muted)",
-                  background: "var(--labs-surface-elevated, var(--labs-surface))",
-                  border: "1px dashed var(--labs-border)",
-                  padding: 8,
-                  borderRadius: 8,
-                  lineHeight: 1.5,
-                }}
-                data-testid="text-upload-naming-hint"
-              >
-                {uploadIntent === "multi"
-                  ? t("labs.handoutLibrary.namingHint")
-                  : uploadIntent === "sammel"
-                    ? t("labs.handoutLibrary.uploadIntent.sammelHint", { defaultValue: "Ein Programm-PDF mit mehreren Whiskys — wird nach dem Hochladen automatisch im Splitter geöffnet." })
-                    : t("labs.handoutLibrary.uploadIntent.singleHint", { defaultValue: "Ein Dokument für genau einen Whisky — mit Vorschlägen aus deiner Bibliothek." })}
-              </div>
               <input
                 ref={uploadFileInputRef}
                 type="file"
