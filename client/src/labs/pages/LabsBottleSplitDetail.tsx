@@ -5,6 +5,7 @@ import { ArrowLeft, Loader2, Scissors, Trash2, Play, Check, X, Wine } from "luci
 import { useLocation } from "wouter";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useLabsBack } from "@/labs/LabsLayout";
+import { useRatingScale } from "@/labs/hooks/useRatingScale";
 
 type ViewTab = "overview" | "claims" | "rate" | "results";
 
@@ -43,6 +44,10 @@ export default function LabsBottleSplitDetail({ id }: { id: string }) {
   const [finalized, setFinalized] = useState<Record<string, boolean>>({});
 
   const pid = currentParticipant?.id || "";
+  const splitScale = useRatingScale(split?.tasting?.ratingScale ?? split?.ratingScale);
+  const splitScaleMin = splitScale.max === 100 ? 60 : 0;
+  const splitScaleMax = splitScale.max;
+  const splitScaleMid = Math.round(splitScaleMax * 0.75);
 
   const load = useCallback(async () => {
     if (!pid) return;
@@ -65,8 +70,8 @@ export default function LabsBottleSplitDetail({ id }: { id: string }) {
           if (res.ok) {
             const ex = await res.json();
             if (ex) {
-              setScores(prev => ({ ...prev, [w.id]: { nose: ex.nose ?? 75, taste: ex.taste ?? 75, finish: ex.finish ?? 75 } }));
-              setOveralls(prev => ({ ...prev, [w.id]: ex.overall ?? 75 }));
+              setScores(prev => ({ ...prev, [w.id]: { nose: ex.nose ?? splitScaleMid, taste: ex.taste ?? splitScaleMid, finish: ex.finish ?? splitScaleMid } }));
+              setOveralls(prev => ({ ...prev, [w.id]: ex.overall ?? splitScaleMid }));
               if (ex.notes) setRatingNotes(prev => ({ ...prev, [w.id]: ex.notes }));
               if (ex.source && ex.source !== "draft") {
                 setFinalized(prev => ({ ...prev, [w.id]: true }));
@@ -174,7 +179,7 @@ export default function LabsBottleSplitDetail({ id }: { id: string }) {
 
   const saveRating = async (wId: string, isFinal = false) => {
     setSaving(true);
-    const sc = scores[wId] || { nose: 75, taste: 75, finish: 75 };
+    const sc = scores[wId] || { nose: splitScaleMid, taste: splitScaleMid, finish: splitScaleMid };
     const overall = overalls[wId] ?? Math.round((sc.nose + sc.taste + sc.finish) / 3);
     try {
       const res = await fetch("/api/ratings", {
@@ -199,7 +204,7 @@ export default function LabsBottleSplitDetail({ id }: { id: string }) {
   };
 
   const setDimScore = (wId: string, dim: "nose" | "taste" | "finish", val: number) => {
-    const cur = scores[wId] || { nose: 75, taste: 75, finish: 75 };
+    const cur = scores[wId] || { nose: splitScaleMid, taste: splitScaleMid, finish: splitScaleMid };
     const upd = { ...cur, [dim]: val };
     setScores(prev => ({ ...prev, [wId]: upd }));
     setOveralls(prev => ({ ...prev, [wId]: Math.round((upd.nose + upd.taste + upd.finish) / 3) }));
@@ -473,7 +478,7 @@ export default function LabsBottleSplitDetail({ id }: { id: string }) {
               </div>
 
               {(["nose", "taste", "finish"] as const).map(dim => {
-                const sc = scores[currentWhisky.id] || { nose: 75, taste: 75, finish: 75 };
+                const sc = scores[currentWhisky.id] || { nose: splitScaleMid, taste: splitScaleMid, finish: splitScaleMid };
                 const dimLabel = dim === "nose" ? "Nose" : dim === "taste" ? "Palate" : "Finish";
                 return (
                   <div key={dim} className="labs-card" style={{ padding: "var(--labs-space-md)" }}>
@@ -481,7 +486,7 @@ export default function LabsBottleSplitDetail({ id }: { id: string }) {
                       <span style={{ fontSize: 13, fontWeight: 600 }}>{dimLabel}</span>
                       <span style={{ fontSize: 15, fontWeight: 700, color: "var(--labs-accent)" }}>{sc[dim]}</span>
                     </div>
-                    <input data-testid={`slider-split-${dim}-${currentWhisky.id}`} type="range" min={60} max={100} value={sc[dim]} onChange={e => setDimScore(currentWhisky.id, dim, parseInt(e.target.value))} style={{ width: "100%", accentColor: "var(--labs-accent)" }} />
+                    <input data-testid={`slider-split-${dim}-${currentWhisky.id}`} type="range" min={splitScaleMin} max={splitScaleMax} step={splitScale.step} value={sc[dim]} onChange={e => setDimScore(currentWhisky.id, dim, Number(e.target.value))} style={{ width: "100%", accentColor: "var(--labs-accent)" }} />
                   </div>
                 );
               })}
@@ -489,9 +494,9 @@ export default function LabsBottleSplitDetail({ id }: { id: string }) {
               <div className="labs-card" style={{ padding: "var(--labs-space-md)", borderColor: "var(--labs-accent)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                   <span style={{ fontSize: 13, fontWeight: 600 }}>Overall</span>
-                  <span style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-accent)" }}>{overalls[currentWhisky.id] ?? 75}</span>
+                  <span style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-accent)" }}>{overalls[currentWhisky.id] ?? splitScaleMid}</span>
                 </div>
-                <input data-testid={`slider-split-overall-${currentWhisky.id}`} type="range" min={60} max={100} value={overalls[currentWhisky.id] ?? 75} onChange={e => { setOveralls(prev => ({ ...prev, [currentWhisky.id]: parseInt(e.target.value) })); setOverallTouched(prev => ({ ...prev, [currentWhisky.id]: true })); }} style={{ width: "100%", accentColor: "var(--labs-accent)" }} />
+                <input data-testid={`slider-split-overall-${currentWhisky.id}`} type="range" min={splitScaleMin} max={splitScaleMax} step={splitScale.step} value={overalls[currentWhisky.id] ?? splitScaleMid} onChange={e => { setOveralls(prev => ({ ...prev, [currentWhisky.id]: Number(e.target.value) })); setOverallTouched(prev => ({ ...prev, [currentWhisky.id]: true })); }} style={{ width: "100%", accentColor: "var(--labs-accent)" }} />
               </div>
 
               <div>

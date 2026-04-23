@@ -6,6 +6,7 @@ import { useSession, getSession } from "@/lib/session";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { queryClient } from "@/lib/queryClient";
 import type { JournalEntry } from "@shared/schema";
+import { useRatingScale } from "@/labs/hooks/useRatingScale";
 
 interface CapturedDraft {
   id: string;
@@ -32,6 +33,10 @@ export default function LabsFairMode() {
   const goBack = useBackNavigation("/labs/taste/drams");
   const session = useSession();
   const fileRef = useRef<HTMLInputElement>(null);
+  const fairScale = useRatingScale();
+  const fairScaleMin = fairScale.max === 100 ? 60 : 0;
+  const fairScaleMax = fairScale.max;
+  const fairScaleMid = Math.round(fairScaleMax * 0.8);
 
   const [phase, setPhase] = useState<Phase>("capture");
   const [drafts, setDrafts] = useState<CapturedDraft[]>([]);
@@ -128,7 +133,7 @@ export default function LabsFairMode() {
           name: entry.name || name,
           distillery: entry.distillery || distillery,
           imageUrl,
-          quickScore: 80,
+          quickScore: fairScaleMid,
           note: "",
         },
       ]);
@@ -271,11 +276,11 @@ export default function LabsFairMode() {
                 </div>
                 <input
                   type="range"
-                  min={60}
-                  max={100}
-                  step={1}
+                  min={fairScaleMin}
+                  max={fairScaleMax}
+                  step={fairScale.step}
                   value={d.quickScore}
-                  onChange={(e) => handleScoreChange(d.id, parseInt(e.target.value, 10))}
+                  onChange={(e) => handleScoreChange(d.id, Number(e.target.value))}
                   data-testid={`input-fair-mode-score-${d.id}`}
                   style={{ width: "100%", accentColor: "var(--labs-accent)" }}
                 />

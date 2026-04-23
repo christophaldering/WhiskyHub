@@ -780,8 +780,11 @@ export default function LabsLive({ params }: LabsLiveProps) {
 
   const mainScale = useRatingScale(tasting?.ratingScale);
   const maxScore = mainScale.max;
-  const mid2 = 75;
-  const clampScore = (v: number) => Math.max(60, Math.min(100, v));
+  const scaleMin = mainScale.max === 100 ? 60 : 0;
+  const scaleMax = mainScale.max;
+  const scaleRange = scaleMax - scaleMin;
+  const mid2 = Math.round(scaleMax * 0.75);
+  const clampScore = (v: number) => Math.max(scaleMin, Math.min(scaleMax, v));
 
   const [scores, setScores] = useState({ nose: mid2, taste: mid2, finish: mid2, overall: mid2 });
   const [notes, setNotes] = useState("");
@@ -1352,13 +1355,14 @@ export default function LabsLive({ params }: LabsLiveProps) {
                     </div>
                     <div className="relative mb-5">
                       <div className="labs-slider-track">
-                        <div className="labs-slider-fill" style={{ width: `${((scores.overall - 60) / 40) * 100}%` }} />
-                        <div className="labs-slider-thumb" style={{ left: `${((scores.overall - 60) / 40) * 100}%` }} />
+                        <div className="labs-slider-fill" style={{ width: `${((scores.overall - scaleMin) / scaleRange) * 100}%` }} />
+                        <div className="labs-slider-thumb" style={{ left: `${((scores.overall - scaleMin) / scaleRange) * 100}%` }} />
                       </div>
                       <input
                         type="range"
-                        min={60}
-                        max={100}
+                        min={scaleMin}
+                        max={scaleMax}
+                        step={mainScale.step}
                         value={scores.overall}
                         onChange={(e) => updateOverall(Number(e.target.value))}
                         className="absolute inset-0 w-full opacity-0 cursor-pointer"
@@ -1367,9 +1371,9 @@ export default function LabsLive({ params }: LabsLiveProps) {
                       />
                     </div>
                     <div className="flex justify-between text-[11px] px-0.5" style={{ color: "var(--labs-text-muted)" }}>
-                      <span>60</span>
-                      <span>80</span>
-                      <span>100</span>
+                      <span>{scaleMin}</span>
+                      <span>{Math.round((scaleMin + scaleMax) / 2)}</span>
+                      <span>{scaleMax}</span>
                     </div>
                     {overrideActive && (
                       <button
@@ -1413,17 +1417,18 @@ export default function LabsLive({ params }: LabsLiveProps) {
                       <div className="labs-slider-track">
                         <div
                           className="labs-slider-fill"
-                          style={{ width: `${((scores[activeDim] - 60) / 40) * 100}%` }}
+                          style={{ width: `${((scores[activeDim] - scaleMin) / scaleRange) * 100}%` }}
                         />
                         <div
                           className="labs-slider-thumb"
-                          style={{ left: `${((scores[activeDim] - 60) / 40) * 100}%` }}
+                          style={{ left: `${((scores[activeDim] - scaleMin) / scaleRange) * 100}%` }}
                         />
                       </div>
                       <input
                         type="range"
-                        min={60}
-                        max={100}
+                        min={scaleMin}
+                        max={scaleMax}
+                        step={mainScale.step}
                         value={scores[activeDim]}
                         onChange={(e) => updateScore(activeDim as Dimension, Number(e.target.value))}
                         className="absolute inset-0 w-full opacity-0 cursor-pointer"
@@ -1433,9 +1438,9 @@ export default function LabsLive({ params }: LabsLiveProps) {
                     </div>
 
                     <div className="flex justify-between text-[11px] px-0.5" style={{ color: "var(--labs-text-muted)" }}>
-                      <span>60</span>
-                      <span>80</span>
-                      <span>100</span>
+                      <span>{scaleMin}</span>
+                      <span>{Math.round((scaleMin + scaleMax) / 2)}</span>
+                      <span>{scaleMax}</span>
                     </div>
 
                     <div style={{ borderTop: "1px solid var(--labs-border)", marginTop: 12, paddingTop: 4 }}>
@@ -1591,7 +1596,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                                       <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
                                         {(["nose", "taste", "finish"] as const).map((dim) => {
                                           const val = (rating as Record<string, number | null>)[dim];
-                                          const pct = val != null ? Math.max(0, Math.min(100, ((val - 60) / 40) * 100)) : 0;
+                                          const pct = val != null ? Math.max(0, Math.min(100, ((val - scaleMin) / scaleRange) * 100)) : 0;
                                           return (
                                             <div key={dim} style={{ flex: 1 }}>
                                               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
