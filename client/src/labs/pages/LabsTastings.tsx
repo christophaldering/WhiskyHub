@@ -323,6 +323,17 @@ export default function LabsTastings() {
             {t('home.noAccount')}
           </p>
         </div>
+
+        <div className="labs-home-signin labs-fade-in labs-stagger-7">
+          <button
+            type="button"
+            className="ty-caption labs-home-signin-link"
+            onClick={() => openAuthDialog('signin')}
+            data-testid="labs-home-signin-link"
+          >
+            {t('home.haveAccount')}
+          </button>
+        </div>
       </div>
     );
   }
