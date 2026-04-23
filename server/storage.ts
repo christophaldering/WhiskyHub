@@ -352,6 +352,7 @@ export interface IStorage {
   addParticipantToTasting(data: InsertTastingParticipant): Promise<TastingParticipant>;
   isParticipantInTasting(tastingId: string, participantId: string): Promise<boolean>;
   getTastingParticipantByRejoinCode(tastingId: string, rejoinCode: string): Promise<(TastingParticipant & { participant: Participant }) | undefined>;
+  getTastingParticipantRow(tastingId: string, participantId: string): Promise<TastingParticipant | undefined>;
   mergeParticipantsInTasting(tastingId: string, sourceParticipantId: string, targetParticipantId: string): Promise<{ ratingsMoved: number; ratingsDiscarded: number }>;
 
   // Sharing Participants (Bottle-Sharing)
@@ -1081,6 +1082,14 @@ export class DatabaseStorage implements IStorage {
       .from(tastingParticipants)
       .where(and(eq(tastingParticipants.tastingId, tastingId), eq(tastingParticipants.participantId, participantId)));
     return !!result;
+  }
+
+  async getTastingParticipantRow(tastingId: string, participantId: string): Promise<TastingParticipant | undefined> {
+    const [row] = await db
+      .select()
+      .from(tastingParticipants)
+      .where(and(eq(tastingParticipants.tastingId, tastingId), eq(tastingParticipants.participantId, participantId)));
+    return row;
   }
 
   async getTastingParticipantByRejoinCode(tastingId: string, rejoinCode: string): Promise<(TastingParticipant & { participant: Participant }) | undefined> {

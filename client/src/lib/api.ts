@@ -86,6 +86,8 @@ export const tastingApi = {
     fetchJSON(`/tastings/${id}/guest-join`, { method: "POST", body: JSON.stringify({ name, code }) }),
   guestRejoin: (id: string, rejoinCode: string) =>
     fetchJSON(`/tastings/${id}/guest-rejoin`, { method: "POST", body: JSON.stringify({ rejoinCode }) }),
+  getMyRejoinCode: (id: string): Promise<{ rejoinCode: string | null }> =>
+    fetchJSON(`/tastings/${id}/my-rejoin-code`),
   mergeParticipants: (id: string, sourceParticipantId: string, targetParticipantId: string) =>
     fetchJSON(`/tastings/${id}/merge-participants`, { method: "POST", body: JSON.stringify({ sourceParticipantId, targetParticipantId }) }),
   getAnalytics: (id: string, requesterId?: string) => fetchJSON(`/tastings/${id}/analytics${requesterId ? `?requesterId=${requesterId}` : ''}`),

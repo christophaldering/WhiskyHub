@@ -31,6 +31,8 @@ import {
   Sliders,
   Gauge,
   RotateCcw,
+  KeyRound,
+  Camera,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, inviteApi, guidedApi, friendsApi } from "@/lib/api";
@@ -167,6 +169,63 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
   });
 
   const isHost = tasting && currentParticipant && tasting.hostId === currentParticipant.id;
+
+  const participantEmail = typeof window !== "undefined" ? localStorage.getItem("casksense_participant_email") : null;
+  const isGuestParticipant = !!currentParticipant && !participantEmail;
+  const [showRejoinSheet, setShowRejoinSheet] = useState(false);
+  const [rejoinSheetCopied, setRejoinSheetCopied] = useState(false);
+  const { data: myRejoinData } = useQuery<{ rejoinCode: string | null }>({
+    queryKey: ["my-rejoin-code", tastingId, currentParticipant?.id],
+    queryFn: () => tastingApi.getMyRejoinCode(tastingId),
+    enabled: !!tastingId && !!currentParticipant?.id && isGuestParticipant,
+    staleTime: 5 * 60 * 1000,
+  });
+  const myRejoinCode = myRejoinData?.rejoinCode || null;
+  const formatRejoinCode = (c: string | null | undefined) => {
+    const s = (c || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    return s.length === 6 ? `${s.slice(0, 3)}-${s.slice(3)}` : s;
+  };
+  const handleCopyMyRejoin = async () => {
+    if (!myRejoinCode) return;
+    try {
+      await navigator.clipboard.writeText(formatRejoinCode(myRejoinCode));
+      setRejoinSheetCopied(true);
+      setTimeout(() => setRejoinSheetCopied(false), 2000);
+    } catch {}
+  };
+  const handleDownloadMyRejoin = () => {
+    if (!myRejoinCode) return;
+    try {
+      const code = formatRejoinCode(myRejoinCode);
+      const tastingCode = (tasting && (tasting as any).code) ? String((tasting as any).code).toUpperCase() : "";
+      const lines = [
+        "CASKSENSE — WIEDEREINSTIEGS-CODE",
+        "==================================",
+        "",
+        `Code:           ${code}`,
+        tastingCode ? `Tasting-Code:   ${tastingCode}` : "",
+        currentParticipant?.name ? `Name:           ${currentParticipant.name}` : "",
+        `Tasting:        ${tasting?.title || tastingId}`,
+        `Ausgestellt am: ${new Date().toLocaleString("de-DE")}`,
+        "",
+        "So nutzt du diesen Code:",
+        "1. Öffne CaskSense erneut (z. B. auf einem anderen Gerät).",
+        "2. Wähle 'Tasting beitreten' und gib den Tasting-Code ein.",
+        "3. Klicke auf 'Schon dabei? Wiedereinstiegs-Code eingeben'.",
+        "4. Tippe diesen Code ein – oder lade diese Datei hoch.",
+        "",
+      ].filter(Boolean);
+      const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `casksense-wiedereinstieg-${code.replace(/-/g, "")}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {}
+  };
 
   const { data: allInvites = [] } = useQuery<Array<{ id: string; email: string; status: string; createdAt: string }>>({
     queryKey: ["invites", tastingId],
@@ -436,6 +495,21 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 {String(tasting.title ?? "")}
               </h1>
               <div className="flex items-center gap-2 flex-shrink-0">
+                {isGuestParticipant && myRejoinCode && (
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
+                    style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", border: "1px solid var(--labs-accent)" }}
+                    onClick={() => setShowRejoinSheet(true)}
+                    title={t("labs.rejoin.myCodeTitle", "Mein Wiedereinstiegs-Code")}
+                    data-testid="button-my-rejoin-code"
+                  >
+                    <KeyRound className="w-3.5 h-3.5" />
+                    <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace", letterSpacing: "0.04em" }}>
+                      {formatRejoinCode(myRejoinCode)}
+                    </span>
+                  </button>
+                )}
                 {isHost && (
                   <button
                     className="labs-btn-ghost p-1.5"
@@ -1313,6 +1387,90 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
       )}
 
       {!isHost && <LabsParticipantDownloads tasting={tasting as Tasting} />}
+
+      {showRejoinSheet && myRejoinCode && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          style={{ background: "rgba(0,0,0,0.5)" }}
+          onClick={() => setShowRejoinSheet(false)}
+          data-testid="my-rejoin-sheet-backdrop"
+        >
+          <div
+            className="w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 sm:p-8 labs-fade-in"
+            style={{ background: "var(--labs-surface)", boxShadow: "0 -10px 40px rgba(0,0,0,0.2)" }}
+            onClick={(e) => e.stopPropagation()}
+            data-testid="my-rejoin-sheet"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <KeyRound className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
+                <h2 className="text-lg font-bold" style={{ color: "var(--labs-text)" }}>
+                  {t("labs.rejoin.myCodeTitle", "Mein Wiedereinstiegs-Code")}
+                </h2>
+              </div>
+              <button
+                className="labs-btn-ghost p-1.5"
+                onClick={() => setShowRejoinSheet(false)}
+                data-testid="button-close-rejoin-sheet"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div
+              className="rounded-2xl p-6 text-center mb-4"
+              style={{
+                background: "linear-gradient(135deg, var(--labs-accent-muted) 0%, var(--labs-surface) 100%)",
+                border: "2px solid var(--labs-accent)",
+              }}
+            >
+              <div
+                className="text-[10px] font-semibold uppercase tracking-[0.2em] mb-2"
+                style={{ color: "var(--labs-accent)" }}
+              >
+                {t("labs.rejoin.codeLabelLong", "Dein Wiedereinstiegs-Code")}
+              </div>
+              <div
+                className="font-bold mb-2 select-all leading-none"
+                style={{
+                  color: "var(--labs-accent)",
+                  fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+                  letterSpacing: "0.12em",
+                  fontSize: "clamp(2rem, 9vw, 3.5rem)",
+                }}
+                data-testid="text-my-rejoin-code"
+              >
+                {formatRejoinCode(myRejoinCode)}
+              </div>
+            </div>
+
+            <p className="text-xs mb-4 leading-relaxed text-center" style={{ color: "var(--labs-text-muted)" }}>
+              {t("labs.rejoin.myCodeDesc", "Mit diesem Code kommst du jederzeit zurück zu diesem Tasting – auch von einem anderen Gerät. Speichere ihn als Screenshot oder lade ihn als Datei herunter.")}
+            </p>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                className="labs-btn-ghost flex items-center justify-center gap-2 py-2.5 text-sm"
+                onClick={handleCopyMyRejoin}
+                style={{ border: "1px solid var(--labs-border-subtle)" }}
+                data-testid="button-copy-my-rejoin"
+              >
+                {rejoinSheetCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {rejoinSheetCopied ? t("labs.rejoin.copied", "Kopiert") : t("labs.rejoin.copy", "Kopieren")}
+              </button>
+              <button
+                className="labs-btn-ghost flex items-center justify-center gap-2 py-2.5 text-sm"
+                onClick={handleDownloadMyRejoin}
+                style={{ border: "1px solid var(--labs-border-subtle)" }}
+                data-testid="button-download-my-rejoin"
+              >
+                <Download className="w-4 h-4" />
+                {t("labs.rejoin.download", "Als Datei speichern")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

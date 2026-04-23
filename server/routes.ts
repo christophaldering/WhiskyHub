@@ -2682,7 +2682,11 @@ export async function registerRoutes(
       seen.add(tp.participantId);
       return true;
     });
-    res.json(deduplicated);
+    const sanitized = deduplicated.map((tp: any) => {
+      const { rejoinCode, ...rest } = tp || {};
+      return rest;
+    });
+    res.json(sanitized);
   });
 
   app.post("/api/tastings/:id/heartbeat", async (req, res) => {
@@ -2844,6 +2848,20 @@ export async function registerRoutes(
         tastingId: tasting.id,
         rejoinCode: found.rejoinCode,
       });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/tastings/:id/my-rejoin-code", async (req, res) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const row = await storage.getTastingParticipantRow(tasting.id, auth.participant.id);
+      if (!row) return res.status(404).json({ message: "Not a participant of this tasting" });
+      res.json({ rejoinCode: row.rejoinCode || null });
     } catch (e: any) {
       res.status(400).json({ message: e.message });
     }
