@@ -89,6 +89,7 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
   const [tags, setTags] = useState<PhaseTags>(initialData?.tags ?? { nose: [], palate: [], finish: [], overall: [] });
   const [notes, setNotes] = useState<PhaseNotes>(initialData?.notes ?? { nose: "", palate: "", finish: "", overall: "" });
   const [showFlash, setShowFlash] = useState(false);
+  const [nextHover, setNextHover] = useState(false);
   const [visibleContent, setVisibleContent] = useState(true);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [overallManuallySet, setOverallManuallySet] = useState(() => {
@@ -523,6 +524,8 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
           <button
             data-testid="rating-next-btn"
             onClick={handleNext}
+            onMouseEnter={() => setNextHover(true)}
+            onMouseLeave={() => setNextHover(false)}
             disabled={!canFinalize}
             style={
               phaseIndex === 3 && !canFinalize
@@ -545,12 +548,17 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
                     flex: 1,
                     minWidth: 0,
                     height: 56,
-                    background: canFinalize ? accent : "var(--labs-surface)",
-                    color: canFinalize ? "#1a1a1a" : "var(--labs-text-muted)",
-                    border: canFinalize ? "none" : "1px solid var(--labs-border)",
+                    background: canFinalize && nextHover
+                      ? `color-mix(in srgb, ${accent} 12%, var(--labs-surface-elevated))`
+                      : "var(--labs-surface-elevated)",
+                    color: canFinalize ? accent : "var(--labs-text-muted)",
+                    border: canFinalize
+                      ? `1px solid color-mix(in srgb, ${accent} ${nextHover ? 65 : 38}%, transparent)`
+                      : "1px solid var(--labs-border)",
+                    transition: "background 0.15s, border-color 0.15s",
                     borderRadius: RADIUS.full,
-                    fontSize: canFinalize ? 17 : 14,
-                    fontWeight: canFinalize ? 700 : 500,
+                    fontSize: canFinalize ? 15 : 14,
+                    fontWeight: canFinalize ? 600 : 500,
                     fontFamily: FONT.body,
                     cursor: canFinalize ? "pointer" : "default",
                     overflow: "hidden",

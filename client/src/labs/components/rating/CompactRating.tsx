@@ -80,6 +80,7 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
   const [openPhase, setOpenPhase] = useState<PhaseId | null>("nose");
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [saving, setSaving] = useState(false);
+  const [submitHover, setSubmitHover] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [overallManuallySet, setOverallManuallySet] = useState(() => {
     if (!initialData?.scores) return false;
@@ -430,6 +431,8 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
           <button
             data-testid="compact-submit-btn"
             onClick={handleSubmit}
+            onMouseEnter={() => setSubmitHover(true)}
+            onMouseLeave={() => setSubmitHover(false)}
             disabled={saving || !canFinalize}
             style={
               !saving && !canFinalize
@@ -456,16 +459,19 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
                     height: 56,
                     background: saving
                       ? "color-mix(in srgb, var(--labs-success) 13%, transparent)"
-                      : "linear-gradient(135deg, var(--labs-gold), var(--labs-amber))",
+                      : submitHover
+                        ? "color-mix(in srgb, var(--labs-gold) 12%, var(--labs-surface-elevated))"
+                        : "var(--labs-surface-elevated)",
                     color: saving
                       ? "var(--labs-success)"
-                      : "var(--labs-accent-dark)",
+                      : "var(--labs-gold)",
                     border: saving
                       ? "1px solid color-mix(in srgb, var(--labs-success) 27%, transparent)"
-                      : "none",
+                      : `1px solid color-mix(in srgb, var(--labs-gold) ${submitHover ? 65 : 38}%, transparent)`,
+                    transition: "background 0.15s, border-color 0.15s",
                     borderRadius: RADIUS.full,
-                    fontSize: 17,
-                    fontWeight: 700,
+                    fontSize: 15,
+                    fontWeight: 600,
                     fontFamily: FONT.body,
                     cursor: saving ? "default" : "pointer",
                     display: "flex",
