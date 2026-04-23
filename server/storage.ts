@@ -351,6 +351,8 @@ export interface IStorage {
   getTastingParticipants(tastingId: string): Promise<(TastingParticipant & { participant: Participant })[]>;
   addParticipantToTasting(data: InsertTastingParticipant): Promise<TastingParticipant>;
   isParticipantInTasting(tastingId: string, participantId: string): Promise<boolean>;
+  getTastingParticipantByRejoinCode(tastingId: string, rejoinCode: string): Promise<(TastingParticipant & { participant: Participant }) | undefined>;
+  mergeParticipantsInTasting(tastingId: string, sourceParticipantId: string, targetParticipantId: string): Promise<{ ratingsMoved: number; ratingsDiscarded: number }>;
 
   // Sharing Participants (Bottle-Sharing)
   getSharingParticipants(tastingId: string): Promise<(SharingParticipant & { participant: Participant })[]>;
@@ -1045,15 +1047,32 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addParticipantToTasting(data: InsertTastingParticipant): Promise<TastingParticipant> {
-    const [result] = await db.insert(tastingParticipants).values(data).onConflictDoNothing({ target: [tastingParticipants.tastingId, tastingParticipants.participantId] }).returning();
-    if (!result) {
-      const [existing] = await db
-        .select()
-        .from(tastingParticipants)
-        .where(and(eq(tastingParticipants.tastingId, data.tastingId), eq(tastingParticipants.participantId, data.participantId)));
-      return existing;
+    const REJOIN_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const generateRejoinCode = () => {
+      let s = "";
+      for (let i = 0; i < 6; i++) s += REJOIN_ALPHABET[Math.floor(Math.random() * REJOIN_ALPHABET.length)];
+      return s;
+    };
+    const valuesWithCode = data.rejoinCode ? data : { ...data, rejoinCode: generateRejoinCode() };
+    let lastErr: any = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        const tryValues = attempt === 0 ? valuesWithCode : { ...data, rejoinCode: generateRejoinCode() };
+        const [result] = await db.insert(tastingParticipants).values(tryValues).onConflictDoNothing({ target: [tastingParticipants.tastingId, tastingParticipants.participantId] }).returning();
+        if (!result) {
+          const [existing] = await db
+            .select()
+            .from(tastingParticipants)
+            .where(and(eq(tastingParticipants.tastingId, data.tastingId), eq(tastingParticipants.participantId, data.participantId)));
+          return existing;
+        }
+        return result;
+      } catch (e: any) {
+        lastErr = e;
+        if (!String(e?.message || "").includes("uq_tasting_rejoin_code")) throw e;
+      }
     }
-    return result;
+    throw lastErr || new Error("Failed to generate unique rejoin code");
   }
 
   async isParticipantInTasting(tastingId: string, participantId: string): Promise<boolean> {
@@ -1062,6 +1081,61 @@ export class DatabaseStorage implements IStorage {
       .from(tastingParticipants)
       .where(and(eq(tastingParticipants.tastingId, tastingId), eq(tastingParticipants.participantId, participantId)));
     return !!result;
+  }
+
+  async getTastingParticipantByRejoinCode(tastingId: string, rejoinCode: string): Promise<(TastingParticipant & { participant: Participant }) | undefined> {
+    const code = rejoinCode.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (!code) return undefined;
+    const [tp] = await db
+      .select()
+      .from(tastingParticipants)
+      .where(and(eq(tastingParticipants.tastingId, tastingId), eq(tastingParticipants.rejoinCode, code)));
+    if (!tp) return undefined;
+    const [p] = await db.select().from(participants).where(eq(participants.id, tp.participantId));
+    if (!p) return undefined;
+    return { ...tp, participant: p };
+  }
+
+  async mergeParticipantsInTasting(tastingId: string, sourceParticipantId: string, targetParticipantId: string): Promise<{ ratingsMoved: number; ratingsDiscarded: number }> {
+    if (sourceParticipantId === targetParticipantId) {
+      return { ratingsMoved: 0, ratingsDiscarded: 0 };
+    }
+    const tasting = await this.getTasting(tastingId);
+    if (!tasting) throw new Error("Tasting not found");
+    if (tasting.hostId === sourceParticipantId) throw new Error("Cannot merge the host away");
+
+    const result = await db.transaction(async (tx) => {
+      const [srcTp] = await tx.select().from(tastingParticipants).where(and(eq(tastingParticipants.tastingId, tastingId), eq(tastingParticipants.participantId, sourceParticipantId)));
+      const [tgtTp] = await tx.select().from(tastingParticipants).where(and(eq(tastingParticipants.tastingId, tastingId), eq(tastingParticipants.participantId, targetParticipantId)));
+      if (!srcTp || !tgtTp) throw new Error("Both participants must be in the tasting");
+
+      let moved = 0;
+      let discarded = 0;
+      const srcRatings = await tx.select().from(ratings).where(and(eq(ratings.tastingId, tastingId), eq(ratings.participantId, sourceParticipantId)));
+      const tgtRatings = await tx.select().from(ratings).where(and(eq(ratings.tastingId, tastingId), eq(ratings.participantId, targetParticipantId)));
+      const tgtWhiskyIds = new Set(tgtRatings.map(r => r.whiskyId));
+      for (const r of srcRatings) {
+        if (tgtWhiskyIds.has(r.whiskyId)) {
+          await tx.delete(ratings).where(eq(ratings.id, r.id));
+          discarded++;
+        } else {
+          await tx.update(ratings).set({ participantId: targetParticipantId }).where(eq(ratings.id, r.id));
+          moved++;
+        }
+      }
+
+      await tx.delete(tastingParticipants).where(and(eq(tastingParticipants.tastingId, tastingId), eq(tastingParticipants.participantId, sourceParticipantId)));
+
+      const otherTastings = await tx.select().from(tastingParticipants).where(eq(tastingParticipants.participantId, sourceParticipantId));
+      const [srcParticipant] = await tx.select().from(participants).where(eq(participants.id, sourceParticipantId));
+      if (otherTastings.length === 0 && srcParticipant && /\s#[A-Za-z0-9]{4}$/.test(srcParticipant.name || "")) {
+        await tx.delete(participants).where(eq(participants.id, sourceParticipantId));
+      }
+
+      return { ratingsMoved: moved, ratingsDiscarded: discarded };
+    });
+
+    return result;
   }
 
   // --- Sharing Participants (Bottle-Sharing) ---

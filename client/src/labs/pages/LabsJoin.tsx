@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
-import { Wine, ArrowRight, AlertCircle, LogIn, ChevronLeft, User, Mail, Calendar, KeyRound, MailCheck } from "lucide-react";
+import { Wine, ArrowRight, AlertCircle, LogIn, ChevronLeft, User, Mail, Calendar, KeyRound, MailCheck, Copy, Check, RotateCcw } from "lucide-react";
 import { useSession, getSession, setGuestSession } from "@/lib/session";
 import { useIsEmbeddedInTastings } from "@/labs/embeddedTastingsContext";
 import { useAppStore } from "@/lib/store";
@@ -49,6 +49,20 @@ export default function LabsJoin() {
   const [guestName, setGuestName] = useState("");
   const [guestError, setGuestError] = useState("");
   const [guestLoading, setGuestLoading] = useState(false);
+
+  const [showRejoinCodeScreen, setShowRejoinCodeScreen] = useState(false);
+  const [issuedRejoinCode, setIssuedRejoinCode] = useState<string>("");
+  const [rejoinCodeCopied, setRejoinCodeCopied] = useState(false);
+
+  const [showRejoinInput, setShowRejoinInput] = useState(false);
+  const [rejoinCodeInput, setRejoinCodeInput] = useState("");
+  const [rejoinError, setRejoinError] = useState("");
+  const [rejoinLoading, setRejoinLoading] = useState(false);
+
+  const formatRejoinCode = (c: string) => {
+    const cleaned = (c || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    return cleaned.length === 6 ? `${cleaned.slice(0, 3)}-${cleaned.slice(3)}` : cleaned;
+  };
 
   const isLoggedIn = session.signedIn && !!currentParticipant;
   const [autoJoinAttempted, setAutoJoinAttempted] = useState(false);
@@ -210,13 +224,54 @@ export default function LabsJoin() {
     try {
       const result = await tastingApi.guestJoin(pendingTasting.id, guestName.trim(), pendingCode);
       setGuestSession(result.id, result.name);
-      navigate(`/labs/tastings/${pendingTasting.id}`);
+      if (result.rejoinCode) {
+        setIssuedRejoinCode(result.rejoinCode);
+        setShowGuestName(false);
+        setShowRejoinCodeScreen(true);
+      } else {
+        navigate(`/labs/tastings/${pendingTasting.id}`);
+      }
     } catch (e: unknown) {
       const msg = (e as Error).message || "";
       setGuestError(msg || "Could not join. Please try again.");
     } finally {
       setGuestLoading(false);
     }
+  };
+
+  const handleGuestRejoin = async () => {
+    if (!pendingTasting) return;
+    const code = rejoinCodeInput.trim();
+    if (!code) {
+      setRejoinError(t("labs.rejoin.enterCode", "Bitte gib deinen Wiedereinstiegs-Code ein."));
+      return;
+    }
+    setRejoinError("");
+    setRejoinLoading(true);
+    try {
+      const result = await tastingApi.guestRejoin(pendingTasting.id, code);
+      setGuestSession(result.id, result.name);
+      navigate(`/labs/tastings/${pendingTasting.id}`);
+    } catch (e: any) {
+      const msg = (e as Error).message || "";
+      setRejoinError(msg || t("labs.rejoin.notFound", "Code nicht gefunden. Bitte prüfe deine Eingabe."));
+    } finally {
+      setRejoinLoading(false);
+    }
+  };
+
+  const handleCopyRejoinCode = async () => {
+    try {
+      await navigator.clipboard.writeText(formatRejoinCode(issuedRejoinCode));
+      setRejoinCodeCopied(true);
+      setTimeout(() => setRejoinCodeCopied(false), 2000);
+    } catch {}
+  };
+
+  const handleContinueAfterRejoinCode = () => {
+    if (!pendingTasting) return;
+    setShowRejoinCodeScreen(false);
+    navigate(`/labs/tastings/${pendingTasting.id}`);
   };
 
   const handleLogin = async () => {
@@ -290,6 +345,73 @@ export default function LabsJoin() {
     }
   };
 
+  if (showRejoinCodeScreen) {
+    return (
+      <div className="labs-page labs-fade-in">
+        <div className="text-center mb-6">
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+            style={{ background: "var(--labs-success-muted)" }}
+          >
+            <Check className="w-7 h-7" style={{ color: "var(--labs-success)" }} />
+          </div>
+          <h1
+            className="labs-h1 mb-2"
+            style={{ color: "var(--labs-text)" }}
+            data-testid="labs-join-rejoin-code-title"
+          >
+            {t("labs.rejoin.savedTitle", "Dein Wiedereinstiegs-Code")}
+          </h1>
+          <p
+            className="text-sm"
+            style={{ color: "var(--labs-text-muted)" }}
+          >
+            {t("labs.rejoin.savedDesc", "Notiere dir diesen Code. Falls du dein Gerät wechselst oder der Browser deine Sitzung vergisst, kommst du damit zurück zu deinem Teilnehmer und behältst alle Bewertungen.")}
+          </p>
+        </div>
+
+        <div
+          className="labs-card p-6 text-center mb-4"
+          style={{ background: "var(--labs-accent-muted)" }}
+        >
+          <div
+            className="text-4xl font-bold tracking-widest mb-3 select-all"
+            style={{ color: "var(--labs-accent)", fontFamily: "monospace", letterSpacing: "0.15em" }}
+            data-testid="labs-join-rejoin-code-value"
+          >
+            {formatRejoinCode(issuedRejoinCode)}
+          </div>
+          <button
+            className="labs-btn-ghost inline-flex items-center gap-2 text-sm"
+            onClick={handleCopyRejoinCode}
+            data-testid="labs-join-rejoin-code-copy"
+          >
+            {rejoinCodeCopied ? (
+              <>
+                <Check className="w-4 h-4" />
+                {t("labs.rejoin.copied", "Kopiert")}
+              </>
+            ) : (
+              <>
+                <Copy className="w-4 h-4" />
+                {t("labs.rejoin.copy", "Code kopieren")}
+              </>
+            )}
+          </button>
+        </div>
+
+        <button
+          className="labs-btn-primary w-full flex items-center justify-center gap-2"
+          onClick={handleContinueAfterRejoinCode}
+          data-testid="labs-join-rejoin-code-continue"
+        >
+          {t("labs.rejoin.continue", "Weiter zum Tasting")}
+          <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  }
+
   if (showGuestName) {
     return (
       <div className="labs-page labs-fade-in">
@@ -305,16 +427,75 @@ export default function LabsJoin() {
             style={{ color: "var(--labs-text)" }}
             data-testid="labs-join-guest-title"
           >
-            Join as Guest
+            {showRejoinInput ? t("labs.rejoin.title", "Schon dabei? Code eingeben") : "Join as Guest"}
           </h1>
           <p
             className="text-sm"
             style={{ color: "var(--labs-text-muted)" }}
           >
-            Enter your name to join the tasting — no account needed.
+            {showRejoinInput
+              ? t("labs.rejoin.inputDesc", "Gib den 6-stelligen Wiedereinstiegs-Code ein, den du beim ersten Beitritt erhalten hast.")
+              : "Enter your name to join the tasting — no account needed."}
           </p>
         </div>
 
+        {showRejoinInput ? (
+          <div className="space-y-4">
+            <div>
+              <label
+                className="text-xs font-medium mb-1.5 block"
+                style={{ color: "var(--labs-text-muted)" }}
+              >
+                {t("labs.rejoin.codeLabel", "Wiedereinstiegs-Code")}
+              </label>
+              <input
+                className="labs-input text-center tracking-widest"
+                style={{ fontFamily: "monospace", fontSize: "1.25rem" }}
+                type="text"
+                placeholder="XK7-PM2"
+                value={rejoinCodeInput}
+                onChange={(e) => setRejoinCodeInput(e.target.value.toUpperCase())}
+                onKeyDown={(e) => { if (e.key === "Enter") handleGuestRejoin(); }}
+                maxLength={8}
+                autoFocus
+                data-testid="labs-join-rejoin-input"
+              />
+            </div>
+
+            {rejoinError && (
+              <div
+                className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm"
+                style={{ background: "var(--labs-danger-muted)", color: "var(--labs-danger)" }}
+                data-testid="labs-join-rejoin-error"
+              >
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                {rejoinError}
+              </div>
+            )}
+
+            <button
+              className="labs-btn-primary w-full flex items-center justify-center gap-2"
+              onClick={handleGuestRejoin}
+              disabled={rejoinLoading || !rejoinCodeInput.trim()}
+              data-testid="labs-join-rejoin-submit"
+            >
+              {rejoinLoading ? "..." : (
+                <>
+                  {t("labs.rejoin.submit", "Wiedereinstieg")}
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+
+            <button
+              className="labs-btn-ghost w-full text-sm"
+              onClick={() => { setShowRejoinInput(false); setRejoinError(""); }}
+              data-testid="labs-join-rejoin-switch-back"
+            >
+              {t("labs.rejoin.switchToName", "Stattdessen mit Namen beitreten")}
+            </button>
+          </div>
+        ) : (
         <div className="space-y-4">
           <div>
             <label
@@ -374,7 +555,19 @@ export default function LabsJoin() {
           >
             Back
           </button>
+
+          <div className="pt-2 text-center" style={{ borderTop: "1px solid var(--labs-border-subtle)" }}>
+            <button
+              className="labs-btn-ghost text-sm inline-flex items-center gap-1.5 mt-2"
+              onClick={() => { setShowRejoinInput(true); setGuestError(""); }}
+              data-testid="labs-join-rejoin-switch"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              {t("labs.rejoin.haveCode", "Schon dabei? Wiedereinstiegs-Code eingeben")}
+            </button>
+          </div>
         </div>
+        )}
       </div>
     );
   }

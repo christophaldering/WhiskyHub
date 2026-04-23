@@ -103,9 +103,11 @@ export const tastingParticipants = pgTable("tasting_participants", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tastingId: varchar("tasting_id").notNull(),
   participantId: varchar("participant_id").notNull(),
+  rejoinCode: varchar("rejoin_code"),
   joinedAt: timestamp("joined_at").defaultNow(),
 }, (table) => ({
   uqTastingParticipant: uniqueIndex("uq_tasting_participant").on(table.tastingId, table.participantId),
+  uqTastingRejoinCode: uniqueIndex("uq_tasting_rejoin_code").on(table.tastingId, table.rejoinCode),
 }));
 
 export const insertTastingParticipantSchema = createInsertSchema(tastingParticipants).omit({ id: true, joinedAt: true });

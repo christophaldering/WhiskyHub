@@ -2790,7 +2790,7 @@ export async function registerRoutes(
 
       const participant = await storage.createParticipant({ name: guestName, experienceLevel: "guest" });
       await storage.setPrivacyConsent(participant.id);
-      await storage.addParticipantToTasting({ tastingId: tasting.id, participantId: participant.id });
+      const tp = await storage.addParticipantToTasting({ tastingId: tasting.id, participantId: participant.id });
       storage.updateLastSeen(participant.id).catch(() => {});
 
       console.log(`[LABS] Guest joined: participant=${participant.id} "${guestName}" tasting=${tasting.id} "${tasting.title}"`);
@@ -2816,7 +2816,59 @@ export async function registerRoutes(
         experienceLevel: "guest",
         guest: true,
         tastingId: tasting.id,
+        rejoinCode: tp?.rejoinCode || null,
       });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/guest-rejoin", async (req, res) => {
+    try {
+      const { rejoinCode } = req.body || {};
+      if (!rejoinCode || typeof rejoinCode !== "string") {
+        return res.status(400).json({ message: "Rejoin code is required" });
+      }
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const found = await storage.getTastingParticipantByRejoinCode(tasting.id, rejoinCode);
+      if (!found) return res.status(404).json({ message: "Rejoin code not found for this tasting" });
+      storage.updateLastSeen(found.participant.id).catch(() => {});
+      console.log(`[LABS] Guest rejoined: participant=${found.participant.id} "${found.participant.name}" tasting=${tasting.id}`);
+      res.json({
+        id: found.participant.id,
+        name: found.participant.name,
+        role: found.participant.role,
+        experienceLevel: found.participant.experienceLevel || "guest",
+        guest: true,
+        tastingId: tasting.id,
+        rejoinCode: found.rejoinCode,
+      });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/merge-participants", async (req, res) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const { sourceParticipantId, targetParticipantId } = req.body || {};
+      if (!sourceParticipantId || !targetParticipantId) {
+        return res.status(400).json({ message: "sourceParticipantId and targetParticipantId are required" });
+      }
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const isHost = tasting.hostId === auth.participant.id;
+      const isAdmin = auth.participant.role === "admin";
+      if (!isHost && !isAdmin) return res.status(403).json({ message: "Only the host can merge participants" });
+      if (sourceParticipantId === targetParticipantId) {
+        return res.status(400).json({ message: "Source and target must be different" });
+      }
+      const result = await storage.mergeParticipantsInTasting(tasting.id, sourceParticipantId, targetParticipantId);
+      try { broadcastToTasting(tasting.id, { type: "participant_merged", data: { sourceParticipantId, targetParticipantId, ...result } }); } catch {}
+      console.log(`[LABS] Participants merged in tasting ${tasting.id} by ${auth.participant.id}: ${sourceParticipantId} -> ${targetParticipantId} (moved=${result.ratingsMoved}, discarded=${result.ratingsDiscarded})`);
+      res.json({ success: true, ...result });
     } catch (e: any) {
       res.status(400).json({ message: e.message });
     }

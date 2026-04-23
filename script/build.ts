@@ -164,6 +164,14 @@ async function preBuildMigrations() {
     } catch (e: any) {
       console.log(`pre-build: tasting_participants unique index note: ${e.message}`);
     }
+
+    try {
+      await pool.query(`ALTER TABLE tasting_participants ADD COLUMN IF NOT EXISTS rejoin_code varchar`);
+      await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_tasting_rejoin_code ON tasting_participants (tasting_id, rejoin_code)`);
+      console.log("pre-build: ensured rejoin_code column + unique index exist");
+    } catch (e: any) {
+      console.log(`pre-build: rejoin_code migration note: ${e.message}`);
+    }
   } catch (e: any) {
     console.log(`pre-build migration note: ${e.message}`);
   } finally {

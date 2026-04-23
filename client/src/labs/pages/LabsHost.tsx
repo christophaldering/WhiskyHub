@@ -3258,15 +3258,49 @@ function ParticipantStatusSection({
   whiskies,
   whiskyCount,
   tasting,
+  tastingId,
 }: {
   participants: any[];
   ratings: any[];
   whiskies: any[];
   whiskyCount: number;
   tasting?: any;
+  tastingId?: string;
 }) {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [expandedWhisky, setExpandedWhisky] = useState<string | null>(null);
+  const [mergeSourceId, setMergeSourceId] = useState<string | null>(null);
+  const [mergeTargetId, setMergeTargetId] = useState<string>("");
+  const [mergeBusy, setMergeBusy] = useState(false);
+
+  const performMerge = async () => {
+    if (!tasting?.id || !mergeSourceId || !mergeTargetId) return;
+    setMergeBusy(true);
+    try {
+      const res: any = await tastingApi.mergeParticipants(tasting.id, mergeSourceId, mergeTargetId);
+      toast({
+        title: t("labs.host.mergeDoneTitle", "Teilnehmer zusammengeführt"),
+        description: t("labs.host.mergeDoneDesc", "{{moved}} Bewertungen übertragen, {{discarded}} Doppelbewertungen verworfen.", { moved: res?.ratingsMoved ?? 0, discarded: res?.ratingsDiscarded ?? 0 }),
+      });
+      setMergeSourceId(null);
+      setMergeTargetId("");
+      queryClient.invalidateQueries({ queryKey: ["tasting-participants", tasting.id] });
+      queryClient.invalidateQueries({ queryKey: ["tasting-ratings", tasting.id] });
+      if (tastingId) {
+        queryClient.invalidateQueries({ queryKey: ["tasting-participants", tastingId] });
+        queryClient.invalidateQueries({ queryKey: ["tasting-ratings", tastingId] });
+      }
+    } catch (e: any) {
+      toast({
+        title: t("labs.host.mergeErrorTitle", "Zusammenführen fehlgeschlagen"),
+        description: e?.message || "",
+        variant: "destructive",
+      });
+    } finally {
+      setMergeBusy(false);
+    }
+  };
 
   const sortedParticipants = [...(participants || [])].sort((a: any, b: any) => {
     const aIsHost = a.participantId === tasting?.hostId ? -1 : 0;
@@ -3336,29 +3370,93 @@ function ParticipantStatusSection({
                   </span>
                 </div>
                 <div className="divide-y" style={{ borderColor: "var(--labs-border-subtle)" }}>
-                  {group.items.map((p: any) => (
+                  {group.items.map((p: any) => {
+                    const isHost = tasting?.hostId && p.participantId === tasting.hostId;
+                    const isMerging = mergeSourceId === p.participantId;
+                    const otherParticipants = (participants || []).filter((o: any) => o.participantId !== p.participantId && o.participantId !== tasting?.hostId);
+                    return (
                     <div
                       key={p.id}
-                      className="flex items-center gap-3 px-4 py-3"
                       data-testid={`labs-host-participant-${p.id}`}
                     >
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
-                        style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
-                      >
-                        {stripGuestSuffix((p.participant?.name || p.name || "?") as string).charAt(0).toUpperCase()}
-                      </div>
-                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{stripGuestSuffix((p.participant?.name || p.name || "Anonymous") as string)}</p>
-                        {tasting?.hostId && p.participantId === tasting.hostId && (
-                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>{t("ui.host")}</span>
+                      <div className="flex items-center gap-3 px-4 py-3">
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
+                          style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                        >
+                          {stripGuestSuffix((p.participant?.name || p.name || "?") as string).charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{stripGuestSuffix((p.participant?.name || p.name || "Anonymous") as string)}</p>
+                          {isHost && (
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>{t("ui.host")}</span>
+                          )}
+                        </div>
+                        <span className="text-xs flex-shrink-0" style={{ color: "var(--labs-text-muted)" }}>
+                          {p.ratedCount}/{whiskyCount}
+                        </span>
+                        {!isHost && otherParticipants.length > 0 && (
+                          <button
+                            className="labs-btn-ghost p-1.5 -mr-1.5 flex-shrink-0"
+                            title={t("labs.host.mergeAction", "Mit anderem Teilnehmer zusammenführen")}
+                            onClick={() => {
+                              setMergeSourceId(isMerging ? null : p.participantId);
+                              setMergeTargetId("");
+                            }}
+                            data-testid={`labs-host-merge-${p.id}`}
+                          >
+                            <RotateCcw className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
+                          </button>
                         )}
                       </div>
-                      <span className="text-xs flex-shrink-0" style={{ color: "var(--labs-text-muted)" }}>
-                        {p.ratedCount}/{whiskyCount}
-                      </span>
+                      {isMerging && (
+                        <div
+                          className="px-4 pb-3 pt-2 space-y-2"
+                          style={{ background: "var(--labs-surface)", borderTop: "1px solid var(--labs-border-subtle)" }}
+                          data-testid={`labs-host-merge-panel-${p.id}`}
+                        >
+                          <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                            {t("labs.host.mergeIntoLabel", "„{{name}}“ zusammenführen mit:", { name: stripGuestSuffix((p.participant?.name || p.name || "?") as string) })}
+                          </p>
+                          <select
+                            className="labs-input text-sm"
+                            value={mergeTargetId}
+                            onChange={(e) => setMergeTargetId(e.target.value)}
+                            data-testid={`labs-host-merge-select-${p.id}`}
+                          >
+                            <option value="">{t("labs.host.mergeSelectPlaceholder", "Ziel-Teilnehmer wählen…")}</option>
+                            {otherParticipants.map((o: any) => (
+                              <option key={o.id} value={o.participantId}>
+                                {stripGuestSuffix((o.participant?.name || o.name || "?") as string)}
+                              </option>
+                            ))}
+                          </select>
+                          <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
+                            {t("labs.host.mergeWarning", "Alle Bewertungen werden auf den Ziel-Teilnehmer übertragen. Bei Doppelbewertungen behält das Ziel seine Werte. Diese Aktion kann nicht rückgängig gemacht werden.")}
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              className="labs-btn-primary flex-1 text-sm py-2"
+                              onClick={performMerge}
+                              disabled={mergeBusy || !mergeTargetId}
+                              data-testid={`labs-host-merge-confirm-${p.id}`}
+                            >
+                              {mergeBusy ? "…" : t("labs.host.mergeConfirm", "Zusammenführen")}
+                            </button>
+                            <button
+                              className="labs-btn-ghost text-sm py-2 px-3"
+                              onClick={() => { setMergeSourceId(null); setMergeTargetId(""); }}
+                              disabled={mergeBusy}
+                              data-testid={`labs-host-merge-cancel-${p.id}`}
+                            >
+                              {t("ui.cancel", "Abbrechen")}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ) : null,
@@ -6590,6 +6688,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           whiskies={whiskies}
           whiskyCount={whiskyCount}
           tasting={tasting}
+          tastingId={tastingId}
         />
       )}
 
