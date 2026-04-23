@@ -196,7 +196,7 @@ function JoinCodeInput() {
   const handleJoin = useCallback(() => {
     const trimmed = code.trim().toUpperCase();
     if (trimmed) {
-      navigate(`/quick/${trimmed}`);
+      navigate(`/labs/join/${trimmed}`);
     }
   }, [code, navigate]);
 
