@@ -104,7 +104,9 @@ export const tastingParticipants = pgTable("tasting_participants", {
   tastingId: varchar("tasting_id").notNull(),
   participantId: varchar("participant_id").notNull(),
   joinedAt: timestamp("joined_at").defaultNow(),
-});
+}, (table) => ({
+  uqTastingParticipant: uniqueIndex("uq_tasting_participant").on(table.tastingId, table.participantId),
+}));
 
 export const insertTastingParticipantSchema = createInsertSchema(tastingParticipants).omit({ id: true, joinedAt: true });
 export type InsertTastingParticipant = z.infer<typeof insertTastingParticipantSchema>;
