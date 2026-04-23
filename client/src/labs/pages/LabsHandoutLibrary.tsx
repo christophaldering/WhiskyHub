@@ -300,6 +300,94 @@ interface HandoutDetailSheetProps {
   locale: string;
 }
 
+function UsageTastingsPopover({ entryId, hostId, count, t, locale, onOpenTasting, onOpenDetail }: { entryId: string; hostId: string; count: number; t: (key: string, opts?: any) => string; locale: string; onOpenTasting: (tt: HandoutLinkedTasting) => void; onOpenDetail: () => void }) {
+  const [open, setOpen] = useState(false);
+  const popRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (popRef.current && !popRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener("mousedown", handler);
+    return () => window.removeEventListener("mousedown", handler);
+  }, [open]);
+  const linksQuery = useQuery<HandoutLinksResponse>({
+    queryKey: ["handout-library-links", entryId],
+    queryFn: () => handoutLibraryApi.getLinks(entryId, hostId) as Promise<HandoutLinksResponse>,
+    enabled: open && !!hostId,
+    staleTime: 30_000,
+  });
+  const tastings = linksQuery.data?.usedInTastings ?? [];
+  return (
+    <div ref={popRef} style={{ position: "relative", display: "inline-block" }}>
+      <button
+        type="button"
+        onClick={() => {
+          if (count > 0) setOpen((v) => !v);
+          else onOpenDetail();
+        }}
+        className="labs-btn-ghost"
+        style={{
+          padding: "2px 6px", borderRadius: 6,
+          fontSize: "inherit", color: "inherit",
+          background: open ? "var(--labs-accent-muted)" : "transparent", cursor: "pointer",
+          textDecoration: count > 0 ? "underline" : "none",
+        }}
+        data-testid={`text-usage-${entryId}`}
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        title={t("labs.handoutLibrary.openLinks", { defaultValue: "Verknüpfungen anzeigen" })}
+      >
+        {count}
+      </button>
+      {open && (
+        <div
+          role="dialog"
+          style={{
+            position: "absolute", right: 0, top: "100%", marginTop: 4, zIndex: 30,
+            minWidth: 240, maxWidth: 320,
+            background: "var(--labs-surface)", border: "1px solid var(--labs-border)",
+            borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
+            padding: 8, textAlign: "left",
+          }}
+          data-testid={`popover-usage-${entryId}`}
+        >
+          {linksQuery.isLoading ? (
+            <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{t("labs.handoutLibrary.linksLoading")}</div>
+          ) : tastings.length === 0 ? (
+            <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+              {t("labs.handoutLibrary.linksNoTastings", { defaultValue: "Noch nicht in Tastings verwendet." })}
+            </div>
+          ) : (
+            <div style={{ display: "grid", gap: 2 }}>
+              {tastings.map((tt) => (
+                <button
+                  key={tt.id}
+                  type="button"
+                  onClick={() => { setOpen(false); onOpenTasting(tt); }}
+                  className="labs-btn-ghost"
+                  style={{
+                    display: "flex", alignItems: "center", gap: 6,
+                    padding: "4px 6px", borderRadius: 6,
+                    fontSize: 12, color: "var(--labs-text)",
+                    textAlign: "left", width: "100%",
+                    background: "transparent", cursor: "pointer",
+                  }}
+                  data-testid={`popover-link-tasting-${tt.id}`}
+                >
+                  <FileText style={{ width: 11, height: 11, color: "var(--labs-accent)", flexShrink: 0 }} />
+                  <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 500 }}>{tt.title}</span>
+                  {tt.date && <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{fmtDate(tt.date, locale)}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function HandoutLinksSection({ entry, hostId, t, onOpenWhisky, onOpenTasting, locale }: { entry: WhiskyHandoutLibraryEntry; hostId: string; t: HandoutDetailSheetProps["t"]; onOpenWhisky?: (link: HandoutLink) => void; onOpenTasting?: (tasting: HandoutLinkedTasting) => void; locale: string }) {
   // Always fetch links so we can also display "used in tastings" even when no
   // whiskybase id / distillery name is set.
@@ -524,7 +612,7 @@ function HandoutDetailSheet({ entry, isPdf, metaParts, actions, onClose, t, host
 
 
 type LibraryRowAug = WhiskyHandoutLibraryEntry & { usageCount?: number; fileSize?: number | null };
-type SortKey = "whisky" | "distillery" | "author" | "shared" | "usage" | "date" | "fileSize";
+type SortKey = "whisky" | "distillery" | "author" | "age" | "caskType" | "shared" | "usage" | "date" | "fileSize";
 
 interface HandoutLibraryTableViewProps {
   entries: LibraryRowAug[];
@@ -547,6 +635,8 @@ interface HandoutLibraryTableViewProps {
   onReplace: (entry: LibraryRowAug) => void;
   onSplit: (entry: LibraryRowAug) => void;
   onDelete: (entry: LibraryRowAug) => void;
+  hostId: string;
+  onOpenTasting: (tt: HandoutLinkedTasting) => void;
 }
 
 function SortHeader({ label, active, dir, onClick, testId }: { label: string; active: boolean; dir: "asc" | "desc"; onClick: () => void; testId: string }) {
@@ -581,6 +671,7 @@ function HandoutLibraryTableView(props: HandoutLibraryTableViewProps) {
     entries, t, locale, selected, selectMode, onToggleSelect, onToggleSelectAll, allSelected,
     sortKey, sortDir, onSort, openMenuId, setOpenMenuId,
     onOpenDetail, onEdit, onShareToggle, onDownload, onReplace, onSplit, onDelete,
+    hostId, onOpenTasting,
   } = props;
 
   const thStyle: React.CSSProperties = {
@@ -616,6 +707,8 @@ function HandoutLibraryTableView(props: HandoutLibraryTableViewProps) {
             <th style={thStyle} aria-sort={ariaSortFor("whisky", sortKey, sortDir)}><SortHeader label={t("labs.handoutLibrary.colWhisky", { defaultValue: t("labs.handoutLibrary.fieldWhiskyName") })} active={sortKey === "whisky"} dir={sortDir} onClick={() => onSort("whisky")} testId="th-sort-whisky" /></th>
             <th style={thStyle} aria-sort={ariaSortFor("distillery", sortKey, sortDir)}><SortHeader label={t("labs.handoutLibrary.colDistillery", { defaultValue: t("labs.handoutLibrary.fieldDistillery") })} active={sortKey === "distillery"} dir={sortDir} onClick={() => onSort("distillery")} testId="th-sort-distillery" /></th>
             <th style={thStyle} aria-sort={ariaSortFor("author", sortKey, sortDir)}><SortHeader label={t("labs.handoutLibrary.colAuthor", { defaultValue: t("labs.handoutLibrary.fieldAuthor") })} active={sortKey === "author"} dir={sortDir} onClick={() => onSort("author")} testId="th-sort-author" /></th>
+            <th style={{ ...thStyle, textAlign: "right" }} aria-sort={ariaSortFor("age", sortKey, sortDir)}><SortHeader label={t("labs.handoutLibrary.colAge", { defaultValue: "Alter" })} active={sortKey === "age"} dir={sortDir} onClick={() => onSort("age")} testId="th-sort-age" /></th>
+            <th style={thStyle} aria-sort={ariaSortFor("caskType", sortKey, sortDir)}><SortHeader label={t("labs.handoutLibrary.colCaskType", { defaultValue: "Fassart" })} active={sortKey === "caskType"} dir={sortDir} onClick={() => onSort("caskType")} testId="th-sort-cask" /></th>
             <th style={thStyle} aria-sort={ariaSortFor("shared", sortKey, sortDir)}><SortHeader label={t("labs.handoutLibrary.colShared", { defaultValue: t("labs.handoutLibrary.badgeShared") })} active={sortKey === "shared"} dir={sortDir} onClick={() => onSort("shared")} testId="th-sort-shared" /></th>
             <th style={{ ...thStyle, textAlign: "right" }} aria-sort={ariaSortFor("usage", sortKey, sortDir)}><SortHeader label={t("labs.handoutLibrary.colUsage", { defaultValue: "Used in" })} active={sortKey === "usage"} dir={sortDir} onClick={() => onSort("usage")} testId="th-sort-usage" /></th>
             <th style={thStyle} aria-sort={ariaSortFor("date", sortKey, sortDir)}><SortHeader label={t("labs.handoutLibrary.colDate", { defaultValue: "Added" })} active={sortKey === "date"} dir={sortDir} onClick={() => onSort("date")} testId="th-sort-date" /></th>
@@ -663,27 +756,27 @@ function HandoutLibraryTableView(props: HandoutLibraryTableViewProps) {
                 </td>
                 <td style={tdStyle} data-testid={`text-distillery-${entry.id}`}>{entry.distillery || "—"}</td>
                 <td style={tdStyle} data-testid={`text-author-${entry.id}`}>{entry.author || "—"}</td>
+                <td style={{ ...tdStyle, textAlign: "right" }} data-testid={`text-age-${entry.id}`}>{typeof entry.age === "number" ? entry.age : "—"}</td>
+                <td style={tdStyle} data-testid={`text-cask-${entry.id}`}>{entry.caskType || "—"}</td>
                 <td style={tdStyle} data-testid={`text-shared-${entry.id}`}>
                   {entry.isShared
                     ? <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--labs-accent)" }}><Globe style={{ width: 12, height: 12 }} /> {t("labs.handoutLibrary.badgeShared")}</span>
                     : <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--labs-text-muted)" }}><Lock style={{ width: 12, height: 12 }} /> {t("labs.handoutLibrary.bulkUnshare")}</span>}
                 </td>
-                <td style={{ ...tdStyle, textAlign: "right" }}>
-                  <button
-                    type="button"
-                    onClick={() => onOpenDetail(entry)}
-                    className="labs-btn-ghost"
-                    style={{
-                      padding: "2px 6px", borderRadius: 6,
-                      fontSize: "inherit", color: "inherit",
-                      background: "transparent", cursor: "pointer",
-                      textDecoration: (entry.usageCount ?? 0) > 0 ? "underline" : "none",
-                    }}
-                    data-testid={`text-usage-${entry.id}`}
-                    title={t("labs.handoutLibrary.openLinks", { defaultValue: "Verknüpfungen anzeigen" })}
-                  >
-                    {entry.usageCount ?? 0}
-                  </button>
+                <td style={{ ...tdStyle, textAlign: "right", overflow: "visible" }}>
+                  {hostId ? (
+                    <UsageTastingsPopover
+                      entryId={entry.id}
+                      hostId={hostId}
+                      count={entry.usageCount ?? 0}
+                      t={t}
+                      locale={locale}
+                      onOpenDetail={() => onOpenDetail(entry)}
+                      onOpenTasting={(tt) => onOpenTasting(tt)}
+                    />
+                  ) : (
+                    <span data-testid={`text-usage-${entry.id}`}>{entry.usageCount ?? 0}</span>
+                  )}
                 </td>
                 <td style={tdStyle} data-testid={`text-date-${entry.id}`}>{formatDateShort(entry.createdAt, locale)}</td>
                 <td style={{ ...tdStyle, textAlign: "right" }} data-testid={`text-filesize-${entry.id}`}>{formatBytes(entry.fileSize ?? null, locale)}</td>
@@ -892,7 +985,9 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
       return "cards";
     }
   });
-  const [sortKey, setSortKey] = useState<"whisky" | "distillery" | "author" | "shared" | "usage" | "date" | "fileSize">("date");
+  const [sortKey, setSortKey] = useState<SortKey>("date");
+  const [caskTypeFilter, setCaskTypeFilter] = useState<string>("");
+  const [tastingPickerSearch, setTastingPickerSearch] = useState<string>("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [openRowMenuId, setOpenRowMenuId] = useState<string | null>(null);
 
@@ -901,9 +996,9 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
     try { window.localStorage.setItem("labs-handout-library-view", mode); } catch {}
   };
 
-  const toggleSort = (key: typeof sortKey) => {
+  const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else { setSortKey(key); setSortDir(key === "date" || key === "usage" || key === "fileSize" ? "desc" : "asc"); }
+    else { setSortKey(key); setSortDir(key === "date" || key === "usage" || key === "fileSize" || key === "age" ? "desc" : "asc"); }
   };
 
   type LibraryRow = WhiskyHandoutLibraryEntry & { usageCount?: number; fileSize?: number | null };
@@ -938,11 +1033,23 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
     }
     return Array.from(set).sort((a, b) => a.localeCompare(b, locale));
   }, [allEntries]);
+  const caskTypeOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of allEntries) {
+      const c = (e.caskType || "").trim();
+      if (c) set.add(c);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, locale));
+  }, [allEntries]);
   const filtered = useMemo(() => {
     let arr = allEntries;
     if (distilleryFilter) {
       const f = distilleryFilter.trim().toLowerCase();
       arr = arr.filter((e) => (e.distillery || "").trim().toLowerCase() === f);
+    }
+    if (caskTypeFilter) {
+      const f = caskTypeFilter.trim().toLowerCase();
+      arr = arr.filter((e) => (e.caskType || "").trim().toLowerCase() === f);
     }
     if (typeFilter) {
       arr = arr.filter((e) => {
@@ -954,7 +1061,7 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
       });
     }
     return arr;
-  }, [allEntries, distilleryFilter, typeFilter]);
+  }, [allEntries, distilleryFilter, caskTypeFilter, typeFilter]);
 
   const sortedFiltered = useMemo(() => {
     const arr = [...filtered];
@@ -967,6 +1074,8 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
         case "whisky": return cmpStr(a.whiskyName || a.title, b.whiskyName || b.title);
         case "distillery": return cmpStr(a.distillery, b.distillery);
         case "author": return cmpStr(a.author, b.author);
+        case "age": return cmpNum(a.age ?? -1, b.age ?? -1);
+        case "caskType": return cmpStr(a.caskType, b.caskType);
         case "shared": return cmpNum(a.isShared ? 1 : 0, b.isShared ? 1 : 0);
         case "usage": return cmpNum(a.usageCount || 0, b.usageCount || 0);
         case "fileSize": return cmpNum(a.fileSize || 0, b.fileSize || 0);
@@ -1085,6 +1194,7 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
       const wantsShare = uploadForm.shareWithCommunity;
       const linkTastingIds = [...uploadForm.tastingIds];
       setUploadForm(emptyUploadForm);
+      setTastingPickerSearch("");
       setUploadOpen(false);
       qc.invalidateQueries({ queryKey: ["handout-library", hostId] });
       if (wantsShare && created?.id) {
@@ -1421,6 +1531,19 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
             </select>
             <select
               className="labs-input"
+              value={caskTypeFilter}
+              onChange={(e) => setCaskTypeFilter(e.target.value)}
+              style={{ flex: "0 1 180px", minWidth: 140, fontSize: 12 }}
+              data-testid="select-handout-library-cask"
+              aria-label={t("labs.handoutLibrary.filterCaskTypeLabel", { defaultValue: "Fassart filtern" })}
+            >
+              <option value="">{t("labs.handoutLibrary.filterCaskTypeAll", { defaultValue: "Alle Fassarten" })}</option>
+              {caskTypeOptions.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            <select
+              className="labs-input"
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as "" | "pdf" | "doc" | "image")}
               style={{ flex: "0 1 160px", minWidth: 120, fontSize: 12 }}
@@ -1541,6 +1664,7 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                     setUploadIntent(null);
                     setUploadValidationError(null);
                     setUploadForm(emptyUploadForm);
+                    setTastingPickerSearch("");
                     setMultiItems([]);
                     setMultiCommonDistillery("");
                     setMultiCommonWhiskybaseId("");
@@ -1870,6 +1994,15 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                     <div style={{ fontSize: 12, color: "var(--labs-text)" }}>
                       {t("labs.handoutLibrary.fieldLinkTastings", { defaultValue: "Direkt mit Tastings verknüpfen" })}
                     </div>
+                    <input
+                      type="text"
+                      className="labs-input"
+                      value={tastingPickerSearch}
+                      onChange={(e) => setTastingPickerSearch(e.target.value)}
+                      placeholder={t("labs.handoutLibrary.tastingPickerSearchPlaceholder", { defaultValue: "Tastings suchen…" })}
+                      style={{ fontSize: 12 }}
+                      data-testid="input-tasting-picker-search"
+                    />
                     {hostTastingsQuery.isLoading ? (
                       <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
                         {t("labs.handoutLibrary.loadingTastings", { defaultValue: "Lade Tastings…" })}
@@ -1886,7 +2019,13 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                           background: "var(--labs-surface)",
                         }}
                       >
-                        {(hostTastingsQuery.data || []).map((tt) => {
+                        {(hostTastingsQuery.data || [])
+                          .filter((tt) => {
+                            const q = tastingPickerSearch.trim().toLowerCase();
+                            if (!q) return true;
+                            return (tt.title || "").toLowerCase().includes(q);
+                          })
+                          .map((tt) => {
                           const checked = uploadForm.tastingIds.includes(tt.id);
                           return (
                             <label
@@ -2418,6 +2557,8 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
               onDelete={(e) => {
                 if (window.confirm(t("labs.handoutLibrary.confirmDelete"))) deleteMut.mutate(e.id);
               }}
+              hostId={hostId}
+              onOpenTasting={(tt) => setLocation(`/labs/host/${tt.id}`)}
             />
           )}
           {viewMode === "cards" && (
