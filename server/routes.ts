@@ -3802,6 +3802,20 @@ export async function registerRoutes(
       if (typeof req.body.title === "string") data.title = req.body.title.slice(0, 200) || null;
       if (typeof req.body.author === "string") data.author = req.body.author.slice(0, 200) || null;
       if (typeof req.body.description === "string") data.description = req.body.description.slice(0, 2000) || null;
+      if (req.body.age !== undefined) {
+        if (req.body.age === null || req.body.age === "") {
+          data.age = null;
+        } else {
+          const n = Number(req.body.age);
+          if (Number.isFinite(n) && Number.isInteger(n) && n >= 0 && n <= 120) {
+            data.age = n;
+          } else {
+            return res.status(400).json({ message: "Ungültiges Alter (0–120 Jahre)" });
+          }
+        }
+      }
+      if (typeof req.body.caskType === "string") data.caskType = req.body.caskType.slice(0, 200) || null;
+      else if (req.body.caskType === null) data.caskType = null;
       if (typeof req.body.documentDate === "string") {
         const trimmed = req.body.documentDate.trim();
         if (trimmed === "") {
@@ -3834,7 +3848,8 @@ export async function registerRoutes(
       const distillery = entry.distillery
         ? (await storage.findDistilleryByName(entry.distillery)) ?? null
         : null;
-      res.json({ whiskies, distillery });
+      const usedInTastings = await storage.listTastingsUsingLibraryEntry(entry.id, hostId);
+      res.json({ whiskies, distillery, usedInTastings });
     } catch (e: any) {
       res.status(400).json({ message: e.message });
     }
@@ -3919,6 +3934,15 @@ export async function registerRoutes(
       const description = typeof req.body.description === "string" ? req.body.description.slice(0, 2000) : "";
       const documentDateRaw = typeof req.body.documentDate === "string" ? req.body.documentDate.trim() : "";
       const documentDate = /^\d{4}-\d{2}-\d{2}$/.test(documentDateRaw) ? documentDateRaw : null;
+      let age: number | null = null;
+      if (req.body.age !== undefined && req.body.age !== null && req.body.age !== "") {
+        const n = Number(req.body.age);
+        if (!Number.isFinite(n) || !Number.isInteger(n) || n < 0 || n > 120) {
+          return res.status(400).json({ message: "Ungültiges Alter (0–120 Jahre)" });
+        }
+        age = n;
+      }
+      const caskType = typeof req.body.caskType === "string" ? req.body.caskType.slice(0, 200) : "";
 
       let created;
       try {
@@ -3927,6 +3951,8 @@ export async function registerRoutes(
           whiskyName: whiskyName.slice(0, 200),
           distillery: distillery || null,
           whiskybaseId: whiskybaseId || null,
+          age,
+          caskType: caskType || null,
           fileUrl: storedUrl,
           contentType,
           fileSize: typeof req.file?.size === "number" ? req.file.size : (buffer ? buffer.length : null),

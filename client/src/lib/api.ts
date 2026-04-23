@@ -224,7 +224,7 @@ export const handoutLibraryApi = {
     if (opts.distillery) qs.set("distillery", opts.distillery);
     return fetchJSON(`/handout-library/suggest?${qs.toString()}`);
   },
-  update: (id: string, hostId: string, data: { whiskyName?: string; distillery?: string | null; whiskybaseId?: string | null; title?: string | null; author?: string | null; description?: string | null; documentDate?: string | null }) =>
+  update: (id: string, hostId: string, data: { whiskyName?: string; distillery?: string | null; whiskybaseId?: string | null; age?: number | null; caskType?: string | null; title?: string | null; author?: string | null; description?: string | null; documentDate?: string | null }) =>
     fetchJSON(`/handout-library/${id}`, { method: "PATCH", headers: { "x-participant-id": hostId }, body: JSON.stringify({ hostId, ...data }) }),
   delete: (id: string, hostId: string) =>
     fetchJSON(`/handout-library/${id}?hostId=${encodeURIComponent(hostId)}`, { method: "DELETE", headers: { "x-participant-id": hostId } }),
@@ -275,13 +275,15 @@ export const handoutLibraryApi = {
   upload: async (
     hostId: string,
     file: File,
-    meta: { whiskyName: string; distillery?: string; whiskybaseId?: string; title?: string; author?: string; description?: string; documentDate?: string },
+    meta: { whiskyName: string; distillery?: string; whiskybaseId?: string; age?: number | null; caskType?: string; title?: string; author?: string; description?: string; documentDate?: string },
   ) => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("whiskyName", meta.whiskyName);
     if (meta.distillery !== undefined) formData.append("distillery", meta.distillery);
     if (meta.whiskybaseId !== undefined) formData.append("whiskybaseId", meta.whiskybaseId);
+    if (meta.age !== undefined && meta.age !== null) formData.append("age", String(meta.age));
+    if (meta.caskType !== undefined) formData.append("caskType", meta.caskType);
     if (meta.title !== undefined) formData.append("title", meta.title);
     if (meta.author !== undefined) formData.append("author", meta.author);
     if (meta.description !== undefined) formData.append("description", meta.description);

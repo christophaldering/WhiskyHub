@@ -378,6 +378,7 @@ export interface IStorage {
   updateHandoutLibraryEntry(id: string, data: Partial<InsertWhiskyHandoutLibraryEntry>): Promise<WhiskyHandoutLibraryEntry | undefined>;
   deleteHandoutLibraryEntry(id: string): Promise<void>;
   isHandoutFileReferencedByLibrary(fileUrl: string): Promise<boolean>;
+  listTastingsUsingLibraryEntry(libraryId: string, hostId: string): Promise<{ id: string; title: string; date: string | null }[]>;
   // Multi-Handouts (n:m for whisky / tasting / distillery)
   listWhiskyHandouts(whiskyId: string): Promise<WhiskyHandout[]>;
   getWhiskyHandout(id: string): Promise<WhiskyHandout | undefined>;
@@ -1507,6 +1508,27 @@ export class DatabaseStorage implements IStorage {
     const [dh] = await db.select({ id: distilleryHandouts.id }).from(distilleryHandouts)
       .where(eq(distilleryHandouts.fileUrl, fileUrl)).limit(1);
     return !!dh;
+  }
+
+  async listTastingsUsingLibraryEntry(libraryId: string, hostId: string): Promise<{ id: string; title: string; date: string | null }[]> {
+    if (!libraryId) return [];
+    const direct = await db.select({ tastingId: tastingHandouts.tastingId })
+      .from(tastingHandouts)
+      .where(eq(tastingHandouts.sourceLibraryId, libraryId));
+    const viaWhisky = await db.select({ tastingId: whiskies.tastingId })
+      .from(whiskyHandouts)
+      .innerJoin(whiskies, eq(whiskies.id, whiskyHandouts.whiskyId))
+      .where(eq(whiskyHandouts.sourceLibraryId, libraryId));
+    const ids = Array.from(new Set([
+      ...direct.map((r) => r.tastingId).filter(Boolean),
+      ...viaWhisky.map((r) => r.tastingId).filter(Boolean),
+    ])) as string[];
+    if (ids.length === 0) return [];
+    const rows = await db.select({ id: tastings.id, title: tastings.title, date: tastings.date })
+      .from(tastings)
+      .where(and(inArray(tastings.id, ids), eq(tastings.hostId, hostId)))
+      .orderBy(desc(tastings.date));
+    return rows.map((r) => ({ id: r.id, title: r.title, date: r.date ?? null }));
   }
 
   // --- Multi-Handouts ---

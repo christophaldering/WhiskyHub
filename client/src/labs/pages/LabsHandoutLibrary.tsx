@@ -8,7 +8,7 @@ import {
   Pencil, Save, X, ExternalLink, Download, Globe, Lock, Plus, Upload, Loader2, RefreshCw, Scissors, Building2,
   LayoutGrid, Table as TableIcon, ArrowUp, ArrowDown, ArrowUpDown, MoreHorizontal,
 } from "lucide-react";
-import { getParticipantId, handoutLibraryApi } from "@/lib/api";
+import { getParticipantId, handoutLibraryApi, tastingApi } from "@/lib/api";
 import { downloadFromEndpoint } from "@/lib/download";
 import type { WhiskyHandoutLibraryEntry } from "@shared/schema";
 import HandoutLibraryPdfSplitterDialog from "../components/HandoutLibraryPdfSplitterDialog";
@@ -60,6 +60,8 @@ interface EditState {
   whiskyName: string;
   distillery: string;
   whiskybaseId: string;
+  age: string;
+  caskType: string;
   title: string;
   author: string;
   description: string;
@@ -70,6 +72,8 @@ interface UploadFormState {
   whiskyName: string;
   distillery: string;
   whiskybaseId: string;
+  age: string;
+  caskType: string;
   title: string;
   author: string;
   description: string;
@@ -77,6 +81,7 @@ interface UploadFormState {
   splitProgramme: boolean;
   programmeDate: string;
   shareWithCommunity: boolean;
+  tastingIds: string[];
 }
 
 const emptyUploadForm: UploadFormState = {
@@ -84,6 +89,8 @@ const emptyUploadForm: UploadFormState = {
   whiskyName: "",
   distillery: "",
   whiskybaseId: "",
+  age: "",
+  caskType: "",
   title: "",
   author: "",
   description: "",
@@ -91,6 +98,7 @@ const emptyUploadForm: UploadFormState = {
   splitProgramme: false,
   programmeDate: "",
   shareWithCommunity: false,
+  tastingIds: [],
 };
 
 function fmtDate(d: Date | string | null | undefined, locale: string): string {
@@ -138,9 +146,14 @@ function formatDateShort(value: Date | string | null | undefined, locale: string
 }
 
 function tileSubline(entry: WhiskyHandoutLibraryEntry, t: (k: string, opts?: any) => string): string {
-  if (entry.distillery && entry.distillery.trim()) return entry.distillery.trim();
-  if (entry.author && entry.author.trim()) return t("labs.handoutLibrary.metaBy", { author: entry.author.trim() });
-  return "";
+  const parts: string[] = [];
+  if (entry.distillery && entry.distillery.trim()) parts.push(entry.distillery.trim());
+  if (typeof entry.age === "number") parts.push(t("labs.handoutLibrary.ageYears", { defaultValue: "{{count}} J.", count: entry.age }));
+  if (entry.caskType && entry.caskType.trim()) parts.push(entry.caskType.trim());
+  if (parts.length === 0 && entry.author && entry.author.trim()) {
+    parts.push(t("labs.handoutLibrary.metaBy", { author: entry.author.trim() }));
+  }
+  return parts.join(" \u00b7 ");
 }
 
 function communitySubline(entry: WhiskyHandoutLibraryEntry, t: (k: string, opts?: any) => string): string {
@@ -262,9 +275,16 @@ interface HandoutLinkedDistillery {
   region: string;
 }
 
+interface HandoutLinkedTasting {
+  id: string;
+  title: string;
+  date: string | null;
+}
+
 interface HandoutLinksResponse {
   whiskies: HandoutLink[];
   distillery: HandoutLinkedDistillery | null;
+  usedInTastings?: HandoutLinkedTasting[];
 }
 
 interface HandoutDetailSheetProps {
@@ -276,10 +296,14 @@ interface HandoutDetailSheetProps {
   t: (key: string, opts?: Record<string, unknown>) => string;
   hostId?: string;
   onOpenWhisky?: (link: HandoutLink) => void;
+  onOpenTasting?: (tasting: HandoutLinkedTasting) => void;
+  locale: string;
 }
 
-function HandoutLinksSection({ entry, hostId, t, onOpenWhisky }: { entry: WhiskyHandoutLibraryEntry; hostId: string; t: HandoutDetailSheetProps["t"]; onOpenWhisky?: (link: HandoutLink) => void }) {
-  const enabled = !!hostId && (!!entry.whiskybaseId || !!entry.distillery);
+function HandoutLinksSection({ entry, hostId, t, onOpenWhisky, onOpenTasting, locale }: { entry: WhiskyHandoutLibraryEntry; hostId: string; t: HandoutDetailSheetProps["t"]; onOpenWhisky?: (link: HandoutLink) => void; onOpenTasting?: (tasting: HandoutLinkedTasting) => void; locale: string }) {
+  // Always fetch links so we can also display "used in tastings" even when no
+  // whiskybase id / distillery name is set.
+  const enabled = !!hostId;
   const linksQuery = useQuery<HandoutLinksResponse>({
     queryKey: ["handout-library-links", entry.id],
     queryFn: () => handoutLibraryApi.getLinks(entry.id, hostId) as Promise<HandoutLinksResponse>,
@@ -291,7 +315,8 @@ function HandoutLinksSection({ entry, hostId, t, onOpenWhisky }: { entry: Whisky
   const isLoading = linksQuery.isLoading;
   const whiskies = data?.whiskies ?? [];
   const distillery = data?.distillery ?? null;
-  const hasAny = whiskies.length > 0 || !!distillery;
+  const usedInTastings = data?.usedInTastings ?? [];
+  const hasAny = whiskies.length > 0 || !!distillery || usedInTastings.length > 0;
   if (!isLoading && !hasAny) return null;
   return (
     <div style={{ display: "grid", gap: 8, paddingTop: 8, borderTop: "1px solid var(--labs-border)" }}>
@@ -342,11 +367,45 @@ function HandoutLinksSection({ entry, hostId, t, onOpenWhisky }: { entry: Whisky
           </div>
         </div>
       )}
+      {usedInTastings.length > 0 && (
+        <div style={{ display: "grid", gap: 6 }}>
+          <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+            {t("labs.handoutLibrary.linksUsedInTastingsLabel", { defaultValue: "Verwendet in {{count}} Tasting(s)", count: usedInTastings.length })}
+          </div>
+          <div style={{ display: "grid", gap: 4 }}>
+            {usedInTastings.map((tt) => (
+              <button
+                key={tt.id}
+                type="button"
+                onClick={() => onOpenTasting?.(tt)}
+                disabled={!onOpenTasting}
+                className="labs-btn-ghost"
+                style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "6px 8px", borderRadius: 8,
+                  fontSize: 12, color: "var(--labs-text)",
+                  textAlign: "left", width: "100%",
+                  background: "var(--labs-surface-elevated)",
+                  cursor: onOpenTasting ? "pointer" : "default",
+                }}
+                data-testid={`link-tasting-${tt.id}`}
+              >
+                <FileText style={{ width: 13, height: 13, color: "var(--labs-accent)", flexShrink: 0 }} />
+                <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <span style={{ fontWeight: 500 }}>{tt.title}</span>
+                  {tt.date && <span style={{ color: "var(--labs-text-muted)" }}> · {fmtDate(tt.date, locale)}</span>}
+                </span>
+                {onOpenTasting && <ExternalLink style={{ width: 11, height: 11, color: "var(--labs-text-muted)", flexShrink: 0 }} />}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function HandoutDetailSheet({ entry, isPdf, metaParts, actions, onClose, t, hostId, onOpenWhisky }: HandoutDetailSheetProps) {
+function HandoutDetailSheet({ entry, isPdf, metaParts, actions, onClose, t, hostId, onOpenWhisky, onOpenTasting, locale }: HandoutDetailSheetProps) {
   return (
     <div
       role="dialog"
@@ -431,7 +490,7 @@ function HandoutDetailSheet({ entry, isPdf, metaParts, actions, onClose, t, host
           </div>
         )}
         {hostId && (
-          <HandoutLinksSection entry={entry} hostId={hostId} t={t} onOpenWhisky={onOpenWhisky} />
+          <HandoutLinksSection entry={entry} hostId={hostId} t={t} onOpenWhisky={onOpenWhisky} onOpenTasting={onOpenTasting} locale={locale} />
         )}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, paddingTop: 6, borderTop: "1px solid var(--labs-border)" }}>
           {actions.map((a) => {
@@ -609,7 +668,23 @@ function HandoutLibraryTableView(props: HandoutLibraryTableViewProps) {
                     ? <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--labs-accent)" }}><Globe style={{ width: 12, height: 12 }} /> {t("labs.handoutLibrary.badgeShared")}</span>
                     : <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--labs-text-muted)" }}><Lock style={{ width: 12, height: 12 }} /> {t("labs.handoutLibrary.bulkUnshare")}</span>}
                 </td>
-                <td style={{ ...tdStyle, textAlign: "right" }} data-testid={`text-usage-${entry.id}`}>{entry.usageCount ?? 0}</td>
+                <td style={{ ...tdStyle, textAlign: "right" }}>
+                  <button
+                    type="button"
+                    onClick={() => onOpenDetail(entry)}
+                    className="labs-btn-ghost"
+                    style={{
+                      padding: "2px 6px", borderRadius: 6,
+                      fontSize: "inherit", color: "inherit",
+                      background: "transparent", cursor: "pointer",
+                      textDecoration: (entry.usageCount ?? 0) > 0 ? "underline" : "none",
+                    }}
+                    data-testid={`text-usage-${entry.id}`}
+                    title={t("labs.handoutLibrary.openLinks", { defaultValue: "Verknüpfungen anzeigen" })}
+                  >
+                    {entry.usageCount ?? 0}
+                  </button>
+                </td>
                 <td style={tdStyle} data-testid={`text-date-${entry.id}`}>{formatDateShort(entry.createdAt, locale)}</td>
                 <td style={{ ...tdStyle, textAlign: "right" }} data-testid={`text-filesize-${entry.id}`}>{formatBytes(entry.fileSize ?? null, locale)}</td>
                 <td style={{ ...tdStyle, textAlign: "right", position: "relative" }}>
@@ -844,6 +919,16 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
     enabled: !!hostId && readonly,
   });
 
+  const hostTastingsQuery = useQuery<Array<{ id: string; title: string; date: string | null; status?: string | null; hostId?: string }>>({
+    queryKey: ["host-tastings-for-handout-link", hostId],
+    queryFn: async () => {
+      const all = await tastingApi.getAll(hostId);
+      return (all || []).filter((tt: any) => !tt.hostId || tt.hostId === hostId);
+    },
+    enabled: !!hostId && !readonly && uploadOpen,
+    staleTime: 30_000,
+  });
+
   const allEntries = useMemo(() => listQuery.data || [], [listQuery.data]);
   const distilleryOptions = useMemo(() => {
     const set = new Set<string>();
@@ -898,14 +983,23 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
   const community = useMemo(() => communityQuery.data || [], [communityQuery.data]);
 
   const updateMut = useMutation({
-    mutationFn: (e: EditState) => handoutLibraryApi.update(e.id, hostId, {
-      whiskyName: e.whiskyName.trim() || undefined,
-      distillery: e.distillery.trim() || null,
-      whiskybaseId: e.whiskybaseId.trim() || null,
-      title: e.title.trim() || null,
-      author: e.author.trim() || null,
-      description: e.description.trim() || null,
-    }),
+    mutationFn: (e: EditState) => {
+      const ageStr = e.age.trim();
+      const ageVal = ageStr === "" ? null : Number(ageStr);
+      if (ageStr !== "" && (!Number.isFinite(ageVal as number) || !Number.isInteger(ageVal as number) || (ageVal as number) < 0 || (ageVal as number) > 120)) {
+        throw new Error(t("labs.handoutLibrary.errAgeInvalid", { defaultValue: "Ungültiges Alter (0–120 Jahre)" }));
+      }
+      return handoutLibraryApi.update(e.id, hostId, {
+        whiskyName: e.whiskyName.trim() || undefined,
+        distillery: e.distillery.trim() || null,
+        whiskybaseId: e.whiskybaseId.trim() || null,
+        age: ageVal as number | null,
+        caskType: e.caskType.trim() || null,
+        title: e.title.trim() || null,
+        author: e.author.trim() || null,
+        description: e.description.trim() || null,
+      });
+    },
     onSuccess: () => {
       setEditing(null);
       setError(null);
@@ -968,25 +1062,49 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
         ? `${t("labs.handoutLibrary.fieldProgrammeDate")}: ${uploadForm.programmeDate.trim()}\n\n`
         : "";
       const effectiveDescription = (datePrefix + uploadForm.description).trim();
+      const ageStr = uploadForm.age.trim();
+      const ageVal = ageStr === "" ? null : Number(ageStr);
+      if (ageStr !== "" && (!Number.isFinite(ageVal as number) || !Number.isInteger(ageVal as number) || (ageVal as number) < 0 || (ageVal as number) > 120)) {
+        throw new Error(t("labs.handoutLibrary.errAgeInvalid", { defaultValue: "Ungültiges Alter (0–120 Jahre)" }));
+      }
       return handoutLibraryApi.upload(hostId, uploadForm.file, {
         whiskyName: effectiveWhiskyName,
         distillery: uploadForm.distillery.trim(),
         whiskybaseId: uploadForm.whiskybaseId.trim(),
+        age: ageVal as number | null,
+        caskType: uploadForm.caskType.trim(),
         title: uploadForm.title.trim(),
         author: uploadForm.author.trim(),
         description: effectiveDescription,
         documentDate: uploadForm.documentDate.trim(),
       });
     },
-    onSuccess: (created: WhiskyHandoutLibraryEntry, _vars, ctx) => {
+    onSuccess: async (created: WhiskyHandoutLibraryEntry, _vars, ctx) => {
       setError(null);
       setInfo(t("labs.handoutLibrary.msgUploaded"));
       const wantsShare = uploadForm.shareWithCommunity;
+      const linkTastingIds = [...uploadForm.tastingIds];
       setUploadForm(emptyUploadForm);
       setUploadOpen(false);
       qc.invalidateQueries({ queryKey: ["handout-library", hostId] });
       if (wantsShare && created?.id) {
         shareMut.mutate({ id: created.id, isShared: true });
+      }
+      if (created?.id && linkTastingIds.length > 0) {
+        const failures: string[] = [];
+        await Promise.all(linkTastingIds.map(async (tid) => {
+          try {
+            await handoutLibraryApi.appendToTasting(created.id, hostId, tid);
+            qc.invalidateQueries({ queryKey: ["tasting-handouts", tid] });
+            qc.invalidateQueries({ queryKey: ["handout-library-links", created.id] });
+          } catch (err: any) {
+            failures.push(err?.message || tid);
+          }
+        }));
+        if (failures.length > 0) {
+          setError(t("labs.handoutLibrary.errLinkSomeTastings", { defaultValue: "Einige Tastings konnten nicht verknüpft werden", count: failures.length }));
+        }
+        qc.invalidateQueries({ queryKey: ["handout-library", hostId] });
       }
       if (ctx?.wantsSplit && ctx.isPdf && created?.id) {
         setSplitTarget(created);
@@ -1014,16 +1132,13 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
           // Only fill empty fields; never overwrite something the user typed.
           const ageStr = typeof suggestion.age === "number" ? `${suggestion.age}` : "";
           const cask = (suggestion.caskType || "").trim();
-          const aiBits = [
-            ageStr ? `Alter: ${ageStr} Jahre` : "",
-            cask ? `Fassart: ${cask}` : "",
-          ].filter(Boolean).join(" · ");
           return {
             ...prev,
             whiskyName: prev.whiskyName.trim() ? prev.whiskyName : (suggestion.whiskyName || ""),
             distillery: prev.distillery.trim() ? prev.distillery : (suggestion.distillery || ""),
             whiskybaseId: prev.whiskybaseId.trim() ? prev.whiskybaseId : (suggestion.whiskybaseId || ""),
-            description: prev.description.trim() ? prev.description : aiBits,
+            age: prev.age.trim() ? prev.age : ageStr,
+            caskType: prev.caskType.trim() ? prev.caskType : cask,
           };
         });
       })
@@ -1680,6 +1795,30 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                       />
                     </label>
                     <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                      {t("labs.handoutLibrary.fieldAge", { defaultValue: "Alter (Jahre)" })}
+                      <input
+                        type="number"
+                        min={0}
+                        max={120}
+                        step={1}
+                        className="labs-input"
+                        value={uploadForm.age}
+                        onChange={(e) => setUploadForm({ ...uploadForm, age: e.target.value })}
+                        data-testid="input-upload-age"
+                        placeholder="z.B. 12"
+                      />
+                    </label>
+                    <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                      {t("labs.handoutLibrary.fieldCaskType", { defaultValue: "Fassart" })}
+                      <input
+                        className="labs-input"
+                        value={uploadForm.caskType}
+                        onChange={(e) => setUploadForm({ ...uploadForm, caskType: e.target.value })}
+                        data-testid="input-upload-cask-type"
+                        placeholder="z.B. First Fill Sherry Hogshead"
+                      />
+                    </label>
+                    <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
                       {t("labs.handoutLibrary.fieldTitle")}
                       <input
                         className="labs-input"
@@ -1727,6 +1866,64 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                     />
                     {t("labs.handoutLibrary.shareWithCommunity", { defaultValue: "Mit Community teilen" })}
                   </label>
+                  <div style={{ display: "grid", gap: 6 }} data-testid="upload-tasting-picker">
+                    <div style={{ fontSize: 12, color: "var(--labs-text)" }}>
+                      {t("labs.handoutLibrary.fieldLinkTastings", { defaultValue: "Direkt mit Tastings verknüpfen" })}
+                    </div>
+                    {hostTastingsQuery.isLoading ? (
+                      <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                        {t("labs.handoutLibrary.loadingTastings", { defaultValue: "Lade Tastings…" })}
+                      </div>
+                    ) : (hostTastingsQuery.data || []).length === 0 ? (
+                      <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                        {t("labs.handoutLibrary.noTastings", { defaultValue: "Keine eigenen Tastings gefunden" })}
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          display: "grid", gap: 4, maxHeight: 160, overflowY: "auto",
+                          border: "1px solid var(--labs-border)", borderRadius: 8, padding: 8,
+                          background: "var(--labs-surface)",
+                        }}
+                      >
+                        {(hostTastingsQuery.data || []).map((tt) => {
+                          const checked = uploadForm.tastingIds.includes(tt.id);
+                          return (
+                            <label
+                              key={tt.id}
+                              style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--labs-text)", cursor: "pointer", padding: "2px 0" }}
+                              data-testid={`upload-tasting-option-${tt.id}`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={(e) => {
+                                  setUploadForm((prev) => ({
+                                    ...prev,
+                                    tastingIds: e.target.checked
+                                      ? [...prev.tastingIds, tt.id]
+                                      : prev.tastingIds.filter((x) => x !== tt.id),
+                                  }));
+                                }}
+                                data-testid={`checkbox-upload-tasting-${tt.id}`}
+                              />
+                              <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {tt.title}
+                              </span>
+                              {tt.date && (
+                                <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{fmtDate(tt.date, locale)}</span>
+                              )}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {uploadForm.tastingIds.length > 0 && (
+                      <div style={{ fontSize: 11, color: "var(--labs-accent)" }} data-testid="upload-tasting-selected-count">
+                        {t("labs.handoutLibrary.tastingsSelectedCount", { defaultValue: "{{count}} Tasting(s) verknüpft", count: uploadForm.tastingIds.length })}
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
               {multiItems.length > 0 && (
@@ -2208,6 +2405,8 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                 whiskyName: e.whiskyName || "",
                 distillery: e.distillery || "",
                 whiskybaseId: e.whiskybaseId || "",
+                age: typeof e.age === "number" ? String(e.age) : "",
+                caskType: e.caskType || "",
                 title: e.title || "",
                 author: e.author || "",
                 description: e.description || "",
@@ -2254,6 +2453,23 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                       <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
                         {t("labs.handoutLibrary.fieldAuthor")}
                         <input className="labs-input" value={editing!.author} onChange={(e) => setEditing({ ...editing!, author: e.target.value })} data-testid={`input-edit-author-${entry.id}`} />
+                      </label>
+                      <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                        {t("labs.handoutLibrary.fieldAge", { defaultValue: "Alter (Jahre)" })}
+                        <input
+                          type="number"
+                          min={0}
+                          max={120}
+                          step={1}
+                          className="labs-input"
+                          value={editing!.age}
+                          onChange={(e) => setEditing({ ...editing!, age: e.target.value })}
+                          data-testid={`input-edit-age-${entry.id}`}
+                        />
+                      </label>
+                      <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
+                        {t("labs.handoutLibrary.fieldCaskType", { defaultValue: "Fassart" })}
+                        <input className="labs-input" value={editing!.caskType} onChange={(e) => setEditing({ ...editing!, caskType: e.target.value })} data-testid={`input-edit-cask-${entry.id}`} />
                       </label>
                     </div>
                     <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--labs-text)" }}>
@@ -2444,6 +2660,8 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                 whiskyName: e.whiskyName || "",
                 distillery: e.distillery || "",
                 whiskybaseId: e.whiskybaseId || "",
+                age: typeof e.age === "number" ? String(e.age) : "",
+                caskType: e.caskType || "",
                 title: e.title || "",
                 author: e.author || "",
                 description: e.description || "",
@@ -2480,6 +2698,11 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
               setDetailEntry(null);
               setLocation(`/labs/host/${w.tastingId}`);
             }}
+            onOpenTasting={(tt) => {
+              setDetailEntry(null);
+              setLocation(`/labs/host/${tt.id}`);
+            }}
+            locale={locale}
           />
         );
       })()}
@@ -2520,6 +2743,7 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
             onClose={() => setCommunityDetailEntry(null)}
             t={t}
             hostId={undefined}
+            locale={locale}
           />
         );
       })()}
