@@ -1696,22 +1696,28 @@ export async function registerRoutes(
       // and is not blocked. Verification-blocked status is intentionally not surfaced
       // here; the user will see it during the actual login flow.
       if (participant && participant.email && !checkEmailVerification(participant).blocked) {
-        const token = crypto.randomBytes(32).toString("base64url");
-        const expiry = new Date(Date.now() + 15 * 60 * 1000);
-        await storage.setLoginLinkToken(participant.id, token, expiry);
-        const proto = (req.headers["x-forwarded-proto"] as string)?.split(",")[0]?.trim() || req.protocol || "https";
-        const host = (req.headers["x-forwarded-host"] as string) || req.headers.host || "";
-        const baseUrl = process.env.PUBLIC_BASE_URL || (host ? `${proto}://${host}` : "");
-        const link = `${baseUrl}/auth/magic?token=${encodeURIComponent(token)}`;
-        const emailContent = buildMagicLinkEmail({
-          name: participant.name,
-          link,
-          language: participant.language || "en",
-          expiryMinutes: 15,
-        });
-        sendEmail({ to: participant.email, ...emailContent }).catch(err =>
-          console.error("Failed to send magic link email:", err)
-        );
+        // Refuse to send a link if no trusted base URL is configured. Falling
+        // back to request headers (host / x-forwarded-host) would let an
+        // attacker poison the magic-link target via header injection and
+        // perform an account-takeover on a user who simply requested a link.
+        const baseUrl = process.env.PUBLIC_BASE_URL?.replace(/\/+$/, "");
+        if (!baseUrl) {
+          console.error("[magic-link] PUBLIC_BASE_URL is not configured; refusing to send login-link email");
+        } else {
+          const token = crypto.randomBytes(32).toString("base64url");
+          const expiry = new Date(Date.now() + 15 * 60 * 1000);
+          await storage.setLoginLinkToken(participant.id, token, expiry);
+          const link = `${baseUrl}/auth/magic?token=${encodeURIComponent(token)}`;
+          const emailContent = buildMagicLinkEmail({
+            name: participant.name,
+            link,
+            language: participant.language || "en",
+            expiryMinutes: 15,
+          });
+          sendEmail({ to: participant.email, ...emailContent }).catch(err =>
+            console.error("Failed to send magic link email:", err)
+          );
+        }
       }
       res.json({ ok: true });
     } catch (e: any) {
