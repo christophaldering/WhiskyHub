@@ -42,6 +42,7 @@ export default function AuthPage({ initialTab }: AuthPageProps) {
       ? t("auth.signInPageDesc", "Melde dich mit deiner E-Mail und deinem Passwort an.")
       : t("auth.registerPageDesc", "Erstelle dein CaskSense-Konto in wenigen Sekunden.");
 
+    const prevTitle = document.title;
     document.title = `${pageTitle} · ${baseTitle}`;
 
     const setMeta = (selector: string, attr: string, content: string) => {
@@ -67,7 +68,7 @@ export default function AuthPage({ initialTab }: AuthPageProps) {
     setMeta('meta[name="twitter:description"]', 'name="twitter:description"', description);
 
     return () => {
-      document.title = baseTitle;
+      document.title = prevTitle || baseTitle;
       if (prevDesc) setMeta('meta[name="description"]', 'name="description"', prevDesc);
       if (prevOgT) setMeta('meta[property="og:title"]', 'property="og:title"', prevOgT);
       if (prevOgD) setMeta('meta[property="og:description"]', 'property="og:description"', prevOgD);
