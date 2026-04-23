@@ -55,6 +55,10 @@ export default function LabsJoin() {
   const [issuedRejoinCode, setIssuedRejoinCode] = useState<string>("");
   const [rejoinCodeCopied, setRejoinCodeCopied] = useState(false);
 
+  const [showRejoinCodeUnavailable, setShowRejoinCodeUnavailable] = useState(false);
+  const [rejoinCodeRetryLoading, setRejoinCodeRetryLoading] = useState(false);
+  const [rejoinCodeRetryFailed, setRejoinCodeRetryFailed] = useState(false);
+
   const [showRejoinInput, setShowRejoinInput] = useState(false);
   const [rejoinCodeInput, setRejoinCodeInput] = useState("");
   const [rejoinError, setRejoinError] = useState("");
@@ -236,13 +240,36 @@ export default function LabsJoin() {
         setShowGuestName(false);
         setShowRejoinCodeScreen(true);
       } else {
-        navigate(`/labs/tastings/${pendingTasting.id}`);
+        setShowGuestName(false);
+        setShowRejoinCodeUnavailable(true);
       }
     } catch (e: unknown) {
       const msg = (e as Error).message || "";
       setGuestError(msg || "Could not join. Please try again.");
     } finally {
       setGuestLoading(false);
+    }
+  };
+
+  const handleRetryRejoinCode = async () => {
+    if (!pendingTasting) return;
+    setRejoinCodeRetryLoading(true);
+    setRejoinCodeRetryFailed(false);
+    try {
+      const fallback = await tastingApi.getMyRejoinCode(pendingTasting.id);
+      const rejoinCode = fallback.rejoinCode ?? null;
+      if (rejoinCode) {
+        setIssuedRejoinCode(rejoinCode);
+        setShowRejoinCodeUnavailable(false);
+        setShowRejoinCodeScreen(true);
+      } else {
+        setRejoinCodeRetryFailed(true);
+      }
+    } catch (err) {
+      console.warn("[LabsJoin] Retry rejoin-code fetch failed:", err);
+      setRejoinCodeRetryFailed(true);
+    } finally {
+      setRejoinCodeRetryLoading(false);
     }
   };
 
@@ -419,6 +446,73 @@ export default function LabsJoin() {
       handleGuestJoin();
     }
   };
+
+  if (showRejoinCodeUnavailable) {
+    return (
+      <div className="labs-page labs-fade-in" data-testid="labs-join-rejoin-unavailable">
+        <div className="text-center mb-8">
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+            style={{ background: "var(--labs-warning-muted, var(--labs-accent-muted))" }}
+          >
+            <AlertCircle className="w-7 h-7" style={{ color: "var(--labs-warning, var(--labs-accent))" }} />
+          </div>
+          <h1
+            className="labs-h1 mb-2"
+            style={{ color: "var(--labs-text)", fontSize: "1.5rem" }}
+            data-testid="labs-join-rejoin-unavailable-title"
+          >
+            {t("labs.rejoin.unavailableTitle", "Code konnte nicht geladen werden")}
+          </h1>
+          <p
+            className="text-sm max-w-sm mx-auto leading-relaxed"
+            style={{ color: "var(--labs-text-muted)" }}
+            data-testid="labs-join-rejoin-unavailable-desc"
+          >
+            {t(
+              "labs.rejoin.unavailableDesc",
+              "Dein Wiedereinstiegs-Code konnte leider nicht abgerufen werden. Du kannst es erneut versuchen oder direkt zum Tasting weitergehen – dein Beitritt war erfolgreich."
+            )}
+          </p>
+        </div>
+
+        <button
+          className="labs-btn-primary w-full flex items-center justify-center gap-2 mb-3"
+          onClick={handleRetryRejoinCode}
+          disabled={rejoinCodeRetryLoading}
+          data-testid="labs-join-rejoin-unavailable-retry"
+        >
+          {rejoinCodeRetryLoading ? (
+            <span className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
+          ) : (
+            <RotateCcw className="w-4 h-4" />
+          )}
+          {rejoinCodeRetryLoading
+            ? t("labs.rejoin.retrying", "Wird geladen…")
+            : t("labs.rejoin.retry", "Erneut versuchen")}
+        </button>
+
+        {rejoinCodeRetryFailed && (
+          <p
+            className="text-xs text-center mb-3"
+            style={{ color: "var(--labs-warning, var(--labs-text-muted))" }}
+            data-testid="labs-join-rejoin-unavailable-retry-failed"
+          >
+            {t("labs.rejoin.retryFailed", "Der Code ist leider weiterhin nicht verfügbar. Du kannst trotzdem am Tasting teilnehmen.")}
+          </p>
+        )}
+
+        <button
+          className="labs-btn-ghost w-full flex items-center justify-center gap-2"
+          onClick={() => pendingTasting && navigate(`/labs/tastings/${pendingTasting.id}`)}
+          data-testid="labs-join-rejoin-unavailable-continue"
+        >
+          <ArrowRight className="w-4 h-4" />
+          {t("labs.rejoin.continueWithout", "Ohne Code weiter")}
+        </button>
+      </div>
+    );
+  }
 
   if (showRejoinCodeScreen) {
     return (
