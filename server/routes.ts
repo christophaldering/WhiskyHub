@@ -2106,11 +2106,13 @@ export async function registerRoutes(
         contentType = "image/jpeg";
       }
       const coverImageUrl = await uploadBufferToObjectStorage(objectStorage, buffer, contentType);
-      const updated = await storage.updateTastingDetails(req.params.id, {
-        coverImageUploadUrl: coverImageUrl,
-        coverImageUrl,
-        coverImageSource: "upload",
-      });
+      const updates: Record<string, unknown> = { coverImageUploadUrl: coverImageUrl };
+      const hasActive = !!tasting.coverImageUrl && !!tasting.coverImageSource;
+      if (!hasActive) {
+        updates.coverImageUrl = coverImageUrl;
+        updates.coverImageSource = "upload";
+      }
+      const updated = await storage.updateTastingDetails(req.params.id, updates);
       res.json(updated);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
@@ -2136,12 +2138,16 @@ export async function registerRoutes(
       const buffer = Buffer.from(coverImageBase64, "base64");
       const contentType = (typeof mimeType === "string" && mimeType) || "image/jpeg";
       const url = await uploadBufferToObjectStorage(objectStorage, buffer, contentType);
-      const updated = await storage.updateTastingDetails(req.params.id, {
+      const updates: Record<string, unknown> = {
         coverImageAiUrl: url,
-        coverImageUrl: url,
-        coverImageSource: "ai",
         coverImageAiPrompt: typeof prompt === "string" && prompt.trim() ? prompt.trim() : null,
-      });
+      };
+      const hasActive = !!tasting.coverImageUrl && !!tasting.coverImageSource;
+      if (!hasActive) {
+        updates.coverImageUrl = url;
+        updates.coverImageSource = "ai";
+      }
+      const updated = await storage.updateTastingDetails(req.params.id, updates);
       res.json(updated);
     } catch (e: any) {
       console.error("Cover AI save error:", e);
@@ -2193,19 +2199,19 @@ export async function registerRoutes(
           return res.status(403).json({ message: "Only the host can remove the cover image" });
         }
       }
-      const upUrl = (tasting as any).coverImageUploadUrl as string | null;
-      const aiUrl = (tasting as any).coverImageAiUrl as string | null;
-      const updates: any = {};
+      const upUrl = tasting.coverImageUploadUrl ?? null;
+      const aiUrl = tasting.coverImageAiUrl ?? null;
+      const updates: Record<string, unknown> = {};
       if (slot === "upload") {
         updates.coverImageUploadUrl = null;
-        if ((tasting as any).coverImageSource === "upload" || tasting.coverImageUrl === upUrl) {
+        if (tasting.coverImageSource === "upload" || tasting.coverImageUrl === upUrl) {
           updates.coverImageUrl = aiUrl || null;
           updates.coverImageSource = aiUrl ? "ai" : null;
         }
       } else if (slot === "ai") {
         updates.coverImageAiUrl = null;
         updates.coverImageAiPrompt = null;
-        if ((tasting as any).coverImageSource === "ai" || tasting.coverImageUrl === aiUrl) {
+        if (tasting.coverImageSource === "ai" || tasting.coverImageUrl === aiUrl) {
           updates.coverImageUrl = upUrl || null;
           updates.coverImageSource = upUrl ? "upload" : null;
         }

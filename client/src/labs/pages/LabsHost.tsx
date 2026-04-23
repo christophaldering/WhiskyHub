@@ -3984,10 +3984,14 @@ function CoverImageManager({
   handleDeleteSlot: (s: "upload" | "ai") => Promise<void>;
 }) {
   const { t } = useTranslation();
-  const uploadUrl = (tasting.coverImageUploadUrl as string | null) || null;
   const aiUrl = (tasting.coverImageAiUrl as string | null) || null;
   const currentCoverUrl = (tasting.coverImageUrl as string | null) || null;
+  let uploadUrl = (tasting.coverImageUploadUrl as string | null) || null;
   let activeSource = (tasting.coverImageSource as string | null) || null;
+  // Legacy fallback: if no slot data exists but a coverImageUrl is present, treat it as an upload-slot legacy cover
+  if (!uploadUrl && !aiUrl && currentCoverUrl) {
+    uploadUrl = currentCoverUrl;
+  }
   if (!activeSource && currentCoverUrl) {
     if (aiUrl && currentCoverUrl === aiUrl) activeSource = "ai";
     else if (uploadUrl && currentCoverUrl === uploadUrl) activeSource = "upload";
@@ -4160,9 +4164,16 @@ function CoverImageManager({
             <h3 className="text-base font-semibold mb-2" style={{ color: "var(--labs-text)" }}>
               {t("labs.host.coverSwitchTitle")}
             </h3>
-            <p className="text-sm mb-4" style={{ color: "var(--labs-text-muted)" }}>
+            <p className="text-sm mb-3" style={{ color: "var(--labs-text-muted)" }}>
               {confirmSwitchTo === "upload" ? t("labs.host.coverSwitchToUpload") : t("labs.host.coverSwitchToAi")}
             </p>
+            <div className="mb-4">
+              <CoverImage16x9
+                src={confirmSwitchTo === "upload" ? uploadUrl : aiUrl}
+                rounded={10}
+                testId="labs-cover-switch-preview"
+              />
+            </div>
             <div className="flex gap-2 justify-end">
               <button className="labs-btn-ghost text-sm px-3 py-1.5" onClick={() => setConfirmSwitchTo(null)} data-testid="labs-cover-confirm-cancel">
                 {t("labs.host.cancel")}
