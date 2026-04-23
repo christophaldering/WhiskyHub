@@ -222,8 +222,17 @@ export default function LabsJoin() {
     try {
       const result = await tastingApi.guestJoin(pendingTasting.id, guestName.trim(), pendingCode);
       setGuestSession(result.id, result.name);
-      if (result.rejoinCode) {
-        setIssuedRejoinCode(result.rejoinCode);
+      let rejoinCode = result.rejoinCode;
+      if (!rejoinCode) {
+        try {
+          const fallback = await tastingApi.getMyRejoinCode(pendingTasting.id);
+          rejoinCode = fallback.rejoinCode ?? null;
+        } catch (fallbackErr) {
+          console.warn("[LabsJoin] Fallback rejoin-code fetch failed:", fallbackErr);
+        }
+      }
+      if (rejoinCode) {
+        setIssuedRejoinCode(rejoinCode);
         setShowGuestName(false);
         setShowRejoinCodeScreen(true);
       } else {

@@ -1190,6 +1190,15 @@ export class DatabaseStorage implements IStorage {
             .select()
             .from(tastingParticipants)
             .where(and(eq(tastingParticipants.tastingId, data.tastingId), eq(tastingParticipants.participantId, data.participantId)));
+          if (existing && !existing.rejoinCode) {
+            const backfillCode = generateRejoinCode();
+            const [updated] = await db
+              .update(tastingParticipants)
+              .set({ rejoinCode: backfillCode })
+              .where(and(eq(tastingParticipants.tastingId, data.tastingId), eq(tastingParticipants.participantId, data.participantId)))
+              .returning();
+            return updated ?? existing;
+          }
           return existing;
         }
         return result;
