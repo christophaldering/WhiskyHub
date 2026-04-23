@@ -6375,7 +6375,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         </div>
       )}
 
-      <div className="labs-auto-grid mb-6" style={{ "--grid-min": "120px" } as React.CSSProperties}>
+      <div className="grid grid-cols-3 gap-3 mb-6">
         <div className="labs-card p-4 text-center">
           <Wine className="w-5 h-5 mx-auto mb-2" style={{ color: "var(--labs-accent)" }} />
           <p className="text-lg font-bold" data-testid="labs-host-whisky-count">{whiskyCount}</p>

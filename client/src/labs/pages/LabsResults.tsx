@@ -1122,7 +1122,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
           <Sparkles className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
           <span className="labs-section-label" style={{ marginBottom: 0 }}>Session Summary</span>
         </div>
-        <div className="labs-auto-grid mb-4" style={{ "--grid-min": "120px", gap: "1rem" } as React.CSSProperties}>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
           <div className="text-center">
             <Wine className="w-4 h-4 mx-auto mb-1" style={{ color: "var(--labs-accent)" }} />
             <p className="text-lg font-bold" style={{ color: "var(--labs-text)" }}>{whiskies?.length || 0}</p>

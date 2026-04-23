@@ -881,7 +881,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         </div>
       )}
 
-      <div className="labs-auto-grid mb-6 labs-stagger-1" style={{ "--grid-min": "120px" } as React.CSSProperties}>
+      <div className="grid grid-cols-3 gap-3 mb-6 labs-stagger-1">
         <div className="labs-card p-3 text-center">
           <Wine className="w-4 h-4 mx-auto mb-1" style={{ color: "var(--labs-accent)" }} />
           <p className="text-lg font-bold" style={{ color: "var(--labs-text)" }} data-testid="labs-detail-whisky-count">
