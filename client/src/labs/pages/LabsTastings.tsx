@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo, useEffect } from "react";
 import { useLocation, useSearch, Link } from "wouter";
-import { Wine, Calendar, MapPin, ChevronRight, Search, Crown, PenLine, Users, Mail, Share2, Settings, Check } from "lucide-react";
+import { Wine, Calendar, MapPin, ChevronRight, Search, Crown, PenLine, Users, Mail, Share2, Settings, Check, LogIn } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, tastingHistoryApi, journalApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
@@ -324,16 +324,22 @@ export default function LabsTastings() {
           </p>
         </div>
 
-        <div className="labs-home-signin labs-fade-in labs-stagger-7">
-          <button
-            type="button"
-            className="ty-caption labs-home-signin-link"
-            onClick={() => openAuthDialog('signin')}
-            data-testid="labs-home-signin-link"
-          >
-            {t('home.haveAccount')}
-          </button>
-        </div>
+        <button
+          type="button"
+          className="labs-card labs-card-interactive labs-home-action-card labs-home-signin-card labs-fade-in labs-stagger-7"
+          onClick={() => openAuthDialog('signin')}
+          data-testid="labs-home-signin-link"
+        >
+          <div className="labs-home-action-icon">
+            <LogIn size={20} />
+          </div>
+          <div className="labs-home-action-text">
+            <div className="ty-ui">{t('home.loginButton')}</div>
+            <div className="ty-caption labs-home-action-sub">
+              {t('home.haveAccount')}
+            </div>
+          </div>
+        </button>
       </div>
     );
   }
