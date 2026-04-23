@@ -1292,7 +1292,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                           src={w.imageUrl as string}
                           alt=""
                           className="rounded-lg object-cover flex-shrink-0"
-                          style={{ width: 44, height: 52, border: "1px solid var(--labs-border)" }}
+                          style={{ width: 56, height: 64, border: "1px solid var(--labs-border)" }}
                           data-testid={`img-whisky-${w.id}`}
                         />
                       )}
