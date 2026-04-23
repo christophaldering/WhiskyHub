@@ -4512,8 +4512,8 @@ function TastingSetupSection({
     try {
       const res = await fetch(`/api/tastings/${tastingId}/cover-image`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hostId: pid, slot }),
+        headers: { "Content-Type": "application/json", ...(pid ? { "x-participant-id": pid } : {}) },
+        body: JSON.stringify({ slot }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
