@@ -2124,7 +2124,7 @@ export async function registerRoutes(
     try {
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
-      const requesterId = (req.headers["x-participant-id"] as string) || req.body?.hostId;
+      const requesterId = (req.headers["x-participant-id"] as string) || "";
       if (requesterId !== tasting.hostId) {
         const requester = requesterId ? await storage.getParticipant(requesterId) : null;
         if (!requester || requester.role !== "admin") {
@@ -2160,7 +2160,7 @@ export async function registerRoutes(
     try {
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
-      const requesterId = (req.headers["x-participant-id"] as string) || req.body?.hostId;
+      const requesterId = (req.headers["x-participant-id"] as string) || "";
       if (requesterId !== tasting.hostId) {
         const requester = requesterId ? await storage.getParticipant(requesterId) : null;
         if (!requester || requester.role !== "admin") {
@@ -2172,8 +2172,8 @@ export async function registerRoutes(
         return res.status(400).json({ message: "source must be 'upload' or 'ai'" });
       }
       const target = source === "upload"
-        ? (tasting as any).coverImageUploadUrl
-        : (tasting as any).coverImageAiUrl;
+        ? tasting.coverImageUploadUrl
+        : tasting.coverImageAiUrl;
       if (!target) {
         return res.status(400).json({ message: `No ${source} cover image available` });
       }
@@ -2192,7 +2192,7 @@ export async function registerRoutes(
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
       const { slot } = req.body || {};
-      const requesterId = (req.headers["x-participant-id"] as string) || req.body?.hostId;
+      const requesterId = (req.headers["x-participant-id"] as string) || "";
       if (requesterId !== tasting.hostId) {
         const requester = requesterId ? await storage.getParticipant(requesterId) : null;
         if (!requester || requester.role !== "admin") {

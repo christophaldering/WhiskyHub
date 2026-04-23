@@ -577,6 +577,14 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       await dbJournal.execute(sqlJ`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS tasting_invite_enabled boolean DEFAULT true`);
       log("Ensured profiles has all schema columns", "startup");
 
+      await dbJournal.execute(sqlJ`ALTER TABLE tastings ADD COLUMN IF NOT EXISTS cover_image_upload_url text`);
+      await dbJournal.execute(sqlJ`ALTER TABLE tastings ADD COLUMN IF NOT EXISTS cover_image_ai_url text`);
+      await dbJournal.execute(sqlJ`ALTER TABLE tastings ADD COLUMN IF NOT EXISTS cover_image_source text`);
+      await dbJournal.execute(sqlJ`ALTER TABLE tastings ADD COLUMN IF NOT EXISTS cover_image_ai_prompt text`);
+      // Backfill: legacy tastings with only cover_image_url get assigned to the upload slot
+      await dbJournal.execute(sqlJ`UPDATE tastings SET cover_image_upload_url = cover_image_url, cover_image_source = 'upload' WHERE cover_image_url IS NOT NULL AND cover_image_upload_url IS NULL AND cover_image_ai_url IS NULL AND cover_image_source IS NULL`);
+      log("Ensured tastings has cover-slot columns and backfilled legacy covers", "startup");
+
       // One-time migration: copy legacy 1:1 handout columns into the new
       // n:m whisky_handouts / tasting_handouts tables, only when no row yet
       // exists for the source. Idempotent — safe to run on every boot.
