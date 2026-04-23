@@ -844,23 +844,12 @@ function PrintMaterialsSection({
       });
       if (res.ok) {
         const data = await res.json();
-        const base64 = data.coverImageBase64 as string | undefined;
-        const mimeType = (data.mimeType as string | undefined) || "image/png";
-        let payload: { coverImageBase64: string; mimeType: string; prompt: string; hostId: string } | null = null;
-        if (base64) {
-          payload = { coverImageBase64: base64, mimeType, prompt: data.prompt || "", hostId: tasting.hostId as string };
-        } else if (data.imageUrl) {
-          const imgRes = await fetch(data.imageUrl);
-          const blob = await imgRes.blob();
-          const buf = await blob.arrayBuffer();
-          const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
-          payload = { coverImageBase64: b64, mimeType: blob.type || "image/png", prompt: data.prompt || "", hostId: tasting.hostId as string };
-        }
-        if (payload) {
+        const url = data.url as string | undefined;
+        if (url) {
           const saveRes = await fetch(`/api/tastings/${tasting.id}/cover-image-ai`, {
             method: "POST",
             headers: { "Content-Type": "application/json", ...(pid ? { "x-participant-id": pid } : {}) },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({ url, prompt: data.prompt || "", hostId: tasting.hostId as string }),
           });
           if (!saveRes.ok) {
             const err = await saveRes.json().catch(() => ({}));
@@ -3951,6 +3940,7 @@ function CoverImageManager({
   setAiPromptHint,
   aiPreview,
   setAiPreview,
+  aiCandidates,
   aiGenerating,
   aiSaving,
   confirmSwitchTo,
@@ -3971,8 +3961,9 @@ function CoverImageManager({
   setAiDialogOpen: (v: boolean) => void;
   aiPromptHint: string;
   setAiPromptHint: (v: string) => void;
-  aiPreview: { base64: string; mimeType: string; prompt: string } | null;
-  setAiPreview: (v: { base64: string; mimeType: string; prompt: string } | null) => void;
+  aiPreview: { url: string; prompt: string; mimeType?: string; generatedAt?: string } | null;
+  setAiPreview: (v: { url: string; prompt: string; mimeType?: string; generatedAt?: string } | null) => void;
+  aiCandidates: { url: string; prompt: string; mimeType: string; generatedAt: string }[];
   aiGenerating: boolean;
   aiSaving: boolean;
   confirmSwitchTo: "upload" | "ai" | null;
@@ -3998,7 +3989,7 @@ function CoverImageManager({
     if (aiUrl && currentCoverUrl === aiUrl) activeSource = "ai";
     else if (uploadUrl && currentCoverUrl === uploadUrl) activeSource = "upload";
   }
-  const aiPreviewSrc = aiPreview ? `data:${aiPreview.mimeType};base64,${aiPreview.base64}` : null;
+  const aiPreviewSrc = aiPreview ? aiPreview.url : null;
 
   const SlotCard = ({
     title,
@@ -4248,6 +4239,38 @@ function CoverImageManager({
             <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>
               {t("labs.host.coverAiDialogDesc")}
             </p>
+            {aiCandidates.length > 0 && (
+              <div className="mb-3" data-testid="labs-cover-ai-candidates">
+                <div className="text-xs font-semibold mb-1" style={{ color: "var(--labs-text-muted)" }}>
+                  {t("labs.host.coverAiCandidatesLabel")}
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {aiCandidates.map((c) => {
+                    const selected = aiPreview?.url === c.url;
+                    return (
+                      <button
+                        type="button"
+                        key={c.url}
+                        onClick={() => setAiPreview({ url: c.url, prompt: c.prompt, mimeType: c.mimeType, generatedAt: c.generatedAt })}
+                        className="rounded-md flex-shrink-0 overflow-hidden"
+                        style={{
+                          width: 96,
+                          height: 54,
+                          border: selected ? "2px solid var(--labs-accent)" : "1px solid var(--labs-border)",
+                          padding: 0,
+                          background: "var(--labs-surface)",
+                          cursor: "pointer",
+                        }}
+                        title={c.prompt}
+                        data-testid={`labs-cover-ai-candidate-${c.url}`}
+                      >
+                        <img src={c.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>
               {t("labs.host.coverAiPromptLabel")}
             </label>
@@ -4329,7 +4352,10 @@ function TastingSetupSection({
   // --- Cover Image Slot State ---
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [aiPromptHint, setAiPromptHint] = useState("");
-  const [aiPreview, setAiPreview] = useState<{ base64: string; mimeType: string; prompt: string } | null>(null);
+  const [aiPreview, setAiPreview] = useState<{ url: string; prompt: string; mimeType?: string; generatedAt?: string } | null>(null);
+  const aiCandidates = (Array.isArray((tasting as any).coverImageAiCandidates)
+    ? ((tasting as any).coverImageAiCandidates as { url: string; prompt: string; mimeType: string; generatedAt: string }[])
+    : []);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiSaving, setAiSaving] = useState(false);
   const [confirmSwitchTo, setConfirmSwitchTo] = useState<"upload" | "ai" | null>(null);
@@ -4436,27 +4462,43 @@ function TastingSetupSection({
   const handleGenerateAiPreview = async () => {
     setAiGenerating(true);
     setCoverActionError(null);
+    // Long-running (~30-60s) generation. Use a longer client timeout via AbortController.
+    const ctrl = new AbortController();
+    const timeoutId = setTimeout(() => ctrl.abort(), 180_000);
     try {
       const hint = aiPromptHint.trim();
       const res = await fetch(`/api/tastings/${tastingId}/menu-cover`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-participant-id": pid },
         body: JSON.stringify(hint ? { customPromptHint: hint } : {}),
+        signal: ctrl.signal,
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "KI-Generierung fehlgeschlagen");
+        const baseMsg = err.message || "KI-Generierung fehlgeschlagen";
+        if (res.status === 504 || res.status === 502) {
+          throw new Error("Die KI-Generierung dauert gerade zu lange. Bitte erneut versuchen — fertige Bilder erscheinen automatisch in der Auswahl.");
+        }
+        throw new Error(baseMsg);
       }
       const data = await res.json();
-      if (!data.coverImageBase64) throw new Error("KI lieferte kein Bild");
+      if (!data.url) throw new Error("KI lieferte kein Bild");
       setAiPreview({
-        base64: data.coverImageBase64,
-        mimeType: data.mimeType || "image/jpeg",
+        url: data.url,
         prompt: data.prompt || hint,
+        mimeType: data.mimeType || "image/jpeg",
+        generatedAt: data.generatedAt,
       });
+      // Refresh tasting so the candidate strip reflects the new entry.
+      queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
     } catch (e: any) {
-      setCoverActionError(e?.message || "KI-Generierung fehlgeschlagen");
+      if (e?.name === "AbortError") {
+        setCoverActionError("Zeitüberschreitung — bitte später erneut versuchen.");
+      } else {
+        setCoverActionError(e?.message || "KI-Generierung fehlgeschlagen");
+      }
     } finally {
+      clearTimeout(timeoutId);
       setAiGenerating(false);
     }
   };
@@ -4470,8 +4512,7 @@ function TastingSetupSection({
         method: "POST",
         headers: { "Content-Type": "application/json", "x-participant-id": pid },
         body: JSON.stringify({
-          coverImageBase64: aiPreview.base64,
-          mimeType: aiPreview.mimeType,
+          url: aiPreview.url,
           prompt: aiPreview.prompt,
         }),
       });
@@ -4810,6 +4851,7 @@ function TastingSetupSection({
             setAiPromptHint={setAiPromptHint}
             aiPreview={aiPreview}
             setAiPreview={setAiPreview}
+            aiCandidates={aiCandidates}
             aiGenerating={aiGenerating}
             aiSaving={aiSaving}
             confirmSwitchTo={confirmSwitchTo}

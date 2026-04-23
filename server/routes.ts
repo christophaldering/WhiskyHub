@@ -2212,7 +2212,13 @@ export async function registerRoutes(
       const { url: providedUrl, coverImageBase64, mimeType, prompt } = req.body || {};
       let url: string | null = null;
       if (typeof providedUrl === "string" && providedUrl.trim()) {
-        url = providedUrl.trim();
+        const candidate = providedUrl.trim();
+        // Only accept normalized object-storage paths (e.g. /objects/<id>) to
+        // prevent storing arbitrary external URLs in the AI cover slot.
+        if (!/^\/objects\/[A-Za-z0-9._\-\/]+$/.test(candidate)) {
+          return res.status(400).json({ message: "Invalid url: must be an object-storage path" });
+        }
+        url = candidate;
       } else if (typeof coverImageBase64 === "string" && coverImageBase64) {
         const buffer = Buffer.from(coverImageBase64, "base64");
         const contentType = (typeof mimeType === "string" && mimeType) || "image/jpeg";
@@ -20197,11 +20203,24 @@ User's style request: ${sanitizedPrompt}`;
         jpegBuffer = imageBuffer;
       }
 
-      const base64 = jpegBuffer.toString("base64");
-      res.json({
-        coverImageBase64: base64,
-        mimeType: "image/jpeg",
+      // Upload immediately to object storage so the response stays small (URL vs ~1MB base64).
+      // This avoids reverse-proxy buffer issues and ensures the candidate is persisted
+      // even if the client connection drops during the long generation roundtrip.
+      const url = await uploadBufferToObjectStorage(objectStorage, jpegBuffer, "image/jpeg");
+      const candidate = {
+        url,
         prompt: finalPrompt,
+        mimeType: "image/jpeg",
+        generatedAt: new Date().toISOString(),
+      };
+      try {
+        await storage.appendAiCoverCandidate(tastingId, candidate);
+      } catch (persistErr) {
+        console.error("Failed to persist AI cover candidate:", persistErr);
+      }
+
+      res.json({
+        ...candidate,
         context: {
           season,
           regions: Array.from(regions),
