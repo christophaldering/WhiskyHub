@@ -45,6 +45,7 @@ export default function AuthPage({ initialTab }: AuthPageProps) {
     const prevTitle = document.title;
     document.title = `${pageTitle} · ${baseTitle}`;
 
+    const createdByUs: HTMLMetaElement[] = [];
     const setMeta = (selector: string, attr: string, content: string) => {
       let el = document.head.querySelector<HTMLMetaElement>(selector);
       if (!el) {
@@ -52,6 +53,7 @@ export default function AuthPage({ initialTab }: AuthPageProps) {
         const [key, val] = attr.split("=");
         if (key && val) el.setAttribute(key, val.replace(/"/g, ""));
         document.head.appendChild(el);
+        createdByUs.push(el);
       }
       el.setAttribute("content", content);
     };
@@ -67,13 +69,23 @@ export default function AuthPage({ initialTab }: AuthPageProps) {
     setMeta('meta[name="twitter:title"]', 'name="twitter:title"', `${pageTitle} · ${baseTitle}`);
     setMeta('meta[name="twitter:description"]', 'name="twitter:description"', description);
 
+    const restoreMeta = (selector: string, attr: string, prev: string | null | undefined) => {
+      const el = document.head.querySelector<HTMLMetaElement>(selector);
+      if (!el) return;
+      if (prev != null) el.setAttribute("content", prev);
+    };
+
     return () => {
       document.title = prevTitle || baseTitle;
-      if (prevDesc) setMeta('meta[name="description"]', 'name="description"', prevDesc);
-      if (prevOgT) setMeta('meta[property="og:title"]', 'property="og:title"', prevOgT);
-      if (prevOgD) setMeta('meta[property="og:description"]', 'property="og:description"', prevOgD);
-      if (prevTwT) setMeta('meta[name="twitter:title"]', 'name="twitter:title"', prevTwT);
-      if (prevTwD) setMeta('meta[name="twitter:description"]', 'name="twitter:description"', prevTwD);
+      restoreMeta('meta[name="description"]', 'name="description"', prevDesc);
+      restoreMeta('meta[property="og:title"]', 'property="og:title"', prevOgT);
+      restoreMeta('meta[property="og:description"]', 'property="og:description"', prevOgD);
+      restoreMeta('meta[name="twitter:title"]', 'name="twitter:title"', prevTwT);
+      restoreMeta('meta[name="twitter:description"]', 'name="twitter:description"', prevTwD);
+      // Remove any meta tags this effect added that did not exist before.
+      for (const el of createdByUs) {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      }
     };
   }, [isSignIn, t]);
 
