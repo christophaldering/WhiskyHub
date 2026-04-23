@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import { Wine, ArrowRight, AlertCircle, LogIn, ChevronLeft, User, Mail, Calendar, KeyRound, MailCheck, Copy, Check, RotateCcw, Camera, Printer, Download, Upload, ShieldCheck } from "lucide-react";
+import { formatRejoinCode as fmtRejoinCode, extractRejoinCodeFromText as extractRejoin } from "@/labs/utils/rejoinCode";
 import { useSession, getSession, setGuestSession } from "@/lib/session";
 import { useIsEmbeddedInTastings } from "@/labs/embeddedTastingsContext";
 import { useAppStore } from "@/lib/store";
@@ -59,10 +60,7 @@ export default function LabsJoin() {
   const [rejoinError, setRejoinError] = useState("");
   const [rejoinLoading, setRejoinLoading] = useState(false);
 
-  const formatRejoinCode = (c: string) => {
-    const cleaned = (c || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-    return cleaned.length === 6 ? `${cleaned.slice(0, 3)}-${cleaned.slice(3)}` : cleaned;
-  };
+  const formatRejoinCode = fmtRejoinCode;
 
   const isLoggedIn = session.signedIn && !!currentParticipant;
   const [autoJoinAttempted, setAutoJoinAttempted] = useState(false);
@@ -311,15 +309,7 @@ export default function LabsJoin() {
     try { window.print(); } catch {}
   };
 
-  const extractRejoinCodeFromText = (text: string): string | null => {
-    const cleaned = (text || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-    const allowed = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    for (let i = 0; i + 6 <= cleaned.length; i++) {
-      const candidate = cleaned.slice(i, i + 6);
-      if ([...candidate].every(c => allowed.includes(c))) return candidate;
-    }
-    return null;
-  };
+  const extractRejoinCodeFromText = extractRejoin;
 
   const rejoinFileInputRef = useRef<HTMLInputElement>(null);
 

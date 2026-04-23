@@ -37,6 +37,7 @@ import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, inviteApi, guidedApi, friendsApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
 import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
+import { formatRejoinCode } from "@/labs/utils/rejoinCode";
 import { LabsParticipantDownloads } from "@/components/ParticipantDownloads";
 import type { Tasting, WhiskyFriend } from "@shared/schema";
 import QRCode from "qrcode";
@@ -178,10 +179,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
     staleTime: 5 * 60 * 1000,
   });
   const myRejoinCode = (myRejoinData?.isGuest && myRejoinData.rejoinCode) ? myRejoinData.rejoinCode : null;
-  const formatRejoinCode = (c: string | null | undefined) => {
-    const s = (c || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-    return s.length === 6 ? `${s.slice(0, 3)}-${s.slice(3)}` : s;
-  };
   const handleCopyMyRejoin = async () => {
     if (!myRejoinCode) return;
     try {
