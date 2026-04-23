@@ -97,7 +97,7 @@ function _tryParseSheet(sheet: XLSX.WorkSheet): any[] | null {
     const asStrings = row.map((c: any) => String(c).trim().toLowerCase());
     const matchedFields = asStrings.filter((s: string) => EXCEL_HEADER_MAP[s] !== undefined);
     const hasName = matchedFields.some((s: string) => EXCEL_HEADER_MAP[s] === "name");
-    if (matchedFields.length >= 2 || (matchedFields.length >= 1 && hasName)) {
+    if (matchedFields.length >= 3 || (matchedFields.length >= 2 && hasName)) {
       headerRowIdx = i;
       break;
     }
@@ -122,7 +122,7 @@ function _tryParseSheet(sheet: XLSX.WorkSheet): any[] | null {
   const firstCol = rawRows.map((r: any[]) => (r.length > 0 ? String(r[0]).trim().toLowerCase() : ""));
   const transposedMatchedFields = firstCol.filter((s: string) => EXCEL_HEADER_MAP[s] !== undefined);
   const transposedHasName = transposedMatchedFields.some((s: string) => EXCEL_HEADER_MAP[s] === "name");
-  if (transposedMatchedFields.length >= 2 || (transposedMatchedFields.length >= 1 && transposedHasName)) {
+  if (transposedMatchedFields.length >= 3 || (transposedMatchedFields.length >= 2 && transposedHasName)) {
     const attrRowIndices: number[] = [];
     const attrKeys: string[] = [];
     firstCol.forEach((label: string, idx: number) => {
@@ -153,6 +153,8 @@ function _tryParseSheet(sheet: XLSX.WorkSheet): any[] | null {
   return null;
 }
 
+const EXCEL_HELP_SHEET_RE = /^(instructions?|anleitung|hilfe|help|readme|tipps?|tips?|legend|legende|info|hinweise?|notes?)$/i;
+
 function parseExcelWhiskies(file: File): Promise<any[]> {
   if (file.size > EXCEL_MAX_SIZE) {
     return Promise.reject(new Error("Excel file too large (max 5 MB)."));
@@ -166,6 +168,7 @@ function parseExcelWhiskies(file: File): Promise<any[]> {
 
         let bestResult: any[] = [];
         for (const sheetName of workbook.SheetNames) {
+          if (EXCEL_HELP_SHEET_RE.test(sheetName.trim())) continue;
           const sheet = workbook.Sheets[sheetName];
           if (!sheet) continue;
           const result = _tryParseSheet(sheet);
