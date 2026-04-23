@@ -1,6 +1,25 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
+let modalOpenCount = 0;
+let originalBodyOverflow: string | null = null;
+
+function lockBodyScroll() {
+  if (modalOpenCount === 0) {
+    originalBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+  }
+  modalOpenCount += 1;
+}
+
+function unlockBodyScroll() {
+  modalOpenCount = Math.max(0, modalOpenCount - 1);
+  if (modalOpenCount === 0) {
+    document.body.style.overflow = originalBodyOverflow ?? "";
+    originalBodyOverflow = null;
+  }
+}
+
 type ModalPortalProps = {
   open: boolean;
   onClose: () => void;
@@ -28,10 +47,9 @@ export default function ModalPortal({
 
   useEffect(() => {
     if (!open) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    lockBodyScroll();
     return () => {
-      document.body.style.overflow = previousOverflow;
+      unlockBodyScroll();
     };
   }, [open]);
 
