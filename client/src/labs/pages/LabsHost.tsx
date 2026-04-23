@@ -3980,8 +3980,20 @@ function CoverImageManager({
   const { t } = useTranslation();
   const aiPromptRef = useRef<HTMLTextAreaElement>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
-  const [galleryItems, setGalleryItems] = useState<Array<{ id: string; imageUrl: string; prompt: string; mimeType: string; createdAt: string }>>([]);
+  const [galleryScope, setGalleryScope] = useState<"mine" | "community">("mine");
+  const [galleryItems, setGalleryItems] = useState<Array<{ id: string; imageUrl: string; prompt: string; mimeType: string; createdAt: string; ownerName: string | null }>>([]);
   const [galleryLoading, setGalleryLoading] = useState(false);
+  const loadGallery = useCallback(async (scope: "mine" | "community") => {
+    if (!pid) return;
+    setGalleryLoading(true);
+    try {
+      const r = await fetch(`/api/ai-images?scope=${scope}&limit=24`, { headers: { "x-participant-id": pid } });
+      if (r.ok) {
+        const data = await r.json();
+        setGalleryItems(data.items || []);
+      }
+    } catch {} finally { setGalleryLoading(false); }
+  }, [pid]);
   const aiUrl = (tasting.coverImageAiUrl as string | null) || null;
   const currentCoverUrl = (tasting.coverImageUrl as string | null) || null;
   let uploadUrl = (tasting.coverImageUploadUrl as string | null) || null;
@@ -4283,16 +4295,7 @@ function CoverImageManager({
                 onClick={async () => {
                   const next = !galleryOpen;
                   setGalleryOpen(next);
-                  if (next && galleryItems.length === 0 && pid) {
-                    setGalleryLoading(true);
-                    try {
-                      const r = await fetch(`/api/ai-images?scope=mine&limit=24`, { headers: { "x-participant-id": pid } });
-                      if (r.ok) {
-                        const data = await r.json();
-                        setGalleryItems(data.items || []);
-                      }
-                    } catch {} finally { setGalleryLoading(false); }
-                  }
+                  if (next && galleryItems.length === 0) await loadGallery(galleryScope);
                 }}
                 disabled={aiGenerating || aiSaving}
                 data-testid="labs-cover-ai-gallery-toggle"
@@ -4302,6 +4305,19 @@ function CoverImageManager({
               </button>
               {galleryOpen && (
                 <div className="mt-2" data-testid="labs-cover-ai-gallery">
+                  <div className="flex gap-1 mb-2">
+                    {(["mine", "community"] as const).map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={async () => { setGalleryScope(s); await loadGallery(s); }}
+                        className={galleryScope === s ? "labs-btn-primary text-xs px-2 py-0.5" : "labs-btn-ghost text-xs px-2 py-0.5"}
+                        data-testid={`labs-cover-ai-gallery-scope-${s}`}
+                      >
+                        {s === "mine" ? t("labs.aiImages.tabMine") : t("labs.aiImages.tabCommunity")}
+                      </button>
+                    ))}
+                  </div>
                   {galleryLoading ? (
                     <div className="flex items-center gap-2 text-xs" style={{ color: "var(--labs-text-muted)" }}>
                       <Loader2 className="w-3 h-3 animate-spin" /> {t("labs.host.loadingEllipsis")}
@@ -4327,6 +4343,9 @@ function CoverImageManager({
                             data-testid={`labs-cover-ai-gallery-item-${g.id}`}
                           >
                             <img src={g.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                            {galleryScope === "community" && g.ownerName && (
+                              <div className="text-[10px] truncate" style={{ color: "var(--labs-text-muted)", padding: "1px 4px" }}>{g.ownerName}</div>
+                            )}
                           </button>
                         );
                       })}

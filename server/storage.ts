@@ -1049,7 +1049,28 @@ export class DatabaseStorage implements IStorage {
     return row;
   }
 
-  async listAiImagesByOwner(ownerId: string, opts?: { search?: string; limit?: number; offset?: number }): Promise<AiImage[]> {
+  private async listAiImagesEnriched(conditions: SQL[], limit: number, offset: number) {
+    const rows = await db
+      .select({
+        img: aiImages,
+        ownerName: participants.name,
+        tastingTitle: tastings.title,
+      })
+      .from(aiImages)
+      .leftJoin(participants, eq(participants.id, aiImages.ownerId))
+      .leftJoin(tastings, eq(tastings.id, aiImages.tastingId))
+      .where(and(...conditions))
+      .orderBy(desc(aiImages.createdAt))
+      .limit(limit)
+      .offset(offset);
+    return rows.map((r) => ({
+      ...r.img,
+      ownerName: r.ownerName ?? null,
+      tastingTitle: r.tastingTitle ?? null,
+    }));
+  }
+
+  async listAiImagesByOwner(ownerId: string, opts?: { search?: string; limit?: number; offset?: number }) {
     const limit = Math.min(Math.max(opts?.limit ?? 60, 1), 200);
     const offset = Math.max(opts?.offset ?? 0, 0);
     const conditions: SQL[] = [eq(aiImages.ownerId, ownerId)];
@@ -1058,10 +1079,10 @@ export class DatabaseStorage implements IStorage {
       const like = `%${search.toLowerCase()}%`;
       conditions.push(sql`(lower(${aiImages.prompt}) LIKE ${like} OR lower(coalesce(${aiImages.promptHint}, '')) LIKE ${like} OR EXISTS (SELECT 1 FROM unnest(${aiImages.tags}) tag WHERE lower(tag) LIKE ${like}))`);
     }
-    return db.select().from(aiImages).where(and(...conditions)).orderBy(desc(aiImages.createdAt)).limit(limit).offset(offset);
+    return this.listAiImagesEnriched(conditions, limit, offset);
   }
 
-  async listCommunityAiImages(opts?: { search?: string; limit?: number; offset?: number }): Promise<AiImage[]> {
+  async listCommunityAiImages(opts?: { search?: string; limit?: number; offset?: number }) {
     const limit = Math.min(Math.max(opts?.limit ?? 60, 1), 200);
     const offset = Math.max(opts?.offset ?? 0, 0);
     const conditions: SQL[] = [eq(aiImages.visibility, "community")];
@@ -1070,7 +1091,7 @@ export class DatabaseStorage implements IStorage {
       const like = `%${search.toLowerCase()}%`;
       conditions.push(sql`(lower(${aiImages.prompt}) LIKE ${like} OR lower(coalesce(${aiImages.promptHint}, '')) LIKE ${like} OR EXISTS (SELECT 1 FROM unnest(${aiImages.tags}) tag WHERE lower(tag) LIKE ${like}))`);
     }
-    return db.select().from(aiImages).where(and(...conditions)).orderBy(desc(aiImages.createdAt)).limit(limit).offset(offset);
+    return this.listAiImagesEnriched(conditions, limit, offset);
   }
 
   async listAiImagesByImageUrl(imageUrl: string): Promise<AiImage[]> {

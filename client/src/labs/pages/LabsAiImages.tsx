@@ -1,18 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Loader2, Search, Trash2, Globe, Lock, Image as ImageIcon } from "lucide-react";
+import { useSearch, useLocation } from "wouter";
+import { Loader2, Search, Trash2, Globe, Lock, Image as ImageIcon, Copy, Check, ImagePlus } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import ModalPortal from "@/labs/components/ModalPortal";
 
 type AiImage = {
   id: string;
   ownerId: string;
+  ownerName: string | null;
   imageUrl: string;
   mimeType: string;
   prompt: string;
   promptHint: string | null;
   sourceContext: string;
   tastingId: string | null;
+  tastingTitle: string | null;
   tags: string[];
   visibility: "private" | "community";
   createdAt: string;
@@ -24,6 +27,12 @@ export default function LabsAiImages() {
   const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
   const pid = currentParticipant?.id || "";
+  const searchStr = useSearch();
+  const [, navigate] = useLocation();
+  const targetTastingId = useMemo(() => {
+    try { return new URLSearchParams(searchStr).get("tastingId"); } catch { return null; }
+  }, [searchStr]);
+
   const [scope, setScope] = useState<Scope>("mine");
   const [search, setSearch] = useState("");
   const [items, setItems] = useState<AiImage[]>([]);
@@ -31,6 +40,8 @@ export default function LabsAiImages() {
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<AiImage | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
   const debouncedSearch = useDebounce(search, 250);
 
@@ -51,7 +62,37 @@ export default function LabsAiImages() {
     return () => { cancelled = true; };
   }, [scope, debouncedSearch, pid]);
 
-  const reload = () => setSearch((s) => s);
+  const flashInfo = (m: string) => { setInfo(m); window.setTimeout(() => setInfo(null), 2000); };
+
+  const handleCopyPrompt = async (img: AiImage) => {
+    try {
+      await navigator.clipboard.writeText(img.prompt);
+      setCopiedId(img.id);
+      window.setTimeout(() => setCopiedId((id) => (id === img.id ? null : id)), 1500);
+    } catch (e: any) {
+      setError(e.message || "Failed to copy");
+    }
+  };
+
+  const handleUseAsCover = async (img: AiImage) => {
+    if (!targetTastingId || !pid) return;
+    setBusyId(img.id);
+    try {
+      const r = await fetch(`/api/tastings/${targetTastingId}/cover-image-ai`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-participant-id": pid },
+        body: JSON.stringify({ url: img.imageUrl, prompt: img.prompt }),
+      });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).message || "Failed");
+      flashInfo(t("labs.aiImages.usedAsCoverOk"));
+      setDetail(null);
+      window.setTimeout(() => navigate(`/labs/host/${targetTastingId}`), 600);
+    } catch (e: any) {
+      setError(e.message || "Failed to set as cover");
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   const handleToggleVisibility = async (img: AiImage) => {
     if (!pid || img.ownerId !== pid) return;
@@ -65,9 +106,7 @@ export default function LabsAiImages() {
       });
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).message || "Failed");
       setItems((rows) => {
-        if (scope === "community" && next === "private") {
-          return rows.filter((it) => it.id !== img.id);
-        }
+        if (scope === "community" && next === "private") return rows.filter((it) => it.id !== img.id);
         return rows.map((it) => (it.id === img.id ? { ...it, visibility: next } : it));
       });
       if (detail?.id === img.id) {
@@ -117,7 +156,7 @@ export default function LabsAiImages() {
         </h1>
       </div>
       <p className="text-sm mb-4" style={{ color: "var(--labs-text-muted)" }}>
-        {t("labs.aiImages.subtitle")}
+        {targetTastingId ? t("labs.aiImages.subtitlePicker") : t("labs.aiImages.subtitle")}
       </p>
 
       <div className="flex gap-2 mb-3" role="tablist">
@@ -156,6 +195,9 @@ export default function LabsAiImages() {
       {error && (
         <p className="text-xs mb-2" style={{ color: "var(--labs-error, #ef4444)" }} data-testid="text-ai-images-error">{error}</p>
       )}
+      {info && (
+        <p className="text-xs mb-2" style={{ color: "var(--labs-accent)" }} data-testid="text-ai-images-info">{info}</p>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center" style={{ minHeight: 200 }}>
@@ -171,7 +213,7 @@ export default function LabsAiImages() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
             gap: 12,
           }}
         >
@@ -188,12 +230,25 @@ export default function LabsAiImages() {
                 <img src={img.imageUrl} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
               </div>
               <div style={{ padding: "8px 10px" }}>
-                <div className="text-xs flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
+                <div className="text-xs flex items-center gap-1 mb-1" style={{ color: "var(--labs-text-muted)" }}>
                   {img.visibility === "community" ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
                   <span>{new Date(img.createdAt).toLocaleDateString()}</span>
+                  {scope === "community" && img.ownerName && (
+                    <span data-testid={`text-ai-image-owner-${img.id}`}>· {img.ownerName}</span>
+                  )}
                 </div>
+                {img.promptHint && (
+                  <div className="text-xs mb-1 truncate" style={{ color: "var(--labs-text)" }} title={img.promptHint} data-testid={`text-ai-image-hint-${img.id}`}>
+                    {img.promptHint}
+                  </div>
+                )}
+                {img.tastingTitle && (
+                  <div className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }} title={img.tastingTitle} data-testid={`text-ai-image-tasting-${img.id}`}>
+                    {t("labs.aiImages.fromTasting")}: {img.tastingTitle}
+                  </div>
+                )}
                 {img.tags.length > 0 && (
-                  <div className="text-xs mt-1 truncate" style={{ color: "var(--labs-text)" }} title={img.tags.join(", ")}>
+                  <div className="text-xs mt-1 truncate" style={{ color: "var(--labs-text-muted)" }} title={img.tags.join(", ")}>
                     {img.tags.slice(0, 3).join(" · ")}
                   </div>
                 )}
@@ -213,8 +268,10 @@ export default function LabsAiImages() {
             <div style={{ aspectRatio: "16/9", background: "var(--labs-surface)", borderRadius: 8, overflow: "hidden", marginBottom: 12 }}>
               <img src={detail.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
             </div>
-            <div className="text-xs mb-2" style={{ color: "var(--labs-text-muted)" }}>
-              {new Date(detail.createdAt).toLocaleString()}
+            <div className="text-xs mb-2 flex flex-wrap gap-x-2" style={{ color: "var(--labs-text-muted)" }}>
+              <span>{new Date(detail.createdAt).toLocaleString()}</span>
+              {detail.ownerName && <span>· {detail.ownerName}</span>}
+              {detail.tastingTitle && <span>· {t("labs.aiImages.fromTasting")}: {detail.tastingTitle}</span>}
             </div>
             {detail.promptHint && (
               <div className="text-sm mb-2" style={{ color: "var(--labs-text)" }}>
@@ -240,6 +297,25 @@ export default function LabsAiImages() {
               >
                 {t("labs.aiImages.close")}
               </button>
+              <button
+                className="labs-btn-secondary text-sm px-3 py-1.5 flex items-center gap-1"
+                onClick={() => handleCopyPrompt(detail)}
+                data-testid="button-ai-image-copy-prompt"
+              >
+                {copiedId === detail.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                {copiedId === detail.id ? t("labs.aiImages.copied") : t("labs.aiImages.copyPrompt")}
+              </button>
+              {targetTastingId && (
+                <button
+                  className="labs-btn-primary text-sm px-3 py-1.5 flex items-center gap-1"
+                  onClick={() => handleUseAsCover(detail)}
+                  disabled={busyId === detail.id}
+                  data-testid="button-ai-image-use-as-cover"
+                >
+                  <ImagePlus className="w-3 h-3" />
+                  {t("labs.aiImages.useAsCover")}
+                </button>
+              )}
               {detail.ownerId === pid && (
                 <>
                   <button
