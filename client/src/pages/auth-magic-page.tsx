@@ -91,6 +91,10 @@ export default function AuthMagicPage() {
     if (!pendingParticipant) return;
     setConsentLoading(true);
     try {
+      // The consent endpoint is gated by requireOwnerOrAdmin, which checks
+      // session_pid. The same pattern is used by AuthFlowPanel's PIN consent
+      // gate before a session is fully established.
+      try { sessionStorage.setItem("session_pid", pendingParticipant.id); } catch {}
       await participantApi.acceptPrivacyConsent(pendingParticipant.id);
       finishLogin(pendingParticipant);
     } catch (e: unknown) {
