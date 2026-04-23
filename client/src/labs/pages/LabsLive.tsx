@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useLabsBack } from "@/labs/LabsLayout";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
-import { Wine, ChevronLeft, ChevronRight, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, Monitor, Sparkles, Settings } from "lucide-react";
+import { Wine, ChevronLeft, ChevronRight, ChevronDown, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, Monitor, Sparkles, Settings, Pencil } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
@@ -718,6 +718,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
   const [activeDim, setActiveDim] = useState<ActiveTab>("nose");
   const [flavorExpanded, setFlavorExpanded] = useState(false);
   const [studioOpen, setStudioOpen] = useState(false);
+  const [expandedCalIdx, setExpandedCalIdx] = useState<number | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [revealFlash, setRevealFlash] = useState(false);
 
@@ -1525,40 +1526,107 @@ export default function LabsLive({ params }: LabsLiveProps) {
                           const rating = myAllRatings.find((r: any) => r.whiskyId === w.id);
                           const overall = rating?.overall;
                           const isActive = idx === currentIndex;
+                          const isExpanded = expandedCalIdx === idx;
                           const idxRevealed = getFreeRevealedFields(idx);
                           const idxNameHidden = tasting?.blindMode && !idxRevealed.has("name");
                           const label = idxNameHidden
                             ? `Dram ${String.fromCharCode(65 + idx)}`
                             : (w.name || `Dram ${idx + 1}`);
                           return (
-                            <button
-                              key={w.id}
-                              type="button"
-                              onClick={() => { setCurrentIndex(idx); }}
-                              style={{
-                                width: "100%", display: "flex", alignItems: "center", gap: 10,
-                                padding: "8px 10px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit",
-                                background: isActive ? "var(--labs-accent-muted)" : "transparent",
-                                border: isActive ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border-subtle, var(--labs-border))",
-                                transition: "all 0.15s",
-                              }}
-                              data-testid={`calibration-row-${idx}`}
-                            >
-                              <span className="text-[11px] font-bold tabular-nums" style={{ color: "var(--labs-text-muted)", width: 18, textAlign: "center", flexShrink: 0 }}>
-                                {idx + 1}
-                              </span>
-                              <span className="text-xs font-medium truncate flex-1 text-left" style={{ color: isActive ? "var(--labs-accent)" : "var(--labs-text)" }}>
-                                {label}
-                              </span>
-                              <div style={{ width: 60, height: 6, borderRadius: 3, background: "var(--labs-border)", flexShrink: 0, overflow: "hidden" }}>
-                                {overall != null && (
-                                  <div style={{ width: `${(overall / maxScore) * 100}%`, height: "100%", borderRadius: 3, background: isActive ? "var(--labs-accent)" : "var(--labs-text-muted)", transition: "width 0.3s" }} />
-                                )}
-                              </div>
-                              <span className="text-xs font-bold tabular-nums" style={{ color: overall != null ? (isActive ? "var(--labs-accent)" : "var(--labs-text)") : "var(--labs-text-muted)", width: 28, textAlign: "right", flexShrink: 0 }}>
-                                {overall != null ? overall : "—"}
-                              </span>
-                            </button>
+                            <div key={w.id} style={{ borderRadius: 8, overflow: "hidden", border: isActive ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border-subtle, var(--labs-border))", transition: "border-color 0.15s" }}>
+                              <button
+                                type="button"
+                                onClick={() => setExpandedCalIdx(isExpanded ? null : idx)}
+                                style={{
+                                  width: "100%", display: "flex", alignItems: "center", gap: 10,
+                                  padding: "8px 10px", cursor: "pointer", fontFamily: "inherit",
+                                  background: isActive ? "var(--labs-accent-muted)" : "transparent",
+                                  border: "none",
+                                  transition: "all 0.15s",
+                                }}
+                                data-testid={`calibration-row-${idx}`}
+                              >
+                                <span className="text-[11px] font-bold tabular-nums" style={{ color: "var(--labs-text-muted)", width: 18, textAlign: "center", flexShrink: 0 }}>
+                                  {idx + 1}
+                                </span>
+                                <span className="text-xs font-medium truncate flex-1 text-left" style={{ color: isActive ? "var(--labs-accent)" : "var(--labs-text)" }}>
+                                  {label}
+                                </span>
+                                <div style={{ width: 60, height: 6, borderRadius: 3, background: "var(--labs-border)", flexShrink: 0, overflow: "hidden" }}>
+                                  {overall != null && (
+                                    <div style={{ width: `${(overall / maxScore) * 100}%`, height: "100%", borderRadius: 3, background: isActive ? "var(--labs-accent)" : "var(--labs-text-muted)", transition: "width 0.3s" }} />
+                                  )}
+                                </div>
+                                <span className="text-xs font-bold tabular-nums" style={{ color: overall != null ? (isActive ? "var(--labs-accent)" : "var(--labs-text)") : "var(--labs-text-muted)", width: 28, textAlign: "right", flexShrink: 0 }}>
+                                  {overall != null ? overall : "—"}
+                                </span>
+                                <ChevronDown
+                                  style={{ width: 13, height: 13, flexShrink: 0, color: "var(--labs-text-muted)", transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }}
+                                />
+                              </button>
+                              {isExpanded && (
+                                <div style={{ padding: "10px 10px 12px", borderTop: "1px solid var(--labs-border-subtle, var(--labs-border))", background: "var(--labs-surface-alt, rgba(255,255,255,0.02))" }} data-testid={`calibration-detail-${idx}`}>
+                                  {rating ? (
+                                    <>
+                                      <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                                        {(["nose", "taste", "finish"] as const).map((dim) => {
+                                          const val = (rating as any)[dim];
+                                          const pct = val != null ? Math.max(0, Math.min(100, ((val - 60) / 40) * 100)) : 0;
+                                          return (
+                                            <div key={dim} style={{ flex: 1 }}>
+                                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                                                <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: "var(--labs-text-muted)" }}>
+                                                  {dim}
+                                                </span>
+                                                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--labs-text-secondary)", fontVariantNumeric: "tabular-nums" }} data-testid={`cal-dim-${idx}-${dim}`}>
+                                                  {val != null ? val : "—"}
+                                                </span>
+                                              </div>
+                                              <div style={{ height: 4, borderRadius: 2, background: "var(--labs-border)", overflow: "hidden" }}>
+                                                <div style={{ height: "100%", width: val != null ? `${pct}%` : "0%", borderRadius: 2, background: "var(--labs-accent)", transition: "width 0.3s ease" }} />
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => { setCurrentIndex(idx); setExpandedCalIdx(null); }}
+                                        data-testid={`calibration-edit-${idx}`}
+                                        style={{
+                                          display: "inline-flex", alignItems: "center", gap: 5,
+                                          fontSize: 11, fontWeight: 600, fontFamily: "inherit",
+                                          color: "var(--labs-accent)", background: "none",
+                                          border: "1px solid var(--labs-accent)", borderRadius: 6,
+                                          padding: "4px 10px", cursor: "pointer",
+                                        }}
+                                      >
+                                        <Pencil style={{ width: 11, height: 11 }} />
+                                        Bearbeiten
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>Noch nicht bewertet</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => { setCurrentIndex(idx); setExpandedCalIdx(null); }}
+                                        data-testid={`calibration-rate-${idx}`}
+                                        style={{
+                                          display: "inline-flex", alignItems: "center", gap: 5,
+                                          fontSize: 11, fontWeight: 600, fontFamily: "inherit",
+                                          color: "var(--labs-accent)", background: "none",
+                                          border: "1px solid var(--labs-accent)", borderRadius: 6,
+                                          padding: "4px 10px", cursor: "pointer",
+                                        }}
+                                      >
+                                        Jetzt bewerten
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           );
                         })}
                       </div>
