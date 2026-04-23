@@ -4300,8 +4300,8 @@ function CoverImageManager({
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </ModalPortal>
     </div>
   );
 }
