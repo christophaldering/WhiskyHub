@@ -147,6 +147,23 @@ async function preBuildMigrations() {
       await pool.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${column} ${type}`);
     }
     console.log("pre-build: ensured all columns exist");
+
+    try {
+      const dedupeRes = await pool.query(`
+        DELETE FROM tasting_participants tp
+        USING tasting_participants tp2
+        WHERE tp.tasting_id = tp2.tasting_id
+          AND tp.participant_id = tp2.participant_id
+          AND tp.joined_at > tp2.joined_at
+      `);
+      if ((dedupeRes.rowCount ?? 0) > 0) {
+        console.log(`pre-build: removed ${dedupeRes.rowCount} duplicate tasting_participants rows`);
+      }
+      await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_tasting_participant ON tasting_participants (tasting_id, participant_id)`);
+      console.log("pre-build: ensured uq_tasting_participant index exists");
+    } catch (e: any) {
+      console.log(`pre-build: tasting_participants unique index note: ${e.message}`);
+    }
   } catch (e: any) {
     console.log(`pre-build migration note: ${e.message}`);
   } finally {
