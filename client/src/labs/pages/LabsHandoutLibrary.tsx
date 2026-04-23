@@ -1661,7 +1661,7 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <strong style={{ fontSize: 13, color: "var(--labs-text)" }}>
                   {uploadIntent === "sammel" ? t("labs.handoutLibrary.uploadIntent.sammelTitle", { defaultValue: "Sammel-PDF zerlegen" })
-                    : uploadIntent === "single" ? t("labs.handoutLibrary.uploadIntent.singleTitle", { defaultValue: "Einzel-Handout für einen Whisky" })
+                    : uploadIntent === "single" ? t("labs.handoutLibrary.uploadIntent.singleTitle", { defaultValue: "Handout hochladen — Einzel-Whisky oder Sammel-PDF" })
                     : uploadIntent === "multi" ? t("labs.handoutLibrary.uploadIntent.multiTitle", { defaultValue: "Mehrere Handouts auf einmal" })
                     : t("labs.handoutLibrary.uploadIntent.pickerTitle", { defaultValue: "Wie möchtest du hochladen?" })}
                 </strong>
@@ -1847,16 +1847,32 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                   {t("labs.handoutLibrary.analyzeErrorHint", { defaultValue: "KI-Vorausfüllung nicht möglich – bitte Felder manuell ergänzen." })}
                 </div>
               )}
+              {multiItems.length === 0 && !analyzing && !analyzeError && (
+                <div
+                  style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: -4, lineHeight: 1.45 }}
+                  data-testid="text-handout-ai-hint"
+                >
+                  {t("labs.handoutLibrary.uploadIntent.singleAiHint", { defaultValue: "Die KI liest die Datei und füllt die Felder unten automatisch aus (Whisky-Name, Brennerei, Alter, Fassart …) — funktioniert für Einzel-Handouts wie auch Sammel-PDFs." })}
+                </div>
+              )}
               {multiItems.length === 0 && (
-                <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--labs-text)", cursor: "pointer" }}>
-                  <input
-                    type="checkbox"
-                    checked={uploadForm.splitProgramme}
-                    onChange={(e) => setUploadForm({ ...uploadForm, splitProgramme: e.target.checked })}
-                    data-testid="checkbox-handout-as-programme"
-                  />
-                  {t("labs.handoutLibrary.uploadIntent.sammelTitle", { defaultValue: "Sammel-PDF zerlegen" })}
-                </label>
+                <div style={{ display: "grid", gap: 2 }}>
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--labs-text)", cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={uploadForm.splitProgramme}
+                      onChange={(e) => setUploadForm({ ...uploadForm, splitProgramme: e.target.checked })}
+                      data-testid="checkbox-handout-as-programme"
+                    />
+                    {t("labs.handoutLibrary.uploadIntent.sammelTitle", { defaultValue: "Sammel-PDF zerlegen" })}
+                  </label>
+                  <div
+                    style={{ fontSize: 11, color: "var(--labs-text-muted)", marginLeft: 22, lineHeight: 1.4 }}
+                    data-testid="text-handout-sammel-hint"
+                  >
+                    {t("labs.handoutLibrary.uploadIntent.sammelCheckboxHint", { defaultValue: "Mehrere Whiskys in einem PDF — wird nach dem Hochladen automatisch in einzelne Handouts aufgeteilt." })}
+                  </div>
+                </div>
               )}
               {multiItems.length === 0 && uploadForm.splitProgramme && (
                 <div style={{ display: "grid", gap: 8 }}>
