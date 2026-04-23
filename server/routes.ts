@@ -2861,7 +2861,8 @@ export async function registerRoutes(
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
       const row = await storage.getTastingParticipantRow(tasting.id, auth.participant.id);
       if (!row) return res.status(404).json({ message: "Not a participant of this tasting" });
-      res.json({ rejoinCode: row.rejoinCode || null });
+      const isGuest = (auth.participant.experienceLevel || "") === "guest";
+      res.json({ rejoinCode: isGuest ? (row.rejoinCode || null) : null, isGuest });
     } catch (e: any) {
       res.status(400).json({ message: e.message });
     }

@@ -32,7 +32,6 @@ import {
   Gauge,
   RotateCcw,
   KeyRound,
-  Camera,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, inviteApi, guidedApi, friendsApi } from "@/lib/api";
@@ -170,17 +169,15 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
 
   const isHost = tasting && currentParticipant && tasting.hostId === currentParticipant.id;
 
-  const participantEmail = typeof window !== "undefined" ? localStorage.getItem("casksense_participant_email") : null;
-  const isGuestParticipant = !!currentParticipant && !participantEmail;
   const [showRejoinSheet, setShowRejoinSheet] = useState(false);
   const [rejoinSheetCopied, setRejoinSheetCopied] = useState(false);
-  const { data: myRejoinData } = useQuery<{ rejoinCode: string | null }>({
+  const { data: myRejoinData } = useQuery<{ rejoinCode: string | null; isGuest: boolean }>({
     queryKey: ["my-rejoin-code", tastingId, currentParticipant?.id],
     queryFn: () => tastingApi.getMyRejoinCode(tastingId),
-    enabled: !!tastingId && !!currentParticipant?.id && isGuestParticipant,
+    enabled: !!tastingId && !!currentParticipant?.id,
     staleTime: 5 * 60 * 1000,
   });
-  const myRejoinCode = myRejoinData?.rejoinCode || null;
+  const myRejoinCode = (myRejoinData?.isGuest && myRejoinData.rejoinCode) ? myRejoinData.rejoinCode : null;
   const formatRejoinCode = (c: string | null | undefined) => {
     const s = (c || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     return s.length === 6 ? `${s.slice(0, 3)}-${s.slice(3)}` : s;
@@ -197,7 +194,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
     if (!myRejoinCode) return;
     try {
       const code = formatRejoinCode(myRejoinCode);
-      const tastingCode = (tasting && (tasting as any).code) ? String((tasting as any).code).toUpperCase() : "";
+      const tastingCode = tasting?.code ? String(tasting.code).toUpperCase() : "";
       const lines = [
         "CASKSENSE — WIEDEREINSTIEGS-CODE",
         "==================================",
@@ -495,7 +492,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 {String(tasting.title ?? "")}
               </h1>
               <div className="flex items-center gap-2 flex-shrink-0">
-                {isGuestParticipant && myRejoinCode && (
+                {myRejoinCode && (
                   <button
                     type="button"
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
