@@ -35,8 +35,11 @@ export default function LabsAiImages() {
 
   const [scope, setScope] = useState<Scope>("mine");
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<"desc" | "asc">("desc");
   const [items, setItems] = useState<AiImage[]>([]);
+  const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<AiImage | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -44,23 +47,45 @@ export default function LabsAiImages() {
   const [info, setInfo] = useState<string | null>(null);
 
   const debouncedSearch = useDebounce(search, 250);
+  const PAGE_SIZE = 60;
 
   useEffect(() => {
     if (!pid) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
-    const params = new URLSearchParams({ scope, ...(debouncedSearch ? { q: debouncedSearch } : {}) });
+    const params = new URLSearchParams({ scope, sort, limit: String(PAGE_SIZE), offset: "0", ...(debouncedSearch ? { q: debouncedSearch } : {}) });
     fetch(`/api/ai-images?${params.toString()}`, { headers: { "x-participant-id": pid } })
       .then(async (r) => {
         if (!r.ok) throw new Error((await r.json().catch(() => ({}))).message || `HTTP ${r.status}`);
         return r.json();
       })
-      .then((data) => { if (!cancelled) setItems(data.items || []); })
+      .then((data) => {
+        if (cancelled) return;
+        setItems(data.items || []);
+        setHasMore(!!data.hasMore);
+      })
       .catch((e) => { if (!cancelled) setError(e.message || "Failed to load"); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [scope, debouncedSearch, pid]);
+  }, [scope, sort, debouncedSearch, pid]);
+
+  const handleLoadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const params = new URLSearchParams({ scope, sort, limit: String(PAGE_SIZE), offset: String(items.length), ...(debouncedSearch ? { q: debouncedSearch } : {}) });
+      const r = await fetch(`/api/ai-images?${params.toString()}`, { headers: { "x-participant-id": pid } });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).message || `HTTP ${r.status}`);
+      const data = await r.json();
+      setItems((prev) => [...prev, ...((data.items as AiImage[]) || [])]);
+      setHasMore(!!data.hasMore);
+    } catch (e: any) {
+      setError(e.message || "Failed to load more");
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const flashInfo = (m: string) => { setInfo(m); window.setTimeout(() => setInfo(null), 2000); };
 
@@ -180,16 +205,28 @@ export default function LabsAiImages() {
         </button>
       </div>
 
-      <div className="relative mb-4" style={{ maxWidth: 480 }}>
-        <Search className="w-4 h-4 absolute" style={{ left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--labs-text-muted)", pointerEvents: "none" }} />
-        <input
-          className="labs-input w-full"
-          style={{ paddingLeft: 32 }}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={t("labs.aiImages.searchPlaceholder")}
-          data-testid="input-ai-images-search"
-        />
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <div className="relative" style={{ flex: "1 1 240px", maxWidth: 480 }}>
+          <Search className="w-4 h-4 absolute" style={{ left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--labs-text-muted)", pointerEvents: "none" }} />
+          <input
+            className="labs-input w-full"
+            style={{ paddingLeft: 32 }}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("labs.aiImages.searchPlaceholder")}
+            data-testid="input-ai-images-search"
+          />
+        </div>
+        <select
+          className="labs-input text-sm"
+          value={sort}
+          onChange={(e) => setSort(e.target.value === "asc" ? "asc" : "desc")}
+          data-testid="select-ai-images-sort"
+          aria-label={t("labs.aiImages.sortLabel")}
+        >
+          <option value="desc">{t("labs.aiImages.sortNewest")}</option>
+          <option value="asc">{t("labs.aiImages.sortOldest")}</option>
+        </select>
       </div>
 
       {error && (
@@ -255,6 +292,21 @@ export default function LabsAiImages() {
               </div>
             </button>
           ))}
+        </div>
+      )}
+
+      {!loading && hasMore && items.length > 0 && (
+        <div className="flex justify-center mt-4">
+          <button
+            type="button"
+            className="labs-btn-secondary text-sm px-3 py-1.5 flex items-center gap-1"
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+            data-testid="button-ai-images-load-more"
+          >
+            {loadingMore && <Loader2 className="w-3 h-3 animate-spin" />}
+            {t("labs.aiImages.loadMore")}
+          </button>
         </div>
       )}
 

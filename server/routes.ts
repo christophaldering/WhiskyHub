@@ -2253,11 +2253,12 @@ export async function registerRoutes(
       const search = (req.query.q as string) || "";
       const limit = Math.min(parseInt((req.query.limit as string) || "60", 10) || 60, 200);
       const offset = Math.max(parseInt((req.query.offset as string) || "0", 10) || 0, 0);
+      const sort: "desc" | "asc" = (req.query.sort as string) === "asc" ? "asc" : "desc";
       let rows;
       if (scope === "community") {
-        rows = await storage.listCommunityAiImages({ search, limit, offset });
+        rows = await storage.listCommunityAiImages({ search, limit, offset, sort, excludeOwnerId: requesterId });
       } else {
-        rows = await storage.listAiImagesByOwner(requesterId, { search, limit, offset });
+        rows = await storage.listAiImagesByOwner(requesterId, { search, limit, offset, sort });
       }
       res.json({ items: rows, hasMore: rows.length >= limit });
     } catch (e: any) {

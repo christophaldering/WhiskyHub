@@ -3983,17 +3983,33 @@ function CoverImageManager({
   const [galleryScope, setGalleryScope] = useState<"mine" | "community">("mine");
   const [galleryItems, setGalleryItems] = useState<Array<{ id: string; imageUrl: string; prompt: string; mimeType: string; createdAt: string; ownerName: string | null }>>([]);
   const [galleryLoading, setGalleryLoading] = useState(false);
+  const [galleryHasMore, setGalleryHasMore] = useState(false);
+  const [galleryLoadingMore, setGalleryLoadingMore] = useState(false);
+  const GALLERY_PAGE = 24;
   const loadGallery = useCallback(async (scope: "mine" | "community") => {
     if (!pid) return;
     setGalleryLoading(true);
     try {
-      const r = await fetch(`/api/ai-images?scope=${scope}&limit=24`, { headers: { "x-participant-id": pid } });
+      const r = await fetch(`/api/ai-images?scope=${scope}&limit=${GALLERY_PAGE}&offset=0`, { headers: { "x-participant-id": pid } });
       if (r.ok) {
         const data = await r.json();
         setGalleryItems(data.items || []);
+        setGalleryHasMore(!!data.hasMore);
       }
     } catch {} finally { setGalleryLoading(false); }
   }, [pid]);
+  const loadMoreGallery = useCallback(async () => {
+    if (!pid || galleryLoadingMore || !galleryHasMore) return;
+    setGalleryLoadingMore(true);
+    try {
+      const r = await fetch(`/api/ai-images?scope=${galleryScope}&limit=${GALLERY_PAGE}&offset=${galleryItems.length}`, { headers: { "x-participant-id": pid } });
+      if (r.ok) {
+        const data = await r.json();
+        setGalleryItems((prev) => [...prev, ...((data.items as typeof galleryItems) || [])]);
+        setGalleryHasMore(!!data.hasMore);
+      }
+    } catch {} finally { setGalleryLoadingMore(false); }
+  }, [pid, galleryScope, galleryItems, galleryLoadingMore, galleryHasMore]);
   const aiUrl = (tasting.coverImageAiUrl as string | null) || null;
   const currentCoverUrl = (tasting.coverImageUrl as string | null) || null;
   let uploadUrl = (tasting.coverImageUploadUrl as string | null) || null;
@@ -4349,6 +4365,20 @@ function CoverImageManager({
                           </button>
                         );
                       })}
+                    </div>
+                  )}
+                  {galleryHasMore && !galleryLoading && (
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        className="labs-btn-ghost text-xs px-2 py-0.5 flex items-center gap-1"
+                        onClick={loadMoreGallery}
+                        disabled={galleryLoadingMore}
+                        data-testid="labs-cover-ai-gallery-load-more"
+                      >
+                        {galleryLoadingMore && <Loader2 className="w-3 h-3 animate-spin" />}
+                        {t("labs.aiImages.loadMore")}
+                      </button>
                     </div>
                   )}
                 </div>

@@ -5868,6 +5868,10 @@ const resources = {
           copied: "Copied",
           useAsCover: "Use as cover",
           usedAsCoverOk: "Cover updated. Returning to tasting…",
+          loadMore: "Load more",
+          sortLabel: "Sort by date",
+          sortNewest: "Newest first",
+          sortOldest: "Oldest first",
         },
         handoutCommunity: {
           intro: "Here you'll find handouts that other hosts have shared with the community. Adopt an entry into your own library with a single click.",
@@ -15095,6 +15099,10 @@ const resources = {
           copied: "Kopiert",
           useAsCover: "Als Cover verwenden",
           usedAsCoverOk: "Cover aktualisiert. Zurück zum Tasting…",
+          loadMore: "Mehr laden",
+          sortLabel: "Nach Datum sortieren",
+          sortNewest: "Neueste zuerst",
+          sortOldest: "Älteste zuerst",
         },
         handoutCommunity: {
           intro: "Hier siehst du Handouts, die andere Hosts mit der Community geteilt haben. Übernimm einen Eintrag mit einem Klick in deine eigene Bibliothek.",
