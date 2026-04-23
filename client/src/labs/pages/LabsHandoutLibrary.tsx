@@ -504,6 +504,31 @@ function HandoutLinksSection({ entry, hostId, t, onOpenWhisky, onOpenTasting, lo
 }
 
 function HandoutDetailSheet({ entry, isPdf, metaParts, actions, onClose, t, hostId, onOpenWhisky, onOpenTasting, locale }: HandoutDetailSheetProps) {
+  const [isDesktop, setIsDesktop] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(min-width: 640px)").matches;
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(min-width: 640px)");
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    if (mq.addEventListener) mq.addEventListener("change", handler);
+    else mq.addListener(handler);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", handler);
+      else mq.removeListener(handler);
+    };
+  }, []);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
   return (
     <div
       role="dialog"
@@ -513,8 +538,10 @@ function HandoutDetailSheet({ entry, isPdf, metaParts, actions, onClose, t, host
       style={{
         position: "fixed", inset: 0, zIndex: 100,
         background: "rgba(0,0,0,0.5)",
-        display: "flex", alignItems: "flex-end", justifyContent: "center",
-        padding: 0,
+        display: "flex",
+        alignItems: isDesktop ? "center" : "flex-end",
+        justifyContent: "center",
+        padding: isDesktop ? 16 : 0,
       }}
       data-testid={`handout-detail-sheet-${entry.id}`}
     >
@@ -524,9 +551,11 @@ function HandoutDetailSheet({ entry, isPdf, metaParts, actions, onClose, t, host
         style={{
           width: "100%", maxWidth: 480,
           padding: "20px 20px 24px",
-          margin: "auto auto 0",
-          borderRadius: "var(--labs-radius) var(--labs-radius) 0 0",
-          maxHeight: "85vh", overflowY: "auto",
+          margin: isDesktop ? "auto" : "auto auto 0",
+          borderRadius: isDesktop
+            ? "var(--labs-radius)"
+            : "var(--labs-radius) var(--labs-radius) 0 0",
+          maxHeight: isDesktop ? "90vh" : "85vh", overflowY: "auto",
           display: "flex", flexDirection: "column", gap: 14,
         }}
       >
