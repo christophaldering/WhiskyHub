@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
-import { Wine, ArrowRight, AlertCircle, LogIn, ChevronLeft, User, Mail, Calendar, KeyRound, MailCheck, Copy, Check, RotateCcw } from "lucide-react";
+import { Wine, ArrowRight, AlertCircle, LogIn, ChevronLeft, User, Mail, Calendar, KeyRound, MailCheck, Copy, Check, RotateCcw, Camera, Printer, Download, Upload, ShieldCheck } from "lucide-react";
 import { useSession, getSession, setGuestSession } from "@/lib/session";
 import { useIsEmbeddedInTastings } from "@/labs/embeddedTastingsContext";
 import { useAppStore } from "@/lib/store";
@@ -268,6 +268,82 @@ export default function LabsJoin() {
     } catch {}
   };
 
+  const buildRejoinFileContent = () => {
+    const code = formatRejoinCode(issuedRejoinCode);
+    const lines = [
+      "CASKSENSE — WIEDEREINSTIEGS-CODE",
+      "==================================",
+      "",
+      `Code:           ${code}`,
+      pendingCode ? `Tasting-Code:   ${pendingCode.toUpperCase()}` : "",
+      guestName.trim() ? `Name:           ${guestName.trim()}` : "",
+      `Ausgestellt am: ${new Date().toLocaleString("de-DE")}`,
+      "",
+      "So nutzt du diesen Code:",
+      "1. Öffne CaskSense erneut (z. B. auf einem anderen Gerät).",
+      "2. Wähle 'Tasting beitreten' und gib den Tasting-Code ein.",
+      "3. Klicke auf 'Schon dabei? Wiedereinstiegs-Code eingeben'.",
+      "4. Tippe diesen Code ein – oder lade diese Datei hoch.",
+      "",
+      "Bewahre diese Datei sicher auf, damit du jederzeit zu deinen",
+      "Bewertungen zurückkehren kannst.",
+      "",
+    ].filter(Boolean);
+    return lines.join("\n");
+  };
+
+  const handleDownloadRejoinFile = () => {
+    try {
+      const content = buildRejoinFileContent();
+      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `casksense-wiedereinstieg-${formatRejoinCode(issuedRejoinCode).replace(/-/g, "")}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {}
+  };
+
+  const handlePrintRejoinCode = () => {
+    try { window.print(); } catch {}
+  };
+
+  const extractRejoinCodeFromText = (text: string): string | null => {
+    const cleaned = (text || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const allowed = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    for (let i = 0; i + 6 <= cleaned.length; i++) {
+      const candidate = cleaned.slice(i, i + 6);
+      if ([...candidate].every(c => allowed.includes(c))) return candidate;
+    }
+    return null;
+  };
+
+  const rejoinFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleRejoinFileUpload = async (file: File | null) => {
+    if (!file) return;
+    setRejoinError("");
+    const MAX_BYTES = 256 * 1024;
+    if (file.size > MAX_BYTES) {
+      setRejoinError(t("labs.rejoin.fileTooLarge", "Datei ist zu groß. Bitte eine kleine Textdatei (.txt) wählen."));
+      return;
+    }
+    try {
+      const text = await file.text();
+      const code = extractRejoinCodeFromText(text);
+      if (!code) {
+        setRejoinError(t("labs.rejoin.fileNoCode", "In dieser Datei wurde kein gültiger Wiedereinstiegs-Code gefunden."));
+        return;
+      }
+      setRejoinCodeInput(code);
+    } catch {
+      setRejoinError(t("labs.rejoin.fileReadError", "Datei konnte nicht gelesen werden."));
+    }
+  };
+
   const handleContinueAfterRejoinCode = () => {
     if (!pendingTasting) return;
     setShowRejoinCodeScreen(false);
@@ -347,67 +423,138 @@ export default function LabsJoin() {
 
   if (showRejoinCodeScreen) {
     return (
-      <div className="labs-page labs-fade-in">
-        <div className="text-center mb-6">
-          <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ background: "var(--labs-success-muted)" }}
-          >
-            <Check className="w-7 h-7" style={{ color: "var(--labs-success)" }} />
-          </div>
-          <h1
-            className="labs-h1 mb-2"
-            style={{ color: "var(--labs-text)" }}
-            data-testid="labs-join-rejoin-code-title"
-          >
-            {t("labs.rejoin.savedTitle", "Dein Wiedereinstiegs-Code")}
-          </h1>
-          <p
-            className="text-sm"
-            style={{ color: "var(--labs-text-muted)" }}
-          >
-            {t("labs.rejoin.savedDesc", "Notiere dir diesen Code. Falls du dein Gerät wechselst oder der Browser deine Sitzung vergisst, kommst du damit zurück zu deinem Teilnehmer und behältst alle Bewertungen.")}
-          </p>
-        </div>
+      <div className="labs-page labs-fade-in" data-testid="labs-join-rejoin-hero">
+        <style>{`
+          @media print {
+            body * { visibility: hidden; }
+            #rejoin-hero-print, #rejoin-hero-print * { visibility: visible; }
+            #rejoin-hero-print { position: absolute; left: 0; top: 0; width: 100%; padding: 32px; }
+            .no-print { display: none !important; }
+          }
+        `}</style>
 
-        <div
-          className="labs-card p-6 text-center mb-4"
-          style={{ background: "var(--labs-accent-muted)" }}
-        >
-          <div
-            className="text-4xl font-bold tracking-widest mb-3 select-all"
-            style={{ color: "var(--labs-accent)", fontFamily: "monospace", letterSpacing: "0.15em" }}
-            data-testid="labs-join-rejoin-code-value"
-          >
-            {formatRejoinCode(issuedRejoinCode)}
+        <div id="rejoin-hero-print">
+          <div className="text-center mb-4">
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4"
+              style={{ background: "var(--labs-success-muted)", color: "var(--labs-success)" }}
+            >
+              <Check className="w-3.5 h-3.5" />
+              {t("labs.rejoin.joinedBadge", "Beitritt erfolgreich")}
+            </div>
+            <h1
+              className="labs-h1 mb-2"
+              style={{ color: "var(--labs-text)", fontSize: "1.75rem" }}
+              data-testid="labs-join-rejoin-code-title"
+            >
+              {t("labs.rejoin.savedTitle", "Dein Wiedereinstiegs-Code")}
+            </h1>
+            <p
+              className="text-sm max-w-md mx-auto"
+              style={{ color: "var(--labs-text-muted)" }}
+            >
+              {t("labs.rejoin.heroIntro", "Mit diesem persönlichen Code kommst du jederzeit zurück zu deinem Teilnehmer – auch von einem anderen Gerät oder Browser. Alle deine Bewertungen bleiben erhalten.")}
+            </p>
           </div>
-          <button
-            className="labs-btn-ghost inline-flex items-center gap-2 text-sm"
-            onClick={handleCopyRejoinCode}
-            data-testid="labs-join-rejoin-code-copy"
+
+          <div
+            className="rounded-3xl p-8 sm:p-12 text-center mb-5"
+            style={{
+              background: "linear-gradient(135deg, var(--labs-accent-muted) 0%, var(--labs-surface) 100%)",
+              border: "2px solid var(--labs-accent)",
+              boxShadow: "0 10px 40px -10px rgba(0,0,0,0.15)",
+            }}
           >
-            {rejoinCodeCopied ? (
-              <>
-                <Check className="w-4 h-4" />
-                {t("labs.rejoin.copied", "Kopiert")}
-              </>
-            ) : (
-              <>
-                <Copy className="w-4 h-4" />
-                {t("labs.rejoin.copy", "Code kopieren")}
-              </>
+            <div
+              className="text-[10px] sm:text-xs font-semibold uppercase tracking-[0.2em] mb-3"
+              style={{ color: "var(--labs-accent)" }}
+            >
+              {t("labs.rejoin.codeLabelLong", "Dein Wiedereinstiegs-Code")}
+            </div>
+            <div
+              className="font-bold mb-4 select-all leading-none break-all"
+              style={{
+                color: "var(--labs-accent)",
+                fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+                letterSpacing: "0.12em",
+                fontSize: "clamp(2.75rem, 12vw, 5.5rem)",
+              }}
+              data-testid="labs-join-rejoin-code-value"
+            >
+              {formatRejoinCode(issuedRejoinCode)}
+            </div>
+            {(pendingCode || guestName.trim()) && (
+              <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs mb-5" style={{ color: "var(--labs-text-muted)" }}>
+                {guestName.trim() && (
+                  <span>{t("labs.rejoin.heroFor", "Für")}: <strong style={{ color: "var(--labs-text)" }}>{guestName.trim()}</strong></span>
+                )}
+                {pendingCode && (
+                  <span>{t("labs.rejoin.heroTasting", "Tasting-Code")}: <strong style={{ color: "var(--labs-text)" }}>{pendingCode.toUpperCase()}</strong></span>
+                )}
+              </div>
             )}
+            <button
+              className="labs-btn-ghost inline-flex items-center gap-2 text-sm no-print"
+              onClick={handleCopyRejoinCode}
+              data-testid="labs-join-rejoin-code-copy"
+            >
+              {rejoinCodeCopied ? (
+                <><Check className="w-4 h-4" />{t("labs.rejoin.copied", "Kopiert")}</>
+              ) : (
+                <><Copy className="w-4 h-4" />{t("labs.rejoin.copy", "Code kopieren")}</>
+              )}
+            </button>
+          </div>
+
+          <div
+            className="rounded-2xl p-4 mb-5 flex items-start gap-3 no-print"
+            style={{
+              background: "var(--labs-warning-muted, var(--labs-accent-muted))",
+              border: "1px solid var(--labs-warning, var(--labs-accent))",
+            }}
+            data-testid="labs-join-rejoin-screenshot-hint"
+          >
+            <Camera className="w-6 h-6 flex-shrink-0 mt-0.5" style={{ color: "var(--labs-warning, var(--labs-accent))" }} />
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-sm mb-0.5" style={{ color: "var(--labs-text)" }}>
+                {t("labs.rejoin.screenshotTitle", "Mach jetzt einen Screenshot!")}
+              </div>
+              <div className="text-xs leading-relaxed" style={{ color: "var(--labs-text-muted)" }}>
+                {t("labs.rejoin.screenshotDesc", "Speichere diesen Bildschirm als Foto in deiner Galerie – das ist der schnellste Weg, den Code wiederzufinden. Alternativ kannst du ihn unten drucken oder als Datei speichern.")}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 mb-5 no-print">
+            <button
+              className="labs-btn-ghost flex items-center justify-center gap-2 py-3 text-sm"
+              onClick={handlePrintRejoinCode}
+              data-testid="labs-join-rejoin-print"
+              style={{ border: "1px solid var(--labs-border-subtle)" }}
+            >
+              <Printer className="w-4 h-4" />
+              {t("labs.rejoin.print", "Drucken")}
+            </button>
+            <button
+              className="labs-btn-ghost flex items-center justify-center gap-2 py-3 text-sm"
+              onClick={handleDownloadRejoinFile}
+              data-testid="labs-join-rejoin-download"
+              style={{ border: "1px solid var(--labs-border-subtle)" }}
+            >
+              <Download className="w-4 h-4" />
+              {t("labs.rejoin.download", "Als Datei speichern")}
+            </button>
+          </div>
+
+          <button
+            className="labs-btn-primary w-full flex items-center justify-center gap-2 no-print"
+            onClick={handleContinueAfterRejoinCode}
+            data-testid="labs-join-rejoin-code-continue"
+          >
+            {t("labs.rejoin.continue", "Weiter zum Tasting")}
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
-
-        <button
-          className="labs-btn-primary w-full flex items-center justify-center gap-2"
-          onClick={handleContinueAfterRejoinCode}
-          data-testid="labs-join-rejoin-code-continue"
-        >
-          {t("labs.rejoin.continue", "Weiter zum Tasting")}
-          <ArrowRight className="w-4 h-4" />
-        </button>
       </div>
     );
   }
@@ -459,6 +606,32 @@ export default function LabsJoin() {
                 maxLength={8}
                 autoFocus
                 data-testid="labs-join-rejoin-input"
+              />
+            </div>
+
+            <div className="text-center">
+              <button
+                type="button"
+                className="labs-btn-ghost inline-flex items-center gap-2 text-xs"
+                onClick={() => rejoinFileInputRef.current?.click()}
+                data-testid="labs-join-rejoin-upload-label"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                {t("labs.rejoin.uploadFile", "Wiedereinstiegs-Datei hochladen")}
+              </button>
+              <input
+                ref={rejoinFileInputRef}
+                type="file"
+                accept=".txt,text/plain"
+                style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0,0,0,0)", border: 0 }}
+                tabIndex={-1}
+                aria-hidden="true"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  handleRejoinFileUpload(file);
+                  e.target.value = "";
+                }}
+                data-testid="labs-join-rejoin-upload-input"
               />
             </div>
 
