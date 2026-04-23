@@ -1695,15 +1695,22 @@ export async function registerRoutes(
       // Always respond OK to prevent email enumeration; only send if account exists
       // and is not blocked. Verification-blocked status is intentionally not surfaced
       // here; the user will see it during the actual login flow.
+      // Resolve a trusted absolute base URL for the magic link. Falling back to
+      // request headers (host / x-forwarded-host) would let an attacker poison
+      // the magic-link target via header injection and perform an
+      // account-takeover. We only accept explicitly configured env vars.
+      // Trusted sources: explicit env vars, or the platform-provided Replit
+      // domain (set by the runtime, not by user-controlled request headers).
+      const replitDomain = (process.env.REPLIT_DOMAINS || process.env.REPLIT_DEV_DOMAIN || "").split(",")[0]?.trim();
+      const replitBase = replitDomain ? `https://${replitDomain}` : "";
+      const rawBase = (process.env.PUBLIC_BASE_URL || process.env.APP_BASE_URL || replitBase || "").trim();
+      const baseUrl = rawBase ? rawBase.replace(/\/+$/, "") : "";
+      if (!baseUrl) {
+        console.error("[magic-link] No trusted base URL configured (set PUBLIC_BASE_URL or APP_BASE_URL); refusing to send login-link email");
+        return res.status(503).json({ message: "Login links are temporarily unavailable. Please use PIN sign-in or try again later." });
+      }
       if (participant && participant.email && !checkEmailVerification(participant).blocked) {
-        // Refuse to send a link if no trusted base URL is configured. Falling
-        // back to request headers (host / x-forwarded-host) would let an
-        // attacker poison the magic-link target via header injection and
-        // perform an account-takeover on a user who simply requested a link.
-        const baseUrl = process.env.PUBLIC_BASE_URL?.replace(/\/+$/, "");
-        if (!baseUrl) {
-          console.error("[magic-link] PUBLIC_BASE_URL is not configured; refusing to send login-link email");
-        } else {
+        {
           const token = crypto.randomBytes(32).toString("base64url");
           const expiry = new Date(Date.now() + 15 * 60 * 1000);
           await storage.setLoginLinkToken(participant.id, token, expiry);
