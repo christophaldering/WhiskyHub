@@ -59,6 +59,10 @@ export const tastings = pgTable("tastings", {
   customPrompts: text("custom_prompts"), // JSON array of custom prompt strings
   coverImageUrl: text("cover_image_url"),
   coverImageRevealed: boolean("cover_image_revealed").default(false),
+  coverImageUploadUrl: text("cover_image_upload_url"),
+  coverImageAiUrl: text("cover_image_ai_url"),
+  coverImageSource: text("cover_image_source"), // null | 'upload' | 'ai'
+  coverImageAiPrompt: text("cover_image_ai_prompt"),
   videoLink: text("video_link"),
   dramStartedAt: timestamp("dram_started_at"),
   dramTimers: text("dram_timers"), // JSON: { [whiskyId]: accumulatedSeconds }

@@ -24,6 +24,7 @@ import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import type { RatingData } from "@/labs/components/rating/types";
 import { useRatingScale } from "@/labs/hooks/useRatingScale";
 import LabsHostCockpit from "@/labs/pages/LabsHostCockpit";
+import CoverImage16x9 from "@/labs/components/CoverImage16x9";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi, collectionApi, wishlistApi } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
@@ -842,13 +843,30 @@ function PrintMaterialsSection({
       });
       if (res.ok) {
         const data = await res.json();
-        const imageUrl = data.imageUrl || (data.coverImageBase64 ? `data:${data.mimeType || "image/png"};base64,${data.coverImageBase64}` : null);
-        if (imageUrl) {
-          const imgRes = await fetch(imageUrl);
+        const base64 = data.coverImageBase64 as string | undefined;
+        const mimeType = (data.mimeType as string | undefined) || "image/png";
+        let payload: { coverImageBase64: string; mimeType: string; prompt: string; hostId: string } | null = null;
+        if (base64) {
+          payload = { coverImageBase64: base64, mimeType, prompt: data.prompt || "", hostId: tasting.hostId as string };
+        } else if (data.imageUrl) {
+          const imgRes = await fetch(data.imageUrl);
           const blob = await imgRes.blob();
-          const file = new File([blob], "ai-cover.png", { type: blob.type || "image/png" });
-          await tastingApi.uploadCoverImage(tastingId, file, pid || (tasting.hostId as string));
-          queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+          const buf = await blob.arrayBuffer();
+          const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+          payload = { coverImageBase64: b64, mimeType: blob.type || "image/png", prompt: data.prompt || "", hostId: tasting.hostId as string };
+        }
+        if (payload) {
+          const saveRes = await fetch(`/api/tastings/${tasting.id}/cover-image-ai`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...(pid ? { "x-participant-id": pid } : {}) },
+            body: JSON.stringify(payload),
+          });
+          if (!saveRes.ok) {
+            const err = await saveRes.json().catch(() => ({}));
+            console.error("AI cover save failed:", err);
+          } else {
+            queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+          }
         }
       }
     } catch (e) {
@@ -3920,6 +3938,360 @@ function GuidedTastingEngine({
   );
 }
 
+function CoverImageManager({
+  tasting,
+  localCoverUrl,
+  coverUploadError,
+  coverActionError,
+  handleCoverUpload,
+  aiDialogOpen,
+  setAiDialogOpen,
+  aiPromptHint,
+  setAiPromptHint,
+  aiPreview,
+  setAiPreview,
+  aiGenerating,
+  aiSaving,
+  confirmSwitchTo,
+  setConfirmSwitchTo,
+  confirmDeleteSlot,
+  setConfirmDeleteSlot,
+  handleGenerateAiPreview,
+  handleSaveAiCover,
+  handleSwitchSource,
+  handleDeleteSlot,
+}: {
+  tasting: Record<string, unknown>;
+  localCoverUrl: string | null;
+  coverUploadError: string | null;
+  coverActionError: string | null;
+  handleCoverUpload: (file: File) => Promise<void>;
+  aiDialogOpen: boolean;
+  setAiDialogOpen: (v: boolean) => void;
+  aiPromptHint: string;
+  setAiPromptHint: (v: string) => void;
+  aiPreview: { base64: string; mimeType: string; prompt: string } | null;
+  setAiPreview: (v: { base64: string; mimeType: string; prompt: string } | null) => void;
+  aiGenerating: boolean;
+  aiSaving: boolean;
+  confirmSwitchTo: "upload" | "ai" | null;
+  setConfirmSwitchTo: (v: "upload" | "ai" | null) => void;
+  confirmDeleteSlot: "upload" | "ai" | null;
+  setConfirmDeleteSlot: (v: "upload" | "ai" | null) => void;
+  handleGenerateAiPreview: () => Promise<void>;
+  handleSaveAiCover: () => Promise<void>;
+  handleSwitchSource: (s: "upload" | "ai") => Promise<void>;
+  handleDeleteSlot: (s: "upload" | "ai") => Promise<void>;
+}) {
+  const { t } = useTranslation();
+  const uploadUrl = (tasting.coverImageUploadUrl as string | null) || null;
+  const aiUrl = (tasting.coverImageAiUrl as string | null) || null;
+  const currentCoverUrl = (tasting.coverImageUrl as string | null) || null;
+  let activeSource = (tasting.coverImageSource as string | null) || null;
+  if (!activeSource && currentCoverUrl) {
+    if (aiUrl && currentCoverUrl === aiUrl) activeSource = "ai";
+    else if (uploadUrl && currentCoverUrl === uploadUrl) activeSource = "upload";
+  }
+  const aiPreviewSrc = aiPreview ? `data:${aiPreview.mimeType};base64,${aiPreview.base64}` : null;
+
+  const SlotCard = ({
+    title,
+    src,
+    isActive,
+    isEmpty,
+    actions,
+    testId,
+  }: {
+    title: string;
+    src: string | null;
+    isActive: boolean;
+    isEmpty: boolean;
+    actions: React.ReactNode;
+    testId: string;
+  }) => (
+    <div
+      className="rounded-xl p-3 flex flex-col gap-2"
+      style={{
+        background: "var(--labs-surface)",
+        border: isActive ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border)",
+        boxShadow: isActive ? "0 0 0 2px rgba(212,162,86,0.18)" : "none",
+      }}
+      data-testid={testId}
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{title}</span>
+        {isActive && (
+          <span
+            className="text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"
+            style={{ color: "var(--labs-accent)", background: "rgba(212,162,86,0.12)", padding: "2px 8px", borderRadius: 6 }}
+            data-testid={`${testId}-active-badge`}
+          >
+            <Check className="w-3 h-3" /> {t("labs.host.coverActiveBadge")}
+          </span>
+        )}
+      </div>
+      {isEmpty ? (
+        <div
+          className="flex items-center justify-center text-xs"
+          style={{ aspectRatio: "16 / 9", borderRadius: 10, border: "1px dashed var(--labs-border)", color: "var(--labs-text-muted)" }}
+        >
+          {t("labs.host.coverSlotEmpty")}
+        </div>
+      ) : (
+        <CoverImage16x9 src={src} testId={`${testId}-preview`} rounded={10} />
+      )}
+      <div className="flex flex-wrap gap-1.5">{actions}</div>
+    </div>
+  );
+
+  return (
+    <div data-testid="labs-settings-cover-block">
+      <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
+        <Image className="w-3 h-3" />
+        {t("labs.host.coverImage")}
+      </label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <SlotCard
+          title={t("labs.host.coverSlotUpload")}
+          src={localCoverUrl || uploadUrl}
+          isActive={activeSource === "upload" && !!uploadUrl}
+          isEmpty={!localCoverUrl && !uploadUrl}
+          testId="labs-cover-slot-upload"
+          actions={
+            <>
+              <label
+                className="labs-btn-ghost text-xs px-2 py-1 rounded cursor-pointer flex items-center gap-1"
+                data-testid="labs-cover-upload-btn"
+              >
+                <Upload className="w-3 h-3" />
+                {uploadUrl ? t("labs.host.coverReplace") : t("labs.host.uploadCover")}
+                <input
+                  type="file"
+                  accept={IMAGE_ACCEPT_STRING}
+                  style={{ display: "none" }}
+                  onChange={(e) => { if (e.target.files?.[0]) handleCoverUpload(e.target.files[0]); }}
+                />
+              </label>
+              {uploadUrl && activeSource !== "upload" && (
+                <button
+                  className="labs-btn-ghost text-xs px-2 py-1 rounded flex items-center gap-1"
+                  style={{ color: "var(--labs-accent)" }}
+                  onClick={() => setConfirmSwitchTo("upload")}
+                  data-testid="labs-cover-use-upload"
+                >
+                  <Check className="w-3 h-3" />
+                  {t("labs.host.coverUseAsTitle")}
+                </button>
+              )}
+              {uploadUrl && (
+                <button
+                  className="labs-btn-ghost text-xs px-2 py-1 rounded flex items-center gap-1"
+                  style={{ color: "var(--labs-text-muted)" }}
+                  onClick={() => setConfirmDeleteSlot("upload")}
+                  data-testid="labs-cover-delete-upload"
+                >
+                  ×
+                </button>
+              )}
+            </>
+          }
+        />
+        <SlotCard
+          title={t("labs.host.coverSlotAi")}
+          src={aiUrl}
+          isActive={activeSource === "ai" && !!aiUrl}
+          isEmpty={!aiUrl}
+          testId="labs-cover-slot-ai"
+          actions={
+            <>
+              <button
+                className="labs-btn-ghost text-xs px-2 py-1 rounded flex items-center gap-1"
+                onClick={() => setAiDialogOpen(true)}
+                data-testid="labs-cover-ai-open"
+              >
+                <Sparkles className="w-3 h-3" style={{ color: "var(--labs-accent)" }} />
+                {aiUrl ? t("labs.host.coverAiRegenerate") : t("labs.host.coverAiGenerate")}
+              </button>
+              {aiUrl && activeSource !== "ai" && (
+                <button
+                  className="labs-btn-ghost text-xs px-2 py-1 rounded flex items-center gap-1"
+                  style={{ color: "var(--labs-accent)" }}
+                  onClick={() => setConfirmSwitchTo("ai")}
+                  data-testid="labs-cover-use-ai"
+                >
+                  <Check className="w-3 h-3" />
+                  {t("labs.host.coverUseAsTitle")}
+                </button>
+              )}
+              {aiUrl && (
+                <button
+                  className="labs-btn-ghost text-xs px-2 py-1 rounded flex items-center gap-1"
+                  style={{ color: "var(--labs-text-muted)" }}
+                  onClick={() => setConfirmDeleteSlot("ai")}
+                  data-testid="labs-cover-delete-ai"
+                >
+                  ×
+                </button>
+              )}
+            </>
+          }
+        />
+      </div>
+
+      {(coverUploadError || coverActionError) && (
+        <p className="text-xs mt-2" style={{ color: "var(--labs-error, #ef4444)" }} data-testid="labs-settings-cover-error">
+          {coverUploadError || coverActionError}
+        </p>
+      )}
+
+      {/* Confirm-Switch Dialog */}
+      {confirmSwitchTo && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+          onClick={() => setConfirmSwitchTo(null)}
+          data-testid="labs-cover-confirm-switch"
+        >
+          <div
+            className="rounded-xl p-5 max-w-sm w-full"
+            style={{ background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold mb-2" style={{ color: "var(--labs-text)" }}>
+              {t("labs.host.coverSwitchTitle")}
+            </h3>
+            <p className="text-sm mb-4" style={{ color: "var(--labs-text-muted)" }}>
+              {confirmSwitchTo === "upload" ? t("labs.host.coverSwitchToUpload") : t("labs.host.coverSwitchToAi")}
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button className="labs-btn-ghost text-sm px-3 py-1.5" onClick={() => setConfirmSwitchTo(null)} data-testid="labs-cover-confirm-cancel">
+                {t("labs.host.cancel")}
+              </button>
+              <button
+                className="labs-btn-primary text-sm px-3 py-1.5"
+                onClick={() => handleSwitchSource(confirmSwitchTo)}
+                data-testid="labs-cover-confirm-ok"
+              >
+                {t("labs.host.coverConfirm")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm-Delete Dialog */}
+      {confirmDeleteSlot && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+          onClick={() => setConfirmDeleteSlot(null)}
+          data-testid="labs-cover-confirm-delete"
+        >
+          <div
+            className="rounded-xl p-5 max-w-sm w-full"
+            style={{ background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold mb-2" style={{ color: "var(--labs-text)" }}>
+              {t("labs.host.coverDeleteTitle")}
+            </h3>
+            <p className="text-sm mb-4" style={{ color: "var(--labs-text-muted)" }}>
+              {t("labs.host.coverDeleteConfirm")}
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button className="labs-btn-ghost text-sm px-3 py-1.5" onClick={() => setConfirmDeleteSlot(null)}>
+                {t("labs.host.cancel")}
+              </button>
+              <button
+                className="labs-btn-secondary text-sm px-3 py-1.5"
+                style={{ color: "var(--labs-error, #ef4444)" }}
+                onClick={() => handleDeleteSlot(confirmDeleteSlot)}
+                data-testid="labs-cover-delete-ok"
+              >
+                {t("labs.host.coverDeleteAction")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Generate / Preview Dialog */}
+      {aiDialogOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+          onClick={() => !aiGenerating && !aiSaving && setAiDialogOpen(false)}
+          data-testid="labs-cover-ai-dialog"
+        >
+          <div
+            className="rounded-xl p-5 max-w-lg w-full"
+            style={{ background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold mb-1 flex items-center gap-2" style={{ color: "var(--labs-text)" }}>
+              <Sparkles className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+              {t("labs.host.coverAiDialogTitle")}
+            </h3>
+            <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>
+              {t("labs.host.coverAiDialogDesc")}
+            </p>
+            <label className="text-xs font-semibold block mb-1" style={{ color: "var(--labs-text-muted)" }}>
+              {t("labs.host.coverAiPromptLabel")}
+            </label>
+            <textarea
+              className="labs-input w-full"
+              rows={3}
+              value={aiPromptHint}
+              onChange={(e) => setAiPromptHint(e.target.value)}
+              placeholder={t("labs.host.coverAiPromptPlaceholder")}
+              data-testid="labs-cover-ai-prompt"
+              disabled={aiGenerating || aiSaving}
+            />
+            <div className="flex justify-between items-center mt-2 gap-2">
+              <button
+                className="labs-btn-secondary text-xs px-3 py-1.5 flex items-center gap-1"
+                onClick={handleGenerateAiPreview}
+                disabled={aiGenerating || aiSaving}
+                data-testid="labs-cover-ai-generate"
+              >
+                {aiGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                {aiGenerating ? t("labs.host.generatingEllipsis") : (aiPreview ? t("labs.host.coverAiRegenerateBtn") : t("labs.host.coverAiGenerateBtn"))}
+              </button>
+            </div>
+            {coverActionError && (
+              <p className="text-xs mt-2" style={{ color: "var(--labs-error, #ef4444)" }}>{coverActionError}</p>
+            )}
+            {aiPreviewSrc && (
+              <div className="mt-3">
+                <CoverImage16x9 src={aiPreviewSrc} testId="labs-cover-ai-preview" rounded={10} />
+              </div>
+            )}
+            <div className="flex gap-2 justify-end mt-4">
+              <button
+                className="labs-btn-ghost text-sm px-3 py-1.5"
+                onClick={() => setAiDialogOpen(false)}
+                disabled={aiGenerating || aiSaving}
+                data-testid="labs-cover-ai-close"
+              >
+                {t("labs.host.cancel")}
+              </button>
+              <button
+                className="labs-btn-primary text-sm px-3 py-1.5 flex items-center gap-1"
+                onClick={handleSaveAiCover}
+                disabled={!aiPreview || aiGenerating || aiSaving}
+                data-testid="labs-cover-ai-apply"
+              >
+                {aiSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                {t("labs.host.coverAiApply")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TastingSetupSection({
   tasting,
   tastingId,
@@ -3939,6 +4311,16 @@ function TastingSetupSection({
   const [localCoverUrl, setLocalCoverUrl] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [forceCustomReveal, setForceCustomReveal] = useState(false);
+
+  // --- Cover Image Slot State ---
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [aiPromptHint, setAiPromptHint] = useState("");
+  const [aiPreview, setAiPreview] = useState<{ base64: string; mimeType: string; prompt: string } | null>(null);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiSaving, setAiSaving] = useState(false);
+  const [confirmSwitchTo, setConfirmSwitchTo] = useState<"upload" | "ai" | null>(null);
+  const [confirmDeleteSlot, setConfirmDeleteSlot] = useState<"upload" | "ai" | null>(null);
+  const [coverActionError, setCoverActionError] = useState<string | null>(null);
 
   const isDraft = tasting.status === "draft";
 
@@ -4033,6 +4415,104 @@ function TastingSetupSection({
       setCoverUploadError(msg);
       setSaveStatus(msg);
       setTimeout(() => setSaveStatus(null), 4000);
+    }
+  };
+
+  // --- AI Cover slot handlers ---
+  const handleGenerateAiPreview = async () => {
+    setAiGenerating(true);
+    setCoverActionError(null);
+    try {
+      const hint = aiPromptHint.trim();
+      const res = await fetch(`/api/tastings/${tastingId}/menu-cover`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-participant-id": pid },
+        body: JSON.stringify(hint ? { customPromptHint: hint } : {}),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "KI-Generierung fehlgeschlagen");
+      }
+      const data = await res.json();
+      if (!data.coverImageBase64) throw new Error("KI lieferte kein Bild");
+      setAiPreview({
+        base64: data.coverImageBase64,
+        mimeType: data.mimeType || "image/jpeg",
+        prompt: data.prompt || hint,
+      });
+    } catch (e: any) {
+      setCoverActionError(e?.message || "KI-Generierung fehlgeschlagen");
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
+  const handleSaveAiCover = async () => {
+    if (!aiPreview) return;
+    setAiSaving(true);
+    setCoverActionError(null);
+    try {
+      const res = await fetch(`/api/tastings/${tastingId}/cover-image-ai`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-participant-id": pid },
+        body: JSON.stringify({
+          coverImageBase64: aiPreview.base64,
+          mimeType: aiPreview.mimeType,
+          prompt: aiPreview.prompt,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Speichern fehlgeschlagen");
+      }
+      queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+      setAiDialogOpen(false);
+      setAiPreview(null);
+      setAiPromptHint("");
+    } catch (e: any) {
+      setCoverActionError(e?.message || "Speichern fehlgeschlagen");
+    } finally {
+      setAiSaving(false);
+    }
+  };
+
+  const handleSwitchSource = async (source: "upload" | "ai") => {
+    setCoverActionError(null);
+    try {
+      const res = await fetch(`/api/tastings/${tastingId}/cover-image-source`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-participant-id": pid },
+        body: JSON.stringify({ source, hostId: pid }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Wechsel fehlgeschlagen");
+      }
+      queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+    } catch (e: any) {
+      setCoverActionError(e?.message || "Wechsel fehlgeschlagen");
+    } finally {
+      setConfirmSwitchTo(null);
+    }
+  };
+
+  const handleDeleteSlot = async (slot: "upload" | "ai") => {
+    setCoverActionError(null);
+    try {
+      const res = await fetch(`/api/tastings/${tastingId}/cover-image`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hostId: pid, slot }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Entfernen fehlgeschlagen");
+      }
+      queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+    } catch (e: any) {
+      setCoverActionError(e?.message || "Entfernen fehlgeschlagen");
+    } finally {
+      setConfirmDeleteSlot(null);
     }
   };
 
@@ -4304,44 +4784,29 @@ function TastingSetupSection({
             </div>
           </div>
 
-          <div>
-            <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
-              <Image className="w-3 h-3" />
-              {t("labs.host.coverImage")}
-            </label>
-            <label
-              className="flex items-center justify-center gap-2 p-3 rounded-lg cursor-pointer text-sm"
-              style={{
-                border: "1px dashed var(--labs-border)",
-                color: "var(--labs-text-muted)",
-                background: "var(--labs-surface)",
-              }}
-              data-testid="labs-settings-upload-cover"
-            >
-              <Upload className="w-4 h-4" />
-              {(tasting.coverImageUrl as string) ? t("labs.host.changeCover") : t("labs.host.uploadCover")}
-              <input
-                type="file"
-                accept={IMAGE_ACCEPT_STRING}
-                style={{ display: "none" }}
-                onChange={e => { if (e.target.files?.[0]) handleCoverUpload(e.target.files[0]); }}
-              />
-            </label>
-            {coverUploadError && (
-              <p className="text-xs mt-1.5" style={{ color: "var(--labs-error, #ef4444)" }} data-testid="labs-settings-cover-error">
-                {coverUploadError}
-              </p>
-            )}
-            {(localCoverUrl || (tasting.coverImageUrl as string)) && (
-              <img
-                src={localCoverUrl || (tasting.coverImageUrl as string) || ""}
-                alt="Cover"
-                className="w-full rounded-lg mt-2"
-                style={{ height: 120, objectFit: "cover" }}
-                data-testid="labs-settings-cover-preview"
-              />
-            )}
-          </div>
+          <CoverImageManager
+            tasting={tasting}
+            localCoverUrl={localCoverUrl}
+            coverUploadError={coverUploadError}
+            coverActionError={coverActionError}
+            handleCoverUpload={handleCoverUpload}
+            aiDialogOpen={aiDialogOpen}
+            setAiDialogOpen={(v) => { setAiDialogOpen(v); if (!v) { setAiPreview(null); setAiPromptHint(""); setCoverActionError(null); } }}
+            aiPromptHint={aiPromptHint}
+            setAiPromptHint={setAiPromptHint}
+            aiPreview={aiPreview}
+            setAiPreview={setAiPreview}
+            aiGenerating={aiGenerating}
+            aiSaving={aiSaving}
+            confirmSwitchTo={confirmSwitchTo}
+            setConfirmSwitchTo={setConfirmSwitchTo}
+            confirmDeleteSlot={confirmDeleteSlot}
+            setConfirmDeleteSlot={setConfirmDeleteSlot}
+            handleGenerateAiPreview={handleGenerateAiPreview}
+            handleSaveAiCover={handleSaveAiCover}
+            handleSwitchSource={handleSwitchSource}
+            handleDeleteSlot={handleDeleteSlot}
+          />
 
       </div>
     </div>

@@ -2106,20 +2106,117 @@ export async function registerRoutes(
         contentType = "image/jpeg";
       }
       const coverImageUrl = await uploadBufferToObjectStorage(objectStorage, buffer, contentType);
-      const updated = await storage.updateTastingDetails(req.params.id, { coverImageUrl });
+      const updated = await storage.updateTastingDetails(req.params.id, {
+        coverImageUploadUrl: coverImageUrl,
+        coverImageUrl,
+        coverImageSource: "upload",
+      });
       res.json(updated);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
     }
   });
 
-  app.delete("/api/tastings/:id/cover-image", async (req, res) => {
+  // Save AI-generated cover (base64) into the AI slot and activate it
+  app.post("/api/tastings/:id/cover-image-ai", async (req: any, res: any) => {
     try {
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
-      const { hostId } = req.body;
-      if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can remove the cover image" });
-      const updated = await storage.updateTastingDetails(req.params.id, { coverImageUrl: null });
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body?.hostId;
+      if (requesterId !== tasting.hostId) {
+        const requester = requesterId ? await storage.getParticipant(requesterId) : null;
+        if (!requester || requester.role !== "admin") {
+          return res.status(403).json({ message: "Only the host can update the cover image" });
+        }
+      }
+      const { coverImageBase64, mimeType, prompt } = req.body || {};
+      if (!coverImageBase64 || typeof coverImageBase64 !== "string") {
+        return res.status(400).json({ message: "Missing coverImageBase64" });
+      }
+      const buffer = Buffer.from(coverImageBase64, "base64");
+      const contentType = (typeof mimeType === "string" && mimeType) || "image/jpeg";
+      const url = await uploadBufferToObjectStorage(objectStorage, buffer, contentType);
+      const updated = await storage.updateTastingDetails(req.params.id, {
+        coverImageAiUrl: url,
+        coverImageUrl: url,
+        coverImageSource: "ai",
+        coverImageAiPrompt: typeof prompt === "string" && prompt.trim() ? prompt.trim() : null,
+      });
+      res.json(updated);
+    } catch (e: any) {
+      console.error("Cover AI save error:", e);
+      res.status(400).json({ message: e.message || "Failed to save AI cover" });
+    }
+  });
+
+  // Switch which slot is the active cover (upload | ai)
+  app.post("/api/tastings/:id/cover-image-source", async (req: any, res: any) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body?.hostId;
+      if (requesterId !== tasting.hostId) {
+        const requester = requesterId ? await storage.getParticipant(requesterId) : null;
+        if (!requester || requester.role !== "admin") {
+          return res.status(403).json({ message: "Only the host can change the cover source" });
+        }
+      }
+      const { source } = req.body || {};
+      if (source !== "upload" && source !== "ai") {
+        return res.status(400).json({ message: "source must be 'upload' or 'ai'" });
+      }
+      const target = source === "upload"
+        ? (tasting as any).coverImageUploadUrl
+        : (tasting as any).coverImageAiUrl;
+      if (!target) {
+        return res.status(400).json({ message: `No ${source} cover image available` });
+      }
+      const updated = await storage.updateTastingDetails(req.params.id, {
+        coverImageUrl: target,
+        coverImageSource: source,
+      });
+      res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/tastings/:id/cover-image", async (req: any, res: any) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const { slot } = req.body || {};
+      const requesterId = (req.headers["x-participant-id"] as string) || req.body?.hostId;
+      if (requesterId !== tasting.hostId) {
+        const requester = requesterId ? await storage.getParticipant(requesterId) : null;
+        if (!requester || requester.role !== "admin") {
+          return res.status(403).json({ message: "Only the host can remove the cover image" });
+        }
+      }
+      const upUrl = (tasting as any).coverImageUploadUrl as string | null;
+      const aiUrl = (tasting as any).coverImageAiUrl as string | null;
+      const updates: any = {};
+      if (slot === "upload") {
+        updates.coverImageUploadUrl = null;
+        if ((tasting as any).coverImageSource === "upload" || tasting.coverImageUrl === upUrl) {
+          updates.coverImageUrl = aiUrl || null;
+          updates.coverImageSource = aiUrl ? "ai" : null;
+        }
+      } else if (slot === "ai") {
+        updates.coverImageAiUrl = null;
+        updates.coverImageAiPrompt = null;
+        if ((tasting as any).coverImageSource === "ai" || tasting.coverImageUrl === aiUrl) {
+          updates.coverImageUrl = upUrl || null;
+          updates.coverImageSource = upUrl ? "upload" : null;
+        }
+      } else {
+        updates.coverImageUrl = null;
+        updates.coverImageUploadUrl = null;
+        updates.coverImageAiUrl = null;
+        updates.coverImageSource = null;
+        updates.coverImageAiPrompt = null;
+      }
+      const updated = await storage.updateTastingDetails(req.params.id, updates);
       res.json(updated);
     } catch (e: any) {
       res.status(400).json({ message: e.message });

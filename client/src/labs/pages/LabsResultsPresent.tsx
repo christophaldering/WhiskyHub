@@ -11,6 +11,7 @@ import {
 import { tastingApi, whiskyApi, ratingApi, presentationApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import WhiskyImage from "@/labs/components/WhiskyImage";
+import CoverImage16x9 from "@/labs/components/CoverImage16x9";
 import LabsScoreRing from "@/labs/components/LabsScoreRing";
 import { stripGuestSuffix, formatScore } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -116,7 +117,7 @@ function CinematicTitleSlide({ tasting, whiskyCount, participantCount, totalRati
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", padding: "40px 24px", position: "relative", overflow: "hidden" }}>
       {hasCover && (
-        <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${tasting.coverImageUrl})`, backgroundSize: "cover", backgroundPosition: "center", opacity: 0.15, filter: "blur(8px) saturate(0.7)" }} />
+        <CoverImage16x9 src={tasting.coverImageUrl} asBackdrop backdropOpacity={0.2} testId="present-title-cover-bg" />
       )}
       <div style={{ position: "relative", zIndex: 1 }}>
         <motion.div initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1, type: "spring", stiffness: 200 }}>

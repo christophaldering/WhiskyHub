@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
 import LabsScoreRing from "@/labs/components/LabsScoreRing";
 import WhiskyImage from "@/labs/components/WhiskyImage";
+import CoverImage16x9 from "@/labs/components/CoverImage16x9";
 import { downloadBlob } from "@/lib/download";
 import { saveJsPdf } from "@/lib/pdf";
 import { stripGuestSuffix, formatScore } from "@/lib/utils";
@@ -412,7 +413,7 @@ function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCou
           >
             {slide.type === "title" && (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", padding: "40px 24px", position: "relative", overflow: "hidden" }}>
-                {hasCover && <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${tasting.coverImageUrl})`, backgroundSize: "cover", backgroundPosition: "center", opacity: 0.15, filter: "blur(8px) saturate(0.7)" }} />}
+                {hasCover && <CoverImage16x9 src={tasting.coverImageUrl} asBackdrop backdropOpacity={0.18} testId="viewer-title-cover-bg" />}
                 <div style={{ position: "relative", zIndex: 1 }}>
                   <div style={{ width: 64, height: 64, borderRadius: 18, margin: "0 auto 24px", background: "linear-gradient(135deg, rgba(212,162,86,0.15), rgba(212,162,86,0.05))", border: "1px solid rgba(212,162,86,0.25)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Wine style={{ width: 28, height: 28, color: "var(--labs-accent)" }} />
