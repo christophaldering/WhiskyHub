@@ -330,6 +330,9 @@ export interface IStorage {
   setPrivacyConsent(id: string): Promise<void>;
   setVerificationCode(id: string, code: string, expiry: Date): Promise<Participant | undefined>;
   verifyEmail(id: string): Promise<Participant | undefined>;
+  setLoginLinkToken(id: string, token: string, expiry: Date): Promise<Participant | undefined>;
+  consumeLoginLinkToken(token: string): Promise<Participant | undefined>;
+  clearLoginLinkToken(id: string): Promise<void>;
   updateWhiskyDbAccess(id: string, canAccess: boolean): Promise<Participant | undefined>;
   updateMakingOfAccess(id: string, access: boolean): Promise<Participant | undefined>;
   getMakingOfLiveStats(): Promise<{ registeredUsers: number; totalTastings: number; totalRatings: number; whiskiesTasted: number; activeCommunities: number }>;
@@ -876,6 +879,29 @@ export class DatabaseStorage implements IStorage {
   async verifyEmail(id: string): Promise<Participant | undefined> {
     const [result] = await db.update(participants).set({ emailVerified: true, verificationCode: null, verificationExpiry: null }).where(eq(participants.id, id)).returning();
     return result;
+  }
+
+  async setLoginLinkToken(id: string, token: string, expiry: Date): Promise<Participant | undefined> {
+    const [result] = await db.update(participants).set({ loginLinkToken: token, loginLinkExpiry: expiry }).where(eq(participants.id, id)).returning();
+    return result;
+  }
+
+  async consumeLoginLinkToken(token: string): Promise<Participant | undefined> {
+    // Atomic single-use consumption: only succeeds if the token matches AND has not expired.
+    // Clearing in the same UPDATE prevents a race where two concurrent requests both pass.
+    const [result] = await db
+      .update(participants)
+      .set({ loginLinkToken: null, loginLinkExpiry: null })
+      .where(and(
+        eq(participants.loginLinkToken, token),
+        gte(participants.loginLinkExpiry, new Date()),
+      ))
+      .returning();
+    return result;
+  }
+
+  async clearLoginLinkToken(id: string): Promise<void> {
+    await db.update(participants).set({ loginLinkToken: null, loginLinkExpiry: null }).where(eq(participants.id, id));
   }
 
   // --- Tastings ---

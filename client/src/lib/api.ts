@@ -53,6 +53,10 @@ export const participantApi = {
     fetchJSON(`/participants/${id}/verify`, { method: "POST", body: JSON.stringify({ code }) }),
   resendVerification: (id: string) =>
     fetchJSON(`/participants/${id}/resend-verification`, { method: "POST", body: JSON.stringify({}) }),
+  requestLoginLink: (email: string) =>
+    fetchJSON(`/participants/login-link/request`, { method: "POST", body: JSON.stringify({ email }) }),
+  consumeLoginLink: (token: string, privacyConsent?: boolean) =>
+    fetchJSON(`/participants/login-link/consume`, { method: "POST", body: JSON.stringify({ token, privacyConsent }) }),
   heartbeat: (id: string, pageContext?: string) =>
     fetchJSON(`/participants/${id}/heartbeat`, { method: "POST", body: JSON.stringify({ pageContext }) }),
   goOffline: (id: string) =>

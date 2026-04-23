@@ -14,7 +14,7 @@ import OpenAI from "openai";
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
 import { clampNormalized } from "@shared/score-utils";
-import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail, buildThankYouEmail, buildAdminLoginNotification, buildFriendInviteEmail, buildCommunityInviteEmail } from "./email";
+import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail, buildThankYouEmail, buildAdminLoginNotification, buildFriendInviteEmail, buildCommunityInviteEmail, buildMagicLinkEmail } from "./email";
 import { extractPagesText } from "./pdf-utils";
 import { registerObjectStorageRoutes, ObjectStorageService, objectStorageClient } from "./replit_integrations/object_storage";
 import { registerFunnelRoutes } from "./funnel-routes";
@@ -1679,6 +1679,69 @@ export async function registerRoutes(
         });
       }
       res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/participants/login-link/request", async (req, res) => {
+    try {
+      const { email } = req.body || {};
+      if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        return res.status(400).json({ message: "A valid email is required" });
+      }
+      const trimmed = email.trim();
+      const participant = await storage.getParticipantByEmail(trimmed);
+      // Always respond OK to prevent email enumeration; only send if account exists
+      // and is not blocked. Verification-blocked status is intentionally not surfaced
+      // here; the user will see it during the actual login flow.
+      if (participant && participant.email && !checkEmailVerification(participant).blocked) {
+        const token = crypto.randomBytes(32).toString("base64url");
+        const expiry = new Date(Date.now() + 15 * 60 * 1000);
+        await storage.setLoginLinkToken(participant.id, token, expiry);
+        const proto = (req.headers["x-forwarded-proto"] as string)?.split(",")[0]?.trim() || req.protocol || "https";
+        const host = (req.headers["x-forwarded-host"] as string) || req.headers.host || "";
+        const baseUrl = process.env.PUBLIC_BASE_URL || (host ? `${proto}://${host}` : "");
+        const link = `${baseUrl}/auth/magic?token=${encodeURIComponent(token)}`;
+        const emailContent = buildMagicLinkEmail({
+          name: participant.name,
+          link,
+          language: participant.language || "en",
+          expiryMinutes: 15,
+        });
+        sendEmail({ to: participant.email, ...emailContent }).catch(err =>
+          console.error("Failed to send magic link email:", err)
+        );
+      }
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/participants/login-link/consume", async (req, res) => {
+    try {
+      const { token, privacyConsent } = req.body || {};
+      if (!token || typeof token !== "string") {
+        return res.status(400).json({ message: "Token is required" });
+      }
+      const participant = await storage.consumeLoginLinkToken(token);
+      if (!participant) {
+        return res.status(400).json({ message: "This login link is invalid or has expired. Please request a new one." });
+      }
+      // A successful magic-link login implicitly verifies the email.
+      if (!participant.emailVerified) {
+        await storage.verifyEmail(participant.id);
+      }
+      if (privacyConsent === true && !participant.privacyConsentAt) {
+        await storage.setPrivacyConsent(participant.id);
+      }
+      const fresh = await storage.getParticipant(participant.id);
+      if (fresh) {
+        storage.updateLastSeen(fresh.id).catch(() => {});
+        notifyAdminLogin(fresh, false);
+      }
+      res.json(fresh || participant);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }

@@ -7,7 +7,7 @@ import { participantApi } from "@/lib/api";
 import { setSessionAndSync } from "@/lib/session";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Mail, ArrowLeft, CheckCircle, Shield, AlertTriangle, Eye, EyeOff, ExternalLink } from "lucide-react";
+import { Mail, ArrowLeft, CheckCircle, Shield, AlertTriangle, Eye, EyeOff, ExternalLink, Sparkles } from "lucide-react";
 import { useLocation, Link } from "wouter";
 
 const scrollInputIntoView = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -150,6 +150,12 @@ export function AuthFlowPanel({
   const [blockedResendSuccess, setBlockedResendSuccess] = useState(false);
   const [showPin, setShowPin] = useState(false);
   const [showNewPin, setShowNewPin] = useState(false);
+
+  const [magicLinkMode, setMagicLinkMode] = useState(false);
+  const [magicLinkEmail, setMagicLinkEmail] = useState("");
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [magicLinkLoading, setMagicLinkLoading] = useState(false);
+  const [magicLinkError, setMagicLinkError] = useState("");
 
   const validateEmail = (val: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
 
@@ -339,6 +345,50 @@ export function AuthFlowPanel({
     } finally {
       setResetLoading(false);
     }
+  };
+
+  const handleRequestLoginLink = async () => {
+    setMagicLinkError("");
+    const trimmed = magicLinkEmail.trim();
+    if (!trimmed) {
+      setMagicLinkError(t("login.emailRequired"));
+      return;
+    }
+    if (!validateEmail(trimmed)) {
+      setMagicLinkError(t("login.invalidEmail"));
+      return;
+    }
+    setMagicLinkLoading(true);
+    try {
+      await participantApi.requestLoginLink(trimmed);
+      setMagicLinkSent(true);
+    } catch (e: unknown) {
+      const err = e as { code?: string; message?: string; adminEmail?: string; participantId?: string };
+      if (err.code === "EMAIL_VERIFICATION_EXPIRED" || (err.message && err.message.includes("nicht rechtzeitig bestätigt"))) {
+        setMagicLinkMode(false);
+        setVerificationBlocked(true);
+        setBlockedAdminEmail(err.adminEmail || "");
+        setBlockedParticipantId(err.participantId || "");
+      } else {
+        setMagicLinkError(err.message || "Failed to send login link");
+      }
+    } finally {
+      setMagicLinkLoading(false);
+    }
+  };
+
+  const handleBackFromMagicLink = () => {
+    setMagicLinkMode(false);
+    setMagicLinkSent(false);
+    setMagicLinkEmail("");
+    setMagicLinkError("");
+  };
+
+  const handleEnterMagicLinkMode = () => {
+    setMagicLinkMode(true);
+    setMagicLinkSent(false);
+    setMagicLinkError("");
+    if (email.trim()) setMagicLinkEmail(email.trim());
   };
 
   const handleBackFromForgot = () => {
@@ -541,6 +591,98 @@ export function AuthFlowPanel({
             >
               {resendLoading ? t("verify.resending") : resendSuccess ? t("verify.resent") : t("verify.resend")}
             </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ===== Magic-link sign-in flow =====
+  if (magicLinkMode) {
+    return (
+      <>
+        <PanelHeader
+          dialogMode={dialogMode}
+          icon={magicLinkSent ? <CheckCircle className="w-6 h-6 text-green-500" /> : <Sparkles className="w-6 h-6" />}
+          title={magicLinkSent ? t("magicLink.sentTitle", "E-Mail unterwegs") : t("magicLink.title", "Per E-Mail-Link anmelden")}
+          description={
+            magicLinkSent
+              ? t("magicLink.sentDescription", "Falls ein Konto zu dieser E-Mail existiert, haben wir dir gerade einen Login-Link geschickt. Prüfe dein Postfach.")
+              : t("magicLink.subtitle", "Wir senden dir einen einmaligen Anmeldelink. Keine PIN nötig.")
+          }
+          titleClassName="font-serif text-2xl text-primary flex items-center gap-2"
+        />
+        <div className="space-y-4 mt-4">
+          {!magicLinkSent ? (
+            <>
+              <div className="space-y-2">
+                <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t("login.email")}</Label>
+                <Input
+                  type="text"
+                  inputMode="email"
+                  value={magicLinkEmail}
+                  onChange={(e) => setMagicLinkEmail(e.target.value)}
+                  placeholder={t("login.emailPlaceholder")}
+                  className="bg-secondary/20"
+                  data-testid="input-magic-link-email"
+                  autoFocus
+                  onKeyDown={(e) => e.key === "Enter" && handleRequestLoginLink()}
+                  autoComplete="email"
+                  enterKeyHint="send"
+                  onFocus={scrollInputIntoView}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t("magicLink.expiryHint", "Der Link ist 15 Minuten gültig und kann nur einmal verwendet werden.")}
+                </p>
+              </div>
+
+              {magicLinkError && (
+                <p className="text-sm text-destructive" data-testid="text-magic-link-error">
+                  {magicLinkError}
+                </p>
+              )}
+
+              <Button
+                onClick={handleRequestLoginLink}
+                disabled={magicLinkLoading}
+                className="w-full bg-primary text-primary-foreground font-serif tracking-wide"
+                data-testid="button-send-magic-link"
+              >
+                <Mail className="w-4 h-4 mr-2" />
+                {magicLinkLoading ? t("magicLink.sending", "Wird gesendet…") : t("magicLink.sendLink", "Login-Link senden")}
+              </Button>
+            </>
+          ) : (
+            <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-2">
+              <p className="text-sm text-muted-foreground" data-testid="text-magic-link-sent-body">
+                {t("magicLink.sentBody", "Öffne die E-Mail an")} <span className="font-semibold text-foreground">{magicLinkEmail}</span> {t("magicLink.sentBodySuffix", "und klicke auf den Anmelde-Button. Du wirst dann automatisch eingeloggt.")}
+              </p>
+              <p className="text-xs text-muted-foreground/80">
+                {t("magicLink.checkSpam", "Keine E-Mail erhalten? Prüfe auch deinen Spam-Ordner.")}
+              </p>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={handleBackFromMagicLink}
+              className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors min-h-[44px]"
+              data-testid="button-back-from-magic-link"
+            >
+              <ArrowLeft className="w-3 h-3" />
+              {t("magicLink.backToLogin", "Zurück zur PIN-Anmeldung")}
+            </button>
+            {magicLinkSent && (
+              <button
+                type="button"
+                onClick={() => { setMagicLinkSent(false); }}
+                className="text-xs text-muted-foreground hover:text-primary underline transition-colors min-h-[44px]"
+                data-testid="button-magic-link-resend"
+              >
+                {t("magicLink.resend", "Erneut senden")}
+              </button>
+            )}
           </div>
         </div>
       </>
@@ -849,6 +991,31 @@ export function AuthFlowPanel({
         >
           {loading ? t("login.joining") : (isReturning ? t("login.enterReturning") : t("login.enter"))}
         </Button>
+
+        {isReturning && (
+          <>
+            <div className="relative my-1">
+              <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                <div className="w-full border-t border-border/60"></div>
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-card px-2 text-[10px] uppercase tracking-widest text-muted-foreground">
+                  {t("magicLink.dividerOr", "oder")}
+                </span>
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleEnterMagicLinkMode}
+              className="w-full font-serif tracking-wide"
+              data-testid="button-magic-link-mode"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              {t("magicLink.toggle", "Per E-Mail-Link anmelden")}
+            </Button>
+          </>
+        )}
 
         {!dialogMode && (
           <div className="text-center pt-1">

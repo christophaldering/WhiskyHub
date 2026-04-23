@@ -14,6 +14,8 @@ export const participants = pgTable("participants", {
   emailVerified: boolean("email_verified").default(false),
   verificationCode: text("verification_code"),
   verificationExpiry: timestamp("verification_expiry"),
+  loginLinkToken: text("login_link_token"),
+  loginLinkExpiry: timestamp("login_link_expiry"),
   canAccessWhiskyDb: boolean("can_access_whisky_db").default(false),
   newsletterOptIn: boolean("newsletter_opt_in").default(false),
   communityContributor: boolean("community_contributor").default(false),
@@ -29,7 +31,7 @@ export const participants = pgTable("participants", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertParticipantSchema = createInsertSchema(participants).omit({ id: true, createdAt: true, emailVerified: true, verificationCode: true, verificationExpiry: true, lastSeenAt: true, makingOfAccess: true, privacyConsentAt: true });
+export const insertParticipantSchema = createInsertSchema(participants).omit({ id: true, createdAt: true, emailVerified: true, verificationCode: true, verificationExpiry: true, loginLinkToken: true, loginLinkExpiry: true, lastSeenAt: true, makingOfAccess: true, privacyConsentAt: true });
 export type InsertParticipant = z.infer<typeof insertParticipantSchema>;
 export type Participant = typeof participants.$inferSelect;
 

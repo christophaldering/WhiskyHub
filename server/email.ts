@@ -211,6 +211,63 @@ export function buildVerificationEmail(params: {
   return { subject, html };
 }
 
+export function buildMagicLinkEmail(params: {
+  name: string;
+  link: string;
+  language?: string;
+  expiryMinutes?: number;
+}): { subject: string; html: string } {
+  const { name, link, language, expiryMinutes = 15 } = params;
+  const isDE = language === "de";
+  const subject = isDE
+    ? `Dein CaskSense Login-Link`
+    : `Your CaskSense login link`;
+  const greeting = isDE ? `Hallo <strong>${name}</strong>,` : `Hello <strong>${name}</strong>,`;
+  const intro = isDE
+    ? `du hast einen Login-Link für CaskSense angefordert. Klicke einfach auf den Button, um dich anzumelden:`
+    : `you requested a login link for CaskSense. Click the button below to sign in:`;
+  const cta = isDE ? "Jetzt anmelden" : "Sign in now";
+  const fallbackHint = isDE
+    ? "Falls der Button nicht funktioniert, kopiere diesen Link in deinen Browser:"
+    : "If the button doesn't work, copy this link into your browser:";
+  const expiryNote = isDE
+    ? `Dieser Link ist ${expiryMinutes} Minuten gültig und kann nur einmal verwendet werden. Wenn du diese E-Mail nicht erwartet hast, kannst du sie ignorieren.`
+    : `This link expires in ${expiryMinutes} minutes and can only be used once. If you did not expect this email, you can safely ignore it.`;
+  const tagline = isDE ? "Wo Verkostung zur Reflexion wird" : "Where Tasting Becomes Reflection";
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;font-family:'Georgia',serif;background:#f9f9f7;color:#333;">
+  <div style="max-width:520px;margin:40px auto;background:#fff;border:1px solid #e5e5e0;border-radius:4px;overflow:hidden;">
+    <div style="padding:32px 32px 16px;border-bottom:1px solid #e5e5e0;">
+      <h1 style="margin:0;font-size:24px;color:#4a5568;font-weight:700;letter-spacing:-0.5px;">CaskSense</h1>
+      <p style="margin:4px 0 0;font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#a0aec0;">${isDE ? "Login-Link" : "Magic Login Link"}</p>
+    </div>
+    <div style="padding:32px;">
+      <p style="font-size:16px;line-height:1.6;margin:0 0 16px;">${greeting}</p>
+      <p style="font-size:15px;line-height:1.6;margin:0 0 24px;color:#555;">${intro}</p>
+      <div style="text-align:center;margin:24px 0;">
+        <a href="${link}" style="display:inline-block;padding:14px 32px;background:#4a5568;color:#fff;text-decoration:none;border-radius:4px;font-size:15px;font-weight:600;letter-spacing:0.5px;">
+          ${cta}
+        </a>
+      </div>
+      <p style="font-size:12px;color:#888;margin:16px 0 8px;line-height:1.5;">${fallbackHint}</p>
+      <p style="font-size:12px;color:#6b7b8d;word-break:break-all;margin:0 0 24px;">
+        <a href="${link}" style="color:#6b7b8d;">${link}</a>
+      </p>
+      <p style="font-size:13px;color:#a0aec0;margin:16px 0 0;line-height:1.5;">${expiryNote}</p>
+    </div>
+    <div style="padding:16px 32px;border-top:1px solid #e5e5e0;background:#fafaf8;">
+      <p style="margin:0;font-size:11px;color:#a0aec0;text-align:center;">CaskSense — ${tagline}</p>
+    </div>
+  </div>
+</body>
+</html>`;
+  return { subject, html };
+}
+
 export function buildReminderEmail(params: {
   name: string;
   tastingTitle: string;

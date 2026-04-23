@@ -58,6 +58,7 @@ const SimpleFeedbackPage = lazy(() => import("@/pages/simple-feedback"));
 const SimpleTestPage = lazy(() => import("@/pages/simple-test"));
 const InternalLandingGlasses = lazy(() => import("@/pages/internal-landing-glasses"));
 const AuthPage = lazy(() => import("@/pages/login-page"));
+const AuthMagicPage = lazy(() => import("@/pages/auth-magic-page"));
 
 import AdminLayout from "@/components/admin/AdminLayout";
 
@@ -530,6 +531,7 @@ function Router() {
         <Route path="/intro" component={Intro} />
         <Route path="/login">{() => <AuthPage initialTab="signin" />}</Route>
         <Route path="/register">{() => <AuthPage initialTab="register" />}</Route>
+        <Route path="/auth/magic">{() => <AuthMagicPage />}</Route>
         <Route path="/signin">{() => <Redirect to="/login" />}</Route>
         <Route path="/signup">{() => <Redirect to="/register" />}</Route>
 
