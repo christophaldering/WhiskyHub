@@ -400,6 +400,7 @@ const COLUMN_MAP: Record<string, string> = {
   type: "type", typ: "type", kategorie: "type",
   category: "category",
   region: "region",
+  country: "country", land: "country",
   cask: "caskType", "cask influence": "caskType", cask_influence: "caskType", cask_type: "caskType", "cask type": "caskType",
   fass: "caskType", fasseinfluss: "caskType",
   peat: "peatLevel", "peat level": "peatLevel", peat_level: "peatLevel",
@@ -419,7 +420,15 @@ const COLUMN_MAP: Record<string, string> = {
 };
 
 function normalizeColumnName(raw: string): string | null {
-  const key = raw.trim().toLowerCase().replace(/[_\s]+/g, " ");
+  const cleaned = raw
+    .trim()
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/[*†‡✱]+/g, " ")
+    .replace(/\s+\*$/g, "")
+    .trim();
+  const key = cleaned.replace(/[_\s]+/g, " ").trim();
+  if (!key) return null;
   return COLUMN_MAP[key] || COLUMN_MAP[key.replace(/ /g, "_")] || COLUMN_MAP[key.replace(/ /g, "")] || null;
 }
 
@@ -502,6 +511,9 @@ function parseArrayRows(raw: any[][], errors: string[]): { rows: Record<string, 
       if (val === undefined || val === null || val === "") continue;
       obj[field] = String(val).trim();
     }
+
+    const meaningfulKeys = Object.keys(obj).filter(k => k !== "sortOrder");
+    if (!obj.name && meaningfulKeys.length === 0) continue;
 
     if (!obj.name) {
       errors.push(`Row ${i + 1}: missing name, skipped`);
