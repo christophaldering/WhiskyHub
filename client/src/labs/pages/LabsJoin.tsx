@@ -54,6 +54,7 @@ export default function LabsJoin() {
   const [showRejoinCodeScreen, setShowRejoinCodeScreen] = useState(false);
   const [issuedRejoinCode, setIssuedRejoinCode] = useState<string>("");
   const [rejoinCodeCopied, setRejoinCodeCopied] = useState(false);
+  const [rejoinCodeAcknowledged, setRejoinCodeAcknowledged] = useState(false);
 
   const [showRejoinCodeUnavailable, setShowRejoinCodeUnavailable] = useState(false);
   const [rejoinCodeRetryLoading, setRejoinCodeRetryLoading] = useState(false);
@@ -639,9 +640,44 @@ export default function LabsJoin() {
             </button>
           </div>
 
+          <label
+            className="flex items-start gap-3 mb-4 cursor-pointer no-print"
+            data-testid="labs-join-rejoin-ack-label"
+          >
+            <div className="relative mt-0.5 flex-shrink-0">
+              <input
+                type="checkbox"
+                className="sr-only"
+                checked={rejoinCodeAcknowledged}
+                onChange={(e) => setRejoinCodeAcknowledged(e.target.checked)}
+                data-testid="labs-join-rejoin-ack-checkbox"
+              />
+              <div
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 6,
+                  border: `2px solid ${rejoinCodeAcknowledged ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                  background: rejoinCodeAcknowledged ? "var(--labs-accent)" : "transparent",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.15s",
+                }}
+              >
+                {rejoinCodeAcknowledged && <Check className="w-3.5 h-3.5" style={{ color: "var(--labs-on-accent, #fff)" }} />}
+              </div>
+            </div>
+            <span className="text-sm leading-snug" style={{ color: "var(--labs-text)" }}>
+              {t("labs.rejoin.ackLabel", "Ich habe meinen Wiedereinstiegs-Code gespeichert (Screenshot, Notiz oder Datei). Ohne diesen Code kann ich nicht zurückkehren.")}
+            </span>
+          </label>
+
           <button
             className="labs-btn-primary w-full flex items-center justify-center gap-2 no-print"
             onClick={handleContinueAfterRejoinCode}
+            disabled={!rejoinCodeAcknowledged}
+            style={{ opacity: rejoinCodeAcknowledged ? 1 : 0.45, transition: "opacity 0.2s" }}
             data-testid="labs-join-rejoin-code-continue"
           >
             {t("labs.rejoin.continue", "Weiter zum Tasting")}
