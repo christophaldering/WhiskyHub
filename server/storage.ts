@@ -353,8 +353,8 @@ export interface IStorage {
   // AI Images Gallery
   createAiImage(data: InsertAiImage): Promise<AiImage>;
   getAiImage(id: string): Promise<AiImage | undefined>;
-  listAiImagesByOwner(ownerId: string, opts?: { search?: string; limit?: number; offset?: number }): Promise<(AiImage & { ownerName: string | null; tastingTitle: string | null })[]>;
-  listCommunityAiImages(opts?: { search?: string; limit?: number; offset?: number }): Promise<(AiImage & { ownerName: string | null; tastingTitle: string | null })[]>;
+  listAiImagesByOwner(ownerId: string, opts?: { search?: string; limit?: number; offset?: number; sort?: "desc" | "asc" }): Promise<(AiImage & { ownerName: string | null; tastingTitle: string | null })[]>;
+  listCommunityAiImages(opts?: { search?: string; limit?: number; offset?: number; excludeOwnerId?: string; sort?: "desc" | "asc" }): Promise<(AiImage & { ownerName: string | null; tastingTitle: string | null })[]>;
   listAiImagesByImageUrl(imageUrl: string): Promise<AiImage[]>;
   updateAiImageVisibility(id: string, visibility: "private" | "community"): Promise<AiImage | undefined>;
   deleteAiImage(id: string): Promise<AiImage | undefined>;
