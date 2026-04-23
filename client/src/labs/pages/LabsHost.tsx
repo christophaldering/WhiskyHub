@@ -6039,11 +6039,11 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                         disabled={whiskyCount === 0}
                         data-testid="labs-host-pdf-splitter-option"
                         title={whiskyCount === 0
-                          ? "Erst Whiskys hinzufügen"
-                          : "Mehrseitiges Programm-PDF in einzelne Whisky-Handouts aufteilen"}
+                          ? t("hostUi.pdfSplitterTooltipNeedWhiskies")
+                          : t("hostUi.pdfSplitterTooltip")}
                       >
                         <Scissors className="w-4 h-4" style={{ color: whiskyCount === 0 ? "var(--labs-text-muted)" : "var(--labs-text-secondary)" }} />
-                        Programm-PDF aufteilen
+                        {t("hostUi.pdfSplitter")}
                       </button>
                     </>
                   )}

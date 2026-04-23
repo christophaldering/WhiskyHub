@@ -9001,6 +9001,9 @@ const resources = {
         aiImport: "AI Import",
         tastingNotFound: "Tasting not found",
         tastingNoAccess: "This tasting doesn't exist or you don't have access.",
+        pdfSplitter: "Split program PDF",
+        pdfSplitterTooltip: "Split a multi-page program PDF into individual whisky handouts",
+        pdfSplitterTooltipNeedWhiskies: "Add whiskies first",
       },
       analyticsUi: {
         overview: "Overview",
@@ -18161,6 +18164,9 @@ const resources = {
         aiImport: "KI-Import",
         tastingNotFound: "Tasting nicht gefunden",
         tastingNoAccess: "Dieses Tasting existiert nicht oder du hast keinen Zugriff.",
+        pdfSplitter: "Programm-PDF aufteilen",
+        pdfSplitterTooltip: "Mehrseitiges Programm-PDF in einzelne Whisky-Handouts aufteilen",
+        pdfSplitterTooltipNeedWhiskies: "Erst Whiskys hinzufügen",
       },
       analyticsUi: {
         overview: "Übersicht",
