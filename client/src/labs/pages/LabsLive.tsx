@@ -1408,53 +1408,71 @@ export default function LabsLive({ params }: LabsLiveProps) {
 
               <div className="labs-card-elevated p-5 labs-fade-in labs-stagger-4">
                 <div className="labs-section-label" style={{ marginBottom: 16 }}>Score Summary</div>
-                <div className="space-y-3 mb-4">
-                  {DIMENSIONS.map((dim) => (
-                    <div key={dim} className="flex items-center gap-3">
-                      <span
-                        className="text-xs font-medium w-14 capitalize"
-                        style={{ color: "var(--labs-text-muted)" }}
-                      >
-                        {dim}
-                      </span>
-                      <div className="flex-1 h-1.5 rounded-full" style={{ background: "var(--labs-border)" }}>
-                        <div
-                          className="h-full rounded-full transition-all"
-                          style={{
-                            width: `${(scores[dim] / maxScore) * 100}%`,
-                            background: "var(--labs-accent)",
-                          }}
-                        />
-                      </div>
-                      <span
-                        className="text-xs font-semibold tabular-nums w-8 text-right"
-                        style={{ color: "var(--labs-text-secondary)" }}
-                        data-testid={`labs-live-summary-${dim}`}
-                      >
-                        {scores[dim]}
-                      </span>
+                {(() => {
+                  const scaleMin = maxScore === 100 ? 60 : 0;
+                  const scaleRange = maxScore - scaleMin;
+                  return (
+                    <div className="space-y-4 mb-5">
+                      {DIMENSIONS.map((dim) => {
+                        const pct = Math.max(0, Math.min(100, ((scores[dim] - scaleMin) / scaleRange) * 100));
+                        return (
+                          <div key={dim}>
+                            <div className="flex items-baseline justify-between" style={{ marginBottom: 6 }}>
+                              <span
+                                className="text-xs font-semibold uppercase tracking-wider capitalize"
+                                style={{ color: "var(--labs-text-muted)" }}
+                              >
+                                {dim}
+                              </span>
+                              <span
+                                className="tabular-nums font-semibold"
+                                style={{ fontSize: 17, color: "var(--labs-text-secondary)" }}
+                                data-testid={`labs-live-summary-${dim}`}
+                              >
+                                {scores[dim]}
+                              </span>
+                            </div>
+                            <div className="rounded-full" style={{ background: "var(--labs-border)", height: 10 }}>
+                              <div
+                                className="h-full rounded-full"
+                                style={{
+                                  width: `${pct}%`,
+                                  background: "var(--labs-accent)",
+                                  transition: "width 0.4s ease",
+                                }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
-                </div>
+                  );
+                })()}
 
                 <div className="labs-divider" style={{ margin: "16px 0" }} />
 
                 <div style={{ marginBottom: 4 }}>
-                  <div className="flex items-center justify-between" style={{ marginBottom: 6 }}>
-                    <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>
+                  <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
+                    <span className="text-sm font-medium" style={{ color: "var(--labs-text-muted)" }}>
                       Overall
-                      {overrideActive && (
-                        <span className="labs-badge labs-badge-accent" style={{ marginLeft: 8 }}>
-                          Manual
-                        </span>
-                      )}
                     </span>
+                    {overrideActive && (
+                      <span className="labs-badge labs-badge-accent">Manual</span>
+                    )}
+                  </div>
+                  <div className="flex items-end justify-between" style={{ marginBottom: 8 }}>
                     <span
-                      className="labs-h1 tabular-nums"
-                      style={{ color: "var(--labs-accent)" }}
+                      className="tabular-nums font-bold"
+                      style={{ fontSize: 48, lineHeight: 1, letterSpacing: "-0.02em", color: "var(--labs-accent)" }}
                       data-testid="labs-live-overall"
                     >
                       {scores.overall}
+                    </span>
+                    <span
+                      className="text-xs"
+                      style={{ color: "var(--labs-text-muted)", paddingBottom: 6 }}
+                    >
+                      / {maxScore}
                     </span>
                   </div>
                   <input
