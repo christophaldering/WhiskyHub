@@ -154,6 +154,43 @@ export default function Landing() {
         </button>
       </div>
 
+      {!session.signedIn && (
+        <div
+          style={{
+            position: "absolute",
+            top: "3.25rem",
+            right: "1rem",
+            display: "flex",
+            gap: 6,
+            fontFamily: "system-ui, sans-serif",
+            fontSize: 12,
+          }}
+        >
+          <Link
+            href="/login"
+            data-testid="link-app-entry-signin"
+            style={{
+              color: v.subtleText,
+              textDecoration: "underline",
+              textUnderlineOffset: 4,
+            }}
+          >
+            {t("auth.signIn", "Anmelden")}
+          </Link>
+          <span style={{ color: v.subtleText, opacity: 0.5 }}>·</span>
+          <Link
+            href="/register"
+            data-testid="link-app-entry-register"
+            style={{
+              color: v.accent,
+              textDecoration: "underline",
+              textUnderlineOffset: 4,
+            }}
+          >
+            {t("auth.register", "Registrieren")}
+          </Link>
+        </div>
+      )}
       <SessionSheet
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}

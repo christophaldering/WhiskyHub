@@ -57,6 +57,7 @@ const Landing = lazy(() => import("@/pages/landing"));
 const SimpleFeedbackPage = lazy(() => import("@/pages/simple-feedback"));
 const SimpleTestPage = lazy(() => import("@/pages/simple-test"));
 const InternalLandingGlasses = lazy(() => import("@/pages/internal-landing-glasses"));
+const AuthPage = lazy(() => import("@/pages/login-page"));
 
 import AdminLayout from "@/components/admin/AdminLayout";
 
@@ -527,6 +528,10 @@ function Router() {
         <Route path="/privacy" component={Privacy} />
         <Route path="/terms" component={Terms} />
         <Route path="/intro" component={Intro} />
+        <Route path="/login">{() => <AuthPage initialTab="signin" />}</Route>
+        <Route path="/register">{() => <AuthPage initialTab="register" />}</Route>
+        <Route path="/signin">{() => <Redirect to="/login" />}</Route>
+        <Route path="/signup">{() => <Redirect to="/register" />}</Route>
 
         {/* ── Admin Backoffice ── */}
         <Route path="/admin/funnel-live">

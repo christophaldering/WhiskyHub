@@ -38,7 +38,7 @@ function FadeUp({ children, delay = 0, className }: { children: React.ReactNode;
 }
 
 function LangSwitch() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { theme, toggleTheme } = useAppStore();
   const isDE = i18n.language?.startsWith("de");
 
@@ -85,6 +85,44 @@ function LangSwitch() {
       >
         {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
       </button>
+      <Link
+        href="/login"
+        data-testid="link-header-signin"
+        style={{
+          padding: "6px 10px",
+          borderRadius: 8,
+          border: `1px solid ${v.border}`,
+          background: "transparent",
+          color: v.muted,
+          textDecoration: "none",
+          fontFamily: font.body,
+          fontSize: 12,
+          fontWeight: 500,
+          letterSpacing: "0.04em",
+          transition: "all 0.2s",
+        }}
+      >
+        {t("auth.signIn", "Anmelden")}
+      </Link>
+      <Link
+        href="/register"
+        data-testid="link-header-register"
+        style={{
+          padding: "6px 10px",
+          borderRadius: 8,
+          border: `1px solid ${ACCENT}55`,
+          background: `${ACCENT}12`,
+          color: ACCENT,
+          textDecoration: "none",
+          fontFamily: font.body,
+          fontSize: 12,
+          fontWeight: 600,
+          letterSpacing: "0.04em",
+          transition: "all 0.2s",
+        }}
+      >
+        {t("auth.register", "Registrieren")}
+      </Link>
       <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
         <button
           onClick={() => switchLang("de")}
@@ -1056,6 +1094,30 @@ function Footer() {
             }}
           >
             {t("premium.footerPrivacy")}
+          </Link>
+          <Link
+            href="/login"
+            data-testid="link-footer-signin"
+            style={{
+              fontFamily: font.body,
+              fontSize: 12,
+              color: v.muted,
+              textDecoration: "none",
+            }}
+          >
+            {t("auth.signIn", "Anmelden")}
+          </Link>
+          <Link
+            href="/register"
+            data-testid="link-footer-register"
+            style={{
+              fontFamily: font.body,
+              fontSize: 12,
+              color: v.muted,
+              textDecoration: "none",
+            }}
+          >
+            {t("auth.register", "Registrieren")}
           </Link>
           <Link
             href="/terms"

@@ -1448,6 +1448,22 @@ const resources = {
         resent: "Code sent!",
         backToLogin: "Back"
       },
+      auth: {
+        signIn: "Sign In",
+        register: "Register",
+        openOnPage: "Open on dedicated page",
+        openSignInPage: "Open sign-in page",
+        openRegisterPage: "Open registration page",
+        signInPageTitle: "Sign in to CaskSense",
+        registerPageTitle: "Create your CaskSense account",
+        signInPageDesc: "Sign in with your email and password.",
+        registerPageDesc: "Create your CaskSense account in seconds.",
+        noAccountYet: "No account yet? Register now",
+        alreadyHaveAccount: "Already have an account? Sign in",
+        alreadySignedIn: "You are already signed in.",
+        toApp: "Go to the app",
+        signInRequired: "Please sign in to continue."
+      },
       nav: {
         tasting: "Tasting",
         tastings: "Tastings",
@@ -10629,6 +10645,22 @@ const resources = {
         resending: "Wird gesendet...",
         resent: "Code gesendet!",
         backToLogin: "Zurück"
+      },
+      auth: {
+        signIn: "Anmelden",
+        register: "Registrieren",
+        openOnPage: "Auf eigener Seite öffnen",
+        openSignInPage: "Anmeldeseite öffnen",
+        openRegisterPage: "Registrierungsseite öffnen",
+        signInPageTitle: "Anmelden bei CaskSense",
+        registerPageTitle: "Konto erstellen",
+        signInPageDesc: "Melde dich mit deiner E-Mail und deinem Passwort an.",
+        registerPageDesc: "Erstelle dein CaskSense-Konto in wenigen Sekunden.",
+        noAccountYet: "Noch kein Konto? Jetzt registrieren",
+        alreadyHaveAccount: "Schon ein Konto? Anmelden",
+        alreadySignedIn: "Du bist bereits angemeldet.",
+        toApp: "Zur App",
+        signInRequired: "Bitte melde dich an, um fortzufahren."
       },
       nav: {
         tasting: "Tasting",

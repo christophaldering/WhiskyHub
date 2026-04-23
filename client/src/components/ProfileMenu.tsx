@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { v } from "@/lib/themeVars";
 import { getTheme, setTheme, type ThemeName } from "@/lib/themeVars";
 import { getSession, signIn, signOut, setSessionPid } from "@/lib/session";
@@ -886,6 +886,21 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
 
   const renderSignedOutView = () => (
     <>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 12 }}>
+        <Link
+          href={signedOutTab === "register" ? "/register" : "/login"}
+          onClick={() => onClose?.()}
+          data-testid="m2-profile-open-on-page"
+          style={{
+            color: tv.accent,
+            textDecoration: "underline",
+            textUnderlineOffset: 4,
+            fontFamily: "system-ui, sans-serif",
+          }}
+        >
+          {t("auth.openOnPage", "Auf eigener Seite öffnen")}
+        </Link>
+      </div>
       <div style={{ display: "flex", borderRadius: 10, overflow: "hidden", border: `1px solid ${tv.border}`, marginBottom: 14 }}>
         <button
           onClick={() => { setSignedOutTab("signin"); setError(""); }}

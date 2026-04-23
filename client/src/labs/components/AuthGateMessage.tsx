@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import { LogIn } from "lucide-react";
+import { Link } from "wouter";
 
 interface AuthGateMessageProps {
   message?: string;
@@ -86,6 +87,22 @@ export default function AuthGateMessage({ message, title, bullets, icon, classNa
         >
           {t("m2.profile.createAccount", "Register")}
         </button>
+      </div>
+      <div style={{ display: "flex", gap: 12, marginTop: 10, fontSize: 12 }}>
+        <Link
+          href="/login"
+          style={{ color: "var(--labs-text-muted)", textDecoration: "underline", textUnderlineOffset: 4 }}
+          data-testid="link-auth-gate-login-page"
+        >
+          {t("auth.openSignInPage", "Anmeldeseite öffnen")}
+        </Link>
+        <Link
+          href="/register"
+          style={{ color: "var(--labs-text-muted)", textDecoration: "underline", textUnderlineOffset: 4 }}
+          data-testid="link-auth-gate-register-page"
+        >
+          {t("auth.openRegisterPage", "Registrierungsseite öffnen")}
+        </Link>
       </div>
     </div>
   );
