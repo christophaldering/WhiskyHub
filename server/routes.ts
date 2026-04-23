@@ -1755,26 +1755,34 @@ export async function registerRoutes(
 
   app.get("/api/tastings", async (req, res) => {
     const participantId = req.query.participantId as string | undefined;
-    if (!participantId) {
+    const hostIdFilter = req.query.hostId as string | undefined;
+    const requesterId = participantId || hostIdFilter;
+    if (!requesterId) {
       return res.json([]);
     }
-    const participant = await storage.getParticipant(participantId);
+    const participant = await storage.getParticipant(requesterId);
     if (!participant) {
       return res.json([]);
     }
+    if (hostIdFilter && hostIdFilter !== requesterId && participant.role !== "admin") {
+      return res.status(403).json({ message: "Forbidden" });
+    }
     let tastings: any[];
     const includeTest = req.query.includeTestData === "true" && participant.role === "admin";
-    if (participant.role === "admin") {
+    if (hostIdFilter) {
+      const hostTastings = await storage.getTastingsForParticipant(hostIdFilter);
+      tastings = hostTastings.filter((t: any) => t.hostId === hostIdFilter);
+    } else if (participant.role === "admin") {
       tastings = await storage.getAllTastings();
     } else {
-      tastings = await storage.getTastingsForParticipant(participantId);
+      tastings = await storage.getTastingsForParticipant(requesterId);
     }
     if (!includeTest) {
       tastings = tastings.filter((t: any) => !t.isTestData);
     }
 
     const invitedTastingMap: Record<string, { invitePending: boolean; inviteToken: string }> = {};
-    if (participant.email && participant.role !== "admin") {
+    if (!hostIdFilter && participant.email && participant.role !== "admin") {
       const pendingInvites = await storage.getInvitesByEmail(participant.email);
       const existingIds = new Set(tastings.map((t: any) => t.id));
       for (const invite of pendingInvites) {

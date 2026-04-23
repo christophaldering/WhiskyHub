@@ -1027,8 +1027,8 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
   const hostTastingsQuery = useQuery<Array<{ id: string; title: string; date: string | null; status?: string | null; hostId?: string }>>({
     queryKey: ["host-tastings-for-handout-link", hostId],
     queryFn: async () => {
-      const all = await tastingApi.getAll(hostId);
-      return (all || []).filter((tt: any) => !tt.hostId || tt.hostId === hostId);
+      const all = await tastingApi.getHosted(hostId);
+      return all || [];
     },
     enabled: !!hostId && !readonly && uploadOpen,
     staleTime: 30_000,

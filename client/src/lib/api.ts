@@ -62,6 +62,7 @@ export const participantApi = {
 // ===== Tastings =====
 export const tastingApi = {
   getAll: (participantId?: string) => fetchJSON(participantId ? `/tastings?participantId=${participantId}` : "/tastings"),
+  getHosted: (hostId: string) => fetchJSON(`/tastings?hostId=${encodeURIComponent(hostId)}`),
   get: (id: string) => fetchJSON(`/tastings/${id}`),
   getByCode: (code: string) => fetchJSON(`/tastings/code/${code}`),
   create: (data: any) => fetchJSON("/tastings", { method: "POST", body: JSON.stringify(data) }),
