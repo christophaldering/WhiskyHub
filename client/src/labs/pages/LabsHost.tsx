@@ -25,6 +25,7 @@ import type { RatingData } from "@/labs/components/rating/types";
 import { useRatingScale } from "@/labs/hooks/useRatingScale";
 import LabsHostCockpit from "@/labs/pages/LabsHostCockpit";
 import CoverImage16x9 from "@/labs/components/CoverImage16x9";
+import ModalPortal from "@/labs/components/ModalPortal";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi, collectionApi, wishlistApi } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
@@ -3984,6 +3985,7 @@ function CoverImageManager({
   handleDeleteSlot: (s: "upload" | "ai") => Promise<void>;
 }) {
   const { t } = useTranslation();
+  const aiPromptRef = useRef<HTMLTextAreaElement>(null);
   const aiUrl = (tasting.coverImageAiUrl as string | null) || null;
   const currentCoverUrl = (tasting.coverImageUrl as string | null) || null;
   let uploadUrl = (tasting.coverImageUploadUrl as string | null) || null;
@@ -4149,13 +4151,12 @@ function CoverImageManager({
       )}
 
       {/* Confirm-Switch Dialog */}
-      {confirmSwitchTo && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
-          onClick={() => setConfirmSwitchTo(null)}
-          data-testid="labs-cover-confirm-switch"
-        >
+      <ModalPortal
+        open={!!confirmSwitchTo}
+        onClose={() => setConfirmSwitchTo(null)}
+        testId="labs-cover-confirm-switch"
+      >
+        {confirmSwitchTo && (
           <div
             className="rounded-xl p-5 max-w-sm w-full"
             style={{ background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)" }}
@@ -4187,17 +4188,16 @@ function CoverImageManager({
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </ModalPortal>
 
       {/* Confirm-Delete Dialog */}
-      {confirmDeleteSlot && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
-          onClick={() => setConfirmDeleteSlot(null)}
-          data-testid="labs-cover-confirm-delete"
-        >
+      <ModalPortal
+        open={!!confirmDeleteSlot}
+        onClose={() => setConfirmDeleteSlot(null)}
+        testId="labs-cover-confirm-delete"
+      >
+        {confirmDeleteSlot && (
           <div
             className="rounded-xl p-5 max-w-sm w-full"
             style={{ background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)" }}
@@ -4223,17 +4223,19 @@ function CoverImageManager({
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </ModalPortal>
 
       {/* AI Generate / Preview Dialog */}
-      {aiDialogOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
-          onClick={() => !aiGenerating && !aiSaving && setAiDialogOpen(false)}
-          data-testid="labs-cover-ai-dialog"
-        >
+      <ModalPortal
+        open={aiDialogOpen}
+        onClose={() => { if (!aiGenerating && !aiSaving) setAiDialogOpen(false); }}
+        closeOnOverlayClick={!aiGenerating && !aiSaving}
+        closeOnEscape={!aiGenerating && !aiSaving}
+        initialFocusRef={aiPromptRef}
+        testId="labs-cover-ai-dialog"
+      >
+        {aiDialogOpen && (
           <div
             className="rounded-xl p-5 max-w-lg w-full"
             style={{ background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)" }}
@@ -4250,6 +4252,7 @@ function CoverImageManager({
               {t("labs.host.coverAiPromptLabel")}
             </label>
             <textarea
+              ref={aiPromptRef}
               className="labs-input w-full"
               rows={3}
               value={aiPromptHint}
