@@ -65,6 +65,7 @@ export const tastings = pgTable("tastings", {
   coverImageAiUrl: text("cover_image_ai_url"),
   coverImageSource: text("cover_image_source"), // null | 'upload' | 'ai'
   coverImageAiPrompt: text("cover_image_ai_prompt"),
+  coverImageAiCandidates: jsonb("cover_image_ai_candidates").$type<{ url: string; prompt: string; mimeType: string; generatedAt: string }[]>(),
   videoLink: text("video_link"),
   dramStartedAt: timestamp("dram_started_at"),
   dramTimers: text("dram_timers"), // JSON: { [whiskyId]: accumulatedSeconds }

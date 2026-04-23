@@ -2195,7 +2195,9 @@ export async function registerRoutes(
     }
   });
 
-  // Save AI-generated cover (base64) into the AI slot and activate it
+  // Save AI-generated cover into the AI slot and activate it.
+  // Preferred: pass { url, prompt } pointing to a previously uploaded candidate
+  // from /menu-cover. Legacy: { coverImageBase64, mimeType, prompt }.
   app.post("/api/tastings/:id/cover-image-ai", async (req: any, res: any) => {
     try {
       const tasting = await storage.getTasting(req.params.id);
@@ -2207,19 +2209,24 @@ export async function registerRoutes(
           return res.status(403).json({ message: "Only the host can update the cover image" });
         }
       }
-      const { coverImageBase64, mimeType, prompt } = req.body || {};
-      if (!coverImageBase64 || typeof coverImageBase64 !== "string") {
-        return res.status(400).json({ message: "Missing coverImageBase64" });
+      const { url: providedUrl, coverImageBase64, mimeType, prompt } = req.body || {};
+      let url: string | null = null;
+      if (typeof providedUrl === "string" && providedUrl.trim()) {
+        url = providedUrl.trim();
+      } else if (typeof coverImageBase64 === "string" && coverImageBase64) {
+        const buffer = Buffer.from(coverImageBase64, "base64");
+        const contentType = (typeof mimeType === "string" && mimeType) || "image/jpeg";
+        url = await uploadBufferToObjectStorage(objectStorage, buffer, contentType);
       }
-      const buffer = Buffer.from(coverImageBase64, "base64");
-      const contentType = (typeof mimeType === "string" && mimeType) || "image/jpeg";
-      const url = await uploadBufferToObjectStorage(objectStorage, buffer, contentType);
+      if (!url) {
+        return res.status(400).json({ message: "Missing url or coverImageBase64" });
+      }
       const updates: Record<string, unknown> = {
         coverImageAiUrl: url,
         coverImageAiPrompt: typeof prompt === "string" && prompt.trim() ? prompt.trim() : null,
       };
       const hasActive = !!tasting.coverImageUrl && !!tasting.coverImageSource;
-      if (!hasActive) {
+      if (!hasActive || tasting.coverImageSource === "ai") {
         updates.coverImageUrl = url;
         updates.coverImageSource = "ai";
       }
