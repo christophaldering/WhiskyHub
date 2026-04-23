@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useLocation, useParams } from "wouter";
+import { Link, useLocation, useParams } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import { Wine, ArrowRight, AlertCircle, LogIn, ChevronLeft, User, Mail, Calendar, KeyRound, MailCheck, Copy, Check, RotateCcw, Camera, Printer, Download, Upload, ShieldCheck } from "lucide-react";
 import { formatRejoinCode as fmtRejoinCode, extractRejoinCodeFromText as extractRejoin } from "@/labs/utils/rejoinCode";
@@ -838,21 +838,21 @@ export default function LabsJoin() {
             className="flex items-center justify-center gap-3 pt-2 text-xs"
             style={{ color: "var(--labs-text-muted)" }}
           >
-            <a
+            <Link
               href="/login"
               data-testid="labs-join-link-login-page"
               style={{ color: "var(--labs-text-muted)", textDecoration: "underline", textUnderlineOffset: 4 }}
             >
               {t("auth.openSignInPage", "Anmeldeseite öffnen")}
-            </a>
+            </Link>
             <span style={{ opacity: 0.5 }}>·</span>
-            <a
+            <Link
               href="/register"
               data-testid="labs-join-link-register-page"
               style={{ color: "var(--labs-text-muted)", textDecoration: "underline", textUnderlineOffset: 4 }}
             >
               {t("auth.openRegisterPage", "Registrierungsseite öffnen")}
-            </a>
+            </Link>
           </div>
         </div>
       </div>

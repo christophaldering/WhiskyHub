@@ -5,6 +5,7 @@ import { ChevronRight, Wine, Users, Mic, SplitSquareVertical, Sun, Moon } from "
 import { useTranslation } from "react-i18next";
 import { v } from "@/lib/themeVars";
 import { useAppStore } from "@/lib/store";
+import { getSession } from "@/lib/session";
 import heroImage from "@/assets/images/hero-whisky.png";
 
 const ACCENT = "#c8a97e";
@@ -39,8 +40,10 @@ function FadeUp({ children, delay = 0, className }: { children: React.ReactNode;
 
 function LangSwitch() {
   const { t, i18n } = useTranslation();
-  const { theme, toggleTheme } = useAppStore();
+  const { theme, toggleTheme, currentParticipant } = useAppStore();
   const isDE = i18n.language?.startsWith("de");
+  const session = getSession();
+  const signedIn = session.signedIn || !!currentParticipant;
 
   const switchLang = (lang: string) => {
     const scrollY = window.scrollY;
@@ -85,44 +88,69 @@ function LangSwitch() {
       >
         {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
       </button>
-      <Link
-        href="/login"
-        data-testid="link-header-signin"
-        style={{
-          padding: "6px 10px",
-          borderRadius: 8,
-          border: `1px solid ${v.border}`,
-          background: "transparent",
-          color: v.muted,
-          textDecoration: "none",
-          fontFamily: font.body,
-          fontSize: 12,
-          fontWeight: 500,
-          letterSpacing: "0.04em",
-          transition: "all 0.2s",
-        }}
-      >
-        {t("auth.signIn", "Anmelden")}
-      </Link>
-      <Link
-        href="/register"
-        data-testid="link-header-register"
-        style={{
-          padding: "6px 10px",
-          borderRadius: 8,
-          border: `1px solid ${ACCENT}55`,
-          background: `${ACCENT}12`,
-          color: ACCENT,
-          textDecoration: "none",
-          fontFamily: font.body,
-          fontSize: 12,
-          fontWeight: 600,
-          letterSpacing: "0.04em",
-          transition: "all 0.2s",
-        }}
-      >
-        {t("auth.register", "Registrieren")}
-      </Link>
+      {!signedIn && (
+        <>
+          <Link
+            href="/login"
+            data-testid="link-header-signin"
+            style={{
+              padding: "6px 10px",
+              borderRadius: 8,
+              border: `1px solid ${v.border}`,
+              background: "transparent",
+              color: v.muted,
+              textDecoration: "none",
+              fontFamily: font.body,
+              fontSize: 12,
+              fontWeight: 500,
+              letterSpacing: "0.04em",
+              transition: "all 0.2s",
+            }}
+          >
+            {t("auth.signIn", "Anmelden")}
+          </Link>
+          <Link
+            href="/register"
+            data-testid="link-header-register"
+            style={{
+              padding: "6px 10px",
+              borderRadius: 8,
+              border: `1px solid ${ACCENT}55`,
+              background: `${ACCENT}12`,
+              color: ACCENT,
+              textDecoration: "none",
+              fontFamily: font.body,
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: "0.04em",
+              transition: "all 0.2s",
+            }}
+          >
+            {t("auth.register", "Registrieren")}
+          </Link>
+        </>
+      )}
+      {signedIn && (
+        <Link
+          href="/labs/tastings"
+          data-testid="link-header-app"
+          style={{
+            padding: "6px 10px",
+            borderRadius: 8,
+            border: `1px solid ${ACCENT}55`,
+            background: `${ACCENT}12`,
+            color: ACCENT,
+            textDecoration: "none",
+            fontFamily: font.body,
+            fontSize: 12,
+            fontWeight: 600,
+            letterSpacing: "0.04em",
+            transition: "all 0.2s",
+          }}
+        >
+          {t("auth.toApp", "Zur App")}
+        </Link>
+      )}
       <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
         <button
           onClick={() => switchLang("de")}
