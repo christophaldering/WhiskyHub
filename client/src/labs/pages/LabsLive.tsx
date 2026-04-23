@@ -1570,7 +1570,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                                     <>
                                       <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
                                         {(["nose", "taste", "finish"] as const).map((dim) => {
-                                          const val = (rating as any)[dim];
+                                          const val = (rating as Record<string, number | null>)[dim];
                                           const pct = val != null ? Math.max(0, Math.min(100, ((val - 60) / 40) * 100)) : 0;
                                           return (
                                             <div key={dim} style={{ flex: 1 }}>
