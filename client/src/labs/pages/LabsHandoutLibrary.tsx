@@ -173,9 +173,10 @@ interface CompactTileProps {
   selectMode?: boolean;
   onClick: () => void;
   testId: string;
+  footer?: React.ReactNode;
 }
 
-function CompactTile({ isPdf, title, subline, isSelected, selectMode, onClick, testId }: CompactTileProps) {
+function CompactTile({ isPdf, title, subline, isSelected, selectMode, onClick, testId, footer }: CompactTileProps) {
   return (
     <div
       className="labs-card labs-card-interactive"
@@ -242,6 +243,15 @@ function CompactTile({ isPdf, title, subline, isSelected, selectMode, onClick, t
             }}
           >
             {subline}
+          </div>
+        )}
+        {footer && (
+          <div
+            onClick={(ev) => ev.stopPropagation()}
+            onKeyDown={(ev) => ev.stopPropagation()}
+            style={{ marginTop: 6 }}
+          >
+            {footer}
           </div>
         )}
       </div>
@@ -2630,6 +2640,7 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
               }
               const title = entry.whiskyName || entry.title || "";
               const subline = tileSubline(entry, t);
+              const usageCount = entry.usageCount ?? 0;
               return (
                 <CompactTile
                   key={entry.id}
@@ -2643,6 +2654,20 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                     if (selectMode) toggleSelected(entry.id);
                     else setDetailEntry(entry);
                   }}
+                  footer={hostId && !selectMode ? (
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--labs-text-muted)" }}>
+                      <span>{t("labs.handoutLibrary.cardUsageLabel", { defaultValue: "Verwendet in:" })}</span>
+                      <UsageTastingsPopover
+                        entryId={entry.id}
+                        hostId={hostId}
+                        count={usageCount}
+                        t={t}
+                        locale={locale}
+                        onOpenDetail={() => setDetailEntry(entry)}
+                        onOpenTasting={(tt) => setLocation(`/labs/host/${tt.id}`)}
+                      />
+                    </div>
+                  ) : undefined}
                 />
               );
             })}
