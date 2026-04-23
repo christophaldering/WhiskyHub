@@ -259,8 +259,21 @@ export function parseHandoutFilename(filename: string): ParsedHandoutFilename {
     if (a.result.date && (!best || a.score > best.score)) best = a;
   }
   if (!best) return empty;
-  // If we could not recognise a date, the structure is unreliable — fall back
-  // to manual entry so the host gets clean inputs rather than misleading guesses.
-  if (!best.result.recognized) return empty;
+  // Even when no date was recognised, return whatever whisky-name guess we
+  // have — the upload form requires a whisky name to submit, and a filename
+  // like "Tobermory Murray McDavid 2010.pdf" is a perfectly reasonable seed
+  // for that field. Other fields (tastingTitle/author) are only kept when
+  // the date anchored the structure, otherwise they are too speculative.
+  if (!best.result.recognized) {
+    if (!best.result.whiskyName) return empty;
+    return {
+      date: null,
+      whiskyName: best.result.whiskyName,
+      tastingTitle: "",
+      author: "",
+      recognized: false,
+      autoFilled: { date: false, whiskyName: true, tastingTitle: false, author: false },
+    };
+  }
   return best.result;
 }

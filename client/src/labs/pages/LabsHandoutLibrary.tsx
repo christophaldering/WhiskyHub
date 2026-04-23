@@ -995,6 +995,47 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
     onError: (e: any) => setError(e?.message || t("labs.handoutLibrary.errUpload")),
   });
 
+  const analyzeFileTokenRef = useRef(0);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+
+  function runAnalyze(file: File) {
+    const isPdf =
+      (file.type || "").toLowerCase() === "application/pdf" ||
+      (file.name || "").toLowerCase().endsWith(".pdf");
+    if (!isPdf) return;
+    const token = ++analyzeFileTokenRef.current;
+    setAnalyzeError(null);
+    setAnalyzing(true);
+    handoutLibraryApi.analyze(hostId, file)
+      .then((suggestion) => {
+        if (token !== analyzeFileTokenRef.current) return;
+        setUploadForm((prev) => {
+          // Only fill empty fields; never overwrite something the user typed.
+          const ageStr = typeof suggestion.age === "number" ? `${suggestion.age}` : "";
+          const cask = (suggestion.caskType || "").trim();
+          const aiBits = [
+            ageStr ? `Alter: ${ageStr} Jahre` : "",
+            cask ? `Fassart: ${cask}` : "",
+          ].filter(Boolean).join(" · ");
+          return {
+            ...prev,
+            whiskyName: prev.whiskyName.trim() ? prev.whiskyName : (suggestion.whiskyName || ""),
+            distillery: prev.distillery.trim() ? prev.distillery : (suggestion.distillery || ""),
+            whiskybaseId: prev.whiskybaseId.trim() ? prev.whiskybaseId : (suggestion.whiskybaseId || ""),
+            description: prev.description.trim() ? prev.description : aiBits,
+          };
+        });
+      })
+      .catch((e: any) => {
+        if (token !== analyzeFileTokenRef.current) return;
+        setAnalyzeError(e?.message || t("labs.handoutLibrary.errAnalyze", { defaultValue: "KI-Analyse fehlgeschlagen" }));
+      })
+      .finally(() => {
+        if (token === analyzeFileTokenRef.current) setAnalyzing(false);
+      });
+  }
+
   const replaceFileMut = useMutation({
     mutationFn: ({ id, file }: { id: string; file: File }) => handoutLibraryApi.replaceFile(id, hostId, file),
     onSuccess: () => {
@@ -1446,6 +1487,7 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                       author: uploadForm.author || parsed.author || "",
                       documentDate: uploadForm.documentDate || parsed.date || "",
                     });
+                    runAnalyze(f);
                   }
                 }}
                 data-testid="input-upload-file"
@@ -1479,6 +1521,7 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                       author: uploadForm.author || parsed.author || "",
                       documentDate: uploadForm.documentDate || parsed.date || "",
                     });
+                    runAnalyze(f);
                   }
                 }}
                 style={{
@@ -1508,7 +1551,23 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                     ? t("labs.handoutLibrary.multiSelectedCount", { count: multiItems.length })
                     : uploadForm.file ? uploadForm.file.name : t("labs.handoutLibrary.dropOrChooseHint")}
                 </span>
+                {analyzing && (
+                  <span
+                    style={{ fontSize: 11, color: "var(--labs-accent)", whiteSpace: "nowrap" }}
+                    data-testid="status-handout-analyzing"
+                  >
+                    {t("labs.handoutLibrary.analyzingHint", { defaultValue: "KI liest PDF…" })}
+                  </span>
+                )}
               </div>
+              {analyzeError && !analyzing && (
+                <div
+                  style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: -4 }}
+                  data-testid="text-handout-analyze-error"
+                >
+                  {t("labs.handoutLibrary.analyzeErrorHint", { defaultValue: "KI-Vorausfüllung nicht möglich – bitte Felder manuell ergänzen." })}
+                </div>
+              )}
               {multiItems.length === 0 && (
                 <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--labs-text)", cursor: "pointer" }}>
                   <input

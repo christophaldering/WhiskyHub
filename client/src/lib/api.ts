@@ -330,6 +330,29 @@ export const handoutLibraryApi = {
       headers: { "x-participant-id": hostId },
       body: JSON.stringify({}),
     }),
+  analyze: async (
+    hostId: string,
+    file: File,
+  ): Promise<{
+    whiskyName: string | null;
+    distillery: string | null;
+    age: number | null;
+    caskType: string | null;
+    whiskybaseId: string | null;
+  }> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`${API_BASE}/handout-library/analyze`, {
+      method: "POST",
+      body: formData,
+      headers: { "x-participant-id": hostId },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
   bulkDelete: (ids: string[], hostId: string) =>
     fetchJSON(`/handout-library/bulk-delete`, {
       method: "POST",

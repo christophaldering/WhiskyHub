@@ -3951,6 +3951,127 @@ export async function registerRoutes(
     }
   });
 
+  // Analyse a freshly picked file (not yet uploaded) and propose metadata
+  // (whisky name, distillery, age, cask type, whiskybase id) extracted from
+  // the PDF text via the AI. The client uses this to pre-fill empty fields
+  // in the upload form so the host doesn't have to retype obvious data.
+  app.post("/api/handout-library/analyze", (req: any, res: any, next: any) => {
+    handoutUpload.single("file")(req, res, (err: any) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(413).json({ message: "Datei zu groß (max. 20 MB)" });
+        }
+        return res.status(400).json({ message: err.message || "Upload fehlgeschlagen" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      const hostId = req.headers["x-participant-id"] as string | undefined;
+      if (!hostId) return res.status(401).json({ message: "Authentifizierung erforderlich" });
+      if (!req.file) return res.status(400).json({ message: "Keine Datei übermittelt" });
+
+      const lowerName = (req.file.originalname || "").toLowerCase();
+      const isPdf = (req.file.mimetype || "").toLowerCase() === "application/pdf" || lowerName.endsWith(".pdf");
+      if (!isPdf) {
+        return res.status(400).json({ message: "Nur PDFs können analysiert werden" });
+      }
+
+      let pages: string[];
+      try {
+        pages = await extractPagesText(req.file.buffer);
+      } catch (extractErr: any) {
+        console.warn("[handout-library] analyze: text extraction failed", extractErr);
+        return res.status(400).json({ message: "Text konnte aus PDF nicht extrahiert werden" });
+      }
+      const fullText = pages.join("\n\n").trim();
+      if (!fullText) {
+        return res.status(400).json({ message: "PDF enthält keinen lesbaren Text" });
+      }
+
+      const { client, error: aiError, quotaInfo } = await getAIClient(hostId, "auto_handout");
+      if (!client) {
+        if (aiError === "AI_LIMIT_EXCEEDED") {
+          return res.status(429).json({ message: "KI-Kontingent erschöpft", quotaInfo });
+        }
+        if (aiError === "AI_DISABLED") {
+          return res.status(503).json({ message: "KI-Funktion deaktiviert" });
+        }
+        return res.status(503).json({ message: "Keine KI verfügbar – bitte OpenAI-Key in den Einstellungen hinterlegen" });
+      }
+
+      // Cap the prompt at the first ~6000 chars: handout cover/first page is
+      // usually enough for whisky/distillery/age/cask/Whiskybase-ID and keeps
+      // the AI call cheap.
+      const MAX_CHARS = 6000;
+      const snippet = fullText.length > MAX_CHARS ? fullText.slice(0, MAX_CHARS) + "…" : fullText;
+
+      const sysPrompt = "Du bist ein Assistent, der Whisky-Tasting-Handouts (PDF) analysiert. Aus dem übergebenen Text extrahierst du strukturierte Metadaten für genau einen Whisky. Antworte ausschließlich mit gültigem JSON nach dem geforderten Schema. Felder, die du nicht sicher bestimmen kannst, lässt du leer (\"\") bzw. lieferst null beim Alter. Erfinde nichts.";
+      const userPrompt = `Hier ist der Text eines Whisky-Handout-PDFs (ein Whisky). Extrahiere die Metadaten.
+
+Antworte mit JSON dieser Struktur:
+{
+  "whiskyName": "<vollständiger Name des Whiskys, z. B. 'Ardbeg 10' oder 'Glenfarclas 25 Sherry Cask'>",
+  "distillery": "<Brennerei, z. B. 'Ardbeg'>",
+  "age": <Ganzzahl Jahre, oder null wenn NAS / unklar>,
+  "caskType": "<Fasstyp, z. B. 'First Fill Sherry Hogshead', 'Bourbon Cask', 'Refill Hogshead'>",
+  "whiskybaseId": "<reine numerische ID von whiskybase.com, z. B. '12345', oder leer>"
+}
+Nur das JSON, keine weiteren Worte.
+
+PDF-INHALT:
+${snippet}`;
+
+      let aiText = "";
+      try {
+        const completion = await client.chat.completions.create({
+          model: process.env.AI_INTEGRATIONS_OPENAI_MODEL || "gpt-4o-mini",
+          temperature: 0.1,
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: sysPrompt },
+            { role: "user", content: userPrompt },
+          ],
+        });
+        aiText = completion.choices[0]?.message?.content || "";
+      } catch (aiErr: any) {
+        console.warn("[handout-library] analyze: AI call failed", aiErr);
+        return res.status(502).json({ message: "KI-Analyse fehlgeschlagen" });
+      }
+
+      let parsed: any;
+      try {
+        parsed = JSON.parse(aiText);
+      } catch {
+        return res.status(502).json({ message: "KI-Antwort konnte nicht gelesen werden" });
+      }
+
+      const schema = z.object({
+        whiskyName: z.string().trim().max(200).optional().nullable(),
+        distillery: z.string().trim().max(200).optional().nullable(),
+        age: z.number().int().min(0).max(120).optional().nullable(),
+        caskType: z.string().trim().max(200).optional().nullable(),
+        whiskybaseId: z.string().trim().max(100).optional().nullable(),
+      });
+      const safe = schema.safeParse(parsed);
+      if (!safe.success) {
+        return res.status(502).json({ message: "KI-Vorschlag ungültig" });
+      }
+      const d = safe.data;
+      const cleanWbId = (d.whiskybaseId || "").replace(/[^0-9]/g, "");
+      res.json({
+        whiskyName: (d.whiskyName || "").trim() || null,
+        distillery: (d.distillery || "").trim() || null,
+        age: typeof d.age === "number" ? d.age : null,
+        caskType: (d.caskType || "").trim() || null,
+        whiskybaseId: cleanWbId || null,
+      });
+    } catch (e: any) {
+      console.error("[handout-library] analyze failed", e);
+      res.status(500).json({ message: e?.message || "Analyse fehlgeschlagen" });
+    }
+  });
+
   app.post("/api/handout-library/:id/replace-file", (req: any, res: any, next: any) => {
     handoutUpload.single("file")(req, res, (err: any) => {
       if (err) {
