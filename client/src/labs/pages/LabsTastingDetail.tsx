@@ -1287,6 +1287,15 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                       >
                         {idx + 1}
                       </span>
+                      {(w.imageUrl as string) && !(tasting.blindMode && !isHost) && (
+                        <img
+                          src={w.imageUrl as string}
+                          alt=""
+                          className="rounded-lg object-cover flex-shrink-0"
+                          style={{ width: 44, height: 52, border: "1px solid var(--labs-border)" }}
+                          data-testid={`img-whisky-${w.id}`}
+                        />
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)", margin: 0 }}>
                           {tasting.blindMode && !isHost ? `Dram #${idx + 1}` : ((w.name as string) || `Dram #${idx + 1}`)}
@@ -1297,14 +1306,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                           </p>
                         )}
                       </div>
-                      {(w.imageUrl as string) && (
-                        <img
-                          src={w.imageUrl as string}
-                          alt=""
-                          className="w-7 h-7 rounded-md object-cover flex-shrink-0"
-                          data-testid={`img-whisky-${w.id}`}
-                        />
-                      )}
                       {isHost && isDraft && (
                         <div className="flex items-center gap-0.5 flex-shrink-0">
                           <button

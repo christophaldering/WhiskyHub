@@ -1204,8 +1204,8 @@ export default function LabsLive({ params }: LabsLiveProps) {
                   <img
                     src={currentWhisky.imageUrl}
                     alt={displayName}
-                    className="mx-auto mb-2 rounded-xl object-cover"
-                    style={{ width: 56, height: 56, border: "1px solid var(--labs-border)" }}
+                    className="mx-auto mb-3 rounded-2xl object-cover"
+                    style={{ width: 110, height: 130, border: "1px solid var(--labs-border)", boxShadow: "0 4px 16px rgba(0,0,0,0.18)" }}
                     data-testid="labs-live-whisky-thumb"
                   />
                 )}
