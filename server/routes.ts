@@ -20215,8 +20215,12 @@ User's style request: ${sanitizedPrompt}`;
       };
       try {
         await storage.appendAiCoverCandidate(tastingId, candidate);
-      } catch (persistErr) {
+      } catch (persistErr: any) {
         console.error("Failed to persist AI cover candidate:", persistErr);
+        return res.status(500).json({
+          message: "Cover image generated but could not be saved: " + (persistErr?.message || "unknown error"),
+          url,
+        });
       }
 
       res.json({
