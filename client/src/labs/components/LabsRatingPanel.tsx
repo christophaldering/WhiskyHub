@@ -8,6 +8,7 @@ import ScaleBadge from "./ScaleBadge";
 import FlavourStudioSheet from "./FlavourStudioSheet";
 
 export type DimKey = "nose" | "taste" | "finish";
+export type TabKey = DimKey | "overall";
 
 const LEGACY_CHIP_MAP: Record<string, string> = {
   "Peaty": "Peat",
@@ -93,7 +94,7 @@ export default function LabsRatingPanel({
   const scaleInfo = useMemo(() => buildScale(scale), [scale]);
 
   const [showDetailed, setShowDetailed] = useState(defaultOpen);
-  const [activeTab, setActiveTab] = useState<DimKey>("nose");
+  const [activeTab, setActiveTab] = useState<TabKey>("nose");
   const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
   const [showFlavors, setShowFlavors] = useState(false);
   const isDE = i18n.language === "de";
@@ -191,6 +192,7 @@ export default function LabsRatingPanel({
   };
 
   const addCustomTag = () => {
+    if (activeTab === "overall") return;
     const tag = customInput.trim();
     if (!tag) return;
     if (!chips[activeTab].some((c) => c.toLowerCase() === tag.toLowerCase())) {
@@ -207,7 +209,7 @@ export default function LabsRatingPanel({
     finish: t("m2.rating.finish", "Finish"),
   };
 
-  const activeChips = chips[activeTab];
+  const activeChips = activeTab !== "overall" ? chips[activeTab] : [];
 
   const normalizedActiveSet = useMemo(() => {
     return new Set(activeChips.map((c) => normalizeLegacyChip(c).toLowerCase()));
@@ -217,15 +219,29 @@ export default function LabsRatingPanel({
     return normalizedActiveSet.has(subEn.toLowerCase());
   }, [normalizedActiveSet]);
 
+  const missingDims = DIM_KEYS.filter((k) => scores[k] <= 0);
+  const allDimsScored = missingDims.length === 0;
+  const overallGated = !allDimsScored;
+
+  const ALL_TABS: TabKey[] = [...DIM_KEYS, "overall"];
+  const overallTabLabel = t("m2.rating.overall", "Overall");
+
   const renderTabBar = () => (
     <div style={{ display: "flex", gap: 0, marginBottom: 16, borderRadius: 8, overflow: "hidden", border: "1px solid var(--labs-border)" }} data-testid="rating-tab-bar">
-      {DIM_KEYS.map((key) => {
+      {ALL_TABS.map((key) => {
         const isActive = activeTab === key;
+        const isOverall = key === "overall";
+        const tabDisabled = disabled || (isOverall && overallGated);
         return (
           <button
             key={key}
             type="button"
-            onClick={() => { if (disabled) return; setActiveTab(key); setExpandedCats({}); setCustomInput(""); }}
+            onClick={() => {
+              if (tabDisabled) return;
+              setActiveTab(key);
+              setExpandedCats({});
+              setCustomInput("");
+            }}
             data-testid={`tab-${key}`}
             style={{
               flex: 1,
@@ -233,16 +249,16 @@ export default function LabsRatingPanel({
               background: isActive ? "var(--labs-accent)" : "transparent",
               border: "none",
               color: isActive ? "var(--labs-bg)" : "var(--labs-text-secondary)",
-              fontSize: compact ? 12 : 13,
+              fontSize: compact ? 11 : 12,
               fontWeight: isActive ? 700 : 500,
               fontFamily: "inherit",
-              cursor: disabled ? "default" : "pointer",
+              cursor: tabDisabled ? "default" : "pointer",
               transition: "all 0.15s",
-              opacity: disabled ? 0.5 : 1,
-              borderRight: key !== "finish" ? "1px solid var(--labs-border)" : "none",
+              opacity: tabDisabled && !isActive ? 0.35 : 1,
+              borderRight: key !== "overall" ? "1px solid var(--labs-border)" : "none",
             }}
           >
-            {dimLabels[key]}
+            {isOverall ? overallTabLabel : dimLabels[key]}
           </button>
         );
       })}
@@ -288,6 +304,7 @@ export default function LabsRatingPanel({
   };
 
   const handleStudioChipsChange = useCallback((newChips: string[]) => {
+    if (activeTab === "overall") return;
     const currentChips = chips[activeTab] || [];
     const currentSet = new Set(currentChips.map((c) => c.toLowerCase()));
     const newSet = new Set(newChips.map((c) => c.toLowerCase()));
@@ -556,22 +573,109 @@ export default function LabsRatingPanel({
     </div>
   );
 
-  const renderActiveTabContent = () => (
-    <div style={{
-      padding: compact ? 12 : 16,
-      background: "var(--labs-surface-alt, rgba(255,255,255,0.03))",
-      borderRadius: 10,
-      border: "1px solid var(--labs-border-subtle)",
-    }} data-testid="section-detailed-scoring">
-      {renderSliderWithMarkers(activeTab)}
-      {renderFlavorCategories()}
-      {renderTextArea(activeTab)}
-    </div>
-  );
-
-  const missingDims = DIM_KEYS.filter((k) => scores[k] <= 0);
-  const allDimsScored = missingDims.length === 0;
-  const overallGated = !allDimsScored;
+  const renderActiveTabContent = () => {
+    if (activeTab === "overall") {
+      return (
+        <div style={{
+          padding: compact ? 12 : 16,
+          background: "var(--labs-surface-alt, rgba(255,255,255,0.03))",
+          borderRadius: 10,
+          border: "1px solid var(--labs-border-subtle)",
+        }} data-testid="section-overall-tab">
+          <div style={{
+            display: "flex",
+            justifyContent: "space-around",
+            marginBottom: 16,
+            paddingBottom: 14,
+            borderBottom: "1px solid var(--labs-border-subtle)",
+          }}>
+            {DIM_KEYS.map((k) => (
+              <div key={k} style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "var(--labs-text-muted)", marginBottom: 4 }}>
+                  {dimLabels[k]}
+                </div>
+                <div
+                  className="labs-serif tabular-nums"
+                  style={{ fontSize: compact ? 18 : 22, fontWeight: 700, color: DIM_COLORS[k] }}
+                  data-testid={`overall-tab-dim-${k}`}
+                >
+                  {scores[k]}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginBottom: compact ? 4 : 6 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+              <span style={{ fontSize: compact ? 10 : 12, fontWeight: 600, color: "var(--labs-text)", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                {t("m2.rating.overall", "Overall")}
+                {scale !== 100 && <ScaleBadge max={scaleInfo.max} />}
+                {overrideActive && !overallGated && (
+                  <span className="labs-badge labs-badge-accent" style={{ marginLeft: 2 }} data-testid="badge-override">
+                    {t("m2.rating.manual", "Manual")}
+                  </span>
+                )}
+              </span>
+              <span className="labs-serif" style={{ fontSize: compact ? 18 : 28, fontWeight: 700, color: "var(--labs-text)", fontVariantNumeric: "tabular-nums" }} data-testid="text-score-value">
+                {overall}
+              </span>
+            </div>
+            <input
+              type="range"
+              min={60}
+              max={100}
+              step={scaleInfo.step}
+              value={overall}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                const prev = prevSliderVals.current["overall"];
+                if ((val === 60 || val === 100) && prev !== val) {
+                  triggerHaptic("boundary");
+                }
+                prevSliderVals.current["overall"] = val;
+                onOverallChange(val);
+              }}
+              disabled={disabled || overallGated}
+              data-testid="m2-rating-overall"
+              style={{ width: "100%", accentColor: "var(--labs-accent)", display: "block", cursor: (disabled || overallGated) ? "not-allowed" : "pointer", opacity: overallGated ? 0.35 : 1, transition: "opacity 0.2s" }}
+            />
+            {overrideActive && !overallGated && (
+              <button
+                type="button"
+                onClick={onResetOverride}
+                data-testid="button-reset-override"
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--labs-accent)",
+                  fontSize: 11,
+                  fontFamily: "inherit",
+                  padding: "6px 0 0",
+                  textDecoration: "underline",
+                  display: "block",
+                  margin: "0 auto",
+                }}
+              >
+                {t("m2.rating.resetToCalc", "Reset to calculated")}
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div style={{
+        padding: compact ? 12 : 16,
+        background: "var(--labs-surface-alt, rgba(255,255,255,0.03))",
+        borderRadius: 10,
+        border: "1px solid var(--labs-border-subtle)",
+      }} data-testid="section-detailed-scoring">
+        {renderSliderWithMarkers(activeTab)}
+        {renderFlavorCategories()}
+        {renderTextArea(activeTab)}
+      </div>
+    );
+  };
 
   const renderOverall = () => (
     <div style={{ marginTop: showToggle && showDetailed ? 8 : 16 }}>
@@ -1020,7 +1124,7 @@ export default function LabsRatingPanel({
         <FlavourStudioSheet
           open={studioOpen}
           onOpenChange={setStudioOpen}
-          dimension={activeTab}
+          dimension={activeTab !== "overall" ? activeTab : "finish"}
           existingChips={activeChips}
           onChipsChange={handleStudioChipsChange}
           disabled={disabled}
@@ -1040,12 +1144,10 @@ export default function LabsRatingPanel({
 
       {showToggle && renderDetailedToggle()}
 
-      {renderOverall()}
-
       <FlavourStudioSheet
         open={studioOpen}
         onOpenChange={setStudioOpen}
-        dimension={activeTab}
+        dimension={activeTab !== "overall" ? activeTab : "finish"}
         existingChips={activeChips}
         onChipsChange={handleStudioChipsChange}
         disabled={disabled}

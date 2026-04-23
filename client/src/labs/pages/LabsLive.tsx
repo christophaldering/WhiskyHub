@@ -39,6 +39,7 @@ interface LabsLiveProps {
 
 const DIMENSIONS = ["nose", "taste", "finish"] as const;
 type Dimension = (typeof DIMENSIONS)[number];
+type ActiveTab = Dimension | "overall";
 
 function GuidedLobby({ tasting, participantCount }: { tasting: any; participantCount: number }) {
   const { t } = useTranslation();
@@ -714,7 +715,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
   const [, navigate] = useLocation();
   const goBack = useLabsBack(`/labs/tastings/${tastingId}`);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [activeDim, setActiveDim] = useState<Dimension>("nose");
+  const [activeDim, setActiveDim] = useState<ActiveTab>("nose");
   const [flavorExpanded, setFlavorExpanded] = useState(false);
   const [studioOpen, setStudioOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -916,7 +917,8 @@ export default function LabsLive({ params }: LabsLiveProps) {
   }, [notes, activeDim]);
 
   const handleStudioChipsChange = useCallback((newChips: string[]) => {
-    const updated = replaceTagsInNotes(notes, activeDim as "nose" | "taste" | "finish", newChips);
+    if (activeDim === "overall") return;
+    const updated = replaceTagsInNotes(notes, activeDim, newChips);
     setNotes(updated);
     debouncedSave(scores, updated);
   }, [notes, activeDim, scores, debouncedSave]);
@@ -1267,113 +1269,205 @@ export default function LabsLive({ params }: LabsLiveProps) {
 
           {canRate ? (
             <>
-              <div className="flex gap-2 mb-4 labs-fade-in labs-stagger-2">
-                {DIMENSIONS.map((dim) => {
-                  const isActive = activeDim === dim;
-                  return (
-                    <button
-                      key={dim}
-                      className="flex-1 py-2 rounded-lg text-[13px] font-medium transition-all"
-                      style={{
-                        background: isActive ? "var(--labs-accent-muted)" : "transparent",
-                        color: isActive ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                        border: isActive ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border)",
-                        cursor: "pointer",
-                        fontFamily: "inherit",
-                      }}
-                      onClick={() => { setActiveDim(dim); setFlavorExpanded(false); }}
-                      data-testid={`labs-live-dim-${dim}`}
-                    >
-                      {dim.charAt(0).toUpperCase() + dim.slice(1)}
-                    </button>
-                  );
-                })}
-              </div>
+              {(() => {
+                const allDimsScored = DIMENSIONS.every((d) => scores[d] > 0);
+                const ALL_LIVE_TABS: ActiveTab[] = [...DIMENSIONS, "overall"];
+                return (
+                  <div className="flex gap-0 mb-4 labs-fade-in labs-stagger-2" style={{ borderRadius: 8, overflow: "hidden", border: "1px solid var(--labs-border)" }}>
+                    {ALL_LIVE_TABS.map((tab) => {
+                      const isActive = activeDim === tab;
+                      const isOverall = tab === "overall";
+                      const tabDisabled = isOverall && !allDimsScored;
+                      const label = isOverall ? "Overall" : tab.charAt(0).toUpperCase() + tab.slice(1);
+                      return (
+                        <button
+                          key={tab}
+                          className="flex-1 transition-all"
+                          style={{
+                            padding: "10px 0",
+                            background: isActive ? "var(--labs-accent)" : "transparent",
+                            color: isActive ? "var(--labs-bg)" : "var(--labs-text-secondary)",
+                            border: "none",
+                            borderRight: tab !== "overall" ? "1px solid var(--labs-border)" : "none",
+                            fontSize: 12,
+                            fontWeight: isActive ? 700 : 500,
+                            fontFamily: "inherit",
+                            cursor: tabDisabled ? "default" : "pointer",
+                            opacity: tabDisabled ? 0.35 : 1,
+                          }}
+                          onClick={() => {
+                            if (tabDisabled) return;
+                            setActiveDim(tab);
+                            setFlavorExpanded(false);
+                          }}
+                          data-testid={`labs-live-dim-${tab}`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
 
               <div className="labs-card p-5 mb-4 labs-fade-in labs-stagger-3">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-sm font-medium capitalize" style={{ color: "var(--labs-text-secondary)" }}>
-                    {activeDim}
-                  </span>
-                  <span
-                    className="text-xl font-bold tabular-nums"
-                    style={{ color: "var(--labs-accent)" }}
-                    data-testid={`labs-live-score-${activeDim}`}
-                  >
-                    {scores[activeDim]}
-                  </span>
-                </div>
+                {activeDim === "overall" ? (
+                  <>
+                    <div style={{ display: "flex", justifyContent: "space-around", marginBottom: 16, paddingBottom: 14, borderBottom: "1px solid var(--labs-border-subtle)" }}>
+                      {DIMENSIONS.map((d) => (
+                        <div key={d} style={{ textAlign: "center" }}>
+                          <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--labs-text-muted)", marginBottom: 4 }}>
+                            {d.charAt(0).toUpperCase() + d.slice(1)}
+                          </div>
+                          <div
+                            className="tabular-nums font-bold"
+                            style={{ fontSize: 22, color: "var(--labs-accent)" }}
+                            data-testid={`labs-live-overall-dim-${d}`}
+                          >
+                            {scores[d]}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-medium" style={{ color: "var(--labs-text-secondary)" }}>Overall</span>
+                      <span
+                        className="text-xl font-bold tabular-nums"
+                        style={{ color: "var(--labs-accent)" }}
+                        data-testid="labs-live-overall"
+                      >
+                        {scores.overall}
+                      </span>
+                    </div>
+                    <div className="relative mb-5">
+                      <div className="labs-slider-track">
+                        <div className="labs-slider-fill" style={{ width: `${((scores.overall - 60) / 40) * 100}%` }} />
+                        <div className="labs-slider-thumb" style={{ left: `${((scores.overall - 60) / 40) * 100}%` }} />
+                      </div>
+                      <input
+                        type="range"
+                        min={60}
+                        max={100}
+                        value={scores.overall}
+                        onChange={(e) => updateOverall(Number(e.target.value))}
+                        className="absolute inset-0 w-full opacity-0 cursor-pointer"
+                        style={{ height: 22, top: -8 }}
+                        data-testid="labs-live-overall-slider"
+                      />
+                    </div>
+                    <div className="flex justify-between text-[11px] px-0.5" style={{ color: "var(--labs-text-muted)" }}>
+                      <span>60</span>
+                      <span>80</span>
+                      <span>100</span>
+                    </div>
+                    {overrideActive && (
+                      <button
+                        type="button"
+                        onClick={resetOverride}
+                        data-testid="labs-live-reset-override"
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--labs-accent)", fontSize: 11, fontWeight: 500, padding: "6px 0 0", fontFamily: "inherit", display: "block", margin: "0 auto" }}
+                      >
+                        Reset to suggested ({computeAutoOverall(scores)})
+                      </button>
+                    )}
+                    {saveError && (
+                      <div className="flex items-center gap-1.5 mt-3 text-xs" style={{ color: "var(--labs-danger, #ef4444)" }} data-testid="labs-live-save-error">
+                        <AlertTriangle className="w-3 h-3" />
+                        {saveError}
+                      </div>
+                    )}
+                    {!saveError && rateMutation.isSuccess && (
+                      <div className="flex items-center gap-1.5 mt-3 text-xs" style={{ color: "var(--labs-success)" }} data-testid="labs-live-saved">
+                        <Check className="w-3 h-3" />
+                        Saved
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-sm font-medium capitalize" style={{ color: "var(--labs-text-secondary)" }}>
+                        {activeDim}
+                      </span>
+                      <span
+                        className="text-xl font-bold tabular-nums"
+                        style={{ color: "var(--labs-accent)" }}
+                        data-testid={`labs-live-score-${activeDim}`}
+                      >
+                        {scores[activeDim]}
+                      </span>
+                    </div>
 
-                <div className="relative mb-5">
-                  <div className="labs-slider-track">
-                    <div
-                      className="labs-slider-fill"
-                      style={{ width: `${((scores[activeDim] - 60) / 40) * 100}%` }}
-                    />
-                    <div
-                      className="labs-slider-thumb"
-                      style={{ left: `${((scores[activeDim] - 60) / 40) * 100}%` }}
-                    />
-                  </div>
-                  <input
-                    type="range"
-                    min={60}
-                    max={100}
-                    value={scores[activeDim]}
-                    onChange={(e) => updateScore(activeDim, Number(e.target.value))}
-                    className="absolute inset-0 w-full opacity-0 cursor-pointer"
-                    style={{ height: 22, top: -8 }}
-                    data-testid={`labs-live-slider-${activeDim}`}
-                  />
-                </div>
+                    <div className="relative mb-5">
+                      <div className="labs-slider-track">
+                        <div
+                          className="labs-slider-fill"
+                          style={{ width: `${((scores[activeDim] - 60) / 40) * 100}%` }}
+                        />
+                        <div
+                          className="labs-slider-thumb"
+                          style={{ left: `${((scores[activeDim] - 60) / 40) * 100}%` }}
+                        />
+                      </div>
+                      <input
+                        type="range"
+                        min={60}
+                        max={100}
+                        value={scores[activeDim]}
+                        onChange={(e) => updateScore(activeDim as Dimension, Number(e.target.value))}
+                        className="absolute inset-0 w-full opacity-0 cursor-pointer"
+                        style={{ height: 22, top: -8 }}
+                        data-testid={`labs-live-slider-${activeDim}`}
+                      />
+                    </div>
 
-                <div className="flex justify-between text-[11px] px-0.5" style={{ color: "var(--labs-text-muted)" }}>
-                  <span>60</span>
-                  <span>80</span>
-                  <span>100</span>
-                </div>
+                    <div className="flex justify-between text-[11px] px-0.5" style={{ color: "var(--labs-text-muted)" }}>
+                      <span>60</span>
+                      <span>80</span>
+                      <span>100</span>
+                    </div>
 
-                {(activeDim === "nose" || activeDim === "taste" || activeDim === "finish") && (
-                  <div style={{ borderTop: "1px solid var(--labs-border)", marginTop: 12, paddingTop: 4 }}>
-                    <InlineFlavorTags
-                      notes={notes}
-                      onNotesChange={updateNotes}
-                      profileId={getEffectiveProfile(currentWhisky || {}, !!isBlind).profileId}
-                      phase={activeDim as "nose" | "taste" | "finish"}
-                      expanded={flavorExpanded}
-                      onToggle={() => setFlavorExpanded(!flavorExpanded)}
-                    />
-                    <button
-                      type="button"
-                      onClick={openStudio}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 8, width: "100%",
-                        background: "linear-gradient(135deg, var(--labs-accent), color-mix(in srgb, var(--labs-accent) 80%, var(--labs-surface)))",
-                        border: "1px solid var(--labs-accent)",
-                        borderRadius: 12, cursor: "pointer",
-                        color: "var(--labs-bg)", fontSize: 13, fontFamily: "inherit",
-                        fontWeight: 700, padding: "10px 16px",
-                        transition: "all 0.2s ease",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                        marginTop: 8,
-                      }}
-                      data-testid="button-open-flavour-studio-live"
-                    >
-                      <Sparkles style={{ width: 16, height: 16 }} />
-                      Flavour Studio
-                      {activeChips.length > 0 && (
-                        <span style={{ fontSize: 11, background: "var(--labs-bg)", color: "var(--labs-accent)", padding: "2px 8px", borderRadius: 10, fontWeight: 700, marginLeft: 2 }}
-                          data-testid="studio-live-count-badge"
-                        >
-                          {activeChips.length}
-                        </span>
-                      )}
-                    </button>
-                  </div>
+                    <div style={{ borderTop: "1px solid var(--labs-border)", marginTop: 12, paddingTop: 4 }}>
+                      <InlineFlavorTags
+                        notes={notes}
+                        onNotesChange={updateNotes}
+                        profileId={getEffectiveProfile(currentWhisky || {}, !!isBlind).profileId}
+                        phase={activeDim as "nose" | "taste" | "finish"}
+                        expanded={flavorExpanded}
+                        onToggle={() => setFlavorExpanded(!flavorExpanded)}
+                      />
+                      <button
+                        type="button"
+                        onClick={openStudio}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 8, width: "100%",
+                          background: "linear-gradient(135deg, var(--labs-accent), color-mix(in srgb, var(--labs-accent) 80%, var(--labs-surface)))",
+                          border: "1px solid var(--labs-accent)",
+                          borderRadius: 12, cursor: "pointer",
+                          color: "var(--labs-bg)", fontSize: 13, fontFamily: "inherit",
+                          fontWeight: 700, padding: "10px 16px",
+                          transition: "all 0.2s ease",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                          marginTop: 8,
+                        }}
+                        data-testid="button-open-flavour-studio-live"
+                      >
+                        <Sparkles style={{ width: 16, height: 16 }} />
+                        Flavour Studio
+                        {activeChips.length > 0 && (
+                          <span style={{ fontSize: 11, background: "var(--labs-bg)", color: "var(--labs-accent)", padding: "2px 8px", borderRadius: 10, fontWeight: 700, marginLeft: 2 }}
+                            data-testid="studio-live-count-badge"
+                          >
+                            {activeChips.length}
+                          </span>
+                        )}
+                      </button>
+                    </div>
+                  </>
                 )}
               </div>
 
-              <div className="labs-card p-5 mb-4 labs-fade-in labs-stagger-3">
+              {activeDim !== "overall" && <div className="labs-card p-5 mb-4 labs-fade-in labs-stagger-3">
                 <label
                   className="text-xs font-medium mb-2 block"
                   style={{ color: "var(--labs-text-muted)", letterSpacing: "0.03em" }}
@@ -1404,123 +1498,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                   />
                 </div>
                 )}
-              </div>
-
-              <div className="labs-card-elevated p-5 labs-fade-in labs-stagger-4">
-                <div className="labs-section-label" style={{ marginBottom: 16 }}>Score Summary</div>
-                {(() => {
-                  const scaleMin = maxScore === 100 ? 60 : 0;
-                  const scaleRange = maxScore - scaleMin;
-                  return (
-                    <div className="space-y-4 mb-5">
-                      {DIMENSIONS.map((dim) => {
-                        const pct = Math.max(0, Math.min(100, ((scores[dim] - scaleMin) / scaleRange) * 100));
-                        return (
-                          <div key={dim}>
-                            <div className="flex items-baseline justify-between" style={{ marginBottom: 6 }}>
-                              <span
-                                className="text-xs font-semibold uppercase tracking-wider capitalize"
-                                style={{ color: "var(--labs-text-muted)" }}
-                              >
-                                {dim}
-                              </span>
-                              <span
-                                className="tabular-nums font-semibold"
-                                style={{ fontSize: 17, color: "var(--labs-text-secondary)" }}
-                                data-testid={`labs-live-summary-${dim}`}
-                              >
-                                {scores[dim]}
-                              </span>
-                            </div>
-                            <div className="rounded-full" style={{ background: "var(--labs-border)", height: 10 }}>
-                              <div
-                                className="h-full rounded-full"
-                                style={{
-                                  width: `${pct}%`,
-                                  background: "var(--labs-accent)",
-                                  transition: "width 0.4s ease",
-                                }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
-
-                <div className="labs-divider" style={{ margin: "16px 0" }} />
-
-                <div style={{ marginBottom: 4 }}>
-                  <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
-                    <span className="text-sm font-medium" style={{ color: "var(--labs-text-muted)" }}>
-                      Overall
-                    </span>
-                    {overrideActive && (
-                      <span className="labs-badge labs-badge-accent">Manual</span>
-                    )}
-                  </div>
-                  <div className="flex items-end justify-between" style={{ marginBottom: 8 }}>
-                    <span
-                      className="tabular-nums font-bold"
-                      style={{ fontSize: 48, lineHeight: 1, letterSpacing: "-0.02em", color: "var(--labs-accent)" }}
-                      data-testid="labs-live-overall"
-                    >
-                      {scores.overall}
-                    </span>
-                    <span
-                      className="text-xs"
-                      style={{ color: "var(--labs-text-muted)", paddingBottom: 6 }}
-                    >
-                      / {maxScore}
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={60}
-                    max={100}
-                    value={scores.overall}
-                    onChange={(e) => updateOverall(Number(e.target.value))}
-                    data-testid="labs-live-overall-slider"
-                    style={{ width: "100%", accentColor: "var(--labs-accent)", display: "block", cursor: "pointer" }}
-                  />
-                  {overrideActive && (
-                    <button
-                      type="button"
-                      onClick={resetOverride}
-                      data-testid="labs-live-reset-override"
-                      style={{
-                        background: "none", border: "none", cursor: "pointer",
-                        color: "var(--labs-accent)", fontSize: 11, fontWeight: 500,
-                        padding: "4px 0", fontFamily: "inherit", marginTop: 2,
-                      }}
-                    >
-                      Reset to suggested ({computeAutoOverall(scores)})
-                    </button>
-                  )}
-                </div>
-
-                {saveError && (
-                  <div
-                    className="flex items-center gap-1.5 mt-3 text-xs"
-                    style={{ color: "var(--labs-danger, #ef4444)" }}
-                    data-testid="labs-live-save-error"
-                  >
-                    <AlertTriangle className="w-3 h-3" />
-                    {saveError}
-                  </div>
-                )}
-                {!saveError && rateMutation.isSuccess && (
-                  <div
-                    className="flex items-center gap-1.5 mt-3 text-xs"
-                    style={{ color: "var(--labs-success)" }}
-                    data-testid="labs-live-saved"
-                  >
-                    <Check className="w-3 h-3" />
-                    Saved
-                  </div>
-                )}
-              </div>
+              </div>}
 
               {whiskies && whiskies.length > 1 && (
                 <div className="labs-card-elevated mt-4 labs-fade-in labs-stagger-5" data-testid="calibration-overview">
