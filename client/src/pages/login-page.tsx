@@ -20,6 +20,20 @@ export default function AuthPage({ initialTab }: AuthPageProps) {
   const alreadySignedIn = session.signedIn || !!currentParticipant;
 
   useEffect(() => {
+    if (!alreadySignedIn) return;
+    let target = "/labs/tastings";
+    try {
+      const stored = sessionStorage.getItem("returnTo");
+      if (stored && stored.startsWith("/labs/")) {
+        target = stored;
+      }
+      sessionStorage.removeItem("returnTo");
+      sessionStorage.removeItem("returnFrom");
+    } catch {}
+    navigate(target);
+  }, [alreadySignedIn, navigate]);
+
+  useEffect(() => {
     const baseTitle = "CaskSense";
     const pageTitle = isSignIn
       ? t("auth.signInPageTitle", "Anmelden bei CaskSense")
@@ -71,26 +85,8 @@ export default function AuthPage({ initialTab }: AuthPageProps) {
   };
 
   if (alreadySignedIn) {
-    return (
-      <div className="min-h-[100dvh] bg-background text-foreground flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-md text-center space-y-6 p-8 rounded-2xl border border-border bg-card">
-          <h1 className="font-serif text-2xl text-primary" data-testid="text-already-signed-in">
-            {t("auth.alreadySignedIn", "Du bist bereits angemeldet.")}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {session.name || currentParticipant?.name}
-          </p>
-          <button
-            type="button"
-            onClick={() => navigate("/labs/tastings")}
-            className="inline-flex items-center justify-center w-full rounded-md bg-primary text-primary-foreground font-serif tracking-wide px-4 py-2.5 hover:bg-primary/90 transition-colors"
-            data-testid="button-to-app"
-          >
-            {t("auth.toApp", "Zur App")}
-          </button>
-        </div>
-      </div>
-    );
+    // Redirect happens in useEffect above; render nothing while redirecting.
+    return null;
   }
 
   return (

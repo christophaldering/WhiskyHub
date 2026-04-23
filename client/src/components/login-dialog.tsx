@@ -36,6 +36,15 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
     [onClose, navigate],
   );
 
+  // Open-on-page should preserve returnTo/returnFrom — close dialog only.
+  const handleOpenOnPage = useCallback(
+    (tab: "signin" | "register") => {
+      onClose();
+      navigate(tab === "signin" ? "/login" : "/register");
+    },
+    [onClose, navigate],
+  );
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && handleDismiss()}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto bg-card border-border">
@@ -45,6 +54,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
           onSuccess={handleSuccess}
           onClose={handleDismiss}
           showOpenOnPageLink
+          onOpenOnPage={handleOpenOnPage}
         />
       </DialogContent>
     </Dialog>

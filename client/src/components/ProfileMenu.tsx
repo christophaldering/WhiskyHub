@@ -886,20 +886,54 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
 
   const renderSignedOutView = () => (
     <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 12 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
         <Link
-          href={signedOutTab === "register" ? "/register" : "/login"}
+          href="/login"
           onClick={() => onClose?.()}
-          data-testid="m2-profile-open-on-page"
+          data-testid="m2-profile-link-login-page"
           style={{
-            color: tv.accent,
-            textDecoration: "underline",
-            textUnderlineOffset: 4,
+            flex: 1,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "10px 12px",
+            borderRadius: 10,
+            border: `1px solid ${tv.border}`,
+            background: "transparent",
+            color: tv.text,
             fontFamily: "system-ui, sans-serif",
+            fontSize: 13,
+            fontWeight: 600,
+            textDecoration: "none",
           }}
         >
-          {t("auth.openOnPage", "Auf eigener Seite öffnen")}
+          {t("auth.signIn", "Anmelden")}
         </Link>
+        <Link
+          href="/register"
+          onClick={() => onClose?.()}
+          data-testid="m2-profile-link-register-page"
+          style={{
+            flex: 1,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "10px 12px",
+            borderRadius: 10,
+            border: `1px solid ${tv.accent}`,
+            background: tv.accent,
+            color: tv.accentInk,
+            fontFamily: "system-ui, sans-serif",
+            fontSize: 13,
+            fontWeight: 600,
+            textDecoration: "none",
+          }}
+        >
+          {t("auth.register", "Registrieren")}
+        </Link>
+      </div>
+      <div style={{ textAlign: "center", marginBottom: 14, fontSize: 11, color: tv.textSecondary, fontFamily: "system-ui, sans-serif" }}>
+        {t("auth.orContinueInline", "Oder direkt hier:")}
       </div>
       <div style={{ display: "flex", borderRadius: 10, overflow: "hidden", border: `1px solid ${tv.border}`, marginBottom: 14 }}>
         <button

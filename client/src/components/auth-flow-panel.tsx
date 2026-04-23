@@ -63,6 +63,8 @@ export interface AuthFlowPanelProps {
   onClose?: () => void;
   /** Whether to show the "open on dedicated page" link (dialog only). */
   showOpenOnPageLink?: boolean;
+  /** Optional override for the "open on dedicated page" action. Gets the target tab. */
+  onOpenOnPage?: (tab: AuthInitialTab) => void;
 }
 
 export function AuthFlowPanel({
@@ -71,6 +73,7 @@ export function AuthFlowPanel({
   onSuccess,
   onClose,
   showOpenOnPageLink = false,
+  onOpenOnPage,
 }: AuthFlowPanelProps) {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
@@ -674,10 +677,12 @@ export function AuthFlowPanel({
 
   // ===== Main signin / register form =====
   const handleOpenOnPage = () => {
-    // Preserve returnTo/returnFrom in sessionStorage so the dedicated page
-    // can complete the same post-auth navigation flow.
-    if (onClose) onClose();
-    navigate(isReturning ? "/login" : "/register");
+    const tab: AuthInitialTab = isReturning ? "signin" : "register";
+    if (onOpenOnPage) {
+      onOpenOnPage(tab);
+    } else {
+      navigate(tab === "signin" ? "/login" : "/register");
+    }
   };
 
   return (
