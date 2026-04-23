@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { RatingData } from "./types";
+import type { RatingScale } from "@/labs/hooks/useRatingScale";
 import RatingModeSelect from "./RatingModeSelect";
 import GuidedRating from "./GuidedRating";
 import CompactRating from "./CompactRating";
@@ -28,11 +29,12 @@ interface RatingFlowV2Props {
   onChange?: (draft: RatingFlowDraftState) => void;
   onSaveAsDraft?: (data: RatingData) => void;
   hideQuick?: boolean;
+  scale?: RatingScale;
 }
 
 type Step = "mode" | "rating";
 
-export default function RatingFlowV2({ whisky, initialData, initialMode, initialPhaseIndex, onDone, onBack, onChange, onSaveAsDraft, hideQuick }: RatingFlowV2Props) {
+export default function RatingFlowV2({ whisky, initialData, initialMode, initialPhaseIndex, onDone, onBack, onChange, onSaveAsDraft, hideQuick, scale }: RatingFlowV2Props) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<"guided" | "compact" | "quick" | null>(initialMode ?? null);
   const [step, setStep] = useState<Step>(initialMode ? "rating" : "mode");
@@ -151,6 +153,7 @@ export default function RatingFlowV2({ whisky, initialData, initialMode, initial
         onBack={handleRatingBack}
         onChange={handleChange}
         onSaveAsDraft={onSaveAsDraft}
+        scale={scale}
       />
     );
   }
@@ -165,6 +168,7 @@ export default function RatingFlowV2({ whisky, initialData, initialMode, initial
         onBack={handleRatingBack}
         onChange={handleChange}
         onSaveAsDraft={onSaveAsDraft}
+        scale={scale}
       />
     );
   }
@@ -179,6 +183,7 @@ export default function RatingFlowV2({ whisky, initialData, initialMode, initial
         onBack={handleRatingBack}
         onChange={handleChange}
         onSaveAsDraft={onSaveAsDraft}
+        scale={scale}
       />
     );
   }

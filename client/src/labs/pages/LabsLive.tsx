@@ -481,6 +481,7 @@ function GuidedStepView({
       {canRate && !revealMoment ? (
         <div key={`flow-${localIndex}-${dramTransitionKey}`} style={{ animation: "labsPopIn 300ms ease both" }}>
           <RatingFlowV2
+            scale={liveScale}
             whisky={{
               name: displayName,
               region: activeWhisky?.region || undefined,
@@ -492,12 +493,20 @@ function GuidedStepView({
               const flavourMatch = rawNotes.match(/\[FLAVOURS\]\s*([\s\S]*?)\s*\[\/FLAVOURS\]/);
               const chips = flavourMatch ? flavourMatch[1].split(",").map((s: string) => s.trim()).filter(Boolean) : [];
               const cleanNotes = flavourMatch ? rawNotes.replace(/\n?\[FLAVOURS\][\s\S]*?\[\/FLAVOURS\]/, "").trim() : rawNotes;
+              const fallback = liveScale.max === 100 ? 75 : Math.round((liveScale.max * 0.75) / liveScale.step) * liveScale.step;
+              const toUserScale = (v: number | null | undefined) => {
+                if (v == null) return fallback;
+                if (liveScale.max !== 100 && v > liveScale.max) {
+                  return Math.round((v / 100) * liveScale.max * 10) / 10;
+                }
+                return v;
+              };
               return {
                 scores: {
-                  nose: myRating.nose ?? 75,
-                  palate: myRating.taste ?? 75,
-                  finish: myRating.finish ?? 75,
-                  overall: myRating.overall ?? 75,
+                  nose: toUserScale(myRating.nose),
+                  palate: toUserScale(myRating.taste),
+                  finish: toUserScale(myRating.finish),
+                  overall: toUserScale(myRating.overall),
                 },
                 tags: { nose: chips, palate: [], finish: [], overall: [] },
                 notes: { nose: cleanNotes, palate: "", finish: "", overall: "" },
@@ -507,11 +516,12 @@ function GuidedStepView({
             initialPhaseIndex={!myRating && guidedDraft ? guidedDraft.ratingPhaseIndex : undefined}
             onDone={async (data: RatingData) => {
               if (!currentParticipant || !activeWhisky) return;
+              const liveInv = 1 / liveScale.step;
               const computeOv = (s: { nose: number; palate: number; finish: number }) =>
-                Math.round(((s.nose + s.palate + s.finish) / 3) * 2) / 2;
+                Math.round(((s.nose + s.palate + s.finish) / 3) * liveInv) / liveInv;
               const eff = data.scores.overall > 0
                 ? data.scores.overall
-                : Math.max(1, computeOv(data.scores));
+                : Math.max(liveScale.step, computeOv(data.scores));
 
               const allNotes = (["nose", "palate", "finish", "overall"] as const)
                 .map((p) => data.notes[p]?.trim())

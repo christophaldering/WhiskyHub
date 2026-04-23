@@ -127,16 +127,18 @@ export default function OverallCircle({
     setTimeout(() => inputRef.current?.select(), 50);
   }, [disabled, overrideActive, onOverrideToggle, value, calculatedAvg]);
 
+  const editMin = scale.max === 100 ? 60 : 0;
+  const editMax = scale.max;
   const commitEdit = useCallback(() => {
     const num = parseFloat(editInput);
-    if (!isNaN(num) && num >= 60 && num <= 100) {
-      const clamped = Math.max(60, Math.min(100, num));
+    if (!isNaN(num) && num >= editMin && num <= editMax) {
+      const clamped = Math.max(editMin, Math.min(editMax, num));
       const snapped = Math.round(clamped / scale.step) * scale.step;
       onChange(snapped);
       triggerHaptic("light");
     }
     setEditing(false);
-  }, [editInput, scale.step, onChange]);
+  }, [editInput, scale.step, editMin, editMax, onChange]);
 
   const handleReset = useCallback(() => {
     onReset();
@@ -174,8 +176,9 @@ export default function OverallCircle({
                 if (e.key === "Enter") commitEdit();
                 if (e.key === "Escape") setEditing(false);
               }}
-              min={60}
-              max={100}
+              min={editMin}
+              max={editMax}
+              step={scale.step}
               style={{
                 width: size * 0.4,
                 textAlign: "center",
@@ -207,7 +210,7 @@ export default function OverallCircle({
               onClick={startEdit}
               data-testid="overall-circle-value"
             >
-              {displayValue}
+              {scale.max === 100 ? displayValue : (displayValue % 1 === 0 ? displayValue : displayValue.toFixed(1))}
             </span>
           )}
           <span

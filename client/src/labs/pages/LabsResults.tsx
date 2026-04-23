@@ -132,10 +132,11 @@ function labsExportPdf(tasting: any, whiskyResults: any[], t: (key: string) => s
       doc.text(r.distillery, marginX + 16, y + 7);
     }
 
+    const resultsScaleMax = (tasting?.ratingScale as number) ?? 100;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
     doc.setTextColor(...accent);
-    doc.text(formatScore(r.avgOverall), pageW - marginX, y + 3, { align: "right" });
+    doc.text(formatScore(r.avgOverall ?? 0), pageW - marginX, y + 3, { align: "right" });
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7);
@@ -156,12 +157,13 @@ function labsExportPdf(tasting: any, whiskyResults: any[], t: (key: string) => s
       doc.setFillColor(60, 55, 45);
       doc.roundedRect(bx + 24, by - 1.5, barMaxW * 0.25, 3, 1, 1, "F");
       if (barVals[bi] != null) {
-        const pct = Math.min(barVals[bi]!, 100) / 100;
+        const userVal = barVals[bi]!;
+        const pct = resultsScaleMax > 0 ? Math.min(userVal, resultsScaleMax) / resultsScaleMax : 0;
         doc.setFillColor(...accent);
         doc.roundedRect(bx + 24, by - 1.5, barMaxW * 0.25 * pct, 3, 1, 1, "F");
         doc.setFontSize(6);
         doc.setTextColor(...textColor);
-        doc.text(formatScore(barVals[bi]), bx + 26 + barMaxW * 0.25, by + 1);
+        doc.text(formatScore(userVal), bx + 26 + barMaxW * 0.25, by + 1);
       }
     });
 
@@ -815,14 +817,29 @@ export default function LabsResults({ params }: LabsResultsProps) {
   }, [tastingHistoryData, whiskies, tastingId]);
 
   const whiskyResults = useMemo(() => {
+    const sMax = (tasting?.ratingScale as number) || 100;
+    const toUserScale = (v: number | null | undefined) => {
+      if (v == null) return null;
+      if (sMax !== 100 && v > sMax) {
+        return Math.round((v / 100) * sMax * 10) / 10;
+      }
+      return v;
+    };
+    const roundForScale = (v: number) => sMax === 100 ? Math.round(v) : Math.round(v * 10) / 10;
     return (whiskies || []).map((w: any) => {
-      const ratings = (allRatings || []).filter((r: any) => r.whiskyId === w.id);
+      const ratings = (allRatings || []).filter((r: any) => r.whiskyId === w.id).map((r: any) => ({
+        ...r,
+        nose: toUserScale(r.nose),
+        taste: toUserScale(r.taste),
+        finish: toUserScale(r.finish),
+        overall: toUserScale(r.overall),
+      }));
       const count = ratings.length;
 
       const avg = (dim: string) => {
         const vals = ratings.map((r: any) => r[dim]).filter((v: any) => v != null && v > 0);
         if (vals.length === 0) return null;
-        return Math.round(vals.reduce((a: number, b: number) => a + b, 0) / vals.length);
+        return roundForScale(vals.reduce((a: number, b: number) => a + b, 0) / vals.length);
       };
 
       const minMax = (dim: string) => {
@@ -870,7 +887,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
         overallStdDev,
       };
     });
-  }, [whiskies, allRatings, currentParticipant]);
+  }, [whiskies, allRatings, currentParticipant, tasting?.ratingScale]);
 
   const sorted = useMemo(() => [...whiskyResults].sort((a, b) => (b.avgOverall || 0) - (a.avgOverall || 0)), [whiskyResults]);
 
@@ -1207,7 +1224,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
             </div>
             <LabsScoreRing
               score={topWhisky.avgOverall}
-              maxScore={tasting?.maxScore || 100}
+              maxScore={maxScore}
               size={64}
               strokeWidth={4}
               color="var(--labs-accent)"
@@ -1339,7 +1356,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                   {w.avgOverall != null ? (
                     <LabsScoreRing
                       score={w.avgOverall}
-                      maxScore={tasting?.maxScore || 100}
+                      maxScore={maxScore}
                       size={40}
                       strokeWidth={3}
                     />

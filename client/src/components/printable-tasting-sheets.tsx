@@ -820,13 +820,14 @@ async function drawScoringPage(
     const dimSpacing = dimAreaW / 4;
     const circleR = 2.1;
 
+    const sheetMaxScore = tasting.ratingScale ?? 100;
     DIMS.forEach((dim, di) => {
       const dx = dimStartX + di * dimSpacing;
       doc.setFontSize(5);
       doc.setTextColor(...GOLD_RGB);
       doc.setFont('helvetica', 'normal');
       doc.text(dim.substring(0, 3).toUpperCase(), dx, y + 1.5);
-      drawScoreCircles(doc, dx, y + 3, circleR);
+      drawRatingCircles(doc, dx, y + 4, circleR, 0.8, sheetMaxScore, dimSpacing - 2);
     });
 
     doc.setFontSize(5.5);
@@ -906,11 +907,12 @@ async function drawTastingMat(
   drawGoldLine(doc, margin, y, usableWidth, 0.4);
   y += 6;
 
+  const matMaxScore = tasting.ratingScale ?? 100;
   doc.setFontSize(6);
   doc.setTextColor(...GOLD_RGB);
   doc.text('#', margin, y);
   doc.text('STICHWORT', margin + 14, y);
-  doc.text('SCORE / 100', usableWidth * 0.55 + margin, y);
+  doc.text(`SCORE / ${matMaxScore}`, usableWidth * 0.55 + margin, y);
   doc.text('FAVORIT', usableWidth * 0.78 + margin, y);
   y += 4;
   drawGoldLine(doc, margin, y, usableWidth, 0.3);
@@ -942,7 +944,7 @@ async function drawTastingMat(
     drawGoldLine(doc, scoreX, rowY + 8, usableWidth * 0.18, 0.4);
     doc.setFontSize(6);
     doc.setTextColor(...GOLD_RGB);
-    doc.text('/ 100', scoreX + usableWidth * 0.19, rowY + 7.5);
+    doc.text(`/ ${matMaxScore}`, scoreX + usableWidth * 0.19, rowY + 7.5);
 
     const cbX = usableWidth * 0.78 + margin;
     doc.setDrawColor(...GOLD_RGB);

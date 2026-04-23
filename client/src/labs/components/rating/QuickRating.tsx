@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { SP, FONT, RADIUS, TOUCH_MIN } from "./theme";
 import type { RatingData } from "./types";
+import type { RatingScale } from "@/labs/hooks/useRatingScale";
 import { BackIcon } from "./icons";
 import PhaseSignature from "./PhaseSignature";
 import ScoreInput from "./ScoreInput";
@@ -35,14 +36,17 @@ interface QuickRatingProps {
   onBack: () => void;
   onChange?: (phaseIndex: number, data: Partial<RatingData>) => void;
   onSaveAsDraft?: (data: RatingData) => void;
+  scale?: RatingScale;
 }
 
-export default function QuickRating({ labels, whisky, initialData, onDone, onBack, onChange, onSaveAsDraft }: QuickRatingProps) {
-  const [score, setScore] = useState(initialData?.scores?.overall ?? 75);
+export default function QuickRating({ labels, whisky, initialData, onDone, onBack, onChange, onSaveAsDraft, scale }: QuickRatingProps) {
+  const scaleMax = scale?.max ?? 100;
+  const scaleStep = scale?.step ?? 0.5;
+  const defaultScore = scaleMax === 100 ? 75 : Math.round((scaleMax * 0.75) / scaleStep) * scaleStep;
+  const [score, setScore] = useState(initialData?.scores?.overall ?? defaultScore);
   const [note, setNote] = useState(initialData?.notes?.overall ?? "");
 
   const handleSave = () => {
-    const defaultScore = 75;
     onDone({
       scores: { nose: defaultScore, palate: defaultScore, finish: defaultScore, overall: score },
       tags: { nose: [], palate: [], finish: [], overall: [] },
@@ -113,10 +117,11 @@ export default function QuickRating({ labels, whisky, initialData, onDone, onBac
           value={score}
           onChange={(v) => {
             setScore(v);
-            onChange?.(0, { scores: { nose: 75, palate: 75, finish: 75, overall: v }, notes: { nose: "", palate: "", finish: "", overall: note } });
+            onChange?.(0, { scores: { nose: defaultScore, palate: defaultScore, finish: defaultScore, overall: v }, notes: { nose: "", palate: "", finish: "", overall: note } });
           }}
           phaseId="overall"
           labels={labels}
+          scale={scale}
         />
       </div>
 
@@ -130,7 +135,7 @@ export default function QuickRating({ labels, whisky, initialData, onDone, onBac
           value={note}
           onChange={(e) => {
             setNote(e.target.value);
-            onChange?.(0, { scores: { nose: 75, palate: 75, finish: 75, overall: score }, notes: { nose: "", palate: "", finish: "", overall: e.target.value } });
+            onChange?.(0, { scores: { nose: defaultScore, palate: defaultScore, finish: defaultScore, overall: score }, notes: { nose: "", palate: "", finish: "", overall: e.target.value } });
           }}
           placeholder={labels.notePH}
           style={{

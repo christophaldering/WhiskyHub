@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { SP, FONT, RADIUS, TOUCH_MIN } from "./theme";
 import type { PhaseId, PhaseScores, PhaseTags, PhaseNotes, RatingData } from "./types";
+import type { RatingScale } from "@/labs/hooks/useRatingScale";
 import ScoreInput from "./ScoreInput";
 import FlavorTags from "./FlavorTags";
 import PhaseSignature from "./PhaseSignature";
@@ -47,6 +48,7 @@ interface CompactRatingProps {
   onBack: () => void;
   onChange?: (phaseIndex: number, data: Partial<RatingData>) => void;
   onSaveAsDraft?: (data: RatingData) => void;
+  scale?: RatingScale;
 }
 
 const PHASES: PhaseId[] = ["nose", "palate", "finish", "overall"];
@@ -58,20 +60,25 @@ function phaseLbl(id: PhaseId, l: CompactLabels): string {
   return map[id];
 }
 
-function getBandColor(score: number): string {
-  if (score >= 90) return "#d4a847";
-  if (score >= 85) return "#c4a040";
-  if (score >= 80) return "#86c678";
-  if (score >= 70) return "#7ab8c4";
+function getBandColor(score: number, scaleMax: number): string {
+  const pctValue = scaleMax > 0 ? (score / scaleMax) * 100 : 0;
+  if (pctValue >= 90) return "#d4a847";
+  if (pctValue >= 85) return "#c4a040";
+  if (pctValue >= 80) return "#86c678";
+  if (pctValue >= 70) return "#7ab8c4";
   return "rgba(200,180,160,0.5)";
 }
 
-export default function CompactRating({ labels, whisky, initialData, onDone, onBack, onChange, onSaveAsDraft }: CompactRatingProps) {
+export default function CompactRating({ labels, whisky, initialData, onDone, onBack, onChange, onSaveAsDraft, scale }: CompactRatingProps) {
   const { t } = useTranslation();
+  const scaleMax = scale?.max ?? 100;
+  const scaleStep = scale?.step ?? 0.5;
+  const defaultScore = scaleMax === 100 ? 75 : Math.round((scaleMax * 0.75) / scaleStep) * scaleStep;
+  const overallInv = scaleStep > 0 ? 1 / scaleStep : 2;
   const [scores, setScores] = useState<PhaseScores>(() => {
-    const init = initialData?.scores ?? { nose: 75, palate: 75, finish: 75, overall: 75 };
+    const init = initialData?.scores ?? { nose: defaultScore, palate: defaultScore, finish: defaultScore, overall: defaultScore };
     if (!initialData?.scores) {
-      return { ...init, overall: Math.round(((init.nose + init.palate + init.finish) / 3) * 2) / 2 };
+      return { ...init, overall: Math.round(((init.nose + init.palate + init.finish) / 3) * overallInv) / overallInv };
     }
     return init;
   });
@@ -85,7 +92,7 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
   const [overallManuallySet, setOverallManuallySet] = useState(() => {
     if (!initialData?.scores) return false;
     const s = initialData.scores;
-    return s.overall !== Math.round(((s.nose + s.palate + s.finish) / 3) * 2) / 2;
+    return s.overall !== Math.round(((s.nose + s.palate + s.finish) / 3) * overallInv) / overallInv;
   });
   const [overallRated, setOverallRated] = useState(() => {
     if (!initialData?.scores) return false;
@@ -102,9 +109,9 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
   const isFirstRender = useRef(true);
 
   const computeAutoOverall = (s: PhaseScores) =>
-    Math.round(((s.nose + s.palate + s.finish) / 3) * 2) / 2;
+    Math.round(((s.nose + s.palate + s.finish) / 3) * overallInv) / overallInv;
 
-  const overallAvg = Math.round((scores.nose + scores.palate + scores.finish + scores.overall) / 4);
+  const overallAvg = Math.round(((scores.nose + scores.palate + scores.finish + scores.overall) / 4) * overallInv) / overallInv;
 
   const scoreLabels = {
     tapEdit: labels.tapEdit,
@@ -172,11 +179,11 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
               fontSize: 42,
               fontWeight: 700,
               fontFamily: FONT.body,
-              color: getBandColor(overallAvg),
+              color: getBandColor(overallAvg, scaleMax),
               lineHeight: 1,
             }}
           >
-            {overallAvg}
+            {scaleMax === 100 || overallAvg % 1 === 0 ? overallAvg : overallAvg.toFixed(1)}
           </div>
           <div style={{ fontSize: 11, color: "var(--labs-text-secondary)", fontFamily: FONT.body }}>{t("ratingUi.avg")}</div>
         </div>
@@ -186,7 +193,9 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
         const pAccent = `var(--labs-phase-${pid})`;
         const pDim = `var(--labs-phase-${pid}-dim)`;
         const isOpen = openPhase === pid;
-        const pct = ((scores[pid] - 60) / 40) * 100;
+        const pctMin = scaleMax === 100 ? 60 : 0;
+        const pctRange = scaleMax - pctMin;
+        const pct = pctRange > 0 ? Math.max(0, Math.min(100, ((scores[pid] - pctMin) / pctRange) * 100)) : 0;
         const tagCount = tags[pid].length;
 
         return (
@@ -245,7 +254,7 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
 
             {isOpen && (
               <div style={{ borderTop: "1px solid var(--labs-border)", padding: `${SP.md}px ${SP.md}px ${SP.lg}px` }}>
-                <ScoreInput value={scores[pid]} onChange={(v) => {
+                <ScoreInput scale={scale} value={scores[pid]} onChange={(v) => {
                   if (pid === "overall") {
                     setOverallManuallySet(true);
                     setOverallRated(true);
@@ -375,8 +384,8 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
             <span style={{ fontSize: 13, color: "var(--labs-text)", fontFamily: FONT.body, flex: 1 }}>
               {phaseLbl(pid, labels)}
             </span>
-            <span style={{ fontSize: 15, fontWeight: 600, color: getBandColor(scores[pid]), fontFamily: FONT.body }}>
-              {scores[pid]}
+            <span style={{ fontSize: 15, fontWeight: 600, color: getBandColor(scores[pid], scaleMax), fontFamily: FONT.body }}>
+              {scaleMax === 100 || scores[pid] % 1 === 0 ? scores[pid] : scores[pid].toFixed(1)}
             </span>
           </div>
         ))}

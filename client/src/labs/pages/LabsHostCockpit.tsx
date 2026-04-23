@@ -15,6 +15,7 @@ import { getStatusConfig } from "@/labs/utils/statusConfig";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi } from "@/lib/api";
 import LabsRatingPanel, { type DimKey } from "@/labs/components/LabsRatingPanel";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
+import { useRatingScale } from "@/labs/hooks/useRatingScale";
 import type { RatingData } from "@/labs/components/rating/types";
 import { useTastingEvents } from "@/labs/hooks/useTastingEvents";
 import { signalRatingQueued } from "@/labs/components/OfflineBanner";
@@ -413,10 +414,18 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
           const existing = await ratingApi.getMyRating(pid, w.id);
           if (existing) {
             const parsed = parseSavedNotes(existing.notes || "");
-            const scaleDefault = 75;
-            const clamp = (v: number) => Math.max(60, Math.min(100, v));
-            setHostScores(prev => ({ ...prev, [w.id]: { nose: clamp(existing.nose ?? scaleDefault), taste: clamp(existing.taste ?? scaleDefault), finish: clamp(existing.finish ?? scaleDefault) } }));
-            setHostOverall(prev => ({ ...prev, [w.id]: clamp(existing.overall ?? scaleDefault) }));
+            const sMax = ratingScale;
+            const sMin = sMax === 100 ? 60 : 0;
+            const sDef = sMax === 100 ? 75 : Math.round((sMax * 0.75) / cockpitScale.step) * cockpitScale.step;
+            const toUserScale = (v: number | null | undefined) => {
+              if (v == null) return sDef;
+              if (sMax !== 100 && v > sMax) {
+                return Math.round((v / 100) * sMax * 10) / 10;
+              }
+              return Math.max(sMin, Math.min(sMax, v));
+            };
+            setHostScores(prev => ({ ...prev, [w.id]: { nose: toUserScale(existing.nose), taste: toUserScale(existing.taste), finish: toUserScale(existing.finish) } }));
+            setHostOverall(prev => ({ ...prev, [w.id]: toUserScale(existing.overall) }));
             setHostChips(prev => ({ ...prev, [w.id]: parsed.chips }));
             setHostTexts(prev => ({ ...prev, [w.id]: parsed.texts }));
             setHostNotes(prev => ({ ...prev, [w.id]: parsed.cleanNotes }));
@@ -452,7 +461,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
     chipSaveRef.current++;
     const gen = chipSaveRef.current;
     const sc = hostScores[wId];
-    const ov = hostOverall[wId] ?? Math.round((sc.nose + sc.taste + sc.finish) / 3);
+    const _inv = 1 / cockpitScale.step;
+    const ov = hostOverall[wId] ?? (Math.round(((sc.nose + sc.taste + sc.finish) / 3) * _inv) / _inv);
     const notes = hostNotes[wId] || "";
     const timer = setTimeout(() => {
       if (gen !== chipSaveRef.current) return;
@@ -483,7 +493,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   const guidedIdx = localGuidedIdx ?? (tasting?.guidedWhiskyIndex ?? -1);
   const guidedRevealStep = localRevealStep ?? (tasting?.guidedRevealStep ?? 0);
   const ratingScale = tasting?.ratingScale ?? 100;
-  const scaleDefault = 75;
+  const cockpitScale = useRatingScale(ratingScale);
+  const scaleDefault = ratingScale === 100 ? 75 : Math.round((ratingScale * 0.75) / cockpitScale.step) * cockpitScale.step;
   const isLive = status === "open" || status === "reveal";
   const isDraft = status === "draft";
 
@@ -588,9 +599,13 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   const defaultScores = (): Record<DimKey, number> => ({ nose: scaleDefault, taste: scaleDefault, finish: scaleDefault });
   const getScores = (wId: string): Record<DimKey, number> => hostScores[wId] || defaultScores();
   const getOverall = (wId: string) => hostOverall[wId] ?? scaleDefault;
+  const roundToStep = (v: number) => {
+    const inv = 1 / cockpitScale.step;
+    return Math.round(v * inv) / inv;
+  };
   const getOverallAuto = (wId: string) => {
     const sc = getScores(wId);
-    return Math.round((sc.nose + sc.taste + sc.finish) / 3);
+    return roundToStep((sc.nose + sc.taste + sc.finish) / 3);
   };
 
   const handleScoreChange = (wId: string, dim: DimKey, val: number) => {
@@ -599,7 +614,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
     setHostScores(prev => ({ ...prev, [wId]: updated }));
     let freshOverall: number;
     if (!hostOverride[wId]) {
-      freshOverall = Math.round((updated.nose + updated.taste + updated.finish) / 3);
+      freshOverall = roundToStep((updated.nose + updated.taste + updated.finish) / 3);
       setHostOverall(prev => ({ ...prev, [wId]: freshOverall }));
     } else {
       freshOverall = hostOverall[wId] ?? scaleDefault;
@@ -2266,6 +2281,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
           {currentRatingWhisky ? (
             <RatingFlowV2
               key={currentRatingWhisky.id}
+              scale={cockpitScale}
               whisky={{
                 name: isBlind ? `Dram ${blindLabel(hostRatingIdx)}` : currentRatingWhisky.name || `Whisky ${hostRatingIdx + 1}`,
                 region: currentRatingWhisky.region || undefined,
@@ -2294,10 +2310,10 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                 setHostScores(prev => ({ ...prev, [wId]: updatedScores }));
 
                 const computeOv = (s: { nose: number; palate: number; finish: number }) =>
-                  Math.round(((s.nose + s.palate + s.finish) / 3) * 2) / 2;
+                  roundToStep((s.nose + s.palate + s.finish) / 3);
                 const eff = data.scores.overall > 0
                   ? data.scores.overall
-                  : Math.max(1, computeOv(data.scores));
+                  : Math.max(cockpitScale.step, computeOv(data.scores));
                 setHostOverall(prev => ({ ...prev, [wId]: eff }));
 
                 setHostChips(prev => ({

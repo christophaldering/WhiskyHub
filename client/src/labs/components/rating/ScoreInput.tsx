@@ -1,12 +1,14 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { SP, FONT } from "./theme";
 import type { PhaseId } from "./types";
+import type { RatingScale } from "@/labs/hooks/useRatingScale";
 
-function getBandColor(score: number): string {
-  if (score >= 90) return "#d4a847";
-  if (score >= 85) return "#c4a040";
-  if (score >= 80) return "#86c678";
-  if (score >= 70) return "#7ab8c4";
+function getBandColor(score: number, scaleMax: number): string {
+  const pctValue = scaleMax > 0 ? (score / scaleMax) * 100 : 0;
+  if (pctValue >= 90) return "#d4a847";
+  if (pctValue >= 85) return "#c4a040";
+  if (pctValue >= 80) return "#86c678";
+  if (pctValue >= 70) return "#7ab8c4";
   return "rgba(200,180,160,0.5)";
 }
 
@@ -21,12 +23,13 @@ interface RatingLabels {
   band0: string;
 }
 
-function getBandLabel(score: number, labels: RatingLabels): string {
-  if (score >= 90) return labels.band90;
-  if (score >= 85) return labels.band85;
-  if (score >= 80) return labels.band80;
-  if (score >= 75) return labels.band75;
-  if (score >= 70) return labels.band70;
+function getBandLabel(score: number, scaleMax: number, labels: RatingLabels): string {
+  const pctValue = scaleMax > 0 ? (score / scaleMax) * 100 : 0;
+  if (pctValue >= 90) return labels.band90;
+  if (pctValue >= 85) return labels.band85;
+  if (pctValue >= 80) return labels.band80;
+  if (pctValue >= 75) return labels.band75;
+  if (pctValue >= 70) return labels.band70;
   return labels.band0;
 }
 
@@ -35,12 +38,73 @@ interface ScoreInputProps {
   onChange: (v: number) => void;
   phaseId: PhaseId;
   labels: RatingLabels;
+  scale?: RatingScale;
 }
 
-const TICKS = [60, 65, 70, 75, 80, 85, 90, 95, 100];
-const QUICK_PICKS = [70, 75, 80, 85, 90];
+interface ScaleConfig {
+  min: number;
+  max: number;
+  step: number;
+  ticks: number[];
+  quickPicks: number[];
+}
 
-export default function ScoreInput({ value, onChange, phaseId, labels }: ScoreInputProps) {
+function buildConfig(scale?: RatingScale): ScaleConfig {
+  const max = scale?.max ?? 100;
+  const step = scale?.step ?? 0.5;
+  if (max === 100) {
+    return {
+      min: 60,
+      max: 100,
+      step,
+      ticks: [60, 65, 70, 75, 80, 85, 90, 95, 100],
+      quickPicks: [70, 75, 80, 85, 90],
+    };
+  }
+  if (max === 20) {
+    return {
+      min: 0,
+      max: 20,
+      step,
+      ticks: [0, 4, 8, 10, 12, 14, 16, 18, 20],
+      quickPicks: [12, 14, 16, 18, 19],
+    };
+  }
+  if (max === 10) {
+    return {
+      min: 0,
+      max: 10,
+      step,
+      ticks: [0, 2, 4, 5, 6, 7, 8, 9, 10],
+      quickPicks: [6, 7, 8, 9, 9.5],
+    };
+  }
+  if (max === 5) {
+    return {
+      min: 0,
+      max: 5,
+      step,
+      ticks: [0, 1, 2, 3, 4, 5],
+      quickPicks: [3, 3.5, 4, 4.5, 5],
+    };
+  }
+  return {
+    min: 0,
+    max,
+    step,
+    ticks: [0, max * 0.25, max * 0.5, max * 0.75, max],
+    quickPicks: [max * 0.6, max * 0.7, max * 0.8, max * 0.9, max],
+  };
+}
+
+function snap(value: number, step: number): number {
+  if (step <= 0) return value;
+  const inv = 1 / step;
+  return Math.round(value * inv) / inv;
+}
+
+export default function ScoreInput({ value, onChange, phaseId, labels, scale }: ScoreInputProps) {
+  const cfg = buildConfig(scale);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(String(value));
   const dragging = useRef(false);
@@ -48,17 +112,19 @@ export default function ScoreInput({ value, onChange, phaseId, labels }: ScoreIn
 
   const accent = `var(--labs-phase-${phaseId})`;
   const dim = `var(--labs-phase-${phaseId}-dim)`;
-  const bandColor = getBandColor(value);
-  const pct = ((value - 60) / 40) * 100;
+  const bandColor = getBandColor(value, cfg.max);
+  const range = cfg.max - cfg.min;
+  const pct = range > 0 ? Math.max(0, Math.min(100, ((value - cfg.min) / range) * 100)) : 0;
 
   const fromX = useCallback((clientX: number) => {
     const el = trackRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    const score = Math.round((60 + ratio * 40) * 2) / 2;
-    onChange(Math.max(60, Math.min(100, score)));
-  }, [onChange]);
+    const raw = cfg.min + ratio * range;
+    const snapped = snap(raw, cfg.step);
+    onChange(Math.max(cfg.min, Math.min(cfg.max, snapped)));
+  }, [onChange, cfg.min, cfg.max, cfg.step, range]);
 
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => { if (dragging.current) fromX(e.clientX); };
@@ -80,11 +146,16 @@ export default function ScoreInput({ value, onChange, phaseId, labels }: ScoreIn
 
   const commitEdit = useCallback(() => {
     const v = parseFloat(draft);
-    if (!isNaN(v) && v >= 60 && v <= 100) {
-      onChange(Math.round(v * 2) / 2);
+    if (!isNaN(v) && v >= cfg.min && v <= cfg.max) {
+      onChange(snap(v, cfg.step));
     }
     setEditing(false);
-  }, [draft, onChange]);
+  }, [draft, onChange, cfg.min, cfg.max, cfg.step]);
+
+  const formatScore = (n: number) => {
+    if (cfg.max === 100) return n % 1 !== 0 ? n.toFixed(1) : String(n);
+    return cfg.step < 1 ? n.toFixed(1) : String(Math.round(n));
+  };
 
   return (
     <div data-testid={`score-input-${phaseId}`}>
@@ -97,9 +168,9 @@ export default function ScoreInput({ value, onChange, phaseId, labels }: ScoreIn
             <input
               data-testid={`score-edit-input-${phaseId}`}
               type="number"
-              min={60}
-              max={100}
-              step={0.5}
+              min={cfg.min}
+              max={cfg.max}
+              step={cfg.step}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onBlur={commitEdit}
@@ -133,16 +204,16 @@ export default function ScoreInput({ value, onChange, phaseId, labels }: ScoreIn
                 lineHeight: 1,
               }}
             >
-              {value % 1 !== 0 ? value.toFixed(1) : value}
+              {formatScore(value)}
             </div>
           )}
         </div>
         <div style={{ paddingBottom: 8, textAlign: "right" }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: bandColor, fontFamily: FONT.body }}>
-            {getBandLabel(value, labels)}
+            {getBandLabel(value, cfg.max, labels)}
           </div>
           <div style={{ fontSize: 12, color: "var(--labs-text-secondary)", fontFamily: FONT.body }}>
-            {labels.of} 100
+            {labels.of} {cfg.max}
           </div>
         </div>
       </div>
@@ -209,7 +280,7 @@ export default function ScoreInput({ value, onChange, phaseId, labels }: ScoreIn
         marginTop: SP.xs,
         marginBottom: SP.md,
       }}>
-        {TICKS.map((tick) => (
+        {cfg.ticks.map((tick) => (
           <span
             key={tick}
             data-testid={`score-tick-${tick}`}
@@ -222,13 +293,13 @@ export default function ScoreInput({ value, onChange, phaseId, labels }: ScoreIn
               textAlign: "center",
             }}
           >
-            {tick}
+            {formatScore(tick)}
           </span>
         ))}
       </div>
 
       <div style={{ display: "flex", gap: SP.sm }}>
-        {QUICK_PICKS.map((qp) => (
+        {cfg.quickPicks.map((qp) => (
           <button
             key={qp}
             data-testid={`score-quick-${qp}`}
@@ -249,7 +320,7 @@ export default function ScoreInput({ value, onChange, phaseId, labels }: ScoreIn
               transition: "all 0.15s",
             }}
           >
-            {qp}
+            {formatScore(qp)}
           </button>
         ))}
       </div>

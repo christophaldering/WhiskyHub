@@ -265,6 +265,16 @@ export default function LabsRatingPanel({
     </div>
   );
 
+  const sliderMin = scaleInfo.max === 100 ? 60 : 0;
+  const sliderMax = scaleInfo.max;
+  const sliderTickLow = sliderMin;
+  const sliderTickMid = scaleInfo.max === 100 ? 80 : Math.round((scaleInfo.max / 2) * 10) / 10;
+  const sliderTickHigh = sliderMax;
+  const fmtScore = (v: number): string => {
+    if (scaleInfo.max === 100) return String(v);
+    return v % 1 === 0 ? String(v) : v.toFixed(1);
+  };
+
   const renderSliderWithMarkers = (key: DimKey) => {
     const dc = DIM_COLORS[key];
     return (
@@ -272,19 +282,19 @@ export default function LabsRatingPanel({
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
           <span style={{ fontSize: compact ? 14 : 16, fontWeight: 600, color: "var(--labs-text)" }}>{dimLabels[key]}</span>
           <span className="labs-serif" style={{ fontSize: compact ? 22 : 28, fontWeight: 700, color: "var(--labs-text)", fontVariantNumeric: "tabular-nums" }} data-testid={`text-score-${key}`}>
-            {scores[key]}
+            {fmtScore(scores[key])}
           </span>
         </div>
         <input
           type="range"
-          min={60}
-          max={100}
+          min={sliderMin}
+          max={sliderMax}
           step={scaleInfo.step}
           value={scores[key]}
           onChange={(e) => {
             const val = Number(e.target.value);
             const prev = prevSliderVals.current[key];
-            if ((val === 60 || val === 100) && prev !== val) {
+            if ((val === sliderMin || val === sliderMax) && prev !== val) {
               triggerHaptic("boundary");
             }
             prevSliderVals.current[key] = val;
@@ -295,9 +305,9 @@ export default function LabsRatingPanel({
           style={{ width: "100%", accentColor: dc, display: "block", cursor: disabled ? "not-allowed" : "pointer" }}
         />
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
-          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>60</span>
-          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>80</span>
-          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>100</span>
+          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{fmtScore(sliderTickLow)}</span>
+          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{fmtScore(sliderTickMid)}</span>
+          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{fmtScore(sliderTickHigh)}</span>
         </div>
       </div>
     );
@@ -599,7 +609,7 @@ export default function LabsRatingPanel({
                   style={{ fontSize: compact ? 18 : 22, fontWeight: 700, color: DIM_COLORS[k] }}
                   data-testid={`overall-tab-dim-${k}`}
                 >
-                  {scores[k]}
+                  {fmtScore(scores[k])}
                 </div>
               </div>
             ))}
@@ -616,19 +626,19 @@ export default function LabsRatingPanel({
                 )}
               </span>
               <span className="labs-serif" style={{ fontSize: compact ? 18 : 28, fontWeight: 700, color: "var(--labs-text)", fontVariantNumeric: "tabular-nums" }} data-testid="text-score-value">
-                {overall}
+                {fmtScore(overall)}
               </span>
             </div>
             <input
               type="range"
-              min={60}
-              max={100}
+              min={sliderMin}
+              max={sliderMax}
               step={scaleInfo.step}
               value={overall}
               onChange={(e) => {
                 const val = Number(e.target.value);
                 const prev = prevSliderVals.current["overall"];
-                if ((val === 60 || val === 100) && prev !== val) {
+                if ((val === sliderMin || val === sliderMax) && prev !== val) {
                   triggerHaptic("boundary");
                 }
                 prevSliderVals.current["overall"] = val;
@@ -754,18 +764,19 @@ export default function LabsRatingPanel({
           )}
         </span>
         <span className="labs-serif" style={{ fontSize: compact ? 18 : 28, fontWeight: 700, color: "var(--labs-text)", fontVariantNumeric: "tabular-nums" }} data-testid="text-score-value">
-          {overall}
+          {fmtScore(overall)}
         </span>
       </div>
       <input
         type="range"
-        min={60}
-        max={100}
+        min={sliderMin}
+        max={sliderMax}
+        step={scaleInfo.step}
         value={overall}
         onChange={(e) => {
           const val = Number(e.target.value);
           const prev = prevSliderVals.current["overall"];
-          if ((val === 60 || val === 100) && prev !== val) {
+          if ((val === sliderMin || val === sliderMax) && prev !== val) {
             triggerHaptic("boundary");
           }
           prevSliderVals.current["overall"] = val;
@@ -937,7 +948,7 @@ export default function LabsRatingPanel({
           {DIM_KEYS.map((k) => (
             <div key={k} style={{ textAlign: "center" }}>
               <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 2 }}>{dimLabels[k]}</div>
-              <div className="labs-serif" style={{ fontSize: 18, fontWeight: 700, color: DIM_COLORS[k] }}>{scores[k]}</div>
+              <div className="labs-serif" style={{ fontSize: 18, fontWeight: 700, color: DIM_COLORS[k] }}>{fmtScore(scores[k])}</div>
             </div>
           ))}
         </div>

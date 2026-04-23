@@ -383,7 +383,8 @@ function HostRatingPanel({
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const hostScale = useRatingScale(ratingScale);
-  const scaleDefault = 75;
+  const scaleDefault = ratingScale === 100 ? 75 : Math.round((ratingScale * 0.75) / hostScale.step) * hostScale.step;
+  const hostScaleMin = ratingScale === 100 ? 60 : 0;
   const emptyChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [] };
   const emptyTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "" };
 
@@ -455,9 +456,11 @@ function HostRatingPanel({
           if (existing) {
             const parsed = parseSavedNotes(existing.notes || "");
             const toV2 = (v: number | null | undefined) => {
-              const raw = v ?? scaleDefault;
-              if (raw >= 60) return raw;
-              return Math.max(60, Math.min(100, Math.round(hostScale.normalize(raw))));
+              if (v == null) return scaleDefault;
+              if (hostScale.max !== 100 && v > hostScale.max) {
+                return Math.round((v / 100) * hostScale.max * 10) / 10;
+              }
+              return Math.max(hostScaleMin, Math.min(hostScale.max, v));
             };
             setHostScores(prev => ({ ...prev, [w.id]: { nose: toV2(existing.nose), taste: toV2(existing.taste), finish: toV2(existing.finish) } }));
             setHostOverall(prev => ({ ...prev, [w.id]: toV2(existing.overall) }));
@@ -496,7 +499,8 @@ function HostRatingPanel({
     chipSaveRef.current++;
     const gen = chipSaveRef.current;
     const sc = hostScores[wId];
-    const ov = hostOverall[wId] ?? Math.round((sc.nose + sc.taste + sc.finish) / 3);
+    const inv = 1 / hostScale.step;
+    const ov = hostOverall[wId] ?? (Math.round(((sc.nose + sc.taste + sc.finish) / 3) * inv) / inv);
     const notes = hostNotes[wId] || "";
     const timer = setTimeout(() => {
       if (gen !== chipSaveRef.current) return;
@@ -584,6 +588,7 @@ function HostRatingPanel({
 
         <RatingFlowV2
           key={currentWhisky.id}
+          scale={hostScale}
           whisky={{
             name: blindMode ? `Dram ${activeIdx + 1}` : (currentWhisky.name || `Whisky ${activeIdx + 1}`),
             region: blindMode ? undefined : (currentWhisky as any).region,

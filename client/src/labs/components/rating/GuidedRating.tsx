@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { SP, FONT, RADIUS, TOUCH_MIN } from "./theme";
 import type { PhaseId, PhaseScores, PhaseTags, PhaseNotes, RatingData } from "./types";
+import type { RatingScale } from "@/labs/hooks/useRatingScale";
 import ScoreInput from "./ScoreInput";
 import FlavorTags from "./FlavorTags";
 import PhaseSignature from "./PhaseSignature";
@@ -56,6 +57,7 @@ interface GuidedRatingProps {
   onBack: () => void;
   onChange?: (phaseIndex: number, data: Partial<RatingData>) => void;
   onSaveAsDraft?: (data: RatingData) => void;
+  scale?: RatingScale;
 }
 
 const PHASES: PhaseId[] = ["nose", "palate", "finish", "overall"];
@@ -81,11 +83,14 @@ function phaseHint(id: PhaseId, l: GuidedLabels): string {
   return map[id];
 }
 
-export default function GuidedRating({ labels, whisky, initialData, initialPhaseIndex, onDone, onBack, onChange, onSaveAsDraft }: GuidedRatingProps) {
+export default function GuidedRating({ labels, whisky, initialData, initialPhaseIndex, onDone, onBack, onChange, onSaveAsDraft, scale }: GuidedRatingProps) {
   const { t, i18n } = useTranslation();
   const isDe = (i18n.language || "").toLowerCase().startsWith("de");
+  const scaleMax = scale?.max ?? 100;
+  const scaleStep = scale?.step ?? 0.5;
+  const defaultScore = scaleMax === 100 ? 75 : Math.round((scaleMax * 0.75) / scaleStep) * scaleStep;
   const [phaseIndex, setPhaseIndex] = useState(initialPhaseIndex ?? 0);
-  const [scores, setScores] = useState<PhaseScores>(initialData?.scores ?? { nose: 75, palate: 75, finish: 75, overall: 75 });
+  const [scores, setScores] = useState<PhaseScores>(initialData?.scores ?? { nose: defaultScore, palate: defaultScore, finish: defaultScore, overall: defaultScore });
   const [tags, setTags] = useState<PhaseTags>(initialData?.tags ?? { nose: [], palate: [], finish: [], overall: [] });
   const [notes, setNotes] = useState<PhaseNotes>(initialData?.notes ?? { nose: "", palate: "", finish: "", overall: "" });
   const [showFlash, setShowFlash] = useState(false);
@@ -95,7 +100,8 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
   const [overallManuallySet, setOverallManuallySet] = useState(() => {
     if (!initialData?.scores) return false;
     const s = initialData.scores;
-    return s.overall !== Math.round(((s.nose + s.palate + s.finish) / 3) * 2) / 2;
+    const inv = scaleStep > 0 ? 1 / scaleStep : 2;
+    return s.overall !== Math.round(((s.nose + s.palate + s.finish) / 3) * inv) / inv;
   });
   const [overallRated, setOverallRated] = useState(() => {
     if (!initialData?.scores) return false;
@@ -114,8 +120,10 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
   });
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const computeAutoOverall = (s: PhaseScores) =>
-    Math.round(((s.nose + s.palate + s.finish) / 3) * 2) / 2;
+  const computeAutoOverall = (s: PhaseScores) => {
+    const inv = scaleStep > 0 ? 1 / scaleStep : 2;
+    return Math.round(((s.nose + s.palate + s.finish) / 3) * inv) / inv;
+  };
 
   const currentPhase = PHASES[phaseIndex];
   const accent = `var(--labs-phase-${currentPhase})`;
@@ -395,6 +403,7 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
             onChange={handleScoreChange}
             phaseId={currentPhase}
             labels={scoreLabels}
+            scale={scale}
           />
           {currentPhase === "overall" && (
             <div
