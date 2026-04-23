@@ -1808,6 +1808,54 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                     {t("labs.handoutLibrary.analyzingHint", { defaultValue: "KI liest PDF…" })}
                   </span>
                 )}
+                {multiItems.length === 0 && (
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginLeft: "auto", flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      className="labs-btn-secondary text-xs"
+                      onClick={() => {
+                        if (uploadMut.isPending) return;
+                        setUploadOpen(false);
+                        setUploadForm(emptyUploadForm);
+                        setMultiItems([]);
+                        setMultiCommonDistillery("");
+                        setMultiCommonWhiskybaseId("");
+                        setLastRunSummary(null);
+                      }}
+                      data-testid="button-upload-cancel-inline"
+                      disabled={uploadMut.isPending}
+                    >
+                      {t("labs.handoutLibrary.cancel")}
+                    </button>
+                    <button
+                      type="button"
+                      className="labs-btn-primary text-xs"
+                      onClick={() => {
+                        if (uploadMut.isPending) return;
+                        if (!uploadForm.file) {
+                          setUploadValidationError(t("labs.handoutLibrary.errSelectFile"));
+                          return;
+                        }
+                        if (!uploadForm.splitProgramme && !uploadForm.whiskyName.trim()) {
+                          setUploadValidationError(t("labs.handoutLibrary.errWhiskyNameRequired"));
+                          return;
+                        }
+                        setUploadValidationError(null);
+                        uploadMut.mutate();
+                      }}
+                      disabled={uploadMut.isPending}
+                      data-testid="button-upload-submit-inline"
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                    >
+                      {uploadMut.isPending ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> : <Upload style={{ width: 12, height: 12 }} />}
+                      {uploadMut.isPending
+                        ? t("labs.handoutLibrary.uploading")
+                        : uploadForm.splitProgramme
+                          ? t("labs.handoutLibrary.uploadAndSplit")
+                          : t("labs.handoutLibrary.uploadButton")}
+                    </button>
+                  </div>
+                )}
               </div>
               {analyzeError && !analyzing && (
                 <div
@@ -2324,63 +2372,35 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                   )}
                 </div>
               )}
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, alignItems: "center" }}>
-                {multiItems.length > 0 && (() => {
-                  const total = multiItems.length;
-                  const done = multiItems.filter((it) => it.status === "done").length;
-                  const failed = multiItems.filter((it) => it.status === "error").length;
-                  return (
-                    <span style={{ fontSize: 11, color: "var(--labs-text-muted)", marginRight: "auto" }} data-testid="text-multi-progress">
-                      {t("labs.handoutLibrary.multiProgress", { done, total, failed })}
-                    </span>
-                  );
-                })()}
-                <button
-                  type="button"
-                  className="labs-btn-secondary text-xs"
-                  onClick={() => {
-                    if (multiUploading) return;
-                    setUploadOpen(false);
-                    setUploadForm(emptyUploadForm);
-                    setMultiItems([]);
-                    setMultiCommonDistillery("");
-                    setMultiCommonWhiskybaseId("");
-                    setLastRunSummary(null);
-                  }}
-                  data-testid="button-upload-cancel"
-                  disabled={multiUploading}
-                >
-                  {t("labs.handoutLibrary.cancel")}
-                </button>
-                {multiItems.length === 0 ? (
+              {multiItems.length > 0 && (
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, alignItems: "center" }}>
+                  {(() => {
+                    const total = multiItems.length;
+                    const done = multiItems.filter((it) => it.status === "done").length;
+                    const failed = multiItems.filter((it) => it.status === "error").length;
+                    return (
+                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)", marginRight: "auto" }} data-testid="text-multi-progress">
+                        {t("labs.handoutLibrary.multiProgress", { done, total, failed })}
+                      </span>
+                    );
+                  })()}
                   <button
                     type="button"
-                    className="labs-btn-primary text-xs"
+                    className="labs-btn-secondary text-xs"
                     onClick={() => {
-                      if (uploadMut.isPending) return;
-                      if (!uploadForm.file) {
-                        setUploadValidationError(t("labs.handoutLibrary.errSelectFile"));
-                        return;
-                      }
-                      if (!uploadForm.splitProgramme && !uploadForm.whiskyName.trim()) {
-                        setUploadValidationError(t("labs.handoutLibrary.errWhiskyNameRequired"));
-                        return;
-                      }
-                      setUploadValidationError(null);
-                      uploadMut.mutate();
+                      if (multiUploading) return;
+                      setUploadOpen(false);
+                      setUploadForm(emptyUploadForm);
+                      setMultiItems([]);
+                      setMultiCommonDistillery("");
+                      setMultiCommonWhiskybaseId("");
+                      setLastRunSummary(null);
                     }}
-                    disabled={uploadMut.isPending}
-                    data-testid="button-upload-submit"
-                    style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                    data-testid="button-upload-cancel"
+                    disabled={multiUploading}
                   >
-                    {uploadMut.isPending ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> : <Upload style={{ width: 12, height: 12 }} />}
-                    {uploadMut.isPending
-                      ? t("labs.handoutLibrary.uploading")
-                      : uploadForm.splitProgramme
-                        ? t("labs.handoutLibrary.uploadAndSplit")
-                        : t("labs.handoutLibrary.uploadButton")}
+                    {t("labs.handoutLibrary.cancel")}
                   </button>
-                ) : (
                   <button
                     type="button"
                     className="labs-btn-primary text-xs"
@@ -2394,8 +2414,8 @@ export default function LabsHandoutLibrary({ mode = "workspace" }: LabsHandoutLi
                       ? t("labs.handoutLibrary.uploading")
                       : t("labs.handoutLibrary.multiUploadButton", { count: multiPendingCount })}
                   </button>
-                )}
-              </div>
+                </div>
+              )}
               {uploadValidationError && (
                 <div
                   style={{ background: "var(--labs-danger-muted)", color: "var(--labs-danger)", padding: 8, borderRadius: 8, fontSize: 12, border: "1px solid var(--labs-border)" }}
