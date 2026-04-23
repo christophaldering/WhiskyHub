@@ -6022,6 +6022,31 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                     <Plus className="w-4 h-4" style={{ color: "var(--labs-text-secondary)" }} />
                     {t("labs.aiImport.orManually", "or add manually").replace(/^or\s+/i, '').replace(/^\w/, (c: string) => c.toUpperCase())}
                   </button>
+                  {tasting.hostId === currentParticipant?.id && (
+                    <>
+                      <div style={{ height: 1, background: "var(--labs-border)" }} />
+                      <button
+                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-left transition-colors"
+                        style={{
+                          color: whiskyCount === 0 ? "var(--labs-text-muted)" : "var(--labs-text)",
+                          background: "transparent", border: "none",
+                          cursor: whiskyCount === 0 ? "not-allowed" : "pointer",
+                          opacity: whiskyCount === 0 ? 0.55 : 1,
+                        }}
+                        onMouseEnter={e => { if (whiskyCount > 0) e.currentTarget.style.background = "var(--labs-accent-muted)"; }}
+                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                        onClick={() => { if (whiskyCount === 0) return; setShowPdfSplitter(true); setShowAddPopover(false); }}
+                        disabled={whiskyCount === 0}
+                        data-testid="labs-host-pdf-splitter-option"
+                        title={whiskyCount === 0
+                          ? "Erst Whiskys hinzufügen"
+                          : "Mehrseitiges Programm-PDF in einzelne Whisky-Handouts aufteilen"}
+                      >
+                        <Scissors className="w-4 h-4" style={{ color: whiskyCount === 0 ? "var(--labs-text-muted)" : "var(--labs-text-secondary)" }} />
+                        Programm-PDF aufteilen
+                      </button>
+                    </>
+                  )}
                 </div>
               </>)}
             </div>
@@ -6350,21 +6375,6 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           </div>
         )}
 
-        {whiskyCount > 0 && tasting.hostId === currentParticipant?.id && (
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-            <button
-              type="button"
-              className="labs-btn-ghost text-xs"
-              onClick={() => setShowPdfSplitter(true)}
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px" }}
-              data-testid="labs-host-pdf-splitter-btn"
-              title="Mehrseitiges PDF-Programm in Whisky-Handouts aufteilen"
-            >
-              <Scissors className="w-3.5 h-3.5" />
-              PDF aufteilen
-            </button>
-          </div>
-        )}
 
         {(() => {
           const rvDesktop = tasting.blindMode && !tasting.guidedMode && tasting.status === "reveal"
