@@ -115,6 +115,82 @@ async function preBuildMigrations() {
       }
     }
 
+    // Migrate target_community_ids from JSON text → native text[] in tastings
+    try {
+      const { rows: tcRows } = await pool.query(
+        `SELECT data_type FROM information_schema.columns WHERE table_name = 'tastings' AND column_name = 'target_community_ids'`
+      );
+      if (tcRows[0]?.data_type === "text") {
+        await pool.query(`
+          UPDATE "tastings" SET "target_community_ids" = NULL
+          WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
+            AND (jsonb_typeof("target_community_ids"::jsonb) IS DISTINCT FROM 'array'
+                 OR "target_community_ids"::jsonb = 'null'::jsonb)
+        `);
+        await pool.query(`ALTER TABLE "tastings" ADD COLUMN "target_community_ids_arr" text[]`);
+        await pool.query(`
+          UPDATE "tastings" SET "target_community_ids_arr" = (
+            SELECT array_agg(v) FROM jsonb_array_elements_text("target_community_ids"::jsonb) AS v
+          ) WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
+        `);
+        await pool.query(`ALTER TABLE "tastings" DROP COLUMN "target_community_ids"`);
+        await pool.query(`ALTER TABLE "tastings" RENAME COLUMN "target_community_ids_arr" TO "target_community_ids"`);
+        console.log("pre-build: tastings.target_community_ids text → text[]");
+      }
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS "tastings_target_community_ids_gin"
+        ON "tastings" USING GIN ("target_community_ids") WHERE "target_community_ids" IS NOT NULL
+      `);
+    } catch (e: any) {
+      console.log(`pre-build: tastings.target_community_ids migration note: ${e.message}`);
+    }
+
+    // Migrate target_community_ids from JSON text → native text[] in bottle_splits
+    try {
+      const { rows: bsRows } = await pool.query(
+        `SELECT data_type FROM information_schema.columns WHERE table_name = 'bottle_splits' AND column_name = 'target_community_ids'`
+      );
+      if (bsRows[0]?.data_type === "text") {
+        await pool.query(`
+          UPDATE "bottle_splits" SET "target_community_ids" = NULL
+          WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
+            AND "target_community_ids" !~ '^\\s*\\[.*\\]\\s*$'
+        `);
+        await pool.query(`
+          UPDATE "bottle_splits" SET "target_community_ids" = NULL
+          WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
+            AND (jsonb_typeof("target_community_ids"::jsonb) IS DISTINCT FROM 'array'
+                 OR "target_community_ids"::jsonb = 'null'::jsonb)
+        `);
+        await pool.query(`ALTER TABLE "bottle_splits" ADD COLUMN "target_community_ids_arr" text[]`);
+        await pool.query(`
+          UPDATE "bottle_splits" SET "target_community_ids_arr" = (
+            SELECT array_agg(v) FROM jsonb_array_elements_text("target_community_ids"::jsonb) AS v
+          ) WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
+        `);
+        await pool.query(`ALTER TABLE "bottle_splits" DROP COLUMN "target_community_ids"`);
+        await pool.query(`ALTER TABLE "bottle_splits" RENAME COLUMN "target_community_ids_arr" TO "target_community_ids"`);
+        console.log("pre-build: bottle_splits.target_community_ids text → text[]");
+      }
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS "bottle_splits_target_community_ids_gin"
+        ON "bottle_splits" USING GIN ("target_community_ids") WHERE "target_community_ids" IS NOT NULL
+      `);
+    } catch (e: any) {
+      console.log(`pre-build: bottle_splits.target_community_ids migration note: ${e.message}`);
+    }
+
+    // Add excluded_participant_ids column (added in Task #854)
+    try {
+      await pool.query(`
+        ALTER TABLE "tastings"
+        ADD COLUMN IF NOT EXISTS "excluded_participant_ids" text[] DEFAULT ARRAY[]::text[]
+      `);
+      console.log("pre-build: ensured tastings.excluded_participant_ids exists");
+    } catch (e: any) {
+      console.log(`pre-build: excluded_participant_ids migration note: ${e.message}`);
+    }
+
     const addCols: Array<{ table: string; column: string; type: string }> = [
       { table: "journal_entries", column: "country", type: "text" },
       { table: "journal_entries", column: "category", type: "text" },
