@@ -7180,13 +7180,13 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   }}
                   data-testid={`labs-host-whisky-${w.id}`}
                   data-whisky-drag-idx={i}
-                  draggable={tasting.status === "draft"}
+                  draggable={tasting.status !== "archived"}
                   onDragStart={(e) => { dragState.current = { dragIdx: i, overIdx: i }; setDragActiveIdx(i); e.dataTransfer.effectAllowed = "move"; }}
                   onDragOver={(e) => { e.preventDefault(); if (dragState.current) dragState.current.overIdx = i; }}
                   onDragEnd={commitDrag}
                 >
                   <div className="flex items-center gap-3">
-                    {tasting.status === "draft" && (
+                    {tasting.status !== "archived" && (
                       <div
                         className="flex-shrink-0 cursor-grab active:cursor-grabbing"
                         style={{ color: "var(--labs-text-muted)", touchAction: "none" }}
