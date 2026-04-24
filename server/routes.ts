@@ -17858,8 +17858,7 @@ Language: German if tasting title appears German, otherwise English. Tone: warm,
       if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
-      const participantId = (req.headers["x-participant-id"] as string) || (req.query.pid as string);
-      if (tasting.hostId !== participantId) return res.status(403).json({ message: "Only the host can share the Story PDF" });
+      if (tasting.hostId !== auth.participant.id) return res.status(403).json({ message: "Only the host can share the Story PDF" });
 
       const { recipients, pdfBase64, tastingTitle } = req.body;
       if (!Array.isArray(recipients) || recipients.length === 0) {
