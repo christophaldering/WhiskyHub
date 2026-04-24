@@ -18,7 +18,9 @@ async function fetchImageAsBase64(url: string): Promise<string | null> {
   }
 }
 
-export async function exportStoryPdf(storyData: any, returnBase64 = false): Promise<string | void> {
+export type PdfProgressCallback = (current: number, total: number, label: string) => void;
+
+export async function exportStoryPdf(storyData: any, returnBase64 = false, onProgress?: PdfProgressCallback): Promise<string | void> {
   const { tasting, sortedRanking, participants, eventPhotos, winner, winnerNarration, aiComments, blindReveal, participantFunFacts } = storyData;
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageW = 210, pageH = 297, marginX = 18, contentW = pageW - marginX * 2;
@@ -77,7 +79,40 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false): Prom
 
   const tasters = (participants || []).filter((p: any) => !p.excludedFromResults);
 
+  const blindData = (blindReveal || []).filter((w: any) => w.guesses && w.guesses.length > 0);
+  const photoEntries = (eventPhotos || []).filter((_: any, i: number) => eventPhotoB64s[i]);
+
+  // Pre-simulate photo layout to get an accurate page count
+  const photoPageCount = (() => {
+    if (photoEntries.length === 0) return 0;
+    const simPhotoW = (contentW - 6) / 2;
+    const simPhotoH = simPhotoW * 0.65;
+    let pages = 1, col = 0, yy = 28;
+    for (let pi = 0; pi < photoEntries.length; pi++) {
+      if (yy + simPhotoH > pageH - 22) { pages++; yy = 28; col = 0; }
+      col++;
+      if (col >= 2) { col = 0; yy += simPhotoH + 14; }
+    }
+    return pages;
+  })();
+
+  const totalPages =
+    1 +
+    (tasters.length > 0 ? 1 : 0) +
+    (sortedRanking || []).length +
+    (blindData.length > 0 ? 1 : 0) +
+    (winner ? 1 : 0) +
+    photoPageCount +
+    1;
+  let currentPage = 0;
+  const progress = async (label: string) => {
+    currentPage++;
+    onProgress?.(currentPage, totalPages, label);
+    if (onProgress) await new Promise<void>(r => setTimeout(r, 0));
+  };
+
   // ===== PAGE 1: ACT I · COVER / OPENING =====
+  await progress("Akt I · Eröffnung");
   drawBg(); drawHeader();
   let y = 18;
 
@@ -146,6 +181,7 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false): Prom
 
   // ===== PAGE: ACT III · DIE VERKOSTER =====
   if (tasters.length > 0) {
+    await progress("Akt III · Die Verkoster");
     doc.addPage(); drawBg(); drawHeader();
     y = 18;
     y = drawActLabel("AKT III", "Die Verkoster", y);
@@ -200,6 +236,7 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false): Prom
   // ===== PAGES: ACT IV · ENTDECKUNGEN =====
   for (let i = 0; i < (sortedRanking || []).length; i++) {
     const w = sortedRanking[i];
+    await progress(`Akt IV · ${w.name ? w.name.slice(0, 24) : `Platz ${i + 1}`}`);
     doc.addPage(); drawBg(); drawHeader();
     y = 18;
 
@@ -308,8 +345,8 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false): Prom
   }
 
   // ===== PAGE: ACT V · BLIND-TASTING AUFLÖSUNG =====
-  const blindData = (blindReveal || []).filter((w: any) => w.guesses && w.guesses.length > 0);
   if (blindData.length > 0) {
+    await progress("Akt V · Die Überraschung");
     doc.addPage(); drawBg(); drawHeader();
     y = 18;
     y = drawActLabel("AKT V", "Die Überraschung", y);
@@ -351,6 +388,7 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false): Prom
 
   // ===== PAGE: ACT VI · DER SIEGER =====
   if (winner) {
+    await progress("Akt VI · Der Sieger");
     doc.addPage(); drawBg(); drawHeader();
     y = 18;
     y = drawActLabel("AKT VI", "Der Sieger", y);
@@ -403,8 +441,8 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false): Prom
   }
 
   // ===== EVENT PHOTOS PAGES =====
-  const photoEntries = (eventPhotos || []).filter((_: any, i: number) => eventPhotoB64s[i]);
   if (photoEntries.length > 0) {
+    await progress("Event Fotos");
     doc.addPage(); drawBg(); drawHeader();
     y = 18;
     doc.setFontSize(7.5); doc.setTextColor(...accent); doc.setFont("helvetica", "bold");
@@ -417,7 +455,9 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false): Prom
       if (!b64) continue;
       const px = marginX + col * (photoW + 6);
       if (y + photoH > pageH - 22) {
-        drawFooter("Event Fotos"); doc.addPage(); drawBg(); drawHeader(); y = 18;
+        drawFooter("Event Fotos");
+        await progress("Event Fotos");
+        doc.addPage(); drawBg(); drawHeader(); y = 18;
         doc.setFontSize(7.5); doc.setTextColor(...accent); doc.setFont("helvetica", "bold");
         doc.text("EVENT FOTOS", pageW / 2, y, { align: "center" }); y += 10;
         col = 0;
@@ -439,6 +479,7 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false): Prom
   }
 
   // ===== PAGE: ACT VII · FINALE =====
+  await progress("Akt VII · Finale");
   doc.addPage(); drawBg(); drawHeader();
   y = 18;
 

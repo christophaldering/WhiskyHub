@@ -13,7 +13,7 @@ import { useAppStore } from "@/lib/store";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { stripGuestSuffix, formatScore } from "@/lib/utils";
 import { useUpload } from "@/hooks/use-upload";
-import { exportStoryPdf } from "@/lib/pdf-story";
+import { exportStoryPdf, type PdfProgressCallback } from "@/lib/pdf-story";
 import ModalPortal from "@/labs/components/ModalPortal";
 
 interface LabsStoryPresentProps {
@@ -795,6 +795,7 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
   const [showPhotoPanel, setShowPhotoPanel] = useState(false);
   const [storyToggling, setStoryToggling] = useState(false);
   const [isPdfExporting, setIsPdfExporting] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState<{ current: number; total: number; label: string } | null>(null);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const touchStartX = useRef<number | null>(null);
@@ -868,8 +869,12 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
   const handlePdfExport = async () => {
     if (!storyData || isPdfExporting) return;
     setIsPdfExporting(true);
+    setPdfProgress(null);
+    const onProgress: PdfProgressCallback = (current, total, label) => {
+      setPdfProgress({ current, total, label });
+    };
     try {
-      await exportStoryPdf({ ...storyData, eventPhotos });
+      await exportStoryPdf({ ...storyData, eventPhotos }, false, onProgress);
       toast({ title: "PDF erfolgreich exportiert", description: "Die Story wurde als PDF heruntergeladen." });
     } catch (err) {
       toast({
@@ -879,6 +884,7 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
       });
     } finally {
       setIsPdfExporting(false);
+      setPdfProgress(null);
     }
   };
 
@@ -1174,6 +1180,58 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
         tastingId={tastingId}
       />
     )}
+
+    <AnimatePresence>
+      {isPdfExporting && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          style={{
+            position: "fixed", inset: 0, zIndex: 200,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: "rgba(0,0,0,0.72)", backdropFilter: "blur(8px)",
+          }}
+          data-testid="pdf-progress-overlay"
+        >
+          <div style={{
+            background: "var(--labs-surface)",
+            border: "1px solid rgba(212,162,86,0.3)",
+            borderRadius: 18,
+            padding: "32px 36px",
+            minWidth: 300, maxWidth: 400, width: "90%",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 20,
+          }}>
+            <Loader2 style={{ width: 32, height: 32, color: "var(--labs-accent)", animation: "spin 1s linear infinite" }} />
+            <div style={{ width: "100%", textAlign: "center" }}>
+              <p style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", marginBottom: 6 }}>
+                PDF wird erstellt…
+              </p>
+              <p style={{ fontSize: 12, color: "var(--labs-text-muted)", marginBottom: 16 }} data-testid="pdf-progress-label">
+                {pdfProgress
+                  ? `Seite ${pdfProgress.current} von ${pdfProgress.total} · ${pdfProgress.label}`
+                  : "Vorbereitung…"}
+              </p>
+              <div style={{
+                width: "100%", height: 6, borderRadius: 3,
+                background: "rgba(255,255,255,0.08)",
+                overflow: "hidden",
+              }}>
+                <motion.div
+                  animate={{ width: pdfProgress ? `${Math.min(100, Math.round((pdfProgress.current / pdfProgress.total) * 100))}%` : "0%" }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                  style={{
+                    height: "100%", borderRadius: 3,
+                    background: "linear-gradient(90deg, var(--labs-accent), #e8c878)",
+                  }}
+                  data-testid="pdf-progress-bar"
+                />
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
     </>
   );
 }
