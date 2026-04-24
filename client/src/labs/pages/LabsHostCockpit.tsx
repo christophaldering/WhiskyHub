@@ -219,6 +219,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   const [confirmAdvance, setConfirmAdvance] = useState(false);
   const [localRevealStep, setLocalRevealStep] = useState<number | null>(null);
   const [localGuidedIdx, setLocalGuidedIdx] = useState<number | null>(null);
+  const [hostViewIdx, setHostViewIdx] = useState<number | null>(null);
 
   const [hostScores, setHostScores] = useState<Record<string, Record<DimKey, number>>>({});
   const [hostChips, setHostChips] = useState<Record<string, Record<DimKey, string[]>>>({});
@@ -517,7 +518,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   }, [tasting, localRevealStep, localGuidedIdx]);
   const gv = isBlind && rv && optimisticTasting ? getGuestVisibility(optimisticTasting, rv.stepGroups, isGuided) : null;
   const guestDramIdx = gv ? gv.dramIdx : (isGuided ? Math.max(0, guidedIdx) : 0);
-  const activeWhisky = whiskies[guestDramIdx] || null;
+  const effectiveDramIdx = hostViewIdx ?? guestDramIdx;
+  const activeWhisky = whiskies[effectiveDramIdx] || null;
 
   const activePreset: RevealPresetKey = useMemo(() => {
     if (!tasting?.revealOrder) return "classic";
@@ -1426,7 +1428,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                         ...(nameRevealed ? { animation: "popIn 350ms ease-out" } : {}),
                       }}>
-                        {nameHidden ? `Dram ${blindLabel(guestDramIdx)}` : (activeWhisky.name || "—")}
+                        {nameHidden ? `Dram ${blindLabel(effectiveDramIdx)}` : (activeWhisky.name || "—")}
                       </div>
                       {nameHidden && (
                         <LockKeyhole style={{ width: 13, height: 13, color: "var(--labs-text-muted)", opacity: 0.7, flexShrink: 0 }} />
@@ -1434,7 +1436,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                     </div>
                     {nameHidden && (
                       <div style={{ fontSize: 11, color: "var(--labs-accent)", fontWeight: 600, marginTop: 2 }}>
-                        Guests see: Dram {blindLabel(guestDramIdx)}
+                        Guests see: Dram {blindLabel(effectiveDramIdx)}
                       </div>
                     )}
                     <div style={{
@@ -1583,7 +1585,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
               </div>
               <div style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-accent)" }}>
                 {gv.currentStep === 0
-                  ? `Dram ${blindLabel(guestDramIdx)}`
+                  ? `Dram ${blindLabel(effectiveDramIdx)}`
                   : (() => {
                       const parts: string[] = [];
                       for (let s = 0; s < gv.currentStep && s < rv.stepGroups.length; s++) {
@@ -1596,7 +1598,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                           if (val[f]) parts.push(val[f]);
                         }
                       }
-                      return parts.slice(0, 4).join(" · ") + (parts.length > 4 ? " …" : "") || `Dram ${blindLabel(guestDramIdx)}`;
+                      return parts.slice(0, 4).join(" · ") + (parts.length > 4 ? " …" : "") || `Dram ${blindLabel(effectiveDramIdx)}`;
                     })()
                 }
               </div>
@@ -1605,7 +1607,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
             <div style={{ padding: "12px 14px", borderRadius: 12, background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)" }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: "var(--labs-text-muted)", letterSpacing: "0.05em", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
                 <EyeOff style={{ width: 10, height: 10 }} />
-                {t("cockpit.revealProgress", "REVEAL STAGES")} — Dram {blindLabel(guestDramIdx)}
+                {t("cockpit.revealProgress", "REVEAL STAGES")} — Dram {blindLabel(effectiveDramIdx)}
               </div>
 
               <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }} data-testid="cockpit-stage-pills">
@@ -1688,7 +1690,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
           </div>
           {activeWhisky && (
             <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text-muted)" }}>
-              {isBlind ? `Dram ${blindLabel(guestDramIdx)}` : (activeWhisky.name || `Dram ${guestDramIdx + 1}`)}
+              {isBlind ? `Dram ${blindLabel(effectiveDramIdx)}` : (activeWhisky.name || `Dram ${effectiveDramIdx + 1}`)}
             </span>
           )}
         </div>
@@ -2023,7 +2025,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 2 }} data-testid="cockpit-compact-lineup">
         {whiskies.map((w: any, idx: number) => {
-          const isCurrent = isGuided ? idx === guidedIdx : idx === guestDramIdx;
+          const isCurrent = isGuided ? idx === guidedIdx : idx === effectiveDramIdx;
           const isPast = isGuided ? idx < guidedIdx : false;
           const whiskyRatings = ratings.filter((r: any) => r.whiskyId === w.id);
           const ratedCount = new Set(whiskyRatings.map((r: any) => r.participantId)).size;
@@ -2040,8 +2042,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
               key={w.id}
               className="cockpit-compact-row"
               data-active={isCurrent}
-              data-clickable={isGuided}
-              onClick={() => isGuided && guidedGoToMut.mutate({ whiskyIndex: idx, revealStep: 0 })}
+              data-clickable={true}
+              onClick={() => isGuided ? guidedGoToMut.mutate({ whiskyIndex: idx, revealStep: 0 }) : setHostViewIdx(idx)}
               data-testid={`cockpit-compact-lineup-${idx}`}
             >
               <div className="cockpit-compact-badge" style={{
@@ -2095,7 +2097,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {whiskies.map((w: any, idx: number) => {
-                const isCurrent = isGuided ? idx === guidedIdx : idx === guestDramIdx;
+                const isCurrent = isGuided ? idx === guidedIdx : idx === effectiveDramIdx;
                 const isPast = isGuided ? idx < guidedIdx : false;
                 const whiskyRatings = ratings.filter((r: any) => r.whiskyId === w.id);
                 const ratedCount = new Set(whiskyRatings.map((r: any) => r.participantId)).size;
@@ -2109,8 +2111,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                     key={w.id}
                     className="cockpit-dram-row"
                     data-active={isCurrent}
-                    data-clickable={isGuided}
-                    onClick={() => isGuided && guidedGoToMut.mutate({ whiskyIndex: idx, revealStep: 0 })}
+                    data-clickable={true}
+                    onClick={() => isGuided ? guidedGoToMut.mutate({ whiskyIndex: idx, revealStep: 0 }) : setHostViewIdx(idx)}
                     data-testid={`cockpit-lineup-${idx}`}
                   >
                     <div className="cockpit-dram-badge" style={{
