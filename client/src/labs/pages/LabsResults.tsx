@@ -16,6 +16,7 @@ import { downloadBlob } from "@/lib/download";
 import { saveJsPdf } from "@/lib/pdf";
 import { stripGuestSuffix, formatScore } from "@/lib/utils";
 import jsPDF from "jspdf";
+import { exportStoryPdf } from "@/lib/pdf-story";
 
 async function labsExportFromServer(tastingId: string, format: "csv" | "xlsx"): Promise<boolean> {
   const res = await fetch(`/api/tastings/${tastingId}/results/export?format=${format}`);
@@ -225,6 +226,22 @@ function LabsExportDropdown({ tastingId, tasting, whiskyResults }: { tastingId: 
     }
   };
 
+  const handleStoryPdf = async () => {
+    setLoading("story-pdf");
+    setOpen(false);
+    try {
+      const [storyRes, photosRes] = await Promise.all([
+        fetch(`/api/tastings/${tastingId}/story`, { headers: pidHeaders() }),
+        fetch(`/api/tastings/${tastingId}/event-photos`, { headers: pidHeaders() }),
+      ]);
+      const storyData = storyRes.ok ? await storyRes.json() : {};
+      const eventPhotos = photosRes.ok ? await photosRes.json() : [];
+      await exportStoryPdf({ ...storyData, eventPhotos });
+    } finally {
+      setLoading(null);
+    }
+  };
+
   return (
     <div style={{ display: "inline-block" }}>
       <button
@@ -319,6 +336,32 @@ function LabsExportDropdown({ tastingId, tasting, whiskyResults }: { tastingId: 
           >
             <Download style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />
             {t("resultsUi.pdf")}
+          </button>
+          <button
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              width: "100%",
+              padding: "8px 12px",
+              background: "transparent",
+              border: "none",
+              borderRadius: 6,
+              cursor: loading === "story-pdf" ? "default" : "pointer",
+              color: "var(--labs-text)",
+              fontSize: 13,
+              fontFamily: "inherit",
+              opacity: loading === "story-pdf" ? 0.6 : 1,
+            }}
+            onClick={handleStoryPdf}
+            disabled={loading === "story-pdf"}
+            data-testid="button-labs-export-story-pdf"
+          >
+            {loading === "story-pdf"
+              ? <Loader2 style={{ width: 14, height: 14, color: "var(--labs-text-muted)", animation: "spin 1s linear infinite" }} />
+              : <BookOpen style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />
+            }
+            Story PDF
           </button>
         </div>,
         document.body
