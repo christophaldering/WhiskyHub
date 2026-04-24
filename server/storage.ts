@@ -363,7 +363,7 @@ export interface IStorage {
   duplicateTasting(id: string, hostId: string): Promise<Tasting>;
 
   // Tasting Participants
-  getTastingParticipants(tastingId: string): Promise<(TastingParticipant & { participant: Participant })[]>;
+  getTastingParticipants(tastingId: string): Promise<(TastingParticipant & { participant: Participant; ratingCount: number })[]>;
   addParticipantToTasting(data: InsertTastingParticipant): Promise<TastingParticipant>;
   isParticipantInTasting(tastingId: string, participantId: string): Promise<boolean>;
   getTastingParticipantByRejoinCode(tastingId: string, rejoinCode: string): Promise<(TastingParticipant & { participant: Participant }) | undefined>;
@@ -1159,16 +1159,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   // --- Tasting Participants ---
-  async getTastingParticipants(tastingId: string): Promise<(TastingParticipant & { participant: Participant })[]> {
+  async getTastingParticipants(tastingId: string): Promise<(TastingParticipant & { participant: Participant; ratingCount: number })[]> {
+    const ratingCounts = db
+      .select({
+        participantId: ratings.participantId,
+        cnt: sql<number>`count(*)::int`.as("cnt"),
+      })
+      .from(ratings)
+      .where(eq(ratings.tastingId, tastingId))
+      .groupBy(ratings.participantId)
+      .as("rating_counts");
+
     const results = await db
       .select()
       .from(tastingParticipants)
       .innerJoin(participants, eq(tastingParticipants.participantId, participants.id))
+      .leftJoin(ratingCounts, eq(ratingCounts.participantId, tastingParticipants.participantId))
       .where(eq(tastingParticipants.tastingId, tastingId));
 
     return results.map(r => ({
       ...r.tasting_participants,
       participant: r.participants,
+      ratingCount: r.rating_counts?.cnt ?? 0,
     }));
   }
 
