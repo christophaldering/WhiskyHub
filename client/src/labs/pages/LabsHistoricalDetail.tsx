@@ -397,10 +397,12 @@ export default function LabsHistoricalDetail() {
     },
   });
 
+  const resolvedId = data?.id ?? tastingId;
+
   const { data: participationData } = useQuery<{ participants: any[]; count: number }>({
-    queryKey: ["historical-participants", tastingId],
-    queryFn: () => fetchJSON(`/api/historical/tastings/${tastingId}/participants`, pid || undefined),
-    enabled: !!tastingId,
+    queryKey: ["historical-participants", resolvedId],
+    queryFn: () => fetchJSON(`/api/historical/tastings/${resolvedId}/participants`, pid || undefined),
+    enabled: !!resolvedId,
   });
 
   const { data: myParticipations } = useQuery<{ participations: Array<{ historicalTastingId: string }> }>({
@@ -409,12 +411,12 @@ export default function LabsHistoricalDetail() {
     enabled: !!pid,
   });
 
-  const isClaimed = myParticipations?.participations?.some(p => p.historicalTastingId === tastingId) ?? false;
+  const isClaimed = myParticipations?.participations?.some(p => p.historicalTastingId === resolvedId) ?? false;
   const participantCount = participationData?.count ?? 0;
 
   const { data: myRatingsData } = useQuery<{ ratings: PersonalRating[] }>({
-    queryKey: ["historical-my-ratings", tastingId],
-    queryFn: () => fetchJSON(`/api/historical/tastings/${tastingId}/my-ratings`, pid || undefined),
+    queryKey: ["historical-my-ratings", resolvedId],
+    queryFn: () => fetchJSON(`/api/historical/tastings/${resolvedId}/my-ratings`, pid || undefined),
     enabled: !!pid && isClaimed,
   });
 
@@ -429,7 +431,7 @@ export default function LabsHistoricalDetail() {
     mutationFn: async (claim: boolean) => {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (pid) headers["x-participant-id"] = pid;
-      const res = await fetch(`/api/historical/tastings/${tastingId}/claim`, {
+      const res = await fetch(`/api/historical/tastings/${resolvedId}/claim`, {
         method: claim ? "POST" : "DELETE",
         headers,
       });
@@ -438,7 +440,7 @@ export default function LabsHistoricalDetail() {
     },
     onSuccess: (_data, claim) => {
       queryClient.invalidateQueries({ queryKey: ["historical-my-participations"] });
-      queryClient.invalidateQueries({ queryKey: ["historical-participants", tastingId] });
+      queryClient.invalidateQueries({ queryKey: ["historical-participants", resolvedId] });
       queryClient.invalidateQueries({ queryKey: ["historical-participant-counts"] });
       if (claim) {
         setShowClaimBanner(true);
@@ -451,6 +453,7 @@ export default function LabsHistoricalDetail() {
   });
 
   const isForbidden = error instanceof ForbiddenError;
+  const isNotFound = !isForbidden && error instanceof Error && error.message.includes("404");
   const title = data
     ? (lang.startsWith("de") ? data.titleDe : data.titleEn) || data.titleDe || `Tasting #${data.tastingNumber}`
     : "";
@@ -472,14 +475,14 @@ export default function LabsHistoricalDetail() {
     if (count > 1) tiedRanks.add(Number(rank));
   });
 
-  if (showScanner && tastingId && pid) {
+  if (showScanner && resolvedId && pid) {
     return (
       <LabsRatingCardScan
-        tastingId={tastingId}
+        tastingId={resolvedId}
         participantId={pid}
         onClose={() => setShowScanner(false)}
         onSaved={() => {
-          queryClient.invalidateQueries({ queryKey: ["historical-my-ratings", tastingId] });
+          queryClient.invalidateQueries({ queryKey: ["historical-my-ratings", resolvedId] });
         }}
       />
     );
@@ -525,7 +528,19 @@ export default function LabsHistoricalDetail() {
         </div>
       )}
 
-      {isError && !isForbidden && (
+      {isError && !isForbidden && isNotFound && (
+        <div className="labs-card" style={{ textAlign: "center", padding: "60px 16px", marginTop: 16 }} data-testid="detail-not-found">
+          <div style={{ fontSize: 32, marginBottom: 12 }}>🗂️</div>
+          <p style={{ fontSize: 14, color: "var(--labs-text)", fontWeight: 600, marginBottom: 4 }}>
+            {t("m2.historicalDetail.notInArchive", "Diese Verkostung ist noch nicht im Archiv verfügbar.")}
+          </p>
+          <p style={{ fontSize: 13, color: "var(--labs-text-muted)", lineHeight: 1.5, maxWidth: 340, margin: "0 auto" }}>
+            {t("m2.historicalDetail.notInArchiveHint", "The archive snapshot is created once the tasting enters the reveal phase.")}
+          </p>
+        </div>
+      )}
+
+      {isError && !isForbidden && !isNotFound && (
         <div className="labs-card" style={{ textAlign: "center", padding: "60px 16px", marginTop: 16 }} data-testid="detail-error">
           <div style={{ fontSize: 32, marginBottom: 12 }}>⚠️</div>
           <p style={{ fontSize: 14, color: "var(--labs-danger)", fontWeight: 600, marginBottom: 4 }}>

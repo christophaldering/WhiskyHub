@@ -2050,7 +2050,7 @@ export async function registerRoutes(
     console.log(`[LABS] Session status: ${tasting.status} → ${finalStatus} | tasting=${req.params.id} "${tasting.title}"`);
     broadcastToTasting(req.params.id, { type: "status_changed", data: { status: finalStatus, previousStatus: tasting.status } });
 
-    if (finalStatus === "archived") {
+    if (finalStatus === "archived" || finalStatus === "reveal") {
       try {
         const tastingWhiskies = await storage.getWhiskiesForTasting(req.params.id);
         const tastingRatings = await storage.getRatingsForTasting(req.params.id);

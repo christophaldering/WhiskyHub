@@ -4120,10 +4120,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getHistoricalTasting(id: string): Promise<(HistoricalTasting & { entries: HistoricalTastingEntry[] }) | undefined> {
-    const [tasting] = await db.select().from(historicalTastings).where(eq(historicalTastings.id, id));
+    let [tasting] = await db.select().from(historicalTastings).where(eq(historicalTastings.id, id));
+    if (!tasting) {
+      const [byOrigin] = await db.select().from(historicalTastings).where(eq(historicalTastings.originTastingId, id));
+      if (byOrigin) tasting = byOrigin;
+    }
     if (!tasting) return undefined;
     const entries = await db.select().from(historicalTastingEntries)
-      .where(eq(historicalTastingEntries.historicalTastingId, id))
+      .where(eq(historicalTastingEntries.historicalTastingId, tasting.id))
       .orderBy(asc(historicalTastingEntries.totalRank));
     return { ...tasting, entries };
   }
