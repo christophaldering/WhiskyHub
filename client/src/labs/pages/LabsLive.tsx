@@ -510,6 +510,7 @@ function GuidedStepView({
                 },
                 tags: { nose: chips, palate: [], finish: [], overall: [] },
                 notes: { nose: cleanNotes, palate: "", finish: "", overall: "" },
+                overallExplicit: true,
               };
             })() : (!myRating && guidedDraft?.ratingData?.scores ? guidedDraft.ratingData as RatingData : undefined)}
             initialMode={!myRating && guidedDraft?.ratingMode ? guidedDraft.ratingMode : undefined}
@@ -519,7 +520,7 @@ function GuidedStepView({
               const liveInv = 1 / liveScale.step;
               const computeOv = (s: { nose: number; palate: number; finish: number }) =>
                 Math.round(((s.nose + s.palate + s.finish) / 3) * liveInv) / liveInv;
-              const eff = data.scores.overall > 0
+              const eff = (data.overallExplicit === true || (data.scores.overall != null && data.scores.overall > 0))
                 ? data.scores.overall
                 : Math.max(liveScale.step, computeOv(data.scores));
 

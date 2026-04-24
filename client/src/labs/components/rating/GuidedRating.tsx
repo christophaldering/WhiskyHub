@@ -141,6 +141,7 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
         setScores(nextScores);
         onChange?.(phaseIndex, { scores: nextScores, tags, notes });
       }
+      setOverallRated(true);
     }
   }, [phaseIndex]);
 
