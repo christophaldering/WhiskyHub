@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useLocation, useSearch } from "wouter";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import {
@@ -1597,7 +1598,7 @@ function FriendDetailSheet({
     return participants.some((p) => p.id === friend.participantId || (p.name as string)?.toLowerCase() === friend.name.toLowerCase());
   });
 
-  return (
+  return createPortal(
     <div
       style={{
         position: "fixed", inset: 0, zIndex: "var(--z-overlay)",
@@ -1785,7 +1786,7 @@ function FriendDetailSheet({
         </button>
       </div>
     </div>
-  );
+  , document.body);
 }
 
 function InvitePickerSheet({
@@ -1801,7 +1802,7 @@ function InvitePickerSheet({
   onInvite: (tastingId: string) => void;
   isLoading: boolean;
 }) {
-  return (
+  return createPortal(
     <div
       style={{
         position: "fixed", inset: 0, zIndex: "var(--z-overlay)",
@@ -1861,7 +1862,7 @@ function InvitePickerSheet({
         </button>
       </div>
     </div>
-  );
+  , document.body);
 }
 
 function EmptyState({
