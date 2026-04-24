@@ -2230,12 +2230,9 @@ export async function registerRoutes(
       const updates: Record<string, unknown> = {
         coverImageAiUrl: url,
         coverImageAiPrompt: typeof prompt === "string" && prompt.trim() ? prompt.trim() : null,
+        coverImageUrl: url,
+        coverImageSource: "ai",
       };
-      const hasActive = !!tasting.coverImageUrl && !!tasting.coverImageSource;
-      if (!hasActive || tasting.coverImageSource === "ai") {
-        updates.coverImageUrl = url;
-        updates.coverImageSource = "ai";
-      }
       const updated = await storage.updateTastingDetails(req.params.id, updates);
       res.json(updated);
     } catch (e: any) {

@@ -4638,7 +4638,8 @@ function TastingSetupSection({
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || "Speichern fehlgeschlagen");
       }
-      queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+      await queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+      toast({ title: "KI-Cover übernommen", description: "Das generierte Bild ist jetzt das aktive Cover." });
       setAiDialogOpen(false);
       setAiPreview(null);
       setAiPromptHint("");
