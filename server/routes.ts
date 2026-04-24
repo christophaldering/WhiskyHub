@@ -8012,7 +8012,13 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Not found" });
       const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId) return res.status(401).json({ message: "Participant ID required" });
       const isHost = requesterId === tasting.hostId;
+      if (!isHost) {
+        const tpRecords = await storage.getTastingParticipants(req.params.id);
+        const isMember = tpRecords.some(tp => tp.participantId === requesterId);
+        if (!isMember) return res.status(403).json({ message: "Not a tasting participant" });
+      }
       const report = await storage.getTastingAiReport(req.params.id);
       if (!report) return res.json({ report: null });
       if (!isHost && !report.aiReportEnabled) {
@@ -8035,7 +8041,7 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
       if (!tasting) return res.status(404).json({ message: "Not found" });
       const requesterId = req.headers["x-participant-id"] as string;
       if (requesterId !== tasting.hostId) return res.status(403).json({ message: "Host only" });
-      if (!["closed", "reveal", "archived"].includes(tasting.status)) {
+      if (!["closed", "reveal", "archived", "completed"].includes(tasting.status)) {
         return res.status(400).json({ message: "Report only available after tasting ends" });
       }
 
@@ -8122,16 +8128,16 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
       allDeviations.sort((a, b) => b.deviation - a.deviation);
       const outlierMoments = allDeviations.slice(0, 6);
 
-      // --- Consistency scores (lower stddev = higher consistency) ---
-      const consistencyScores: Record<string, number> = {};
-      const scaleMax = (tasting.ratingScale as number) || 100;
+      // --- Consistency scores (lower avgDeviation = more consistent) ---
+      const consistencyScores: Array<{ participantId: string; participantName: string; avgDeviation: number }> = [];
       for (const pid of pids) {
         const scores = wids.map(wid => scoreMatrix[pid][wid]).filter((s): s is number => s !== null);
-        if (scores.length < 2) { consistencyScores[pid] = 1; continue; }
+        if (scores.length < 2) { consistencyScores.push({ participantId: pid, participantName: participantMap.get(pid)!, avgDeviation: 0 }); continue; }
         const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
         const stddev = Math.sqrt(scores.reduce((s, x) => s + (x - mean) ** 2, 0) / scores.length);
-        consistencyScores[pid] = Math.round((1 - Math.min(stddev / scaleMax, 1)) * 100) / 100;
+        consistencyScores.push({ participantId: pid, participantName: participantMap.get(pid)!, avgDeviation: Math.round(stddev * 10) / 10 });
       }
+      consistencyScores.sort((a, b) => a.avgDeviation - b.avgDeviation);
 
       // --- Median taster (lowest avg absolute deviation from group) ---
       let medianTasterId = "";
@@ -8184,8 +8190,9 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
         return { id: w.id, name: w.name || "?", distillery: w.distillery, region: w.region, caskType: w.caskType, peatLevel: w.peatLevel, avgScore: avg.toFixed(1), ratingCount: wRatings.length };
       }).sort((a, b) => parseFloat(b.avgScore) - parseFloat(a.avgScore));
 
+      const consistencyByPid = Object.fromEntries(consistencyScores.map(cs => [cs.participantId, cs.avgDeviation]));
       const participantSummaries = pids.map(pid => ({
-        id: pid, name: participantMap.get(pid)!, consistency: consistencyScores[pid], isMedianTaster: pid === medianTasterId,
+        id: pid, name: participantMap.get(pid)!, consistency: consistencyByPid[pid], isMedianTaster: pid === medianTasterId,
         closestMatch: closestMatches[pid]?.name,
         preferences: preferenceProfiles[pid],
         scores: wids.map(wid => ({ whiskyName: tastingWhiskies.find(w => w.id === wid)?.name || "?", score: scoreMatrix[pid][wid] })).filter(s => s.score !== null),
