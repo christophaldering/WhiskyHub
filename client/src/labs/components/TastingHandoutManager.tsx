@@ -14,7 +14,7 @@ async function safeDownload(url: string, filename: string) {
 
 function isMobilePdfUnsupported(): boolean {
   if (typeof navigator === "undefined") return false;
-  return /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+  return /android/i.test(navigator.userAgent);
 }
 
 interface Props {
