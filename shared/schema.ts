@@ -1163,7 +1163,7 @@ export const bottleSplits = pgTable("bottle_splits", {
   description: text("description"),
   status: text("status").notNull().default("draft"), // draft | open | confirmed | distributed | tasting | completed | cancelled
   visibility: text("visibility").notNull().default("public"), // public | private | group
-  targetCommunityIds: text("target_community_ids"), // JSON array of community IDs
+  targetCommunityIds: text("target_community_ids").array(), // native text array of community IDs
   tastingId: varchar("tasting_id"), // link to generated tasting session
   deadline: timestamp("deadline"),
   minClaims: integer("min_claims"),

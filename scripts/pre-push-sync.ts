@@ -77,6 +77,53 @@ async function prePushSync() {
     `);
     console.log("pre-push-sync: tastings.target_community_ids GIN index ensured");
 
+    // Migrate bottle_splits.target_community_ids from JSON text to native text[]
+    const bsRes = await client.query(
+      `SELECT data_type FROM information_schema.columns WHERE table_name = 'bottle_splits' AND column_name = 'target_community_ids'`
+    );
+    const bsDtype = bsRes.rows?.[0]?.data_type;
+    if (bsDtype === "text") {
+      // Step 1: NULL out values that cannot possibly be JSON arrays (no jsonb cast, regex only)
+      // This prevents cast errors in step 2 for malformed legacy values.
+      await client.query(`
+        UPDATE "bottle_splits"
+        SET "target_community_ids" = NULL
+        WHERE "target_community_ids" IS NOT NULL
+          AND "target_community_ids" != ''
+          AND "target_community_ids" !~ '^\\s*\\[.*\\]\\s*$'
+      `);
+      // Step 2: NULL out values that look like JSON arrays but are not valid text[] arrays
+      await client.query(`
+        UPDATE "bottle_splits"
+        SET "target_community_ids" = NULL
+        WHERE "target_community_ids" IS NOT NULL
+          AND "target_community_ids" != ''
+          AND (
+            jsonb_typeof("target_community_ids"::jsonb) IS DISTINCT FROM 'array'
+            OR "target_community_ids"::jsonb = 'null'::jsonb
+          )
+      `);
+      await client.query(`ALTER TABLE "bottle_splits" ADD COLUMN "target_community_ids_arr" text[]`);
+      await client.query(`
+        UPDATE "bottle_splits"
+        SET "target_community_ids_arr" = (
+          SELECT array_agg(v)
+          FROM jsonb_array_elements_text("target_community_ids"::jsonb) AS v
+        )
+        WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
+      `);
+      await client.query(`ALTER TABLE "bottle_splits" DROP COLUMN "target_community_ids"`);
+      await client.query(`ALTER TABLE "bottle_splits" RENAME COLUMN "target_community_ids_arr" TO "target_community_ids"`);
+      console.log("pre-push-sync: bottle_splits.target_community_ids text → text[]");
+    }
+    // Ensure GIN index for bottle_splits community membership queries
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS "bottle_splits_target_community_ids_gin"
+      ON "bottle_splits" USING GIN ("target_community_ids")
+      WHERE "target_community_ids" IS NOT NULL
+    `);
+    console.log("pre-push-sync: bottle_splits.target_community_ids GIN index ensured");
+
     const addColumns = [
       { table: "whiskies", column: "country", type: "text" },
       { table: "whiskybase_collection", column: "country", type: "text" },

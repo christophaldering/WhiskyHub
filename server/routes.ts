@@ -22243,13 +22243,10 @@ Rules:
     if (split.visibility === 'public') return 'allowed';
     if (split.hostId === participantId) return 'allowed';
     if (split.visibility === 'private') return 'allowed';
-    if (split.visibility === 'group' && split.targetCommunityIds) {
-      try {
-        const targetIds = JSON.parse(split.targetCommunityIds) as string[];
-        const userCommunities = await storage.getParticipantCommunities(participantId);
-        const userCommunityIds = userCommunities.map((c: any) => c.id);
-        if (targetIds.some((id: string) => userCommunityIds.includes(id))) return 'allowed';
-      } catch {}
+    if (split.visibility === 'group' && Array.isArray(split.targetCommunityIds) && split.targetCommunityIds.length > 0) {
+      const userCommunities = await storage.getParticipantCommunities(participantId);
+      const userCommunityIds = userCommunities.map((c: any) => c.id);
+      if (split.targetCommunityIds.some((id: string) => userCommunityIds.includes(id))) return 'allowed';
     }
     const claims = await storage.getClaimsForSplit(split.id);
     if (claims.some((c: any) => c.participantId === participantId)) return 'allowed';

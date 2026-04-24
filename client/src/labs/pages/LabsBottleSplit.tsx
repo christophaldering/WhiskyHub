@@ -150,7 +150,7 @@ export default function LabsBottleSplit() {
           title: title.trim() || `Flaschenteilung (${validBottles.length} Flaschen)`,
           description: description || null,
           visibility,
-          targetCommunityIds: selectedCommunityIds.size > 0 ? JSON.stringify(Array.from(selectedCommunityIds)) : null,
+          targetCommunityIds: selectedCommunityIds.size > 0 ? Array.from(selectedCommunityIds) : null,
           deadline: deadline || null,
           minClaims: minClaims ? parseInt(minClaims) : null,
           bottles: validBottles.map(b => ({
