@@ -8018,7 +8018,12 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
       if (!isHost && !report.aiReportEnabled) {
         return res.json({ report: null, locked: true });
       }
-      res.json({ report });
+      if (!isHost) {
+        const allIndividual = (report.individualReports as Record<string, unknown> | null) ?? {};
+        const myReport = requesterId && allIndividual[requesterId] ? { [requesterId]: allIndividual[requesterId] } : {};
+        return res.json({ report: { ...report, individualReports: myReport }, isHost: false });
+      }
+      res.json({ report, isHost: true });
     } catch (e: any) {
       res.status(500).json({ message: "Error fetching AI report" });
     }

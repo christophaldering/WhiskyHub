@@ -1,10 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import {
   ChevronLeft, Sparkles, Users, Trophy, TrendingUp, TrendingDown,
-  Heart, Target, BarChart3, Download, Loader2, Lock, Unlock,
-  AlertTriangle, CheckCircle, RefreshCw, User, Wine, Zap,
+  Heart, Target, Download, Loader2, Lock, Unlock,
+  CheckCircle, RefreshCw, User, Zap, Activity,
 } from "lucide-react";
 import React, { useState, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
@@ -122,6 +121,29 @@ function exportGroupReportPdf(tasting: any, report: any, whiskies: any[], partic
     doc.text(`${report.medianTasterName} lag am nächsten am Gruppengeschmack.`, mx, y); y += 12;
   }
 
+  if (report.consistencyScores && (report.consistencyScores as any[]).length > 0) {
+    y = checkY(y, 16);
+    doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(...ACCENT);
+    doc.text("Bewertungskonsistenz", mx, y); y += 7;
+    doc.setFontSize(8); doc.setFont("helvetica", "italic"); doc.setTextColor(...MUTED);
+    doc.text("Niedrige Ø-Abweichung = konsequenter Stil.", mx, y); y += 7;
+    const maxDev = Math.max(...(report.consistencyScores as any[]).map((x: any) => x.avgDeviation));
+    for (const cs of (report.consistencyScores as any[]).slice(0, 8)) {
+      y = checkY(y, 7);
+      doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.setTextColor(...TEXT);
+      doc.text(cs.participantName || "?", mx, y);
+      doc.setTextColor(...MUTED);
+      doc.text(`Ø ±${(cs.avgDeviation as number).toFixed(1)}`, pageW - mx, y, { align: "right" });
+      const barW = cw * 0.35;
+      const barX = pageW - mx - barW - 30;
+      const pct = maxDev > 0 ? 1 - cs.avgDeviation / maxDev : 1;
+      doc.setFillColor(...MUTED); doc.roundedRect(barX, y - 3.5, barW, 3, 1, 1, "F");
+      doc.setFillColor(...ACCENT); doc.roundedRect(barX, y - 3.5, barW * pct, 3, 1, 1, "F");
+      y += 7;
+    }
+    y += 4;
+  }
+
   const indReports = report.individualReports || {};
   if (Object.keys(indReports).length > 0) {
     doc.addPage(); drawBg(); drawHeader(); y = 22;
@@ -172,10 +194,51 @@ function Card({ children, style }: { children: React.ReactNode; style?: React.CS
   );
 }
 
+function IndividualReportBody({ report, participantName, t }: { report: any; participantName?: string; t: (k: string, fb?: string) => string }) {
+  return (
+    <div>
+      {participantName && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <User style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
+          <span style={{ fontWeight: 700, fontSize: 14, color: "var(--labs-text)" }}>{participantName}</span>
+        </div>
+      )}
+      {report.preferenceProfile && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+          {report.preferenceProfile.topRegion && (
+            <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 6, background: "rgba(212,162,86,0.1)", color: "var(--labs-accent)", border: "1px solid rgba(212,162,86,0.2)" }}>
+              📍 {report.preferenceProfile.topRegion}
+            </span>
+          )}
+          {report.preferenceProfile.topCask && (
+            <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 6, background: "rgba(212,162,86,0.1)", color: "var(--labs-accent)", border: "1px solid rgba(212,162,86,0.2)" }}>
+              🪵 {report.preferenceProfile.topCask}
+            </span>
+          )}
+          {report.preferenceProfile.peatLevel && (
+            <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 6, background: "rgba(212,162,86,0.1)", color: "var(--labs-accent)", border: "1px solid rgba(212,162,86,0.2)" }}>
+              🔥 {report.preferenceProfile.peatLevel}
+            </span>
+          )}
+          {report.closestMatchName && (
+            <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 6, background: "rgba(74,222,128,0.08)", color: "var(--labs-success, #4ade80)", border: "1px solid rgba(74,222,128,0.15)" }}>
+              💫 {t("aiReport.closestMatch", "Nah an")} {report.closestMatchName}
+            </span>
+          )}
+        </div>
+      )}
+      {report.narrative && (
+        <p style={{ fontSize: 13, lineHeight: 1.7, color: "var(--labs-text)", whiteSpace: "pre-line" }}>
+          {report.narrative}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function LabsGroupReport({ params }: LabsGroupReportProps) {
   const tastingId = params.id;
   const { currentParticipant } = useAppStore();
-  const [, navigate] = useLocation();
   const goBack = useLabsBack(`/labs/results/${tastingId}`);
   const { t } = useTranslation();
   const qc = useQueryClient();
@@ -233,7 +296,9 @@ export default function LabsGroupReport({ params }: LabsGroupReportProps) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tasting-ai-report", tastingId] }),
   });
 
-  const isHost = currentParticipant?.id === tasting?.hostId;
+  const isHostLocal = currentParticipant?.id === tasting?.hostId;
+  const isHostServer = reportData?.isHost === true;
+  const isHost = isHostLocal || isHostServer;
   const report = reportData?.report;
   const isLocked = reportData?.locked;
 
@@ -549,7 +614,33 @@ export default function LabsGroupReport({ params }: LabsGroupReportProps) {
               </Card>
             )}
 
-            {activeParticipants.length > 0 && Object.keys(indReports).length > 0 && (
+            {isHost && report.consistencyScores && (report.consistencyScores as any[]).length > 0 && (
+              <Card style={{ marginBottom: 20 }}>
+                <SectionTitle icon={<Activity style={{ width: 15, height: 15 }} />}>
+                  {t("aiReport.consistencyTitle", "Bewertungskonsistenz")}
+                </SectionTitle>
+                <p style={{ fontSize: 12, color: "var(--labs-text-muted)", marginBottom: 14 }}>
+                  {t("aiReport.consistencyDesc", "Wer bewertet konsistent? Niedrige Abweichung = konsequenter Stil.")}
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {(report.consistencyScores as any[]).slice(0, 8).map((cs: any, i: number) => {
+                    const maxDev = Math.max(...(report.consistencyScores as any[]).map((x: any) => x.avgDeviation));
+                    const barPct = maxDev > 0 ? Math.round((1 - cs.avgDeviation / maxDev) * 100) : 100;
+                    return (
+                      <div key={cs.participantId || i} style={{ display: "flex", alignItems: "center", gap: 10 }} data-testid={`report-consistency-${i}`}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)", width: 120, flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cs.participantName}</span>
+                        <div style={{ flex: 1, height: 5, borderRadius: 3, background: "var(--labs-surface-elevated, rgba(255,255,255,0.06))", overflow: "hidden" }}>
+                          <div style={{ width: `${barPct}%`, height: "100%", background: barPct > 70 ? "var(--labs-accent)" : "var(--labs-text-muted)", borderRadius: 3 }} />
+                        </div>
+                        <span style={{ fontSize: 11, color: "var(--labs-text-muted)", width: 50, textAlign: "right", flexShrink: 0 }}>Ø ±{cs.avgDeviation.toFixed(1)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
+
+            {isHost && activeParticipants.length > 0 && Object.keys(indReports).length > 0 && (
               <Card style={{ marginBottom: 20 }}>
                 <SectionTitle icon={<Users style={{ width: 15, height: 15 }} />}>
                   {t("aiReport.individualTitle", "Individuelle Analysen")}
@@ -575,43 +666,18 @@ export default function LabsGroupReport({ params }: LabsGroupReportProps) {
 
                 {selectedParticipant && selectedReport && (
                   <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 16 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                      <User style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
-                      <span style={{ fontWeight: 700, fontSize: 14, color: "var(--labs-text)" }}>{selectedParticipantData?.name}</span>
-                    </div>
-
-                    {selectedReport.preferenceProfile && (
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
-                        {selectedReport.preferenceProfile.topRegion && (
-                          <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 6, background: "rgba(212,162,86,0.1)", color: "var(--labs-accent)", border: "1px solid rgba(212,162,86,0.2)" }}>
-                            📍 {selectedReport.preferenceProfile.topRegion}
-                          </span>
-                        )}
-                        {selectedReport.preferenceProfile.topCask && (
-                          <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 6, background: "rgba(212,162,86,0.1)", color: "var(--labs-accent)", border: "1px solid rgba(212,162,86,0.2)" }}>
-                            🪵 {selectedReport.preferenceProfile.topCask}
-                          </span>
-                        )}
-                        {selectedReport.preferenceProfile.peatLevel && (
-                          <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 6, background: "rgba(212,162,86,0.1)", color: "var(--labs-accent)", border: "1px solid rgba(212,162,86,0.2)" }}>
-                            🔥 {selectedReport.preferenceProfile.peatLevel}
-                          </span>
-                        )}
-                        {selectedReport.closestMatchName && (
-                          <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 6, background: "rgba(74,222,128,0.08)", color: "var(--labs-success, #4ade80)", border: "1px solid rgba(74,222,128,0.15)" }}>
-                            💫 Nah an {selectedReport.closestMatchName}
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    {selectedReport.narrative && (
-                      <p style={{ fontSize: 13, lineHeight: 1.7, color: "var(--labs-text)", whiteSpace: "pre-line" }}>
-                        {selectedReport.narrative}
-                      </p>
-                    )}
+                    <IndividualReportBody report={selectedReport} participantName={selectedParticipantData?.name} t={t} />
                   </div>
                 )}
+              </Card>
+            )}
+
+            {!isHost && pid && indReports[pid] && (
+              <Card style={{ marginBottom: 20 }}>
+                <SectionTitle icon={<User style={{ width: 15, height: 15 }} />}>
+                  {t("aiReport.myReportTitle", "Mein Tasting-Report")}
+                </SectionTitle>
+                <IndividualReportBody report={indReports[pid]} participantName={currentParticipant?.name} t={t} />
               </Card>
             )}
           </>
