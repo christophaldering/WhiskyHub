@@ -7278,7 +7278,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       )}
                     </div>
                   </div>
-                  <div className="flex sm:hidden items-center gap-2 mt-2" style={{ flexWrap: "wrap", paddingLeft: tasting.status === "draft" ? 72 : 44 }}>
+                  <div className="flex sm:hidden items-center gap-2 mt-2" style={{ flexWrap: "wrap", paddingLeft: tasting.status !== "archived" ? 72 : 44 }}>
                     {isDramLocked(w.id) && (
                       <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--labs-success-muted)", color: "var(--labs-success)" }} data-testid={`mobile-badge-locked-${w.id}`}>
                         <Lock className="w-2.5 h-2.5 inline mr-0.5" style={{ verticalAlign: "-1px" }} />{t("m2.host.lockedBadge", "Locked")}
