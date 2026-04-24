@@ -3949,6 +3949,7 @@ function CoverImageManager({
   aiCandidates,
   aiGenerating,
   aiSaving,
+  aiSaved,
   confirmSwitchTo,
   setConfirmSwitchTo,
   confirmDeleteSlot,
@@ -3973,6 +3974,7 @@ function CoverImageManager({
   aiCandidates: { url: string; prompt: string; mimeType: string; generatedAt: string }[];
   aiGenerating: boolean;
   aiSaving: boolean;
+  aiSaved: boolean;
   confirmSwitchTo: "upload" | "ai" | null;
   setConfirmSwitchTo: (v: "upload" | "ai" | null) => void;
   confirmDeleteSlot: "upload" | "ai" | null;
@@ -4979,6 +4981,7 @@ function TastingSetupSection({
             aiCandidates={aiCandidates}
             aiGenerating={aiGenerating}
             aiSaving={aiSaving}
+            aiSaved={aiSaved}
             confirmSwitchTo={confirmSwitchTo}
             setConfirmSwitchTo={setConfirmSwitchTo}
             confirmDeleteSlot={confirmDeleteSlot}
