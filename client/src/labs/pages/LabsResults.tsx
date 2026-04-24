@@ -874,8 +874,11 @@ export default function LabsResults({ params }: LabsResultsProps) {
       const overallRange = minMax("overall");
       const overallStdDev = stdDev("overall");
 
-      const myRating = currentParticipant
-        ? ratings.find((r: any) => r.participantId === currentParticipant.id)
+      const myRatingRaw = currentParticipant
+        ? (allRatings || []).find((r: any) => r.whiskyId === w.id && r.participantId === currentParticipant.id)
+        : null;
+      const myRating = myRatingRaw
+        ? { ...myRatingRaw, nose: toUserScale(myRatingRaw.nose), taste: toUserScale(myRatingRaw.taste), finish: toUserScale(myRatingRaw.finish), overall: toUserScale(myRatingRaw.overall) }
         : null;
 
       const myDelta = myRating?.overall != null && avgOverall != null
@@ -896,7 +899,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
         overallStdDev,
       };
     });
-  }, [whiskies, filteredRatings, currentParticipant, tasting?.ratingScale]);
+  }, [whiskies, filteredRatings, allRatings, currentParticipant, tasting?.ratingScale]);
 
   const sorted = useMemo(() => [...whiskyResults].sort((a, b) => (b.avgOverall || 0) - (a.avgOverall || 0)), [whiskyResults]);
 
