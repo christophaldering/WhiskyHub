@@ -25,10 +25,10 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false, onPro
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageW = 210, pageH = 297, marginX = 18, contentW = pageW - marginX * 2;
   const accent: [number, number, number] = [212, 162, 86];
-  const muted: [number, number, number] = [138, 126, 109];
+  const muted: [number, number, number] = [192, 186, 178];
   const bg: [number, number, number] = [26, 23, 20];
   const textColor: [number, number, number] = [245, 240, 232];
-  const surface: [number, number, number] = [38, 34, 28];
+  const surface: [number, number, number] = [58, 53, 46];
 
   const drawBg = () => { doc.setFillColor(...bg); doc.rect(0, 0, pageW, pageH, "F"); };
 
