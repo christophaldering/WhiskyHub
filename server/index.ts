@@ -327,7 +327,7 @@ app.use(
     },
   }),
 );
-app.use(express.urlencoded({ extended: false, limit: "20mb" }));
+app.use(express.urlencoded({ extended: false }));
 
 app.use((req, res, next) => {
   const start = Date.now();
