@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { profileApi, tastingApi } from "@/lib/api";
+import { profileApi, tastingApi, inviteApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -1007,6 +1007,154 @@ export async function generateBlindEvaluationSheet(tasting: Tasting, whiskies: W
   saveOrPrintJsPdf(doc, `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_Bewertungsbogen.pdf`, mode);
 }
 
+async function drawCompactSinglePage(
+  doc: jsPDF,
+  tasting: Tasting,
+  whiskies: Whisky[],
+  lang: string,
+  isBlind: boolean,
+  participant?: ParticipantInfo,
+  hostName?: string,
+) {
+  const pageW = 210;
+  const pageH = 297;
+  const margin = 15;
+  const usableW = pageW - 2 * margin;
+  const n = whiskies.length;
+
+  const HEADER_H = 20;
+  const FOOTER_H = 10;
+  const available = pageH - margin - HEADER_H - FOOTER_H - margin;
+  const perWhiskyH = Math.max(13, Math.min(28, available / Math.max(1, n)));
+
+  const WHISKY_LABEL_H = Math.min(6.5, perWhiskyH * 0.28);
+  const dimRowsH = perWhiskyH - WHISKY_LABEL_H - 0.5;
+  const DIM_ROW_H = dimRowsH / 2;
+  const HALF_W = usableW / 2 - 1;
+  const LABEL_W = 12;
+  const CIRCLE_W = HALF_W - LABEL_W;
+  const sheetMaxScore = tasting.ratingScale ?? 100;
+  const DIMS = ['Nase', 'Gaumen', 'Abgang', 'Gesamt'] as const;
+
+  doc.addPage([pageW, pageH]);
+  let y = margin;
+
+  doc.setFontSize(7);
+  doc.setTextColor(...GOLD_RGB);
+  doc.setFont('helvetica', 'normal');
+  doc.text('BEWERTUNGSBOGEN', margin, y + 3);
+
+  doc.setFontSize(13);
+  doc.setTextColor(...PRINT_BLACK_RGB);
+  doc.setFont('times', 'italic');
+  const titleLines = doc.splitTextToSize(tasting.title, usableW - 28).slice(0, 2);
+  doc.text(titleLines, margin, y + 10, { lineHeightFactor: 1.25 });
+
+  const titleBlockH = titleLines.length * 13 * 0.353 * 1.25;
+  const metaY = Math.max(y + 14, y + 9 + titleBlockH + 1);
+
+  doc.setFontSize(7);
+  doc.setTextColor(...PRINT_TEXTMUTED_RGB);
+  doc.setFont('helvetica', 'normal');
+  const metaParts = [tasting.date ? formatDate(tasting.date, lang) : '', hostName ?? ''].filter(Boolean);
+  if (metaParts.length) doc.text(metaParts.join(' · '), margin, metaY);
+
+  if (participant?.id && tasting.id) {
+    await generateParticipantQR(tasting.id, participant.id, participant.name, doc, pageW - margin - 20, margin, 18);
+  }
+  if (participant?.name) {
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...PRINT_BLACK_RGB);
+    const nameX = participant?.id ? pageW - margin - 24 : pageW - margin;
+    doc.text(participant.name, nameX, margin + 3, { align: "right" });
+  }
+
+  y += HEADER_H;
+  drawGoldLine(doc, margin, y, usableW, 0.4);
+  y += 3;
+
+  for (let i = 0; i < n; i++) {
+    const whisky = whiskies[i];
+    const whiskyName = isBlind
+      ? `${tp('printableSheets.pdfSample', lang)} #${i + 1}`
+      : (whisky.name ?? 'Unbekannt');
+
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...GOLD_RGB);
+    doc.text(String(i + 1), margin, y + WHISKY_LABEL_H - 0.5);
+
+    doc.setFontSize(7.5);
+    doc.setFont('times', 'italic');
+    doc.setTextColor(...PRINT_BLACK_RGB);
+    const nameMaxW = usableW - 8;
+    const nameLines = doc.splitTextToSize(whiskyName, nameMaxW);
+    doc.text(nameLines[0] ?? '', margin + 6, y + WHISKY_LABEL_H - 0.5);
+
+    if (!isBlind) {
+      const meta = [whisky.distillery, whisky.age ? `${whisky.age}y` : null, whisky.abv ? `${whisky.abv}%` : null].filter(Boolean).join(' · ');
+      if (meta) {
+        doc.setFontSize(5);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...GOLD_RGB);
+        doc.text(meta.toUpperCase(), margin + 6, y + WHISKY_LABEL_H + 2);
+      }
+    }
+
+    const dimStartY = y + WHISKY_LABEL_H + (isBlind ? 1 : 3);
+
+    const dimPairs: [typeof DIMS[number], typeof DIMS[number]][] = [
+      [DIMS[0], DIMS[1]],
+      [DIMS[2], DIMS[3]],
+    ];
+    dimPairs.forEach(([dimA, dimB], ri) => {
+      const ry = dimStartY + ri * DIM_ROW_H;
+      const cy = ry + DIM_ROW_H * 0.55;
+
+      doc.setFontSize(5.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...GOLD_RGB);
+      doc.text(dimA.toUpperCase(), margin, cy + 0.5);
+      drawRatingCircles(doc, margin + LABEL_W, cy, 2.5, 1.2, sheetMaxScore, CIRCLE_W);
+
+      const rx = margin + HALF_W + 2;
+      doc.text(dimB.toUpperCase(), rx, cy + 0.5);
+      drawRatingCircles(doc, rx + LABEL_W, cy, 2.5, 1.2, sheetMaxScore, CIRCLE_W);
+    });
+
+    y += perWhiskyH;
+    drawGoldLine(doc, margin, y - 0.5, usableW, 0.15);
+  }
+
+  doc.setFontSize(6);
+  doc.setTextColor(...PRINT_TEXTMUTED_RGB);
+  doc.setFont('helvetica', 'normal');
+  doc.text('CaskSense', margin, pageH - 8);
+  doc.text('casksense.com', pageW - margin, pageH - 8, { align: 'right' });
+}
+
+export async function generateCompactBatchPdf(
+  tasting: Tasting,
+  whiskies: Whisky[],
+  participants: { id: string; name: string }[],
+  lang: string,
+  type: "tasting" | "blind",
+  hostName?: string,
+) {
+  if (whiskies.length === 0 || participants.length === 0) return;
+  const isBlind = type === "blind";
+  const titleSlug = tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_");
+
+  for (const p of participants) {
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const participantInfo: ParticipantInfo = { name: p.name, id: p.id };
+    await drawCompactSinglePage(doc, tasting, whiskies, lang, isBlind, participantInfo, hostName);
+    const nameSlug = p.name.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_");
+    saveJsPdf(doc, `${titleSlug}_Kompakt_${nameSlug}.pdf`);
+  }
+}
+
 export async function generateBatchPersonalizedPdf(
   tasting: Tasting,
   whiskies: Whisky[],
@@ -1088,6 +1236,31 @@ export function PrintableTastingSheets({ tasting, whiskies }: PrintableTastingSh
     enabled: open,
   });
 
+  const { data: sessionInvites = [] } = useQuery({
+    queryKey: ["tasting-invites", tasting.id],
+    queryFn: () => inviteApi.getForTasting(tasting.id),
+    enabled: open,
+  });
+
+  const joinedEmails = new Set(
+    participants.map((p: { email?: string }) => (p.email ?? "").toLowerCase()).filter(Boolean)
+  );
+  const pendingInvitees: { id: string; name: string }[] = (sessionInvites as { id: string; email: string; status: string; token: string }[])
+    .filter(inv => inv.status === "invited" && !joinedEmails.has((inv.email ?? "").toLowerCase()))
+    .map(inv => ({
+      id: "",
+      name: inv.email,
+    }));
+
+  const allRecipients: { id: string; name: string }[] = [
+    ...participants.map((p: { participantId?: string; id?: string; name?: string; participant?: { name?: string } }) => ({
+      id: p.participantId || p.id || "",
+      name: p.name || p.participant?.name || "Unknown",
+    })),
+    ...pendingInvitees,
+  ];
+  const totalRecipients = allRecipients.length;
+
   const participantInfo: ParticipantInfo | undefined = currentParticipant
     ? { name: currentParticipant.name, photoUrl: profile?.photoUrl, id: currentParticipant.id }
     : undefined;
@@ -1105,14 +1278,20 @@ export function PrintableTastingSheets({ tasting, whiskies }: PrintableTastingSh
   };
 
   const handleBatchAction = async (type: "tasting" | "blind", mode: "download" | "print") => {
-    if (participants.length === 0) return;
+    if (totalRecipients === 0) return;
     setBatchLoading(true);
     try {
-      const pList = participants.map((p: any) => ({
-        id: p.participantId || p.id,
-        name: p.name || p.participant?.name || "Unknown",
-      }));
-      await generateBatchPersonalizedPdf(tasting, whiskies, pList, lang, type, mode, hostName, orientation, styleTheme);
+      await generateBatchPersonalizedPdf(tasting, whiskies, allRecipients, lang, type, mode, hostName, orientation, styleTheme);
+    } finally {
+      setBatchLoading(false);
+    }
+  };
+
+  const handleCompactBatch = async () => {
+    if (totalRecipients === 0) return;
+    setBatchLoading(true);
+    try {
+      await generateCompactBatchPdf(tasting, whiskies, allRecipients, lang, isBlind ? "blind" : "tasting", hostName);
     } finally {
       setBatchLoading(false);
     }
@@ -1350,7 +1529,7 @@ export function PrintableTastingSheets({ tasting, whiskies }: PrintableTastingSh
             </div>
           </div>
 
-          {participants.length > 0 && (
+          {totalRecipients > 0 && (
             <div className="p-4 rounded-lg border border-border space-y-3 bg-muted/30">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
@@ -1358,47 +1537,72 @@ export function PrintableTastingSheets({ tasting, whiskies }: PrintableTastingSh
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-serif font-semibold text-foreground">
-                    {t("printableSheets.batchTitle", "Print for All Participants")}
+                    {t("printableSheets.batchTitle", "Für alle Teilnehmer")}
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5">
-                    {t("printableSheets.batchDesc", { count: participants.length })}
+                    {participants.length} {t("printableSheets.batchJoined", "angemeldet")}
+                    {pendingInvitees.length > 0 && ` · ${pendingInvitees.length} ${t("printableSheets.batchInvited", "eingeladen")}`}
+                    {" · "}{totalRecipients} {t("printableSheets.batchTotal", "gesamt")}
                   </div>
                   <span className="inline-block mt-1 text-[10px] bg-green-500/10 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
-                    {t("printableSheets.batchQrNote", "Each sheet includes a personal QR code")}
+                    {t("printableSheets.batchQrNote", "Angemeldete erhalten einen persönlichen QR-Code")}
                   </span>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={whiskies.length === 0 || batchLoading}
-                  onClick={() => handleBatchAction(isBlind ? "blind" : "tasting", "download")}
-                  className="flex-1 text-xs"
-                  data-testid="button-batch-download"
-                >
-                  {batchLoading ? (
-                    <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-                  ) : (
-                    <Download className="w-3.5 h-3.5 mr-1" />
-                  )}
-                  {t("printableSheets.downloadPdf")}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={whiskies.length === 0 || batchLoading}
-                  onClick={() => handleBatchAction(isBlind ? "blind" : "tasting", "print")}
-                  className="flex-1 text-xs"
-                  data-testid="button-batch-print"
-                >
-                  {batchLoading ? (
-                    <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-                  ) : (
-                    <Printer className="w-3.5 h-3.5 mr-1" />
-                  )}
-                  {t("printableSheets.print")}
-                </Button>
+
+              <div className="space-y-2">
+                <div className="text-[11px] font-medium text-muted-foreground">{t("printableSheets.batchFullSheets", "Vollständige Bögen (Cover + Lineup + Bewertung + Matte)")}</div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={whiskies.length === 0 || batchLoading}
+                    onClick={() => handleBatchAction(isBlind ? "blind" : "tasting", "download")}
+                    className="flex-1 text-xs"
+                    data-testid="button-batch-download"
+                  >
+                    {batchLoading ? (
+                      <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5 mr-1" />
+                    )}
+                    {t("printableSheets.downloadPdf")}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={whiskies.length === 0 || batchLoading}
+                    onClick={() => handleBatchAction(isBlind ? "blind" : "tasting", "print")}
+                    className="flex-1 text-xs"
+                    data-testid="button-batch-print"
+                  >
+                    {batchLoading ? (
+                      <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                    ) : (
+                      <Printer className="w-3.5 h-3.5 mr-1" />
+                    )}
+                    {t("printableSheets.print")}
+                  </Button>
+                </div>
+
+                <div className="text-[11px] font-medium text-muted-foreground pt-1">{t("printableSheets.batchCompact", "Kompakt: alle Whiskys auf einer Seite")}</div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={whiskies.length === 0 || batchLoading}
+                    onClick={handleCompactBatch}
+                    className="flex-1 text-xs"
+                    data-testid="button-batch-compact"
+                  >
+                    {batchLoading ? (
+                      <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5 mr-1" />
+                    )}
+                    {t("printableSheets.downloadPdf")}
+                  </Button>
+                </div>
               </div>
             </div>
           )}
