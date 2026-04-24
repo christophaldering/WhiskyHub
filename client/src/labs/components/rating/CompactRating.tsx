@@ -212,7 +212,8 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
               border: "1px solid var(--labs-border)",
               borderRadius: 18,
               marginBottom: SP.sm + 4,
-              overflow: "hidden",
+              overflow: isOpen ? "clip" : "hidden",
+              position: "relative",
             }}
           >
             <button
@@ -233,10 +234,13 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
                 alignItems: "center",
                 gap: SP.sm,
                 padding: `${SP.sm}px ${SP.md}px`,
-                background: "transparent",
+                background: isOpen ? pDim : "transparent",
                 border: "none",
                 cursor: "pointer",
                 minHeight: TOUCH_MIN,
+                position: isOpen ? "sticky" : "relative",
+                top: isOpen ? 0 : "auto",
+                zIndex: isOpen ? 2 : "auto",
               }}
             >
               <PhaseSignature phaseId={pid} size="normal" />
