@@ -1181,7 +1181,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
           </div>
           {sorted.length > 0 && (
             <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
-              {currentParticipant?.id === tasting.hostId && (tasting.status === "archived" || tasting.status === "completed") && (
+              {currentParticipant?.id === tasting.hostId && (tasting.status === "archived" || tasting.status === "completed" || tasting.status === "closed" || tasting.status === "reveal") && (
                 <button
                   className="labs-btn-secondary flex items-center gap-2"
                   onClick={() => navigate(`/labs/results/${tastingId}/story`)}
