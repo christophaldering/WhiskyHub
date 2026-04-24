@@ -2,6 +2,7 @@ import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
 import { rm, readFile, copyFile } from "fs/promises";
 import { execSync } from "child_process";
+import { pathToFileURL } from "url";
 
 function getGitSha(): string {
   try {
@@ -335,7 +336,7 @@ async function buildAll() {
 
 export { preBuildMigrations };
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   buildAll().catch((err) => {
     console.error(err);
     process.exit(1);
