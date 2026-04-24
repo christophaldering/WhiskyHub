@@ -17871,6 +17871,10 @@ Language: German if tasting title appears German, otherwise English. Tone: warm,
       if (!pdfBase64 || typeof pdfBase64 !== "string") {
         return res.status(400).json({ message: "PDF data required" });
       }
+      const pdfSizeMb = Buffer.byteLength(pdfBase64, "utf8") / (1024 * 1024);
+      if (pdfSizeMb > 15) {
+        return res.status(413).json({ message: "PDF zu groß (max. 15 MB)" });
+      }
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       const validRecipients: string[] = recipients.filter((r: any) => typeof r === "string" && emailRegex.test(r.trim()));
       if (validRecipients.length === 0) return res.status(400).json({ message: "No valid email addresses" });
