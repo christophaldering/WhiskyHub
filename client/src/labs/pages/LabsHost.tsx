@@ -2841,7 +2841,7 @@ function CreateTastingForm() {
         videoLink: videoLink.trim() || null,
         status: "draft",
         visibility: selectedCommunityIds.size > 0 ? "group" : undefined,
-        targetCommunityIds: selectedCommunityIds.size > 0 ? JSON.stringify(Array.from(selectedCommunityIds)) : null,
+        targetCommunityIds: selectedCommunityIds.size > 0 ? Array.from(selectedCommunityIds) : null,
       });
       if (result?.id) {
         clearDraft();
@@ -5570,7 +5570,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       const currentIds = editCommunityIds;
       const communityChanged = initialIds.size !== currentIds.size || [...currentIds].some(id => !initialIds.has(id));
       if (communityChanged) {
-        body.targetCommunityIds = currentIds.size > 0 ? JSON.stringify(Array.from(currentIds)) : null;
+        body.targetCommunityIds = currentIds.size > 0 ? Array.from(currentIds) : null;
         if (currentIds.size > 0 && tasting?.visibility !== "public") {
           body.visibility = "group";
         } else if (currentIds.size === 0 && tasting?.visibility === "group") {
@@ -5882,14 +5882,11 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 };
                 setEditTastingFields(initial);
                 editTastingInitialRef.current = initial;
-                try {
-                  const ids = tasting.targetCommunityIds ? JSON.parse(tasting.targetCommunityIds) : [];
-                  const idSet = new Set<string>(Array.isArray(ids) ? ids : []);
+                {
+                  const ids = Array.isArray(tasting.targetCommunityIds) ? tasting.targetCommunityIds : [];
+                  const idSet = new Set<string>(ids);
                   setEditCommunityIds(idSet);
                   editCommunityIdsInitialRef.current = new Set(idSet);
-                } catch {
-                  setEditCommunityIds(new Set());
-                  editCommunityIdsInitialRef.current = new Set();
                 }
                 setShowEditTasting(!showEditTasting);
               }}

@@ -93,7 +93,7 @@ export const tastings = pgTable("tastings", {
   tastingType: text("tasting_type").default("standard"), // standard | bottle-sharing
   visibility: text("visibility").default("private"), // public | private | group
   sharingMessage: text("sharing_message"),
-  targetCommunityIds: text("target_community_ids"), // JSON array of community IDs
+  targetCommunityIds: text("target_community_ids").array(), // native text array of community IDs
   createdAt: timestamp("created_at").defaultNow(),
   openedAt: timestamp("opened_at"),
   closedAt: timestamp("closed_at"),

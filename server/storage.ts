@@ -347,7 +347,7 @@ export interface IStorage {
   createTasting(data: InsertTasting): Promise<Tasting>;
   updateTastingStatus(id: string, status: string, currentAct?: string): Promise<Tasting | undefined>;
   updateTastingReflection(id: string, reflection: string): Promise<Tasting | undefined>;
-  updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; description: string; blindMode: boolean; ratingScale: number; guidedMode: boolean; ratingPrompt: string | null; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean; coverImageUploadUrl: string | null; coverImageAiUrl: string | null; coverImageSource: string | null; coverImageAiPrompt: string | null; coverImageAiCandidates: { url: string; prompt: string; mimeType: string; generatedAt: string }[] | null; videoLink: string | null; guestMode: string; sessionUiMode: string | null; showRanking: boolean; showGroupAvg: boolean; showReveal: boolean; lockedDrams: string | null; targetCommunityIds: string | null; visibility: string }>): Promise<Tasting | undefined>;
+  updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; description: string; blindMode: boolean; ratingScale: number; guidedMode: boolean; ratingPrompt: string | null; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean; coverImageUploadUrl: string | null; coverImageAiUrl: string | null; coverImageSource: string | null; coverImageAiPrompt: string | null; coverImageAiCandidates: { url: string; prompt: string; mimeType: string; generatedAt: string }[] | null; videoLink: string | null; guestMode: string; sessionUiMode: string | null; showRanking: boolean; showGroupAvg: boolean; showReveal: boolean; lockedDrams: string | null; targetCommunityIds: string[] | null; visibility: string }>): Promise<Tasting | undefined>;
   appendAiCoverCandidate(tastingId: string, candidate: { url: string; prompt: string; mimeType: string; generatedAt: string }): Promise<Tasting | undefined>;
 
   // AI Images Gallery
@@ -987,7 +987,7 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; description: string; blindMode: boolean; ratingScale: number; guidedMode: boolean; ratingPrompt: string | null; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean; coverImageUploadUrl: string | null; coverImageAiUrl: string | null; coverImageSource: string | null; coverImageAiPrompt: string | null; videoLink: string | null; guestMode: string; sessionUiMode: string | null; showRanking: boolean; showGroupAvg: boolean; showReveal: boolean; lockedDrams: string | null; targetCommunityIds: string | null; visibility: string }>): Promise<Tasting | undefined> {
+  async updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; description: string; blindMode: boolean; ratingScale: number; guidedMode: boolean; ratingPrompt: string | null; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean; coverImageUploadUrl: string | null; coverImageAiUrl: string | null; coverImageSource: string | null; coverImageAiPrompt: string | null; videoLink: string | null; guestMode: string; sessionUiMode: string | null; showRanking: boolean; showGroupAvg: boolean; showReveal: boolean; lockedDrams: string | null; targetCommunityIds: string[] | null; visibility: string }>): Promise<Tasting | undefined> {
     const updateData: any = {};
     if (data.title !== undefined) updateData.title = data.title;
     if (data.date !== undefined) updateData.date = data.date;
@@ -3836,7 +3836,7 @@ export class DatabaseStorage implements IStorage {
       and(
         ne(tastings.status, "deleted"),
         sql`COALESCE(${tastings.tastingType}, 'standard') = 'standard'`,
-        sql`${tastings.targetCommunityIds} IS NOT NULL AND ${tastings.targetCommunityIds} != '' AND ${tastings.targetCommunityIds}::jsonb ? ${communityId}`
+        sql`${tastings.targetCommunityIds} IS NOT NULL AND ${communityId} = ANY(${tastings.targetCommunityIds})`
       )
     );
 

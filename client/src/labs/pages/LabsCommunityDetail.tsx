@@ -98,12 +98,8 @@ export default function LabsCommunityDetail() {
       const filtered = (Array.isArray(all) ? all : []).filter((t: any) => {
         if (t.hostId !== pid) return false;
         if (existingIds.has(t.id)) return false;
-        if (!t.targetCommunityIds) return true;
-        try {
-          const assigned = JSON.parse(t.targetCommunityIds);
-          if (!Array.isArray(assigned) || assigned.length === 0) return true;
-          return !assigned.includes(communityId);
-        } catch { return true; }
+        if (!Array.isArray(t.targetCommunityIds) || t.targetCommunityIds.length === 0) return true;
+        return !t.targetCommunityIds.includes(communityId);
       });
       setMyTastings(filtered);
     } catch {
@@ -118,11 +114,7 @@ export default function LabsCommunityDetail() {
     setAssigningTastingId(tastingId);
     try {
       const tasting = myTastings.find((t: any) => t.id === tastingId);
-      let existingIds: string[] = [];
-      try {
-        existingIds = tasting?.targetCommunityIds ? JSON.parse(tasting.targetCommunityIds) : [];
-        if (!Array.isArray(existingIds)) existingIds = [];
-      } catch { existingIds = []; }
+      const existingIds: string[] = Array.isArray(tasting?.targetCommunityIds) ? tasting.targetCommunityIds : [];
       const newIds = Array.from(new Set([...existingIds, communityId]));
       const currentVisibility = tasting?.visibility;
       const res = await fetch(`/api/tastings/${tastingId}/details`, {
@@ -130,7 +122,7 @@ export default function LabsCommunityDetail() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           hostId: pid,
-          targetCommunityIds: JSON.stringify(newIds),
+          targetCommunityIds: newIds,
           visibility: currentVisibility === "public" ? "public" : "group",
         }),
       });

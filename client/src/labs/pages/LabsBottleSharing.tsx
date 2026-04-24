@@ -213,7 +213,7 @@ export default function LabsBottleSharing() {
           title: sharingTitle, date: new Date().toISOString().split("T")[0], location: "Bottle-Sharing",
           hostId: pid, code, status: "draft", blindMode: format === "blind", tastingType: "bottle-sharing",
           visibility, sharingMessage: message || null,
-          targetCommunityIds: selectedCommunityIds.size > 0 ? JSON.stringify(Array.from(selectedCommunityIds)) : null,
+          targetCommunityIds: selectedCommunityIds.size > 0 ? Array.from(selectedCommunityIds) : null,
           invitedFriendIds: selectedFriendIds.size > 0 ? Array.from(selectedFriendIds) : undefined,
           ratingScale: 100,
         }),

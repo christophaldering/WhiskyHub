@@ -1948,17 +1948,13 @@ export async function registerRoutes(
       }
 
       if (data.targetCommunityIds && data.hostId) {
-        try {
-          const communityIds = JSON.parse(data.targetCommunityIds) as string[];
-          if (Array.isArray(communityIds) && communityIds.length > 0) {
-            for (const cid of communityIds) {
-              const isMember = await storage.isCommunityMember(cid, data.hostId);
-              if (!isMember) {
-                return res.status(403).json({ message: `You are not a member of community ${cid}` });
-              }
-            }
+        const communityIds = Array.isArray(data.targetCommunityIds) ? data.targetCommunityIds : [];
+        for (const cid of communityIds) {
+          const isMember = await storage.isCommunityMember(cid, data.hostId);
+          if (!isMember) {
+            return res.status(403).json({ message: `You are not a member of community ${cid}` });
           }
-        } catch {}
+        }
       }
 
       const tasting = await storage.createTasting(data);
@@ -2131,16 +2127,10 @@ export async function registerRoutes(
         }
       }
       if (details.targetCommunityIds !== undefined && details.targetCommunityIds !== null) {
-        let parsedCommunityIds: string[];
-        try {
-          parsedCommunityIds = JSON.parse(details.targetCommunityIds);
-          if (!Array.isArray(parsedCommunityIds) || !parsedCommunityIds.every((id: any) => typeof id === "string")) {
-            return res.status(400).json({ message: "Invalid targetCommunityIds format" });
-          }
-        } catch {
-          return res.status(400).json({ message: "Invalid targetCommunityIds JSON" });
+        if (!Array.isArray(details.targetCommunityIds) || !details.targetCommunityIds.every((id: any) => typeof id === "string")) {
+          return res.status(400).json({ message: "Invalid targetCommunityIds format" });
         }
-        for (const cid of parsedCommunityIds) {
+        for (const cid of details.targetCommunityIds) {
           const role = await storage.getCommunityMemberRole(cid, hostId);
           if (!role) {
             return res.status(403).json({ message: `Not a member of community ${cid}` });
@@ -22092,13 +22082,10 @@ Rules:
     if (tasting.hostId === participantId) return 'allowed';
     const existing = await storage.getSharingParticipant(tasting.id, participantId);
     if (existing) return 'allowed';
-    if (tasting.visibility === 'group' && tasting.targetCommunityIds) {
-      try {
-        const targetIds = JSON.parse(tasting.targetCommunityIds) as string[];
-        const userCommunities = await storage.getParticipantCommunities(participantId);
-        const userCommunityIds = userCommunities.map(c => c.id);
-        if (targetIds.some(id => userCommunityIds.includes(id))) return 'allowed';
-      } catch {}
+    if (tasting.visibility === 'group' && Array.isArray(tasting.targetCommunityIds) && tasting.targetCommunityIds.length > 0) {
+      const userCommunities = await storage.getParticipantCommunities(participantId);
+      const userCommunityIds = userCommunities.map(c => c.id);
+      if (tasting.targetCommunityIds.some((id: string) => userCommunityIds.includes(id))) return 'allowed';
     }
     return 'denied';
   }
