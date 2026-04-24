@@ -122,17 +122,21 @@ async function preBuildMigrations() {
         `SELECT data_type FROM information_schema.columns WHERE table_name = 'tastings' AND column_name = 'target_community_ids'`
       );
       if (tcRows[0]?.data_type === "text") {
-        // Null out values that are not valid JSON arrays to prevent cast failures
+        // Step 1: null out values that are not JSON-array-shaped (regex only, no jsonb cast)
+        // This guarantees no malformed value reaches the jsonb cast in step 2.
         await pool.query(`
           UPDATE "tastings" SET "target_community_ids" = NULL
           WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
-            AND (
-              "target_community_ids" !~ '^\\s*\\[.*\\]\\s*$'
-              OR jsonb_typeof("target_community_ids"::jsonb) IS DISTINCT FROM 'array'
-              OR "target_community_ids"::jsonb = 'null'::jsonb
-            )
+            AND "target_community_ids" !~ '^\\s*\\[.*\\]\\s*$'
         `);
-        await pool.query(`ALTER TABLE "tastings" ADD COLUMN "target_community_ids_arr" text[]`);
+        // Step 2: null out structurally invalid JSON arrays (safe: all non-array-shaped already gone)
+        await pool.query(`
+          UPDATE "tastings" SET "target_community_ids" = NULL
+          WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
+            AND (jsonb_typeof("target_community_ids"::jsonb) IS DISTINCT FROM 'array'
+                 OR "target_community_ids"::jsonb = 'null'::jsonb)
+        `);
+        await pool.query(`ALTER TABLE "tastings" ADD COLUMN IF NOT EXISTS "target_community_ids_arr" text[]`);
         await pool.query(`
           UPDATE "tastings" SET "target_community_ids_arr" = (
             SELECT array_agg(v) FROM jsonb_array_elements_text("target_community_ids"::jsonb) AS v
@@ -172,7 +176,7 @@ async function preBuildMigrations() {
             AND (jsonb_typeof("target_community_ids"::jsonb) IS DISTINCT FROM 'array'
                  OR "target_community_ids"::jsonb = 'null'::jsonb)
         `);
-        await pool.query(`ALTER TABLE "bottle_splits" ADD COLUMN "target_community_ids_arr" text[]`);
+        await pool.query(`ALTER TABLE "bottle_splits" ADD COLUMN IF NOT EXISTS "target_community_ids_arr" text[]`);
         await pool.query(`
           UPDATE "bottle_splits" SET "target_community_ids_arr" = (
             SELECT array_agg(v) FROM jsonb_array_elements_text("target_community_ids"::jsonb) AS v
