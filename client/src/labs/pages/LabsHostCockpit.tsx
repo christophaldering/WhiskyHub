@@ -2251,6 +2251,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
 
   function renderMyRating() {
     return (
+      <>
       <div className="cockpit-card">
         <div className="cockpit-card-header">
           <div className="cockpit-card-title">
@@ -2489,6 +2490,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
           </div>
         </div>
       </ModalPortal>
+      </>
     );
   }
 }
