@@ -638,21 +638,8 @@ async function drawLineupPage(
   drawLineupFooter();
 }
 
-function drawRatingCircles(doc: jsPDF, x: number, y: number, circleR: number, circleGap: number, maxScore: number, availableW: number) {
-  if (maxScore >= 100) {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(circleR >= 2.5 ? 7 : 6);
-    doc.setTextColor(...MUTED);
-    doc.text("__ / " + maxScore, x + 2, y + (circleR >= 2.5 ? 1 : 0.5));
-    doc.setDrawColor(...LINE_GRAY);
-    doc.setLineWidth(0.3);
-    const fieldW = doc.getTextWidth("__ / " + maxScore) + 6;
-    doc.line(x, y + 2, x + fieldW, y + 2);
-    return;
-  }
-
-  const minRequiredW = maxScore * (2.5 * 2) + (maxScore - 1) * 0.5;
-  if (minRequiredW > availableW) {
+function drawRatingCircles(doc: jsPDF, x: number, y: number, _circleR: number, _circleGap: number, maxScore: number, availableW: number) {
+  if (maxScore > 25) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7);
     doc.setTextColor(...MUTED);
@@ -664,21 +651,23 @@ function drawRatingCircles(doc: jsPDF, x: number, y: number, circleR: number, ci
     return;
   }
 
-  const effectiveR = Math.min(circleR, (availableW - (maxScore - 1) * circleGap) / (2 * maxScore));
-  const effectiveGap = Math.min(circleGap, (availableW - maxScore * effectiveR * 2) / Math.max(1, maxScore - 1));
-  const finalR = Math.max(2.5, effectiveR);
-  const finalGap = Math.max(0.5, effectiveGap);
+  const minGap = 0.8;
+  const maxR = 2.5;
+  const r = Math.min(maxR, (availableW - (maxScore - 1) * minGap) / (2 * maxScore));
+  const gap = Math.max(minGap, (availableW - maxScore * r * 2) / Math.max(1, maxScore - 1));
+  const finalR = Math.max(1.5, r);
+  const finalGap = Math.max(0.5, gap);
 
   for (let s = 1; s <= maxScore; s++) {
     const cx = x + (s - 1) * (finalR * 2 + finalGap) + finalR;
     doc.setDrawColor(...SLATE);
-    doc.setLineWidth(0.35);
+    doc.setLineWidth(0.3);
     doc.circle(cx, y, finalR);
     doc.setFont("helvetica", "normal");
-    const fontSize = finalR >= 3 ? 6.5 : finalR >= 2.2 ? 5.5 : finalR >= 1.6 ? 4.5 : 3.5;
+    const fontSize = finalR >= 2.5 ? 6 : finalR >= 2.0 ? 5.5 : finalR >= 1.6 ? 4.5 : 3.5;
     doc.setFontSize(fontSize);
     doc.setTextColor(...MUTED);
-    doc.text(`${s}`, cx, y + (fontSize * 0.12), { align: "center" });
+    doc.text(`${s}`, cx, y + (fontSize * 0.11), { align: "center" });
   }
 }
 
@@ -698,42 +687,21 @@ async function drawScoringPage(
   const margin = 15;
   const usableWidth = pageW - 2 * margin;
 
-  doc.addPage([pageW, pageH]);
-
-  let y = margin;
-
-  doc.setFontSize(7);
-  doc.setTextColor(...GOLD_RGB);
-  doc.setFont('helvetica', 'normal');
-  doc.text('BEWERTUNGSBOGEN', margin, y + 3);
-
-  doc.setFontSize(14);
-  doc.setTextColor(...PRINT_BLACK_RGB);
-  doc.setFont('times', 'italic');
-  doc.text(tasting.title, margin, y + 10);
-
-  doc.setFontSize(7);
-  doc.setTextColor(...PRINT_TEXTMUTED_RGB);
-  doc.setFont('helvetica', 'normal');
-  const meta = [
-    tasting.date ? formatDate(tasting.date, lang) : '',
-    hostName ?? '',
-  ].filter(Boolean).join(' · ');
-  doc.text(meta, margin, y + 15);
-
-  if (participant?.id && tasting.id) {
-    const qrX = pageW - margin - 22;
-    await generateParticipantQR(tasting.id, participant.id, participant.name, doc, qrX, y, 20);
-  }
-
-  y += 22;
-  drawGoldLine(doc, margin, y, usableWidth, 0.4);
-  y += 5;
-
   const DIMS = ['Nase', 'Gaumen', 'Abgang', 'Gesamt'] as const;
-  const WHISKIES_PER_PAGE = 12;
+  const sheetMaxScore = tasting.ratingScale ?? 100;
 
-  const drawScoringHeader = async () => {
+  const LABEL_COL_W = 22;
+  const circleAreaW = usableWidth - LABEL_COL_W;
+
+  const DIM_ROW_H = 6.5;
+  const HEADER_H = 8;
+  const NOTE_H = 6;
+  const BLIND_GUESS_H = 7;
+  const ITEM_PADDING = 3;
+
+  const itemHeight = HEADER_H + DIMS.length * DIM_ROW_H + NOTE_H + (isBlind ? BLIND_GUESS_H : 0) + ITEM_PADDING;
+
+  const drawPageHeader = async () => {
     let hy = margin;
     doc.setFontSize(7);
     doc.setTextColor(...GOLD_RGB);
@@ -743,8 +711,11 @@ async function drawScoringPage(
     doc.setFontSize(13);
     doc.setTextColor(...PRINT_BLACK_RGB);
     doc.setFont('times', 'italic');
-    const titleLines = doc.splitTextToSize(tasting.title, usableWidth - 30);
-    doc.text(titleLines, margin, hy + 10);
+    const titleLines = doc.splitTextToSize(tasting.title, usableWidth - 30).slice(0, 2);
+    doc.text(titleLines, margin, hy + 10, { lineHeightFactor: 1.3 });
+
+    const titleBlockH = titleLines.length * 13 * 0.353 * 1.3;
+    const metaY = Math.max(hy + 15, hy + 9 + titleBlockH + 2);
 
     doc.setFontSize(7);
     doc.setTextColor(...PRINT_TEXTMUTED_RGB);
@@ -753,7 +724,7 @@ async function drawScoringPage(
       tasting.date ? formatDate(tasting.date, lang) : '',
       hostName ?? '',
     ].filter(Boolean).join(' · ');
-    doc.text(headerMeta, margin, hy + 15);
+    doc.text(headerMeta, margin, metaY);
 
     if (participant?.id && tasting.id) {
       const qrX = pageW - margin - 22;
@@ -765,38 +736,41 @@ async function drawScoringPage(
     return hy + 5;
   };
 
-  const drawScoringFooter = () => {
+  const drawPageFooter = () => {
     doc.setFontSize(6);
     doc.setTextColor(...PRINT_TEXTMUTED_RGB);
     doc.text('CaskSense', margin, pageH - 8);
     doc.text('casksense.com', pageW - margin, pageH - 8, { align: 'right' });
   };
 
-  let pageItemCount = 0;
+  doc.addPage([pageW, pageH]);
+  let y = await drawPageHeader();
 
   for (let i = 0; i < whiskies.length; i++) {
     const whisky = whiskies[i];
 
-    const itemHeight = isBlind ? 19 : 16;
-
-    if (i > 0 && (pageItemCount >= WHISKIES_PER_PAGE || y + itemHeight > pageH - 12)) {
-      drawScoringFooter();
+    if (i > 0 && y + itemHeight > pageH - 14) {
+      drawPageFooter();
       doc.addPage([pageW, pageH]);
-      y = await drawScoringHeader();
-      pageItemCount = 0;
+      y = await drawPageHeader();
     }
 
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setTextColor(...GOLD_RGB);
-    doc.setFont('helvetica', 'normal');
-    doc.text(String(i + 1), margin, y + 4);
+    doc.setFont('helvetica', 'bold');
+    doc.text(String(i + 1), margin, y + 5);
 
-    const whiskyName = isBlind ? `${tp("printableSheets.pdfSample", lang)} #${i + 1}` : (whisky.name ?? 'Unbekannt');
+    const whiskyName = isBlind
+      ? `${tp("printableSheets.pdfSample", lang)} #${i + 1}`
+      : (whisky.name ?? 'Unbekannt');
+
     doc.setFontSize(9);
     doc.setTextColor(...PRINT_BLACK_RGB);
     doc.setFont('times', 'italic');
-    const nameLines = doc.splitTextToSize(whiskyName, usableWidth * 0.24);
-    doc.text(nameLines[0] ?? '', margin + 7, y + 4);
+    const nameX = margin + 6;
+    const nameMaxW = usableWidth - 6;
+    const nameLines = doc.splitTextToSize(whiskyName, nameMaxW);
+    doc.text(nameLines[0] ?? '', nameX, y + 5);
 
     if (!isBlind) {
       const metaParts = [
@@ -811,31 +785,33 @@ async function drawScoringPage(
         doc.setFontSize(5.5);
         doc.setTextColor(...GOLD_RGB);
         doc.setFont('helvetica', 'normal');
-        const metaShort = doc.splitTextToSize(metaParts.join(' · ').toUpperCase(), usableWidth * 0.24);
-        doc.text(metaShort[0] ?? '', margin + 7, y + 7.5);
+        const metaStr = doc.splitTextToSize(metaParts.join(' · ').toUpperCase(), nameMaxW);
+        doc.text(metaStr[0] ?? '', nameX, y + 7.5);
       }
     }
 
-    const dimAreaW = usableWidth * 0.72;
-    const dimStartX = margin + usableWidth * 0.28;
-    const dimSpacing = dimAreaW / 4;
-    const circleR = 2.1;
+    const dimsStartY = y + HEADER_H;
 
-    const sheetMaxScore = tasting.ratingScale ?? 100;
     DIMS.forEach((dim, di) => {
-      const dx = dimStartX + di * dimSpacing;
-      doc.setFontSize(5);
+      const ry = dimsStartY + di * DIM_ROW_H;
+      const circleCenterY = ry + DIM_ROW_H / 2;
+
+      doc.setFontSize(6);
       doc.setTextColor(...GOLD_RGB);
       doc.setFont('helvetica', 'normal');
-      doc.text(dim.substring(0, 3).toUpperCase(), dx, y + 1.5);
-      drawRatingCircles(doc, dx, y + 4, circleR, 0.8, sheetMaxScore, dimSpacing - 2);
+      doc.text(dim.toUpperCase(), margin, circleCenterY + 0.5);
+
+      const circleX = margin + LABEL_COL_W;
+      drawRatingCircles(doc, circleX, circleCenterY, 2.5, 1.2, sheetMaxScore, circleAreaW);
     });
 
+    const noteY = dimsStartY + DIMS.length * DIM_ROW_H + 1;
     doc.setFontSize(5.5);
     doc.setTextColor(...PRINT_TEXTMUTED_RGB);
     doc.setFont('helvetica', 'normal');
-    doc.text('Notiz:', margin + 7, y + 11.5);
-    drawGoldLine(doc, margin + 16, y + 11, usableWidth - 16, 0.2);
+    doc.text('Notiz:', margin, noteY + 3.5);
+    const noteLabelW = doc.getTextWidth('Notiz: ') + 1;
+    drawGoldLine(doc, margin + noteLabelW, noteY + 3, usableWidth - noteLabelW, 0.2);
 
     if (isBlind) {
       const guessLabels = [
@@ -843,25 +819,24 @@ async function drawScoringPage(
         tp("printableSheets.pdfGuessAge", lang),
         tp("printableSheets.pdfGuessAbv", lang),
       ];
+      const guessY = noteY + NOTE_H - 1;
       doc.setFontSize(5);
       doc.setTextColor(...PRINT_TEXTMUTED_RGB);
       doc.setFont('helvetica', 'normal');
-      const thirdW = (usableWidth - 7) / 3;
+      const thirdW = usableWidth / 3;
       guessLabels.forEach((lbl, gi) => {
-        const gx = margin + 7 + gi * thirdW;
-        doc.text(lbl + ':', gx, y + 15);
+        const gx = margin + gi * thirdW;
+        doc.text(lbl + ':', gx, guessY + 3);
         const lw = doc.getTextWidth(lbl + ': ');
-        drawGoldLine(doc, gx + lw, y + 14.5, thirdW - lw - 3, 0.2);
+        drawGoldLine(doc, gx + lw, guessY + 2.5, thirdW - lw - 3, 0.2);
       });
     }
 
     y += itemHeight;
-    drawGoldLine(doc, margin, y - 2, usableWidth, 0.15);
-
-    pageItemCount++;
+    drawGoldLine(doc, margin, y - ITEM_PADDING + 1, usableWidth, 0.15);
   }
 
-  drawScoringFooter();
+  drawPageFooter();
 }
 
 async function drawTastingMat(
