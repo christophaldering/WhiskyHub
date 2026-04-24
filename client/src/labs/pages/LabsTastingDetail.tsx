@@ -1358,25 +1358,28 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
             Participants ({participants.length})
           </p>
           <div className="labs-card overflow-hidden">
-            {participants.map((p: { id: string; name?: string }, idx: number) => (
+            {participants.map((p: { id: string; participantId?: string; name?: string; participant?: { name?: string } }, idx: number) => {
+              const displayName = p.participant?.name || p.name || "";
+              const rowId = p.participantId || p.id;
+              return (
               <div
-                key={p.id}
+                key={rowId}
                 className="flex items-center gap-3 px-4 py-2.5"
                 style={{ borderBottom: idx < participants.length - 1 ? "1px solid var(--labs-border)" : "none" }}
-                data-testid={`labs-detail-participant-${p.id}`}
+                data-testid={`labs-detail-participant-${rowId}`}
               >
                 <div
                   className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold flex-shrink-0"
                   style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
                 >
-                  {stripGuestSuffix((p.name || "?")).charAt(0).toUpperCase()}
+                  {stripGuestSuffix(displayName || "?").charAt(0).toUpperCase()}
                 </div>
-                <span className="text-sm font-medium flex-1 truncate">{stripGuestSuffix(p.name || "Anonymous")}</span>
-                {p.id === tasting.hostId && (
+                <span className="text-sm font-medium flex-1 truncate">{stripGuestSuffix(displayName || "Anonymous")}</span>
+                {rowId === tasting.hostId && (
                   <Crown className="w-3 h-3 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
                 )}
               </div>
-            ))}
+            ); })}
           </div>
         </div>
       )}
