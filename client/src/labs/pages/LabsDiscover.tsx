@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   BookOpen, Building2, Package, FileText, Map,
   BookMarked, MessageSquare, ChevronRight, ChevronLeft,
-  Sparkles, Info,
+  Sparkles, Info, Heart,
 } from "lucide-react";
 import type { ElementType } from "react";
 

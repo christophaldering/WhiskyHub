@@ -1,7 +1,7 @@
 import { ObjectStorageService } from "./replit_integrations/object_storage";
 import { db } from "./db";
 import { whiskies, profiles } from "@shared/schema";
-import { like } from "drizzle-orm";
+import { like, isNotNull } from "drizzle-orm";
 import fs from "fs";
 import path from "path";
 import mime from "mime-types";

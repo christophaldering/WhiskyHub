@@ -6,10 +6,10 @@ import { useAppStore } from "@/lib/store";
 import { tastingApi, participantApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
-import { c, inputStyle } from "@/lib/theme";
+import { c, cardStyle, inputStyle } from "@/lib/theme";
 import {
   Upload, FileSpreadsheet, Image, MessageSquare, Sparkles, Loader2,
-  Check, X, Trash2, ChevronDown, ChevronUp, Wine, ExternalLink, Star
+  Check, X, Trash2, Edit3, ChevronDown, ChevronUp, Wine, ExternalLink, Star
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 

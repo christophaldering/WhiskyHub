@@ -1,4 +1,3 @@
-import React from "react";
 import { useTranslation } from "react-i18next";
 import { Check, FileEdit, MapPin, Sparkles, Users, Wine } from "lucide-react";
 
@@ -65,7 +64,7 @@ export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, sh
   const { t } = useTranslation();
 
   const ctx = parseContext(tastingContext);
-  const contextItems: { icon: React.ReactElement; label: string }[] = [];
+  const contextItems: { icon: JSX.Element; label: string }[] = [];
   if (ctx) {
     const placeFreetext = (ctx.placeCustom || ctx.placeOther || "").trim();
     if (ctx.place) {

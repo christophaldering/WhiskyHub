@@ -10,7 +10,7 @@ import CollectionBadge from "@/labs/components/CollectionBadge";
 import { stripGuestSuffix, formatScore } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import {
-  Sparkles, Copy, Check, Download,
+  ChevronLeft, Sparkles, Copy, Check, Download,
   FileText, Trash2, Globe, Share2, TrendingUp, TrendingDown,
   Award, BarChart3, Wine, Droplets, Info, Activity, ChevronRight,
 } from "lucide-react";
@@ -460,13 +460,12 @@ function WhiskysTab({ snapshot, fallback, savedKeys, collectionKeys, t }: { snap
 function AromasTab({ snapshot, t }: { snapshot: DataSnapshot; t: (key: string, fallback: string) => string }) {
   const regionBreakdown = snapshot.regionBreakdown || [];
   const avgScores = snapshot.avgScores || {};
-  const dimsAll: { key: keyof DimensionScores; label: string; color: string }[] = [
+  const dims: { key: keyof DimensionScores; label: string; color: string }[] = [
     { key: "nose", label: t("labs.connoisseur.dimNose", "Nose"), color: "var(--labs-dim-nose)" },
     { key: "taste", label: t("labs.connoisseur.dimTaste", "Taste"), color: "var(--labs-dim-taste)" },
     { key: "finish", label: t("labs.connoisseur.dimFinish", "Finish"), color: "var(--labs-dim-finish)" },
     { key: "overall", label: t("labs.connoisseur.dimOverall", "Overall"), color: "var(--labs-accent)" },
-  ];
-  const dims = dimsAll.filter(d => (avgScores as DimensionScores)[d.key] != null);
+  ].filter(d => avgScores[d.key] != null);
 
   const allFlavors: Record<string, number> = {};
   for (const ws of (snapshot.whiskySummaries || [])) {
@@ -927,7 +926,7 @@ export default function LabsConnoisseur() {
       }
       const mod = await import("@/components/connoisseur-report-pdf");
       await mod.generateConnoisseurReportPdf({
-        report: latestReport as unknown as Parameters<typeof mod.generateConnoisseurReportPdf>[0]["report"],
+        report: latestReport as Parameters<typeof mod.generateConnoisseurReportPdf>[0]["report"],
         participantName: stripGuestSuffix(session.name || "Participant"),
         language: latestReport.language || "en",
         participantPhotoUrl,

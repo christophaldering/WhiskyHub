@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Link } from "wouter";
 import { ChevronRight, Loader2 } from "lucide-react";
-import { radius, space, shadow, typo } from "@/lib/theme";
+import { c, radius, space, shadow, typo } from "@/lib/theme";
 import { v, alpha } from "@/lib/themeVars";
 import { UI_SKIN } from "@/lib/config";
 

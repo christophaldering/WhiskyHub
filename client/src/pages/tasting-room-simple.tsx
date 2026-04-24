@@ -285,7 +285,7 @@ export default function TastingRoomSimple() {
     queryKey: ["tasting-simple", tastingId],
     queryFn: () => tastingApi.get(tastingId!),
     enabled: !!tastingId,
-    refetchInterval: (query: any) => query.state.data?.guidedMode ? 800 : 3000,
+    refetchInterval: tasting?.guidedMode ? 800 : 3000,
   });
 
   const { data: whiskies = [], isLoading: whiskiesLoading } = useQuery<WhiskyItem[]>({

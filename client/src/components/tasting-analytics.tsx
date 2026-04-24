@@ -16,6 +16,12 @@ import {
 import { useAppleTheme, SP, withAlpha } from "@/labs/hooks/useAppleTheme";
 import { formatScore } from "@/lib/utils";
 
+const CATEGORY_LABELS: Record<string, { en: string; de: string }> = {
+  nose: { en: "Nose", de: "Nase" },
+  taste: { en: "Taste", de: "Geschmack" },
+  finish: { en: "Finish", de: "Abgang" },
+};
+
 function KendallBadge({ value }: { value: number | null }) {
   const th = useAppleTheme();
   const { t } = useTranslation();
@@ -46,7 +52,7 @@ function MedalIcon({ rank }: { rank: number }) {
 
 export function TastingAnalytics({ tastingId }: { tastingId: string }) {
   const th = useAppleTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currentParticipant } = useAppStore();
 
   const [isExpanded, setIsExpanded] = useState(false);

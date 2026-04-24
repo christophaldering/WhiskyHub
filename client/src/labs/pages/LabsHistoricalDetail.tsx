@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useParams } from "wouter";
+import { useParams, Link } from "wouter";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { getParticipantId } from "@/lib/api";
 import {
@@ -305,6 +305,8 @@ function PersonalRatingEditor({ entry, existingRating, pid, tastingId }: {
     },
   });
 
+  const whiskyLabel = [entry.distilleryRaw, entry.whiskyNameRaw].filter(Boolean).join(" — ") || t("historicalDetailUi.unknownWhisky");
+
   const SliderRow = ({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) => (
     <div style={{ marginBottom: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
@@ -387,7 +389,7 @@ export default function LabsHistoricalDetail() {
 
   const { data, isLoading, isError, error, refetch } = useQuery<TastingDetail>({
     queryKey: ["historical-tasting", tastingId],
-    queryFn: () => fetchJSON(`/api/historical/tastings/${tastingId}`, pid ?? undefined),
+    queryFn: () => fetchJSON(`/api/historical/tastings/${tastingId}`, pid),
     enabled: !!tastingId,
     retry: (failureCount, err) => {
       if (err instanceof ForbiddenError) return false;

@@ -8,7 +8,7 @@ import { useSession } from "@/lib/session";
 import { flavorProfileApi, communityApi } from "@/lib/api";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import {
-  Sparkles, Wine, MapPin, Droplets, Flame, Users,
+  ChevronLeft, Sparkles, Wine, MapPin, Droplets, Flame, Users,
   Info, Bot, RefreshCw, ExternalLink, Calendar, Percent,
 } from "lucide-react";
 
@@ -447,7 +447,7 @@ export default function LabsRecommendations() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {recommendations.map((rec, i) => (
-                  <RecommendationCard key={rec.whisky.id} rec={rec} index={i} t={t as unknown as (k: string, d?: any, o?: any) => string} />
+                  <RecommendationCard key={rec.whisky.id} rec={rec} index={i} t={t} />
                 ))}
               </div>
             )}
@@ -498,7 +498,7 @@ export default function LabsRecommendations() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {aiQuery.data.suggestions.map((s, i) => (
-                  <AISuggestionCard key={`${s.name}-${i}`} s={s} index={i} t={t as unknown as (k: string, d?: any, o?: any) => string} communityScores={communityScores} />
+                  <AISuggestionCard key={`${s.name}-${i}`} s={s} index={i} t={t} communityScores={communityScores} />
                 ))}
               </div>
             )}

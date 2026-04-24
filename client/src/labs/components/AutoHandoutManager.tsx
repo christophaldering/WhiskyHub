@@ -136,7 +136,7 @@ export default function AutoHandoutManager({ tasting, hostId }: { tasting: Tasti
 
   const updateBinding = async (patch: Partial<AutoHandoutBinding>) => {
     try {
-      await autoHandoutApi.update(tasting.id, patch as any);
+      await autoHandoutApi.update(tasting.id, patch);
       await load();
     } catch (e: any) { setError(e.message); }
   };
@@ -208,7 +208,7 @@ export default function AutoHandoutManager({ tasting, hostId }: { tasting: Tasti
       tastingTitle: tasting.title,
       hostName: data.hostName ?? null,
       language: data.binding.language,
-      chapters: data.chapters as any,
+      chapters: data.chapters,
       generatedAt: data.binding.generatedAt,
       selectedImages,
     });

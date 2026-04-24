@@ -15,8 +15,7 @@
     "test:api": "vitest run --config vitest.config.api.ts",
     "test:e2e": "vitest run --config vitest.config.e2e.ts",
     "test:smoke": "tsx tests/smoke.ts",
-    "test:all": "npm run test:unit && npm run test:api && npm run test:e2e && npm run test:smoke",
-    "db:migrate": "tsx scripts/pre-push-sync.ts"
+    "test:all": "npm run test:unit && npm run test:api && npm run test:e2e && npm run test:smoke"
   },
   "dependencies": {
     "@capacitor/android": "^8.1.0",

@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Sparkles, Download, FileText, FileSpreadsheet, Clock, Monitor, Archive, Check, Info, Lock, Loader2 } from "lucide-react";
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/lib/store";
@@ -35,6 +35,7 @@ function labsExportPdf(tasting: any, whiskyResults: any[], t: (key: string) => s
   const marginX = 18;
   const contentW = pageW - marginX * 2;
   const accent: [number, number, number] = [212, 162, 86];
+  const dark: [number, number, number] = [30, 28, 24];
   const muted: [number, number, number] = [138, 126, 109];
   const bg: [number, number, number] = [26, 23, 20];
   const textColor: [number, number, number] = [245, 240, 232];
@@ -552,7 +553,7 @@ function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCou
                 <h2 className="labs-serif" style={{ fontSize: "clamp(28px, 5vw, 52px)", fontWeight: 700, color: "var(--labs-text)", lineHeight: 1.05, maxWidth: 600 }}>
                   {(slide.data?.title as string) || ""}
                 </h2>
-                {!!(slide.data?.subtitle) && (
+                {slide.data?.subtitle && (
                   <p style={{ fontSize: "clamp(14px, 2vw, 18px)", color: "var(--labs-text-muted)", marginTop: 12, maxWidth: 450 }}>
                     {slide.data.subtitle as string}
                   </p>
@@ -815,15 +816,6 @@ export default function LabsResults({ params }: LabsResultsProps) {
     setPreviousRatingsMap(map);
   }, [tastingHistoryData, whiskies, tastingId]);
 
-  const excludedParticipantSet = useMemo(() => {
-    return new Set<string>(Array.isArray(tasting?.excludedParticipantIds) ? tasting.excludedParticipantIds : []);
-  }, [tasting?.excludedParticipantIds]);
-
-  const filteredRatings = useMemo(() => {
-    if (excludedParticipantSet.size === 0) return allRatings || [];
-    return (allRatings || []).filter((r: any) => !excludedParticipantSet.has(r.participantId));
-  }, [allRatings, excludedParticipantSet]);
-
   const whiskyResults = useMemo(() => {
     const sMax = (tasting?.ratingScale as number) || 100;
     const toUserScale = (v: number | null | undefined) => {
@@ -835,7 +827,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
     };
     const roundForScale = (v: number) => sMax === 100 ? Math.round(v) : Math.round(v * 10) / 10;
     return (whiskies || []).map((w: any) => {
-      const ratings = filteredRatings.filter((r: any) => r.whiskyId === w.id).map((r: any) => ({
+      const ratings = (allRatings || []).filter((r: any) => r.whiskyId === w.id).map((r: any) => ({
         ...r,
         nose: toUserScale(r.nose),
         taste: toUserScale(r.taste),
@@ -873,11 +865,8 @@ export default function LabsResults({ params }: LabsResultsProps) {
       const overallRange = minMax("overall");
       const overallStdDev = stdDev("overall");
 
-      const myRatingRaw = currentParticipant
-        ? (allRatings || []).find((r: any) => r.whiskyId === w.id && r.participantId === currentParticipant.id)
-        : null;
-      const myRating = myRatingRaw
-        ? { ...myRatingRaw, nose: toUserScale(myRatingRaw.nose), taste: toUserScale(myRatingRaw.taste), finish: toUserScale(myRatingRaw.finish), overall: toUserScale(myRatingRaw.overall) }
+      const myRating = currentParticipant
+        ? ratings.find((r: any) => r.participantId === currentParticipant.id)
         : null;
 
       const myDelta = myRating?.overall != null && avgOverall != null
@@ -898,7 +887,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
         overallStdDev,
       };
     });
-  }, [whiskies, filteredRatings, allRatings, currentParticipant, tasting?.ratingScale]);
+  }, [whiskies, allRatings, currentParticipant, tasting?.ratingScale]);
 
   const sorted = useMemo(() => [...whiskyResults].sort((a, b) => (b.avgOverall || 0) - (a.avgOverall || 0)), [whiskyResults]);
 
@@ -991,14 +980,24 @@ export default function LabsResults({ params }: LabsResultsProps) {
   }
 
   const topWhisky = sorted[0];
-  const uniqueRaters = new Set(filteredRatings.map((r: any) => r.participantId)).size;
-  const totalRatings = filteredRatings.length;
+  const uniqueRaters = new Set((allRatings || []).map((r: any) => r.participantId)).size;
+  const totalRatings = allRatings?.length || 0;
   const participantCount = Math.max(participants?.length || 0, uniqueRaters, totalRatings > 0 ? 1 : 0);
-  const totalCount = Math.max(participants?.length || 0, new Set((allRatings || []).map((r: any) => r.participantId)).size);
-  const includedCount = totalCount - excludedParticipantSet.size;
   const maxScore = tasting?.ratingScale || 100;
   const isHost = currentParticipant?.id === tasting.hostId;
   const presentationActive = tasting.presentationSlide != null && !isHost;
+
+  const getWhiskyDisplayName = (
+    whisky: any,
+    index: number
+  ) => {
+    if (!tasting.blindMode) return whisky.name;
+    const isRevealed = (tasting.guidedRevealStep ?? 0) >= 1 ||
+                        tasting.status === 'archived';
+    return isRevealed
+      ? whisky.name
+      : `Sample ${index + 1}`;
+  };
 
   if (presentationActive) {
     return (
@@ -1131,26 +1130,6 @@ export default function LabsResults({ params }: LabsResultsProps) {
           )}
         </div>
       </div>
-
-      {excludedParticipantSet.size > 0 && (
-        <div
-          className="labs-fade-in"
-          style={{
-            display: "flex", alignItems: "center", gap: 10,
-            padding: "10px 16px", marginBottom: 16, borderRadius: 10,
-            background: "color-mix(in srgb, var(--labs-warning, #d97706) 10%, transparent)",
-            border: "1px solid color-mix(in srgb, var(--labs-warning, #d97706) 30%, transparent)",
-            fontSize: 13, color: "var(--labs-text)",
-          }}
-          data-testid="excluded-participants-banner"
-        >
-          <span style={{ fontSize: 16 }}>⚠️</span>
-          <span>
-            Auswertung basiert auf <strong>{includedCount}</strong> von <strong>{totalCount}</strong> Teilnehmern
-            {" "}({excludedParticipantSet.size} ausgeschlossen)
-          </span>
-        </div>
-      )}
 
       <div
         className="labs-card-elevated p-5 mb-6 labs-stagger-2 labs-fade-in"
@@ -1358,7 +1337,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                           const d = w.myRating?.overall != null ? w.myRating.overall - mostRecent.overall : null;
                           if (d == null) return null;
                           const rd = fmt(d)!;
-                          return <span className="font-semibold" style={{ color: d > 0 ? "var(--labs-success)" : d < 0 ? "var(--labs-danger)" : "var(--labs-text-muted)" }}>{d > 0 ? `+${rd}` : d === 0 ? "=" : rd}</span>;
+                          return <span className="font-semibold" style={{ color: d > 0 ? "var(--labs-success)" : d < 0 ? "var(--labs-danger)" : "var(--labs-text-muted)" }}>{rd > 0 ? `+${rd}` : rd === 0 ? "=" : rd}</span>;
                         })()}
                       </span>
                     )}

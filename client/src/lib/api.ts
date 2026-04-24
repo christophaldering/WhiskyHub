@@ -1,3 +1,4 @@
+import { queryClient } from "./queryClient";
 import { apiUrl } from "./native";
 
 const API_BASE = apiUrl("/api");

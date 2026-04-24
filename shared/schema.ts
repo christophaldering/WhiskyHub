@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, serial, real, doublePrecision, timestamp, boolean, jsonb, date, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, real, doublePrecision, timestamp, boolean, jsonb, date, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -93,8 +93,7 @@ export const tastings = pgTable("tastings", {
   tastingType: text("tasting_type").default("standard"), // standard | bottle-sharing
   visibility: text("visibility").default("private"), // public | private | group
   sharingMessage: text("sharing_message"),
-  targetCommunityIds: text("target_community_ids"), // stored as text in prod, preBuildMigrations converts to text[] on deploy
-  excludedParticipantIds: text("excluded_participant_ids").array().default(sql`ARRAY[]::text[]`), // participant IDs excluded from result aggregation
+  targetCommunityIds: text("target_community_ids"), // JSON array of community IDs
   createdAt: timestamp("created_at").defaultNow(),
   openedAt: timestamp("opened_at"),
   closedAt: timestamp("closed_at"),
@@ -1164,7 +1163,7 @@ export const bottleSplits = pgTable("bottle_splits", {
   description: text("description"),
   status: text("status").notNull().default("draft"), // draft | open | confirmed | distributed | tasting | completed | cancelled
   visibility: text("visibility").notNull().default("public"), // public | private | group
-  targetCommunityIds: text("target_community_ids"), // stored as text in prod, preBuildMigrations converts to text[] on deploy
+  targetCommunityIds: text("target_community_ids"), // JSON array of community IDs
   tastingId: varchar("tasting_id"), // link to generated tasting session
   deadline: timestamp("deadline"),
   minClaims: integer("min_claims"),
@@ -1434,21 +1433,6 @@ export interface AutoHandoutSelectedImage {
   source: string;
   license?: string;
 }
-
-// --- Chat (AI Integration boilerplate) ---
-export const conversations = pgTable("conversations", {
-  id: serial("id").primaryKey(),
-  title: text("title").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const messages = pgTable("messages", {
-  id: serial("id").primaryKey(),
-  conversationId: integer("conversation_id").notNull().references(() => conversations.id),
-  role: text("role").notNull(),
-  content: text("content").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
 
 export const AUTO_HANDOUT_CHAPTER_TYPES = {
   distillery: [

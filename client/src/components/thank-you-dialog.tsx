@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, Mail, Send, Loader2, CheckCircle } from "lucide-react";
+import { Heart, Mail, Send, Loader2, Users, CheckCircle } from "lucide-react";
 
 interface ThankYouDialogProps {
   tastingId: string;

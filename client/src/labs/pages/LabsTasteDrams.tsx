@@ -5,14 +5,14 @@ import { queryClient } from "@/lib/queryClient";
 import { useSession } from "@/lib/session";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { journalApi, tastingHistoryApi } from "@/lib/api";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import type { JournalEntry } from "@shared/schema";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
 import {
-  BookOpen, Plus, ChevronLeft, Pencil, Trash2, Check,
+  BookOpen, Star, Plus, ChevronLeft, Pencil, Trash2, Check,
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy,
-  Mic, Play as PlayIcon, Pause, ChevronDown, RotateCcw,
+  Mic, Play as PlayIcon, Pause, ChevronDown, RotateCcw, Camera,
   ArrowUp, ArrowDown, SlidersHorizontal, Archive, Clock, FileEdit, MoreHorizontal,
   Users, Smile,
 } from "lucide-react";
@@ -31,9 +31,9 @@ type SortDirection = "asc" | "desc";
 interface DramEntry extends JournalEntry {
   source: "solo" | "tasting" | "casksense";
   tastingTitle?: string;
-  noseScore: number | null;
-  tasteScore: number | null;
-  finishScore: number | null;
+  noseScore?: number | null;
+  tasteScore?: number | null;
+  finishScore?: number | null;
   savedAt?: string | Date | null;
 }
 
@@ -76,20 +76,22 @@ function splitRatingNotes(notes: string | null | undefined): {
   }
 
   let remaining = notes;
+  let noseContent: string | null = null;
   let tasteContent: string | null = null;
   let finishContent: string | null = null;
 
   for (const dim of ["NOSE", "TASTE", "FINISH"]) {
-    const rx = new RegExp(`\\[${dim}]\\s*([\\s\\S]+?)\\s*\\[\\/${dim}]`, "i");
+    const rx = new RegExp(`\\[${dim}]\\s*(.+?)\\s*\\[\\/${dim}]`, "si");
     const m = remaining.match(rx);
     if (m) {
       const content = m[1].trim();
-      if (dim === "TASTE") tasteContent = content;
+      if (dim === "NOSE") noseContent = content;
+      else if (dim === "TASTE") tasteContent = content;
       else if (dim === "FINISH") finishContent = content;
     }
   }
 
-  remaining = remaining.replace(/\[(SCORES|NOSE|TASTE|FINISH|BALANCE)\][\s\S]*?\[\/\1\]/gi, "");
+  remaining = remaining.replace(/\[(SCORES|NOSE|TASTE|FINISH|BALANCE)\].*?\[\/\1\]/gsi, "");
   const bodyText = remaining.trim() || null;
 
   return {
@@ -151,7 +153,8 @@ export default function LabsTasteDrams() {
   const [statsExpanded, setStatsExpanded] = useState(false);
   const statsInitRef = useRef(false);
   const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
-  const [, setImageUploading] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const [editStructured, setEditStructured] = useState<{
     hasStructured: boolean;
     generalNotes: string;
@@ -782,7 +785,7 @@ export default function LabsTasteDrams() {
               {selectedEntry.country && <MetaBadge label={t("drams.country")} value={selectedEntry.country} />}
               {selectedEntry.region && <MetaBadge label={t("drams.region")} value={selectedEntry.region} />}
               {selectedEntry.age && <MetaBadge label={t("drams.age")} value={selectedEntry.age} />}
-              {selectedEntry.abv && <MetaBadge label={t("drams.abv")} value={String(selectedEntry.abv)} />}
+              {selectedEntry.abv && <MetaBadge label={t("drams.abv")} value={selectedEntry.abv} />}
               {selectedEntry.caskType && <MetaBadge label={t("drams.cask")} value={selectedEntry.caskType} />}
             </div>
           )}
@@ -887,7 +890,7 @@ export default function LabsTasteDrams() {
         nose: selectedEntry.noseNotes || "",
         palate: selectedEntry.tasteNotes ? cleanTasteNotes(selectedEntry.tasteNotes) : "",
         finish: selectedEntry.finishNotes || "",
-        overall: "",
+        overall: selectedEntry.notes || "",
       },
     };
     const handleDeepRateDone = (data: RatingData) => {

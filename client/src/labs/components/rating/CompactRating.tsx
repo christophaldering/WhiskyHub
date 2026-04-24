@@ -88,7 +88,7 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [saving, setSaving] = useState(false);
   const [submitHover, setSubmitHover] = useState(false);
-  const [saveError, _setSaveError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [overallManuallySet, setOverallManuallySet] = useState(() => {
     if (!initialData?.scores) return false;
     const s = initialData.scores;
@@ -191,6 +191,7 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
 
       {PHASES.map((pid) => {
         const pAccent = `var(--labs-phase-${pid})`;
+        const pDim = `var(--labs-phase-${pid}-dim)`;
         const isOpen = openPhase === pid;
         const pctMin = scaleMax === 100 ? 60 : 0;
         const pctRange = scaleMax - pctMin;

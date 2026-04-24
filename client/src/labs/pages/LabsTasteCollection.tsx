@@ -5,11 +5,12 @@ import { queryClient } from "@/lib/queryClient";
 import { collectionApi } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import { useLocation } from "wouter";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import {
   Upload, Search, Trash2, Archive, Loader2, Check,
   Star, RefreshCw, Sparkles, X, CheckSquare,
-  FileSpreadsheet, Download, ChevronDown, ChevronUp,
+  FileSpreadsheet, Download, ChevronDown, ChevronUp, ChevronLeft,
   ExternalLink, Clock, AlertTriangle, History, MoreHorizontal,
   ArrowRight, Globe, FileDown,
 } from "lucide-react";
@@ -27,6 +28,7 @@ const STATUS_CYCLE: string[] = ["closed", "open", "empty"];
 
 export default function LabsTasteCollection() {
   const { t } = useTranslation();
+  const [, navigate] = useLocation();
   const session = useSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const syncFileInputRef = useRef<HTMLInputElement>(null);

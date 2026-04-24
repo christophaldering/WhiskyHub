@@ -8,24 +8,25 @@ import {
   Plus, X, Trash2, Copy, Check, EyeOff, Eye, Play, Square,
   Users, Calendar, MapPin, ChevronLeft, Loader2,
   Wine, BarChart3, CheckCircle2, Clock, CircleDashed,
-  ChevronDown, ChevronUp, Compass, SkipForward, StopCircle, AlertTriangle,
+  ChevronDown, ChevronUp, ChevronRight, Compass, SkipForward, StopCircle, AlertTriangle,
   QrCode, Mail, Send, Star, Monitor, Gauge, Globe, Sliders,
-  MessageCircle, Video, FileText, FileSpreadsheet, Upload, Share2,
-  Sparkles, RefreshCw, Camera, Pencil, Image, Image as ImageIcon,
+  MessageCircle, Video, FileText, FileSpreadsheet, Settings, Upload, Share2,
+  Sparkles, RefreshCw, Camera, BookOpen, Heart, Pencil, Image, Image as ImageIcon,
   Download, ExternalLink, Lock, Printer, ScanLine, GripVertical, Layers, ArrowRightLeft, Archive, Info,
-  Crown, Scissors, RotateCcw,
+  Crown, Scissors,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { stripGuestSuffix } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { FLAVOR_PROFILES, detectFlavorProfile } from "@/labs/data/flavor-data";
+import { FLAVOR_PROFILES, detectFlavorProfile, type FlavorProfileId } from "@/labs/data/flavor-data";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import type { RatingData } from "@/labs/components/rating/types";
 import { useRatingScale } from "@/labs/hooks/useRatingScale";
 import LabsHostCockpit from "@/labs/pages/LabsHostCockpit";
 import CoverImage16x9 from "@/labs/components/CoverImage16x9";
 import ModalPortal from "@/labs/components/ModalPortal";
-import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi } from "@/lib/api";
+import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi, collectionApi, wishlistApi } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
@@ -206,6 +207,13 @@ function normalizePrice(raw: any): number | null {
   const val = typeof raw === "string" ? parseFloat(raw.replace(",", ".")) : Number(raw);
   if (isNaN(val) || val < 0) return null;
   return Math.round(val * 100) / 100;
+}
+
+function formatPrice(price: number | string | null | undefined): string {
+  if (price === null || price === undefined || price === "") return "";
+  const val = typeof price === "string" ? parseFloat(price.replace(",", ".")) : Number(price);
+  if (isNaN(val)) return "";
+  return val.toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " €";
 }
 
 function isExcelFile(file: File): boolean {
@@ -890,7 +898,7 @@ function PrintMaterialsSection({
                 <div className="flex gap-1">
                   <button
                     className={`labs-btn-ghost text-xs py-2 rounded-lg flex-1 text-center ${orientation === "portrait" ? "ring-1" : ""}`}
-                    style={orientation === "portrait" ? { background: "var(--labs-accent-muted)", color: "var(--labs-accent)", minHeight: 44 } : { minHeight: 44 }}
+                    style={orientation === "portrait" ? { background: "var(--labs-accent-muted)", color: "var(--labs-accent)", ringColor: "var(--labs-accent)", minHeight: 44 } : { minHeight: 44 }}
                     onClick={() => setOrientation("portrait")}
                     data-testid="print-orientation-portrait"
                   >
@@ -898,7 +906,7 @@ function PrintMaterialsSection({
                   </button>
                   <button
                     className={`labs-btn-ghost text-xs py-2 rounded-lg flex-1 text-center ${orientation === "landscape" ? "ring-1" : ""}`}
-                    style={orientation === "landscape" ? { background: "var(--labs-accent-muted)", color: "var(--labs-accent)", minHeight: 44 } : { minHeight: 44 }}
+                    style={orientation === "landscape" ? { background: "var(--labs-accent-muted)", color: "var(--labs-accent)", ringColor: "var(--labs-accent)", minHeight: 44 } : { minHeight: 44 }}
                     onClick={() => setOrientation("landscape")}
                     data-testid="print-orientation-landscape"
                   >
@@ -911,7 +919,7 @@ function PrintMaterialsSection({
                 <div className="flex gap-1">
                   <button
                     className={`labs-btn-ghost text-xs py-2 rounded-lg flex-1 text-center ${!blindMode ? "ring-1" : ""}`}
-                    style={!blindMode ? { background: "var(--labs-accent-muted)", color: "var(--labs-accent)", minHeight: 44 } : { minHeight: 44 }}
+                    style={!blindMode ? { background: "var(--labs-accent-muted)", color: "var(--labs-accent)", ringColor: "var(--labs-accent)", minHeight: 44 } : { minHeight: 44 }}
                     onClick={() => setBlindMode(false)}
                     data-testid="print-mode-open"
                   >
@@ -919,7 +927,7 @@ function PrintMaterialsSection({
                   </button>
                   <button
                     className={`labs-btn-ghost text-xs py-2 rounded-lg flex-1 text-center ${blindMode ? "ring-1" : ""}`}
-                    style={blindMode ? { background: "var(--labs-accent-muted)", color: "var(--labs-accent)", minHeight: 44 } : { minHeight: 44 }}
+                    style={blindMode ? { background: "var(--labs-accent-muted)", color: "var(--labs-accent)", ringColor: "var(--labs-accent)", minHeight: 44 } : { minHeight: 44 }}
                     onClick={() => setBlindMode(true)}
                     data-testid="print-mode-blind"
                   >
@@ -1285,7 +1293,7 @@ function MobileCompanion({
     setMobileWbResult("");
     try {
       const headers: Record<string, string> = {};
-      if (currentParticipant?.id) headers["x-participant-id"] = String(currentParticipant.id);
+      if (currentParticipant?.id) headers["x-participant-id"] = currentParticipant.id;
       const res = await fetch(`/api/whiskybase-lookup/${encodeURIComponent(id)}`, { headers });
       if (!res.ok) {
         setMobileWbResult(res.status === 429 ? "rate_limit" : res.status === 400 ? "invalid" : "not_found");
@@ -1331,7 +1339,7 @@ function MobileCompanion({
       if (parsedWhiskies && parsedWhiskies.length > 0) {
         setMobileAiResults(parsedWhiskies);
         const existingList = (whiskies || []) as Array<Record<string, unknown>>;
-        const nonDupeIndices = new Set<number>(
+        const nonDupeIndices = new Set(
           parsedWhiskies.map((_: any, i: number) => i).filter((i: number) =>
             !existingList.some((ew: any) => isSimilarWhisky(parsedWhiskies![i].name || "", parsedWhiskies![i].distillery || "", ew.name || "", ew.distillery || ""))
           )
@@ -1344,7 +1352,7 @@ function MobileCompanion({
         if (result?.whiskies?.length) {
           setMobileAiResults(result.whiskies);
           const existingList = (whiskies || []) as Array<Record<string, unknown>>;
-          const nonDupeIndices = new Set<number>(
+          const nonDupeIndices = new Set(
             result.whiskies.map((_: any, i: number) => i).filter((i: number) =>
               !existingList.some((ew: any) => isSimilarWhisky(result.whiskies[i].name || "", result.whiskies[i].distillery || "", ew.name || "", ew.distillery || ""))
             )
@@ -1912,7 +1920,7 @@ function MobileCompanion({
         </div>
       )}
 
-      {!!tasting.guidedMode && isLive && !!activeWhisky && (
+      {tasting.guidedMode && isLive && activeWhisky && (
         <div className="labs-card p-4 mb-4">
           <p className="labs-section-label">{t("labs.host.currentDram")}</p>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -1955,7 +1963,7 @@ function MobileCompanion({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
-                    {isFieldRevealed(rv, "name") ? (String(currentWhisky.name || "") || `Whisky ${rv.revealIndex + 1}`) : `Dram ${String.fromCharCode(65 + rv.revealIndex)} (Blind)`}
+                    {isFieldRevealed(rv, "name") ? (currentWhisky.name || `Whisky ${rv.revealIndex + 1}`) : `Dram ${String.fromCharCode(65 + rv.revealIndex)} (Blind)`}
                   </p>
                   {isFieldRevealed(rv, ["distillery", "age", "abv"]) && (
                     <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
@@ -2034,7 +2042,7 @@ function MobileCompanion({
           </button>
         )}
 
-        {isLive && !!tasting.guidedMode && (
+        {isLive && tasting.guidedMode && (
           <button
             className="labs-btn-primary flex items-center justify-center gap-2 w-full"
             onClick={() => guidedAdvanceMut.mutate()}
@@ -2047,7 +2055,7 @@ function MobileCompanion({
           </button>
         )}
 
-        {(isLive || tasting.status === "reveal") && !!tasting.blindMode && !tasting.guidedMode && whiskyCount > 0 && (() => {
+        {(isLive || tasting.status === "reveal") && tasting.blindMode && !tasting.guidedMode && whiskyCount > 0 && (() => {
           const rv = getRevealState(tasting, whiskyCount, t);
           return (
             <button
@@ -2086,7 +2094,7 @@ function MobileCompanion({
           </button>
         )}
 
-        {isLive && !!(tasting.guidedMode) && activeWhisky && (
+        {isLive && tasting.guidedMode && activeWhisky && (
           <button
             className="labs-btn-secondary flex items-center justify-center gap-2 w-full"
             onClick={() => toggleDramLock((activeWhisky as any).id)}
@@ -2718,7 +2726,7 @@ function CreateTastingForm() {
   const [guestMode, setGuestMode] = useState(draft?.guestMode || "standard");
   const [sessionUiMode, setSessionUiMode] = useState(draft?.sessionUiMode || "flow");
   const [reflectionEnabled, setReflectionEnabled] = useState(draft?.reflectionEnabled ?? false);
-  const [reflectionMode] = useState(draft?.reflectionMode || "standard");
+  const [reflectionMode, setReflectionMode] = useState(draft?.reflectionMode || "standard");
   const [reflectionVisibility, setReflectionVisibility] = useState(draft?.reflectionVisibility || "named");
   const [videoLink, setVideoLink] = useState(draft?.videoLink || "");
   const [submitting, setSubmitting] = useState(false);
@@ -2833,7 +2841,7 @@ function CreateTastingForm() {
         videoLink: videoLink.trim() || null,
         status: "draft",
         visibility: selectedCommunityIds.size > 0 ? "group" : undefined,
-        targetCommunityIds: selectedCommunityIds.size > 0 ? Array.from(selectedCommunityIds) : null,
+        targetCommunityIds: selectedCommunityIds.size > 0 ? JSON.stringify(Array.from(selectedCommunityIds)) : null,
       });
       if (result?.id) {
         clearDraft();
@@ -4253,7 +4261,7 @@ function CoverImageManager({
         onClose={() => { if (!aiGenerating && !aiSaving) setAiDialogOpen(false); }}
         closeOnOverlayClick={!aiGenerating && !aiSaving}
         closeOnEscape={!aiGenerating && !aiSaving}
-        initialFocusRef={aiPromptRef as React.RefObject<HTMLElement>}
+        initialFocusRef={aiPromptRef}
         testId="labs-cover-ai-dialog"
       >
         {aiDialogOpen && (
@@ -4532,6 +4540,10 @@ function TastingSetupSection({
     try { await patchDetails({ reflectionEnabled: !tasting.reflectionEnabled }); } catch {}
   };
 
+  const handleChangeReflectionMode = async (mode: string) => {
+    try { await patchDetails({ reflectionMode: mode }); } catch {}
+  };
+
   const handleChangeReflectionVis = async (vis: string) => {
     try { await patchDetails({ reflectionVisibility: vis }); } catch {}
   };
@@ -4725,7 +4737,7 @@ function TastingSetupSection({
             testId="labs-settings-toggle-blind"
           />
 
-          {!!(tasting.blindMode) && (() => {
+          {tasting.blindMode && (() => {
             let detectedKey = "classic";
             let currentSteps = REVEAL_PRESETS_MAP.classic;
             try {
@@ -4839,7 +4851,7 @@ function TastingSetupSection({
             description={t("labs.host.showRankingDesc")}
             testId="labs-settings-toggle-ranking"
           />
-          {!!(tasting.blindMode) && !!(tasting.showRanking) && (
+          {tasting.blindMode && tasting.showRanking && (
             <p className="text-xs mt-1 px-1" style={{ color: "var(--labs-accent)", opacity: 0.8 }} data-testid="blind-ranking-hint">
               {t("labs.host.blindRankingHint")}
             </p>
@@ -4905,7 +4917,7 @@ function TastingSetupSection({
               description={t("labs.host.enableDiscussionDesc")}
               testId="labs-settings-toggle-reflection"
             />
-            {!!(tasting.reflectionEnabled) && (
+            {tasting.reflectionEnabled && (
               <div className="mt-3">
                 <label className="labs-section-label" style={{ fontSize: 11 }}>{t("labs.host.showNames")}</label>
                 <LabsSegmentedSelect
@@ -5119,6 +5131,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const aiImportLoadingRef = useRef(false);
   const [aiImportResults, setAiImportResults] = useState<any[]>([]);
   const [aiImportSelected, setAiImportSelected] = useState<Set<number>>(new Set());
+  const [showCollectionImport, setShowCollectionImport] = useState(false);
+  const [showWishlistImport, setShowWishlistImport] = useState(false);
   const [showEditTasting, setShowEditTasting] = useState(false);
   const [editTastingFields, setEditTastingFields] = useState<Record<string, string>>({});
   const editTastingInitialRef = useRef<Record<string, string>>({});
@@ -5185,6 +5199,15 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       toast({ title: t("labs.whisky.reorderFailed", "Failed to reorder whiskies"), description: e.message, variant: "destructive" });
     },
   });
+
+  const handleMoveWhisky = (index: number, direction: "up" | "down") => {
+    if (!whiskies) return;
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= whiskies.length) return;
+    const reordered = [...whiskies];
+    [reordered[index], reordered[newIndex]] = [reordered[newIndex], reordered[index]];
+    reorderMutation.mutate(reordered.map((w: any, i: number) => ({ id: w.id, sortOrder: i + 1 })));
+  };
 
   const dragState = useRef<{ dragIdx: number; overIdx: number } | null>(null);
   const [dragActiveIdx, setDragActiveIdx] = useState<number | null>(null);
@@ -5280,7 +5303,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       if (parsedWhiskies && parsedWhiskies.length > 0) {
         setAiImportResults(parsedWhiskies);
         const existingList = (whiskies || []) as Array<Record<string, unknown>>;
-        const nonDupeIndices = new Set<number>(
+        const nonDupeIndices = new Set(
           parsedWhiskies.map((_: any, i: number) => i).filter((i: number) =>
             !existingList.some((ew: any) => isSimilarWhisky(parsedWhiskies![i].name || "", parsedWhiskies![i].distillery || "", ew.name || "", ew.distillery || ""))
           )
@@ -5293,7 +5316,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         if (result?.whiskies?.length) {
           setAiImportResults(result.whiskies);
           const existingList = (whiskies || []) as Array<Record<string, unknown>>;
-          const nonDupeIndices = new Set<number>(
+          const nonDupeIndices = new Set(
             result.whiskies.map((_: any, i: number) => i).filter((i: number) =>
               !existingList.some((ew: any) => isSimilarWhisky(result.whiskies[i].name || "", result.whiskies[i].distillery || "", ew.name || "", ew.distillery || ""))
             )
@@ -5378,7 +5401,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     setResult("");
     try {
       const headers: Record<string, string> = {};
-      if (currentParticipant?.id) headers["x-participant-id"] = String(currentParticipant.id);
+      if (currentParticipant?.id) headers["x-participant-id"] = currentParticipant.id;
       const res = await fetch(`/api/whiskybase-lookup/${encodeURIComponent(id)}`, { headers });
       if (!res.ok) {
         if (res.status === 429) { setResult("rate_limit"); return; }
@@ -5547,7 +5570,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       const currentIds = editCommunityIds;
       const communityChanged = initialIds.size !== currentIds.size || [...currentIds].some(id => !initialIds.has(id));
       if (communityChanged) {
-        body.targetCommunityIds = currentIds.size > 0 ? Array.from(currentIds) : null;
+        body.targetCommunityIds = currentIds.size > 0 ? JSON.stringify(Array.from(currentIds)) : null;
         if (currentIds.size > 0 && tasting?.visibility !== "public") {
           body.visibility = "group";
         } else if (currentIds.size === 0 && tasting?.visibility === "group") {
@@ -5859,11 +5882,14 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 };
                 setEditTastingFields(initial);
                 editTastingInitialRef.current = initial;
-                {
-                  const ids = Array.isArray(tasting.targetCommunityIds) ? tasting.targetCommunityIds : [];
-                  const idSet = new Set<string>(ids);
+                try {
+                  const ids = tasting.targetCommunityIds ? JSON.parse(tasting.targetCommunityIds) : [];
+                  const idSet = new Set<string>(Array.isArray(ids) ? ids : []);
                   setEditCommunityIds(idSet);
                   editCommunityIdsInitialRef.current = new Set(idSet);
+                } catch {
+                  setEditCommunityIds(new Set());
+                  editCommunityIdsInitialRef.current = new Set();
                 }
                 setShowEditTasting(!showEditTasting);
               }}

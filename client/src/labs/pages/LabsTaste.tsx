@@ -2,6 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
+import {
+  Archive, Sparkles, BarChart3, Compass, GlassWater,
+} from "lucide-react";
+import type { ElementType } from "react";
 import { useAppStore } from "@/lib/store";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
@@ -34,10 +38,71 @@ import LabsTasteDownloads from "./LabsTasteDownloads";
 import LabsTasteProfile from "./LabsTasteProfile";
 import LabsBenchmark from "./LabsBenchmark";
 
-import { Compass } from "lucide-react";
-
 type Tab = "tastings" | "collection" | "ai" | "analytics";
 
+interface TabDef {
+  key: Tab;
+  icon: ElementType;
+  iconVariant: "accent" | "surface" | "success";
+  iconColorClass: string;
+  labelKey: string;
+  labelFallback: string;
+  descKey: string;
+  descFallback: string;
+  href: string;
+  testId: string;
+}
+
+const TABS: TabDef[] = [
+  {
+    key: "tastings",
+    icon: GlassWater,
+    iconVariant: "accent",
+    iconColorClass: "labs-icon-accent",
+    labelKey: "myTastePage.tileMyTastings",
+    labelFallback: "My Tastings",
+    descKey: "myTastePage.tileMyTastingsDesc",
+    descFallback: "Search & history",
+    href: "/labs/tastings",
+    testId: "tile-meine-welt-tastings",
+  },
+  {
+    key: "collection",
+    icon: Archive,
+    iconVariant: "accent",
+    iconColorClass: "labs-icon-accent",
+    labelKey: "myTastePage.tileMyCollection",
+    labelFallback: "Collection",
+    descKey: "myTastePage.tileMyCollectionDesc",
+    descFallback: "Drams",
+    href: "/labs/taste/collection-hub",
+    testId: "tile-meine-welt-collection",
+  },
+  {
+    key: "ai",
+    icon: Sparkles,
+    iconVariant: "accent",
+    iconColorClass: "labs-icon-accent",
+    labelKey: "myTastePage.tileAiInsights",
+    labelFallback: "AI Insights",
+    descKey: "myTastePage.tileAiInsightsDesc",
+    descFallback: "Tips",
+    href: "/labs/taste/ai-insights",
+    testId: "tile-meine-welt-ai-insights",
+  },
+  {
+    key: "analytics",
+    icon: BarChart3,
+    iconVariant: "success",
+    iconColorClass: "labs-icon-success",
+    labelKey: "myTastePage.tileProfileAnalytics",
+    labelFallback: "Analytics",
+    descKey: "myTastePage.tileProfileAnalyticsDesc",
+    descFallback: "Aromas",
+    href: "/labs/taste/analytics-hub",
+    testId: "tile-meine-welt-profile-analytics",
+  },
+];
 
 function isTab(value: string | null): value is Tab {
   return value === "tastings" || value === "collection" || value === "ai" || value === "analytics";

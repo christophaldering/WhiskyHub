@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import {
-  Scissors, Plus, ChevronLeft, ChevronRight, Loader2, Trash2, ChevronDown, ChevronUp, Globe, Lock, UsersRound
+  Scissors, Plus, ChevronLeft, ChevronRight, Loader2, Trash2, ChevronDown, ChevronUp, Globe, Lock, UsersRound, Camera, X
 } from "lucide-react";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
@@ -150,7 +150,7 @@ export default function LabsBottleSplit() {
           title: title.trim() || `Flaschenteilung (${validBottles.length} Flaschen)`,
           description: description || null,
           visibility,
-          targetCommunityIds: selectedCommunityIds.size > 0 ? Array.from(selectedCommunityIds) : null,
+          targetCommunityIds: selectedCommunityIds.size > 0 ? JSON.stringify(Array.from(selectedCommunityIds)) : null,
           deadline: deadline || null,
           minClaims: minClaims ? parseInt(minClaims) : null,
           bottles: validBottles.map(b => ({

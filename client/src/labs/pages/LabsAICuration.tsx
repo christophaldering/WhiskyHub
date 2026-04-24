@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session";
 import { pairingsApi, tastingApi } from "@/lib/api";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import {
-  Sparkles, MapPin, Flame, Package, ChevronDown, BrainCircuit,
+  ChevronLeft, Sparkles, MapPin, Flame, Package, ChevronDown, BrainCircuit,
 } from "lucide-react";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 
@@ -65,7 +65,7 @@ function Tag({ icon: Icon, label, variant }: { icon: React.ElementType; label: s
 
 export default function LabsAICuration() {
   const { t } = useTranslation();
-  useLocation();
+  const [, navigate] = useLocation();
   const session = useSession();
   const pid = session.pid;
   const [selectedId, setSelectedId] = useState("");

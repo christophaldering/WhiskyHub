@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
@@ -11,9 +11,9 @@ import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import {
   GlassWater, Users, Wine, Star, Calendar, Trophy,
-  Plus, ChevronLeft, ChevronRight, Mail, QrCode,
+  Plus, ChevronLeft, ChevronRight, Copy, Mail, QrCode,
   BarChart3, Check, Send, Loader2, Download,
-  Link as LinkIcon, ChevronDown, Archive, Sparkles, BookOpen,
+  Link as LinkIcon, ChevronDown, ClipboardList, Archive, Sparkles, BookOpen,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import QRCodeLib from "qrcode";
@@ -785,7 +785,7 @@ function QuickStartCard({ pid, onCreated }: { pid: string; onCreated: (id: strin
 
 export default function LabsHostDashboard() {
   const th = useAppleTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [, navigate] = useLocation();
   const goBack = useLabsBack("/labs/tastings");
   const { currentParticipant } = useAppStore();

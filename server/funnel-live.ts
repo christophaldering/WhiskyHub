@@ -176,7 +176,7 @@ export function getSessionTimeline(shortCode: string): SessionTimelineResult {
         source: s.source,
         device: s.device,
         country: s.country,
-        events: s.events.map((e: LiveEvent) => ({
+        events: s.events.map(e => ({
           ts: e.ts,
           type: e.type,
           page: e.page || s.currentPage,

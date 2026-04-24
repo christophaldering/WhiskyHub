@@ -86,8 +86,8 @@ export default function LabsTastings() {
     setActiveTab((prev) => (prev === tab ? null : tab));
   };
 
-  const [filterTab] = useState<FilterTab>("all");
-  const [timeFilter] = useState<TimeFilter | null>(null);
+  const [filterTab, setFilterTab] = useState<FilterTab>("all");
+  const [timeFilter, setTimeFilter] = useState<TimeFilter | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [acceptingInvite, setAcceptingInvite] = useState<string | null>(null);
   const [copiedShareId, setCopiedShareId] = useState<string | null>(null);
@@ -184,7 +184,7 @@ export default function LabsTastings() {
     }
   }, [currentParticipant, openAuthDialog]);
 
-  const { data: historyData } = useQuery({
+  const { data: historyData, isLoading: isHistoryLoading } = useQuery({
     queryKey: ["tasting-history", currentParticipant?.id],
     queryFn: () => tastingHistoryApi.get(currentParticipant!.id),
     enabled: !!currentParticipant?.id,
@@ -197,6 +197,21 @@ export default function LabsTastings() {
     enabled: !!currentParticipant?.id,
     staleTime: 60_000,
   });
+
+  const archiveItems = useMemo(() => {
+    const list = historyData?.tastings ?? [];
+    let items = list.filter((t: any) => t.status !== "open" && t.status !== "draft" && t.status !== "deleted");
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      items = items.filter((t: any) =>
+        t.title?.toLowerCase().includes(q) ||
+        t.location?.toLowerCase().includes(q) ||
+        t.hostName?.toLowerCase().includes(q)
+      );
+    }
+    items = [...items].sort((a: any, b: any) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+    return items;
+  }, [historyData, searchQuery]);
 
   const recentDrams = useMemo(
     () => buildRecentRatedItems(historyData, journalData, { participantId: currentParticipant?.id }),

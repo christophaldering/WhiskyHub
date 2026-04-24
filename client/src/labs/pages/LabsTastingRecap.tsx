@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -13,13 +13,14 @@ import WhiskyImage from "@/labs/components/WhiskyImage";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import jsPDF from "jspdf";
 import { saveJsPdf } from "@/lib/pdf";
+import { Link } from "wouter";
 
 interface RecapData {
   tasting: { id: string; title: string; date: string; location: string; status: string; hostId: string; ratingScale?: number };
   hostName: string;
   participantCount: number;
   whiskyCount: number;
-  topRated: { id?: string; name: string; distillery: string; avgScore: number; imageUrl: string | null }[];
+  topRated: { name: string; distillery: string; avgScore: number; imageUrl: string | null }[];
   mostDivisive: { name: string; stddev: number } | null;
   overallAverages: { nose: number; taste: number; finish: number; overall: number };
   participantHighlights: { name: string; ratingsCount: number; avgScore: number }[];
@@ -30,6 +31,7 @@ const BAR_COLORS = ["#D9A15B", "#C97845", "#9C6A5E", "#7F8C5A", "#d4a256"];
 
 export default function LabsTastingRecap() {
   const { t, i18n } = useTranslation();
+  const [, navigate] = useLocation();
   const params = useParams<{ id: string }>();
   const tastingId = params.id;
   const goBack = useLabsBack(`/labs/tastings/${tastingId}`);

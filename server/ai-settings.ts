@@ -1,4 +1,4 @@
-import { eq, count } from "drizzle-orm";
+import { eq, sql, and, gte, count } from "drizzle-orm";
 import { db } from "./db";
 import { systemSettings, adminAuditLog, aiUsageLog, participants, profiles } from "@shared/schema";
 
@@ -155,6 +155,7 @@ export async function getAIUsageOverview(): Promise<Array<{ participantId: strin
 
   if (usageCounts.length === 0) return [];
 
+  const pIds = usageCounts.map(u => u.participantId);
   const allParticipants = await db.select({ id: participants.id, name: participants.name, email: participants.email }).from(participants);
   const allProfiles = await db.select({ participantId: profiles.participantId, openaiApiKey: profiles.openaiApiKey }).from(profiles);
 

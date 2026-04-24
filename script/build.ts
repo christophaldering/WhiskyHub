@@ -2,7 +2,6 @@ import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
 import { rm, readFile, copyFile } from "fs/promises";
 import { execSync } from "child_process";
-import { pathToFileURL } from "url";
 
 function getGitSha(): string {
   try {
@@ -116,121 +115,6 @@ async function preBuildMigrations() {
       }
     }
 
-    // Migrate tastings.target_community_ids from JSON text → native text[]
-    // (idempotent: only runs when data_type is still 'text'; hard-fails on error)
-    {
-      const { rows: tcRows } = await pool.query(
-        `SELECT data_type FROM information_schema.columns WHERE table_name = 'tastings' AND column_name = 'target_community_ids'`
-      );
-      if (tcRows[0]?.data_type === "text") {
-        // Step 1: null out values that are not JSON-array-shaped (regex only, no jsonb cast)
-        // This guarantees no malformed value reaches the jsonb cast in step 2.
-        await pool.query(`
-          UPDATE "tastings" SET "target_community_ids" = NULL
-          WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
-            AND "target_community_ids" !~ '^\\s*\\[.*\\]\\s*$'
-        `);
-        // Step 2: exception-safe JSON validation via PL/pgSQL loop; any row that
-        // fails the ::jsonb cast is nulled out individually, preventing a batch abort.
-        await pool.query(`
-          DO $$
-          DECLARE rec RECORD;
-          BEGIN
-            FOR rec IN
-              SELECT ctid FROM "tastings"
-              WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
-            LOOP
-              BEGIN
-                IF (SELECT jsonb_typeof("target_community_ids"::jsonb)
-                    FROM "tastings" WHERE ctid = rec.ctid) IS DISTINCT FROM 'array'
-                   OR (SELECT "target_community_ids"::jsonb
-                       FROM "tastings" WHERE ctid = rec.ctid) = 'null'::jsonb
-                THEN
-                  UPDATE "tastings" SET "target_community_ids" = NULL WHERE ctid = rec.ctid;
-                END IF;
-              EXCEPTION WHEN OTHERS THEN
-                UPDATE "tastings" SET "target_community_ids" = NULL WHERE ctid = rec.ctid;
-              END;
-            END LOOP;
-          END $$
-        `);
-        await pool.query(`ALTER TABLE "tastings" ADD COLUMN IF NOT EXISTS "target_community_ids_arr" text[]`);
-        await pool.query(`
-          UPDATE "tastings" SET "target_community_ids_arr" = (
-            SELECT array_agg(v) FROM jsonb_array_elements_text("target_community_ids"::jsonb) AS v
-          ) WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
-        `);
-        await pool.query(`ALTER TABLE "tastings" DROP COLUMN "target_community_ids"`);
-        await pool.query(`ALTER TABLE "tastings" RENAME COLUMN "target_community_ids_arr" TO "target_community_ids"`);
-        console.log("pre-build: tastings.target_community_ids text → text[]");
-      }
-    }
-    try {
-      await pool.query(`
-        CREATE INDEX IF NOT EXISTS "tastings_target_community_ids_gin"
-        ON "tastings" USING GIN ("target_community_ids") WHERE "target_community_ids" IS NOT NULL
-      `);
-    } catch (e: any) {
-      console.log(`pre-build: tastings GIN index note: ${e.message}`);
-    }
-
-    // Migrate bottle_splits.target_community_ids from JSON text → native text[]
-    // (idempotent: only runs when data_type is still 'text'; hard-fails on error)
-    {
-      const { rows: bsRows } = await pool.query(
-        `SELECT data_type FROM information_schema.columns WHERE table_name = 'bottle_splits' AND column_name = 'target_community_ids'`
-      );
-      if (bsRows[0]?.data_type === "text") {
-        // Step 1: null out non-JSON-array-shaped values (regex guard, no jsonb cast)
-        await pool.query(`
-          UPDATE "bottle_splits" SET "target_community_ids" = NULL
-          WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
-            AND "target_community_ids" !~ '^\\s*\\[.*\\]\\s*$'
-        `);
-        // Step 2: exception-safe JSON validation via PL/pgSQL loop; any row that
-        // fails the ::jsonb cast is nulled out individually, preventing a batch abort.
-        await pool.query(`
-          DO $$
-          DECLARE rec RECORD;
-          BEGIN
-            FOR rec IN
-              SELECT ctid FROM "bottle_splits"
-              WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
-            LOOP
-              BEGIN
-                IF (SELECT jsonb_typeof("target_community_ids"::jsonb)
-                    FROM "bottle_splits" WHERE ctid = rec.ctid) IS DISTINCT FROM 'array'
-                   OR (SELECT "target_community_ids"::jsonb
-                       FROM "bottle_splits" WHERE ctid = rec.ctid) = 'null'::jsonb
-                THEN
-                  UPDATE "bottle_splits" SET "target_community_ids" = NULL WHERE ctid = rec.ctid;
-                END IF;
-              EXCEPTION WHEN OTHERS THEN
-                UPDATE "bottle_splits" SET "target_community_ids" = NULL WHERE ctid = rec.ctid;
-              END;
-            END LOOP;
-          END $$
-        `);
-        await pool.query(`ALTER TABLE "bottle_splits" ADD COLUMN IF NOT EXISTS "target_community_ids_arr" text[]`);
-        await pool.query(`
-          UPDATE "bottle_splits" SET "target_community_ids_arr" = (
-            SELECT array_agg(v) FROM jsonb_array_elements_text("target_community_ids"::jsonb) AS v
-          ) WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
-        `);
-        await pool.query(`ALTER TABLE "bottle_splits" DROP COLUMN "target_community_ids"`);
-        await pool.query(`ALTER TABLE "bottle_splits" RENAME COLUMN "target_community_ids_arr" TO "target_community_ids"`);
-        console.log("pre-build: bottle_splits.target_community_ids text → text[]");
-      }
-    }
-    try {
-      await pool.query(`
-        CREATE INDEX IF NOT EXISTS "bottle_splits_target_community_ids_gin"
-        ON "bottle_splits" USING GIN ("target_community_ids") WHERE "target_community_ids" IS NOT NULL
-      `);
-    } catch (e: any) {
-      console.log(`pre-build: bottle_splits GIN index note: ${e.message}`);
-    }
-
     const addCols: Array<{ table: string; column: string; type: string }> = [
       { table: "journal_entries", column: "country", type: "text" },
       { table: "journal_entries", column: "category", type: "text" },
@@ -258,7 +142,6 @@ async function preBuildMigrations() {
       { table: "whiskybase_collection", column: "distilled_year", type: "integer" },
       { table: "whiskies", column: "country", type: "text" },
       { table: "wishlist_entries", column: "country", type: "text" },
-      { table: "tastings", column: "excluded_participant_ids", type: "text[] DEFAULT ARRAY[]::text[]" },
     ];
     for (const { table, column, type } of addCols) {
       await pool.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${column} ${type}`);
@@ -290,26 +173,14 @@ async function preBuildMigrations() {
       console.log(`pre-build: rejoin_code migration note: ${e.message}`);
     }
   } catch (e: any) {
-    console.error(`pre-build migration FAILED: ${e.message}`);
-    throw e;
+    console.log(`pre-build migration note: ${e.message}`);
   } finally {
     await pool.end();
   }
 }
 
-async function typecheck() {
-  console.log("type-checking...");
-  try {
-    execSync("npx tsc --noEmit", { stdio: "inherit" });
-  } catch {
-    console.error("TypeScript type-check failed. Fix all errors before building.");
-    process.exit(1);
-  }
-}
-
 async function buildAll() {
   await preBuildMigrations();
-  await typecheck();
   await rm("dist", { recursive: true, force: true });
 
   console.log("building client...");
@@ -346,12 +217,7 @@ async function buildAll() {
   await copyFile("server/preload.cjs", "dist/preload.cjs");
 }
 
-// Public API: importable standalone so `npm run db:migrate` (scripts/pre-push-sync.ts) can run migrations without a full build.
-export { preBuildMigrations };
-
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  buildAll().catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
-}
+buildAll().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

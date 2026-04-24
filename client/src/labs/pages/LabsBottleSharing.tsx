@@ -12,6 +12,7 @@ import {
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { useIsEmbeddedInTastings } from "@/labs/embeddedTastingsContext";
 import { friendsApi } from "@/lib/api";
+import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 
 type WizardStep = "bottles" | "visibility" | "review";
@@ -86,7 +87,7 @@ export default function LabsBottleSharing() {
   const [curationSource, setCurationSource] = useState<"world" | "collection">("world");
   const [curationRegions, setCurationRegions] = useState<string[]>([]);
   const [curationStyles, setCurationStyles] = useState<string[]>([]);
-  const [curationFlightSize, _setCurationFlightSize] = useState("6");
+  const [curationFlightSize, setCurationFlightSize] = useState("6");
 
   const pid = currentParticipant?.id || "";
 
@@ -212,7 +213,7 @@ export default function LabsBottleSharing() {
           title: sharingTitle, date: new Date().toISOString().split("T")[0], location: "Bottle-Sharing",
           hostId: pid, code, status: "draft", blindMode: format === "blind", tastingType: "bottle-sharing",
           visibility, sharingMessage: message || null,
-          targetCommunityIds: selectedCommunityIds.size > 0 ? Array.from(selectedCommunityIds) : null,
+          targetCommunityIds: selectedCommunityIds.size > 0 ? JSON.stringify(Array.from(selectedCommunityIds)) : null,
           invitedFriendIds: selectedFriendIds.size > 0 ? Array.from(selectedFriendIds) : undefined,
           ratingScale: 100,
         }),

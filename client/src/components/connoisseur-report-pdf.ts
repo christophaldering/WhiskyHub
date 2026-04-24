@@ -87,6 +87,26 @@ function stripMd(text: string): string {
   return text.replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1").replace(/__(.*?)__/g, "$1").replace(/_(.*?)_/g, "$1");
 }
 
+function renderBoldSegments(doc: jsPDF, text: string, x: number, y: number, maxW: number, color: RGB) {
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  let cx = x;
+  for (const part of parts) {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      const clean = part.slice(2, -2);
+      doc.setFont("helvetica", "bold");
+      const lines = doc.splitTextToSize(clean, maxW - (cx - x));
+      doc.setTextColor(...color);
+      doc.text(lines[0] || "", cx, y);
+      cx += doc.getTextWidth(lines[0] || "");
+      doc.setFont("helvetica", "normal");
+    } else if (part) {
+      const lines = doc.splitTextToSize(part, maxW - (cx - x));
+      doc.setTextColor(...color);
+      doc.text(lines[0] || "", cx, y);
+      cx += doc.getTextWidth(lines[0] || "");
+    }
+  }
+}
 
 export async function generateConnoisseurReportPdf(options: ConnoisseurPdfOptions): Promise<void> {
   const { report, participantName, language, participantPhotoUrl } = options;

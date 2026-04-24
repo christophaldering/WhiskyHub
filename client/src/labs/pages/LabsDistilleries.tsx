@@ -149,7 +149,7 @@ export default function LabsDistilleries() {
           </div>
           <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 10 }}>{t("discover.found", "{{count}} found", { count: filtered.length })}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {filtered.map((d) => <Card key={d.id} d={d} t={t as unknown as (key: string, fallback?: string, opts?: any) => string} hostId={currentParticipant?.id ?? null} />)}
+            {filtered.map((d) => <Card key={d.id} d={d} t={t} hostId={currentParticipant?.id ?? null} />)}
             {filtered.length === 0 && <div className="labs-empty" data-testid="text-distilleries-empty">{t("discover.noMatch", "No distilleries match your search.")}</div>}
           </div>
         </>

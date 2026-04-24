@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, Fragment } from "react";
+import { useState, useEffect, useRef, Fragment, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "wouter";
 import BackButton from "@/components/navigation/BackButton";
 import { adminApi, feedbackApi } from "@/lib/api";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
@@ -13,17 +14,17 @@ import { getSession, useSession } from "@/lib/session";
 import {
   ShieldAlert, Users, Wine, Crown, Trash2, Search, Shield, User,
   Calendar, Eye, Hash, BarChart3, ChevronRight, Database,
-  Sparkles, Send, Archive, CheckSquare, Square, Loader2,
-  Clock, Settings, FlaskConical, Wifi, XCircle, CheckCircle,
-  MessageSquarePlus, AlertTriangle,
-  FileArchive, Play, Globe, UserPlus,
-  BookOpen, ExternalLink, Activity, ChevronLeft, Flower2, Plus, Pencil, X,
-  FileText, RotateCcw, TrendingUp, Timer, MailCheck,
-  Download, LogOut, ArrowLeft,
+  Mail, Sparkles, Send, Archive, CheckSquare, Square, Loader2,
+  Brain, Clock, Settings, FlaskConical, Wifi, XCircle, CheckCircle,
+  MessageSquarePlus, Rocket, AlertTriangle,
+  FileArchive, Play, FileWarning, Globe, Lock, UserPlus, ToggleLeft, ToggleRight,
+  BookOpen, ExternalLink, Activity, ChevronLeft, Flower2, Plus, GripVertical, Pencil, X,
+  FileText, RotateCcw, TrendingUp, ArrowUpRight, ArrowDownRight, Timer, MailCheck,
+  Download, Target, LogOut, ArrowLeft,
 } from "lucide-react";
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, Tooltip, CartesianGrid,
+  XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from "recharts";
 
 function formatDurationGlobal(sec: number): string {
@@ -160,7 +161,11 @@ const labsSelect: React.CSSProperties = {
 };
 
 export default function LabsAdmin() {
+  const [, navigate] = useLocation();
+
   const { t } = useTranslation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const session = useSession();
   const pid = session.pid || "";
   const [activeGroup, setActiveGroup] = useState<AdminGroup>("nutzer");
@@ -795,7 +800,7 @@ function OnlineTab() {
                   <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{String(u.name ?? "")}</span>
                   {u.role === "admin" && <span className="text-[11px] px-1 rounded font-semibold" style={{ background: "var(--labs-danger-muted)", color: "var(--labs-danger)" }}>{t("admin.adminBadge")}</span>}
                 </div>
-                {!!u.email && <div className="text-[11px] truncate" style={{ color: "var(--labs-text-muted)" }}>{String(u.email)}</div>}
+                {u.email && <div className="text-[11px] truncate" style={{ color: "var(--labs-text-muted)" }}>{String(u.email)}</div>}
               </div>
               <span className="text-[11px] flex-shrink-0" style={{ color: "var(--labs-text-muted)" }}>{formatTime(u.lastSeenAt as string)}</span>
             </div>
@@ -1092,7 +1097,7 @@ function ActivityTab({ pid }: { pid: string }) {
                     <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{String(u.name ?? "")}</span>
                     <span className="text-[11px] px-1.5 rounded uppercase font-semibold" style={{ background: "var(--labs-surface-elevated)", color: "var(--labs-text-muted)" }}>{String(u.role ?? "")}</span>
                   </div>
-                  {!!u.email && <div className="text-[11px] mt-0.5 truncate" style={{ color: "var(--labs-text-muted)" }}>{String(u.email)}</div>}
+                  {u.email && <div className="text-[11px] mt-0.5 truncate" style={{ color: "var(--labs-text-muted)" }}>{String(u.email)}</div>}
                 </div>
                 <div className="text-right flex-shrink-0 ml-2">
                   <div className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{formatRel(u.lastSeenAt as string)}</div>
@@ -1413,7 +1418,7 @@ function SessionsTab({ pid }: { pid: string }) {
                   >
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{u.name}</div>
-                      {!!u.email && <div className="text-[11px] truncate" style={{ color: "var(--labs-text-muted)" }}>{String(u.email)}</div>}
+                      {u.email && <div className="text-[11px] truncate" style={{ color: "var(--labs-text-muted)" }}>{u.email}</div>}
                     </div>
                     <div className="text-right flex-shrink-0">
                       <div className="text-xs font-semibold" style={{ color: "var(--labs-accent)" }}>{u.sessions} {t("admin.sessionsLabel")}</div>
@@ -1605,7 +1610,7 @@ function AITab({ pid }: { pid: string }) {
                       {u.hasOwnKey && <span className="text-[11px] px-1 rounded" style={{ background: "var(--labs-success-muted)", color: "var(--labs-success)" }}>{ t("admin.ownKey") }</span>}
                       {overLimit && !u.hasOwnKey && <span className="text-[11px] px-1 rounded" style={{ background: "var(--labs-danger-muted)", color: "var(--labs-danger)" }}>{ t("admin.limitReached") }</span>}
                     </div>
-                    {!!u.email && <div className="text-[11px] truncate" style={{ color: "var(--labs-text-muted)" }}>{String(u.email)}</div>}
+                    {u.email && <div className="text-[11px] truncate" style={{ color: "var(--labs-text-muted)" }}>{u.email}</div>}
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {quota > 0 && (
@@ -2965,8 +2970,8 @@ function FeedbackTab({ pid }: { pid: string }) {
               <div className="flex items-center gap-1.5 mb-1">
                 <span className="text-sm">{icons[String(fb.category ?? "")] || "\u{1F4DD}"}</span>
                 <span className="text-[11px] font-semibold uppercase" style={{ color: "var(--labs-accent)" }}>{String(fb.category ?? "")}</span>
-                {!!fb.participantName && <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>· {stripGuestSuffix(String(fb.participantName))}</span>}
-                {!!fb.createdAt && <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>· {new Date(String(fb.createdAt)).toLocaleDateString()}</span>}
+                {fb.participantName && <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>· {stripGuestSuffix(fb.participantName)}</span>}
+                {fb.createdAt && <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>· {new Date(String(fb.createdAt)).toLocaleDateString()}</span>}
               </div>
               <div className="text-xs" style={{ color: "var(--labs-text)", lineHeight: 1.5 }}>{String(fb.message ?? "")}</div>
             </div>

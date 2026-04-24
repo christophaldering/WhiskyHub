@@ -1,10 +1,10 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
   PenLine, Camera, EyeOff, Eye, Users, Radar, BarChart3,
   Sparkles, UtensilsCrossed, Trophy, Archive, FileDown,
-  ChevronRight, Star, Wine, BookOpen,
+  ChevronRight, ChevronLeft, X, Star, Wine, BookOpen,
   ArrowLeft
 } from "lucide-react";
 import { v, alpha } from "@/lib/themeVars";

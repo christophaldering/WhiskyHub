@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { historicalTastings, historicalTastingEntries, historicalImportRuns } from "@shared/schema";
-import { sql, count, isNull, isNotNull } from "drizzle-orm";
+import { sql, count, eq, isNull, isNotNull } from "drizzle-orm";
 
 export interface ReconciliationReport {
   generatedAt: string;

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   Wine, NotebookPen, Trophy, Activity, CircleDot, Sparkles, GitCompareArrows,
   FileText, Download, Puzzle, Users, Rss, Medal, Calendar, LayoutDashboard,
-  ClipboardList, Database, Brain, Library, Landmark, Map, BookOpen,
+  ClipboardList, Database, Brain, Library, Landmark, Map, BookOpen, Heart,
   Eye, EyeOff, MessageSquare, Lightbulb, QrCode, Volume2,
   Sun, Globe, Smartphone, Camera, Star, Archive, Bell,
   ChevronLeft, ChevronRight, ArrowLeft, FileDown, Play, Pause

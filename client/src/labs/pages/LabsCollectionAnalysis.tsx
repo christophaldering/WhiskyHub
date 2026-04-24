@@ -6,8 +6,8 @@ import { useSession } from "@/lib/session";
 import { collectionApi } from "@/lib/api";
 import { distilleries } from "@/data/distilleries";
 import {
-  Library, DollarSign,
-  Star, Package, ChevronDown, ChevronUp, AlertCircle,
+  ChevronLeft, Library, Wine, MapPin, Clock, Layers, DollarSign,
+  Star, Droplets, Calendar, Package, ChevronDown, ChevronUp, AlertCircle,
 } from "lucide-react";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useAppleTheme, SP, withAlpha } from "@/labs/hooks/useAppleTheme";
@@ -351,7 +351,7 @@ export default function LabsCollectionAnalysis() {
         {distilleryList.length > 0 && (
           <div style={{ marginTop: SP.md }}>
             <p style={{ fontSize: 13, fontWeight: 600, marginBottom: SP.sm, color: th.text }}>{t("labs.collection.topDistilleries", "Top Distilleries")}</p>
-            <ExpandableList items={distilleryList} limit={7} t={t as (key: string, fallback: string, opts?: any) => string} />
+            <ExpandableList items={distilleryList} limit={7} t={t} />
           </div>
         )}
       </div>

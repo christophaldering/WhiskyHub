@@ -107,7 +107,7 @@ export async function batchProcess<T, R>(
               throw error; // Rethrow to trigger p-retry
             }
             // For non-rate-limit errors, abort immediately
-            throw new (pRetry as any).AbortError(
+            throw new pRetry.AbortError(
               error instanceof Error ? error : new Error(String(error))
             );
           }

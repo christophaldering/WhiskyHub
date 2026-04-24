@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { useRoute, useSearch } from "wouter";
+import { useRoute, useSearch, useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import { tastingApi, paperScanApi, participantApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
@@ -13,6 +13,7 @@ type ScanStep = "select-participant" | "confirm" | "capture" | "scanning" | "rev
 
 export default function LabsPaperScan() {
   const { t } = useTranslation();
+  const [, navigate] = useLocation();
   const [, params] = useRoute("/labs/tastings/:id/scan");
   const search = useSearch();
   const tastingId = params?.id || "";

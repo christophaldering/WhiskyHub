@@ -7,7 +7,7 @@ import { getSession } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
 import {
   Users, ChevronLeft, UserPlus, Shield, Crown, Eye, Trash2, Mail, ChevronDown, Edit2, Save, X,
-  Wine, Calendar, GlassWater, Plus, Loader2, BarChart3, Activity, Trophy,
+  Wine, Calendar, User, GlassWater, Plus, Loader2, BarChart3, Activity, Trophy,
 } from "lucide-react";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import HubHeader from "@/labs/components/HubHeader";
@@ -98,8 +98,12 @@ export default function LabsCommunityDetail() {
       const filtered = (Array.isArray(all) ? all : []).filter((t: any) => {
         if (t.hostId !== pid) return false;
         if (existingIds.has(t.id)) return false;
-        if (!Array.isArray(t.targetCommunityIds) || t.targetCommunityIds.length === 0) return true;
-        return !t.targetCommunityIds.includes(communityId);
+        if (!t.targetCommunityIds) return true;
+        try {
+          const assigned = JSON.parse(t.targetCommunityIds);
+          if (!Array.isArray(assigned) || assigned.length === 0) return true;
+          return !assigned.includes(communityId);
+        } catch { return true; }
       });
       setMyTastings(filtered);
     } catch {
@@ -114,7 +118,11 @@ export default function LabsCommunityDetail() {
     setAssigningTastingId(tastingId);
     try {
       const tasting = myTastings.find((t: any) => t.id === tastingId);
-      const existingIds: string[] = Array.isArray(tasting?.targetCommunityIds) ? tasting.targetCommunityIds : [];
+      let existingIds: string[] = [];
+      try {
+        existingIds = tasting?.targetCommunityIds ? JSON.parse(tasting.targetCommunityIds) : [];
+        if (!Array.isArray(existingIds)) existingIds = [];
+      } catch { existingIds = []; }
       const newIds = Array.from(new Set([...existingIds, communityId]));
       const currentVisibility = tasting?.visibility;
       const res = await fetch(`/api/tastings/${tastingId}/details`, {
@@ -122,7 +130,7 @@ export default function LabsCommunityDetail() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           hostId: pid,
-          targetCommunityIds: newIds,
+          targetCommunityIds: JSON.stringify(newIds),
           visibility: currentVisibility === "public" ? "public" : "group",
         }),
       });

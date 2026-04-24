@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "wouter";
-import { ShieldAlert, ArrowLeft } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { ShieldAlert, ArrowLeft, Menu, X } from "lucide-react";
 import { c } from "@/lib/theme";
 
 interface AdminLayoutProps {
@@ -9,6 +10,8 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const { t } = useTranslation();
+  const [location] = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div

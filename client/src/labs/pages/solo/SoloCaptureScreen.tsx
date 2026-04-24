@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Camera, ImagePlus, PenLine, Barcode, Loader2, AlertTriangle, ArrowLeft, Wine, ChevronRight, ScanLine, Layers } from "lucide-react";
+import { Camera, ImagePlus, PenLine, Barcode, Loader2, AlertTriangle, ArrowLeft, Wine, ChevronRight, ScanLine, X, Layers } from "lucide-react";
 import { useLocation } from "wouter";
 import BottleRecognitionFeedback, { type BottleRecognitionResult } from "@/labs/components/BottleRecognitionFeedback";
 import { CollectionPicker, type SelectedWhisky } from "@/labs/components/CollectionPicker";
@@ -193,7 +193,7 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
           fps: 10,
           qrbox: { width: 280, height: 120 },
           formatsToSupport: [2, 3, 4, 5, 8, 9, 10, 12, 13, 14, 15, 16],
-        } as any,
+        },
         (decodedText: string) => {
           if (isProcessingRef.current) return;
           const cleaned = decodedText.trim();

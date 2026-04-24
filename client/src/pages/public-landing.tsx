@@ -2,15 +2,16 @@ import { useRef } from "react";
 import { Link } from "wouter";
 import { motion, useInView } from "framer-motion";
 import {
-  PenLine, Users, BarChart3, Sparkles, Search, Camera,
+  Wine, PenLine, Users, BarChart3, Sparkles, Search, Camera,
   ClipboardList, Radar, GitCompareArrows, ChevronRight, Star,
-  FlaskConical, Trophy, Layers
+  FlaskConical, Trophy, FileText, Layers
 } from "lucide-react";
 import { v, alpha } from "@/lib/themeVars";
 import i18n from "i18next";
 import heroImage from "@/assets/images/hero-whisky.png";
 
 const ACCENT_RAW = "#c8a97e";
+const BG_RAW = "#1a1714";
 
 const font = {
   display: "'Playfair Display', Georgia, 'Times New Roman', serif",

@@ -570,7 +570,6 @@ function PagesSection({ pageViewData, loading, onExport }: { pageViewData: any; 
 }
 
 function EngagementSection({ dashboard, onSelectUser, onExport, onSessionExport }: { dashboard: any; onSelectUser: (id: string) => void; onExport: () => void; onSessionExport: () => void }) {
-  const { t } = useTranslation();
   const [sortBy, setSortBy] = useState<string>("totalDuration");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 

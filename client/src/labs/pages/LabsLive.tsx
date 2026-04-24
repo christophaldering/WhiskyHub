@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useLabsBack } from "@/labs/LabsLayout";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
-import { ChevronLeft, ChevronRight, ChevronDown, Eye, EyeOff, Check, Trophy, AlertTriangle, BarChart3, Monitor, Sparkles, Settings, Pencil } from "lucide-react";
+import { Wine, ChevronLeft, ChevronRight, ChevronDown, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, Monitor, Sparkles, Settings, Pencil } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
@@ -755,7 +755,9 @@ export default function LabsLive({ params }: LabsLiveProps) {
 
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useTastingEvents(tastingId, {
+  useTastingEvents({
+    tastingId,
+    enabled: !!tastingId,
     onReveal: useCallback(() => {
       setRevealFlash(true);
       if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
@@ -925,7 +927,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
 
   const activeChips = useMemo(() => {
     const tagsByPhase = parseTagsFromNotes(notes);
-    return tagsByPhase[activeDim as "nose" | "taste" | "finish"] || [];
+    return tagsByPhase[activeDim] || [];
   }, [notes, activeDim]);
 
   const handleStudioChipsChange = useCallback((newChips: string[]) => {

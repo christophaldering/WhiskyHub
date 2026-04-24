@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
-import { ArrowLeft, Camera, ChevronRight, Loader2, AlertTriangle, Layers, Wine, Check, X, Save } from "lucide-react";
-import { useSession } from "@/lib/session";
+import { ArrowLeft, Camera, ChevronRight, Loader2, AlertTriangle, Layers, Plus, Wine, Check, X, Save } from "lucide-react";
+import { useSession, getSession } from "@/lib/session";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { queryClient } from "@/lib/queryClient";
 import type { JournalEntry } from "@shared/schema";

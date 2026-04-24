@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import { useAppStore } from "@/lib/store";
-import { calendarApi, friendsApi } from "@/lib/api";
+import { calendarApi, friendsApi, pidHeaders } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
 import {
   Calendar as CalendarIcon, ChevronLeft, ChevronRight,
@@ -77,7 +77,7 @@ function getTastingRoute(ev: CalendarEvent, participantId?: string): string {
 
 export default function LabsCalendar() {
   const { t, i18n } = useTranslation();
-  useLocation();
+  const [, navigate] = useLocation();
   const goBack = useLabsBack("/labs/tastings");
   const now = new Date();
   const [currentYear, setCurrentYear] = useState(now.getFullYear());

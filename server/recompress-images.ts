@@ -1,7 +1,7 @@
-import { ObjectStorageService } from "./replit_integrations/object_storage";
+import { ObjectStorageService, objectStorageClient } from "./replit_integrations/object_storage";
 import { db } from "./db";
 import { whiskies, profiles, tastings, tastingPhotos, journalEntries, whiskyGallery } from "@shared/schema";
-import { eq, and, isNotNull, like } from "drizzle-orm";
+import { eq, and, isNotNull, ne, like } from "drizzle-orm";
 import sharp from "sharp";
 
 const MAX_EDGE = 1600;

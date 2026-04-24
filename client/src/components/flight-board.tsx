@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { whiskyApi } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ChevronUp, ChevronDown, Trash2, ChevronLeft, ChevronRight, ImageIcon } from "lucide-react";
+import { ChevronUp, ChevronDown, Trash2, ChevronLeft, ChevronRight, ImageIcon, Camera, X, Loader2 } from "lucide-react";
 import type { Whisky, Tasting } from "@shared/schema";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 

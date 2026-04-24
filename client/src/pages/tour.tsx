@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,7 +9,7 @@ import {
   List, X, Star, Sparkles, FileSpreadsheet, QrCode,
   Trophy, Rss, Calendar, Landmark, Map,
   MessageSquare, Volume2, Heart, Bell, Download, FileText,
-  Shield, Layers, BarChart3, HandHeart, GlassWater, Compass,
+  Shield, Layers, Search, BarChart3, HandHeart, GlassWater, Compass,
   FlaskConical, GraduationCap, TrendingUp
 } from "lucide-react";
 import { cn } from "@/lib/utils";

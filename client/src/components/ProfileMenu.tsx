@@ -6,7 +6,7 @@ import { getTheme, setTheme, type ThemeName } from "@/lib/themeVars";
 import { getSession, signIn, signOut, setSessionPid } from "@/lib/session";
 import { participantApi } from "@/lib/api";
 import {
-  X, LogOut, Globe, Settings, Download,
+  X, LogOut, User, Globe, Settings, Palette, Download,
   ArrowLeftRight, UserPlus, KeyRound, Mail, Eye, EyeOff,
   Shield, ChevronLeft, Sun, Moon, CheckCircle2, Info, HandHeart,
 } from "lucide-react";

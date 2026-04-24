@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
-import { ArrowLeft, Loader2, Trash2, Play, Check, X, Wine } from "lucide-react";
+import { ArrowLeft, Loader2, Scissors, Trash2, Play, Check, X, Wine } from "lucide-react";
 import { useLocation } from "wouter";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useLabsBack } from "@/labs/LabsLayout";
@@ -25,7 +25,7 @@ function statusLabel(status: string): string {
 export default function LabsBottleSplitDetail({ id }: { id: string }) {
   const { currentParticipant } = useAppStore();
   const { t } = useTranslation();
-  useLocation();
+  const [, navigate] = useLocation();
   const goBack = useLabsBack("/labs/splits");
 
   const [split, setSplit] = useState<any>(null);

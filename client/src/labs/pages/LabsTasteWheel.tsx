@@ -6,7 +6,7 @@ import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import { useSession } from "@/lib/session";
 import { journalApi, ratingNotesApi } from "@/lib/api";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { CircleDot, X, Wine } from "lucide-react";
+import { ChevronLeft, CircleDot, X, Wine } from "lucide-react";
 import { FLAVOR_CATEGORIES, type FlavorCategory } from "@/labs/data/flavor-data";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 

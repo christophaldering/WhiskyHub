@@ -5,16 +5,17 @@ import { SkeletonList } from "@/labs/components/LabsSkeleton";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useAppStore } from "@/lib/store";
 import { signOut, updateSessionPhotoUrl } from "@/lib/session";
-import { profileApi, participantApi, participantUpdateApi } from "@/lib/api";
+import { profileApi, participantApi, participantUpdateApi, tastingApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
+import { downloadBlob } from "@/lib/download";
 import { compressImage, isAcceptedImageType, fileTooLargeAfterCompression, IMAGE_ACCEPT_STRING } from "@/lib/image-compress";
 import { useRatingScale } from "@/labs/hooks/useRatingScale";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import ScaleBadge from "@/labs/components/ScaleBadge";
 import {
   ChevronLeft, User, Settings, Shield, Sparkles, Trash2, LogOut,
-  Eye, EyeOff, ExternalLink, Bell,
+  Loader2, Eye, EyeOff, Camera, ExternalLink, Bell,
 } from "lucide-react";
 
 const REGIONS = ["Speyside", "Highlands", "Islay", "Lowlands", "Campbeltown", "Islands", "Ireland", "Japan", "USA", "Taiwan", "Other"];

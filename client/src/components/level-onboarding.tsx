@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { User, Star, Sparkles, Brain, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/lib/store";
+import { participantApi } from "@/lib/api";
 
 const LEVELS = [
   { id: "guest", icon: User, gradient: "from-slate-500/20 to-slate-600/10", color: "text-slate-500" },
@@ -19,7 +20,7 @@ export function isLevelOnboardingActive(participantId?: string): boolean {
 
 export function LevelOnboarding({ onComplete }: { onComplete?: () => void } = {}) {
   const { t } = useTranslation();
-  const { currentParticipant } = useAppStore();
+  const { currentParticipant, setParticipant } = useAppStore();
   const [visible, setVisible] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -29,9 +30,13 @@ export function LevelOnboarding({ onComplete }: { onComplete?: () => void } = {}
   const hasChosen = localStorage.getItem(hasChosenKey);
   if (hasChosen) return null;
 
-  const handleSelect = (_level: string) => {
-    setSelected(_level);
-    localStorage.setItem(hasChosenKey, "true");
+  const handleSelect = async (level: string) => {
+    setSelected(level);
+    try {
+      await participantApi.updateExperienceLevel(currentParticipant.id, level);
+      setParticipant({ ...currentParticipant, experienceLevel: level });
+      localStorage.setItem(hasChosenKey, "true");
+    } catch {}
     setTimeout(() => {
       setVisible(false);
       onComplete?.();

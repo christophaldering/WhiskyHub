@@ -704,7 +704,7 @@ function ModeSwitcher({ mode, onModeChange }: { mode: UIMode; onModeChange: (m: 
 function RecapScreen({ tasting, whiskies, participantId, hideRanking = false }: { tasting: Tasting; whiskies: Whisky[]; participantId: string; hideRanking?: boolean }) {
   const { t } = useTranslation();
   const scale = tasting.ratingScale || 100;
-  const [sortByScore] = useState(true);
+  const [sortByScore, setSortByScore] = useState(true);
 
   const { data: allRatings = [] } = useQuery({
     queryKey: ["ratings", tasting.id],

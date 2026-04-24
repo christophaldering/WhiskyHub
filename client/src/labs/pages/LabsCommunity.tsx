@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
-import { communityApi } from "@/lib/api";
+import { communityApi, friendsApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
 import { Users, ChevronLeft, Plus, ChevronRight, Mail, Check, X } from "lucide-react";

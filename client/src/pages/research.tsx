@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { BookOpen, ExternalLink, FlaskConical, Brain, Users, Wine, Microscope, Scale, ChevronDown, ChevronUp, GraduationCap, TrendingUp, Layers } from "lucide-react";
+import { BookOpen, ExternalLink, FlaskConical, Brain, BarChart3, Users, Wine, Microscope, Scale, ChevronDown, ChevronUp, GraduationCap, TrendingUp, Layers } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

@@ -559,6 +559,7 @@ export default function LabsWhiskyDNA() {
     );
   }
 
+  const sortedTop = dna ? [...dna.categories].sort((a, b) => b.pct - a.pct).slice(0, 5) : [];
   const affinityRows = dna ? [...dna.categories].sort((a, b) => (b.affinity ?? 50) - (a.affinity ?? 50)) : [];
   const sortedFrequency = dna
     ? [...dna.categories]
