@@ -129,12 +129,29 @@ async function preBuildMigrations() {
           WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
             AND "target_community_ids" !~ '^\\s*\\[.*\\]\\s*$'
         `);
-        // Step 2: null out structurally invalid JSON arrays (safe: all non-array-shaped already gone)
+        // Step 2: exception-safe JSON validation via PL/pgSQL loop; any row that
+        // fails the ::jsonb cast is nulled out individually, preventing a batch abort.
         await pool.query(`
-          UPDATE "tastings" SET "target_community_ids" = NULL
-          WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
-            AND (jsonb_typeof("target_community_ids"::jsonb) IS DISTINCT FROM 'array'
-                 OR "target_community_ids"::jsonb = 'null'::jsonb)
+          DO $$
+          DECLARE rec RECORD;
+          BEGIN
+            FOR rec IN
+              SELECT ctid FROM "tastings"
+              WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
+            LOOP
+              BEGIN
+                IF (SELECT jsonb_typeof("target_community_ids"::jsonb)
+                    FROM "tastings" WHERE ctid = rec.ctid) IS DISTINCT FROM 'array'
+                   OR (SELECT "target_community_ids"::jsonb
+                       FROM "tastings" WHERE ctid = rec.ctid) = 'null'::jsonb
+                THEN
+                  UPDATE "tastings" SET "target_community_ids" = NULL WHERE ctid = rec.ctid;
+                END IF;
+              EXCEPTION WHEN OTHERS THEN
+                UPDATE "tastings" SET "target_community_ids" = NULL WHERE ctid = rec.ctid;
+              END;
+            END LOOP;
+          END $$
         `);
         await pool.query(`ALTER TABLE "tastings" ADD COLUMN IF NOT EXISTS "target_community_ids_arr" text[]`);
         await pool.query(`
@@ -169,12 +186,29 @@ async function preBuildMigrations() {
           WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
             AND "target_community_ids" !~ '^\\s*\\[.*\\]\\s*$'
         `);
-        // Step 2: null out structurally invalid JSON arrays
+        // Step 2: exception-safe JSON validation via PL/pgSQL loop; any row that
+        // fails the ::jsonb cast is nulled out individually, preventing a batch abort.
         await pool.query(`
-          UPDATE "bottle_splits" SET "target_community_ids" = NULL
-          WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
-            AND (jsonb_typeof("target_community_ids"::jsonb) IS DISTINCT FROM 'array'
-                 OR "target_community_ids"::jsonb = 'null'::jsonb)
+          DO $$
+          DECLARE rec RECORD;
+          BEGIN
+            FOR rec IN
+              SELECT ctid FROM "bottle_splits"
+              WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
+            LOOP
+              BEGIN
+                IF (SELECT jsonb_typeof("target_community_ids"::jsonb)
+                    FROM "bottle_splits" WHERE ctid = rec.ctid) IS DISTINCT FROM 'array'
+                   OR (SELECT "target_community_ids"::jsonb
+                       FROM "bottle_splits" WHERE ctid = rec.ctid) = 'null'::jsonb
+                THEN
+                  UPDATE "bottle_splits" SET "target_community_ids" = NULL WHERE ctid = rec.ctid;
+                END IF;
+              EXCEPTION WHEN OTHERS THEN
+                UPDATE "bottle_splits" SET "target_community_ids" = NULL WHERE ctid = rec.ctid;
+              END;
+            END LOOP;
+          END $$
         `);
         await pool.query(`ALTER TABLE "bottle_splits" ADD COLUMN IF NOT EXISTS "target_community_ids_arr" text[]`);
         await pool.query(`
@@ -255,10 +289,9 @@ async function preBuildMigrations() {
     }
   } catch (e: any) {
     console.error(`pre-build migration FAILED: ${e.message}`);
-    await pool.end();
     throw e;
   } finally {
-    await pool.end().catch(() => {});
+    await pool.end();
   }
 }
 
