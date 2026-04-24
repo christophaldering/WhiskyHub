@@ -1055,7 +1055,7 @@ export const tastingAiReports = pgTable("tasting_ai_reports", {
   outlierMoments: jsonb("outlier_moments").$type<Array<{ participantId: string; participantName: string; whiskyId: string; whiskyName: string; deviation: number; direction: "above" | "below" }>>(),
   medianTasterId: varchar("median_taster_id"),
   medianTasterName: text("median_taster_name"),
-  consistencyScores: jsonb("consistency_scores").$type<Record<string, number>>(), // { [participantId]: 0-1 score }
+  consistencyScores: jsonb("consistency_scores").$type<Array<{ participantId: string; participantName: string; avgDeviation: number }>>(),
   individualReports: jsonb("individual_reports").$type<Record<string, { narrative: string; narrativeEn: string; preferenceProfile: { topRegion?: string; peatLevel?: string; topCask?: string }; closestMatchId?: string; closestMatchName?: string; }>>(),
   aiReportEnabled: boolean("ai_report_enabled").default(false),
 }, (t) => ({
