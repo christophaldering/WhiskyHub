@@ -2977,6 +2977,7 @@ export async function registerRoutes(
       if (auth.participant.role !== "admin" && tasting.hostId !== auth.participant.id) {
         return res.status(403).json({ message: "Forbidden" });
       }
+      if (tasting.status === "archived") return res.status(403).json({ message: "Cannot change inclusion for archived tastings" });
       const { excluded } = req.body;
       if (typeof excluded !== "boolean") return res.status(400).json({ message: "excluded must be boolean" });
       await storage.setParticipantInclusion(req.params.id, req.params.participantId, excluded);

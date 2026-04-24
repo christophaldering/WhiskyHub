@@ -2209,7 +2209,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                       ).size;
 
                       const isExcluded = !!p.excludedFromResults;
-                      const canToggle = status === "closed" || status === "archived" || status === "reveal";
+                      const canToggle = status === "closed" || status === "reveal";
                       return (
                         <div key={participantId} className="cockpit-participant-row" data-testid={`cockpit-participant-${participantId}`}
                           style={{ opacity: isExcluded ? 0.5 : 1 }}>

@@ -468,7 +468,7 @@ function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCou
             )}
 
             {slide.type === "tasters" && (() => {
-              const names = (participants || []).map((p: any) => stripGuestSuffix(p.participant?.name || p.participant?.email || p.name || p.email || "Anonymous"));
+              const names = (participants || []).filter((p: any) => !p.excludedFromResults).map((p: any) => stripGuestSuffix(p.participant?.name || p.participant?.email || p.name || p.email || "Anonymous"));
               return (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "40px 24px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
@@ -818,6 +818,12 @@ export default function LabsResults({ params }: LabsResultsProps) {
 
   const whiskyResults = useMemo(() => {
     const sMax = (tasting?.ratingScale as number) || 100;
+    const excludedPids = new Set(
+      (participants || []).filter((p: any) => p.excludedFromResults).map((p: any) => p.participantId || p.id)
+    );
+    const includedRatings = excludedPids.size > 0
+      ? (allRatings || []).filter((r: any) => !excludedPids.has(r.participantId))
+      : (allRatings || []);
     const toUserScale = (v: number | null | undefined) => {
       if (v == null) return null;
       if (sMax !== 100 && v > sMax) {
@@ -827,7 +833,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
     };
     const roundForScale = (v: number) => sMax === 100 ? Math.round(v) : Math.round(v * 10) / 10;
     return (whiskies || []).map((w: any) => {
-      const ratings = (allRatings || []).filter((r: any) => r.whiskyId === w.id).map((r: any) => ({
+      const ratings = includedRatings.filter((r: any) => r.whiskyId === w.id).map((r: any) => ({
         ...r,
         nose: toUserScale(r.nose),
         taste: toUserScale(r.taste),
@@ -887,7 +893,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
         overallStdDev,
       };
     });
-  }, [whiskies, allRatings, currentParticipant, tasting?.ratingScale]);
+  }, [whiskies, allRatings, participants, currentParticipant, tasting?.ratingScale]);
 
   const sorted = useMemo(() => [...whiskyResults].sort((a, b) => (b.avgOverall || 0) - (a.avgOverall || 0)), [whiskyResults]);
 
@@ -980,9 +986,16 @@ export default function LabsResults({ params }: LabsResultsProps) {
   }
 
   const topWhisky = sorted[0];
-  const uniqueRaters = new Set((allRatings || []).map((r: any) => r.participantId)).size;
-  const totalRatings = allRatings?.length || 0;
-  const participantCount = Math.max(participants?.length || 0, uniqueRaters, totalRatings > 0 ? 1 : 0);
+  const excludedPidsForCount = new Set(
+    (participants || []).filter((p: any) => p.excludedFromResults).map((p: any) => p.participantId || p.id)
+  );
+  const includedParticipantsCount = (participants || []).filter((p: any) => !p.excludedFromResults).length;
+  const includedAllRatings = excludedPidsForCount.size > 0
+    ? (allRatings || []).filter((r: any) => !excludedPidsForCount.has(r.participantId))
+    : (allRatings || []);
+  const uniqueRaters = new Set(includedAllRatings.map((r: any) => r.participantId)).size;
+  const totalRatings = includedAllRatings.length;
+  const participantCount = Math.max(includedParticipantsCount, uniqueRaters, totalRatings > 0 ? 1 : 0);
   const maxScore = tasting?.ratingScale || 100;
   const isHost = currentParticipant?.id === tasting.hostId;
   const presentationActive = tasting.presentationSlide != null && !isHost;
