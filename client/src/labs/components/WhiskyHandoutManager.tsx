@@ -13,6 +13,11 @@ async function safeDownload(url: string, filename: string) {
   }
 }
 
+function isMobilePdfUnsupported(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
 interface Props {
   whisky: Whisky;
   hostId: string;
@@ -463,6 +468,7 @@ export function WhiskyHandoutViewer({ whisky, isRevealed }: { whisky: Whisky; is
 }
 
 function SingleHandoutView({ fileUrl, contentType, title, author, description, testId, isPdf }: { fileUrl: string; contentType: string; title?: string | null; author?: string | null; description?: string | null; testId: string; isPdf: boolean }) {
+  const skipEmbed = isPdf && isMobilePdfUnsupported();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }} data-testid={testId}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -475,17 +481,24 @@ function SingleHandoutView({ fileUrl, contentType, title, author, description, t
       {description && <p style={{ fontSize: 12, color: "var(--labs-text-secondary)", margin: 0, lineHeight: 1.5 }}>{description}</p>}
       {!isPdf ? (
         <img src={fileUrl} alt={title || "Handout"} style={{ width: "100%", borderRadius: 8, border: "1px solid var(--labs-border)" }} />
+      ) : skipEmbed ? (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "20px 16px", borderRadius: 8, border: "1px solid var(--labs-border)", background: "var(--labs-surface)" }} data-testid={`${testId}-mobile-card`}>
+          <FileText style={{ width: 40, height: 40, color: "var(--labs-accent)", opacity: 0.7 }} />
+          <p style={{ fontSize: 12, color: "var(--labs-text-muted)", textAlign: "center", margin: 0 }}>
+            PDF-Vorschau auf Mobilgeräten nicht verfügbar. Tippe auf „PDF öffnen", um es zu lesen.
+          </p>
+        </div>
       ) : (
         <object data={fileUrl} type="application/pdf" style={{ width: "100%", height: 360, borderRadius: 8, border: "1px solid var(--labs-border)", background: "var(--labs-surface)" }} aria-label={title || "Handout PDF"}>
           <p style={{ fontSize: 12, color: "var(--labs-text-muted)", padding: 12 }}>PDF kann hier nicht inline angezeigt werden. Nutze „Öffnen" oder „Download".</p>
         </object>
       )}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="labs-btn-primary text-xs" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 9999, textDecoration: "none" }}>
+        <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="labs-btn-primary text-xs" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 9999, textDecoration: "none" }} data-testid={`${testId}-open`}>
           <ExternalLink style={{ width: 12, height: 12 }} />
           {isPdf ? "PDF öffnen" : "Bild öffnen"}
         </a>
-        <button type="button" onClick={() => safeDownload(fileUrl, (title || "handout") + (isPdf ? ".pdf" : ""))} className="labs-btn-ghost text-xs" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 9999, cursor: "pointer", border: "1px solid var(--labs-border)", background: "transparent", fontFamily: "inherit", color: "inherit" }}>
+        <button type="button" onClick={() => safeDownload(fileUrl, (title || "handout") + (isPdf ? ".pdf" : ""))} className="labs-btn-ghost text-xs" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 9999, cursor: "pointer", border: "1px solid var(--labs-border)", background: "transparent", fontFamily: "inherit", color: "inherit" }} data-testid={`${testId}-download`}>
           <Download style={{ width: 12, height: 12 }} />
           Download
         </button>
