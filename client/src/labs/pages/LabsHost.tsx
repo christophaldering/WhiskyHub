@@ -4258,9 +4258,9 @@ function CoverImageManager({
       {/* AI Generate / Preview Dialog */}
       <ModalPortal
         open={aiDialogOpen}
-        onClose={() => { if (!aiGenerating && !aiSaving) setAiDialogOpen(false); }}
-        closeOnOverlayClick={!aiGenerating && !aiSaving}
-        closeOnEscape={!aiGenerating && !aiSaving}
+        onClose={() => { if (!aiGenerating && !aiSaving && !aiSaved) setAiDialogOpen(false); }}
+        closeOnOverlayClick={!aiGenerating && !aiSaving && !aiSaved}
+        closeOnEscape={!aiGenerating && !aiSaving && !aiSaved}
         initialFocusRef={aiPromptRef}
         testId="labs-cover-ai-dialog"
       >
@@ -4425,7 +4425,7 @@ function CoverImageManager({
               <button
                 className="labs-btn-ghost text-sm px-3 py-1.5"
                 onClick={() => setAiDialogOpen(false)}
-                disabled={aiGenerating || aiSaving}
+                disabled={aiGenerating || aiSaving || aiSaved}
                 data-testid="labs-cover-ai-close"
               >
                 {t("labs.host.cancel")}
@@ -4433,11 +4433,12 @@ function CoverImageManager({
               <button
                 className="labs-btn-primary text-sm px-3 py-1.5 flex items-center gap-1"
                 onClick={handleSaveAiCover}
-                disabled={!aiPreview || aiGenerating || aiSaving}
+                disabled={!aiPreview || aiGenerating || aiSaving || aiSaved}
                 data-testid="labs-cover-ai-apply"
+                style={aiSaved ? { background: "var(--labs-success, #38a169)" } : undefined}
               >
                 {aiSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                {t("labs.host.coverAiApply")}
+                {aiSaved ? "Übernommen" : t("labs.host.coverAiApply")}
               </button>
             </div>
           </div>
@@ -4476,6 +4477,7 @@ function TastingSetupSection({
     : []);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiSaving, setAiSaving] = useState(false);
+  const [aiSaved, setAiSaved] = useState(false);
   const [confirmSwitchTo, setConfirmSwitchTo] = useState<"upload" | "ai" | null>(null);
   const [confirmDeleteSlot, setConfirmDeleteSlot] = useState<"upload" | "ai" | null>(null);
   const [coverActionError, setCoverActionError] = useState<string | null>(null);
@@ -4638,11 +4640,14 @@ function TastingSetupSection({
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || "Speichern fehlgeschlagen");
       }
-      await queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+      setAiSaved(true);
       toast({ title: "KI-Cover übernommen", description: "Das generierte Bild ist jetzt das aktive Cover." });
+      await new Promise(r => setTimeout(r, 750));
+      await queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
       setAiDialogOpen(false);
       setAiPreview(null);
       setAiPromptHint("");
+      setAiSaved(false);
     } catch (e: any) {
       setCoverActionError(e?.message || "Speichern fehlgeschlagen");
     } finally {
