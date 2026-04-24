@@ -8005,6 +8005,267 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
     }
   });
 
+  // ===== TASTING AI REPORT =====
+
+  app.get("/api/tastings/:id/ai-report", async (req: any, res: any) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Not found" });
+      const requesterId = req.headers["x-participant-id"] as string;
+      const isHost = requesterId === tasting.hostId;
+      const report = await storage.getTastingAiReport(req.params.id);
+      if (!report) return res.json({ report: null });
+      if (!isHost && !report.aiReportEnabled) {
+        return res.json({ report: null, locked: true });
+      }
+      res.json({ report });
+    } catch (e: any) {
+      res.status(500).json({ message: "Error fetching AI report" });
+    }
+  });
+
+  app.post("/api/tastings/:id/ai-report", async (req: any, res: any) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Not found" });
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (requesterId !== tasting.hostId) return res.status(403).json({ message: "Host only" });
+      if (!["closed", "reveal", "archived"].includes(tasting.status)) {
+        return res.status(400).json({ message: "Report only available after tasting ends" });
+      }
+
+      const force = req.body?.force === true;
+      const allRatings = await storage.getRatingsForTasting(req.params.id);
+      const tastingWhiskies = await storage.getWhiskiesForTasting(req.params.id);
+      const tpRecords = await storage.getTastingParticipants(req.params.id);
+
+      const activeParticipants = tpRecords.filter(tp => !tp.excludedFromResults);
+      const participantMap = new Map<string, string>();
+      for (const tp of activeParticipants) participantMap.set(tp.participantId, tp.participant.name);
+
+      const activeRatings = allRatings.filter(r => participantMap.has(r.participantId));
+      const ratingCount = activeRatings.length;
+
+      const existing = await storage.getTastingAiReport(req.params.id);
+      if (existing && !force && existing.ratingCountAtGeneration === ratingCount) {
+        return res.json({ report: existing, cached: true });
+      }
+
+      const lang = (tasting as any).language || "de";
+
+      // --- Build per-participant score vectors (overall scores per whisky) ---
+      const pids = Array.from(participantMap.keys());
+      const wids = tastingWhiskies.map(w => w.id);
+
+      const scoreMatrix: Record<string, Record<string, number | null>> = {};
+      for (const pid of pids) {
+        scoreMatrix[pid] = {};
+        for (const wid of wids) scoreMatrix[pid][wid] = null;
+      }
+      for (const r of activeRatings) {
+        if (scoreMatrix[r.participantId]) {
+          scoreMatrix[r.participantId][r.whiskyId] = r.overall ?? null;
+        }
+      }
+
+      // --- Group averages per whisky ---
+      const whiskyGroupAvg: Record<string, number> = {};
+      for (const wid of wids) {
+        const scores = pids.map(p => scoreMatrix[p][wid]).filter((s): s is number => s !== null);
+        whiskyGroupAvg[wid] = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+      }
+
+      // --- Pearson correlation between participant pairs ---
+      function pearson(a: (number | null)[], b: (number | null)[]): number | null {
+        const pairs = a.map((v, i) => [v, b[i]] as [number | null, number | null]).filter(([x, y]) => x !== null && y !== null) as [number, number][];
+        if (pairs.length < 2) return null;
+        const n = pairs.length;
+        const meanA = pairs.reduce((s, [x]) => s + x, 0) / n;
+        const meanB = pairs.reduce((s, [, y]) => s + y, 0) / n;
+        const num = pairs.reduce((s, [x, y]) => s + (x - meanA) * (y - meanB), 0);
+        const denomA = Math.sqrt(pairs.reduce((s, [x]) => s + (x - meanA) ** 2, 0));
+        const denomB = Math.sqrt(pairs.reduce((s, [, y]) => s + (y - meanB) ** 2, 0));
+        if (denomA === 0 || denomB === 0) return null;
+        return Math.round((num / (denomA * denomB)) * 100) / 100;
+      }
+
+      const pairings: Array<{ aId: string; aName: string; bId: string; bName: string; score: number }> = [];
+      for (let i = 0; i < pids.length; i++) {
+        for (let j = i + 1; j < pids.length; j++) {
+          const aVec = wids.map(wid => scoreMatrix[pids[i]][wid]);
+          const bVec = wids.map(wid => scoreMatrix[pids[j]][wid]);
+          const corr = pearson(aVec, bVec);
+          if (corr !== null) {
+            pairings.push({ aId: pids[i], aName: participantMap.get(pids[i])!, bId: pids[j], bName: participantMap.get(pids[j])!, score: corr });
+          }
+        }
+      }
+      pairings.sort((a, b) => b.score - a.score);
+
+      // --- Outlier moments (top 5 biggest deviations) ---
+      const allDeviations: Array<{ participantId: string; participantName: string; whiskyId: string; whiskyName: string; deviation: number; direction: "above" | "below" }> = [];
+      for (const pid of pids) {
+        for (const wid of wids) {
+          const score = scoreMatrix[pid][wid];
+          const avg = whiskyGroupAvg[wid];
+          if (score === null || avg === 0) continue;
+          const dev = score - avg;
+          const whisky = tastingWhiskies.find(w => w.id === wid);
+          allDeviations.push({ participantId: pid, participantName: participantMap.get(pid)!, whiskyId: wid, whiskyName: whisky?.name || "Unknown", deviation: Math.abs(dev), direction: dev > 0 ? "above" : "below" });
+        }
+      }
+      allDeviations.sort((a, b) => b.deviation - a.deviation);
+      const outlierMoments = allDeviations.slice(0, 6);
+
+      // --- Consistency scores (lower stddev = higher consistency) ---
+      const consistencyScores: Record<string, number> = {};
+      const scaleMax = (tasting.ratingScale as number) || 100;
+      for (const pid of pids) {
+        const scores = wids.map(wid => scoreMatrix[pid][wid]).filter((s): s is number => s !== null);
+        if (scores.length < 2) { consistencyScores[pid] = 1; continue; }
+        const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+        const stddev = Math.sqrt(scores.reduce((s, x) => s + (x - mean) ** 2, 0) / scores.length);
+        consistencyScores[pid] = Math.round((1 - Math.min(stddev / scaleMax, 1)) * 100) / 100;
+      }
+
+      // --- Median taster (lowest avg absolute deviation from group) ---
+      let medianTasterId = "";
+      let medianTasterName = "";
+      let lowestAvgDev = Infinity;
+      for (const pid of pids) {
+        const devs = wids.map(wid => {
+          const s = scoreMatrix[pid][wid];
+          const g = whiskyGroupAvg[wid];
+          return s !== null && g > 0 ? Math.abs(s - g) : null;
+        }).filter((d): d is number => d !== null);
+        const avgDev = devs.length > 0 ? devs.reduce((a, b) => a + b, 0) / devs.length : Infinity;
+        if (avgDev < lowestAvgDev) { lowestAvgDev = avgDev; medianTasterId = pid; medianTasterName = participantMap.get(pid)!; }
+      }
+
+      // --- Per-participant preference profiles ---
+      const preferenceProfiles: Record<string, { topRegion?: string; peatLevel?: string; topCask?: string }> = {};
+      for (const pid of pids) {
+        const regionScores: Record<string, { sum: number; count: number }> = {};
+        const caskScores: Record<string, { sum: number; count: number }> = {};
+        let totalPeat = 0; let peatCount = 0;
+        for (const r of activeRatings.filter(r => r.participantId === pid)) {
+          const w = tastingWhiskies.find(w => w.id === r.whiskyId);
+          if (!w) continue;
+          const s = r.overall ?? 0;
+          if (w.region) { if (!regionScores[w.region]) regionScores[w.region] = { sum: 0, count: 0 }; regionScores[w.region].sum += s; regionScores[w.region].count++; }
+          if (w.caskType) { if (!caskScores[w.caskType]) caskScores[w.caskType] = { sum: 0, count: 0 }; caskScores[w.caskType].sum += s; caskScores[w.caskType].count++; }
+          if (w.peatLevel !== undefined && w.peatLevel !== null) { totalPeat += (w.peatLevel as number); peatCount++; }
+        }
+        const topRegion = Object.entries(regionScores).sort(([, a], [, b]) => b.sum / b.count - a.sum / a.count)[0]?.[0];
+        const topCask = Object.entries(caskScores).sort(([, a], [, b]) => b.sum / b.count - a.sum / a.count)[0]?.[0];
+        const avgPeat = peatCount > 0 ? totalPeat / peatCount : null;
+        preferenceProfiles[pid] = { topRegion, topCask, peatLevel: avgPeat !== null ? (avgPeat > 2 ? "peaty" : avgPeat > 1 ? "medium" : "light") : undefined };
+      }
+
+      // --- Closest match per participant ---
+      const closestMatches: Record<string, { id: string; name: string }> = {};
+      for (const pid of pids) {
+        const myPairings = pairings.filter(p => p.aId === pid || p.bId === pid);
+        if (myPairings.length > 0) {
+          const best = myPairings[0];
+          closestMatches[pid] = { id: best.aId === pid ? best.bId : best.aId, name: best.aId === pid ? best.bName : best.aName };
+        }
+      }
+
+      // --- Whisky summary data for AI prompts ---
+      const rankedWhiskies = tastingWhiskies.map(w => {
+        const wRatings = activeRatings.filter(r => r.whiskyId === w.id);
+        const avg = wRatings.length > 0 ? wRatings.reduce((s, r) => s + (r.overall ?? 0), 0) / wRatings.length : 0;
+        return { id: w.id, name: w.name || "?", distillery: w.distillery, region: w.region, caskType: w.caskType, peatLevel: w.peatLevel, avgScore: avg.toFixed(1), ratingCount: wRatings.length };
+      }).sort((a, b) => parseFloat(b.avgScore) - parseFloat(a.avgScore));
+
+      const participantSummaries = pids.map(pid => ({
+        id: pid, name: participantMap.get(pid)!, consistency: consistencyScores[pid], isMedianTaster: pid === medianTasterId,
+        closestMatch: closestMatches[pid]?.name,
+        preferences: preferenceProfiles[pid],
+        scores: wids.map(wid => ({ whiskyName: tastingWhiskies.find(w => w.id === wid)?.name || "?", score: scoreMatrix[pid][wid] })).filter(s => s.score !== null),
+      }));
+
+      // --- AI generation ---
+      const { client: aiClient, error: aiError } = await getAIClient(requesterId, "ai_narrative");
+      if (aiError === "AI_LIMIT_EXCEEDED") return res.status(429).json({ message: "AI_LIMIT_EXCEEDED" });
+      if (!aiClient) return res.status(503).json({ message: "AI service not available" });
+
+      const systemPromptGroup = `Du bist ein erfahrener Whisky-Journalist und Analytiker. Verfasse einen warmen, analytischen Bericht über dieses Tasting auf Deutsch (200-300 Wörter Fließtext, kein Markdown außer Absätze).`;
+      const userPromptGroup = `Tasting: "${tasting.title}" am ${tasting.date}
+Teilnehmer: ${pids.map(p => participantMap.get(p)).join(", ")}
+Whiskies (Ranking): ${rankedWhiskies.map((w, i) => `#${i + 1} ${w.name} (${w.avgScore} Pkt.)`).join(", ")}
+Median-Taster (nah am Gruppenkonsens): ${medianTasterName}
+Stärkste Ausreißer: ${outlierMoments.slice(0, 3).map(o => `${o.participantName} bei ${o.whiskyName} (${o.direction === "above" ? "+" : "-"}${o.deviation.toFixed(1)} Pkt.)`).join(", ")}
+Beste Übereinstimmungen: ${pairings.slice(0, 2).map(p => `${p.aName} & ${p.bName} (${(p.score * 100).toFixed(0)}% ähnlich)`).join(", ")}`;
+
+      let groupNarrative = "";
+      let groupNarrativeEn = "";
+      try {
+        const [deResp, enResp] = await Promise.all([
+          aiClient.chat.completions.create({ model: "gpt-4o", messages: [{ role: "system", content: systemPromptGroup }, { role: "user", content: userPromptGroup }], max_tokens: 600, temperature: 0.75 }),
+          aiClient.chat.completions.create({ model: "gpt-4o", messages: [{ role: "system", content: systemPromptGroup.replace("auf Deutsch", "in English") }, { role: "user", content: userPromptGroup }], max_tokens: 600, temperature: 0.75 }),
+        ]);
+        groupNarrative = deResp.choices[0]?.message?.content || "";
+        groupNarrativeEn = enResp.choices[0]?.message?.content || "";
+      } catch {}
+
+      // --- Whisky one-liners ---
+      const whiskyCharacteristics: Record<string, string> = {};
+      try {
+        const charResp = await aiClient.chat.completions.create({
+          model: "gpt-4o",
+          response_format: { type: "json_object" },
+          messages: [{
+            role: "system",
+            content: `Verfasse für jeden Whisky eine kurze KI-Charakteristik (1 Satz, max 15 Wörter, Deutsch) basierend auf den Gruppenwertungen. Antworte als JSON: {"whiskyId": "charakteristik"}`,
+          }, {
+            role: "user",
+            content: JSON.stringify(rankedWhiskies.map(w => ({ id: w.id, name: w.name, region: w.region, cask: w.caskType, peat: w.peatLevel, score: w.avgScore, ratingCount: w.ratingCount }))),
+          }],
+          max_tokens: 400,
+        });
+        const parsed = JSON.parse(charResp.choices[0]?.message?.content || "{}");
+        for (const w of rankedWhiskies) if (parsed[w.id] || parsed[w.name]) whiskyCharacteristics[w.id] = parsed[w.id] || parsed[w.name];
+      } catch {}
+
+      // --- Individual narratives ---
+      const individualReports: Record<string, { narrative: string; narrativeEn: string; preferenceProfile: { topRegion?: string; peatLevel?: string; topCask?: string }; closestMatchId?: string; closestMatchName?: string }> = {};
+      try {
+        await Promise.all(pids.map(async (pid) => {
+          const ps = participantSummaries.find(p => p.id === pid)!;
+          const myScores = ps.scores.map(s => `${s.whiskyName}: ${s.score}`).join(", ");
+          const [deR, enR] = await Promise.all([
+            aiClient.chat.completions.create({ model: "gpt-4o-mini", messages: [{ role: "system", content: `Schreibe für ${ps.name} einen personalisierten Tasting-Kommentar auf Deutsch (80-120 Wörter, warm und spezifisch, epistemic tone). Was zeigen seine/ihre Bewertungen über den Gaumen?` }, { role: "user", content: `Bewertungen: ${myScores}. Stärkste Übereinstimmung mit: ${ps.closestMatch || "niemand"}. Präferenzen: Region ${ps.preferences?.topRegion || "??"}, Fass ${ps.preferences?.topCask || "??"}, Torf ${ps.preferences?.peatLevel || "??"}. Median-Taster: ${ps.isMedianTaster ? "Ja" : "Nein"}.` }], max_tokens: 250, temperature: 0.8 }),
+            aiClient.chat.completions.create({ model: "gpt-4o-mini", messages: [{ role: "system", content: `Write a personalized tasting comment for ${ps.name} in English (80-120 words, warm, epistemic tone). What do their scores reveal about their palate?` }, { role: "user", content: `Scores: ${myScores}. Closest match: ${ps.closestMatch || "none"}. Preferences: region ${ps.preferences?.topRegion || "??"}, cask ${ps.preferences?.topCask || "??"}, peat ${ps.preferences?.peatLevel || "??"}. Is median taster: ${ps.isMedianTaster ? "yes" : "no"}.` }], max_tokens: 250, temperature: 0.8 }),
+          ]);
+          individualReports[pid] = { narrative: deR.choices[0]?.message?.content || "", narrativeEn: enR.choices[0]?.message?.content || "", preferenceProfile: preferenceProfiles[pid], closestMatchId: closestMatches[pid]?.id, closestMatchName: closestMatches[pid]?.name };
+        }));
+      } catch {}
+
+      const saved = await storage.saveTastingAiReport({ tastingId: req.params.id, ratingCountAtGeneration: ratingCount, groupNarrative, groupNarrativeEn, whiskyCharacteristics, correlationData: { pairings: pairings.slice(0, 15) }, outlierMoments, medianTasterId, medianTasterName, consistencyScores, individualReports, aiReportEnabled: existing?.aiReportEnabled ?? false });
+      res.json({ report: saved, cached: false });
+    } catch (e: any) {
+      console.error("AI report error:", e.message);
+      res.status(500).json({ message: "Could not generate AI report" });
+    }
+  });
+
+  app.patch("/api/tastings/:id/ai-report/enable", async (req: any, res: any) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Not found" });
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (requesterId !== tasting.hostId) return res.status(403).json({ message: "Host only" });
+      const enabled = req.body?.enabled === true;
+      const updated = await storage.updateTastingAiReport(req.params.id, { aiReportEnabled: enabled });
+      if (!updated) return res.status(404).json({ message: "Report not found – generate first" });
+      res.json({ aiReportEnabled: updated.aiReportEnabled });
+    } catch (e: any) {
+      res.status(500).json({ message: "Could not update report" });
+    }
+  });
+
   // ===== VOICE MEMOS =====
   app.post("/api/tastings/:tastingId/whiskies/:whiskyId/voice-memo", (req: any, res: any, next: any) => {
     audioUpload.single("audio")(req, res, (err: any) => {

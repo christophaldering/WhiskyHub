@@ -1042,6 +1042,30 @@ export const insertConnoisseurReportSchema = createInsertSchema(connoisseurRepor
 export type InsertConnoisseurReport = z.infer<typeof insertConnoisseurReportSchema>;
 export type ConnoisseurReport = typeof connoisseurReports.$inferSelect;
 
+// --- Tasting AI Reports (group analysis + individual summaries cached per session) ---
+export const tastingAiReports = pgTable("tasting_ai_reports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tastingId: varchar("tasting_id").notNull().unique(),
+  generatedAt: timestamp("generated_at").defaultNow(),
+  ratingCountAtGeneration: integer("rating_count_at_generation").default(0),
+  groupNarrative: text("group_narrative"), // AI narrative in DE (primary)
+  groupNarrativeEn: text("group_narrative_en"), // AI narrative in EN
+  whiskyCharacteristics: jsonb("whisky_characteristics").$type<Record<string, string>>(), // { [whiskyId]: one-line }
+  correlationData: jsonb("correlation_data").$type<{ pairings: Array<{ aId: string; aName: string; bId: string; bName: string; score: number }>; }>(),
+  outlierMoments: jsonb("outlier_moments").$type<Array<{ participantId: string; participantName: string; whiskyId: string; whiskyName: string; deviation: number; direction: "above" | "below" }>>(),
+  medianTasterId: varchar("median_taster_id"),
+  medianTasterName: text("median_taster_name"),
+  consistencyScores: jsonb("consistency_scores").$type<Record<string, number>>(), // { [participantId]: 0-1 score }
+  individualReports: jsonb("individual_reports").$type<Record<string, { narrative: string; narrativeEn: string; preferenceProfile: { topRegion?: string; peatLevel?: string; topCask?: string }; closestMatchId?: string; closestMatchName?: string; }>>(),
+  aiReportEnabled: boolean("ai_report_enabled").default(false),
+}, (t) => ({
+  tastingIdx: index("idx_tasting_ai_reports_tasting").on(t.tastingId),
+}));
+
+export const insertTastingAiReportSchema = createInsertSchema(tastingAiReports).omit({ id: true, generatedAt: true });
+export type InsertTastingAiReport = z.infer<typeof insertTastingAiReportSchema>;
+export type TastingAiReport = typeof tastingAiReports.$inferSelect;
+
 // --- Voice Memos (audio recordings per whisky during tasting) ---
 export const voiceMemos = pgTable("voice_memos", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

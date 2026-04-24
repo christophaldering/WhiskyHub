@@ -65,6 +65,8 @@ import {
   type InsertCommunityInvite, type CommunityInvite,
   connoisseurReports,
   type InsertConnoisseurReport, type ConnoisseurReport,
+  tastingAiReports,
+  type InsertTastingAiReport, type TastingAiReport,
   voiceMemos,
   type InsertVoiceMemo, type VoiceMemo,
   whiskyGallery,
@@ -769,6 +771,11 @@ export interface IStorage {
   getConnoisseurReports(participantId: string): Promise<ConnoisseurReport[]>;
   getConnoisseurReport(id: string): Promise<ConnoisseurReport | undefined>;
   deleteConnoisseurReport(id: string): Promise<void>;
+
+  // Tasting AI Reports
+  getTastingAiReport(tastingId: string): Promise<TastingAiReport | undefined>;
+  saveTastingAiReport(data: InsertTastingAiReport): Promise<TastingAiReport>;
+  updateTastingAiReport(tastingId: string, data: Partial<InsertTastingAiReport>): Promise<TastingAiReport | undefined>;
 
   // Voice Memos
   createVoiceMemo(data: InsertVoiceMemo): Promise<VoiceMemo>;
@@ -4304,6 +4311,24 @@ export class DatabaseStorage implements IStorage {
 
   async deleteConnoisseurReport(id: string): Promise<void> {
     await db.delete(connoisseurReports).where(eq(connoisseurReports.id, id));
+  }
+
+  // --- Tasting AI Reports ---
+  async getTastingAiReport(tastingId: string): Promise<TastingAiReport | undefined> {
+    const [result] = await db.select().from(tastingAiReports).where(eq(tastingAiReports.tastingId, tastingId));
+    return result;
+  }
+
+  async saveTastingAiReport(data: InsertTastingAiReport): Promise<TastingAiReport> {
+    const [result] = await db.insert(tastingAiReports).values(data)
+      .onConflictDoUpdate({ target: tastingAiReports.tastingId, set: { ...data, generatedAt: sql`NOW()` } })
+      .returning();
+    return result;
+  }
+
+  async updateTastingAiReport(tastingId: string, data: Partial<InsertTastingAiReport>): Promise<TastingAiReport | undefined> {
+    const [result] = await db.update(tastingAiReports).set(data).where(eq(tastingAiReports.tastingId, tastingId)).returning();
+    return result;
   }
 
   // --- Voice Memos ---

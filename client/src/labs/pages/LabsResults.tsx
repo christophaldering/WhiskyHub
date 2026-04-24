@@ -1138,6 +1138,17 @@ export default function LabsResults({ params }: LabsResultsProps) {
                   Archive
                 </button>
               )}
+              {(tasting.status === "archived" || tasting.status === "completed" || tasting.status === "closed" || tasting.status === "reveal") && (
+                <button
+                  className="flex items-center gap-2 text-sm font-semibold px-3 py-2 rounded-xl transition-colors"
+                  style={{ background: "var(--labs-surface)", border: "1px solid var(--labs-border)", color: "var(--labs-text)", cursor: "pointer", fontFamily: "inherit" }}
+                  onClick={() => navigate(`/labs/results/${tastingId}/report`)}
+                  data-testid="button-labs-ki-report"
+                >
+                  <Sparkles className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                  KI-Report
+                </button>
+              )}
               <LabsExportDropdown tastingId={tastingId} tasting={tasting} whiskyResults={whiskyResults} />
             </div>
           )}
