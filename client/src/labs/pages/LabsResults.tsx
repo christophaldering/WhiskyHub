@@ -228,15 +228,20 @@ function LabsExportDropdown({ tastingId, tasting, whiskyResults }: { tastingId: 
 
   const handleStoryPdf = async () => {
     setLoading("story-pdf");
-    setOpen(false);
     try {
       const [storyRes, photosRes] = await Promise.all([
         fetch(`/api/tastings/${tastingId}/story`, { headers: pidHeaders() }),
         fetch(`/api/tastings/${tastingId}/event-photos`, { headers: pidHeaders() }),
       ]);
-      const storyData = storyRes.ok ? await storyRes.json() : {};
+      if (!storyRes.ok) throw new Error("Story-Daten konnten nicht geladen werden.");
+      const storyData = await storyRes.json();
+      if (!storyData?.tasting) throw new Error("Keine Tasting-Daten verfügbar.");
       const eventPhotos = photosRes.ok ? await photosRes.json() : [];
       await exportStoryPdf({ ...storyData, eventPhotos });
+      setOpen(false);
+    } catch (err) {
+      console.error("Story PDF export failed:", err);
+      setOpen(false);
     } finally {
       setLoading(null);
     }
