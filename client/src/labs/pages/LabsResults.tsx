@@ -366,7 +366,7 @@ function LabsExportDropdown({ tastingId, tasting, whiskyResults }: { tastingId: 
               ? <Loader2 style={{ width: 14, height: 14, color: "var(--labs-text-muted)", animation: "spin 1s linear infinite" }} />
               : <BookOpen style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />
             }
-            Story PDF
+            {t("resultsUi.storyPdf")}
           </button>
         </div>,
         document.body
