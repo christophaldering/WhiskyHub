@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useSearch, useLocation } from "wouter";
 import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 import { Search, BookOpen, Wine, FlameKindling, MapPin, Factory, Package, ChevronDown } from "lucide-react";
-import { lexiconData, categoryLabelsEn, categoryLabelsDe, type LexiconEntry, type LexiconCategory } from "@/labs/data/lexiconData";
+import { lexiconData, categoryLabelsEn, categoryLabelsDe } from "@/labs/data/lexiconData";
 import { TemplatesContent } from "./LabsTemplates";
 import { VocabularyContent } from "./LabsVocabulary";
 
@@ -14,7 +14,7 @@ const iconMap: Record<string, React.ElementType> = {
 };
 
 function DictionaryContent() {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 

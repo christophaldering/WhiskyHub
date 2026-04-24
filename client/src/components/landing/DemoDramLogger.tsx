@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { DIMS, generateNote } from "@/lib/demoMath";
-import { v, alpha } from "@/lib/themeVars";
+import { v } from "@/lib/themeVars";
 
 const A = "#c8a97e";
 const font = {

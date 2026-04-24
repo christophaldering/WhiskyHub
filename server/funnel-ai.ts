@@ -13,7 +13,7 @@ function cacheGet<T = unknown>(key: string): T | null {
   const e = CACHE.get(key);
   if (!e) return null;
   if (Date.now() - e.ts > CACHE_TTL_MS) { CACHE.delete(key); return null; }
-  return e.value;
+  return e.value as T;
 }
 function cacheSet<T = unknown>(key: string, value: T): void {
   CACHE.set(key, { ts: Date.now(), value });
@@ -121,13 +121,13 @@ export interface AIAnalysis {
 
 export async function analyzePeriod(rangeHours: number, filter?: { utmSource?: string }, requesterId?: string): Promise<AIAnalysis> {
   const cacheKey = `analyze:${rangeHours}:${filter?.utmSource || ""}`;
-  const cached = cacheGet(cacheKey);
-  if (cached) return { ...cached, cached: true };
+  const cached = cacheGet<AIAnalysis>(cacheKey);
+  if (cached) return cached;
 
   const snapshot = await buildSnapshot(rangeHours, filter);
   const ai = await getAIClient(requesterId, "funnel_analysis");
   if (!ai.client) {
-    return { cached: false, available: false, reason: ai.reason || "AI not available", generatedAt: Date.now() };
+    return { cached: false, available: false, reason: ai.error ?? "AI not available", generatedAt: Date.now() };
   }
 
   const prompt = `Du bist ein freundlicher Produkt-Coach für eine Whisky-Tasting-App (CaskSense Labs).

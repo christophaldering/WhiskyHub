@@ -122,7 +122,7 @@ export default function LabsActivity() {
                     <p className="text-xs font-medium truncate mt-0.5" style={{ color: "var(--labs-text)" }}>
                       {String(a.details.title ?? "")}
                     </p>
-                    {a.details.personalScore && (
+                    {!!a.details.personalScore && (
                       <div className="flex items-center gap-1 mt-1">
                         <Star className="w-3 h-3" style={{ color: "var(--labs-accent)" }} />
                         <span className="text-xs font-bold" style={{ color: "var(--labs-accent)" }}>

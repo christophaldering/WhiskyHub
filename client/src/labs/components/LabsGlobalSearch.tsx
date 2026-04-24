@@ -3,14 +3,14 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import {
   Search, X, Clock, ChevronRight, Compass, Radar, BookOpen, Users,
-  Wine, Building2, Star, MapPin, Sparkles, BarChart3, FlameKindling,
+  Wine, Building2, Star, Sparkles, BarChart3, FlameKindling,
   Download, Settings, Heart, Mic, Layers, FileText, Map, Beaker,
-  GraduationCap, Calendar, History, Activity, Info, Gift, Shield, Lock,
+  GraduationCap, Calendar, History, Activity, Info, Shield, Lock,
   ArrowRight,
 } from "lucide-react";
 import { distilleries, type Distillery } from "@/data/distilleries";
 import { triggerHaptic } from "@/labs/hooks/useHaptic";
-import { lexiconData, categoryLabelMap, type LexiconEntry, type LexiconCategory } from "@/labs/data/lexiconData";
+import { lexiconData, categoryLabelMap } from "@/labs/data/lexiconData";
 
 interface SearchResult {
   id: string;
@@ -518,7 +518,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
             )}
           </div>
           <button
-            onClick={handleClose}
+            onClick={() => handleClose()}
             style={{
               flexShrink: 0,
               width: 44,

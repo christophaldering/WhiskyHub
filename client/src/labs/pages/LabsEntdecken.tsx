@@ -1,9 +1,9 @@
         import { useState, useEffect, useMemo, useCallback, useRef } from "react";
         import { createPortal } from "react-dom";
         import { useTranslation } from "react-i18next";
-        import { useLocation, useSearch, Link } from "wouter";
+        import { useLocation, useSearch } from "wouter";
         import { useQuery } from "@tanstack/react-query";
-        import { useSession } from "@/lib/session";
+        import { useAppStore } from "@/lib/store";
         import { pidHeaders } from "@/lib/api";
         import { wishlistKey, useWishlistKeys, useCollectionKeys } from "@/lib/wishlistKey";
         import WishlistBadge from "@/labs/components/WishlistBadge";
@@ -15,10 +15,10 @@
         import type { ElementType } from "react";
         import {
           Search, ChevronRight, Wine,
-          BookOpen, List, BarChart3, Compass, Activity,
+          BookOpen, List, Compass, Activity,
           X, ChevronDown, Check, Star, Archive,
-          Map as MapIcon, FlaskConical, Heart, Info, Globe, Package,
-          SlidersHorizontal, Factory, Microscope, Utensils,
+          FlaskConical, Info, Globe, Package,
+          Factory, Microscope, Utensils,
         } from "lucide-react";
         import LabsLexicon from "@/labs/pages/LabsLexicon";
         import LabsDistilleries from "@/labs/pages/LabsDistilleries";
@@ -240,7 +240,7 @@
         ];
 
         export default function LabsEntdecken() {
-          const { t, i18n } = useTranslation();
+          const { t } = useTranslation();
           const [, navigate] = useLocation();
           const searchStr = useSearch();
           const initialUrlState = useMemo(() => {
@@ -260,7 +260,7 @@
             return { tab: null as null | "whiskies" | "bibliothek", view: null as string | null, section: null as BibliothekSectionKey | null, sub: null as string | null };
           }, []);
           const initialTabFromUrl = initialUrlState.tab;
-          const { currentParticipant } = useSession();
+          const { currentParticipant } = useAppStore();
           const pid = currentParticipant?.id;
           const savedKeys = useWishlistKeys(pid);
           const collectionKeys = useCollectionKeys(pid);

@@ -1,12 +1,12 @@
 import { db } from "./db";
 import {
-  tastings, whiskies, ratings, tastingParticipants, participants,
+  tastingParticipants, participants,
   historicalTastings, historicalTastingEntries,
   type Tasting, type Whisky, type Rating,
   type InsertHistoricalTasting, type InsertHistoricalTastingEntry,
 } from "@shared/schema";
-import { eq, and } from "drizzle-orm";
-import { normalizeKey, normalizeText, parseAge, parseAbv, parseSmoky } from "./historical-import";
+import { eq } from "drizzle-orm";
+import { normalizeKey, normalizeText, parseAge } from "./historical-import";
 import { clampNormalized } from "@shared/score-utils";
 
 export interface ArchiveSnapshotResult {
@@ -49,7 +49,7 @@ export async function createArchiveSnapshot(
       .where(eq(participants.id, tasting.hostId))
       .limit(1);
     if (host.length > 0) {
-      const { communities: commTable, communityMemberships } = await import("@shared/schema");
+      const { communityMemberships } = await import("@shared/schema");
       const hostCommunities = await db
         .select({ communityId: communityMemberships.communityId })
         .from(communityMemberships)

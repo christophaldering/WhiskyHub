@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import {
   Play, Lock, Eye, EyeOff, SkipForward, Users, Wine, Star,
   BarChart3, CheckCircle2, Clock, ChevronLeft, Loader2,
-  Monitor, Smartphone, FileText, Radio, X, LockKeyhole, Unlock, ImageOff, Sliders, RotateCcw, AlertTriangle,
+  Smartphone, FileText, Radio, LockKeyhole, Unlock, ImageOff, Sliders, RotateCcw, AlertTriangle,
   ChevronDown, Layers, Archive,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
@@ -13,7 +13,7 @@ import { useAppStore } from "@/lib/store";
 import { stripGuestSuffix, formatScore } from "@/lib/utils";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi } from "@/lib/api";
-import LabsRatingPanel, { type DimKey } from "@/labs/components/LabsRatingPanel";
+import { type DimKey } from "@/labs/components/LabsRatingPanel";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import { useRatingScale } from "@/labs/hooks/useRatingScale";
 import type { RatingData } from "@/labs/components/rating/types";
@@ -222,7 +222,6 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   const [hostChips, setHostChips] = useState<Record<string, Record<DimKey, string[]>>>({});
   const [hostTexts, setHostTexts] = useState<Record<string, Record<DimKey, string>>>({});
   const [hostOverall, setHostOverall] = useState<Record<string, number>>({});
-  const [hostOverride, setHostOverride] = useState<Record<string, boolean>>({});
   const [hostNotes, setHostNotes] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -371,24 +370,13 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
     },
   });
 
-  useTastingEvents({
-    tastingId,
-    enabled: !!tastingId,
-    onReveal: useCallback((data: Record<string, unknown>) => {
+  useTastingEvents(tastingId, {
+    onReveal: useCallback(() => {
       setRevealConfirmed(true);
       if (revealConfirmTimerRef.current) clearTimeout(revealConfirmTimerRef.current);
       revealConfirmTimerRef.current = setTimeout(() => setRevealConfirmed(false), 1200);
       setRevealFlash(true);
       setTimeout(() => setRevealFlash(false), 180);
-      if (typeof data.guidedRevealStep === "number") setLocalRevealStep(data.guidedRevealStep);
-      if (typeof data.guidedWhiskyIndex === "number") setLocalGuidedIdx(data.guidedWhiskyIndex);
-    }, []),
-    onDramAdvanced: useCallback((data: Record<string, unknown>) => {
-      setConfirmAdvance(false);
-      if (typeof data.guidedWhiskyIndex === "number") {
-        setLocalGuidedIdx(data.guidedWhiskyIndex);
-        setLocalRevealStep(0);
-      }
     }, []),
   });
 
@@ -645,47 +633,6 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
     const inv = 1 / cockpitScale.step;
     return Math.round(v * inv) / inv;
   };
-  const getOverallAuto = (wId: string) => {
-    const sc = getScores(wId);
-    return roundToStep((sc.nose + sc.taste + sc.finish) / 3);
-  };
-
-  const handleScoreChange = (wId: string, dim: DimKey, val: number) => {
-    const current = getScores(wId);
-    const updated = { ...current, [dim]: val };
-    setHostScores(prev => ({ ...prev, [wId]: updated }));
-    let freshOverall: number;
-    if (!hostOverride[wId]) {
-      freshOverall = roundToStep((updated.nose + updated.taste + updated.finish) / 3);
-      setHostOverall(prev => ({ ...prev, [wId]: freshOverall }));
-    } else {
-      freshOverall = hostOverall[wId] ?? scaleDefault;
-    }
-    debouncedSave(wId, updated, freshOverall, hostNotes[wId] || "");
-  };
-
-  const handleOverallChange = (wId: string, val: number) => {
-    setHostOverall(prev => ({ ...prev, [wId]: val }));
-    setHostOverride(prev => ({ ...prev, [wId]: true }));
-    debouncedSave(wId, getScores(wId), val, hostNotes[wId] || "");
-  };
-
-  const handleChipToggle = (wId: string, dim: DimKey, chip: string) => {
-    setHostChips(prev => {
-      const current = prev[wId] || emptyChips;
-      const dimChips = current[dim];
-      const next = dimChips.includes(chip) ? dimChips.filter(c => c !== chip) : [...dimChips, chip];
-      return { ...prev, [wId]: { ...current, [dim]: next } };
-    });
-  };
-
-  const handleTextChange = (wId: string, dim: DimKey, text: string) => {
-    setHostTexts(prev => {
-      const current = prev[wId] || emptyTexts;
-      return { ...prev, [wId]: { ...current, [dim]: text } };
-    });
-  };
-
   const handlePresetChange = async (key: RevealPresetKey) => {
     const newOrder = JSON.stringify(REVEAL_PRESETS[key].order);
     await tastingApi.updateDetails(tastingId, pid, { revealOrder: newOrder });

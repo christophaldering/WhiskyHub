@@ -73,7 +73,7 @@ export default function RatingDial({
   const containerRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
   const [bumpAnim, setBumpAnim] = useState(false);
-  const bumpTimer = useRef<ReturnType<typeof setTimeout>>();
+  const bumpTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const prevValue = useRef(value);
 
   const discreteSnap = scale.max <= 20;

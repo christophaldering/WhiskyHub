@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { FileText, Image as ImageIcon, Trash2, Upload, ExternalLink, Download, Library, Check, ArrowUp, ArrowDown, Pencil, X, Building2 } from "lucide-react";
 import { handoutLibraryApi, whiskyHandoutApi } from "@/lib/api";
 import { downloadFromEndpoint } from "@/lib/download";
-import type { Whisky, WhiskyHandoutLibraryEntry, WhiskyHandout, DistilleryHandout } from "@shared/schema";
+import type { Whisky, WhiskyHandoutLibraryEntry, WhiskyHandout } from "@shared/schema";
 
 async function safeDownload(url: string, filename: string) {
   const ok = await downloadFromEndpoint(url, filename).catch(() => false);

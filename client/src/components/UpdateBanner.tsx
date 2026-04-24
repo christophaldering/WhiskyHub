@@ -5,7 +5,8 @@ export default function UpdateBanner() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    return onUpdateAvailable((available) => setShow(available));
+    const unsubscribe = onUpdateAvailable((available) => setShow(available));
+    return () => { unsubscribe(); };
   }, []);
 
   if (!show) return null;

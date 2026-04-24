@@ -7,7 +7,7 @@ import { getSession } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
 import {
   Users, ChevronLeft, UserPlus, Shield, Crown, Eye, Trash2, Mail, ChevronDown, Edit2, Save, X,
-  Wine, Calendar, User, GlassWater, Plus, Loader2, BarChart3, Activity, Trophy,
+  Wine, Calendar, GlassWater, Plus, Loader2, BarChart3, Activity, Trophy,
 } from "lucide-react";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import HubHeader from "@/labs/components/HubHeader";

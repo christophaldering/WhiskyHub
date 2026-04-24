@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import {
-  Scissors, Plus, ChevronLeft, ChevronRight, Loader2, Trash2, ChevronDown, ChevronUp, Globe, Lock, UsersRound, Camera, X
+  Scissors, Plus, ChevronLeft, ChevronRight, Loader2, Trash2, ChevronDown, ChevronUp, Globe, Lock, UsersRound
 } from "lucide-react";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";

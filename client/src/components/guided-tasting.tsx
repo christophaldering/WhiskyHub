@@ -15,7 +15,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { TastingNoteGenerator } from "./tasting-note-generator";
 import {
   ChevronLeft,
-  ChevronRight,
   Check,
   Clock,
   Users,
@@ -44,7 +43,6 @@ interface GuidedTastingProps {
 }
 
 function GuidedRatingProgress({ tastingId, whiskyId, participantCount }: { tastingId: string; whiskyId: string; participantCount: number }) {
-  const { t } = useTranslation();
   const inputFocused = useInputFocused();
   const { data: ratings = [] } = useQuery({
     queryKey: ["ratings-whisky", whiskyId],
@@ -391,7 +389,6 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
     };
   };
 
-  const blind = getGuidedBlindState();
   const evalBlind = getGuidedBlindState(true);
 
   const stepLabels = [

@@ -8,10 +8,9 @@ import { useToast } from "@/hooks/use-toast";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import { downloadBlob } from "@/lib/download";
 import { generateBlankTastingSheet, generateBlankTastingMat } from "@/components/printable-tasting-sheets";
-import { Link , useLocation } from "wouter";
 import {
   Download, FileText, FileSpreadsheet, ClipboardList, Loader2,
-  User, NotebookPen, Star, Archive, Users, Wine, ChevronLeft, Package,
+  User, NotebookPen, Star, Archive, Users, Wine, Package,
 } from "lucide-react";
 
 type AccessLevel = "own" | "extended" | "admin";
@@ -28,7 +27,6 @@ const EXPORT_CARDS: ExportCard[] = [
 
 export default function LabsTasteDownloads() {
   const { t, i18n } = useTranslation();
-  const [, navigate] = useLocation();
   const { toast } = useToast();
   const session = useSession();
   const participantId = session.pid;

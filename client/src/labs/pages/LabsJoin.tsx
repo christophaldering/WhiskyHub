@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useParams } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
-import { Wine, ArrowRight, AlertCircle, LogIn, ChevronLeft, User, Mail, Calendar, KeyRound, MailCheck, Copy, Check, RotateCcw, Camera, Printer, Download, Upload, ShieldCheck } from "lucide-react";
+import { Wine, ArrowRight, AlertCircle, LogIn, ChevronLeft, User, Mail, Calendar, KeyRound, MailCheck, Copy, Check, RotateCcw, Camera, Printer, Download, Upload } from "lucide-react";
 import { formatRejoinCode as fmtRejoinCode, extractRejoinCodeFromText as extractRejoin } from "@/labs/utils/rejoinCode";
 import { useSession, getSession, setGuestSession } from "@/lib/session";
 import { useIsEmbeddedInTastings } from "@/labs/embeddedTastingsContext";

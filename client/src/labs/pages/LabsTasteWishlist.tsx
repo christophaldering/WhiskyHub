@@ -7,11 +7,11 @@ import { useAIStatus } from "@/hooks/use-ai-status";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useSession } from "@/lib/session";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
-import { useLocation, Link } from "wouter";
+import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Pencil, Trash2, Star, Wine, Flame, Sparkles, Clock,
-  Camera, Loader2, ScanLine, Send, GlassWater, ChevronLeft,
+  Camera, Loader2, Send, GlassWater, ChevronLeft,
 } from "lucide-react";
 import type { WishlistEntry } from "@shared/schema";
 
@@ -206,8 +206,8 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId }: {
   const [whiskyName, setWhiskyName] = useState(entry?.name || "");
   const [distillery, setDistillery] = useState(entry?.distillery || "");
   const [region, setRegion] = useState(entry?.region || "");
-  const [age, setAge] = useState(entry?.age || "");
-  const [abv, setAbv] = useState(entry?.abv || "");
+  const [age, setAge] = useState(String(entry?.age ?? ""));
+  const [abv, setAbv] = useState(String(entry?.abv ?? ""));
   const [caskType, setCaskType] = useState(entry?.caskType || "");
   const [notes, setNotes] = useState(entry?.notes || "");
   const [priority, setPriority] = useState(entry?.priority || "medium");
@@ -232,8 +232,7 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId }: {
     if (!participantId || aiScanDisabled) return;
     setScanning(true);
     try {
-      const lang = i18n.language?.startsWith("de") ? "de" : "en";
-      const result = await wishlistScanApi.identify(participantId, file, lang);
+      const result = await wishlistScanApi.identify(file, participantId);
       if (result.whiskyName && result.whiskyName !== "Unknown Whisky") {
         setWhiskyName(result.whiskyName);
         if (result.distillery) setDistillery(result.distillery);

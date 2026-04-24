@@ -1,4 +1,4 @@
-import { normalize, tokenize } from "./whiskyIndex.js";
+import { normalize } from "./whiskyIndex.js";
 
 export interface OnlineCandidate {
   source: "external";

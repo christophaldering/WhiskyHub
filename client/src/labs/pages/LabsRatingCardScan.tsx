@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Camera, Upload, X, Check, AlertTriangle, Loader2, Edit3, ChevronLeft, Save } from "lucide-react";
+import { Camera, Upload, X, Check, AlertTriangle, Loader2, ChevronLeft, Save } from "lucide-react";
 
 interface ExtractedWhisky {
   position: number | null;

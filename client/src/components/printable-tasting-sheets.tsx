@@ -6,7 +6,7 @@ import { useAppStore } from "@/lib/store";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Printer, FileDown, ClipboardList, EyeOff, Download, Users, Loader2, Monitor, Smartphone, Sparkles, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
+import { Printer, ClipboardList, EyeOff, Download, Users, Loader2, Monitor, Smartphone, Sparkles, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 import type { Whisky, Tasting } from "@shared/schema";
 import jsPDF from "jspdf";
 import { saveOrPrintJsPdf, saveJsPdf } from "@/lib/pdf";
@@ -22,20 +22,8 @@ const LIGHT_BG: RGB = [248, 250, 252];
 const AMBER: RGB = [180, 130, 30];
 const LINE_GRAY: RGB = [200, 210, 220];
 
-const PRINT_COLORS = {
-  gold:        '#8b6914',
-  goldLight:   'rgba(139,105,20,0.2)',
-  goldMid:     'rgba(139,105,20,0.4)',
-  goldBorder:  'rgba(139,105,20,0.6)',
-  black:       '#1a1208',
-  textDark:    '#2d2010',
-  textMuted:   '#888070',
-  white:       '#ffffff',
-};
-
 const GOLD_RGB: RGB = [139, 105, 20];
 const PRINT_BLACK_RGB: RGB = [26, 18, 8];
-const PRINT_TEXTDARK_RGB: RGB = [45, 32, 16];
 const PRINT_TEXTMUTED_RGB: RGB = [136, 128, 112];
 
 interface ParticipantInfo {
@@ -54,14 +42,6 @@ export interface PdfStyleTheme {
     textLight: RGB;
   };
   mood: string;
-}
-
-async function generateQRDataUrl(url: string): Promise<string> {
-  return QRCodeLib.toDataURL(url, {
-    width: 200,
-    margin: 1,
-    color: { dark: "#1e293b", light: "#ffffff" },
-  });
 }
 
 async function generateParticipantQR(
@@ -87,36 +67,6 @@ async function generateParticipantQR(
     doc.text(qrLabel[0] ?? '', x + size / 2, y + size + 3, { align: 'center' });
   } catch (e) {
     console.warn('[Print] QR generation failed:', e);
-  }
-}
-
-function getFlavorTags(whisky: Whisky): string[] {
-  if (!whisky.flavorProfile) return [];
-  const profileMap: Record<string, string[]> = {
-    'sherried-rich':      ['Sherry', 'Trockenfrüchte', 'Würze'],
-    'bourbon-classic':    ['Vanille', 'Karamell', 'Eiche'],
-    'peated-maritime':    ['Rauch', 'Salz', 'Torf'],
-    'highland-elegant':   ['Honig', 'Blumen', 'Frucht'],
-    'speyside-fruity':    ['Apfel', 'Birne', 'Malz'],
-    'island-coastal':     ['Meeresluft', 'Heide', 'Gewürz'],
-  };
-  return profileMap[whisky.flavorProfile] ?? [];
-}
-
-function drawScoreCircles(
-  doc: jsPDF,
-  x: number,
-  y: number,
-  circleSize: number = 5
-): void {
-  for (let i = 1; i <= 10; i++) {
-    const cx = x + (i - 1) * (circleSize + 1);
-    doc.setDrawColor(...GOLD_RGB);
-    doc.setLineWidth(0.3);
-    doc.circle(cx + circleSize / 2, y + circleSize / 2, circleSize / 2, 'S');
-    doc.setFontSize(6);
-    doc.setTextColor(...GOLD_RGB);
-    doc.text(String(i), cx + circleSize / 2, y + circleSize / 2 + 1.5, { align: 'center' });
   }
 }
 
@@ -226,117 +176,8 @@ async function loadImageAsBase64(url: string): Promise<string | null> {
   } catch { return null; }
 }
 
-function drawHeader(doc: jsPDF, tasting: Tasting, lang: string, isBlind: boolean) {
-  const pageW = 210;
-  const marginX = 14;
-
-  doc.setFillColor(...NAVY);
-  doc.rect(0, 0, pageW, 20, "F");
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(255, 255, 255);
-  const titleLines = doc.splitTextToSize(tasting.title, pageW - marginX * 2 - 50);
-  doc.text(titleLines, marginX, 9);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  doc.setTextColor(200, 210, 220);
-  const dateStr = formatDate(tasting.date, lang);
-  const locationStr = tasting.location && tasting.location !== "—" ? ` · ${tasting.location}` : "";
-  doc.text(`${dateStr}${locationStr}`, marginX, titleLines.length > 1 ? 18 : 15);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.5);
-  doc.setTextColor(180, 190, 200);
-  doc.text("CaskSense", pageW - marginX, 15, { align: "right" });
-
-  if (isBlind) {
-    doc.setFillColor(...AMBER);
-    doc.roundedRect(pageW - marginX - 24, 4, 24, 7, 1.5, 1.5, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(6);
-    doc.setTextColor(255, 255, 255);
-    doc.text("BLIND", pageW - marginX - 12, 9, { align: "center" });
-  }
-}
-
-function drawFooter(doc: jsPDF, pageNum: number, totalPages: number) {
-  const pageW = 210;
-  const pageH = 297;
-
-  doc.setDrawColor(210, 218, 230);
-  doc.setLineWidth(0.3);
-  doc.line(14, pageH - 10, pageW - 14, pageH - 10);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  doc.setTextColor(...MUTED);
-  doc.text("CaskSense", 14, pageH - 6);
-  doc.text(`${pageNum} / ${totalPages}`, pageW - 14, pageH - 6, { align: "right" });
-}
-
 function tp(key: string, lang: string, opts?: Record<string, any>): string {
   return i18n.t(key, { lng: lang, ...opts }) as string;
-}
-
-async function drawParticipantInfo(doc: jsPDF, participant: ParticipantInfo, y: number, marginX: number, pageW: number, lang: string, tastingId?: string): Promise<number> {
-  const nameLabel = tp("printableSheets.pdfParticipant", lang);
-
-  let photoDataUrl: string | null = null;
-  if (participant.photoUrl) {
-    photoDataUrl = await loadImageAsBase64(participant.photoUrl);
-  }
-
-  let qrDataUrl: string | null = null;
-  if (participant.id && tastingId) {
-    try {
-      const scanUrl = `${window.location.origin}/m2/tastings/${tastingId}/scan?participant=${participant.id}`;
-      qrDataUrl = await generateQRDataUrl(scanUrl);
-    } catch {}
-  }
-
-  const qrSize = 18;
-  const hasQR = !!qrDataUrl;
-
-  if (hasQR) {
-    try {
-      doc.addImage(qrDataUrl!, "PNG", pageW - marginX - qrSize, y - 5, qrSize, qrSize, undefined, "FAST");
-    } catch {}
-  }
-
-  if (photoDataUrl) {
-    try {
-      doc.addImage(photoDataUrl, "JPEG", marginX, y - 5, 12, 12, undefined, "FAST");
-    } catch {}
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(...SLATE);
-    doc.text(`${nameLabel}:`, marginX + 15, y);
-    doc.setFont("helvetica", "normal");
-    doc.text(participant.name, marginX + 15 + doc.getTextWidth(`${nameLabel}: `), y);
-    return y + (hasQR ? Math.max(10, qrSize - 2) : 10);
-  } else {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(...SLATE);
-    doc.text(`${nameLabel}:`, marginX, y);
-    doc.setFont("helvetica", "normal");
-    doc.text(participant.name, marginX + doc.getTextWidth(`${nameLabel}: `), y);
-    return y + (hasQR ? Math.max(8, qrSize - 2) : 8);
-  }
-}
-
-function getWhiskyMeta(w: Whisky): string {
-  const parts: string[] = [];
-  if (w.distillery) parts.push(w.distillery);
-  if (w.country) parts.push(w.country);
-  if (w.age && w.age !== "NAS") parts.push(`${w.age}y`);
-  if (w.age === "NAS" || w.age === "n.a.s.") parts.push("NAS");
-  if (w.abv != null) parts.push(`${w.abv}%`);
-  if (w.region) parts.push(w.region);
-  if (w.caskType) parts.push(w.caskType);
-  return parts.join(" · ");
 }
 
 async function drawCoverPage(
@@ -974,18 +815,6 @@ async function drawTastingMat(
   doc.setTextColor(...PRINT_TEXTMUTED_RGB);
   doc.text('CaskSense', margin, pageH - 8);
   doc.text('casksense.com', pageW - margin, pageH - 8, { align: 'right' });
-}
-
-async function preloadWhiskyImages(whiskies: Whisky[], isBlind: boolean): Promise<Map<number, string>> {
-  const cache = new Map<number, string>();
-  if (isBlind) return cache;
-  for (let i = 0; i < whiskies.length; i++) {
-    if (whiskies[i].imageUrl) {
-      const data = await loadImageAsBase64(whiskies[i].imageUrl!);
-      if (data) cache.set(i, data);
-    }
-  }
-  return cache;
 }
 
 export async function generateTastingNotesSheet(tasting: Tasting, whiskies: Whisky[], lang: string, participant?: ParticipantInfo, mode: "download" | "print" = "download", hostName?: string, orientation: "portrait" | "landscape" = "portrait", styleTheme?: PdfStyleTheme | null) {

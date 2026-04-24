@@ -7,7 +7,6 @@ import { generateCaskSensePresentation } from "@/components/casksense-presentati
 const A = "#c8a97e";
 const A2 = "#a8834a";
 const BG = "#1a1714";
-const BG2 = "#211e19";
 const TXT = "#f0ebe3";
 const TXT_M = "#b8a99a";
 const TXT_DIM = "#7a6e62";
@@ -887,7 +886,6 @@ function TasteTwinsDemo() {
 }
 
 function ChapterASection() {
-  const heroFeatures = chapA.filter(f => ["Blind Mode", "Live Rating", "Multi-Act Reveal"].includes(f.title));
   const gridFeatures = chapA.filter(f => !["Blind Mode", "Live Rating", "Multi-Act Reveal"].includes(f.title));
   return (
     <section style={{ padding: "100px 0 80px", position: "relative", zIndex: 1 }}>

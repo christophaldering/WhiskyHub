@@ -113,7 +113,7 @@ export async function generateAutoHandoutPdf(opts: AutoHandoutPdfOptions): Promi
     groups.get(key)!.chapters.push(c);
   }
 
-  for (const [, group] of groups) {
+  for (const group of Array.from(groups.values())) {
     y = ensureSpace(doc, y, 18);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(15);

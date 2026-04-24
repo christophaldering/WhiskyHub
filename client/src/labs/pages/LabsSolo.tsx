@@ -113,7 +113,8 @@ export default function LabsSolo() {
   const [participantId, setParticipantId] = useState<string>("");
   const [participantError, setParticipantError] = useState(false);
   const [saveError, setSaveError] = useState(false);
-  const [initToken, setInitToken] = useState(0);
+  const [, setInitToken] = useState(0);
+  const [, setDraftSaving] = useState(false);
   const [fromCollection, setFromCollection] = useState(false);
   const [bottleAdded, setBottleAdded] = useState(false);
   const [draftSavedFlash, setDraftSavedFlash] = useState(false);
@@ -122,7 +123,6 @@ export default function LabsSolo() {
   const [showBackDialog, setShowBackDialog] = useState(false);
   const [quickFollowUpData, setQuickFollowUpData] = useState<RatingData | null>(null);
   const [draftEntryId, setDraftEntryId] = useState<string | null>(null);
-  const [draftSaving, setDraftSaving] = useState(false);
   const [tastingContext, setTastingContext] = useState<TastingContextState | null>(null);
 
   const [soloImageFile, setSoloImageFile] = useState<File | null>(null);

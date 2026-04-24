@@ -296,8 +296,19 @@ async function preBuildMigrations() {
   }
 }
 
+async function typecheck() {
+  console.log("type-checking...");
+  try {
+    execSync("npx tsc --noEmit", { stdio: "inherit" });
+  } catch {
+    console.error("TypeScript type-check failed. Fix all errors before building.");
+    process.exit(1);
+  }
+}
+
 async function buildAll() {
   await preBuildMigrations();
+  await typecheck();
   await rm("dist", { recursive: true, force: true });
 
   console.log("building client...");

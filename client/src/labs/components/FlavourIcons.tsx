@@ -7,26 +7,6 @@ export function renderIcon(map: Record<string, FC<IconProps>>, key: string, size
   return Icon ? <Icon size={size} /> : null;
 }
 
-const icon = (d: string, viewBox = "0 0 24 24"): FC<IconProps> => {
-  const Comp: FC<IconProps> = ({ size = 20, ...props }) => (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={size}
-      height={size}
-      viewBox={viewBox}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.6}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d={d} />
-    </svg>
-  );
-  return Comp;
-};
-
 const multiIcon = (paths: string[], viewBox = "0 0 24 24"): FC<IconProps> => {
   const Comp: FC<IconProps> = ({ size = 20, ...props }) => (
     <svg

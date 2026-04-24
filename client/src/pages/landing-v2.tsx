@@ -2,9 +2,9 @@ import { useRef, useState, lazy, Suspense } from "react";
 import { Link } from "wouter";
 import { motion, useInView } from "framer-motion";
 import {
-  Wine, PenLine, Users, BarChart3, Sparkles, Camera, ChevronRight,
-  Search, GitCompareArrows, FileDown, Radar, Star, ClipboardList,
-  FlaskConical, Trophy, Layers, Eye, Archive, QrCode
+  PenLine, Users, BarChart3, Sparkles, Camera, ChevronRight,
+  GitCompareArrows, FileDown, Radar, Star, ClipboardList,
+  FlaskConical, Layers, Eye, Archive, QrCode
 } from "lucide-react";
 import { v, alpha } from "@/lib/themeVars";
 import heroImage from "@/assets/images/hero-whisky.png";

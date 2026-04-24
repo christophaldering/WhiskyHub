@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, real, doublePrecision, timestamp, boolean, jsonb, date, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, serial, real, doublePrecision, timestamp, boolean, jsonb, date, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -1434,6 +1434,21 @@ export interface AutoHandoutSelectedImage {
   source: string;
   license?: string;
 }
+
+// --- Chat (AI Integration boilerplate) ---
+export const conversations = pgTable("conversations", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull().references(() => conversations.id),
+  role: text("role").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
 export const AUTO_HANDOUT_CHAPTER_TYPES = {
   distillery: [

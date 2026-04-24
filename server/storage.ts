@@ -44,9 +44,7 @@ import {
   changelogEntries,
   type InsertChangelogEntry, type ChangelogEntry,
   sessionPresence,
-  type SessionPresence,
   appSettings,
-  type AppSetting,
   historicalTastings,
   historicalTastingEntries,
   historicalImportRuns,
@@ -55,7 +53,7 @@ import {
   type InsertHistoricalTasting, type HistoricalTasting,
   type InsertHistoricalTastingEntry, type HistoricalTastingEntry,
   type InsertHistoricalImportRun, type HistoricalImportRun,
-  type InsertHistoricalTastingParticipant, type HistoricalTastingParticipant,
+  type HistoricalTastingParticipant,
   type InsertHistoricalPersonalRating, type HistoricalPersonalRating,
   communities,
   communityMemberships,
@@ -89,8 +87,6 @@ import {
   bottleSplitClaims,
   type InsertBottleSplit, type BottleSplit,
   type InsertBottleSplitClaim, type BottleSplitClaim,
-  historicalPersonalRatings,
-  type InsertHistoricalPersonalRating, type HistoricalPersonalRating,
 } from "@shared/schema";
 
 export async function getUniquePersonCount(participantIds: string[]): Promise<number> {
@@ -2302,7 +2298,7 @@ export class DatabaseStorage implements IStorage {
     let highestOverall = 0;
 
     for (const rating of allRatings) {
-      if (rating.overall > highestOverall) highestOverall = rating.overall;
+      if ((rating.overall ?? 0) > highestOverall) highestOverall = rating.overall ?? 0;
       const w = whiskyMap.get(rating.whiskyId);
       if (w) {
         if (w.region) ratedRegions[w.region] = (ratedRegions[w.region] || 0) + 1;
@@ -2402,7 +2398,7 @@ export class DatabaseStorage implements IStorage {
       for (const r of allRatings) {
         const w = whiskyMap.get(r.whiskyId);
         if (!w || !w.peatLevel) continue;
-        const score = clampNormalized(r.normalizedScore ?? r.overall * (100 / (tastingScaleMap.get(r.tastingId) ?? 100)));
+        const score = clampNormalized(r.normalizedScore ?? (r.overall ?? 0) * (100 / (tastingScaleMap.get(r.tastingId) ?? 100)));
         const level = w.peatLevel.toLowerCase();
         if (level === "medium" || level === "heavy") {
           smokyScores.push(score);
@@ -2435,7 +2431,7 @@ export class DatabaseStorage implements IStorage {
       for (const r of allRatings) {
         const w = whiskyMap.get(r.whiskyId);
         if (!w || !w.caskType) continue;
-        const score = clampNormalized(r.normalizedScore ?? r.overall * (100 / (tastingScaleMap.get(r.tastingId) ?? 100)));
+        const score = clampNormalized(r.normalizedScore ?? (r.overall ?? 0) * (100 / (tastingScaleMap.get(r.tastingId) ?? 100)));
         const cask = w.caskType.toLowerCase();
         if (cask.includes("sherry") || cask.includes("port") || cask.includes("wine") || cask.includes("madeira") || cask.includes("rum")) {
           sherryScores.push(score);
@@ -2514,15 +2510,15 @@ export class DatabaseStorage implements IStorage {
     for (const r of allRatings) {
       const scale = tastingScaleMap.get(r.tastingId) ?? 100;
       const norm = 100 / scale;
-      const nNose = clampNormalized(r.normalizedNose ?? r.nose * norm);
-      const nTaste = clampNormalized(r.normalizedTaste ?? r.taste * norm);
-      const nFinish = clampNormalized(r.normalizedFinish ?? r.finish * norm);
-      const nOverall = clampNormalized(r.normalizedScore ?? r.overall * norm);
+      const nNose = clampNormalized(r.normalizedNose ?? (r.nose ?? 0) * norm);
+      const nTaste = clampNormalized(r.normalizedTaste ?? (r.taste ?? 0) * norm);
+      const nFinish = clampNormalized(r.normalizedFinish ?? (r.finish ?? 0) * norm);
+      const nOverall = clampNormalized(r.normalizedScore ?? (r.overall ?? 0) * norm);
       sumNose += nNose; sumTaste += nTaste; sumFinish += nFinish; sumOverall += nOverall;
       noseScores.push(nNose); tasteScores.push(nTaste); finishScores.push(nFinish); overallScores.push(nOverall);
       const w = whiskyMap.get(r.whiskyId);
       if (w) {
-        const normOverall = clampNormalized(r.normalizedScore ?? r.overall * norm);
+        const normOverall = clampNormalized(r.normalizedScore ?? (r.overall ?? 0) * norm);
         if (w.region) {
           if (!regionAcc[w.region]) regionAcc[w.region] = { total: 0, count: 0 };
           regionAcc[w.region].total += normOverall; regionAcc[w.region].count++;
@@ -2695,8 +2691,8 @@ export class DatabaseStorage implements IStorage {
     for (const r of filteredRatings) {
       const scale = tastingScaleMap.get(r.tastingId) ?? 100;
       const norm = 100 / scale;
-      sumNose += clampNormalized(r.normalizedNose ?? r.nose * norm); sumTaste += clampNormalized(r.normalizedTaste ?? r.taste * norm); sumFinish += clampNormalized(r.normalizedFinish ?? r.finish * norm);
-      sumOverall += clampNormalized(r.normalizedScore ?? r.overall * norm);
+      sumNose += clampNormalized(r.normalizedNose ?? (r.nose ?? 0) * norm); sumTaste += clampNormalized(r.normalizedTaste ?? (r.taste ?? 0) * norm); sumFinish += clampNormalized(r.normalizedFinish ?? (r.finish ?? 0) * norm);
+      sumOverall += clampNormalized(r.normalizedScore ?? (r.overall ?? 0) * norm);
       noseCount++;
       participantIds.add(r.participantId);
     }
@@ -4611,13 +4607,14 @@ export class DatabaseStorage implements IStorage {
     return await db.transaction(async (tx) => {
       const existingClaims = await tx.select().from(bottleSplitClaims)
         .where(eq(bottleSplitClaims.splitId, data.splitId));
-      const bottleClaims = existingClaims.filter(c => c.bottleIndex === data.bottleIndex);
+      const bottleIndex = data.bottleIndex ?? 0;
+      const bottleClaims = existingClaims.filter(c => c.bottleIndex === bottleIndex);
       const claimedMl = bottleClaims.reduce((sum, c) => sum + c.sizeMl, 0);
 
       const [split] = await tx.select().from(bottleSplits)
         .where(eq(bottleSplits.id, data.splitId));
       if (!split) throw new Error("Split not found");
-      const bottle = (split.bottles as any[])[data.bottleIndex];
+      const bottle = (split.bottles as any[])[bottleIndex];
       if (!bottle) throw new Error("Invalid bottle index");
       const availableMl = bottle.totalVolumeMl - (bottle.ownerKeepMl || 0) - claimedMl;
       if (data.sizeMl > availableMl) {

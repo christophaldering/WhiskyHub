@@ -8,10 +8,6 @@ import { analyzePeriod, detectAnomalies } from "./funnel-ai";
 const ADMIN_REPORT_EMAIL =
   process.env.ADMIN_REPORT_EMAIL || "christoph.aldering@googlemail.com";
 
-interface CountRow {
-  count: number;
-}
-
 interface TopPathRow {
   normalized_path: string;
   views: number;
@@ -167,7 +163,7 @@ async function gatherFunnelMetrics(): Promise<DailyMetrics["funnel"]> {
     const sourceMap = new Map<string, number>();
     const countryMap = new Map<string, number>();
     for (const r of rows) {
-      if (r.utm_source) sourceMap.set(r.utm_source, (sourceMap.get(r.utm_source) ?? 0) + r.count);
+      if (r.utmSource) sourceMap.set(r.utmSource, (sourceMap.get(r.utmSource) ?? 0) + r.count);
       if (r.country) countryMap.set(r.country, (countryMap.get(r.country) ?? 0) + r.count);
     }
     const topSources = [...sourceMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)

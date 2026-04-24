@@ -97,19 +97,6 @@ export function AuthFlowPanel({
     }
   }, [onSuccess, navigate, dialogMode]);
 
-  const handleClose = useCallback(() => {
-    let returnFrom: string | null = null;
-    try {
-      returnFrom = sessionStorage.getItem("returnFrom");
-      sessionStorage.removeItem("returnFrom");
-      sessionStorage.removeItem("returnTo");
-    } catch {}
-    if (onClose) onClose();
-    if (returnFrom && returnFrom.startsWith("/labs/")) {
-      navigate(returnFrom);
-    }
-  }, [onClose, navigate]);
-
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [pin, setPin] = useState("");

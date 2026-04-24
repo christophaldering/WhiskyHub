@@ -391,7 +391,7 @@ export default function LabsRatingPanel({
               <button
                 key={tag}
                 type="button"
-                onClick={() => !disabled && onChipToggle(activeTab, tag)}
+                onClick={() => !disabled && onChipToggle(activeTab as DimKey, tag)}
                 data-testid={`chip-selected-${tag.toLowerCase().replace(/\s+/g, "-")}`}
                 style={{
                   padding: "3px 10px",
@@ -471,9 +471,9 @@ export default function LabsRatingPanel({
                             if (disabled) return;
                             if (isSelected) {
                               const legacyMatch = activeChips.find((c) => normalizeLegacyChip(c).toLowerCase() === sub.en.toLowerCase());
-                              onChipToggle(activeTab, legacyMatch || sub.en);
+                              onChipToggle(activeTab as DimKey, legacyMatch || sub.en);
                             } else {
-                              onChipToggle(activeTab, sub.en);
+                              onChipToggle(activeTab as DimKey, sub.en);
                             }
                           }}
                           data-testid={`flavor-tag-${activeTab}-${sub.id}`}
@@ -961,7 +961,6 @@ export default function LabsRatingPanel({
   const renderWizardNavigation = () => {
     const canGoBack = wizardStep > 0;
     const canGoForward = wizardStep < 3;
-    const currentDim = wizardStep < 3 ? DIM_KEYS[wizardStep] : null;
     const stepLabel = isWizardOverallStep
       ? `${t("m2.rating.overall", "Overall")}`
       : `${wizardStep + 1} / 3`;

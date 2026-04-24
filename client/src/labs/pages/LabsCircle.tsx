@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useLocation, useSearch } from "wouter";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import {
   Users, Wine, ChevronRight, Activity, Star, UserPlus,
-  GlassWater, Trophy, Radio, FileText, Compass, Check, X, Trash2, Wifi, Clock,
+  GlassWater, Radio, FileText, Compass, Check, X, Trash2, Wifi, Clock,
   Globe, Mail, Send, BarChart3, Plus,
 } from "lucide-react";
 import CommunityInsights from "@/labs/components/CommunityInsights";

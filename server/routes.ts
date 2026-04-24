@@ -1,18 +1,18 @@
 import express, { type Express, type Request, type Response } from "express";
-import { createServer, type Server } from "http";
+import { type Server } from "http";
 // @ts-ignore
 import multer from "multer";
 import path from "path";
 import fs from "fs";
 import crypto from "crypto";
-import { readExcelBuffer, sheetToArrayOfArrays, sheetToJson, sheetToCsv, jsonToSheet, jsonToCsv, buildExcelBuffer, type SimpleWorkbook } from "./excel-utils";
+import { readExcelBuffer, sheetToArrayOfArrays, sheetToJson, sheetToCsv, jsonToCsv, buildExcelBuffer } from "./excel-utils";
 // @ts-ignore
 import AdmZip from "adm-zip";
-import { storage, getUniquePersonCount, deduplicateParticipantList, getAllCommunityRatings, buildCommunityWhiskyKey, invalidateCommunityRatingsCache } from "./storage";
-import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema, insertBenchmarkEntrySchema, type Participant, type WhiskyFriend, type WhiskybaseCollectionItem, type JournalEntry, type PdfSplitPage, type WhiskyHandoutLibraryEntry, type InsertWhiskyHandoutLibraryEntry } from "@shared/schema";
+import { storage, getUniquePersonCount, deduplicateParticipantList, getAllCommunityRatings, buildCommunityWhiskyKey } from "./storage";
+import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema, type Participant, type WhiskyFriend, type WhiskybaseCollectionItem, type JournalEntry, type PdfSplitPage, type WhiskyHandoutLibraryEntry, type InsertWhiskyHandoutLibraryEntry } from "@shared/schema";
 import OpenAI from "openai";
 import { z } from "zod";
-import { APP_VERSION, getVersionInfo } from "@shared/version";
+import { getVersionInfo } from "@shared/version";
 import { clampNormalized } from "@shared/score-utils";
 import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail, buildThankYouEmail, buildAdminLoginNotification, buildFriendInviteEmail, buildCommunityInviteEmail, buildMagicLinkEmail } from "./email";
 import { extractPagesText } from "./pdf-utils";
@@ -109,23 +109,6 @@ function getDefaultSetting(key: string): string {
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-const upload = multer({
-  storage: multer.diskStorage({
-    destination: (_req: any, _file: any, cb: any) => cb(null, uploadsDir),
-    filename: (_req: any, file: any, cb: any) => {
-      const ext = path.extname(file.originalname).toLowerCase();
-      cb(null, `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`);
-    },
-  }),
-  limits: { fileSize: 20 * 1024 * 1024 },
-  fileFilter: (_req: any, file: any, cb: any) => {
-    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"];
-    const heicExtensions = [".heic", ".heif"];
-    const ext = file.originalname ? file.originalname.toLowerCase().slice(file.originalname.lastIndexOf(".")) : "";
-    if (allowed.includes(file.mimetype) || heicExtensions.includes(ext)) cb(null, true);
-    else cb(new Error("Nur JPG, PNG, WebP, GIF und HEIC Bilder sind erlaubt."));
-  },
-});
 
 const memUpload = multer({
   storage: multer.memoryStorage(),
@@ -733,7 +716,7 @@ export async function registerRoutes(
       timestamp: new Date(),
     });
     sendEmail({ to: ADMIN_NOTIFICATION_EMAIL, ...emailContent }).catch((err) => {
-      log(`Admin login notification email failed: ${err?.message || err}`, "email");
+      console.error(`Admin login notification email failed: ${err?.message || err}`);
     });
   }
 
@@ -762,7 +745,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/client-error", (req: Request, res: Response) => {
-    const { message, stack, componentStack, url, userAgent, timestamp } = req.body || {};
+    const { message, stack, componentStack, url, userAgent } = req.body || {};
     console.error(`[CLIENT ERROR] ${message || "unknown"} at ${url || "?"} (${userAgent?.slice(0, 80) || "?"})`);
     if (stack) console.error(`  Stack: ${String(stack).slice(0, 500)}`);
     if (componentStack) console.error(`  Component: ${String(componentStack).slice(0, 300)}`);
@@ -1531,6 +1514,7 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Password must be 4–64 characters" });
       }
       const bcrypt = await import("bcrypt");
+      // @ts-ignore
       const hashedPin = await bcrypt.hash(pin, 10);
       const updates: any = { pin: hashedPin };
       if (email && typeof email === "string") {
@@ -2720,7 +2704,7 @@ export async function registerRoutes(
       const lengthPref = ["compact", "medium", "long"].includes(req.body.length) ? req.body.length : "medium";
       const forceRefresh = req.body.forceRefresh === true;
 
-      const { getOrCreateTastingHandout, updateTastingHandout, ensureDistilleryProfile, ensureWhiskyProfile, assembleHandout } = await import("./auto-handout/index.js");
+      const { getOrCreateTastingHandout, updateTastingHandout, ensureDistilleryProfile, ensureWhiskyProfile } = await import("./auto-handout/index.js");
       await getOrCreateTastingHandout(req.params.id);
 
       const tastingWhiskies = await storage.getWhiskiesForTasting(req.params.id);
@@ -2822,7 +2806,7 @@ export async function registerRoutes(
       const lang = language === "en" ? "en" : "de";
       const t = ["sachlich", "erzaehlerisch", "locker"].includes(tone) ? tone : "erzaehlerisch";
       const lp = ["compact", "medium", "long"].includes(length) ? length : "medium";
-      const { regenerateDistilleryChapter, regenerateWhiskyChapter, getWhiskyProfile } = await import("./auto-handout/index.js");
+      const { regenerateDistilleryChapter, regenerateWhiskyChapter } = await import("./auto-handout/index.js");
 
       if (kind === "distillery") {
         const updated = await regenerateDistilleryChapter(client, subjectKey, chapterId, { language: lang, tone: t, lengthPref: lp });
@@ -5374,7 +5358,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
 
   // ===== SESSION AUTH (shared by Classic + Simple) =====
   const sessionSigninAttempts = new Map<string, { count: number; resetAt: number }>();
-  const sessionResumeTokens = new Map<string, { mode: string; name?: string; expiresAt: number }>();
+  const sessionResumeTokens = new Map<string, { mode: string; name?: string; pid?: string; role?: string; expiresAt: number }>();
   const sessionResumeAttempts = new Map<string, { count: number; resetAt: number }>();
 
   function generateResumeToken(): string {
@@ -5405,7 +5389,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       sessionSigninAttempts.set(clientIp, { count: 1, resetAt: now + 5 * 60 * 1000 });
     }
 
-    const { name, email, pin, password, mode, remember } = req.body || {};
+    const { name, email, pin, password, mode } = req.body || {};
     const credential = password || pin;
     if (!credential || typeof credential !== "string") {
       return res.status(400).json({ ok: false, message: "Password is required" });
@@ -5863,7 +5847,6 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const includedParticipantCount = tastingParticipants.filter((p) => !excludedSet.has(p.participantId)).length;
       const excludedCount = excludedSet.size;
 
-      const whiskyMap = new Map(allWhiskies.map((w) => [w.id, w]));
       const scale = tasting.ratingScale ?? 100;
       const normFactor = 100 / scale;
 
@@ -5877,10 +5860,10 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
 
       const results = allWhiskies.map((w) => {
         const rats = grouped[w.id] || [];
-        const overalls = rats.map((r) => r.normalizedScore ?? r.overall * normFactor).filter((v): v is number => v != null).map(clampNormalized);
-        const noses = rats.map((r) => r.normalizedNose ?? r.nose * normFactor).filter((v): v is number => v != null).map(clampNormalized);
-        const tastes = rats.map((r) => r.normalizedTaste ?? r.taste * normFactor).filter((v): v is number => v != null).map(clampNormalized);
-        const finishes = rats.map((r) => r.normalizedFinish ?? r.finish * normFactor).filter((v): v is number => v != null).map(clampNormalized);
+        const overalls = rats.map((r) => r.normalizedScore ?? (r.overall ?? 0) * normFactor).filter((v): v is number => v != null).map(clampNormalized);
+        const noses = rats.map((r) => r.normalizedNose ?? (r.nose ?? 0) * normFactor).filter((v): v is number => v != null).map(clampNormalized);
+        const tastes = rats.map((r) => r.normalizedTaste ?? (r.taste ?? 0) * normFactor).filter((v): v is number => v != null).map(clampNormalized);
+        const finishes = rats.map((r) => r.normalizedFinish ?? (r.finish ?? 0) * normFactor).filter((v): v is number => v != null).map(clampNormalized);
 
         return {
           whiskyId: w.id,
@@ -5898,10 +5881,10 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
           avgFinish: avg(finishes),
           ratings: rats.map((r) => ({
             participantId: r.participantId,
-            overall: clampNormalized(r.normalizedScore ?? r.overall * normFactor),
-            nose: clampNormalized(r.normalizedNose ?? r.nose * normFactor),
-            taste: clampNormalized(r.normalizedTaste ?? r.taste * normFactor),
-            finish: clampNormalized(r.normalizedFinish ?? r.finish * normFactor),
+            overall: clampNormalized(r.normalizedScore ?? (r.overall ?? 0) * normFactor),
+            nose: clampNormalized(r.normalizedNose ?? (r.nose ?? 0) * normFactor),
+            taste: clampNormalized(r.normalizedTaste ?? (r.taste ?? 0) * normFactor),
+            finish: clampNormalized(r.normalizedFinish ?? (r.finish ?? 0) * normFactor),
             notes: r.notes,
           })),
         };
@@ -5961,6 +5944,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         storage.getWhiskiesForTasting(req.params.id),
       ]);
 
+      const normFactor = 100 / (tasting.ratingScale ?? 100);
       const avg = (arr: number[]) => arr.length ? Math.round((arr.reduce((s, v) => s + v, 0) / arr.length) * 10) / 10 : null;
 
       const rows = allWhiskies
@@ -5975,9 +5959,9 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
             Age: w.age ?? "",
             ABV: w.abv ?? "",
             "Avg Overall": avg(overalls)?.toFixed(1) ?? "",
-            "Avg Nose": avg(rats.map(r => r.normalizedNose ?? r.nose * normFactor).filter((v): v is number => v != null))?.toFixed(1) ?? "",
-            "Avg Taste": avg(rats.map(r => r.normalizedTaste ?? r.taste * normFactor).filter((v): v is number => v != null))?.toFixed(1) ?? "",
-            "Avg Finish": avg(rats.map(r => r.normalizedFinish ?? r.finish * normFactor).filter((v): v is number => v != null))?.toFixed(1) ?? "",
+            "Avg Nose": avg(rats.map(r => r.normalizedNose ?? (r.nose ?? 0) * normFactor).filter((v): v is number => v != null))?.toFixed(1) ?? "",
+            "Avg Taste": avg(rats.map(r => r.normalizedTaste ?? (r.taste ?? 0) * normFactor).filter((v): v is number => v != null))?.toFixed(1) ?? "",
+            "Avg Finish": avg(rats.map(r => r.normalizedFinish ?? (r.finish ?? 0) * normFactor).filter((v): v is number => v != null))?.toFixed(1) ?? "",
             Ratings: rats.length,
           };
         })
@@ -6096,7 +6080,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const count = wr.length;
       if (count === 0) return { whisky: w, count: 0, avg: 0, median: 0, stdDev: 0, iqr: null, categories: {}, myRating: null };
 
-      const overallScores = wr.map(r => norm(r.overall));
+      const overallScores = wr.map(r => norm(r.overall ?? 0));
       const avg = overallScores.reduce((a, b) => a + b, 0) / count;
       const median = calcMedian(overallScores);
       const variance = overallScores.reduce((acc, val) => acc + Math.pow(val - avg, 2), 0) / count;
@@ -6105,12 +6089,12 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
 
       const categoryAvg = (key: "nose" | "taste" | "finish") => {
         const normKey = key === "nose" ? "normalizedNose" : key === "taste" ? "normalizedTaste" : "normalizedFinish";
-        const vals = wr.map(r => r[normKey] ?? norm(r[key]));
+        const vals = wr.map(r => r[normKey] ?? norm(r[key] ?? 0));
         return vals.reduce((a, b) => a + b, 0) / count;
       };
       const categoryMedian = (key: "nose" | "taste" | "finish") => {
         const normKey = key === "nose" ? "normalizedNose" : key === "taste" ? "normalizedTaste" : "normalizedFinish";
-        const vals = wr.map(r => r[normKey] ?? norm(r[key]));
+        const vals = wr.map(r => r[normKey] ?? norm(r[key] ?? 0));
         return calcMedian(vals);
       };
 
@@ -6119,10 +6103,10 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         const mine = wr.find(r => r.participantId === validRequesterId);
         if (mine) {
           myRating = {
-            nose: norm(mine.nose),
-            taste: norm(mine.taste),
-            finish: norm(mine.finish),
-            overall: norm(mine.overall),
+            nose: norm(mine.nose ?? 0),
+            taste: norm(mine.taste ?? 0),
+            finish: norm(mine.finish ?? 0),
+            overall: norm(mine.overall ?? 0),
           };
         }
       }
@@ -6147,7 +6131,6 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
 
     let kendallW: number | null = null;
     if (participantCount >= 2 && whiskyList.length >= 2) {
-      const k = participantCount;
       const n = whiskyList.length;
       const whiskyIds = whiskyList.map(w => w.id);
 
@@ -6157,7 +6140,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         if (pRatings.length < n) continue;
         const scores = whiskyIds.map(wid => {
           const rat = pRatings.find(r => r.whiskyId === wid);
-          return rat ? norm(rat.overall) : 0;
+          return rat ? norm(rat.overall ?? 0) : 0;
         });
         const sorted = [...scores].map((v, i) => ({ v, i })).sort((a, b) => a.v - b.v);
         const ranks = new Array(n);
@@ -6184,7 +6167,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
     }
 
     const overallDistribution: { bin: string; count: number }[] = [];
-    const allOverall = allRatings.map(r => norm(r.overall));
+    const allOverall = allRatings.map(r => norm(r.overall ?? 0));
     const bins = [
       { label: "0-20", min: 0, max: 20 },
       { label: "21-40", min: 21, max: 40 },
@@ -6256,13 +6239,13 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const wr = allRatings.filter(r => r.whiskyId === w.id);
       const count = wr.length;
       if (count === 0) return { whisky: w, count: 0, avg: 0, median: 0, stdDev: 0, noseAvg: 0, tasteAvg: 0, finishAvg: 0 };
-      const overallScores = wr.map(r => norm(r.overall));
+      const overallScores = wr.map(r => norm(r.overall ?? 0));
       const avg = overallScores.reduce((a, b) => a + b, 0) / count;
       const median = calcMedian(overallScores);
       const variance = overallScores.reduce((acc, val) => acc + Math.pow(val - avg, 2), 0) / count;
       const catAvg = (key: "nose" | "taste" | "finish") => {
         const normKey = key === "nose" ? "normalizedNose" : key === "taste" ? "normalizedTaste" : "normalizedFinish";
-        const vals = wr.map(r => r[normKey] ?? norm(r[key]));
+        const vals = wr.map(r => r[normKey] ?? norm(r[key] ?? 0));
         return vals.reduce((a, b) => a + b, 0) / count;
       };
       return { whisky: w, count, avg: r1(avg), median: r1(median), stdDev: r1(Math.sqrt(variance)), noseAvg: r1(catAvg("nose")), tasteAvg: r1(catAvg("taste")), finishAvg: r1(catAvg("finish")) };
@@ -6299,14 +6282,14 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       for (const w of whiskyList) {
         const mine = allRatings.find(r => r.whiskyId === w.id && r.participantId === validRequesterId);
         const wr = allRatings.filter(r => r.whiskyId === w.id);
-        const groupMedian = calcMedian(wr.map(r => norm(r.overall)));
+        const groupMedian = calcMedian(wr.map(r => norm(r.overall ?? 0)));
         if (mine) {
-          const myOverall = norm(mine.overall);
+          const myOverall = norm(mine.overall ?? 0);
           mySheet.addRow({
             name: w.name || `Whisky #${(w as any).sortOrder || ''}`,
-            myNose: norm(mine.nose),
-            myTaste: norm(mine.taste),
-            myFinish: norm(mine.finish),
+            myNose: norm(mine.nose ?? 0),
+            myTaste: norm(mine.taste ?? 0),
+            myFinish: norm(mine.finish ?? 0),
             myOverall,
             groupMedian: r1(groupMedian),
             diff: r1(myOverall - groupMedian),
@@ -6713,7 +6696,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       try {
         const adderName = adder?.name || firstName.trim();
         const platformLink = process.env.APP_BASE_URL || "https://casksense.com";
-        const lang = (req.headers["accept-language"] || "").startsWith("de") ? "de" : "en";
+        const lang = ((req.headers["accept-language"] as string) || "").startsWith("de") ? "de" : "en";
         const emailContent = buildFriendInviteEmail({
           adderName,
           recipientName: firstName.trim(),
@@ -6748,7 +6731,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const adder = await storage.getParticipant(req.params.id);
       const adderName = adder?.name || "A friend";
       const platformLink = process.env.APP_BASE_URL || "https://casksense.com";
-      const lang = (req.headers["accept-language"] || "").startsWith("de") ? "de" : "en";
+      const lang = ((req.headers["accept-language"] as string) || "").startsWith("de") ? "de" : "en";
       const emailContent = buildFriendInviteEmail({
         adderName,
         recipientName: friend.firstName,
@@ -7003,7 +6986,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         if (!trimmed || !trimmed.includes("@")) continue;
 
         const token = crypto.randomBytes(24).toString("hex");
-        const invite = await storage.createInvite({
+        await storage.createInvite({
           tastingId: tasting.id,
           email: trimmed,
           token,
@@ -8205,7 +8188,7 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
         distillery: rw.whisky.distillery ?? undefined,
         region: rw.whisky.region ?? undefined,
         scores: { nose: rw.rating.nose, taste: rw.rating.taste, finish: rw.rating.finish, overall: rw.rating.overall },
-        flavors: rw.rating.flavors || [],
+        flavors: (rw.rating as any).flavors || [],
         vsGroupOverall: rw.rating.overall != null && groupAvgOverall != null ? Math.round((rw.rating.overall - groupAvgOverall) * 10) / 10 : null,
       }));
       const scoredJournalEntries = journalEntries.filter(j =>
@@ -8249,7 +8232,7 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
       const customPrompt = typeof req.body?.customPrompt === "string" ? req.body.customPrompt.trim().slice(0, 500) : "";
       const tastingId = typeof req.body?.tastingId === "string" ? req.body.tastingId.trim() : undefined;
       const requestedLang = req.body?.language;
-      const acceptLang = req.headers["accept-language"] || "";
+      const acceptLang = (req.headers["accept-language"] as string) || "";
       const primaryLang = requestedLang === "de" || requestedLang === "en"
         ? requestedLang
         : participant.language === "de" || acceptLang.startsWith("de") ? "de" : "en";
@@ -8280,7 +8263,7 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
 
       let communityRankPosition: number | null = null;
       try {
-        const communityScores = await storage.getCommunityScores();
+        await storage.getCommunityScores();
         const allParticipantIds = new Set<string>();
         const allRatings = await storage.getAllRatings();
         for (const r of allRatings) allParticipantIds.add(r.participantId);
@@ -8333,7 +8316,7 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
         distillery: rw.whisky.distillery ?? undefined,
         region: rw.whisky.region ?? undefined,
         scores: { nose: rw.rating.nose, taste: rw.rating.taste, finish: rw.rating.finish, overall: rw.rating.overall },
-        flavors: rw.rating.flavors || [],
+        flavors: (rw.rating as any).flavors || [],
         vsGroupOverall: rw.rating.overall != null && groupAvgOverall != null ? Math.round((rw.rating.overall - groupAvgOverall) * 10) / 10 : null,
       }));
 
@@ -11805,8 +11788,8 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           const norm = 100 / scale;
           return {
             whiskyId: r.whiskyId,
-            nose: clampNormalized(r.normalizedNose ?? r.nose * norm), taste: clampNormalized(r.normalizedTaste ?? r.taste * norm), finish: clampNormalized(r.normalizedFinish ?? r.finish * norm),
-            overall: clampNormalized(r.normalizedScore ?? r.overall * norm),
+            nose: clampNormalized(r.normalizedNose ?? (r.nose ?? 0) * norm), taste: clampNormalized(r.normalizedTaste ?? (r.taste ?? 0) * norm), finish: clampNormalized(r.normalizedFinish ?? (r.finish ?? 0) * norm),
+            overall: clampNormalized(r.normalizedScore ?? (r.overall ?? 0) * norm),
             ratedAt: r.updatedAt || null,
           };
         });
@@ -11876,7 +11859,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         if (!completedTastingStatuses.has(tastingStatusMap.get(r.tastingId) ?? "")) continue;
         const scale = tastingScaleMap.get(r.tastingId) ?? 100;
         const norm = 100 / scale;
-        const normOverall = clampNormalized(r.normalizedScore ?? r.overall * norm);
+        const normOverall = clampNormalized(r.normalizedScore ?? (r.overall ?? 0) * norm);
         platformAllOveralls.push(normOverall);
         platformParticipantIds.add(r.participantId);
 
@@ -11884,9 +11867,9 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           platformByWhisky[r.whiskyId] = { overalls: [], nose: [], taste: [], finish: [] };
         }
         platformByWhisky[r.whiskyId].overalls.push(normOverall);
-        platformByWhisky[r.whiskyId].nose.push(clampNormalized(r.normalizedNose ?? r.nose * norm));
-        platformByWhisky[r.whiskyId].taste.push(clampNormalized(r.normalizedTaste ?? r.taste * norm));
-        platformByWhisky[r.whiskyId].finish.push(clampNormalized(r.normalizedFinish ?? r.finish * norm));
+        platformByWhisky[r.whiskyId].nose.push(clampNormalized(r.normalizedNose ?? (r.nose ?? 0) * norm));
+        platformByWhisky[r.whiskyId].taste.push(clampNormalized(r.normalizedTaste ?? (r.taste ?? 0) * norm));
+        platformByWhisky[r.whiskyId].finish.push(clampNormalized(r.normalizedFinish ?? (r.finish ?? 0) * norm));
       }
 
       const platformMedianOverall = calcMedian(platformAllOveralls);
@@ -11981,10 +11964,10 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
             for (const r of friendRatings) {
               const scale = tastingScaleMap.get(r.tastingId) ?? 100;
               const norm = 100 / scale;
-              friendDimScores.nose.push(clampNormalized(r.normalizedNose ?? r.nose * norm));
-              friendDimScores.taste.push(clampNormalized(r.normalizedTaste ?? r.taste * norm));
-              friendDimScores.finish.push(clampNormalized(r.normalizedFinish ?? r.finish * norm));
-              friendDimScores.overall.push(clampNormalized(r.normalizedScore ?? r.overall * norm));
+              friendDimScores.nose.push(clampNormalized(r.normalizedNose ?? (r.nose ?? 0) * norm));
+              friendDimScores.taste.push(clampNormalized(r.normalizedTaste ?? (r.taste ?? 0) * norm));
+              friendDimScores.finish.push(clampNormalized(r.normalizedFinish ?? (r.finish ?? 0) * norm));
+              friendDimScores.overall.push(clampNormalized(r.normalizedScore ?? (r.overall ?? 0) * norm));
             }
             const friendMedians: Record<string, number> = {};
             for (const dim of dims) {
@@ -12004,10 +11987,10 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           if (!completedTastingStatuses.has(tastingStatusMap.get(r.tastingId) ?? "")) continue;
           const scale = tastingScaleMap.get(r.tastingId) ?? 100;
           const norm = 100 / scale;
-          platformDimScores.nose.push(clampNormalized(r.normalizedNose ?? r.nose * norm));
-          platformDimScores.taste.push(clampNormalized(r.normalizedTaste ?? r.taste * norm));
-          platformDimScores.finish.push(clampNormalized(r.normalizedFinish ?? r.finish * norm));
-          platformDimScores.overall.push(clampNormalized(r.normalizedScore ?? r.overall * norm));
+          platformDimScores.nose.push(clampNormalized(r.normalizedNose ?? (r.nose ?? 0) * norm));
+          platformDimScores.taste.push(clampNormalized(r.normalizedTaste ?? (r.taste ?? 0) * norm));
+          platformDimScores.finish.push(clampNormalized(r.normalizedFinish ?? (r.finish ?? 0) * norm));
+          platformDimScores.overall.push(clampNormalized(r.normalizedScore ?? (r.overall ?? 0) * norm));
         }
         const platformMedians: Record<string, number> = {};
         for (const dim of dims) {
@@ -18876,7 +18859,7 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
       // 2a. Category Correlations: Pearson correlation between sub-scores and overall
       const corrData = allRatings.map(r => {
         const norm = 100 / r.scale;
-        return { nose: clampNormalized(r.normalizedNose ?? r.nose * norm), taste: clampNormalized(r.normalizedTaste ?? r.taste * norm), finish: clampNormalized(r.normalizedFinish ?? r.finish * norm), overall: clampNormalized(r.normalizedScore ?? r.overall * norm) };
+        return { nose: clampNormalized(r.normalizedNose ?? (r.nose ?? 0) * norm), taste: clampNormalized(r.normalizedTaste ?? (r.taste ?? 0) * norm), finish: clampNormalized(r.normalizedFinish ?? (r.finish ?? 0) * norm), overall: clampNormalized(r.normalizedScore ?? (r.overall ?? 0) * norm) };
       });
       const pearson = (xs: number[], ys: number[]): number => {
         const n = xs.length;
@@ -18924,9 +18907,9 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
         const pRatings = allRatings.filter(r => r.participantId === pid);
         if (pRatings.length < 3) return null;
         const norm = (r: typeof pRatings[0]) => 100 / r.scale;
-        const avgNose = pRatings.reduce((a, r) => a + (r.normalizedNose ?? r.nose * norm(r)), 0) / pRatings.length;
-        const avgTaste = pRatings.reduce((a, r) => a + (r.normalizedTaste ?? r.taste * norm(r)), 0) / pRatings.length;
-        const avgFinish = pRatings.reduce((a, r) => a + (r.normalizedFinish ?? r.finish * norm(r)), 0) / pRatings.length;
+        const avgNose = pRatings.reduce((a, r) => a + (r.normalizedNose ?? (r.nose ?? 0) * norm(r)), 0) / pRatings.length;
+        const avgTaste = pRatings.reduce((a, r) => a + (r.normalizedTaste ?? (r.taste ?? 0) * norm(r)), 0) / pRatings.length;
+        const avgFinish = pRatings.reduce((a, r) => a + (r.normalizedFinish ?? (r.finish ?? 0) * norm(r)), 0) / pRatings.length;
         return { participantId: pid, name: participantMap.get(pid) ?? "Unknown", nose: avgNose, taste: avgTaste, finish: avgFinish, ratingCount: pRatings.length };
       }).filter(Boolean);
 

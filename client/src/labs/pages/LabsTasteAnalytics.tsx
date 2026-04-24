@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import { useSession } from "@/lib/session";
 import { statsApi, flavorProfileApi, journalApi, ratingNotesApi } from "@/lib/api";
-import { ChevronLeft, Lock, TrendingUp, TrendingDown, Minus, PenLine, Sparkles, Info } from "lucide-react";
+import { Lock, TrendingUp, TrendingDown, Minus, PenLine, Sparkles, Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useAppleTheme, SP, withAlpha } from "@/labs/hooks/useAppleTheme";
@@ -27,10 +27,6 @@ interface ParticipantStats {
   totalRatings?: number;
   totalTastingWhiskies?: number;
   totalJournalEntries?: number;
-}
-
-interface ParticipantDetail {
-  ratingStabilityScore?: number | null;
 }
 
 interface WhiskyProfileResponse {
@@ -163,7 +159,7 @@ function RatingConsistencyCard({ pid }: { pid: string }) {
   const { t } = useTranslation();
   const { data: profile } = useQuery({
     queryKey: ["labs-whisky-profile-analytics", pid],
-    queryFn: () => flavorProfileApi.getWhiskyProfile(pid, "all_incl_imported"),
+    queryFn: () => flavorProfileApi.getWhiskyProfile(pid || "", "all_incl_imported"),
     enabled: !!pid,
     staleTime: 120000,
   });
@@ -317,7 +313,7 @@ export default function LabsTasteAnalytics() {
 
   const { data: scaleInfo } = useQuery<{ hasMultipleScales?: boolean }>({
     queryKey: ["labs-whisky-profile-scale-info", pid],
-    queryFn: () => flavorProfileApi.getWhiskyProfile(pid, "all_incl_imported"),
+    queryFn: () => flavorProfileApi.getWhiskyProfile(pid || "", "all_incl_imported"),
     enabled: !!pid,
     staleTime: 120000,
   });

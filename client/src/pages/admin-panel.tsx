@@ -8,7 +8,7 @@ import { useAppStore } from "@/lib/store";
 import { useAIStatus } from "@/hooks/use-ai-status";
 import type { EncyclopediaSuggestion } from "@shared/schema";
 import { RichTextEditor } from "@/components/rich-text-editor";
-import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus, Heart, Rocket, Wifi, Star, Brain, Clock, Settings, FlaskConical, Filter, AlertTriangle, Globe, UserPlus, BellRing, Megaphone, Scale } from "lucide-react";
+import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus, Heart, Rocket, Wifi, Brain, Clock, Settings, FlaskConical, Filter, AlertTriangle, Globe, BellRing, Megaphone, Scale } from "lucide-react";
 import AnalyticsDashboard from "@/components/admin/AnalyticsDashboard";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -686,26 +686,6 @@ export default function AdminPanel() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
       toast({ title: t("admin.dbAccessUpdated") });
-    },
-    onError: (e: Error) => toast({ title: t("admin.error"), description: e.message, variant: "destructive" }),
-  });
-
-  const levelMutation = useMutation({
-    mutationFn: ({ participantId, level }: { participantId: string; level: string }) =>
-      adminApi.updateExperienceLevel(participantId, level, currentParticipant!.id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
-      toast({ title: t("admin.levelUpdated") });
-    },
-    onError: (e: Error) => toast({ title: t("admin.error"), description: e.message, variant: "destructive" }),
-  });
-
-  const batchLevelMutation = useMutation({
-    mutationFn: ({ participantIds, level }: { participantIds: string[]; level: string }) =>
-      adminApi.batchExperienceLevel(participantIds, level, currentParticipant!.id),
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
-      toast({ title: `${data.updated} participants updated` });
     },
     onError: (e: Error) => toast({ title: t("admin.error"), description: e.message, variant: "destructive" }),
   });

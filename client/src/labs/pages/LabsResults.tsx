@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Sparkles, Download, FileText, FileSpreadsheet, Clock, Monitor, Archive, Check, Info, Lock, Loader2 } from "lucide-react";
-import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/lib/store";
@@ -35,7 +35,6 @@ function labsExportPdf(tasting: any, whiskyResults: any[], t: (key: string) => s
   const marginX = 18;
   const contentW = pageW - marginX * 2;
   const accent: [number, number, number] = [212, 162, 86];
-  const dark: [number, number, number] = [30, 28, 24];
   const muted: [number, number, number] = [138, 126, 109];
   const bg: [number, number, number] = [26, 23, 20];
   const textColor: [number, number, number] = [245, 240, 232];
@@ -553,7 +552,7 @@ function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCou
                 <h2 className="labs-serif" style={{ fontSize: "clamp(28px, 5vw, 52px)", fontWeight: 700, color: "var(--labs-text)", lineHeight: 1.05, maxWidth: 600 }}>
                   {(slide.data?.title as string) || ""}
                 </h2>
-                {slide.data?.subtitle && (
+                {!!(slide.data?.subtitle) && (
                   <p style={{ fontSize: "clamp(14px, 2vw, 18px)", color: "var(--labs-text-muted)", marginTop: 12, maxWidth: 450 }}>
                     {slide.data.subtitle as string}
                   </p>
@@ -1001,18 +1000,6 @@ export default function LabsResults({ params }: LabsResultsProps) {
   const isHost = currentParticipant?.id === tasting.hostId;
   const presentationActive = tasting.presentationSlide != null && !isHost;
 
-  const getWhiskyDisplayName = (
-    whisky: any,
-    index: number
-  ) => {
-    if (!tasting.blindMode) return whisky.name;
-    const isRevealed = (tasting.guidedRevealStep ?? 0) >= 1 ||
-                        tasting.status === 'archived';
-    return isRevealed
-      ? whisky.name
-      : `Sample ${index + 1}`;
-  };
-
   if (presentationActive) {
     return (
       <PresentationViewerOverlay
@@ -1371,7 +1358,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                           const d = w.myRating?.overall != null ? w.myRating.overall - mostRecent.overall : null;
                           if (d == null) return null;
                           const rd = fmt(d)!;
-                          return <span className="font-semibold" style={{ color: d > 0 ? "var(--labs-success)" : d < 0 ? "var(--labs-danger)" : "var(--labs-text-muted)" }}>{rd > 0 ? `+${rd}` : rd === 0 ? "=" : rd}</span>;
+                          return <span className="font-semibold" style={{ color: d > 0 ? "var(--labs-success)" : d < 0 ? "var(--labs-danger)" : "var(--labs-text-muted)" }}>{d > 0 ? `+${rd}` : d === 0 ? "=" : rd}</span>;
                         })()}
                       </span>
                     )}

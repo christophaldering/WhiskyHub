@@ -1042,7 +1042,7 @@ function CompactRadar({
 }) {
   const { t } = useTranslation();
   const isDark = useIsDarkTheme();
-  const [enabledCats, setEnabledCats] = useState<Set<CategoryId>>(new Set(["islay", "speyside"]));
+  const [enabledCats, setEnabledCats] = useState<Set<CategoryId>>(new Set<CategoryId>(["islay", "speyside"]));
   const [selectedRadarCat, setSelectedRadarCat] = useState<CategoryId | null>(null);
   const [selectedAxis, setSelectedAxis] = useState<string | null>(null);
   const cx = 150, cy = 145, maxR = 110;

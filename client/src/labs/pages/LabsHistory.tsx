@@ -5,16 +5,14 @@ import { Link, useRoute, useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
-import { useAppStore } from "@/lib/store";
 import { formatScore } from "@/lib/utils";
 import { getParticipantId } from "@/lib/api";
-import { useSession } from "@/lib/session";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
 import {
   Search, Wine, Trophy, Calendar, BarChart3,
   ArrowUpDown, ChevronLeft, ChevronRight, Archive, Sparkles, RefreshCw,
-  LogIn, MapPin, Flame, Droplets, TrendingUp,
-  Loader2, UserCheck, Users,
+  MapPin, Flame, Droplets, TrendingUp,
+  UserCheck, Users,
 } from "lucide-react";
 import { useIsEmbeddedInExplore } from "@/labs/embeddedExploreContext";
 import {
@@ -320,10 +318,9 @@ function LabsHistoryList() {
 export function LabsHistoryInsights() {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
-  const session = useSession();
   const pid = getParticipantId();
 
-  const { data: myCommunities, isLoading: commLoading } = useQuery<{ communities: Array<{ id: string }> }>({
+  const { isLoading: commLoading } = useQuery<{ communities: Array<{ id: string }> }>({
     queryKey: ["my-communities", pid],
     queryFn: async () => {
       if (!pid) return { communities: [] };
@@ -333,9 +330,6 @@ export function LabsHistoryInsights() {
     },
     enabled: !!pid,
   });
-
-  const isMember = session.role === "admin" || (myCommunities?.communities?.length ?? 0) > 0;
-  const isAdmin = session.role === "admin";
 
   const { data: analytics, isLoading, isError, refetch } = useQuery<AnalyticsData>({
     queryKey: ["historical-analytics"],

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
-import { ArrowLeft, Clock, Loader2, Users } from "lucide-react";
+import { ArrowLeft, Clock, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useLabsBack } from "@/labs/LabsLayout";
@@ -12,7 +12,7 @@ type ViewTab = "overview" | "rate" | "results";
 export default function LabsBottleSharingDetail({ id }: { id: string }) {
   const { currentParticipant } = useAppStore();
   const { t } = useTranslation();
-  const [, navigate] = useLocation();
+  useLocation();
   const goBack = useLabsBack("/labs/bottle-sharing");
 
   const [sharing, setSharing] = useState<any>(null);

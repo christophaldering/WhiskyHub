@@ -4,7 +4,6 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { discussionApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, MessageCircle, Lock } from "lucide-react";

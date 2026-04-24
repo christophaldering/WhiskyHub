@@ -9,7 +9,7 @@ export function extractRejoinCodeFromText(text: string): string | null {
   const cleaned = (text || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
   for (let i = 0; i + 6 <= cleaned.length; i++) {
     const candidate = cleaned.slice(i, i + 6);
-    if ([...candidate].every((c) => REJOIN_ALPHABET.includes(c))) return candidate;
+    if (candidate.split("").every((c) => REJOIN_ALPHABET.includes(c))) return candidate;
   }
   return null;
 }

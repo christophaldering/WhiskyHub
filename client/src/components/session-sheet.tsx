@@ -4,7 +4,6 @@ import { KeyRound, LogOut, Lock, Unlock, X, Eye, EyeOff, Pencil, Check, ChevronD
 import { getSession, signIn, signOut } from "@/lib/session";
 import type { SessionMode } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
-import { c as darkColors } from "@/lib/theme";
 import { v } from "@/lib/themeVars";
 
 interface SessionSheetProps {
@@ -42,8 +41,8 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
   const [editEmail, setEditEmail] = useState("");
   const [editCurPw, setEditCurPw] = useState("");
   const [editNewPw, setEditNewPw] = useState("");
-  const [showEditCurPw, setShowEditCurPw] = useState(false);
-  const [showEditNewPw, setShowEditNewPw] = useState(false);
+  const [_showEditCurPw, setShowEditCurPw] = useState(false);
+  const [_showEditNewPw, setShowEditNewPw] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [editMsg, setEditMsg] = useState("");
   const [editSuccess, setEditSuccess] = useState(false);
@@ -101,18 +100,6 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
   if (!open) return null;
 
   const isDark = variant === "dark";
-  const c = isDark ? darkColors : {
-    bg: "hsl(var(--background))",
-    text: "hsl(var(--foreground))",
-    accent: "hsl(var(--primary))",
-    muted: "hsl(var(--border))",
-    mutedLight: "hsl(var(--muted-foreground))",
-    border: "hsl(var(--border))",
-    card: "hsl(var(--card))",
-    error: "hsl(var(--destructive))",
-    success: "#4a9e4a",
-  };
-
   const inputStyle: React.CSSProperties = {
     width: "100%",
     background: isDark ? v.inputBg : "transparent",
@@ -390,20 +377,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
     </div>
   );
 
-  const langToggleStyle: React.CSSProperties = {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 4,
-    padding: "4px 10px",
-    fontSize: 12,
-    fontWeight: 600,
-    fontFamily: "monospace",
-    background: v.bg,
-    border: `1px solid ${v.border}`,
-    borderRadius: 8,
-    cursor: "pointer",
-    color: v.text,
-  };
+
 
   const langOptionStyle = (active: boolean): React.CSSProperties => ({
     padding: "3px 8px",

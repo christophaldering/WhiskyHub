@@ -8,7 +8,7 @@ import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer,
 } from "recharts";
 import {
-  ChevronLeft, GitCompareArrows, Search, Download, ChevronDown,
+  GitCompareArrows, Search, Download, ChevronDown,
   Wine, ArrowUpDown, Filter, X, Info,
 } from "lucide-react";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";

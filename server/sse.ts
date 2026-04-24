@@ -5,6 +5,7 @@ export type SSEEventType =
   | "status_changed"
   | "presentation_changed"
   | "dram_advanced"
+  | "participant_merged"
   | "heartbeat";
 
 export interface SSEEvent {

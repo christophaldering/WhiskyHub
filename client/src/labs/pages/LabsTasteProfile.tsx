@@ -14,7 +14,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import {
-  Activity, ChevronDown, ChevronUp, ChevronLeft,
+  Activity, ChevronDown, ChevronUp,
   MapPin, Cog, Flame, Globe, BarChart3, Users, Wine,
 } from "lucide-react";
 
@@ -383,7 +383,7 @@ export default function LabsTasteProfile() {
                     {Number(whiskyProfile.ratingStyle.systematicDeviation.avgDelta).toFixed(1)}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
-                    {t("labs.profile.comparedAcross", "Compared across {{count}} whiskies", { count: String(whiskyProfile.ratingStyle.systematicDeviation.nWhiskiesCompared ?? 0) })}
+                    {t("labs.profile.comparedAcross", { count: Number(whiskyProfile.ratingStyle.systematicDeviation.nWhiskiesCompared ?? 0), defaultValue: "Compared across {{count}} whiskies" }) as string}
                   </div>
                 </div>
               )}

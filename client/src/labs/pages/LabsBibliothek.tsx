@@ -4,7 +4,7 @@ import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 import {
   BookOpen, Building2, Package, Map,
   Archive, SlidersHorizontal,
-  Utensils, Brain, Factory,
+  Utensils, Factory,
   Microscope, Globe,
 } from "lucide-react";
 import type { ElementType } from "react";

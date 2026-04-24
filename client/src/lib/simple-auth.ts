@@ -1,5 +1,5 @@
-import { getSession, signIn as sessionSignIn, signOut as sessionSignOut, tryAutoResume as sessionTryAutoResume, setSessionPid } from "./session";
-import type { SessionMode, SessionState } from "./session";
+import { getSession, signIn as sessionSignIn, signOut as sessionSignOut, tryAutoResume as sessionTryAutoResume } from "./session";
+import type { SessionMode } from "./session";
 
 export type SimpleMode = SessionMode;
 

@@ -12,7 +12,6 @@ import {
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { useIsEmbeddedInTastings } from "@/labs/embeddedTastingsContext";
 import { friendsApi } from "@/lib/api";
-import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 
 type WizardStep = "bottles" | "visibility" | "review";
@@ -87,7 +86,7 @@ export default function LabsBottleSharing() {
   const [curationSource, setCurationSource] = useState<"world" | "collection">("world");
   const [curationRegions, setCurationRegions] = useState<string[]>([]);
   const [curationStyles, setCurationStyles] = useState<string[]>([]);
-  const [curationFlightSize, setCurationFlightSize] = useState("6");
+  const [curationFlightSize, _setCurationFlightSize] = useState("6");
 
   const pid = currentParticipant?.id || "";
 
