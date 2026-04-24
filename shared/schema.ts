@@ -93,7 +93,7 @@ export const tastings = pgTable("tastings", {
   tastingType: text("tasting_type").default("standard"), // standard | bottle-sharing
   visibility: text("visibility").default("private"), // public | private | group
   sharingMessage: text("sharing_message"),
-  targetCommunityIds: text("target_community_ids").array(), // native text array of community IDs
+  targetCommunityIds: text("target_community_ids"), // stored as text in prod, preBuildMigrations converts to text[] on deploy
   excludedParticipantIds: text("excluded_participant_ids").array().default(sql`ARRAY[]::text[]`), // participant IDs excluded from result aggregation
   createdAt: timestamp("created_at").defaultNow(),
   openedAt: timestamp("opened_at"),
@@ -1164,7 +1164,7 @@ export const bottleSplits = pgTable("bottle_splits", {
   description: text("description"),
   status: text("status").notNull().default("draft"), // draft | open | confirmed | distributed | tasting | completed | cancelled
   visibility: text("visibility").notNull().default("public"), // public | private | group
-  targetCommunityIds: text("target_community_ids").array(), // native text array of community IDs
+  targetCommunityIds: text("target_community_ids"), // stored as text in prod, preBuildMigrations converts to text[] on deploy
   tastingId: varchar("tasting_id"), // link to generated tasting session
   deadline: timestamp("deadline"),
   minClaims: integer("min_claims"),
