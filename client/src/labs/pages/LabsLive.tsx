@@ -135,6 +135,7 @@ function GuidedStepView({
   currentParticipant,
   tastingId,
   allWhiskies,
+  onUnsavedChange,
 }: {
   tasting: any;
   whisky: any;
@@ -143,6 +144,7 @@ function GuidedStepView({
   currentParticipant: any;
   tastingId: string;
   allWhiskies: any[];
+  onUnsavedChange?: (unsaved: boolean) => void;
 }) {
   const { t } = useTranslation();
   const [localIndex, setLocalIndex] = useState(whiskyIndex);
@@ -211,6 +213,7 @@ function GuidedStepView({
   const handleGuidedDraftChange = useCallback((draft: RatingFlowDraftState) => {
     if (!activeWhisky?.id) return;
     guidedDirtyRef.current = true;
+    onUnsavedChange?.(true);
     saveGroupDraft({
       tastingId,
       whiskyId: activeWhisky.id,
@@ -307,6 +310,7 @@ function GuidedStepView({
   useEffect(() => {
     if (myRating) {
       setFlowSaved(true);
+      onUnsavedChange?.(false);
     } else {
       setFlowSaved(false);
     }
@@ -567,6 +571,7 @@ function GuidedStepView({
                 setFailedSaveArgs(null);
                 clearGroupDraft(tastingId, activeWhisky.id);
                 guidedDirtyRef.current = false;
+                onUnsavedChange?.(false);
                 setFlowSaved(true);
               } catch (err: any) {
                 setFailedSaveArgs(mutArgs);
@@ -614,6 +619,7 @@ function GuidedStepView({
                       setFailedSaveArgs(null);
                       if (activeWhisky) clearGroupDraft(tastingId, activeWhisky.id);
                       guidedDirtyRef.current = false;
+                      onUnsavedChange?.(false);
                       setFlowSaved(true);
                     } catch (err: any) {
                       setSaveError(err?.message || t("liveUi.saveFailedError"));
@@ -778,6 +784,8 @@ export default function LabsLive({ params }: LabsLiveProps) {
   const [expandedCalIdx, setExpandedCalIdx] = useState<number | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [revealFlash, setRevealFlash] = useState(false);
+  const guidedUnsavedRef = useRef(false);
+  const [showGuidedLeaveConfirm, setShowGuidedLeaveConfirm] = useState(false);
 
   const { data: tasting, isLoading: tastingLoading, isError: tastingError } = useQuery({
     queryKey: ["tasting", tastingId],
@@ -1096,7 +1104,13 @@ export default function LabsLive({ params }: LabsLiveProps) {
         )}
         <div className="flex items-center justify-between mb-4">
           <button
-            onClick={goBack}
+            onClick={() => {
+              if (guidedUnsavedRef.current) {
+                setShowGuidedLeaveConfirm(true);
+              } else {
+                goBack();
+              }
+            }}
             className="labs-btn-ghost flex items-center gap-1 -ml-2"
             style={{ color: "var(--labs-text-muted)" }}
             data-testid="labs-live-back"
@@ -1135,9 +1149,101 @@ export default function LabsLive({ params }: LabsLiveProps) {
             currentParticipant={currentParticipant}
             tastingId={tastingId}
             allWhiskies={whiskies || []}
+            onUnsavedChange={(unsaved) => { guidedUnsavedRef.current = unsaved; }}
           />
         ) : (
           <GuidedLobby tasting={tasting} participantCount={participantCount} />
+        )}
+
+        {showGuidedLeaveConfirm && (
+          <div
+            data-testid="guided-leave-confirm-overlay"
+            onClick={() => setShowGuidedLeaveConfirm(false)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.6)",
+              zIndex: 200,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 24,
+            }}
+          >
+            <div
+              data-testid="guided-leave-confirm-dialog"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: "var(--labs-surface-elevated, #1a1a1a)",
+                borderRadius: 16,
+                padding: 24,
+                width: "100%",
+                maxWidth: 340,
+                display: "flex",
+                flexDirection: "column",
+                gap: 12,
+              }}
+            >
+              <AlertTriangle
+                style={{ width: 28, height: 28, color: "var(--labs-warning, #f59e0b)", margin: "0 auto" }}
+              />
+              <h3
+                style={{
+                  fontFamily: "var(--labs-font-display, inherit)",
+                  fontSize: 17,
+                  fontWeight: 600,
+                  color: "var(--labs-text, #fff)",
+                  margin: 0,
+                  textAlign: "center",
+                }}
+              >
+                {t("liveUi.leaveConfirmTitle", "Bewertung nicht gespeichert")}
+              </h3>
+              <p style={{ fontSize: 13, color: "var(--labs-text-muted)", textAlign: "center", margin: 0, lineHeight: 1.5 }}>
+                {t("liveUi.leaveConfirmBody", "Du hast ungespeicherte Bewertungen. Wenn du jetzt verlässt, gehen deine Eingaben verloren.")}
+              </p>
+              <button
+                data-testid="guided-leave-confirm-leave"
+                onClick={() => {
+                  guidedUnsavedRef.current = false;
+                  setShowGuidedLeaveConfirm(false);
+                  goBack();
+                }}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  background: "var(--labs-danger, #ef4444)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 9999,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  minHeight: 44,
+                }}
+              >
+                {t("liveUi.leaveConfirmLeave", "Verlassen")}
+              </button>
+              <button
+                data-testid="guided-leave-confirm-stay"
+                onClick={() => setShowGuidedLeaveConfirm(false)}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  background: "var(--labs-surface, #222)",
+                  color: "var(--labs-text, #fff)",
+                  border: "1px solid var(--labs-border, #333)",
+                  borderRadius: 9999,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  minHeight: 44,
+                }}
+              >
+                {t("liveUi.leaveConfirmStay", "Weiter bewerten")}
+              </button>
+            </div>
+          </div>
         )}
       </div>
     );
