@@ -786,6 +786,8 @@ export default function LabsLive({ params }: LabsLiveProps) {
   const [revealFlash, setRevealFlash] = useState(false);
   const guidedUnsavedRef = useRef(false);
   const [showGuidedLeaveConfirm, setShowGuidedLeaveConfirm] = useState(false);
+  const goBackRef = useRef(goBack);
+  useEffect(() => { goBackRef.current = goBack; }, [goBack]);
 
   const { data: tasting, isLoading: tastingLoading, isError: tastingError } = useQuery({
     queryKey: ["tasting", tastingId],
@@ -858,6 +860,21 @@ export default function LabsLive({ params }: LabsLiveProps) {
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, []);
+
+  useEffect(() => {
+    if (!tasting?.guidedMode) return;
+    history.pushState(null, "", window.location.href);
+    const handlePopState = () => {
+      if (guidedUnsavedRef.current) {
+        history.pushState(null, "", window.location.href);
+        setShowGuidedLeaveConfirm(true);
+      } else {
+        goBackRef.current();
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [tasting?.guidedMode]);
 
   const { data: allTastingRatings } = useQuery({
     queryKey: ["tasting-ratings", tastingId],
