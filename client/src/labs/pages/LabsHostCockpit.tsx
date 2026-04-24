@@ -200,6 +200,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
 
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [restartDialog, setRestartDialog] = useState<false | "choose" | "confirmClear">(false);
+  const [excludedPids, setExcludedPids] = useState<Set<string>>(() => new Set());
   const [hostRatingIdx, setHostRatingIdx] = useState(0);
   const [cockpitWizard, setCockpitWizard] = useState(() => {
     if (typeof window !== "undefined") {
@@ -265,6 +266,22 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
       queryClient.invalidateQueries({ queryKey: ["tastings"] });
+    },
+  });
+
+  const saveAndRevealMut = useMutation({
+    mutationFn: async () => {
+      const excluded = [...excludedPids];
+      await fetch(`/api/tastings/${tastingId}/excluded-participants`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "x-participant-id": pid },
+        body: JSON.stringify({ excludedParticipantIds: excluded }),
+      });
+      await tastingApi.updateStatus(tastingId, "reveal", undefined, pid);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+      navigate(`/labs/results/${tastingId}`);
     },
   });
 
@@ -497,6 +514,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   const scaleDefault = ratingScale === 100 ? 75 : Math.round((ratingScale * 0.75) / cockpitScale.step) * cockpitScale.step;
   const isLive = status === "open" || status === "reveal";
   const isDraft = status === "draft";
+  const isClosed = status === "closed";
 
   const rv = isBlind && tasting ? getRevealState(tasting, whiskies.length, t) : null;
   const optimisticTasting = useMemo(() => {
@@ -1896,6 +1914,82 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
             Archive Tasting
           </button>
         )}
+
+        {isClosed && !restartDialog && (() => {
+          const ratedByPid: Record<string, number> = {};
+          for (const r of ratings as any[]) {
+            ratedByPid[r.participantId] = (ratedByPid[r.participantId] || 0) + 1;
+          }
+          const totalWhiskies = (whiskies as any[]).length;
+          const includedCount = (participants as any[]).filter((p: any) => !excludedPids.has(pId(p))).length;
+          return (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.04em", paddingBottom: 2 }}>
+                Auswertung vorbereiten
+              </div>
+              <div style={{ fontSize: 12, color: "var(--labs-text-muted)", lineHeight: 1.4 }}>
+                Wähle Teilnehmer ab, die nicht in die Auswertung einfließen sollen.
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 220, overflowY: "auto" }}>
+                {(participants as any[]).map((p: any) => {
+                  const pid_ = pId(p);
+                  const isExcluded = excludedPids.has(pid_);
+                  const ratedN = ratedByPid[pid_] || 0;
+                  return (
+                    <label
+                      key={pid_}
+                      data-testid={`exclude-participant-${pid_}`}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 8,
+                        padding: "6px 8px", borderRadius: 6, cursor: "pointer",
+                        background: isExcluded ? "color-mix(in srgb, var(--labs-danger, #e53e3e) 8%, transparent)" : "color-mix(in srgb, var(--labs-accent) 5%, transparent)",
+                        border: `1px solid ${isExcluded ? "color-mix(in srgb, var(--labs-danger, #e53e3e) 30%, transparent)" : "color-mix(in srgb, var(--labs-border) 60%, transparent)"}`,
+                        userSelect: "none",
+                      }}
+                      onClick={() => {
+                        setExcludedPids(prev => {
+                          const next = new Set(prev);
+                          if (next.has(pid_)) next.delete(pid_);
+                          else next.add(pid_);
+                          return next;
+                        });
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        readOnly
+                        checked={!isExcluded}
+                        style={{ accentColor: "var(--labs-accent)", width: 14, height: 14, flexShrink: 0, pointerEvents: "none" }}
+                      />
+                      <span style={{ flex: 1, fontSize: 12, fontWeight: 500, color: isExcluded ? "var(--labs-text-muted)" : "var(--labs-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {pName(p)}
+                      </span>
+                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)", flexShrink: 0 }}>
+                        {ratedN}/{totalWhiskies}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+              {excludedPids.size > 0 && (
+                <div style={{ fontSize: 11, color: "var(--labs-danger, #e53e3e)", textAlign: "center" }}>
+                  {excludedPids.size} Teilnehmer ausgeschlossen · {includedCount} einbezogen
+                </div>
+              )}
+              <button
+                onClick={() => saveAndRevealMut.mutate()}
+                disabled={saveAndRevealMut.isPending}
+                className="cockpit-action-btn cockpit-action-success"
+                data-testid="cockpit-show-results"
+              >
+                {saveAndRevealMut.isPending
+                  ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} />
+                  : <BarChart3 style={{ width: 14, height: 14 }} />}
+                Ergebnisse anzeigen
+              </button>
+            </div>
+          );
+        })()}
 
         {["closed", "reveal"].includes(status) && !restartDialog && (
           <button onClick={() => setRestartDialog("choose")} className="cockpit-action-btn cockpit-action-secondary" data-testid="cockpit-restart">

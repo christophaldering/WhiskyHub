@@ -347,7 +347,7 @@ export interface IStorage {
   createTasting(data: InsertTasting): Promise<Tasting>;
   updateTastingStatus(id: string, status: string, currentAct?: string): Promise<Tasting | undefined>;
   updateTastingReflection(id: string, reflection: string): Promise<Tasting | undefined>;
-  updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; description: string; blindMode: boolean; ratingScale: number; guidedMode: boolean; ratingPrompt: string | null; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean; coverImageUploadUrl: string | null; coverImageAiUrl: string | null; coverImageSource: string | null; coverImageAiPrompt: string | null; coverImageAiCandidates: { url: string; prompt: string; mimeType: string; generatedAt: string }[] | null; videoLink: string | null; guestMode: string; sessionUiMode: string | null; showRanking: boolean; showGroupAvg: boolean; showReveal: boolean; lockedDrams: string | null; targetCommunityIds: string[] | null; visibility: string }>): Promise<Tasting | undefined>;
+  updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; description: string; blindMode: boolean; ratingScale: number; guidedMode: boolean; ratingPrompt: string | null; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean; coverImageUploadUrl: string | null; coverImageAiUrl: string | null; coverImageSource: string | null; coverImageAiPrompt: string | null; coverImageAiCandidates: { url: string; prompt: string; mimeType: string; generatedAt: string }[] | null; videoLink: string | null; guestMode: string; sessionUiMode: string | null; showRanking: boolean; showGroupAvg: boolean; showReveal: boolean; lockedDrams: string | null; targetCommunityIds: string[] | null; visibility: string; excludedParticipantIds: string[] | null }>): Promise<Tasting | undefined>;
   appendAiCoverCandidate(tastingId: string, candidate: { url: string; prompt: string; mimeType: string; generatedAt: string }): Promise<Tasting | undefined>;
 
   // AI Images Gallery
@@ -1018,6 +1018,7 @@ export class DatabaseStorage implements IStorage {
     if ((data as any).lockedDrams !== undefined) updateData.lockedDrams = (data as any).lockedDrams;
     if (data.targetCommunityIds !== undefined) updateData.targetCommunityIds = data.targetCommunityIds;
     if (data.visibility !== undefined) updateData.visibility = data.visibility;
+    if ((data as any).excludedParticipantIds !== undefined) updateData.excludedParticipantIds = (data as any).excludedParticipantIds;
     if (Object.keys(updateData).length === 0) return this.getTasting(id);
     const [result] = await db.update(tastings).set(updateData).where(eq(tastings.id, id)).returning();
     return result;

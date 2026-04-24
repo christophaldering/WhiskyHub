@@ -5851,10 +5851,16 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Not found" });
 
-      const [allRatings, allWhiskies] = await Promise.all([
+      const [allRatingsRaw, allWhiskies] = await Promise.all([
         storage.getRatingsForTasting(req.params.id),
         storage.getWhiskiesForTasting(req.params.id),
       ]);
+
+      const excludedSet = new Set<string>(Array.isArray(tasting.excludedParticipantIds) ? tasting.excludedParticipantIds : []);
+      const allRatings = allRatingsRaw.filter((r) => !excludedSet.has(r.participantId));
+      const totalParticipantCount = new Set(allRatingsRaw.map((r) => r.participantId)).size;
+      const includedParticipantCount = new Set(allRatings.map((r) => r.participantId)).size;
+      const excludedCount = excludedSet.size;
 
       const whiskyMap = new Map(allWhiskies.map((w) => [w.id, w]));
       const scale = tasting.ratingScale ?? 100;
@@ -5910,10 +5916,30 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         ratingScale: tasting.ratingScale ?? 100,
         whiskyCount: allWhiskies.length,
         totalRatings: allRatings.length,
+        excludedCount,
+        totalParticipantCount,
+        includedParticipantCount,
         results,
       });
     } catch (err: any) {
       console.error("Error fetching results:", err);
+      res.status(500).json({ message: "Internal error" });
+    }
+  });
+
+  app.patch("/api/tastings/:id/excluded-participants", async (req: any, res: any) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Not found" });
+      if (tasting.hostId !== auth.participantId) return res.status(403).json({ message: "Forbidden" });
+      const { excludedParticipantIds } = req.body;
+      if (!Array.isArray(excludedParticipantIds)) return res.status(400).json({ message: "excludedParticipantIds must be an array" });
+      const updated = await storage.updateTastingDetails(req.params.id, { excludedParticipantIds });
+      res.json({ ok: true, excludedParticipantIds: updated?.excludedParticipantIds ?? [] });
+    } catch (err: any) {
+      console.error("Error updating excluded participants:", err);
       res.status(500).json({ message: "Internal error" });
     }
   });

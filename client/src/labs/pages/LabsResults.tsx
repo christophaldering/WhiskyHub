@@ -816,6 +816,15 @@ export default function LabsResults({ params }: LabsResultsProps) {
     setPreviousRatingsMap(map);
   }, [tastingHistoryData, whiskies, tastingId]);
 
+  const excludedParticipantSet = useMemo(() => {
+    return new Set<string>(Array.isArray(tasting?.excludedParticipantIds) ? tasting.excludedParticipantIds : []);
+  }, [tasting?.excludedParticipantIds]);
+
+  const filteredRatings = useMemo(() => {
+    if (excludedParticipantSet.size === 0) return allRatings || [];
+    return (allRatings || []).filter((r: any) => !excludedParticipantSet.has(r.participantId));
+  }, [allRatings, excludedParticipantSet]);
+
   const whiskyResults = useMemo(() => {
     const sMax = (tasting?.ratingScale as number) || 100;
     const toUserScale = (v: number | null | undefined) => {
@@ -827,7 +836,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
     };
     const roundForScale = (v: number) => sMax === 100 ? Math.round(v) : Math.round(v * 10) / 10;
     return (whiskies || []).map((w: any) => {
-      const ratings = (allRatings || []).filter((r: any) => r.whiskyId === w.id).map((r: any) => ({
+      const ratings = filteredRatings.filter((r: any) => r.whiskyId === w.id).map((r: any) => ({
         ...r,
         nose: toUserScale(r.nose),
         taste: toUserScale(r.taste),
@@ -887,7 +896,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
         overallStdDev,
       };
     });
-  }, [whiskies, allRatings, currentParticipant, tasting?.ratingScale]);
+  }, [whiskies, filteredRatings, currentParticipant, tasting?.ratingScale]);
 
   const sorted = useMemo(() => [...whiskyResults].sort((a, b) => (b.avgOverall || 0) - (a.avgOverall || 0)), [whiskyResults]);
 
@@ -980,8 +989,9 @@ export default function LabsResults({ params }: LabsResultsProps) {
   }
 
   const topWhisky = sorted[0];
-  const uniqueRaters = new Set((allRatings || []).map((r: any) => r.participantId)).size;
-  const totalRatings = allRatings?.length || 0;
+  const uniqueRaters = new Set(filteredRatings.map((r: any) => r.participantId)).size;
+  const totalRatings = filteredRatings.length;
+  const totalRatersAll = new Set((allRatings || []).map((r: any) => r.participantId)).size;
   const participantCount = Math.max(participants?.length || 0, uniqueRaters, totalRatings > 0 ? 1 : 0);
   const maxScore = tasting?.ratingScale || 100;
   const isHost = currentParticipant?.id === tasting.hostId;
@@ -1130,6 +1140,26 @@ export default function LabsResults({ params }: LabsResultsProps) {
           )}
         </div>
       </div>
+
+      {excludedParticipantSet.size > 0 && (
+        <div
+          className="labs-fade-in"
+          style={{
+            display: "flex", alignItems: "center", gap: 10,
+            padding: "10px 16px", marginBottom: 16, borderRadius: 10,
+            background: "color-mix(in srgb, var(--labs-warning, #d97706) 10%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--labs-warning, #d97706) 30%, transparent)",
+            fontSize: 13, color: "var(--labs-text)",
+          }}
+          data-testid="excluded-participants-banner"
+        >
+          <span style={{ fontSize: 16 }}>⚠️</span>
+          <span>
+            Auswertung basiert auf <strong>{uniqueRaters}</strong> von <strong>{totalRatersAll}</strong> Teilnehmern
+            {" "}({excludedParticipantSet.size} ausgeschlossen)
+          </span>
+        </div>
+      )}
 
       <div
         className="labs-card-elevated p-5 mb-6 labs-stagger-2 labs-fade-in"
