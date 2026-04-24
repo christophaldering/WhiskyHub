@@ -115,17 +115,22 @@ async function preBuildMigrations() {
       }
     }
 
-    // Migrate target_community_ids from JSON text → native text[] in tastings
-    try {
+    // Migrate tastings.target_community_ids from JSON text → native text[]
+    // (idempotent: only runs when data_type is still 'text'; hard-fails on error)
+    {
       const { rows: tcRows } = await pool.query(
         `SELECT data_type FROM information_schema.columns WHERE table_name = 'tastings' AND column_name = 'target_community_ids'`
       );
       if (tcRows[0]?.data_type === "text") {
+        // Null out values that are not valid JSON arrays to prevent cast failures
         await pool.query(`
           UPDATE "tastings" SET "target_community_ids" = NULL
           WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
-            AND (jsonb_typeof("target_community_ids"::jsonb) IS DISTINCT FROM 'array'
-                 OR "target_community_ids"::jsonb = 'null'::jsonb)
+            AND (
+              "target_community_ids" !~ '^\\s*\\[.*\\]\\s*$'
+              OR jsonb_typeof("target_community_ids"::jsonb) IS DISTINCT FROM 'array'
+              OR "target_community_ids"::jsonb = 'null'::jsonb
+            )
         `);
         await pool.query(`ALTER TABLE "tastings" ADD COLUMN "target_community_ids_arr" text[]`);
         await pool.query(`
@@ -137,25 +142,30 @@ async function preBuildMigrations() {
         await pool.query(`ALTER TABLE "tastings" RENAME COLUMN "target_community_ids_arr" TO "target_community_ids"`);
         console.log("pre-build: tastings.target_community_ids text → text[]");
       }
+    }
+    try {
       await pool.query(`
         CREATE INDEX IF NOT EXISTS "tastings_target_community_ids_gin"
         ON "tastings" USING GIN ("target_community_ids") WHERE "target_community_ids" IS NOT NULL
       `);
     } catch (e: any) {
-      console.log(`pre-build: tastings.target_community_ids migration note: ${e.message}`);
+      console.log(`pre-build: tastings GIN index note: ${e.message}`);
     }
 
-    // Migrate target_community_ids from JSON text → native text[] in bottle_splits
-    try {
+    // Migrate bottle_splits.target_community_ids from JSON text → native text[]
+    // (idempotent: only runs when data_type is still 'text'; hard-fails on error)
+    {
       const { rows: bsRows } = await pool.query(
         `SELECT data_type FROM information_schema.columns WHERE table_name = 'bottle_splits' AND column_name = 'target_community_ids'`
       );
       if (bsRows[0]?.data_type === "text") {
+        // Step 1: null out non-JSON-array-shaped values (regex guard, no jsonb cast)
         await pool.query(`
           UPDATE "bottle_splits" SET "target_community_ids" = NULL
           WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
             AND "target_community_ids" !~ '^\\s*\\[.*\\]\\s*$'
         `);
+        // Step 2: null out structurally invalid JSON arrays
         await pool.query(`
           UPDATE "bottle_splits" SET "target_community_ids" = NULL
           WHERE "target_community_ids" IS NOT NULL AND "target_community_ids" != ''
@@ -172,23 +182,14 @@ async function preBuildMigrations() {
         await pool.query(`ALTER TABLE "bottle_splits" RENAME COLUMN "target_community_ids_arr" TO "target_community_ids"`);
         console.log("pre-build: bottle_splits.target_community_ids text → text[]");
       }
+    }
+    try {
       await pool.query(`
         CREATE INDEX IF NOT EXISTS "bottle_splits_target_community_ids_gin"
         ON "bottle_splits" USING GIN ("target_community_ids") WHERE "target_community_ids" IS NOT NULL
       `);
     } catch (e: any) {
-      console.log(`pre-build: bottle_splits.target_community_ids migration note: ${e.message}`);
-    }
-
-    // Add excluded_participant_ids column (added in Task #854)
-    try {
-      await pool.query(`
-        ALTER TABLE "tastings"
-        ADD COLUMN IF NOT EXISTS "excluded_participant_ids" text[] DEFAULT ARRAY[]::text[]
-      `);
-      console.log("pre-build: ensured tastings.excluded_participant_ids exists");
-    } catch (e: any) {
-      console.log(`pre-build: excluded_participant_ids migration note: ${e.message}`);
+      console.log(`pre-build: bottle_splits GIN index note: ${e.message}`);
     }
 
     const addCols: Array<{ table: string; column: string; type: string }> = [
@@ -249,9 +250,11 @@ async function preBuildMigrations() {
       console.log(`pre-build: rejoin_code migration note: ${e.message}`);
     }
   } catch (e: any) {
-    console.log(`pre-build migration note: ${e.message}`);
-  } finally {
+    console.error(`pre-build migration FAILED: ${e.message}`);
     await pool.end();
+    throw e;
+  } finally {
+    await pool.end().catch(() => {});
   }
 }
 
