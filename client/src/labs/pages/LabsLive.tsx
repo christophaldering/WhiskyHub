@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useLabsBack } from "@/labs/LabsLayout";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
-import { Wine, ChevronLeft, ChevronRight, ChevronDown, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, Monitor, Sparkles, Settings, Pencil } from "lucide-react";
+import { Wine, ChevronLeft, ChevronRight, ChevronDown, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, Monitor, Sparkles, Settings, Pencil, RotateCcw } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
@@ -313,11 +313,13 @@ function GuidedStepView({
   }, [myRating, activeWhisky?.id]);
 
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [failedSaveArgs, setFailedSaveArgs] = useState<Record<string, unknown> | null>(null);
 
   const rateMutation = useMutation({
     mutationFn: (data: any) => ratingApi.upsert(data),
     onSuccess: () => {
       setSaveError(null);
+      setFailedSaveArgs(null);
       queryClient.invalidateQueries({ queryKey: ["myRating", currentParticipant?.id, activeWhisky?.id] });
       queryClient.invalidateQueries({ queryKey: ["tasting-ratings", tastingId] });
     },
@@ -329,6 +331,7 @@ function GuidedStepView({
 
   useEffect(() => {
     setSaveError(null);
+    setFailedSaveArgs(null);
   }, [activeWhisky?.id]);
 
   const getDramName = useCallback((idx: number) => {
@@ -537,21 +540,25 @@ function GuidedStepView({
                   : `[FLAVOURS] ${chipStr.join(", ")} [/FLAVOURS]`;
               }
 
+              const mutArgs = {
+                tastingId,
+                whiskyId: activeWhisky.id,
+                participantId: currentParticipant.id,
+                nose: data.scores.nose,
+                taste: data.scores.palate,
+                finish: data.scores.finish,
+                overall: eff,
+                notes: combined,
+              };
+
               try {
-                await rateMutation.mutateAsync({
-                  tastingId,
-                  whiskyId: activeWhisky.id,
-                  participantId: currentParticipant.id,
-                  nose: data.scores.nose,
-                  taste: data.scores.palate,
-                  finish: data.scores.finish,
-                  overall: eff,
-                  notes: combined,
-                });
+                await rateMutation.mutateAsync(mutArgs);
+                setFailedSaveArgs(null);
                 clearGroupDraft(tastingId, activeWhisky.id);
                 guidedDirtyRef.current = false;
                 setFlowSaved(true);
               } catch (err: any) {
+                setFailedSaveArgs(mutArgs);
                 setSaveError(err?.message || t("liveUi.saveFailedError"));
               }
             }}
@@ -577,12 +584,39 @@ function GuidedStepView({
 
           {saveError && (
             <div
-              className="flex items-center gap-1.5 mb-3 text-xs"
-              style={{ color: "var(--labs-danger, #ef4444)" }}
+              className="mb-3 p-3 rounded-xl text-xs"
+              style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}
               data-testid="guided-save-error"
             >
-              <AlertTriangle className="w-3 h-3" />
-              {saveError}
+              <div className="flex items-start gap-1.5" style={{ color: "var(--labs-danger, #ef4444)" }}>
+                <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                <span>{saveError}</span>
+              </div>
+              {failedSaveArgs && (
+                <button
+                  className="mt-2 flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg w-full justify-center transition-all"
+                  style={{ background: "var(--labs-danger, #ef4444)", color: "#fff", border: "none", cursor: rateMutation.isPending ? "default" : "pointer", opacity: rateMutation.isPending ? 0.7 : 1 }}
+                  disabled={rateMutation.isPending}
+                  onClick={async () => {
+                    try {
+                      await rateMutation.mutateAsync(failedSaveArgs);
+                      setFailedSaveArgs(null);
+                      if (activeWhisky) clearGroupDraft(tastingId, activeWhisky.id);
+                      guidedDirtyRef.current = false;
+                      setFlowSaved(true);
+                    } catch {
+                    }
+                  }}
+                  data-testid="guided-save-retry"
+                >
+                  {rateMutation.isPending ? (
+                    <span className="animate-spin inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full" />
+                  ) : (
+                    <RotateCcw className="w-3 h-3" />
+                  )}
+                  {t("liveUi.retrySave", "Erneut speichern")}
+                </button>
+              )}
             </div>
           )}
         </div>
