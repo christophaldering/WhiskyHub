@@ -1595,7 +1595,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
         })}
       </div>
 
-      {(!allRatings || allRatings.length === 0) && (
+      {(!allRatings || totalRatings === 0) && (
         <div style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           justifyContent: 'center', padding: '4rem 2rem', textAlign: 'center',
