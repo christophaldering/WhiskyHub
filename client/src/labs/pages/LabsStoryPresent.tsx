@@ -8,6 +8,7 @@ import {
   Sparkles, Star, Eye, EyeOff, Loader2, Check, BookOpen, MapPin, Calendar, Mail, Plus, CheckCheck,
 } from "lucide-react";
 import { getParticipantId, pidHeaders } from "@/lib/api";
+import { toast } from "@/hooks/use-toast";
 import { useAppStore } from "@/lib/store";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { stripGuestSuffix, formatScore } from "@/lib/utils";
@@ -869,6 +870,13 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
     setIsPdfExporting(true);
     try {
       await exportStoryPdf({ ...storyData, eventPhotos });
+      toast({ title: "PDF erfolgreich exportiert", description: "Die Story wurde als PDF heruntergeladen." });
+    } catch (err) {
+      toast({
+        title: "PDF-Export fehlgeschlagen",
+        description: (err instanceof Error ? err.message : null) || "Beim Erstellen des PDFs ist ein Fehler aufgetreten.",
+        variant: "destructive",
+      });
     } finally {
       setIsPdfExporting(false);
     }
