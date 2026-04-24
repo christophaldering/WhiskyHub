@@ -6,6 +6,7 @@ import {
   ChevronLeft, ChevronRight, X, Trophy, Wine, Users,
   Camera, Upload, Trash2, Play, Pause, Download,
   Sparkles, Star, Eye, EyeOff, Loader2, Check, BookOpen, MapPin, Calendar, Mail, Plus, CheckCheck,
+  Maximize, Minimize,
 } from "lucide-react";
 import { getParticipantId, pidHeaders } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
@@ -797,6 +798,8 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
   const [isPdfExporting, setIsPdfExporting] = useState(false);
   const [pdfProgress, setPdfProgress] = useState<{ current: number; total: number; label: string } | null>(null);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const touchStartX = useRef<number | null>(null);
 
@@ -851,12 +854,34 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight" || e.key === "ArrowDown") goNext();
       else if (e.key === "ArrowLeft" || e.key === "ArrowUp") goPrev();
-      else if (e.key === "Escape") navigate(`/labs/results/${tastingId}`);
+      else if (e.key === "Escape") {
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(() => {});
+        } else {
+          navigate(`/labs/results/${tastingId}`);
+        }
+      }
       else if (e.key === " ") { e.preventDefault(); setAutoPlay(p => !p); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [goNext, goPrev, navigate, tastingId]);
+
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement && containerRef.current) {
+        await containerRef.current.requestFullscreen();
+      } else if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    const handleFSChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handleFSChange);
+    return () => document.removeEventListener("fullscreenchange", handleFSChange);
+  }, []);
 
   const handleStoryToggle = async () => {
     if (!tasting) return;
@@ -934,6 +959,7 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
   return (
     <>
     <div
+      ref={containerRef}
       style={{ position: "fixed", inset: 0, background: "var(--labs-bg)", display: "flex", flexDirection: "column", overflow: "hidden", zIndex: 100 }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
@@ -1013,6 +1039,18 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
           }} data-testid="story-slide-indicator">
             {slideIndex + 1} / {slides.length}
           </span>
+          <button
+            onClick={toggleFullscreen}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center",
+              width: 32, height: 32, borderRadius: 8,
+              background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+              color: "var(--labs-text-muted)", cursor: "pointer", backdropFilter: "blur(8px)",
+            }}
+            data-testid="story-fullscreen-btn"
+          >
+            {isFullscreen ? <Minimize style={{ width: 14, height: 14 }} /> : <Maximize style={{ width: 14, height: 14 }} />}
+          </button>
         </div>
       </div>
 

@@ -7,7 +7,7 @@ import { recapApi, collectionApi, getParticipantId } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
 import {
   Trophy, Copy, Printer, AlertTriangle, Users, Wine, Star, FileDown,
-  Loader2, ChevronLeft, AlertCircle, Archive, Check
+  Loader2, ChevronLeft, AlertCircle, Archive, Check, BookOpen
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
@@ -365,6 +365,16 @@ export default function LabsTastingRecap() {
           </h1>
         </div>
         <div className="labs-recap-actions" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {(recap.tasting.status === "archived" || recap.tasting.status === "completed") && (
+            <button
+              className="labs-btn-secondary"
+              onClick={() => navigate(`/labs/results/${recap.tasting.id}/story`)}
+              data-testid="button-recap-story"
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              <BookOpen style={{ width: 16, height: 16 }} /> Story
+            </button>
+          )}
           <button className="labs-btn-ghost" onClick={handlePdfDownload} data-testid="button-labs-pdf-recap" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             <FileDown style={{ width: 16, height: 16 }} /> {t("recap.pdfExport")}
           </button>
