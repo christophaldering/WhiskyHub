@@ -69,7 +69,7 @@ function DimBar({ label, value, maxScore, delay }: { label: string; value: numbe
   const pct = value != null ? Math.min((value / maxScore) * 100, 100) : 0;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 10 }}>
-      <span style={{ width: 56, fontSize: 13, fontWeight: 600, color: "var(--labs-text-muted)", textAlign: "right", letterSpacing: "0.02em" }}>{label}</span>
+      <span style={{ width: 56, fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.75)", textAlign: "right", letterSpacing: "0.02em" }}>{label}</span>
       <div style={{ flex: 1, height: 6, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
         <div style={{
           height: "100%",
@@ -89,8 +89,8 @@ function DimBar({ label, value, maxScore, delay }: { label: string; value: numbe
 function GlassCard({ children, accent, style }: { children: React.ReactNode; accent?: boolean; style?: React.CSSProperties }) {
   return (
     <div style={{
-      background: accent ? "rgba(212,162,86,0.06)" : "rgba(255,255,255,0.03)",
-      border: accent ? "1px solid rgba(212,162,86,0.2)" : "1px solid rgba(255,255,255,0.06)",
+      background: accent ? "rgba(212,162,86,0.08)" : "rgba(255,255,255,0.08)",
+      border: accent ? "1px solid rgba(212,162,86,0.25)" : "1px solid rgba(255,255,255,0.1)",
       borderRadius: 20,
       backdropFilter: "blur(12px)",
       ...style,
@@ -104,7 +104,7 @@ function SectionLabel({ children, icon }: { children: React.ReactNode; icon?: Re
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
       {icon && <span style={{ color: "var(--labs-accent)", display: "flex" }}>{icon}</span>}
-      <span style={{ fontSize: 11, fontWeight: 700, color: "var(--labs-text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{children}</span>
+      <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.75)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{children}</span>
     </div>
   );
 }
@@ -117,9 +117,12 @@ function CinematicTitleSlide({ tasting, whiskyCount, participantCount, totalRati
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", padding: "40px 24px", position: "relative", overflow: "hidden" }}>
       {hasCover && (
-        <CoverImage16x9 src={tasting.coverImageUrl} asBackdrop backdropOpacity={0.2} testId="present-title-cover-bg" />
+        <>
+          <CoverImage16x9 src={tasting.coverImageUrl} asBackdrop backdropOpacity={0.35} testId="present-title-cover-bg" />
+          <div style={{ position: "absolute", inset: 0, zIndex: 1, background: "rgba(0,0,0,0.45)" }} />
+        </>
       )}
-      <div style={{ position: "relative", zIndex: 1 }}>
+      <div style={{ position: "relative", zIndex: 2 }}>
         <motion.div initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1, type: "spring", stiffness: 200 }}>
           <div style={{
             width: 72, height: 72, borderRadius: 20, margin: "0 auto 28px",
@@ -145,13 +148,13 @@ function CinematicTitleSlide({ tasting, whiskyCount, participantCount, totalRati
           style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, marginBottom: 40, flexWrap: "wrap" }}
         >
           {tasting.date && (
-            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 15, color: "var(--labs-text-muted)" }}>
-              <Calendar style={{ width: 14, height: 14, opacity: 0.6 }} /> {tasting.date}
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 15, color: "rgba(255,255,255,0.75)" }}>
+              <Calendar style={{ width: 14, height: 14 }} /> {tasting.date}
             </span>
           )}
           {tasting.location && (
-            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 15, color: "var(--labs-text-muted)" }}>
-              <MapPin style={{ width: 14, height: 14, opacity: 0.6 }} /> {tasting.location}
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 15, color: "rgba(255,255,255,0.75)" }}>
+              <MapPin style={{ width: 14, height: 14 }} /> {tasting.location}
             </span>
           )}
         </motion.div>
@@ -170,7 +173,7 @@ function CinematicTitleSlide({ tasting, whiskyCount, participantCount, totalRati
               <div style={{ fontSize: 32, fontWeight: 700, color: "var(--labs-text)", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>
                 <AnimatedCounter value={s.value} delay={700 + i * 200} />
               </div>
-              <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>{s.label}</div>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>{s.label}</div>
             </GlassCard>
           ))}
         </motion.div>
@@ -206,7 +209,7 @@ function LineupSlide({ whiskies, blindMode }: { whiskies: any[]; blindMode: bool
                 {blindMode ? `Dram ${String.fromCharCode(65 + i)}` : (w.name || `#${i + 1}`)}
               </div>
               {!blindMode && w.distillery && (
-                <div style={{ fontSize: 10, color: "var(--labs-text-muted)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{w.distillery}</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{w.distillery}</div>
               )}
             </GlassCard>
           </motion.div>
@@ -256,17 +259,17 @@ function TastersSlide({ participants, totalRatings, whiskyCount }: { participant
       >
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>{totalRatings}</div>
-          <div style={{ fontSize: 11, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("m2.results.ratingsGiven")}</div>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("m2.results.ratingsGiven")}</div>
         </div>
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>{whiskyCount}</div>
-          <div style={{ fontSize: 11, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("m2.results.whiskiesExplored")}</div>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("m2.results.whiskiesExplored")}</div>
         </div>
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>
             {names.length > 0 ? formatScore(Math.round(totalRatings / names.length * 10) / 10) : 0}
           </div>
-          <div style={{ fontSize: 11, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("m2.results.avgPerTaster")}</div>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("m2.results.avgPerTaster")}</div>
         </div>
       </motion.div>
     </div>
@@ -295,10 +298,10 @@ function FunStatsSlide({ stats }: { stats: Array<{ icon: React.ReactNode; label:
             <GlassCard accent style={{ padding: "20px 24px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
                 <span style={{ color: "var(--labs-accent)", display: "flex" }}>{stat.icon}</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--labs-text-muted)", letterSpacing: "0.06em", textTransform: "uppercase" }}>{stat.label}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.75)", letterSpacing: "0.06em", textTransform: "uppercase" }}>{stat.label}</span>
               </div>
               <div style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-text)", lineHeight: 1.2 }}>{stat.value}</div>
-              {stat.sub && <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: 4 }}>{stat.sub}</div>}
+              {stat.sub && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 4 }}>{stat.sub}</div>}
             </GlassCard>
           </motion.div>
         ))}
@@ -328,7 +331,7 @@ function TransitionSlide({ title, subtitle, icon }: { title: string; subtitle?: 
       {subtitle && (
         <motion.p
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
-          style={{ fontSize: "clamp(14px, 2vw, 20px)", color: "var(--labs-text-muted)", marginTop: 12, maxWidth: 500 }}
+          style={{ fontSize: "clamp(14px, 2vw, 20px)", color: "rgba(255,255,255,0.75)", marginTop: 12, maxWidth: 500 }}
         >
           {subtitle}
         </motion.p>
@@ -383,16 +386,16 @@ function WhiskySlide({ whisky, rank, totalWhiskies, maxScore }: {
           style={{ flex: 1, minWidth: 0 }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "var(--labs-text-muted)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.75)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
               #{rank} {t("ui.of")} {totalWhiskies}
             </span>
             {isConsensus && (
-              <span style={{ fontSize: 10, fontWeight: 600, color: "var(--labs-success)", background: "var(--labs-success-muted)", padding: "2px 8px", borderRadius: 6, display: "flex", alignItems: "center", gap: 3 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-success)", background: "var(--labs-success-muted)", padding: "2px 8px", borderRadius: 6, display: "flex", alignItems: "center", gap: 3 }}>
                 <Target style={{ width: 10, height: 10 }} /> {t("resultsUi.consensus")}
               </span>
             )}
             {isDebated && (
-              <span style={{ fontSize: 10, fontWeight: 600, color: "var(--labs-danger)", background: "rgba(239,68,68,0.1)", padding: "2px 8px", borderRadius: 6, display: "flex", alignItems: "center", gap: 3 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-danger)", background: "rgba(239,68,68,0.1)", padding: "2px 8px", borderRadius: 6, display: "flex", alignItems: "center", gap: 3 }}>
                 <MessageCircle style={{ width: 10, height: 10 }} /> {t("resultsUi.debated")}
               </span>
             )}
@@ -403,11 +406,11 @@ function WhiskySlide({ whisky, rank, totalWhiskies, maxScore }: {
           </h2>
 
           {whisky.distillery && (
-            <p style={{ fontSize: 15, color: "var(--labs-text-muted)", marginBottom: 4 }}>{whisky.distillery}</p>
+            <p style={{ fontSize: 15, color: "rgba(255,255,255,0.75)", marginBottom: 4 }}>{whisky.distillery}</p>
           )}
 
           {details.length > 0 && (
-            <p style={{ fontSize: 12, color: "var(--labs-text-muted)", marginBottom: 16, opacity: 0.8 }}>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", marginBottom: 16 }}>
               {details.join(" · ")}
             </p>
           )}
@@ -415,11 +418,11 @@ function WhiskySlide({ whisky, rank, totalWhiskies, maxScore }: {
           {(whisky.hostNotes || whisky.hostSummary) && (
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
-              style={{ padding: "10px 14px", borderRadius: 12, background: "rgba(212,162,86,0.06)", border: "1px solid rgba(212,162,86,0.12)", marginBottom: 16 }}
+              style={{ padding: "10px 14px", borderRadius: 12, background: "rgba(212,162,86,0.08)", border: "1px solid rgba(212,162,86,0.2)", marginBottom: 16 }}
             >
               <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
                 <Quote style={{ width: 14, height: 14, color: "var(--labs-accent)", flexShrink: 0, marginTop: 2 }} />
-                <p style={{ fontSize: 12, color: "var(--labs-text-secondary)", lineHeight: 1.5, fontStyle: "italic", margin: 0 }}>
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", lineHeight: 1.5, fontStyle: "italic", margin: 0 }}>
                   {(whisky.hostSummary || whisky.hostNotes || "").slice(0, 200)}
                   {((whisky.hostSummary || whisky.hostNotes || "").length > 200) ? "…" : ""}
                 </p>
@@ -438,7 +441,7 @@ function WhiskySlide({ whisky, rank, totalWhiskies, maxScore }: {
             </div>
           </div>
 
-          <div style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "flex", alignItems: "center", gap: 4 }}>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", display: "flex", alignItems: "center", gap: 4 }}>
             <Users style={{ width: 11, height: 11 }} /> {whisky.ratingCount} {whisky.ratingCount === 1 ? t("resultsUi.rating") : t("resultsUi.ratings")}
           </div>
         </motion.div>
@@ -506,7 +509,7 @@ function WinnerRevealSlide({ whisky, maxScore }: { whisky: any; maxScore: number
 
       {whisky.distillery && (
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }}
-          style={{ fontSize: 16, color: "var(--labs-text-muted)", marginBottom: 20 }}
+          style={{ fontSize: 16, color: "rgba(255,255,255,0.75)", marginBottom: 20 }}
         >
           {whisky.distillery}
         </motion.p>
@@ -583,7 +586,7 @@ function PodiumSlide({ top3, maxScore }: { top3: any[]; maxScore: number }) {
                 }}>
                   {actualRank + 1}
                 </span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--labs-text-muted)", marginTop: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.75)", marginTop: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                   {t(MEDAL_LABELS_KEYS[actualRank])}
                 </span>
               </div>
@@ -640,7 +643,7 @@ function OutroSlide({ tasting, tastingId }: { tasting: any; tastingId: string })
 
       <motion.p
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-        style={{ fontSize: "clamp(14px, 2vw, 18px)", color: "var(--labs-text-muted)", maxWidth: 450, lineHeight: 1.6, marginBottom: 36 }}
+        style={{ fontSize: "clamp(14px, 2vw, 18px)", color: "rgba(255,255,255,0.75)", maxWidth: 450, lineHeight: 1.6, marginBottom: 36 }}
       >
         Thank you for sharing this tasting journey with us.
       </motion.p>
@@ -683,7 +686,7 @@ function OutroSlide({ tasting, tastingId }: { tasting: any; tastingId: string })
 
       <motion.p
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
-        style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 32, opacity: 0.6 }}
+        style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", marginTop: 32 }}
       >
         {tasting.title} · CaskSense Labs
       </motion.p>
@@ -1008,8 +1011,8 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
             style={{
               display: "flex", alignItems: "center", gap: 6,
               padding: "6px 12px", borderRadius: 8,
-              background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
-              color: "var(--labs-text-muted)", fontSize: 13, cursor: "pointer", fontFamily: "inherit",
+              background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)",
+              color: "rgba(255,255,255,0.75)", fontSize: 13, cursor: "pointer", fontFamily: "inherit",
               backdropFilter: "blur(8px)",
             }}
             data-testid="present-exit-btn"
@@ -1021,7 +1024,7 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
             display: "flex", alignItems: "center", gap: 6,
             padding: "5px 12px", borderRadius: 8,
             background: "rgba(212, 162, 86, 0.1)", border: "1px solid rgba(212, 162, 86, 0.2)",
-            fontSize: 11, fontWeight: 700, color: "var(--labs-accent)",
+            fontSize: 12, fontWeight: 700, color: "var(--labs-accent)",
             backdropFilter: "blur(8px)", letterSpacing: "0.04em",
           }} data-testid="present-live-indicator">
             <span style={{ width: 7, height: 7, borderRadius: 4, background: "var(--labs-accent)", animation: "pulse 2s infinite" }} />
@@ -1030,17 +1033,17 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, pointerEvents: "auto" }}>
           <span style={{
-            fontSize: 10, fontWeight: 700, color: "var(--labs-text-muted)",
+            fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.75)",
             padding: "4px 10px", borderRadius: 6,
-            background: "rgba(255,255,255,0.04)", backdropFilter: "blur(8px)",
+            background: "rgba(255,255,255,0.08)", backdropFilter: "blur(8px)",
             letterSpacing: "0.06em", textTransform: "uppercase",
           }}>
             {actLabel}
           </span>
           <span style={{
-            fontSize: 12, fontWeight: 600, color: "var(--labs-text-muted)",
+            fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.75)",
             padding: "4px 12px", borderRadius: 8,
-            background: "rgba(255,255,255,0.04)", backdropFilter: "blur(8px)",
+            background: "rgba(255,255,255,0.08)", backdropFilter: "blur(8px)",
             fontVariantNumeric: "tabular-nums",
           }} data-testid="present-slide-indicator">
             {currentSlide + 1} / {totalSlides}
@@ -1050,8 +1053,8 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
             style={{
               display: "flex", alignItems: "center", justifyContent: "center",
               width: 32, height: 32, borderRadius: 8,
-              background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
-              color: "var(--labs-text-muted)", cursor: "pointer", backdropFilter: "blur(8px)",
+              background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)",
+              color: "rgba(255,255,255,0.75)", cursor: "pointer", backdropFilter: "blur(8px)",
             }}
             data-testid="present-fullscreen-btn"
           >

@@ -89,13 +89,13 @@ function ActLabel({ number, title }: { number: string; title: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
       <span style={{
-        fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase",
+        fontSize: 12, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase",
         color: "var(--labs-accent)", padding: "3px 10px", borderRadius: 6,
         background: "rgba(212,162,86,0.12)", border: "1px solid rgba(212,162,86,0.25)",
       }}>
         {number}
       </span>
-      <span style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text-muted)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+      <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.75)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
         {title}
       </span>
     </div>
@@ -123,11 +123,17 @@ function Act1Opening({ tasting, eventPhotos }: { tasting: any; eventPhotos: any[
   return (
     <SlideContainer>
       {mainPhoto && (
-        <div style={{
-          position: "absolute", inset: 0, zIndex: 0,
-          background: `url(${mainPhoto.photoUrl}) center/cover no-repeat`,
-          opacity: 0.15,
-        }} />
+        <>
+          <div style={{
+            position: "absolute", inset: 0, zIndex: 0,
+            background: `url(${mainPhoto.photoUrl}) center/cover no-repeat`,
+            opacity: 0.35,
+          }} />
+          <div style={{
+            position: "absolute", inset: 0, zIndex: 0,
+            background: "rgba(0,0,0,0.45)",
+          }} />
+        </>
       )}
       <div style={{ position: "relative", zIndex: 1, maxWidth: 700, margin: "0 auto" }}>
         <ActLabel number="Akt I" title="Eröffnung" />
@@ -140,13 +146,13 @@ function Act1Opening({ tasting, eventPhotos }: { tasting: any; eventPhotos: any[
         </h1>
         <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", marginBottom: 32 }}>
           {tasting.date && (
-            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 15, color: "var(--labs-text-muted)" }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 15, color: "rgba(255,255,255,0.75)" }}>
               <Calendar style={{ width: 14, height: 14 }} />
               {tasting.date}
             </span>
           )}
           {tasting.location && (
-            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 15, color: "var(--labs-text-muted)" }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 15, color: "rgba(255,255,255,0.75)" }}>
               <MapPin style={{ width: 14, height: 14 }} />
               {tasting.location}
             </span>
@@ -154,10 +160,10 @@ function Act1Opening({ tasting, eventPhotos }: { tasting: any; eventPhotos: any[
         </div>
         {tasting.hostReflection && (
           <p style={{
-            fontSize: 18, color: "var(--labs-text-muted)", fontStyle: "italic",
+            fontSize: 18, color: "rgba(255,255,255,0.75)", fontStyle: "italic",
             lineHeight: 1.6, maxWidth: 520, margin: "0 auto",
             padding: "16px 24px", borderRadius: 12,
-            background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
+            background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)",
           }}>
             "{tasting.hostReflection}"
           </p>
@@ -185,7 +191,7 @@ function Act2Whisky({ whisky, index, totalWhiskies, blindMode }: { whisky: any; 
               {label}
             </h2>
             {!blindMode && (
-              <p style={{ fontSize: 15, color: "var(--labs-text-muted)", marginBottom: 12 }}>
+              <p style={{ fontSize: 15, color: "rgba(255,255,255,0.75)", marginBottom: 12 }}>
                 {[whisky.distillery, whisky.region, whisky.country].filter(Boolean).join(" · ")}
               </p>
             )}
@@ -210,10 +216,10 @@ function Act2Whisky({ whisky, index, totalWhiskies, blindMode }: { whisky: any; 
             )}
             {!blindMode && whisky.notes && (
               <p style={{
-                marginTop: 16, fontSize: 14, color: "var(--labs-text-muted)",
+                marginTop: 16, fontSize: 14, color: "rgba(255,255,255,0.75)",
                 lineHeight: 1.6, fontStyle: "italic", maxWidth: 420,
                 padding: "12px 16px", borderRadius: 10,
-                background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)",
+                background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)",
               }}>
                 {whisky.notes.length > 200 ? whisky.notes.slice(0, 200) + "…" : whisky.notes}
               </p>
@@ -258,7 +264,7 @@ function Act3Tasters({ participants, participantFunFacts }: { participants: any[
                 </div>
                 <span style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>{name}</span>
                 {funFact && (
-                  <span style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.4, fontStyle: "italic" }}>
+                  <span style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", lineHeight: 1.4, fontStyle: "italic" }}>
                     {funFact}
                   </span>
                 )}
@@ -285,7 +291,7 @@ function Act4Discovery({ whisky, rank, totalWhiskies, aiComment, maxScore }: {
           <div style={{ textAlign: "center" }}>
             <div style={{
               fontSize: "clamp(48px, 8vw, 88px)", fontWeight: 900,
-              color: rank <= 3 ? "var(--labs-accent)" : "var(--labs-text-muted)",
+              color: rank <= 3 ? "var(--labs-accent)" : "rgba(255,255,255,0.6)",
               fontVariantNumeric: "tabular-nums", lineHeight: 1,
               marginBottom: 8,
             }}>
@@ -298,7 +304,7 @@ function Act4Discovery({ whisky, rank, totalWhiskies, aiComment, maxScore }: {
               {whisky.name || "Unknown"}
             </h2>
             {whisky.distillery && (
-              <p style={{ fontSize: 14, color: "var(--labs-text-muted)", marginBottom: 16 }}>{whisky.distillery}</p>
+              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.75)", marginBottom: 16 }}>{whisky.distillery}</p>
             )}
             {whisky.avgOverall != null && (
               <div style={{
@@ -307,17 +313,17 @@ function Act4Discovery({ whisky, rank, totalWhiskies, aiComment, maxScore }: {
                 fontVariantNumeric: "tabular-nums",
               }}>
                 {formatScore(whisky.avgOverall)}
-                <span style={{ fontSize: "0.4em", color: "var(--labs-text-muted)", fontWeight: 400 }}>
+                <span style={{ fontSize: "0.4em", color: "rgba(255,255,255,0.75)", fontWeight: 400 }}>
                   {" "}/ {maxScore}
                 </span>
               </div>
             )}
             {aiComment && (
               <p style={{
-                fontSize: 14, color: "var(--labs-text-muted)", fontStyle: "italic",
+                fontSize: 14, color: "rgba(255,255,255,0.75)", fontStyle: "italic",
                 lineHeight: 1.6, maxWidth: 420, margin: "0 auto",
                 padding: "12px 16px", borderRadius: 10,
-                background: "rgba(212,162,86,0.05)", border: "1px solid rgba(212,162,86,0.15)",
+                background: "rgba(212,162,86,0.08)", border: "1px solid rgba(212,162,86,0.2)",
               }}>
                 {aiComment}
               </p>
@@ -342,7 +348,7 @@ function Act5Surprise({ blindReveal, tasting }: { blindReveal: any[]; tasting: a
         }}>
           Blind-Tasting-Auflösung
         </h2>
-        <p style={{ fontSize: 14, color: "var(--labs-text-muted)", marginBottom: 28, textAlign: "center" }}>
+        <p style={{ fontSize: 14, color: "rgba(255,255,255,0.75)", marginBottom: 28, textAlign: "center" }}>
           {tasting.blindMode ? "Wer hatte Recht? Wer lag daneben?" : "Das Tasting war nicht blind."}
         </p>
         {hasRevealData && (
@@ -354,7 +360,7 @@ function Act5Surprise({ blindReveal, tasting }: { blindReveal: any[]; tasting: a
               return (
                 <div key={w.whiskyId} style={{
                   padding: "14px 18px", borderRadius: 12,
-                  background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)",
+                  background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)",
                 }}>
                   <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", marginBottom: 8 }}>
                     {w.whiskyName || "Whisky"} · {w.guesses[0]?.actualAbv != null ? `${w.guesses[0].actualAbv}% ABV` : ""}
@@ -414,7 +420,7 @@ function Act6Winner({ winner, aiComment, winnerNarration, maxScore }: {
               {winner.name || "Unknown"}
             </h2>
             {winner.distillery && (
-              <p style={{ fontSize: 15, color: "var(--labs-text-muted)", marginBottom: 16 }}>{winner.distillery}</p>
+              <p style={{ fontSize: 15, color: "rgba(255,255,255,0.75)", marginBottom: 16 }}>{winner.distillery}</p>
             )}
             <div style={{
               fontSize: "clamp(40px, 7vw, 72px)", fontWeight: 900,
@@ -422,16 +428,16 @@ function Act6Winner({ winner, aiComment, winnerNarration, maxScore }: {
               fontVariantNumeric: "tabular-nums",
             }}>
               {formatScore(winner.avgOverall ?? 0)}
-              <span style={{ fontSize: "0.4em", color: "var(--labs-text-muted)", fontWeight: 400 }}>
+              <span style={{ fontSize: "0.4em", color: "rgba(255,255,255,0.75)", fontWeight: 400 }}>
                 {" "}/ {maxScore}
               </span>
             </div>
             {(winnerNarration || aiComment) && (
               <p style={{
-                fontSize: 16, color: "var(--labs-text-muted)", fontStyle: "italic",
+                fontSize: 16, color: "rgba(255,255,255,0.75)", fontStyle: "italic",
                 lineHeight: 1.6, maxWidth: 460, margin: "0 auto",
                 padding: "16px 20px", borderRadius: 12,
-                background: "rgba(212,162,86,0.06)", border: "1px solid rgba(212,162,86,0.2)",
+                background: "rgba(212,162,86,0.08)", border: "1px solid rgba(212,162,86,0.25)",
               }}>
                 {winnerNarration || aiComment}
               </p>
@@ -448,11 +454,17 @@ function Act7Finale({ tasting, whiskies, eventPhotos }: { tasting: any; whiskies
   return (
     <SlideContainer>
       {closingPhoto && (
-        <div style={{
-          position: "absolute", inset: 0, zIndex: 0,
-          background: `url(${closingPhoto.photoUrl}) center/cover no-repeat`,
-          opacity: 0.12,
-        }} />
+        <>
+          <div style={{
+            position: "absolute", inset: 0, zIndex: 0,
+            background: `url(${closingPhoto.photoUrl}) center/cover no-repeat`,
+            opacity: 0.35,
+          }} />
+          <div style={{
+            position: "absolute", inset: 0, zIndex: 0,
+            background: "rgba(0,0,0,0.45)",
+          }} />
+        </>
       )}
       <div style={{ position: "relative", zIndex: 1, maxWidth: 700, margin: "0 auto", width: "100%", textAlign: "center" }}>
         <ActLabel number="Akt VII" title="Das Bild des Abends" />
@@ -469,7 +481,7 @@ function Act7Finale({ tasting, whiskies, eventPhotos }: { tasting: any; whiskies
         }}>
           Ein Abend. Unvergesslich.
         </h2>
-        <p style={{ fontSize: 15, color: "var(--labs-text-muted)", marginBottom: 32 }}>
+        <p style={{ fontSize: 15, color: "rgba(255,255,255,0.75)", marginBottom: 32 }}>
           {tasting.date} · {tasting.location}
         </p>
         <div style={{
@@ -1033,8 +1045,8 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
             </button>
           )}
           <span style={{
-            fontSize: 12, fontWeight: 600, color: "var(--labs-text-muted)",
-            padding: "4px 12px", borderRadius: 8, background: "rgba(255,255,255,0.04)",
+            fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.75)",
+            padding: "4px 12px", borderRadius: 8, background: "rgba(255,255,255,0.08)",
             fontVariantNumeric: "tabular-nums",
           }} data-testid="story-slide-indicator">
             {slideIndex + 1} / {slides.length}
@@ -1046,8 +1058,8 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
             style={{
               display: "flex", alignItems: "center", justifyContent: "center",
               width: 32, height: 32, borderRadius: 8,
-              background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
-              color: "var(--labs-text-muted)", cursor: "pointer", backdropFilter: "blur(8px)",
+              background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)",
+              color: "rgba(255,255,255,0.75)", cursor: "pointer", backdropFilter: "blur(8px)",
             }}
             data-testid="story-fullscreen-btn"
           >
@@ -1181,7 +1193,7 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
             />
           ))}
           {slides.length > 16 && (
-            <span style={{ fontSize: 12, color: "var(--labs-text-muted)", fontVariantNumeric: "tabular-nums" }}>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", fontVariantNumeric: "tabular-nums" }}>
               {slideIndex + 1} / {slides.length}
             </span>
           )}
