@@ -1210,25 +1210,6 @@ export default function LabsLive({ params }: LabsLiveProps) {
         </div>
       </div>
 
-      {tasting && (
-        <div className="mb-4">
-          <TastingHandoutViewer tasting={tasting as Tasting} />
-        </div>
-      )}
-
-      {tasting && (
-        <div className="mb-4">
-          <AutoHandoutViewer
-            tasting={tasting as Tasting}
-            // Align with server-side gating: a tasting counts as "revealed"
-            // once the host has triggered the global reveal (tasting.revealedAt).
-            // The server enforces the same condition before returning content.
-            anyRevealed={Boolean((tasting as Tasting | undefined)?.revealedAt)}
-            hasHostUpload={Boolean(tasting?.handoutUrl)}
-          />
-        </div>
-      )}
-
       {!whiskies || totalWhiskies === 0 ? (
         <div className="labs-empty labs-fade-in">
           <svg className="labs-empty-icon" viewBox="0 0 40 40" fill="none">
@@ -1321,12 +1302,6 @@ export default function LabsLive({ params }: LabsLiveProps) {
               ))}
             </div>
           </div>
-
-          {currentWhisky && (
-            <div className="mb-4 labs-fade-in labs-stagger-2">
-              <WhiskyHandoutViewer whisky={currentWhisky} isRevealed={!isBlind} />
-            </div>
-          )}
 
           {canRate ? (
             <>
@@ -1563,165 +1538,6 @@ export default function LabsLive({ params }: LabsLiveProps) {
                 )}
               </div>}
 
-              {whiskies && whiskies.length > 1 && (
-                <div className="labs-card-elevated mt-4 labs-fade-in labs-stagger-5" data-testid="calibration-overview">
-                  <div
-                    style={{
-                      width: "100%", display: "flex", alignItems: "center",
-                      padding: "14px 16px",
-                    }}
-                    data-testid="calibration-header"
-                  >
-                    <div className="flex items-center gap-2">
-                      <BarChart3 className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-                      <span className="text-xs font-semibold" style={{ color: "var(--labs-text)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
-                        My Scores Overview
-                      </span>
-                      <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
-                        ({myAllRatings.length}/{whiskies.length} rated)
-                      </span>
-                    </div>
-                  </div>
-                  <div style={{ padding: "0 16px 16px" }}>
-                      <div className="space-y-2">
-                        {whiskies.map((w: any, idx: number) => {
-                          const rating = myAllRatings.find((r: any) => r.whiskyId === w.id);
-                          const overall = rating?.overall;
-                          const isActive = idx === currentIndex;
-                          const isExpanded = expandedCalIdx === idx;
-                          const idxRevealed = getFreeRevealedFields(idx);
-                          const idxNameHidden = tasting?.blindMode && !idxRevealed.has("name");
-                          const label = idxNameHidden
-                            ? `Dram ${String.fromCharCode(65 + idx)}`
-                            : (w.name || `Dram ${idx + 1}`);
-                          return (
-                            <div key={w.id} style={{ borderRadius: 8, overflow: "hidden", border: isActive ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border-subtle, var(--labs-border))", transition: "border-color 0.15s" }}>
-                              <button
-                                type="button"
-                                onClick={() => setExpandedCalIdx(isExpanded ? null : idx)}
-                                style={{
-                                  width: "100%", display: "flex", alignItems: "center", gap: 10,
-                                  padding: "8px 10px", cursor: "pointer", fontFamily: "inherit",
-                                  background: isActive ? "var(--labs-accent-muted)" : "transparent",
-                                  border: "none",
-                                  transition: "all 0.15s",
-                                }}
-                                data-testid={`calibration-row-${idx}`}
-                              >
-                                <span className="text-[11px] font-bold tabular-nums" style={{ color: "var(--labs-text-muted)", width: 18, textAlign: "center", flexShrink: 0 }}>
-                                  {idx + 1}
-                                </span>
-                                <span className="text-xs font-medium truncate flex-1 text-left" style={{ color: isActive ? "var(--labs-accent)" : "var(--labs-text)" }}>
-                                  {label}
-                                </span>
-                                <div style={{ width: 60, height: 6, borderRadius: 3, background: "var(--labs-border)", flexShrink: 0, overflow: "hidden" }}>
-                                  {overall != null && (
-                                    <div style={{ width: `${(overall / maxScore) * 100}%`, height: "100%", borderRadius: 3, background: isActive ? "var(--labs-accent)" : "var(--labs-text-muted)", transition: "width 0.3s" }} />
-                                  )}
-                                </div>
-                                <span className="text-xs font-bold tabular-nums" style={{ color: overall != null ? (isActive ? "var(--labs-accent)" : "var(--labs-text)") : "var(--labs-text-muted)", width: 28, textAlign: "right", flexShrink: 0 }}>
-                                  {overall != null ? overall : "—"}
-                                </span>
-                                <ChevronDown
-                                  style={{ width: 13, height: 13, flexShrink: 0, color: "var(--labs-text-muted)", transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }}
-                                />
-                              </button>
-                              <div
-                                aria-hidden={!isExpanded}
-                                {...(!isExpanded ? { inert: "" as any } : {})}
-                                style={{
-                                  maxHeight: isExpanded ? 999 : 0,
-                                  opacity: isExpanded ? 1 : 0,
-                                  overflow: "hidden",
-                                  transition: "max-height 200ms ease, opacity 200ms ease",
-                                  pointerEvents: isExpanded ? "auto" : "none",
-                                }}
-                              >
-                                <div style={{ padding: "10px 10px 12px", borderTop: "1px solid var(--labs-border-subtle, var(--labs-border))", background: "var(--labs-surface-alt, rgba(255,255,255,0.02))" }} data-testid={`calibration-detail-${idx}`}>
-                                  {rating ? (
-                                    <>
-                                      <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-                                        {(["nose", "taste", "finish"] as const).map((dim) => {
-                                          const val = (rating as Record<string, number | null>)[dim];
-                                          const pct = val != null ? Math.max(0, Math.min(100, ((val - scaleMin) / scaleRange) * 100)) : 0;
-                                          return (
-                                            <div key={dim} style={{ flex: 1 }}>
-                                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                                                <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: "var(--labs-text-muted)" }}>
-                                                  {dim}
-                                                </span>
-                                                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--labs-text-secondary)", fontVariantNumeric: "tabular-nums" }} data-testid={`cal-dim-${idx}-${dim}`}>
-                                                  {val != null ? val : "—"}
-                                                </span>
-                                              </div>
-                                              <div style={{ height: 4, borderRadius: 2, background: "var(--labs-border)", overflow: "hidden" }}>
-                                                <div style={{ height: "100%", width: val != null ? `${pct}%` : "0%", borderRadius: 2, background: "var(--labs-accent)", transition: "width 0.3s ease" }} />
-                                              </div>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                      <button
-                                        type="button"
-                                        onClick={() => { setCurrentIndex(idx); setExpandedCalIdx(null); }}
-                                        data-testid={`calibration-edit-${idx}`}
-                                        style={{
-                                          display: "inline-flex", alignItems: "center", gap: 5,
-                                          fontSize: 11, fontWeight: 600, fontFamily: "inherit",
-                                          color: "var(--labs-accent)", background: "none",
-                                          border: "1px solid var(--labs-accent)", borderRadius: 6,
-                                          padding: "4px 10px", cursor: "pointer",
-                                        }}
-                                      >
-                                        <Pencil style={{ width: 11, height: 11 }} />
-                                        Bearbeiten
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                      <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>Noch nicht bewertet</span>
-                                      <button
-                                        type="button"
-                                        onClick={() => { setCurrentIndex(idx); setExpandedCalIdx(null); }}
-                                        data-testid={`calibration-rate-${idx}`}
-                                        style={{
-                                          display: "inline-flex", alignItems: "center", gap: 5,
-                                          fontSize: 11, fontWeight: 600, fontFamily: "inherit",
-                                          color: "var(--labs-accent)", background: "none",
-                                          border: "1px solid var(--labs-accent)", borderRadius: 6,
-                                          padding: "4px 10px", cursor: "pointer",
-                                        }}
-                                      >
-                                        Jetzt bewerten
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      {myAllRatings.length >= 2 && (() => {
-                        const overalls = myAllRatings.map((r: any) => r.overall).filter((v: any) => v != null);
-                        if (overalls.length < 2) return null;
-                        const avg = overalls.reduce((a: number, b: number) => a + b, 0) / overalls.length;
-                        const min = Math.min(...overalls);
-                        const max = Math.max(...overalls);
-                        return (
-                          <div style={{ marginTop: 10, padding: "8px 10px", borderRadius: 8, background: "var(--labs-surface-elevated)" }} data-testid="calibration-stats">
-                            <div className="flex items-center justify-between text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
-                              <span>Avg: <strong style={{ color: "var(--labs-text)" }}>{formatScore(avg)}</strong></span>
-                              <span>Range: <strong style={{ color: "var(--labs-text)" }}>{formatScore(min)}–{formatScore(max)}</strong></span>
-                              <span>Spread: <strong style={{ color: "var(--labs-text)" }}>{formatScore(max - min)}</strong></span>
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                </div>
-              )}
-
               <FlavourStudioSheet
                 open={studioOpen}
                 onOpenChange={setStudioOpen}
@@ -1759,6 +1575,187 @@ export default function LabsLive({ params }: LabsLiveProps) {
                   </button>
                 </div>
               ) : null}
+            </div>
+          )}
+
+          {currentWhisky && (
+            <div className="mb-4 labs-fade-in labs-stagger-2">
+              <WhiskyHandoutViewer whisky={currentWhisky} isRevealed={!isBlind} />
+            </div>
+          )}
+
+          {tasting && (
+            <div className="mb-4">
+              <TastingHandoutViewer tasting={tasting as Tasting} />
+            </div>
+          )}
+
+          {tasting && (
+            <div className="mb-4">
+              <AutoHandoutViewer
+                tasting={tasting as Tasting}
+                anyRevealed={Boolean((tasting as Tasting | undefined)?.revealedAt)}
+                hasHostUpload={Boolean(tasting?.handoutUrl)}
+              />
+            </div>
+          )}
+
+          {whiskies && whiskies.length > 1 && (
+            <div className="labs-card-elevated mt-4 labs-fade-in labs-stagger-5" data-testid="calibration-overview">
+              <div
+                style={{
+                  width: "100%", display: "flex", alignItems: "center",
+                  padding: "14px 16px",
+                }}
+                data-testid="calibration-header"
+              >
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                  <span className="text-xs font-semibold" style={{ color: "var(--labs-text)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                    My Scores Overview
+                  </span>
+                  <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
+                    ({myAllRatings.length}/{whiskies.length} rated)
+                  </span>
+                </div>
+              </div>
+              <div style={{ padding: "0 16px 16px" }}>
+                <div className="space-y-2">
+                  {whiskies.map((w: any, idx: number) => {
+                    const rating = myAllRatings.find((r: any) => r.whiskyId === w.id);
+                    const overall = rating?.overall;
+                    const isActive = idx === currentIndex;
+                    const isExpanded = expandedCalIdx === idx;
+                    const idxRevealed = getFreeRevealedFields(idx);
+                    const idxNameHidden = tasting?.blindMode && !idxRevealed.has("name");
+                    const label = idxNameHidden
+                      ? `Dram ${String.fromCharCode(65 + idx)}`
+                      : (w.name || `Dram ${idx + 1}`);
+                    return (
+                      <div key={w.id} style={{ borderRadius: 8, overflow: "hidden", border: isActive ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border-subtle, var(--labs-border))", transition: "border-color 0.15s" }}>
+                        <button
+                          type="button"
+                          onClick={() => setExpandedCalIdx(isExpanded ? null : idx)}
+                          style={{
+                            width: "100%", display: "flex", alignItems: "center", gap: 10,
+                            padding: "8px 10px", cursor: "pointer", fontFamily: "inherit",
+                            background: isActive ? "var(--labs-accent-muted)" : "transparent",
+                            border: "none",
+                            transition: "all 0.15s",
+                          }}
+                          data-testid={`calibration-row-${idx}`}
+                        >
+                          <span className="text-[11px] font-bold tabular-nums" style={{ color: "var(--labs-text-muted)", width: 18, textAlign: "center", flexShrink: 0 }}>
+                            {idx + 1}
+                          </span>
+                          <span className="text-xs font-medium truncate flex-1 text-left" style={{ color: isActive ? "var(--labs-accent)" : "var(--labs-text)" }}>
+                            {label}
+                          </span>
+                          <div style={{ width: 60, height: 6, borderRadius: 3, background: "var(--labs-border)", flexShrink: 0, overflow: "hidden" }}>
+                            {overall != null && (
+                              <div style={{ width: `${(overall / maxScore) * 100}%`, height: "100%", borderRadius: 3, background: isActive ? "var(--labs-accent)" : "var(--labs-text-muted)", transition: "width 0.3s" }} />
+                            )}
+                          </div>
+                          <span className="text-xs font-bold tabular-nums" style={{ color: overall != null ? (isActive ? "var(--labs-accent)" : "var(--labs-text)") : "var(--labs-text-muted)", width: 28, textAlign: "right", flexShrink: 0 }}>
+                            {overall != null ? overall : "—"}
+                          </span>
+                          <ChevronDown
+                            style={{ width: 13, height: 13, flexShrink: 0, color: "var(--labs-text-muted)", transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }}
+                          />
+                        </button>
+                        <div
+                          aria-hidden={!isExpanded}
+                          {...(!isExpanded ? { inert: "" as any } : {})}
+                          style={{
+                            maxHeight: isExpanded ? 999 : 0,
+                            opacity: isExpanded ? 1 : 0,
+                            overflow: "hidden",
+                            transition: "max-height 200ms ease, opacity 200ms ease",
+                            pointerEvents: isExpanded ? "auto" : "none",
+                          }}
+                        >
+                          <div style={{ padding: "10px 10px 12px", borderTop: "1px solid var(--labs-border-subtle, var(--labs-border))", background: "var(--labs-surface-alt, rgba(255,255,255,0.02))" }} data-testid={`calibration-detail-${idx}`}>
+                            {rating ? (
+                              <>
+                                <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                                  {(["nose", "taste", "finish"] as const).map((dim) => {
+                                    const val = (rating as Record<string, number | null>)[dim];
+                                    const pct = val != null ? Math.max(0, Math.min(100, ((val - scaleMin) / scaleRange) * 100)) : 0;
+                                    return (
+                                      <div key={dim} style={{ flex: 1 }}>
+                                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                                          <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: "var(--labs-text-muted)" }}>
+                                            {dim}
+                                          </span>
+                                          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--labs-text-secondary)", fontVariantNumeric: "tabular-nums" }} data-testid={`cal-dim-${idx}-${dim}`}>
+                                            {val != null ? val : "—"}
+                                          </span>
+                                        </div>
+                                        <div style={{ height: 4, borderRadius: 2, background: "var(--labs-border)", overflow: "hidden" }}>
+                                          <div style={{ height: "100%", width: val != null ? `${pct}%` : "0%", borderRadius: 2, background: "var(--labs-accent)", transition: "width 0.3s ease" }} />
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => { setCurrentIndex(idx); setExpandedCalIdx(null); }}
+                                  data-testid={`calibration-edit-${idx}`}
+                                  style={{
+                                    display: "inline-flex", alignItems: "center", gap: 5,
+                                    fontSize: 11, fontWeight: 600, fontFamily: "inherit",
+                                    color: "var(--labs-accent)", background: "none",
+                                    border: "1px solid var(--labs-accent)", borderRadius: 6,
+                                    padding: "4px 10px", cursor: "pointer",
+                                  }}
+                                >
+                                  <Pencil style={{ width: 11, height: 11 }} />
+                                  Bearbeiten
+                                </button>
+                              </>
+                            ) : (
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>Noch nicht bewertet</span>
+                                <button
+                                  type="button"
+                                  onClick={() => { setCurrentIndex(idx); setExpandedCalIdx(null); }}
+                                  data-testid={`calibration-rate-${idx}`}
+                                  style={{
+                                    display: "inline-flex", alignItems: "center", gap: 5,
+                                    fontSize: 11, fontWeight: 600, fontFamily: "inherit",
+                                    color: "var(--labs-accent)", background: "none",
+                                    border: "1px solid var(--labs-accent)", borderRadius: 6,
+                                    padding: "4px 10px", cursor: "pointer",
+                                  }}
+                                >
+                                  Jetzt bewerten
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {myAllRatings.length >= 2 && (() => {
+                  const overalls = myAllRatings.map((r: any) => r.overall).filter((v: any) => v != null);
+                  if (overalls.length < 2) return null;
+                  const avg = overalls.reduce((a: number, b: number) => a + b, 0) / overalls.length;
+                  const min = Math.min(...overalls);
+                  const max = Math.max(...overalls);
+                  return (
+                    <div style={{ marginTop: 10, padding: "8px 10px", borderRadius: 8, background: "var(--labs-surface-elevated)" }} data-testid="calibration-stats">
+                      <div className="flex items-center justify-between text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
+                        <span>Avg: <strong style={{ color: "var(--labs-text)" }}>{formatScore(avg)}</strong></span>
+                        <span>Range: <strong style={{ color: "var(--labs-text)" }}>{formatScore(min)}–{formatScore(max)}</strong></span>
+                        <span>Spread: <strong style={{ color: "var(--labs-text)" }}>{formatScore(max - min)}</strong></span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
           )}
         </>
