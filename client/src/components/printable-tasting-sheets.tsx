@@ -984,7 +984,7 @@ export async function generateTastingNotesSheet(tasting: Tasting, whiskies: Whis
 
   await drawTastingMat(doc, tasting, whiskies, lang, false, participant, orientation, hostName);
 
-  saveOrPrintJsPdf(doc, `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_Notizblatt.pdf`, mode);
+  await saveOrPrintJsPdf(doc, `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_Notizblatt.pdf`, mode);
 }
 
 export async function generateBlindEvaluationSheet(tasting: Tasting, whiskies: Whisky[], lang: string, participant?: ParticipantInfo, mode: "download" | "print" = "download", hostName?: string, orientation: "portrait" | "landscape" = "portrait", styleTheme?: PdfStyleTheme | null) {
@@ -1004,7 +1004,7 @@ export async function generateBlindEvaluationSheet(tasting: Tasting, whiskies: W
 
   await drawTastingMat(doc, tasting, whiskies, lang, true, participant, orientation, hostName);
 
-  saveOrPrintJsPdf(doc, `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_Bewertungsbogen.pdf`, mode);
+  await saveOrPrintJsPdf(doc, `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_Bewertungsbogen.pdf`, mode);
 }
 
 function drawCompactRatingCell(
@@ -1201,7 +1201,7 @@ export async function generateCompactBatchPdf(
     const participantInfo: ParticipantInfo = { name: p.name, id: p.id };
     await drawCompactSinglePage(doc, tasting, whiskies, lang, isBlind, participantInfo, hostName, false);
     const nameSlug = p.name.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_");
-    saveJsPdf(doc, `${titleSlug}_Kompakt_${nameSlug}.pdf`);
+    await saveJsPdf(doc, `${titleSlug}_Kompakt_${nameSlug}.pdf`);
   }
 }
 
@@ -1224,7 +1224,7 @@ export async function generateCompactMasterPdf(
     await drawCompactSinglePage(doc, tasting, whiskies, lang, isBlind, participantInfo, hostName, i > 0);
   }
 
-  saveJsPdf(doc, `${titleSlug}_Kompakt_Alle.pdf`);
+  await saveJsPdf(doc, `${titleSlug}_Kompakt_Alle.pdf`);
 }
 
 export async function generateBatchPersonalizedPdf(
@@ -1265,7 +1265,7 @@ export async function generateBatchPersonalizedPdf(
     await drawTastingMat(doc, tasting, whiskies, lang, isBlind, participantInfo, orientation, hostName);
 
     const nameSlug = p.name.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_");
-    saveJsPdf(doc, `${titleSlug}_${suffix}_${nameSlug}.pdf`);
+    await saveJsPdf(doc, `${titleSlug}_${suffix}_${nameSlug}.pdf`);
   }
 }
 

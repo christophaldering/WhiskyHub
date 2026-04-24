@@ -1,12 +1,18 @@
 import type jsPDF from "jspdf";
-import { downloadBlob } from "./download";
+import { downloadBlob, downloadBlobAndroid, isAndroid } from "./download";
 
-export function saveJsPdf(doc: jsPDF, filename: string) {
+export async function saveJsPdf(doc: jsPDF, filename: string): Promise<void> {
   const blob = doc.output("blob");
-  downloadBlob(blob, filename);
+  await downloadBlob(blob, filename);
 }
 
-export function openJsPdfForPrint(doc: jsPDF) {
+export async function openJsPdfForPrint(doc: jsPDF): Promise<void> {
+  if (isAndroid()) {
+    const blob = doc.output("blob");
+    await downloadBlobAndroid(blob, "print.pdf");
+    return;
+  }
+
   doc.autoPrint();
   const blob = doc.output("blob");
   const url = URL.createObjectURL(blob);
@@ -43,10 +49,10 @@ export function openJsPdfForPrint(doc: jsPDF) {
   }
 }
 
-export function saveOrPrintJsPdf(doc: jsPDF, filename: string, mode: "download" | "print") {
+export async function saveOrPrintJsPdf(doc: jsPDF, filename: string, mode: "download" | "print"): Promise<void> {
   if (mode === "print") {
-    openJsPdfForPrint(doc);
+    await openJsPdfForPrint(doc);
   } else {
-    saveJsPdf(doc, filename);
+    await saveJsPdf(doc, filename);
   }
 }

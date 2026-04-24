@@ -675,5 +675,5 @@ export async function generateTastingMenu(
   }
 
   const filename = `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_Menukarte.pdf`;
-  saveOrPrintJsPdf(doc, filename, mode);
+  await saveOrPrintJsPdf(doc, filename, mode);
 }
