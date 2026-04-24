@@ -333,7 +333,11 @@ async function buildAll() {
   await copyFile("server/preload.cjs", "dist/preload.cjs");
 }
 
-buildAll().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+export { preBuildMigrations };
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  buildAll().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
