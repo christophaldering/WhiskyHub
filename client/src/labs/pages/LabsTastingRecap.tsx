@@ -27,6 +27,12 @@ interface RecapData {
   participantHighlights: { name: string; ratingsCount: number; avgScore: number }[];
 }
 
+interface EventPhoto {
+  id: string;
+  photoUrl: string;
+  caption?: string | null;
+}
+
 async function addEventPhotoRecap(tastingId: string, photoUrl: string) {
   const res = await fetch(`/api/tastings/${tastingId}/event-photos`, {
     method: "POST",
@@ -38,10 +44,11 @@ async function addEventPhotoRecap(tastingId: string, photoUrl: string) {
 }
 
 async function deleteEventPhotoRecap(tastingId: string, photoId: string) {
-  await fetch(`/api/tastings/${tastingId}/event-photos/${photoId}`, {
+  const res = await fetch(`/api/tastings/${tastingId}/event-photos/${photoId}`, {
     method: "DELETE",
     headers: { "Content-Type": "application/json", ...pidHeaders() },
   });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? "Löschen fehlgeschlagen");
 }
 
 const MEDAL_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32"];
@@ -77,7 +84,7 @@ export default function LabsTastingRecap() {
 
   const isHost = !!pid && !!recap && recap.tasting.hostId === pid;
 
-  const { data: eventPhotos = [], refetch: refetchPhotos } = useQuery<any[]>({
+  const { data: eventPhotos = [], refetch: refetchPhotos } = useQuery<EventPhoto[]>({
     queryKey: ["recap-event-photos", tastingId],
     queryFn: async () => {
       const res = await fetch(`/api/tastings/${tastingId}/event-photos`, { headers: pidHeaders() });
@@ -488,7 +495,7 @@ export default function LabsTastingRecap() {
 
           {eventPhotos.length > 0 && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
-              {eventPhotos.map((p: any) => (
+              {eventPhotos.map((p: EventPhoto) => (
                 <div key={p.id} style={{ position: "relative", width: 64, height: 64, flexShrink: 0 }} data-testid={`card-recap-event-photo-${p.id}`}>
                   <img
                     src={p.photoUrl}
@@ -497,7 +504,11 @@ export default function LabsTastingRecap() {
                   />
                   <button
                     onClick={async () => {
-                      await deleteEventPhotoRecap(tastingId!, p.id);
+                      try {
+                        await deleteEventPhotoRecap(tastingId!, p.id);
+                      } catch (e: unknown) {
+                        setPhotoError(e instanceof Error ? e.message : "Löschen fehlgeschlagen.");
+                      }
                       refetchPhotos();
                       qc.invalidateQueries({ queryKey: ["recap-event-photos", tastingId] });
                     }}
