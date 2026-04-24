@@ -2450,7 +2450,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                       <div style={{ fontSize: 13, fontWeight: 600, color: isExcluded ? "var(--labs-text-muted)" : "var(--labs-text)", textDecoration: isExcluded ? "line-through" : "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {pName(p)}
                       </div>
-                      <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1 }}>
+                      <div style={{ fontSize: 11, color: rc === 0 ? "var(--labs-warning, #e67e22)" : "var(--labs-text-muted)", marginTop: 1, display: "flex", alignItems: "center", gap: 4 }}>
+                        {rc === 0 && <AlertTriangle style={{ width: 10, height: 10, flexShrink: 0 }} />}
                         {rc} {rc === 1 ? t("ui.rating", "Bewertung") : t("ui.ratings", "Bewertungen")}
                         {joinedStr && <span style={{ marginLeft: 6, opacity: 0.7 }}>· {joinedStr}</span>}
                       </div>
