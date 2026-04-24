@@ -5856,10 +5856,11 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         storage.getWhiskiesForTasting(req.params.id),
       ]);
 
+      const tastingParticipants = await storage.getTastingParticipants(req.params.id);
       const excludedSet = new Set<string>(Array.isArray(tasting.excludedParticipantIds) ? tasting.excludedParticipantIds : []);
       const allRatings = allRatingsRaw.filter((r) => !excludedSet.has(r.participantId));
-      const totalParticipantCount = new Set(allRatingsRaw.map((r) => r.participantId)).size;
-      const includedParticipantCount = new Set(allRatings.map((r) => r.participantId)).size;
+      const totalParticipantCount = tastingParticipants.length;
+      const includedParticipantCount = tastingParticipants.filter((p) => !excludedSet.has(p.participantId)).length;
       const excludedCount = excludedSet.size;
 
       const whiskyMap = new Map(allWhiskies.map((w) => [w.id, w]));
@@ -5936,7 +5937,10 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       if (tasting.hostId !== auth.participantId) return res.status(403).json({ message: "Forbidden" });
       const { excludedParticipantIds } = req.body;
       if (!Array.isArray(excludedParticipantIds)) return res.status(400).json({ message: "excludedParticipantIds must be an array" });
-      const updated = await storage.updateTastingDetails(req.params.id, { excludedParticipantIds });
+      const tastingParticipants = await storage.getTastingParticipants(req.params.id);
+      const validPids = new Set(tastingParticipants.map((p) => p.participantId));
+      const sanitized = [...new Set((excludedParticipantIds as string[]).filter((id) => typeof id === "string" && validPids.has(id)))];
+      const updated = await storage.updateTastingDetails(req.params.id, { excludedParticipantIds: sanitized });
       res.json({ ok: true, excludedParticipantIds: updated?.excludedParticipantIds ?? [] });
     } catch (err: any) {
       console.error("Error updating excluded participants:", err);

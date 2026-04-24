@@ -994,8 +994,9 @@ export default function LabsResults({ params }: LabsResultsProps) {
   const topWhisky = sorted[0];
   const uniqueRaters = new Set(filteredRatings.map((r: any) => r.participantId)).size;
   const totalRatings = filteredRatings.length;
-  const totalRatersAll = new Set((allRatings || []).map((r: any) => r.participantId)).size;
   const participantCount = Math.max(participants?.length || 0, uniqueRaters, totalRatings > 0 ? 1 : 0);
+  const totalCount = Math.max(participants?.length || 0, new Set((allRatings || []).map((r: any) => r.participantId)).size);
+  const includedCount = totalCount - excludedParticipantSet.size;
   const maxScore = tasting?.ratingScale || 100;
   const isHost = currentParticipant?.id === tasting.hostId;
   const presentationActive = tasting.presentationSlide != null && !isHost;
@@ -1158,7 +1159,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
         >
           <span style={{ fontSize: 16 }}>⚠️</span>
           <span>
-            Auswertung basiert auf <strong>{uniqueRaters}</strong> von <strong>{totalRatersAll}</strong> Teilnehmern
+            Auswertung basiert auf <strong>{includedCount}</strong> von <strong>{totalCount}</strong> Teilnehmern
             {" "}({excludedParticipantSet.size} ausgeschlossen)
           </span>
         </div>
