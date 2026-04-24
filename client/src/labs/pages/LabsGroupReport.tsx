@@ -24,7 +24,7 @@ const SURFACE: RGB = [36, 32, 28];
 const MUTED: RGB = [138, 126, 109];
 const TEXT: RGB = [245, 240, 232];
 
-function exportGroupReportPdf(tasting: any, report: any, whiskies: any[], participants: any[], t: (k: string, fb?: string) => string) {
+async function exportGroupReportPdf(tasting: any, report: any, whiskies: any[], participants: any[], t: (k: string, fb?: string) => string) {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageW = 210;
   const pageH = 297;
@@ -166,7 +166,7 @@ function exportGroupReportPdf(tasting: any, report: any, whiskies: any[], partic
 
   drawFooter();
   const safe = (tasting.title || "report").replace(/[^a-zA-Z0-9]/g, "_");
-  saveJsPdf(doc, `${safe}_ki-report.pdf`);
+  await saveJsPdf(doc, `${safe}_ki-report.pdf`);
 }
 
 function ScoreBadge({ score }: { score: number }) {
@@ -374,7 +374,7 @@ export default function LabsGroupReport({ params }: LabsGroupReportProps) {
           </div>
           {report && (
             <button
-              onClick={() => exportGroupReportPdf(tasting, report, whiskyResults, activeParticipants, t)}
+              onClick={() => void exportGroupReportPdf(tasting, report, whiskyResults, activeParticipants, t)}
               style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "1px solid var(--labs-border)", borderRadius: 8, cursor: "pointer", color: "var(--labs-text-muted)", fontSize: 12, fontWeight: 600, padding: "5px 10px" }}
               data-testid="button-download-report-pdf"
             >

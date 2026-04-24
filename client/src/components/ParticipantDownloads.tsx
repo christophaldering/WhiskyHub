@@ -116,10 +116,10 @@ function useDownloadHandlers(tasting: Tasting) {
     }
   };
 
-  const handleTastingMat = () => {
+  const handleTastingMat = async () => {
     setGenerating("tastingMat");
     try {
-      generateBlankTastingMat(lang, whiskies.length, tasting.ratingScale || 10);
+      await generateBlankTastingMat(lang, whiskies.length, tasting.ratingScale || 10);
     } catch (e) {
       console.error("Mat generation failed:", e);
     } finally {

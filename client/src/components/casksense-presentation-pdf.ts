@@ -1712,5 +1712,5 @@ export async function generateCaskSensePresentation() {
   drawCTAPage(doc);
   addPageNumbers(doc);
 
-  saveJsPdf(doc, "CaskSense-Feature-Presentation.pdf");
+  await saveJsPdf(doc, "CaskSense-Feature-Presentation.pdf");
 }

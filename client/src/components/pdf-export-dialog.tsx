@@ -685,7 +685,7 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
         addFooter();
       }
 
-      saveJsPdf(doc, `${title.replace(/[^a-zA-Z0-9]/g, "_")}_menu.pdf`);
+      await saveJsPdf(doc, `${title.replace(/[^a-zA-Z0-9]/g, "_")}_menu.pdf`);
     } finally {
       setGenerating(false);
     }

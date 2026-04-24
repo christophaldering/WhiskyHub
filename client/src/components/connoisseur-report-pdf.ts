@@ -429,5 +429,5 @@ export async function generateConnoisseurReportPdf(options: ConnoisseurPdfOption
 
   const safeName = participantName.replace(/[^a-zA-Z0-9äöüÄÖÜß\s]/g, "").replace(/\s+/g, "_");
   const filename = `CaskSense_Connoisseur_${safeName}_${new Date().toISOString().slice(0, 10)}.pdf`;
-  saveJsPdf(doc, filename);
+  await saveJsPdf(doc, filename);
 }

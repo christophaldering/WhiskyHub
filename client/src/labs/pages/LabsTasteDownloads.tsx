@@ -100,8 +100,8 @@ export default function LabsTasteDownloads() {
         <p className="labs-section-label">{t("downloads.printableTemplates", "Printable Templates")}</p>
         <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>{t("downloads.printableTemplatesDesc", "Blank tasting sheets and mats for your next session")}</p>
         <div className="flex flex-col gap-2.5">
-          <DownloadButton loading={loadingSheet} onClick={() => { setLoadingSheet(true); try { generateBlankTastingSheet(lang); } finally { setLoadingSheet(false); } }} icon={ClipboardList} label={t("downloads.blankScoreSheet", "Blank Score Sheet (PDF)")} testId="button-labs-download-sheet" />
-          <DownloadButton loading={loadingMat} onClick={() => { setLoadingMat(true); try { generateBlankTastingMat(lang); } finally { setLoadingMat(false); } }} icon={FileText} label={t("downloads.blankTastingMat", "Blank Tasting Mat (PDF)")} testId="button-labs-download-mat" />
+          <DownloadButton loading={loadingSheet} onClick={async () => { setLoadingSheet(true); try { await generateBlankTastingSheet(lang); } finally { setLoadingSheet(false); } }} icon={ClipboardList} label={t("downloads.blankScoreSheet", "Blank Score Sheet (PDF)")} testId="button-labs-download-sheet" />
+          <DownloadButton loading={loadingMat} onClick={async () => { setLoadingMat(true); try { await generateBlankTastingMat(lang); } finally { setLoadingMat(false); } }} icon={FileText} label={t("downloads.blankTastingMat", "Blank Tasting Mat (PDF)")} testId="button-labs-download-mat" />
         </div>
       </div>
 

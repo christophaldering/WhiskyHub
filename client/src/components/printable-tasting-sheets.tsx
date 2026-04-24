@@ -1715,7 +1715,7 @@ export function PrintableTastingSheets({ tasting, whiskies }: PrintableTastingSh
   );
 }
 
-export function generateBlankTastingSheet(lang: string, slots = 6) {
+export async function generateBlankTastingSheet(lang: string, slots = 6) {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageW = 210;
   const marginX = 15;
@@ -1766,10 +1766,10 @@ export function generateBlankTastingSheet(lang: string, slots = 6) {
   doc.setTextColor(...MUTED);
   doc.text("CaskSense · casksense.com", pageW / 2, 292, { align: "center" });
 
-  saveJsPdf(doc, `${tp("printableSheets.pdfScoreSheet", lang).replace(/\s+/g, "_")}.pdf`);
+  await saveJsPdf(doc, `${tp("printableSheets.pdfScoreSheet", lang).replace(/\s+/g, "_")}.pdf`);
 }
 
-export function generateBlankTastingMat(lang: string, slots = 6, ratingScale = 10) {
+export async function generateBlankTastingMat(lang: string, slots = 6, ratingScale = 10) {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pageW = 297;
   const pageH = 210;
@@ -1818,5 +1818,5 @@ export function generateBlankTastingMat(lang: string, slots = 6, ratingScale = 1
   doc.setTextColor(...MUTED);
   doc.text("CaskSense · casksense.com", pageW / 2, pageH - 5, { align: "center" });
 
-  saveJsPdf(doc, `${tp("printableSheets.pdfTastingMat", lang).replace(/\s+/g, "_")}.pdf`);
+  await saveJsPdf(doc, `${tp("printableSheets.pdfTastingMat", lang).replace(/\s+/g, "_")}.pdf`);
 }

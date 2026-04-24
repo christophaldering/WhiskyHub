@@ -816,10 +816,10 @@ function PrintMaterialsSection({
     }
   };
 
-  const handleGenerateMat = () => {
+  const handleGenerateMat = async () => {
     setGenerating("mat");
     try {
-      generateBlankTastingMat("de", whiskyCount, (tasting.ratingScale as number) || 10);
+      await generateBlankTastingMat("de", whiskyCount, (tasting.ratingScale as number) || 10);
     } catch (e) {
       console.error("Mat generation failed:", e);
     } finally {
@@ -827,10 +827,10 @@ function PrintMaterialsSection({
     }
   };
 
-  const handleGenerateBlankSheet = () => {
+  const handleGenerateBlankSheet = async () => {
     setGenerating("blank");
     try {
-      generateBlankTastingSheet("de", whiskyCount);
+      await generateBlankTastingSheet("de", whiskyCount);
     } catch (e) {
       console.error("Sheet generation failed:", e);
     } finally {

@@ -560,5 +560,5 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false, onPro
     const dataUri = doc.output("datauristring");
     return dataUri.split(",")[1];
   }
-  saveJsPdf(doc, `${safeName}_story.pdf`);
+  await saveJsPdf(doc, `${safeName}_story.pdf`);
 }

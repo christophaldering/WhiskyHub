@@ -193,5 +193,5 @@ export async function generateAutoHandoutPdf(opts: AutoHandoutPdfOptions): Promi
     : "Dieses Handout wurde von CaskSense aus öffentlich zugänglichen Quellen (Wikipedia, Brennerei-Websites, News, Blogs, Whiskybase) automatisch erstellt. Der Host hat die Inhalte geprüft und ggf. bearbeitet. Aussagen mit (?) oder ~ bitte vor einer Weitergabe gegenprüfen.";
   drawWrappedText(doc, notice, MARGIN, y, CONTENT_W, 5);
 
-  saveJsPdf(doc, `auto-handout-${opts.tastingTitle.replace(/[^a-z0-9]+/gi, "_").slice(0, 60)}.pdf`);
+  await saveJsPdf(doc, `auto-handout-${opts.tastingTitle.replace(/[^a-z0-9]+/gi, "_").slice(0, 60)}.pdf`);
 }

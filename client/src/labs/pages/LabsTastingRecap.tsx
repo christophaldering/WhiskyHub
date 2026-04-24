@@ -184,7 +184,7 @@ export default function LabsTastingRecap() {
 
   const handlePrint = () => window.print();
 
-  const handlePdfDownload = () => {
+  const handlePdfDownload = async () => {
     if (!recap) return;
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const pw = doc.internal.pageSize.getWidth();
@@ -352,7 +352,7 @@ export default function LabsTastingRecap() {
 
     drawFooter();
     const slug = recap.tasting.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
-    saveJsPdf(doc, `casksense-${slug}-recap.pdf`);
+    await saveJsPdf(doc, `casksense-${slug}-recap.pdf`);
   };
 
   if (isLoading) {

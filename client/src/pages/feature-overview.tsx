@@ -182,7 +182,7 @@ function rgb(hex: string): [number, number, number] {
   return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
 }
 
-function generateFeatureOverviewPDF() {
+async function generateFeatureOverviewPDF() {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pw = doc.internal.pageSize.getWidth();
   const ph = doc.internal.pageSize.getHeight();
@@ -282,7 +282,7 @@ function generateFeatureOverviewPDF() {
     doc.text(`${i} / ${totalPages}`, pw - marginLeft, ph - 8, { align: "right" });
   }
 
-  saveJsPdf(doc, "CaskSense-Feature-Overview.pdf");
+  await saveJsPdf(doc, "CaskSense-Feature-Overview.pdf");
 }
 
 function CategorySection({ category, index }: { category: Category; index: number }) {
@@ -399,10 +399,10 @@ export default function FeatureOverview() {
 
   const totalFeatures = categories.reduce((sum, c) => sum + c.features.length, 0);
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     setDownloading(true);
     try {
-      generateFeatureOverviewPDF();
+      await generateFeatureOverviewPDF();
     } finally {
       setDownloading(false);
     }

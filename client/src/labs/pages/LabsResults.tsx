@@ -29,7 +29,7 @@ async function labsExportFromServer(tastingId: string, format: "csv" | "xlsx"): 
   return true;
 }
 
-function labsExportPdf(tasting: any, whiskyResults: any[], t: (key: string) => string) {
+async function labsExportPdf(tasting: any, whiskyResults: any[], t: (key: string) => string) {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageW = 210;
   const pageH = 297;
@@ -173,7 +173,7 @@ function labsExportPdf(tasting: any, whiskyResults: any[], t: (key: string) => s
 
   drawFooter();
   const safeName = (tasting.title || "results").replace(/[^a-zA-Z0-9]/g, "_");
-  saveJsPdf(doc, `${safeName}_results.pdf`);
+  await saveJsPdf(doc, `${safeName}_results.pdf`);
 }
 
 function LabsExportDropdown({ tastingId, tasting, whiskyResults }: { tastingId: string; tasting: any; whiskyResults: any[] }) {
@@ -336,7 +336,7 @@ function LabsExportDropdown({ tastingId, tasting, whiskyResults }: { tastingId: 
               fontSize: 13,
               fontFamily: "inherit",
             }}
-            onClick={() => { labsExportPdf(tasting, whiskyResults, t); setOpen(false); }}
+            onClick={async () => { await labsExportPdf(tasting, whiskyResults, t); setOpen(false); }}
             data-testid="button-labs-export-pdf"
           >
             <Download style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />

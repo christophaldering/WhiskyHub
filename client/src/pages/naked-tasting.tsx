@@ -727,7 +727,7 @@ function RecapScreen({ tasting, whiskies, participantId, hideRanking = false }: 
     ? [...whiskyResults].sort((a, b) => b.avgOverall - a.avgOverall)
     : whiskyResults;
 
-  const generatePdf = () => {
+  const generatePdf = async () => {
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const pageW = 210;
     const pageH = 297;
@@ -797,7 +797,7 @@ function RecapScreen({ tasting, whiskies, participantId, hideRanking = false }: 
       y += 22;
     });
 
-    saveJsPdf(doc, `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß ]/g, "_")}_results.pdf`);
+    await saveJsPdf(doc, `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß ]/g, "_")}_results.pdf`);
   };
 
   if (hideRanking) {
