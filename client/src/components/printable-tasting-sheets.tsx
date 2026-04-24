@@ -933,7 +933,10 @@ async function drawTastingMat(
     doc.setFont('times', 'italic');
     const displayName = isBlind ? `${tp("printableSheets.pdfSample", lang)}` : (whisky.name ?? '');
     const matNameLines = doc.splitTextToSize(displayName, usableWidth * 0.38);
-    doc.text(matNameLines[0] ?? '', margin + 14, rowY + 4);
+    const matNameDisplay = matNameLines.length > 1
+      ? `${matNameLines[0].trimEnd()}…`
+      : (matNameLines[0] ?? '');
+    doc.text(matNameDisplay, margin + 14, rowY + 4);
 
     drawGoldLine(doc, margin + 14, rowY + 8, usableWidth * 0.38, 0.4);
     doc.setFontSize(6);
