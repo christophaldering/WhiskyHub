@@ -258,6 +258,7 @@ async function preBuildMigrations() {
       { table: "whiskybase_collection", column: "distilled_year", type: "integer" },
       { table: "whiskies", column: "country", type: "text" },
       { table: "wishlist_entries", column: "country", type: "text" },
+      { table: "tastings", column: "excluded_participant_ids", type: "text[] DEFAULT ARRAY[]::text[]" },
     ];
     for (const { table, column, type } of addCols) {
       await pool.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${column} ${type}`);
