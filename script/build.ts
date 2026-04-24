@@ -345,6 +345,7 @@ async function buildAll() {
   await copyFile("server/preload.cjs", "dist/preload.cjs");
 }
 
+// Public API: importable standalone so `npm run db:migrate` (scripts/pre-push-sync.ts) can run migrations without a full build.
 export { preBuildMigrations };
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
