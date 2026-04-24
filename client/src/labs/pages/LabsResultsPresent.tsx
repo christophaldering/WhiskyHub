@@ -1001,9 +1001,10 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
       `}</style>
 
       <div style={{
-        position: "absolute", top: 12, left: 16, right: 16, zIndex: 10,
+        position: "absolute", top: 0, left: 0, right: 0, zIndex: 10,
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        pointerEvents: "none",
+        padding: "12px 16px", pointerEvents: "none",
+        background: "linear-gradient(rgba(0,0,0,0.4) 0%, transparent 100%)",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, pointerEvents: "auto" }}>
           <button
