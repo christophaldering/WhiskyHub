@@ -552,7 +552,7 @@ async function drawLineupPage(
     // Pre-measure all entries
     const measured = whiskies.map(w => measureEntry(w, colWidth));
 
-    // Distribute entries across columns by balancing height
+    // Distribute entries across columns sequentially: fill left first, then right
     type Slot = { col: number; idx: number };
     const startY = y;
     const colXs: number[] = [];
@@ -566,11 +566,12 @@ async function drawLineupPage(
       let pageOverflow = false;
 
       for (let i = startIdx; i < whiskies.length; i++) {
-        let bestCol = 0;
-        for (let c = 1; c < columns; c++) {
-          if (planYs[c] < planYs[bestCol]) bestCol = c;
-        }
         const entryH = measured[i].consumed;
+        // Sequential: stay in the current (leftmost) column until it is full, then advance
+        let bestCol = 0;
+        while (bestCol < columns - 1 && planYs[bestCol] + entryH > maxY) {
+          bestCol++;
+        }
         if (planYs[bestCol] + entryH > maxY) {
           lastIdx = i;
           pageOverflow = true;
