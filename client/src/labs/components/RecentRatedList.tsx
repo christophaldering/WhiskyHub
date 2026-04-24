@@ -175,7 +175,7 @@ export function RecentRatedList({
                 </div>
                 {d.rated ? (
                   <div
-                    className={`labs-dram-score${Math.round(d.score) >= (d.scale ?? 100) * 0.9 ? " labs-dram-score--high" : ""}`}
+                    className={`labs-dram-score${d.score >= (d.scale ?? 100) * 0.9 ? " labs-dram-score--high" : ""}`}
                     data-testid={`text-recent-score-${d.id}`}
                   >
                     {Math.round(d.score)}
