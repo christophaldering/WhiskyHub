@@ -923,7 +923,7 @@ async function drawTastingMat(
     const whisky = whiskies[i];
     const rowY = y;
 
-    doc.setFontSize(18);
+    doc.setFontSize(13);
     doc.setTextColor(...GOLD_RGB);
     doc.setFont('helvetica', 'normal');
     doc.text(String(i + 1), margin, rowY + 7);
@@ -933,7 +933,7 @@ async function drawTastingMat(
     doc.setFont('times', 'italic');
     const displayName = isBlind ? `${tp("printableSheets.pdfSample", lang)}` : (whisky.name ?? '');
     const matNameLines = doc.splitTextToSize(displayName, usableWidth * 0.38);
-    doc.text(matNameLines, margin + 14, rowY + 4);
+    doc.text(matNameLines[0] ?? '', margin + 14, rowY + 4);
 
     drawGoldLine(doc, margin + 14, rowY + 8, usableWidth * 0.38, 0.4);
     doc.setFontSize(6);
@@ -955,7 +955,7 @@ async function drawTastingMat(
     doc.setTextColor(...PRINT_TEXTMUTED_RGB);
     doc.text('Ja', cbX + 7, rowY + 7);
 
-    y += 14;
+    y += 11;
     drawGoldLine(doc, margin, y, usableWidth, 0.15);
     y += 3;
 
