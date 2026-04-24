@@ -102,7 +102,7 @@ export default function LabsCommunityDetail() {
         try {
           const assigned = JSON.parse(t.targetCommunityIds);
           if (!Array.isArray(assigned) || assigned.length === 0) return true;
-          return false;
+          return !assigned.includes(communityId);
         } catch { return true; }
       });
       setMyTastings(filtered);

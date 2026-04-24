@@ -3836,9 +3836,7 @@ export class DatabaseStorage implements IStorage {
       and(
         ne(tastings.status, "deleted"),
         sql`COALESCE(${tastings.tastingType}, 'standard') = 'standard'`,
-        sql`${tastings.targetCommunityIds} IS NOT NULL AND ${tastings.targetCommunityIds} != '' AND (
-          CASE WHEN ${tastings.targetCommunityIds} ~ '^\[.*\]$' THEN ${tastings.targetCommunityIds}::jsonb @> ${JSON.stringify([communityId])}::jsonb ELSE false END
-        )`
+        sql`${tastings.targetCommunityIds} IS NOT NULL AND ${tastings.targetCommunityIds} != '' AND ${tastings.targetCommunityIds}::jsonb ? ${communityId}`
       )
     );
 
