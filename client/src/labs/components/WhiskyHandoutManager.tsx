@@ -18,6 +18,12 @@ function isMobilePdfUnsupported(): boolean {
   return /android/i.test(navigator.userAgent);
 }
 
+function isIos(): boolean {
+  if (typeof navigator === "undefined") return false;
+  if (/iphone|ipad|ipod/i.test(navigator.userAgent)) return true;
+  return /Mac/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1;
+}
+
 interface Props {
   whisky: Whisky;
   hostId: string;
@@ -469,6 +475,7 @@ export function WhiskyHandoutViewer({ whisky, isRevealed }: { whisky: Whisky; is
 
 function SingleHandoutView({ fileUrl, contentType, title, author, description, testId, isPdf }: { fileUrl: string; contentType: string; title?: string | null; author?: string | null; description?: string | null; testId: string; isPdf: boolean }) {
   const skipEmbed = isPdf && isMobilePdfUnsupported();
+  const useIframe = isPdf && !skipEmbed && isIos();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }} data-testid={testId}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -488,6 +495,8 @@ function SingleHandoutView({ fileUrl, contentType, title, author, description, t
             PDF-Vorschau auf Mobilgeräten nicht verfügbar. Tippe auf „PDF öffnen", um es zu lesen.
           </p>
         </div>
+      ) : useIframe ? (
+        <iframe src={fileUrl} title={title || "Handout PDF"} style={{ width: "100%", height: 360, borderRadius: 8, border: "1px solid var(--labs-border)", background: "var(--labs-surface)" }} data-testid={`${testId}-iframe`} />
       ) : (
         <object data={fileUrl} type="application/pdf" style={{ width: "100%", height: 360, borderRadius: 8, border: "1px solid var(--labs-border)", background: "var(--labs-surface)" }} aria-label={title || "Handout PDF"}>
           <p style={{ fontSize: 12, color: "var(--labs-text-muted)", padding: 12 }}>PDF kann hier nicht inline angezeigt werden. Nutze „Öffnen" oder „Download".</p>
