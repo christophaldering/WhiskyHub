@@ -1016,8 +1016,10 @@ function drawCompactRatingCell(
 ): void {
   if (maxScore <= 10) {
     const n = maxScore;
-    const r = 1.05;
-    const gap = Math.max(0.35, (width - n * r * 2) / Math.max(1, n - 1));
+    const minGap = 0.3;
+    const maxR = 1.3;
+    const r = Math.min(maxR, (width - (n - 1) * minGap) / (2 * n));
+    const gap = n > 1 ? (width - n * r * 2) / (n - 1) : 0;
     const totalW = n * r * 2 + (n - 1) * gap;
     const startX = x + (width - totalW) / 2 + r;
     doc.setDrawColor(...GOLD_RGB);
