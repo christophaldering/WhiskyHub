@@ -1128,7 +1128,7 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
                   height: isActive ? 6 : (totalSlides > 15 && !isNear ? 4 : 6),
                   borderRadius: 3,
                   border: "none",
-                  background: isActive ? "var(--labs-accent)" : `rgba(255,255,255,${isNear ? 0.15 : 0.08})`,
+                  background: isActive ? "var(--labs-accent)" : `rgba(255,255,255,${isNear ? 0.28 : 0.15})`,
                   cursor: "pointer",
                   transition: "all 0.25s ease",
                   padding: 0,

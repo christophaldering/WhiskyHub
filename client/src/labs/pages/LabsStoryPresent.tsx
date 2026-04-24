@@ -987,6 +987,7 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
         position: "absolute", top: 0, left: 0, right: 0, zIndex: 20,
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "12px 16px", pointerEvents: "none",
+        background: "linear-gradient(rgba(0,0,0,0.4) 0%, transparent 100%)",
       }}>
         <div style={{ pointerEvents: "auto", display: "flex", gap: 8 }}>
           <button
@@ -1163,8 +1164,8 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
       <div style={{
         padding: "10px 16px 14px",
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        borderTop: "1px solid rgba(255,255,255,0.04)",
-        background: "rgba(0,0,0,0.3)", backdropFilter: "blur(12px)",
+        borderTop: "1px solid rgba(255,255,255,0.08)",
+        background: "rgba(0,0,0,0.55)", backdropFilter: "blur(12px)",
       }}>
         <button
           className="labs-btn-ghost"
@@ -1185,7 +1186,7 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
               style={{
                 width: i === slideIndex ? 20 : 6,
                 height: 6, borderRadius: 3,
-                background: i === slideIndex ? "var(--labs-accent)" : "rgba(255,255,255,0.2)",
+                background: i === slideIndex ? "var(--labs-accent)" : "rgba(255,255,255,0.3)",
                 border: "none", cursor: "pointer", padding: 0,
                 transition: "all 0.2s",
               }}
