@@ -109,6 +109,82 @@ function buildRawEmail(to: string, subject: string, html: string): string {
     .replace(/=+$/, "");
 }
 
+function buildRawEmailWithPdfAttachment(
+  to: string,
+  subject: string,
+  html: string,
+  pdfBase64: string,
+  filename: string
+): string {
+  const outerBoundary = "outer_" + Date.now().toString(36);
+  const innerBoundary = "inner_" + (Date.now() + 1).toString(36);
+  const encodedSubject = `=?UTF-8?B?${Buffer.from(subject).toString("base64")}?=`;
+  const encodedFilename = `=?UTF-8?B?${Buffer.from(filename).toString("base64")}?=`;
+  const htmlB64 = Buffer.from(html).toString("base64");
+
+  const lines = [
+    `To: ${to}`,
+    `Subject: ${encodedSubject}`,
+    "MIME-Version: 1.0",
+    `Content-Type: multipart/mixed; boundary="${outerBoundary}"`,
+    "",
+    `--${outerBoundary}`,
+    `Content-Type: multipart/alternative; boundary="${innerBoundary}"`,
+    "",
+    `--${innerBoundary}`,
+    "Content-Type: text/html; charset=UTF-8",
+    "Content-Transfer-Encoding: base64",
+    "",
+    htmlB64,
+    "",
+    `--${innerBoundary}--`,
+    "",
+    `--${outerBoundary}`,
+    "Content-Type: application/pdf",
+    "Content-Transfer-Encoding: base64",
+    `Content-Disposition: attachment; filename="${encodedFilename}"`,
+    "",
+    pdfBase64,
+    "",
+    `--${outerBoundary}--`,
+  ];
+  const raw = lines.join("\r\n");
+  return Buffer.from(raw)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+export async function sendEmailWithPdfAttachment(options: {
+  to: string;
+  subject: string;
+  html: string;
+  pdfBase64: string;
+  filename: string;
+}): Promise<boolean> {
+  const gmail = await getGmailClient();
+  if (!gmail) {
+    log(`Gmail not connected — skipping PDF email to ${options.to}`, "email");
+    return false;
+  }
+  try {
+    const raw = buildRawEmailWithPdfAttachment(
+      options.to,
+      options.subject,
+      options.html,
+      options.pdfBase64,
+      options.filename
+    );
+    await gmail.users.messages.send({ userId: "me", requestBody: { raw } });
+    log(`PDF email sent to ${options.to} via Gmail`, "email");
+    return true;
+  } catch (e) {
+    log(`Failed to send PDF email to ${options.to}: ${(e as Error).message}`, "email");
+    return false;
+  }
+}
+
 export async function sendEmail(options: EmailOptions): Promise<boolean> {
   const gmail = await getGmailClient();
   if (!gmail) {

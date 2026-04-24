@@ -14,7 +14,7 @@ import OpenAI from "openai";
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
 import { clampNormalized } from "@shared/score-utils";
-import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail, buildThankYouEmail, buildAdminLoginNotification, buildFriendInviteEmail, buildCommunityInviteEmail, buildMagicLinkEmail } from "./email";
+import { isSmtpConfigured, sendEmail, sendEmailWithPdfAttachment, buildInviteEmail, buildVerificationEmail, buildThankYouEmail, buildAdminLoginNotification, buildFriendInviteEmail, buildCommunityInviteEmail, buildMagicLinkEmail } from "./email";
 import { extractPagesText } from "./pdf-utils";
 import { registerObjectStorageRoutes, ObjectStorageService, objectStorageClient } from "./replit_integrations/object_storage";
 import { registerFunnelRoutes } from "./funnel-routes";
@@ -17848,6 +17848,65 @@ Language: German if tasting title appears German, otherwise English. Tone: warm,
       });
     } catch (e: any) {
       console.error("Story endpoint error:", e.message);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/story-pdf-email", async (req: any, res: any) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const participantId = (req.headers["x-participant-id"] as string) || (req.query.pid as string);
+      if (tasting.hostId !== participantId) return res.status(403).json({ message: "Only the host can share the Story PDF" });
+
+      const { recipients, pdfBase64, tastingTitle } = req.body;
+      if (!Array.isArray(recipients) || recipients.length === 0) {
+        return res.status(400).json({ message: "At least one recipient required" });
+      }
+      if (recipients.length > 30) {
+        return res.status(400).json({ message: "Max 30 recipients per send" });
+      }
+      if (!pdfBase64 || typeof pdfBase64 !== "string") {
+        return res.status(400).json({ message: "PDF data required" });
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const validRecipients: string[] = recipients.filter((r: any) => typeof r === "string" && emailRegex.test(r.trim()));
+      if (validRecipients.length === 0) return res.status(400).json({ message: "No valid email addresses" });
+
+      const title = (typeof tastingTitle === "string" && tastingTitle.trim()) ? tastingTitle.trim() : tasting.title || "CaskSense Tasting";
+      const safeFilename = title.replace(/[^a-zA-Z0-9äöüÄÖÜß\-_ ]/g, "").trim().replace(/\s+/g, "_") || "story";
+      const filename = `${safeFilename}_Story.pdf`;
+      const subject = `${title} — Story PDF`;
+      const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;font-family:'Georgia',serif;background:#f5f3f0;color:#333;">
+  <div style="max-width:520px;margin:40px auto;background:#fff;border:1px solid #e5e5e0;border-radius:6px;overflow:hidden;">
+    <div style="background:linear-gradient(135deg,#2d2d30 0%,#3d3d42 100%);padding:28px 32px 20px;">
+      <h1 style="margin:0;font-size:26px;color:#c8a864;font-weight:700;letter-spacing:-0.5px;">CaskSense</h1>
+      <p style="margin:4px 0 0;font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#a0956e;">Story PDF</p>
+    </div>
+    <div style="padding:28px 32px;">
+      <p style="font-size:15px;line-height:1.6;margin:0 0 16px;color:#555;">
+        Anbei findest du das Story-PDF der Verkostung <strong>${title}</strong>.
+      </p>
+      <p style="font-size:13px;color:#a0aec0;margin:0;">CaskSense — Wo Verkostung zur Reflexion wird</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+      const results = await Promise.all(
+        validRecipients.map(to => sendEmailWithPdfAttachment({ to: to.trim(), subject, html, pdfBase64, filename }))
+      );
+      const sent = results.filter(Boolean).length;
+      const failed = results.length - sent;
+      res.json({ sent, failed, total: validRecipients.length });
+    } catch (e: any) {
+      console.error("Story PDF email error:", e.message);
       res.status(500).json({ message: e.message });
     }
   });

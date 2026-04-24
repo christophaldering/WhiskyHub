@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, X, Trophy, Wine, Users,
   Camera, Upload, Trash2, Play, Pause, Download,
-  Sparkles, Star, Eye, EyeOff, Loader2, Check, BookOpen, MapPin, Calendar,
+  Sparkles, Star, Eye, EyeOff, Loader2, Check, BookOpen, MapPin, Calendar, Mail, Plus, CheckCheck,
 } from "lucide-react";
 import { getParticipantId, pidHeaders } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
@@ -14,6 +14,7 @@ import { stripGuestSuffix, formatScore } from "@/lib/utils";
 import { useUpload } from "@/hooks/use-upload";
 import jsPDF from "jspdf";
 import { saveJsPdf } from "@/lib/pdf";
+import ModalPortal from "@/labs/components/ModalPortal";
 
 interface LabsStoryPresentProps {
   params: { id: string };
@@ -502,7 +503,7 @@ async function fetchImageAsBase64(url: string): Promise<string | null> {
   }
 }
 
-async function exportStoryPdf(storyData: any) {
+async function exportStoryPdf(storyData: any, returnBase64 = false): Promise<string | void> {
   const { tasting, sortedRanking, participants, eventPhotos, winner, winnerNarration, aiComments, blindReveal, participantFunFacts } = storyData;
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageW = 210, pageH = 297, marginX = 18, contentW = pageW - marginX * 2;
@@ -1038,6 +1039,10 @@ async function exportStoryPdf(storyData: any) {
   drawFooter("Finale");
 
   const safeName = (tasting.title || "story").replace(/[^a-zA-Z0-9]/g, "_");
+  if (returnBase64) {
+    const dataUri = doc.output("datauristring");
+    return dataUri.split(",")[1];
+  }
   saveJsPdf(doc, `${safeName}_story.pdf`);
 }
 
@@ -1145,6 +1150,198 @@ function PhotoUploadPanel({ tastingId, photos, onRefresh, canUpload }: {
   );
 }
 
+// ---- Story Email Share Dialog ----
+function StoryEmailDialog({
+  open, onClose, storyData, eventPhotos, tastingId,
+}: {
+  open: boolean; onClose: () => void; storyData: any; eventPhotos: any[]; tastingId: string;
+}) {
+  const participants: any[] = storyData?.participants ?? [];
+  const tasting = storyData?.tasting;
+
+  const participantEmailEntries = participants
+    .filter((tp: any) => tp.participant?.email && !tp.excludedFromResults)
+    .map((tp: any) => ({ email: tp.participant.email as string, name: stripGuestSuffix(tp.participant.name || tp.participant.email) }));
+
+  const [checkedEmails, setCheckedEmails] = useState<Set<string>>(() => new Set(participantEmailEntries.map(e => e.email)));
+  const [customInput, setCustomInput] = useState("");
+  const [customEmails, setCustomEmails] = useState<string[]>([]);
+  const [sendState, setSendState] = useState<"idle" | "sending" | "done" | "error">("idle");
+  const [sendResult, setSendResult] = useState<{ sent: number; failed: number } | null>(null);
+  const [sendError, setSendError] = useState("");
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  function toggleEmail(email: string) {
+    setCheckedEmails(prev => {
+      const next = new Set(prev);
+      if (next.has(email)) next.delete(email); else next.add(email);
+      return next;
+    });
+  }
+
+  function addCustomEmail() {
+    const trimmed = customInput.trim();
+    if (!emailRegex.test(trimmed)) return;
+    if (!customEmails.includes(trimmed) && !participantEmailEntries.some(e => e.email === trimmed)) {
+      setCustomEmails(prev => [...prev, trimmed]);
+      setCheckedEmails(prev => new Set([...prev, trimmed]));
+    }
+    setCustomInput("");
+  }
+
+  function removeCustomEmail(email: string) {
+    setCustomEmails(prev => prev.filter(e => e !== email));
+    setCheckedEmails(prev => { const n = new Set(prev); n.delete(email); return n; });
+  }
+
+  async function handleSend() {
+    const recipients = [...checkedEmails];
+    if (recipients.length === 0) return;
+    setSendState("sending");
+    setSendError("");
+    try {
+      const pdfBase64 = await exportStoryPdf({ ...storyData, eventPhotos }, true) as string;
+      const res = await fetch(`/api/tastings/${tastingId}/story-pdf-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...pidHeaders() },
+        body: JSON.stringify({ recipients, pdfBase64, tastingTitle: tasting?.title }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Fehler beim Senden");
+      setSendResult({ sent: data.sent, failed: data.failed });
+      setSendState("done");
+    } catch (e: any) {
+      setSendError(e.message || "Unbekannter Fehler");
+      setSendState("error");
+    }
+  }
+
+  function handleClose() {
+    setSendState("idle"); setSendResult(null); setSendError(""); onClose();
+  }
+
+  const allEmails = [...participantEmailEntries.map(e => e.email), ...customEmails];
+  const selectedCount = [...checkedEmails].filter(e => allEmails.includes(e)).length;
+
+  return (
+    <ModalPortal open={open} onClose={handleClose} testId="story-email-dialog" closeOnEscape={sendState !== "sending"}>
+      <div style={{
+        background: "var(--labs-surface, #1e1a14)", border: "1px solid rgba(212,162,86,0.2)",
+        borderRadius: 12, padding: "28px 28px 24px", width: "100%", maxWidth: 440,
+        display: "flex", flexDirection: "column", gap: 20,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--labs-text, #f5f0e8)" }}>Story PDF versenden</p>
+            <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--labs-text-muted, #8a7e6d)" }}>PDF per E-Mail an Teilnehmer senden</p>
+          </div>
+          <button className="labs-btn-ghost" style={{ padding: 6 }} onClick={handleClose} disabled={sendState === "sending"} data-testid="story-email-dialog-close">
+            <X style={{ width: 16, height: 16 }} />
+          </button>
+        </div>
+
+        {sendState === "done" && sendResult ? (
+          <div style={{ textAlign: "center", padding: "16px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(56,161,105,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <CheckCheck style={{ width: 24, height: 24, color: "#38a169" }} />
+            </div>
+            <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: "var(--labs-text, #f5f0e8)" }}>
+              {sendResult.sent} von {sendResult.sent + sendResult.failed} E-Mail{sendResult.sent !== 1 ? "s" : ""} gesendet
+            </p>
+            {sendResult.failed > 0 && (
+              <p style={{ margin: 0, fontSize: 13, color: "var(--labs-danger, #e53e3e)" }}>{sendResult.failed} fehlgeschlagen</p>
+            )}
+            <button className="labs-btn-secondary" style={{ marginTop: 8 }} onClick={handleClose} data-testid="story-email-done-close">Schließen</button>
+          </div>
+        ) : (
+          <>
+            {participantEmailEntries.length > 0 && (
+              <div>
+                <p style={{ margin: "0 0 10px", fontSize: 12, fontWeight: 600, color: "var(--labs-text-muted, #8a7e6d)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Teilnehmer</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {participantEmailEntries.map(({ email, name }) => (
+                    <label key={email} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "7px 10px", borderRadius: 8, background: checkedEmails.has(email) ? "rgba(212,162,86,0.08)" : "rgba(255,255,255,0.03)", border: `1px solid ${checkedEmails.has(email) ? "rgba(212,162,86,0.25)" : "rgba(255,255,255,0.06)"}`, transition: "all 0.15s" }} data-testid={`story-email-participant-${email}`}>
+                      <input type="checkbox" checked={checkedEmails.has(email)} onChange={() => toggleEmail(email)} style={{ accentColor: "#d4a256", width: 16, height: 16 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text, #f5f0e8)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
+                        <div style={{ fontSize: 11, color: "var(--labs-text-muted, #8a7e6d)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{email}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {customEmails.length > 0 && (
+              <div>
+                <p style={{ margin: "0 0 8px", fontSize: 12, fontWeight: 600, color: "var(--labs-text-muted, #8a7e6d)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Weitere Empfänger</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {customEmails.map(email => (
+                    <div key={email} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, background: "rgba(212,162,86,0.08)", border: "1px solid rgba(212,162,86,0.2)" }}>
+                      <Mail style={{ width: 13, height: 13, color: "#d4a256", flexShrink: 0 }} />
+                      <span style={{ flex: 1, fontSize: 13, color: "var(--labs-text, #f5f0e8)", overflow: "hidden", textOverflow: "ellipsis" }}>{email}</span>
+                      <button onClick={() => removeCustomEmail(email)} style={{ background: "none", border: "none", cursor: "pointer", padding: 2, color: "var(--labs-text-muted, #8a7e6d)" }} data-testid={`story-email-remove-${email}`}>
+                        <X style={{ width: 12, height: 12 }} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <p style={{ margin: "0 0 8px", fontSize: 12, fontWeight: 600, color: "var(--labs-text-muted, #8a7e6d)", textTransform: "uppercase", letterSpacing: "0.08em" }}>E-Mail hinzufügen</p>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  type="email"
+                  value={customInput}
+                  onChange={e => setCustomInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addCustomEmail(); } }}
+                  placeholder="name@beispiel.de"
+                  style={{ flex: 1, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "8px 12px", fontSize: 13, color: "var(--labs-text, #f5f0e8)", outline: "none" }}
+                  data-testid="story-email-custom-input"
+                />
+                <button
+                  className="labs-btn-ghost"
+                  style={{ padding: "8px 12px", flexShrink: 0 }}
+                  onClick={addCustomEmail}
+                  disabled={!emailRegex.test(customInput.trim())}
+                  data-testid="story-email-add-btn"
+                >
+                  <Plus style={{ width: 15, height: 15 }} />
+                </button>
+              </div>
+            </div>
+
+            {sendState === "error" && (
+              <p style={{ margin: 0, fontSize: 13, color: "var(--labs-danger, #e53e3e)" }}>{sendError}</p>
+            )}
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <button className="labs-btn-ghost" onClick={handleClose} disabled={sendState === "sending"} data-testid="story-email-cancel">
+                Abbrechen
+              </button>
+              <button
+                className="labs-btn-primary"
+                onClick={handleSend}
+                disabled={selectedCount === 0 || sendState === "sending"}
+                data-testid="story-email-send-btn"
+                style={{ display: "flex", alignItems: "center", gap: 6 }}
+              >
+                {sendState === "sending" ? (
+                  <><Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> Generiere & sende…</>
+                ) : (
+                  <><Mail style={{ width: 14, height: 14 }} /> {selectedCount > 0 ? `An ${selectedCount} senden` : "Senden"}</>
+                )}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </ModalPortal>
+  );
+}
+
 // ---- Main Component ----
 export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
   const tastingId = params.id;
@@ -1158,6 +1355,7 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
   const [showPhotoPanel, setShowPhotoPanel] = useState(false);
   const [storyToggling, setStoryToggling] = useState(false);
   const [isPdfExporting, setIsPdfExporting] = useState(false);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const touchStartX = useRef<number | null>(null);
 
@@ -1281,6 +1479,7 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
   const currentSlide = slides[slideIndex];
 
   return (
+    <>
     <div
       style={{ position: "fixed", inset: 0, background: "var(--labs-bg)", display: "flex", flexDirection: "column", overflow: "hidden", zIndex: 100 }}
       onTouchStart={handleTouchStart}
@@ -1343,6 +1542,17 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
             {isPdfExporting ? <Loader2 style={{ width: 13, height: 13, animation: "spin 1s linear infinite" }} /> : <Download style={{ width: 13, height: 13 }} />}
             {isPdfExporting ? "Exportiere…" : "PDF"}
           </button>
+          {isHost && (
+            <button
+              className="labs-btn-ghost"
+              style={{ padding: "6px 12px", fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}
+              onClick={() => setShowEmailDialog(true)}
+              data-testid="story-email-share-btn"
+            >
+              <Mail style={{ width: 13, height: 13 }} />
+              <span>Teilen</span>
+            </button>
+          )}
           <span style={{
             fontSize: 12, fontWeight: 600, color: "var(--labs-text-muted)",
             padding: "4px 12px", borderRadius: 8, background: "rgba(255,255,255,0.04)",
@@ -1507,5 +1717,16 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
         </div>
       </div>
     </div>
+
+    {isHost && storyData && (
+      <StoryEmailDialog
+        open={showEmailDialog}
+        onClose={() => setShowEmailDialog(false)}
+        storyData={storyData}
+        eventPhotos={eventPhotos}
+        tastingId={tastingId}
+      />
+    )}
+    </>
   );
 }
