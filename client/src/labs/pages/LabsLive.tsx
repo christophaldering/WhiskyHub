@@ -313,7 +313,18 @@ function GuidedStepView({
   }, [myRating, activeWhisky?.id]);
 
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [failedSaveArgs, setFailedSaveArgs] = useState<Record<string, unknown> | null>(null);
+
+  type GuidedSaveArgs = {
+    tastingId: string;
+    whiskyId: string;
+    participantId: string;
+    nose: number;
+    taste: number;
+    finish: number;
+    overall: number;
+    notes: string;
+  };
+  const [failedSaveArgs, setFailedSaveArgs] = useState<GuidedSaveArgs | null>(null);
 
   const rateMutation = useMutation({
     mutationFn: (data: any) => ratingApi.upsert(data),
@@ -540,7 +551,7 @@ function GuidedStepView({
                   : `[FLAVOURS] ${chipStr.join(", ")} [/FLAVOURS]`;
               }
 
-              const mutArgs = {
+              const mutArgs: GuidedSaveArgs = {
                 tastingId,
                 whiskyId: activeWhisky.id,
                 participantId: currentParticipant.id,
@@ -604,7 +615,8 @@ function GuidedStepView({
                       if (activeWhisky) clearGroupDraft(tastingId, activeWhisky.id);
                       guidedDirtyRef.current = false;
                       setFlowSaved(true);
-                    } catch {
+                    } catch (err: any) {
+                      setSaveError(err?.message || t("liveUi.saveFailedError"));
                     }
                   }}
                   data-testid="guided-save-retry"
