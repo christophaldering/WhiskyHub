@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
-import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Sparkles, Download, FileText, FileSpreadsheet, Clock, Monitor, Archive, Check, Info, Lock, Loader2, BookOpen, Camera } from "lucide-react";
+import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Sparkles, Download, FileText, FileSpreadsheet, Clock, Monitor, Archive, Check, Info, Lock, Loader2, BookOpen, Camera, Trash2, Plus } from "lucide-react";
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,6 +17,7 @@ import { saveJsPdf } from "@/lib/pdf";
 import { stripGuestSuffix, formatScore } from "@/lib/utils";
 import jsPDF from "jspdf";
 import { exportStoryPdf } from "@/lib/pdf-story";
+import { useUpload } from "@/hooks/use-upload";
 
 async function labsExportFromServer(tastingId: string, format: "csv" | "xlsx"): Promise<boolean> {
   const res = await fetch(`/api/tastings/${tastingId}/results/export?format=${format}`);
@@ -27,6 +28,24 @@ async function labsExportFromServer(tastingId: string, format: "csv" | "xlsx"): 
   const filename = filenameMatch?.[1] || `results.${format}`;
   downloadBlob(blob, filename);
   return true;
+}
+
+async function addEventPhoto(tastingId: string, photoUrl: string) {
+  const pid = getParticipantId();
+  const res = await fetch(`/api/tastings/${tastingId}/event-photos`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-participant-id": pid ?? "" },
+    body: JSON.stringify({ photoUrl }),
+  });
+  if (!res.ok) throw new Error((await res.json()).message ?? "Upload fehlgeschlagen");
+}
+
+async function deleteEventPhoto(tastingId: string, photoId: string) {
+  const pid = getParticipantId();
+  await fetch(`/api/tastings/${tastingId}/event-photos/${photoId}`, {
+    method: "DELETE",
+    headers: { "x-participant-id": pid ?? "" },
+  });
 }
 
 async function labsExportPdf(tasting: any, whiskyResults: any[], t: (key: string) => string) {
@@ -826,10 +845,10 @@ export default function LabsResults({ params }: LabsResultsProps) {
   });
 
   const isHostForStory = !!currentParticipant?.id && currentParticipant.id === tasting?.hostId &&
-    (tasting?.status === "archived" || tasting?.status === "completed");
+    (tasting?.status === "archived" || tasting?.status === "completed" || tasting?.status === "closed" || tasting?.status === "reveal");
 
   type EventPhoto = { id: string; photoUrl: string; caption: string | null; sortOrder: number };
-  const { data: eventPhotos } = useQuery<EventPhoto[]>({
+  const { data: eventPhotos, refetch: refetchEventPhotos } = useQuery<EventPhoto[]>({
     queryKey: ["tasting-event-photos", tastingId],
     queryFn: async () => {
       const pid = currentParticipant!.id;
@@ -840,6 +859,40 @@ export default function LabsResults({ params }: LabsResultsProps) {
     enabled: isHostForStory,
     staleTime: 30_000,
   });
+
+  const [photosPanelOpen, setPhotosPanelOpen] = useState(false);
+  const [photosUploading, setPhotosUploading] = useState(false);
+  const [photosError, setPhotosError] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const { uploadFile } = useUpload();
+  const qcPhotos = useQueryClient();
+
+  const handlePhotoFiles = useCallback(async (files: FileList) => {
+    if (!files.length) return;
+    const photos = eventPhotos ?? [];
+    const remaining = 10 - photos.length;
+    if (remaining <= 0) { setPhotosError("Maximal 10 Fotos erlaubt."); return; }
+    setPhotosUploading(true);
+    setPhotosError(null);
+    for (let i = 0; i < Math.min(files.length, remaining); i++) {
+      const file = files[i];
+      if (!file.type.startsWith("image/")) continue;
+      const result = await uploadFile(file);
+      if (result?.objectPath) {
+        const publicUrl = result.objectPath.startsWith("http") ? result.objectPath : `/api/uploads/serve/${result.objectPath}`;
+        await addEventPhoto(tastingId, publicUrl).catch(e => setPhotosError(e.message));
+      }
+    }
+    setPhotosUploading(false);
+    refetchEventPhotos();
+    qcPhotos.invalidateQueries({ queryKey: ["tasting-event-photos", tastingId] });
+  }, [eventPhotos, tastingId, uploadFile, refetchEventPhotos, qcPhotos]);
+
+  const handleDeletePhoto = useCallback(async (photoId: string) => {
+    await deleteEventPhoto(tastingId, photoId);
+    refetchEventPhotos();
+    qcPhotos.invalidateQueries({ queryKey: ["tasting-event-photos", tastingId] });
+  }, [tastingId, refetchEventPhotos, qcPhotos]);
 
   useEffect(() => {
     if (!tastingHistoryData?.tastings?.length || !whiskies?.length || !tastingId) return;
@@ -1240,31 +1293,94 @@ export default function LabsResults({ params }: LabsResultsProps) {
       </div>
 
       {isHostForStory && (
-        <div
-          className="labs-card-elevated labs-fade-in"
-          style={{ padding: "12px 16px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, cursor: "pointer" }}
-          onClick={() => navigate(`/labs/results/${tastingId}/story`)}
-          data-testid="results-story-photos-section"
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <BookOpen className="w-4 h-4" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3 }}>Story-Fotos</div>
-              <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.3 }}>
-                {eventPhotos?.length
-                  ? `${eventPhotos.length} Foto${eventPhotos.length === 1 ? "" : "s"} hochgeladen · In Story verwalten`
-                  : "Eventfotos für die Story hochladen"}
+        <div className="labs-card-elevated labs-fade-in" style={{ marginBottom: 16 }} data-testid="results-story-photos-section">
+          <div
+            style={{ padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, cursor: "pointer" }}
+            onClick={() => setPhotosPanelOpen(o => !o)}
+            data-testid="button-story-photos-toggle"
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Camera className="w-4 h-4" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3 }}>
+                  Story-Fotos {eventPhotos?.length ? `(${eventPhotos.length}/10)` : ""}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.3 }}>
+                  {eventPhotos?.length
+                    ? "Erscheinen als Hintergrund in Eröffnung & Finale"
+                    : "Fotos vom Event für die Story hochladen"}
+                </div>
               </div>
             </div>
-          </div>
-          {eventPhotos?.length ? (
-            <div style={{ display: "flex", gap: 4 }}>
-              {eventPhotos.slice(0, 3).map((p) => (
-                <img key={p.id} src={p.photoUrl} alt="" style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 6, border: "1px solid var(--labs-border)" }} />
-              ))}
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              {eventPhotos?.length ? (
+                <div style={{ display: "flex", gap: 3 }}>
+                  {eventPhotos.slice(0, 3).map((p) => (
+                    <img key={p.id} src={p.photoUrl} alt="" style={{ width: 32, height: 32, objectFit: "cover", borderRadius: 5, border: "1px solid var(--labs-border)" }} />
+                  ))}
+                </div>
+              ) : null}
+              {photosPanelOpen ? <ChevronUp className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} /> : <ChevronDown className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />}
             </div>
-          ) : (
-            <Camera className="w-4 h-4" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
+          </div>
+
+          {photosPanelOpen && (
+            <div style={{ padding: "0 16px 16px" }}>
+              <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 14 }}>
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  style={{ display: "none" }}
+                  data-testid="input-story-photo-file"
+                  onChange={e => { if (e.target.files?.length) handlePhotoFiles(e.target.files); e.target.value = ""; }}
+                />
+
+                {eventPhotos && eventPhotos.length > 0 && (
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+                    {eventPhotos.map(p => (
+                      <div key={p.id} style={{ position: "relative", width: 72, height: 72 }} data-testid={`event-photo-${p.id}`}>
+                        <img src={p.photoUrl} alt="" style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 8, border: "1px solid var(--labs-border)", display: "block" }} />
+                        <button
+                          onClick={() => handleDeletePhoto(p.id)}
+                          data-testid={`button-delete-photo-${p.id}`}
+                          style={{ position: "absolute", top: 2, right: 2, background: "rgba(0,0,0,0.65)", border: "none", borderRadius: 4, padding: "2px 3px", cursor: "pointer", display: "flex", alignItems: "center" }}
+                        >
+                          <Trash2 style={{ width: 10, height: 10, color: "#fff" }} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {photosError && (
+                  <div style={{ fontSize: 11, color: "#e57373", marginBottom: 8 }}>{photosError}</div>
+                )}
+
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <button
+                    className="labs-btn-secondary"
+                    onClick={() => photoInputRef.current?.click()}
+                    disabled={photosUploading || (eventPhotos?.length ?? 0) >= 10}
+                    data-testid="button-add-story-photos"
+                    style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}
+                  >
+                    {photosUploading ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> : <Plus style={{ width: 14, height: 14 }} />}
+                    {photosUploading ? "Wird hochgeladen…" : "Fotos hinzufügen"}
+                  </button>
+                  <button
+                    className="labs-btn-ghost"
+                    onClick={() => navigate(`/labs/results/${tastingId}/story`)}
+                    data-testid="button-open-story-from-photos"
+                    style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}
+                  >
+                    <BookOpen style={{ width: 13, height: 13 }} />
+                    Story öffnen
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       )}
