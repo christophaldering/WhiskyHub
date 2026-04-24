@@ -137,6 +137,7 @@ export const tastingParticipants = pgTable("tasting_participants", {
   participantId: varchar("participant_id").notNull(),
   rejoinCode: varchar("rejoin_code"),
   joinedAt: timestamp("joined_at").defaultNow(),
+  excludedFromResults: boolean("excluded_from_results").notNull().default(false),
 }, (table) => ({
   uqTastingParticipant: uniqueIndex("uq_tasting_participant").on(table.tastingId, table.participantId),
   uqTastingRejoinCode: uniqueIndex("uq_tasting_rejoin_code").on(table.tastingId, table.rejoinCode),

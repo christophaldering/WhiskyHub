@@ -2968,6 +2968,25 @@ export async function registerRoutes(
     res.json(sanitized);
   });
 
+  app.patch("/api/tastings/:id/participants/:participantId/inclusion", async (req: any, res: any) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Not found" });
+      if (auth.participant.role !== "admin" && tasting.hostId !== auth.participant.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      const { excluded } = req.body;
+      if (typeof excluded !== "boolean") return res.status(400).json({ message: "excluded must be boolean" });
+      await storage.setParticipantInclusion(req.params.id, req.params.participantId, excluded);
+      res.json({ ok: true });
+    } catch (err: any) {
+      console.error("Error setting participant inclusion:", err);
+      res.status(500).json({ message: "Internal error" });
+    }
+  });
+
   app.post("/api/tastings/:id/heartbeat", async (req, res) => {
     try {
       const { participantId } = req.body;
@@ -5861,17 +5880,21 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Not found" });
 
-      const [allRatings, allWhiskies] = await Promise.all([
+      const [allRatings, allWhiskies, allParticipants] = await Promise.all([
         storage.getRatingsForTasting(req.params.id),
         storage.getWhiskiesForTasting(req.params.id),
+        storage.getTastingParticipants(req.params.id),
       ]);
+
+      const excludedPids = new Set(allParticipants.filter(p => p.excludedFromResults).map(p => p.participantId));
+      const filteredRatings = allRatings.filter(r => !excludedPids.has(r.participantId));
 
       const whiskyMap = new Map(allWhiskies.map((w) => [w.id, w]));
       const scale = tasting.ratingScale ?? 100;
       const normFactor = 100 / scale;
 
-      const grouped: Record<string, typeof allRatings> = {};
-      for (const r of allRatings) {
+      const grouped: Record<string, typeof filteredRatings> = {};
+      for (const r of filteredRatings) {
         if (!grouped[r.whiskyId]) grouped[r.whiskyId] = [];
         grouped[r.whiskyId].push(r);
       }
@@ -5919,7 +5942,8 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         blindMode: tasting.blindMode,
         ratingScale: tasting.ratingScale ?? 100,
         whiskyCount: allWhiskies.length,
-        totalRatings: allRatings.length,
+        totalRatings: filteredRatings.length,
+        excludedParticipantCount: excludedPids.size,
         results,
       });
     } catch (err: any) {
@@ -5936,16 +5960,21 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Not found" });
 
-      const [allRatings, allWhiskies] = await Promise.all([
+      const [allRatings, allWhiskies, exportParticipants] = await Promise.all([
         storage.getRatingsForTasting(req.params.id),
         storage.getWhiskiesForTasting(req.params.id),
+        storage.getTastingParticipants(req.params.id),
       ]);
+
+      const exportExcludedPids = new Set(exportParticipants.filter(p => p.excludedFromResults).map(p => p.participantId));
+      const exportFilteredRatings = allRatings.filter(r => !exportExcludedPids.has(r.participantId));
+      const exportNormFactor = 100 / (tasting.ratingScale ?? 100);
 
       const avg = (arr: number[]) => arr.length ? Math.round((arr.reduce((s, v) => s + v, 0) / arr.length) * 10) / 10 : null;
 
       const rows = allWhiskies
         .map((w, i) => {
-          const rats = allRatings.filter(r => r.whiskyId === w.id);
+          const rats = exportFilteredRatings.filter(r => r.whiskyId === w.id);
           const overalls = rats.map(r => r.overall).filter((v): v is number => v != null);
           return {
             Rank: i + 1,
@@ -5955,9 +5984,9 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
             Age: w.age ?? "",
             ABV: w.abv ?? "",
             "Avg Overall": avg(overalls)?.toFixed(1) ?? "",
-            "Avg Nose": avg(rats.map(r => r.normalizedNose ?? r.nose * normFactor).filter((v): v is number => v != null))?.toFixed(1) ?? "",
-            "Avg Taste": avg(rats.map(r => r.normalizedTaste ?? r.taste * normFactor).filter((v): v is number => v != null))?.toFixed(1) ?? "",
-            "Avg Finish": avg(rats.map(r => r.normalizedFinish ?? r.finish * normFactor).filter((v): v is number => v != null))?.toFixed(1) ?? "",
+            "Avg Nose": avg(rats.map(r => r.normalizedNose ?? r.nose * exportNormFactor).filter((v): v is number => v != null))?.toFixed(1) ?? "",
+            "Avg Taste": avg(rats.map(r => r.normalizedTaste ?? r.taste * exportNormFactor).filter((v): v is number => v != null))?.toFixed(1) ?? "",
+            "Avg Finish": avg(rats.map(r => r.normalizedFinish ?? r.finish * exportNormFactor).filter((v): v is number => v != null))?.toFixed(1) ?? "",
             Ratings: rats.length,
           };
         })

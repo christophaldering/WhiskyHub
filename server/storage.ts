@@ -369,6 +369,7 @@ export interface IStorage {
   getTastingParticipantByRejoinCode(tastingId: string, rejoinCode: string): Promise<(TastingParticipant & { participant: Participant }) | undefined>;
   getTastingParticipantRow(tastingId: string, participantId: string): Promise<TastingParticipant | undefined>;
   mergeParticipantsInTasting(tastingId: string, sourceParticipantId: string, targetParticipantId: string): Promise<{ ratingsMoved: number; ratingsDiscarded: number }>;
+  setParticipantInclusion(tastingId: string, participantId: string, excluded: boolean): Promise<void>;
 
   // Sharing Participants (Bottle-Sharing)
   getSharingParticipants(tastingId: string): Promise<(SharingParticipant & { participant: Participant })[]>;
@@ -1291,6 +1292,13 @@ export class DatabaseStorage implements IStorage {
     });
 
     return result;
+  }
+
+  async setParticipantInclusion(tastingId: string, participantId: string, excluded: boolean): Promise<void> {
+    await db
+      .update(tastingParticipants)
+      .set({ excludedFromResults: excluded })
+      .where(and(eq(tastingParticipants.tastingId, tastingId), eq(tastingParticipants.participantId, participantId)));
   }
 
   // --- Sharing Participants (Bottle-Sharing) ---
