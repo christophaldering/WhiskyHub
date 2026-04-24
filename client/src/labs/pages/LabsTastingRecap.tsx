@@ -1,19 +1,20 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useParams, useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { recapApi, collectionApi, getParticipantId } from "@/lib/api";
+import { recapApi, collectionApi, getParticipantId, pidHeaders } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
 import {
   Trophy, Copy, Printer, AlertTriangle, Users, Wine, Star, FileDown,
-  Loader2, ChevronLeft, AlertCircle, Archive, Check, BookOpen
+  Loader2, ChevronLeft, AlertCircle, Archive, Check, BookOpen, Camera, X
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import jsPDF from "jspdf";
 import { saveJsPdf } from "@/lib/pdf";
 import { Link } from "wouter";
+import { useUpload } from "@/hooks/use-upload";
 
 interface RecapData {
   tasting: { id: string; title: string; date: string; location: string; status: string; hostId: string; ratingScale?: number };
@@ -24,6 +25,23 @@ interface RecapData {
   mostDivisive: { name: string; stddev: number } | null;
   overallAverages: { nose: number; taste: number; finish: number; overall: number };
   participantHighlights: { name: string; ratingsCount: number; avgScore: number }[];
+}
+
+async function addEventPhotoRecap(tastingId: string, photoUrl: string) {
+  const res = await fetch(`/api/tastings/${tastingId}/event-photos`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...pidHeaders() },
+    body: JSON.stringify({ photoUrl }),
+  });
+  if (!res.ok) throw new Error((await res.json()).message ?? "Upload failed");
+  return res.json();
+}
+
+async function deleteEventPhotoRecap(tastingId: string, photoId: string) {
+  await fetch(`/api/tastings/${tastingId}/event-photos/${photoId}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json", ...pidHeaders() },
+  });
 }
 
 const MEDAL_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32"];
@@ -43,8 +61,12 @@ export default function LabsTastingRecap() {
   });
 
   const [copyFeedback, setCopyFeedback] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
   const pid = getParticipantId();
+  const { uploadFile } = useUpload();
 
   const { data: collectionCheck } = useQuery({
     queryKey: ["collection-check", pid],
@@ -52,6 +74,46 @@ export default function LabsTastingRecap() {
     enabled: !!pid,
     staleTime: 30_000,
   });
+
+  const isHost = !!pid && !!recap && recap.tasting.hostId === pid;
+
+  const { data: eventPhotos = [], refetch: refetchPhotos } = useQuery<any[]>({
+    queryKey: ["recap-event-photos", tastingId],
+    queryFn: async () => {
+      const res = await fetch(`/api/tastings/${tastingId}/event-photos`, { headers: pidHeaders() });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: isHost && !!tastingId,
+  });
+
+  const handlePhotoFiles = async (files: FileList) => {
+    if (!files.length) return;
+    const remaining = 10 - eventPhotos.length;
+    if (remaining <= 0) { setPhotoError("Maximal 10 Fotos erlaubt."); return; }
+    setPhotoUploading(true);
+    setPhotoError(null);
+    try {
+      for (let i = 0; i < Math.min(files.length, remaining); i++) {
+        const file = files[i];
+        if (!file.type.startsWith("image/")) continue;
+        const result = await uploadFile(file);
+        if (result?.objectPath) {
+          const publicUrl = result.objectPath.startsWith("http")
+            ? result.objectPath
+            : `/api/uploads/serve/${result.objectPath}`;
+          await addEventPhotoRecap(tastingId!, publicUrl);
+        }
+      }
+    } catch (e: unknown) {
+      setPhotoError(e instanceof Error ? e.message : "Upload fehlgeschlagen.");
+    } finally {
+      setPhotoUploading(false);
+      refetchPhotos();
+      qc.invalidateQueries({ queryKey: ["recap-event-photos", tastingId] });
+      if (photoInputRef.current) photoInputRef.current.value = "";
+    }
+  };
 
   const addToCollectionMut = useMutation({
     mutationFn: (data: { name: string; distillery?: string }) =>
@@ -405,6 +467,95 @@ export default function LabsTastingRecap() {
           </span>
         </div>
       </div>
+
+      {isHost && (
+        <div className="labs-card" style={{ padding: 20, marginBottom: 16 }} data-testid="card-recap-story">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: eventPhotos.length > 0 ? 14 : 10 }}>
+            <h2 className="labs-serif" style={{ fontSize: 17, fontWeight: 600, color: "var(--labs-text)", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+              <BookOpen style={{ width: 18, height: 18, color: "var(--labs-accent)" }} />
+              Story
+            </h2>
+            <button
+              className="labs-btn-secondary"
+              onClick={() => navigate(`/labs/results/${recap.tasting.id}/story`)}
+              data-testid="button-recap-story-open"
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              <BookOpen style={{ width: 14, height: 14 }} />
+              Story anzeigen
+            </button>
+          </div>
+
+          {eventPhotos.length > 0 && (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+              {eventPhotos.map((p: any) => (
+                <div key={p.id} style={{ position: "relative", width: 64, height: 64, flexShrink: 0 }} data-testid={`card-recap-event-photo-${p.id}`}>
+                  <img
+                    src={p.photoUrl}
+                    alt={p.caption || "Foto"}
+                    style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8, border: "1px solid var(--labs-border)", display: "block" }}
+                  />
+                  <button
+                    onClick={async () => {
+                      await deleteEventPhotoRecap(tastingId!, p.id);
+                      refetchPhotos();
+                      qc.invalidateQueries({ queryKey: ["recap-event-photos", tastingId] });
+                    }}
+                    style={{
+                      position: "absolute", top: -6, right: -6, width: 18, height: 18,
+                      borderRadius: 9, background: "var(--labs-danger)", border: "none",
+                      cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                      color: "#fff", padding: 0, lineHeight: 1,
+                    }}
+                    data-testid={`button-recap-delete-photo-${p.id}`}
+                  >
+                    <X style={{ width: 10, height: 10 }} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: "none" }}
+              onChange={e => e.target.files && handlePhotoFiles(e.target.files)}
+              data-testid="input-recap-photo-upload"
+            />
+            <button
+              className="labs-btn-ghost"
+              onClick={() => photoInputRef.current?.click()}
+              disabled={photoUploading || eventPhotos.length >= 10}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13 }}
+              data-testid="button-recap-upload-photo"
+            >
+              {photoUploading
+                ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} />
+                : <Camera style={{ width: 14, height: 14 }} />
+              }
+              {photoUploading
+                ? "Hochladen…"
+                : eventPhotos.length > 0
+                  ? `${eventPhotos.length}/10 Fotos · weitere hinzufügen`
+                  : "Event-Fotos hinzufügen"
+              }
+            </button>
+            {photoError && (
+              <p style={{ color: "var(--labs-danger)", fontSize: 12, margin: 0 }} data-testid="text-recap-photo-error">
+                {photoError}
+              </p>
+            )}
+          </div>
+
+          <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "10px 0 0", lineHeight: 1.5 }}>
+            Fotos werden als Hintergrund in der Story-Präsentation eingeblendet (Eröffnung & Finale).
+          </p>
+        </div>
+      )}
 
       {recap.topRated.length > 0 && (
         <div className="labs-card" style={{ padding: 20, marginBottom: 16 }} data-testid="card-labs-top-rated">
