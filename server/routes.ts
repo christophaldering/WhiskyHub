@@ -12969,6 +12969,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
             ratedCount: myRatings.length,
             myAvgOverall,
             coverImageUrl: tasting.coverImageUrl,
+            ratingScale: tasting.ratingScale ?? 100,
             whiskies: whiskyDetails,
           };
         })

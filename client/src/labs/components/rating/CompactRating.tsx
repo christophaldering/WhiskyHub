@@ -181,9 +181,13 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
               fontFamily: FONT.body,
               color: getBandColor(overallAvg, scaleMax),
               lineHeight: 1,
+              display: "flex",
+              alignItems: "baseline",
+              gap: 1,
             }}
           >
             {scaleMax === 100 || overallAvg % 1 === 0 ? overallAvg : overallAvg.toFixed(1)}
+            <span style={{ fontSize: 16, fontWeight: 400, color: "var(--labs-text-secondary)", opacity: 0.55, marginLeft: 2 }}>/{scaleMax}</span>
           </div>
           <div style={{ fontSize: 11, color: "var(--labs-text-secondary)", fontFamily: FONT.body }}>{t("ratingUi.avg")}</div>
         </div>

@@ -10,6 +10,7 @@ export interface RecentRatedItem {
   id: string;
   whiskyName: string;
   score: number;
+  scale: number;
   date: string;
   origin: RecentOrigin;
   originStatus?: RecentOriginStatus;
@@ -19,14 +20,16 @@ export interface RecentRatedItem {
 
 interface BuildOptions {
   participantId?: string | null;
+  preferredRatingScale?: number | null;
 }
 
 export function buildRecentRatedItems(
   historyData: any,
   journalData: any,
-  _opts: BuildOptions = {},
+  opts: BuildOptions = {},
 ): RecentRatedItem[] {
   const items: RecentRatedItem[] = [];
+  const journalScale = opts.preferredRatingScale ?? 100;
 
   if (historyData?.tastings && Array.isArray(historyData.tastings)) {
     for (const tasting of historyData.tastings) {
@@ -35,6 +38,7 @@ export function buildRecentRatedItems(
       const isMesse = /\b(messe|fair|festival)\b/.test(titleHay);
       const origin: RecentOrigin = isMesse ? "messe" : isSolo ? "solo" : "tasting";
       const tastingDate = tasting.date || tasting.createdAt || "";
+      const scale: number = tasting.ratingScale ?? 100;
       const whiskies = Array.isArray(tasting.whiskies) ? tasting.whiskies : [];
       for (const w of whiskies) {
         const myRating = w.myRating || null;
@@ -45,6 +49,7 @@ export function buildRecentRatedItems(
           id: `t-${tasting.id}-${w.id}`,
           whiskyName: w.name || "Unknown Whisky",
           score,
+          scale,
           date: myRating.updatedAt || myRating.createdAt || tastingDate,
           origin,
           originStatus: "completed",
@@ -64,6 +69,7 @@ export function buildRecentRatedItems(
         id: `j-${j.id}`,
         whiskyName: j.name || j.title || "Unknown Whisky",
         score: score > 0 ? score : 0,
+        scale: journalScale,
         date: j.tastingDate || j.updatedAt || j.createdAt || "",
         origin: "journal",
         rated: score > 0,
@@ -169,10 +175,11 @@ export function RecentRatedList({
                 </div>
                 {d.rated ? (
                   <div
-                    className={`labs-dram-score${Math.round(d.score) >= 90 ? " labs-dram-score--high" : ""}`}
+                    className={`labs-dram-score${Math.round(d.score) >= (d.scale ?? 100) * 0.9 ? " labs-dram-score--high" : ""}`}
                     data-testid={`text-recent-score-${d.id}`}
                   >
                     {Math.round(d.score)}
+                    <span style={{ fontSize: "0.6em", fontWeight: 400, opacity: 0.5, marginLeft: 1 }}>/{d.scale ?? 100}</span>
                   </div>
                 ) : (
                   <span

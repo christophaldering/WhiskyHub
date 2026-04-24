@@ -214,8 +214,8 @@ export default function LabsTastings() {
   }, [historyData, searchQuery]);
 
   const recentDrams = useMemo(
-    () => buildRecentRatedItems(historyData, journalData, { participantId: currentParticipant?.id }),
-    [historyData, journalData, currentParticipant?.id],
+    () => buildRecentRatedItems(historyData, journalData, { participantId: currentParticipant?.id, preferredRatingScale: currentParticipant?.preferredRatingScale ?? 100 }),
+    [historyData, journalData, currentParticipant?.id, currentParticipant?.preferredRatingScale],
   );
 
   if (!currentParticipant) {
