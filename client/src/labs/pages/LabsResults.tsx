@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
-import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Sparkles, Download, FileText, FileSpreadsheet, Clock, Monitor, Archive, Check, Info, Lock, Loader2 } from "lucide-react";
+import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Sparkles, Download, FileText, FileSpreadsheet, Clock, Monitor, Archive, Check, Info, Lock, Loader2, BookOpen, Camera } from "lucide-react";
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -777,6 +777,22 @@ export default function LabsResults({ params }: LabsResultsProps) {
     staleTime: 5 * 60 * 1000,
   });
 
+  const isHostForStory = !!currentParticipant?.id && currentParticipant.id === tasting?.hostId &&
+    (tasting?.status === "archived" || tasting?.status === "completed");
+
+  type EventPhoto = { id: string; photoUrl: string; caption: string | null; sortOrder: number };
+  const { data: eventPhotos } = useQuery<EventPhoto[]>({
+    queryKey: ["tasting-event-photos", tastingId],
+    queryFn: async () => {
+      const pid = currentParticipant!.id;
+      const res = await fetch(`/api/tastings/${tastingId}/event-photos`, { headers: { "x-participant-id": pid } });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: isHostForStory,
+    staleTime: 30_000,
+  });
+
   useEffect(() => {
     if (!tastingHistoryData?.tastings?.length || !whiskies?.length || !tastingId) return;
 
@@ -1117,6 +1133,26 @@ export default function LabsResults({ params }: LabsResultsProps) {
           </div>
           {sorted.length > 0 && (
             <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
+              {currentParticipant?.id === tasting.hostId && (tasting.status === "archived" || tasting.status === "completed") && (
+                <button
+                  className="labs-btn-secondary flex items-center gap-2"
+                  onClick={() => navigate(`/labs/results/${tastingId}/story`)}
+                  data-testid="button-labs-story"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  Story
+                </button>
+              )}
+              {!!tasting.storyEnabled && currentParticipant?.id !== tasting.hostId && (tasting.status === "archived" || tasting.status === "completed") && (
+                <button
+                  className="labs-btn-ghost flex items-center gap-2"
+                  onClick={() => navigate(`/labs/results/${tastingId}/story`)}
+                  data-testid="button-labs-story-participant"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  Story
+                </button>
+              )}
               {currentParticipant?.id === tasting.hostId && (tasting.status === "archived" || tasting.status === "completed" || tasting.status === "closed" || tasting.status === "reveal") && (
                 <button
                   className="labs-btn-primary flex items-center gap-2"
@@ -1154,6 +1190,36 @@ export default function LabsResults({ params }: LabsResultsProps) {
           )}
         </div>
       </div>
+
+      {isHostForStory && (
+        <div
+          className="labs-card-elevated labs-fade-in"
+          style={{ padding: "12px 16px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, cursor: "pointer" }}
+          onClick={() => navigate(`/labs/results/${tastingId}/story`)}
+          data-testid="results-story-photos-section"
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <BookOpen className="w-4 h-4" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3 }}>Story-Fotos</div>
+              <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.3 }}>
+                {eventPhotos?.length
+                  ? `${eventPhotos.length} Foto${eventPhotos.length === 1 ? "" : "s"} hochgeladen · In Story verwalten`
+                  : "Eventfotos für die Story hochladen"}
+              </div>
+            </div>
+          </div>
+          {eventPhotos?.length ? (
+            <div style={{ display: "flex", gap: 4 }}>
+              {eventPhotos.slice(0, 3).map((p) => (
+                <img key={p.id} src={p.photoUrl} alt="" style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 6, border: "1px solid var(--labs-border)" }} />
+              ))}
+            </div>
+          ) : (
+            <Camera className="w-4 h-4" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
+          )}
+        </div>
+      )}
 
       <div
         className="labs-card-elevated p-5 mb-6 labs-stagger-2 labs-fade-in"

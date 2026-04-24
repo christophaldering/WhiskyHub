@@ -133,6 +133,7 @@ const LabsAdmin = lazy(() => import("@/labs/pages/LabsAdmin"));
 const LabsOnboarding = lazy(() => import("@/labs/pages/LabsOnboarding"));
 const LabsResultsPresent = lazy(() => import("@/labs/pages/LabsResultsPresent"));
 const LabsGroupReport = lazy(() => import("@/labs/pages/LabsGroupReport"));
+const LabsStoryPresent = lazy(() => import("@/labs/pages/LabsStoryPresent"));
 const LabsAiImages = lazy(() => import("@/labs/pages/LabsAiImages"));
 
 
@@ -641,6 +642,7 @@ function Router() {
         {/* === CASKSENSE LABS === */}
         <Route path="/labs/results/:id/present" component={LabsResultsPresent} />
         <Route path="/labs/results/:id/report" component={LabsGroupReport} />
+        <Route path="/labs/results/:id/story" component={LabsStoryPresent} />
         <Route path="/labs">{() => <Redirect to="/labs/onboarding" />}</Route>
         <Route path="/labs/*">
           <LabsLayout>

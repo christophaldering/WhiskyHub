@@ -17597,6 +17597,261 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
     }
   });
 
+  // ===== TASTING EVENT PHOTOS (for Story presentation) =====
+
+  app.get("/api/tastings/:id/event-photos", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const participantId = (req.headers["x-participant-id"] as string) || (req.query.pid as string);
+      const isHost = tasting.hostId === participantId;
+      if (!isHost) {
+        if (!tasting.storyEnabled) return res.status(403).json({ message: "Story not yet available" });
+        if (!participantId) return res.status(403).json({ message: "Participant ID required" });
+        const isMember = await storage.isParticipantInTasting(req.params.id, participantId);
+        if (!isMember) return res.status(403).json({ message: "Access restricted to invited participants" });
+      }
+      const photos = await storage.getTastingEventPhotos(req.params.id);
+      res.json(photos);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/event-photos", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const participantId = (req.headers["x-participant-id"] as string) || req.body?.participantId;
+      if (tasting.hostId !== participantId) return res.status(403).json({ message: "Only host can add event photos" });
+      const existingPhotos = await storage.getTastingEventPhotos(req.params.id);
+      if (existingPhotos.length >= 10) return res.status(400).json({ message: "Maximum 10 event photos allowed" });
+      const { photoUrl, caption } = req.body;
+      if (!photoUrl) return res.status(400).json({ message: "photoUrl required" });
+      const photo = await storage.createTastingEventPhoto({
+        tastingId: req.params.id,
+        photoUrl,
+        caption: caption || null,
+        sortOrder: existingPhotos.length,
+      });
+      res.json(photo);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/tastings/:id/event-photos/:photoId", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const participantId = (req.headers["x-participant-id"] as string) || req.body?.participantId;
+      if (tasting.hostId !== participantId) return res.status(403).json({ message: "Only host can update event photos" });
+      const photo = await storage.getTastingEventPhoto(req.params.photoId);
+      if (!photo || photo.tastingId !== req.params.id) return res.status(404).json({ message: "Photo not found" });
+      const { caption, sortOrder } = req.body;
+      const update: Partial<{ caption: string; sortOrder: number }> = {};
+      if (caption !== undefined) update.caption = caption;
+      if (sortOrder !== undefined) update.sortOrder = sortOrder;
+      const updated = await storage.updateTastingEventPhoto(req.params.photoId, update);
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/tastings/:id/event-photos/:photoId", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const participantId = (req.headers["x-participant-id"] as string) || req.body?.participantId;
+      if (tasting.hostId !== participantId) return res.status(403).json({ message: "Only host can delete event photos" });
+      const photo = await storage.getTastingEventPhoto(req.params.photoId);
+      if (!photo || photo.tastingId !== req.params.id) return res.status(404).json({ message: "Photo not found" });
+      await storage.deleteTastingEventPhoto(req.params.photoId);
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // Story enable/disable toggle
+  app.patch("/api/tastings/:id/story-enabled", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const participantId = (req.headers["x-participant-id"] as string) || req.body?.participantId;
+      if (tasting.hostId !== participantId) return res.status(403).json({ message: "Only host can toggle story access" });
+      const { storyEnabled } = req.body;
+      await storage.updateTasting(req.params.id, { storyEnabled: !!storyEnabled });
+      res.json({ ok: true, storyEnabled: !!storyEnabled });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // Story data aggregation endpoint
+  app.get("/api/tastings/:id/story", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const participantId = (req.headers["x-participant-id"] as string) || (req.query.pid as string);
+      const isHost = tasting.hostId === participantId;
+      if (!isHost) {
+        if (!tasting.storyEnabled) return res.status(403).json({ message: "Story not yet available" });
+        if (!participantId) return res.status(403).json({ message: "Participant ID required" });
+        const isMember = await storage.isParticipantInTasting(req.params.id, participantId);
+        if (!isMember) return res.status(403).json({ message: "Access restricted to invited participants" });
+      }
+
+      // Gather all story data
+      const [whiskyList, participantList, allRatings, eventPhotos] = await Promise.all([
+        storage.getWhiskiesForTasting(req.params.id),
+        storage.getTastingParticipants(req.params.id),
+        storage.getRatingsForTasting(req.params.id),
+        storage.getTastingEventPhotos(req.params.id),
+      ]);
+
+      // Compute per-whisky avg scores
+      const whiskyResults = whiskyList.map(w => {
+        const wRatings = allRatings.filter(r => r.whiskyId === w.id);
+        const included = wRatings.filter(r => {
+          const tp = participantList.find(p => p.participantId === r.participantId);
+          return !tp?.excludedFromResults;
+        });
+        const avg = (field: "nose" | "taste" | "finish" | "overall") => {
+          const vals = included.map(r => r[field]).filter(v => v != null) as number[];
+          return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+        };
+        // Build a short handout excerpt from available sources
+        let handoutExcerpt: string | null = null;
+        if (w.handoutDescription) {
+          handoutExcerpt = w.handoutDescription;
+        } else if (w.aiInsightsCache) {
+          try {
+            const ai = JSON.parse(w.aiInsightsCache);
+            handoutExcerpt = ai?.summary ?? ai?.description ?? ai?.tasting_notes ?? null;
+          } catch { /* ignore */ }
+        }
+        return {
+          ...w,
+          avgOverall: avg("overall"),
+          avgNose: avg("nose"),
+          avgTaste: avg("taste"),
+          avgFinish: avg("finish"),
+          ratingCount: included.length,
+          ratings: included,
+          handoutExcerpt,
+        };
+      });
+
+      const sorted = [...whiskyResults].filter(w => w.avgOverall != null).sort((a, b) => (b.avgOverall ?? 0) - (a.avgOverall ?? 0));
+      const winner = sorted[0] ?? null;
+
+      // Blind-tasting reveal: who guessed closest / furthest (compare ABV guess)
+      let blindReveal: any[] = [];
+      if (tasting.blindMode) {
+        blindReveal = whiskyResults.map(w => {
+          const guesses = w.ratings.filter(r => r.guessAbv != null).map(r => ({
+            participantId: r.participantId,
+            guessAbv: r.guessAbv,
+            actualAbv: w.abv,
+            delta: w.abv != null && r.guessAbv != null ? Math.abs(r.guessAbv - w.abv) : null,
+          }));
+          return { whiskyId: w.id, whiskyName: w.name, guesses };
+        });
+      }
+
+      // AI narration (generate per-whisky comments + winner sentence)
+      let aiComments: Record<string, string> = {};
+      let winnerNarration = "";
+      let participantFunFacts: Record<string, string> = {};
+
+      try {
+        const { client: aiClient } = await getAIClient(participantId ?? tasting.hostId, "ai_narrative");
+        if (aiClient) {
+          const whiskyDataForAI = sorted.slice(0, 8).map(w => ({
+            name: w.name,
+            distillery: w.distillery,
+            region: w.region,
+            avgScore: w.avgOverall != null ? Math.round(w.avgOverall * 10) / 10 : null,
+            tasterNotes: w.ratings.slice(0, 4).map(r => r.notes).filter(Boolean).join("; "),
+          }));
+          const participantsForAI = participantList.filter(p => !p.excludedFromResults).slice(0, 8).map(p => ({
+            name: p.participant?.name ?? "Unknown",
+          }));
+
+          const aiResp = await aiClient.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+              {
+                role: "system",
+                content: `You are a warm, witty whisky storyteller. Given tasting data, generate:
+1. A short 1-2 sentence narrative comment per whisky (highlight score, character, any surprises).
+2. A fun fact / personality trait per taster (lighthearted, fictional, whisky-themed).
+3. A single "winner sentence" celebrating the top whisky.
+Respond in JSON format:
+{
+  "whiskies": { "<name>": "<1-2 sentence comment>" },
+  "tasters": { "<name>": "<fun fact>" },
+  "winnerSentence": "<sentence>"
+}
+Language: German if tasting title appears German, otherwise English. Tone: warm, erzählerisch, slightly humorous.`,
+              },
+              {
+                role: "user",
+                content: JSON.stringify({
+                  tastingTitle: tasting.title,
+                  date: tasting.date,
+                  location: tasting.location,
+                  whiskies: whiskyDataForAI,
+                  participants: participantsForAI,
+                  winner: winner ? { name: winner.name, score: winner.avgOverall } : null,
+                }),
+              },
+            ],
+            max_tokens: 1200,
+            temperature: 0.85,
+            response_format: { type: "json_object" },
+          });
+          const parsed = JSON.parse(aiResp.choices[0]?.message?.content ?? "{}");
+          aiComments = parsed.whiskies ?? {};
+          participantFunFacts = parsed.tasters ?? {};
+          winnerNarration = parsed.winnerSentence ?? "";
+        }
+      } catch (aiErr) {
+        console.warn("Story AI narration failed:", (aiErr as any)?.message ?? aiErr);
+      }
+
+      res.json({
+        tasting,
+        whiskies: whiskyResults,
+        sortedRanking: sorted,
+        winner,
+        participants: participantList,
+        eventPhotos,
+        blindReveal,
+        aiComments,
+        participantFunFacts,
+        winnerNarration,
+      });
+    } catch (e: any) {
+      console.error("Story endpoint error:", e.message);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== AI TASTING IMPORT =====
 
   const tastingImportUpload = multer({

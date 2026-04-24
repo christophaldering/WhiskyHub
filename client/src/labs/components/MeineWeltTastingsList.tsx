@@ -1,8 +1,8 @@
 import { useMemo } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Wine, Calendar, MapPin, ChevronRight, Crown } from "lucide-react";
+import { Wine, Calendar, MapPin, ChevronRight, Crown, BookOpen } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, tastingHistoryApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
@@ -40,6 +40,7 @@ export default function MeineWeltTastingsList({ filter }: Props) {
   const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
   const participantId = currentParticipant?.id;
+  const [, navigate] = useLocation();
 
   const { data: tastings, isLoading: isTastingsLoading } = useQuery({
     queryKey: ["tastings", participantId],
@@ -142,6 +143,10 @@ export default function MeineWeltTastingsList({ filter }: Props) {
           filter === "archive" ? !!tasting.isHost : tasting.hostId === participantId;
         const isLive = tasting.status === "open";
         const formattedDate = formatTastingDate(tasting.date);
+        const showStoryBtn =
+          filter === "archive" &&
+          (tasting.status === "archived" || tasting.status === "completed") &&
+          (isHost || tasting.storyEnabled);
         return (
           <Link key={tasting.id} href={`${hrefBase}/${tasting.id}`}>
             <div
@@ -208,7 +213,28 @@ export default function MeineWeltTastingsList({ filter }: Props) {
                   )}
                 </div>
               </div>
-              <div className="labs-tasting-card-actions">
+              <div className="labs-tasting-card-actions" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {showStoryBtn && (
+                  <button
+                    type="button"
+                    data-testid={`meine-welt-story-btn-${tasting.id}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      navigate(`/labs/results/${tasting.id}/story`);
+                    }}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 4,
+                      padding: "4px 8px", fontSize: 11, fontWeight: 600,
+                      borderRadius: 8, border: "1px solid var(--labs-accent)",
+                      color: "var(--labs-accent)", background: "transparent",
+                      cursor: "pointer", whiteSpace: "nowrap",
+                    }}
+                  >
+                    <BookOpen style={{ width: 11, height: 11 }} />
+                    Story
+                  </button>
+                )}
                 <ChevronRight className="labs-tasting-chevron" />
               </div>
             </div>

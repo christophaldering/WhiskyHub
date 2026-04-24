@@ -83,6 +83,7 @@ export const tastings = pgTable("tastings", {
   showReveal: boolean("show_reveal").default(true),
   isTestData: boolean("is_test_data").default(false),
   sharedPrintMaterials: text("shared_print_materials"),
+  storyEnabled: boolean("story_enabled").default(false), // Host has enabled story access for participants
   // Tasting-wide handout (one per tasting, e.g. "von Rudi" Programmheft)
   handoutUrl: text("handout_url"), // Object storage path to handout file (PDF or image)
   handoutContentType: text("handout_content_type"), // MIME type
@@ -733,6 +734,22 @@ export const tastingPhotos = pgTable("tasting_photos", {
 export const insertTastingPhotoSchema = createInsertSchema(tastingPhotos).omit({ id: true, createdAt: true });
 export type InsertTastingPhoto = z.infer<typeof insertTastingPhotoSchema>;
 export type TastingPhoto = typeof tastingPhotos.$inferSelect;
+
+// --- Tasting Event Photos (host-uploaded atmosphere photos for Story presentation) ---
+export const tastingEventPhotos = pgTable("tasting_event_photos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tastingId: varchar("tasting_id").notNull(),
+  photoUrl: text("photo_url").notNull(),
+  caption: text("caption"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  tastingIdx: index("idx_tasting_event_photos_tasting").on(table.tastingId, table.sortOrder),
+}));
+
+export const insertTastingEventPhotoSchema = createInsertSchema(tastingEventPhotos).omit({ id: true, createdAt: true });
+export type InsertTastingEventPhoto = z.infer<typeof insertTastingEventPhotoSchema>;
+export type TastingEventPhoto = typeof tastingEventPhotos.$inferSelect;
 
 // --- User Feedback ---
 export const userFeedback = pgTable("user_feedback", {

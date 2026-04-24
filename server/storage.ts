@@ -7,7 +7,7 @@ import { getParticipantOverallScores, computeStabilityScore } from "./participan
 import {
   participants, tastings, tastingParticipants, sharingParticipants, whiskies, whiskyHandoutLibrary, whiskyHandouts, tastingHandouts, distilleryHandouts, pdfSplitSessions, ratings,
   profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, whiskyGroups, whiskyGroupMembers, journalEntries, benchmarkEntries, wishlistEntries,
-  newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, tastingPhotos, userFeedback,
+  newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, tastingPhotos, tastingEventPhotos, userFeedback,
   type InsertParticipant, type Participant,
   type InsertTasting, type Tasting,
   type InsertTastingParticipant, type TastingParticipant,
@@ -38,6 +38,7 @@ import {
   type InsertTastingReminder, type TastingReminder,
   type InsertEncyclopediaSuggestion, type EncyclopediaSuggestion,
   type InsertTastingPhoto, type TastingPhoto,
+  type InsertTastingEventPhoto, type TastingEventPhoto,
   type InsertUserFeedback, type UserFeedback,
   notifications,
   type InsertNotification, type Notification,
@@ -667,6 +668,13 @@ export interface IStorage {
   updateTastingPhoto(id: string, participantId: string, data: Partial<{ caption: string; printable: boolean }>): Promise<TastingPhoto | undefined>;
   updateTastingPhotoAsHost(id: string, hostParticipantId: string, data: Partial<{ caption: string; printable: boolean }>): Promise<TastingPhoto | undefined>;
   deleteTastingPhoto(id: string, participantId: string): Promise<void>;
+
+  // Tasting Event Photos (host-uploaded atmosphere photos for Story)
+  getTastingEventPhotos(tastingId: string): Promise<TastingEventPhoto[]>;
+  getTastingEventPhoto(id: string): Promise<TastingEventPhoto | undefined>;
+  createTastingEventPhoto(data: InsertTastingEventPhoto): Promise<TastingEventPhoto>;
+  updateTastingEventPhoto(id: string, data: Partial<{ caption: string; sortOrder: number }>): Promise<TastingEventPhoto | undefined>;
+  deleteTastingEventPhoto(id: string): Promise<void>;
 
   // User Feedback
   createUserFeedback(data: InsertUserFeedback): Promise<UserFeedback>;
@@ -3528,6 +3536,30 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTastingPhoto(id: string, participantId: string): Promise<void> {
     await db.delete(tastingPhotos).where(and(eq(tastingPhotos.id, id), eq(tastingPhotos.participantId, participantId)));
+  }
+
+  // --- Tasting Event Photos ---
+  async getTastingEventPhotos(tastingId: string): Promise<TastingEventPhoto[]> {
+    return db.select().from(tastingEventPhotos).where(eq(tastingEventPhotos.tastingId, tastingId)).orderBy(asc(tastingEventPhotos.sortOrder), asc(tastingEventPhotos.createdAt));
+  }
+
+  async getTastingEventPhoto(id: string): Promise<TastingEventPhoto | undefined> {
+    const [result] = await db.select().from(tastingEventPhotos).where(eq(tastingEventPhotos.id, id));
+    return result;
+  }
+
+  async createTastingEventPhoto(data: InsertTastingEventPhoto): Promise<TastingEventPhoto> {
+    const [result] = await db.insert(tastingEventPhotos).values(data).returning();
+    return result;
+  }
+
+  async updateTastingEventPhoto(id: string, data: Partial<{ caption: string; sortOrder: number }>): Promise<TastingEventPhoto | undefined> {
+    const [result] = await db.update(tastingEventPhotos).set(data).where(eq(tastingEventPhotos.id, id)).returning();
+    return result;
+  }
+
+  async deleteTastingEventPhoto(id: string): Promise<void> {
+    await db.delete(tastingEventPhotos).where(eq(tastingEventPhotos.id, id));
   }
 
   // --- User Feedback ---
