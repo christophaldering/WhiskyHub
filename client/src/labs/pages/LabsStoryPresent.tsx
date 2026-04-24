@@ -1041,6 +1041,8 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
           </span>
           <button
             onClick={toggleFullscreen}
+            title={isFullscreen ? "Vollbild verlassen" : "Vollbild"}
+            aria-label={isFullscreen ? "Vollbild verlassen" : "Vollbild"}
             style={{
               display: "flex", alignItems: "center", justifyContent: "center",
               width: 32, height: 32, borderRadius: 8,
