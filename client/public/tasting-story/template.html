@@ -790,7 +790,7 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
         <div class="${revealCls}"><div class="divider"></div><div class="act-label">Der Abend in Bildern</div></div>
       </section>
       <div class="photos-grid ${revealCls} reveal--d1">${photoList.map((p, i) => {
-        const slideText = p.slideText || (i >= 1 ? slideTexts[String(i)] : null) || null;
+        const slideText = p.slideText || slideTexts[String(i + 1)] || null;
         return `<div class="photo-item ${revealCls}">
           <img src="${esc(p.photoUrl)}" alt="${esc(p.caption || '')}" loading="lazy">
           ${p.caption ? `<div class="photo-item__caption">${esc(p.caption)}</div>` : ''}

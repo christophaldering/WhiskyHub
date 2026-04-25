@@ -17934,14 +17934,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
           if (aiClient) {
             const groupAvgOverall = sorted.length > 0 ? sorted.reduce((s, w) => s + (w.avgOverall ?? 0), 0) / sorted.length : 0;
 
-            const flavorProfileTagMap: Record<string, string[]> = {
-              "sherried-rich":    ["Sherry", "Trockenfrüchte", "Würze"],
-              "bourbon-classic":  ["Vanille", "Karamell", "Eiche"],
-              "peated-maritime":  ["Rauch", "Salz", "Torf"],
-              "highland-elegant": ["Honig", "Blumen", "Frucht"],
-              "speyside-fruity":  ["Apfel", "Birne", "Malz"],
-              "island-coastal":   ["Meeresluft", "Heide", "Gewürz"],
-            };
+            const allFlavourDescriptors = await storage.getFlavourDescriptors();
 
             const whiskyDataForAI = sorted.slice(0, 10).map((w, idx) => {
               const overallVals = w.ratings.map((r: any) => r.overall).filter((v: any) => v != null) as number[];
@@ -17955,6 +17948,16 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
               const scores: Record<string, number | null> = { nose: w.avgNose, taste: w.avgTaste, finish: w.avgFinish };
               const topDim = Object.entries(scores).filter(([, v]) => v != null).sort((a, b) => (b[1] as number) - (a[1] as number))[0]?.[0] ?? null;
               const spread = overallVals.length > 1 ? Math.round((Math.max(...overallVals) - Math.min(...overallVals)) * 10) / 10 : null;
+              const combinedNotes = w.ratings.map((r: any) => r.notes).filter(Boolean).join(" ").toLowerCase();
+              const descriptorCounts: { label: string; count: number }[] = allFlavourDescriptors.map(d => ({
+                label: d.de,
+                count: d.keywords.reduce((sum, kw) => sum + (combinedNotes.includes(kw.toLowerCase()) ? 1 : 0), 0),
+              }));
+              const topFlavorTags = descriptorCounts
+                .filter(d => d.count > 0)
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 10)
+                .map(d => d.label);
               return {
                 rank: idx + 1,
                 name: w.name,
@@ -17973,7 +17976,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
                 topRater: topRating && topRating !== bottomRating ? { name: getPN(topRating.participantId), score: topRating.overall } : null,
                 bottomRater: bottomRating && topRating !== bottomRating ? { name: getPN(bottomRating.participantId), score: bottomRating.overall } : null,
                 tasterNotes: w.ratings.slice(0, 5).map((r: any) => r.notes).filter(Boolean).join("; "),
-                topFlavorTags: w.flavorProfile ? (flavorProfileTagMap[w.flavorProfile] ?? []) : [],
+                topFlavorTags,
               };
             });
 
