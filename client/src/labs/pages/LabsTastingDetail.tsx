@@ -32,6 +32,7 @@ import {
   Gauge,
   RotateCcw,
   KeyRound,
+  BookOpen,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, inviteApi, guidedApi, friendsApi } from "@/lib/api";
@@ -655,6 +656,26 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
               <Trophy className="w-4 h-4" />
               {t("tastingDetail.tastingRecap")}
             </button>
+            {(isHost || tasting.storyEnabled) && (
+              <button
+                className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+                onClick={() => navigate(`/labs/results/${tastingId}/story`)}
+                data-testid="labs-detail-view-story"
+              >
+                <BookOpen className="w-4 h-4" />
+                {t("tastingDetail.viewStory", "Story anzeigen")}
+              </button>
+            )}
+            {isHost && (
+              <button
+                className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+                onClick={() => navigate(`/labs/results/${tastingId}/present`)}
+                data-testid="labs-detail-view-presentation"
+              >
+                <Play className="w-4 h-4" />
+                {t("tastingDetail.viewPresentation", "Ergebnisse präsentieren")}
+              </button>
+            )}
             {isHost && (
               <button
                 className="labs-btn-secondary w-full flex items-center justify-center gap-2"
