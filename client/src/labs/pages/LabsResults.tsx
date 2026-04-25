@@ -30,14 +30,23 @@ async function labsExportFromServer(tastingId: string, format: "csv" | "xlsx"): 
   return true;
 }
 
-async function addEventPhoto(tastingId: string, photoUrl: string) {
+async function addEventPhoto(tastingId: string, photoUrl: string, caption?: string) {
   const pid = getParticipantId();
   const res = await fetch(`/api/tastings/${tastingId}/event-photos`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-participant-id": pid ?? "" },
-    body: JSON.stringify({ photoUrl }),
+    body: JSON.stringify({ photoUrl, caption: caption || null }),
   });
   if (!res.ok) throw new Error((await res.json()).message ?? "Upload fehlgeschlagen");
+}
+
+async function updateEventPhotoCaption(tastingId: string, photoId: string, caption: string, pid: string) {
+  const res = await fetch(`/api/tastings/${tastingId}/event-photos/${photoId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", "x-participant-id": pid },
+    body: JSON.stringify({ caption: caption || null }),
+  });
+  if (!res.ok) throw new Error((await res.json()).message ?? "Speichern fehlgeschlagen");
 }
 
 async function deleteEventPhoto(tastingId: string, photoId: string) {
@@ -894,11 +903,17 @@ export default function LabsResults({ params }: LabsResultsProps) {
   const { uploadFile } = useUpload();
   const qcPhotos = useQueryClient();
 
-  const handlePhotoFiles = useCallback(async (files: FileList) => {
-    if (!files.length) return;
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [captionModalOpen, setCaptionModalOpen] = useState(false);
+  const [pendingCaption, setPendingCaption] = useState("");
+
+  const [editCaptionPhotoId, setEditCaptionPhotoId] = useState<string | null>(null);
+  const [editCaptionValue, setEditCaptionValue] = useState("");
+  const [captionSaving, setCaptionSaving] = useState(false);
+
+  const doUploadFiles = useCallback(async (files: File[], caption: string) => {
     const photos = eventPhotos ?? [];
-    const remaining = 10 - photos.length;
-    if (remaining <= 0) { setPhotosError("Maximal 10 Fotos erlaubt."); return; }
+    const remaining = 30 - photos.length;
     setPhotosUploading(true);
     setPhotosError(null);
     for (let i = 0; i < Math.min(files.length, remaining); i++) {
@@ -906,7 +921,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
       if (!file.type.startsWith("image/")) continue;
       const result = await uploadFile(file);
       if (result?.objectPath) {
-        await addEventPhoto(tastingId, result.objectPath).catch(e => setPhotosError(e.message));
+        await addEventPhoto(tastingId, result.objectPath, caption || undefined).catch(e => setPhotosError(e.message));
       }
     }
     setPhotosUploading(false);
@@ -914,11 +929,46 @@ export default function LabsResults({ params }: LabsResultsProps) {
     qcPhotos.invalidateQueries({ queryKey: ["tasting-event-photos", tastingId] });
   }, [eventPhotos, tastingId, uploadFile, refetchEventPhotos, qcPhotos]);
 
+  const handlePhotoFiles = useCallback((files: FileList) => {
+    if (!files.length) return;
+    const photos = eventPhotos ?? [];
+    const remaining = 30 - photos.length;
+    if (remaining <= 0) { setPhotosError("Maximal 30 Fotos erlaubt."); return; }
+    const valid = Array.from(files).filter(f => f.type.startsWith("image/")).slice(0, remaining);
+    if (!valid.length) return;
+    setPendingFiles(valid);
+    setPendingCaption("");
+    setCaptionModalOpen(true);
+  }, [eventPhotos]);
+
+  const handleCaptionConfirm = useCallback(async () => {
+    setCaptionModalOpen(false);
+    if (!pendingFiles.length) return;
+    await doUploadFiles(pendingFiles, pendingCaption);
+    setPendingFiles([]);
+    setPendingCaption("");
+  }, [pendingFiles, pendingCaption, doUploadFiles]);
+
   const handleDeletePhoto = useCallback(async (photoId: string) => {
     await deleteEventPhoto(tastingId, photoId);
     refetchEventPhotos();
     qcPhotos.invalidateQueries({ queryKey: ["tasting-event-photos", tastingId] });
   }, [tastingId, refetchEventPhotos, qcPhotos]);
+
+  const handleSaveCaption = useCallback(async () => {
+    if (!editCaptionPhotoId || !currentParticipant?.id) return;
+    setCaptionSaving(true);
+    try {
+      await updateEventPhotoCaption(tastingId, editCaptionPhotoId, editCaptionValue, currentParticipant.id);
+      setEditCaptionPhotoId(null);
+      refetchEventPhotos();
+      qcPhotos.invalidateQueries({ queryKey: ["tasting-event-photos", tastingId] });
+    } catch (e: any) {
+      setPhotosError(e.message);
+    } finally {
+      setCaptionSaving(false);
+    }
+  }, [editCaptionPhotoId, editCaptionValue, tastingId, currentParticipant, refetchEventPhotos, qcPhotos]);
 
   useEffect(() => {
     if (!tastingHistoryData?.tastings?.length || !whiskies?.length || !tastingId) return;
@@ -1431,7 +1481,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
               <Camera className="w-4 h-4" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
               <div>
                 <div style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3 }}>
-                  Story-Fotos {eventPhotos?.length ? `(${eventPhotos.length}/10)` : ""}
+                  Story-Fotos {eventPhotos?.length ? `(${eventPhotos.length}/30)` : ""}
                 </div>
                 <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.3 }}>
                   {eventPhotos?.length
@@ -1469,7 +1519,18 @@ export default function LabsResults({ params }: LabsResultsProps) {
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
                     {eventPhotos.map(p => (
                       <div key={p.id} style={{ position: "relative", width: 72, height: 72 }} data-testid={`event-photo-${p.id}`}>
-                        <img src={p.photoUrl} alt="" style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 8, border: "1px solid var(--labs-border)", display: "block" }} />
+                        <img
+                          src={p.photoUrl}
+                          alt={p.caption ?? ""}
+                          onClick={() => { setEditCaptionPhotoId(p.id); setEditCaptionValue(p.caption ?? ""); setPhotosError(null); }}
+                          data-testid={`button-edit-caption-${p.id}`}
+                          style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 8, border: editCaptionPhotoId === p.id ? "2px solid var(--labs-accent)" : "1px solid var(--labs-border)", display: "block", cursor: "pointer" }}
+                        />
+                        {p.caption && (
+                          <div style={{ position: "absolute", bottom: 2, left: 2, right: 14, background: "rgba(0,0,0,0.55)", borderRadius: 3, padding: "1px 3px", fontSize: 8, color: "#fff", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", pointerEvents: "none" }}>
+                            {p.caption}
+                          </div>
+                        )}
                         <button
                           onClick={() => handleDeletePhoto(p.id)}
                           data-testid={`button-delete-photo-${p.id}`}
@@ -1482,6 +1543,42 @@ export default function LabsResults({ params }: LabsResultsProps) {
                   </div>
                 )}
 
+                {editCaptionPhotoId && (
+                  <div style={{ marginBottom: 12, padding: 10, background: "var(--labs-surface-elevated)", borderRadius: 8, border: "1px solid var(--labs-border)" }}>
+                    <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 6 }}>Bildunterschrift (optional)</div>
+                    <input
+                      type="text"
+                      value={editCaptionValue}
+                      onChange={e => setEditCaptionValue(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter") handleSaveCaption(); if (e.key === "Escape") setEditCaptionPhotoId(null); }}
+                      placeholder="z.B. &quot;Siegermoment&quot;"
+                      maxLength={200}
+                      autoFocus
+                      data-testid="input-edit-caption"
+                      style={{ width: "100%", fontSize: 12, padding: "6px 8px", borderRadius: 6, border: "1px solid var(--labs-border)", background: "var(--labs-bg)", color: "var(--labs-text)", fontFamily: "inherit", boxSizing: "border-box", marginBottom: 8 }}
+                    />
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button
+                        className="labs-btn-primary"
+                        onClick={handleSaveCaption}
+                        disabled={captionSaving}
+                        data-testid="button-save-caption"
+                        style={{ fontSize: 11, padding: "4px 10px" }}
+                      >
+                        {captionSaving ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> : "Speichern"}
+                      </button>
+                      <button
+                        className="labs-btn-ghost"
+                        onClick={() => setEditCaptionPhotoId(null)}
+                        data-testid="button-cancel-caption"
+                        style={{ fontSize: 11, padding: "4px 10px" }}
+                      >
+                        Abbrechen
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {photosError && (
                   <div style={{ fontSize: 11, color: "#e57373", marginBottom: 8 }}>{photosError}</div>
                 )}
@@ -1490,7 +1587,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                   <button
                     className="labs-btn-secondary"
                     onClick={() => photoInputRef.current?.click()}
-                    disabled={photosUploading || (eventPhotos?.length ?? 0) >= 10}
+                    disabled={photosUploading || (eventPhotos?.length ?? 0) >= 30}
                     data-testid="button-add-story-photos"
                     style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}
                   >
@@ -2104,6 +2201,63 @@ export default function LabsResults({ params }: LabsResultsProps) {
                   <Lock className="w-4 h-4" />
                 )}
                 {archiveMut.isPending ? "Archiving..." : "Archive Now"}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {captionModalOpen && createPortal(
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 9999,
+            background: "rgba(0,0,0,0.55)", display: "flex",
+            alignItems: "center", justifyContent: "center", padding: 20,
+          }}
+          onClick={e => { if (e.target === e.currentTarget) { setCaptionModalOpen(false); setPendingFiles([]); } }}
+          data-testid="caption-modal-overlay"
+        >
+          <div
+            style={{
+              background: "var(--labs-surface-elevated)", borderRadius: 14,
+              padding: "24px 20px", width: "100%", maxWidth: 360,
+              border: "1px solid var(--labs-border)",
+            }}
+          >
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", marginBottom: 4 }}>
+              {pendingFiles.length === 1 ? "Foto hochladen" : `${pendingFiles.length} Fotos hochladen`}
+            </div>
+            <div style={{ fontSize: 12, color: "var(--labs-text-muted)", marginBottom: 14 }}>
+              Optionale Bildunterschrift — hilft der KI beim Erstellen der Story.
+            </div>
+            <input
+              type="text"
+              value={pendingCaption}
+              onChange={e => setPendingCaption(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") handleCaptionConfirm(); if (e.key === "Escape") { setCaptionModalOpen(false); setPendingFiles([]); } }}
+              placeholder="z.B. &quot;Siegermoment&quot;"
+              maxLength={200}
+              autoFocus
+              data-testid="input-new-photo-caption"
+              style={{ width: "100%", fontSize: 13, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--labs-border)", background: "var(--labs-bg)", color: "var(--labs-text)", fontFamily: "inherit", boxSizing: "border-box", marginBottom: 14 }}
+            />
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                className="labs-btn-ghost"
+                onClick={() => { setCaptionModalOpen(false); setPendingFiles([]); }}
+                data-testid="button-caption-modal-cancel"
+                style={{ flex: 1, fontSize: 13 }}
+              >
+                Abbrechen
+              </button>
+              <button
+                className="labs-btn-primary"
+                onClick={handleCaptionConfirm}
+                data-testid="button-caption-modal-confirm"
+                style={{ flex: 1, fontSize: 13 }}
+              >
+                Hochladen
               </button>
             </div>
           </div>
