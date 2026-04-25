@@ -607,6 +607,13 @@ export default function LabsTastings() {
                                       {String(tasting.title ?? "")}
                                     </span>
                                     <div className="labs-tasting-card-badges">
+                                      <span
+                                        className="labs-badge labs-badge--role labs-badge--guest"
+                                        data-testid={`labs-tasting-role-${tasting.id}`}
+                                      >
+                                        <Users style={{ width: 9, height: 9 }} />
+                                        {t("tastings.roleGuest", "GAST")}
+                                      </span>
                                       <span className="labs-tasting-badge--invite" data-testid={`labs-tasting-invite-badge-${tasting.id}`}>
                                         {t("tastingStatus.invited", "Invited")}
                                       </span>
