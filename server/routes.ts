@@ -12153,6 +12153,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       const platformParticipantIds = new Set<string>();
 
       for (const r of allRatingsRaw) {
+        if (r.participantId === req.params.id) continue;
         if (!completedTastingStatuses.has(tastingStatusMap.get(r.tastingId) ?? "")) continue;
         const scale = tastingScaleMap.get(r.tastingId) ?? 100;
         const norm = 100 / scale;
