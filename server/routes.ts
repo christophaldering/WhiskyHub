@@ -18088,7 +18088,7 @@ For discoveryTexts (ranks 2 and below only): Reference specific rating highlight
 
 If existingStory is provided in the user data, you are in REFINEMENT MODE. Preserve all story sections that the hostContext does not explicitly ask to change — copy them verbatim into your response. Only rewrite the sections the host has clearly instructed to modify. Return ALL JSON fields, using the existingStory text for unchanged sections.
 
-If event photos are provided in the eventPhotos array: you do NOT have visual access to the images — work only from the captions provided. Use the captions to infer the mood, moments, and highlights of the evening. Weave them naturally into openingNarration and closingReflection where they fit. For each captioned photo, produce a photoSlideTexts entry (1-2 sentences) that celebrates or contextualises that moment based on its caption. Skip photos without a caption in photoSlideTexts.
+If event photos are provided as images in the request: you can see them. Use your visual perception to describe the atmosphere, setting, mood, and visible details — the lighting, table arrangement, candlelight, glasses, expressions, the feel of the room. Weave these visual impressions naturally into openingNarration, closingReflection, and photoSlideTexts. For photos that also have captions, treat the caption as the host's own annotation and reference it where it fits naturally. For each photo, produce a photoSlideTexts entry (1-2 sentences) celebrating or contextualising that moment based on what you see and any caption provided. If no images were sent but the eventPhotos array contains captions, rely on those captions alone to infer the evening's mood and moments.
 
 Respond ONLY with valid JSON matching this exact structure:
 {
