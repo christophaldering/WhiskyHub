@@ -17948,16 +17948,32 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
               const scores: Record<string, number | null> = { nose: w.avgNose, taste: w.avgTaste, finish: w.avgFinish };
               const topDim = Object.entries(scores).filter(([, v]) => v != null).sort((a, b) => (b[1] as number) - (a[1] as number))[0]?.[0] ?? null;
               const spread = overallVals.length > 1 ? Math.round((Math.max(...overallVals) - Math.min(...overallVals)) * 10) / 10 : null;
-              const combinedNotes = w.ratings.map((r: any) => r.notes).filter(Boolean).join(" ").toLowerCase();
-              const descriptorCounts: { label: string; count: number }[] = allFlavourDescriptors.map(d => ({
-                label: d.de,
-                count: d.keywords.reduce((sum, kw) => sum + (combinedNotes.includes(kw.toLowerCase()) ? 1 : 0), 0),
-              }));
-              const topFlavorTags = descriptorCounts
-                .filter(d => d.count > 0)
-                .sort((a, b) => b.count - a.count)
-                .slice(0, 10)
-                .map(d => d.label);
+              const explicitTagFreq: Record<string, number> = {};
+              for (const r of w.ratings) {
+                const tags: string[] = Array.isArray((r as any).flavorTags) ? (r as any).flavorTags : [];
+                for (const t of tags) {
+                  if (t) explicitTagFreq[t] = (explicitTagFreq[t] ?? 0) + 1;
+                }
+              }
+              const hasExplicitTags = Object.keys(explicitTagFreq).length > 0;
+              let topFlavorTags: string[];
+              if (hasExplicitTags) {
+                topFlavorTags = Object.entries(explicitTagFreq)
+                  .sort((a, b) => b[1] - a[1])
+                  .slice(0, 10)
+                  .map(([tag]) => tag);
+              } else {
+                const combinedNotes = w.ratings.map((r: any) => r.notes).filter(Boolean).join(" ").toLowerCase();
+                const descriptorCounts: { label: string; count: number }[] = allFlavourDescriptors.map(d => ({
+                  label: d.de,
+                  count: d.keywords.reduce((sum, kw) => sum + (combinedNotes.includes(kw.toLowerCase()) ? 1 : 0), 0),
+                }));
+                topFlavorTags = descriptorCounts
+                  .filter(d => d.count > 0)
+                  .sort((a, b) => b.count - a.count)
+                  .slice(0, 10)
+                  .map(d => d.label);
+              }
               return {
                 rank: idx + 1,
                 name: w.name,
