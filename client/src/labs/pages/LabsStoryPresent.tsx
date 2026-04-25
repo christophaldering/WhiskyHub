@@ -85,19 +85,27 @@ function buildSlides(whiskyCount: number, sortedCount: number, hasBlind: boolean
 
 // ---- Slide components ----
 
+const STORY = {
+  bg: "#0B0906",
+  text: "#F5EDE0",
+  dim: "#A89A85",
+  amber: "#C9A961",
+  amberGlow: "rgba(201,169,97,0.12)",
+  amberBorder: "rgba(201,169,97,0.25)",
+} as const;
+
 function ActLabel({ number, title }: { number: string; title: string }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-      <span style={{
-        fontSize: 12, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase",
-        color: "var(--labs-accent)", padding: "3px 10px", borderRadius: 6,
-        background: "rgba(212,162,86,0.12)", border: "1px solid rgba(212,162,86,0.25)",
-      }}>
-        {number}
-      </span>
-      <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.75)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-        {title}
-      </span>
+    <div style={{ marginBottom: 24 }}>
+      <div style={{ width: 28, height: 1, background: STORY.amber, marginBottom: 8 }} />
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: STORY.amber }}>
+          {number}
+        </span>
+        <span style={{ fontSize: 10, fontWeight: 600, color: STORY.dim, letterSpacing: "0.2em", textTransform: "uppercase" }}>
+          {title}
+        </span>
+      </div>
     </div>
   );
 }
@@ -118,7 +126,7 @@ function SlideContainer({ children, centered = true }: { children: React.ReactNo
   );
 }
 
-function Act1Opening({ tasting, eventPhotos }: { tasting: any; eventPhotos: any[] }) {
+function Act1Opening({ tasting, eventPhotos, openingNarration }: { tasting: any; eventPhotos: any[]; openingNarration: string }) {
   const mainPhoto = eventPhotos[0];
   return (
     <SlideContainer>
@@ -127,45 +135,45 @@ function Act1Opening({ tasting, eventPhotos }: { tasting: any; eventPhotos: any[
           <div style={{
             position: "absolute", inset: 0, zIndex: 0,
             background: `url(${mainPhoto.photoUrl}) center/cover no-repeat`,
-            opacity: 0.35,
+            opacity: 0.3,
           }} />
           <div style={{
             position: "absolute", inset: 0, zIndex: 0,
-            background: "rgba(0,0,0,0.45)",
+            background: "linear-gradient(to top, #0B0906 30%, rgba(11,9,6,0.6) 100%)",
           }} />
         </>
       )}
       <div style={{ position: "relative", zIndex: 1, maxWidth: 700, margin: "0 auto" }}>
         <ActLabel number="Akt I" title="Eröffnung" />
-        <BookOpen style={{ width: 48, height: 48, color: "var(--labs-accent)", marginBottom: 20 }} />
+        <BookOpen style={{ width: 44, height: 44, color: STORY.amber, marginBottom: 20 }} />
         <h1 className="labs-serif" style={{
-          fontSize: "clamp(28px, 5vw, 64px)", fontWeight: 700,
-          color: "var(--labs-text)", lineHeight: 1.05, marginBottom: 16,
+          fontSize: "clamp(28px, 5vw, 60px)", fontWeight: 700,
+          color: STORY.text, lineHeight: 1.05, marginBottom: 16,
         }}>
           {tasting.title}
         </h1>
         <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", marginBottom: 32 }}>
           {tasting.date && (
-            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 15, color: "rgba(255,255,255,0.75)" }}>
-              <Calendar style={{ width: 14, height: 14 }} />
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: STORY.dim }}>
+              <Calendar style={{ width: 13, height: 13 }} />
               {tasting.date}
             </span>
           )}
           {tasting.location && (
-            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 15, color: "rgba(255,255,255,0.75)" }}>
-              <MapPin style={{ width: 14, height: 14 }} />
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: STORY.dim }}>
+              <MapPin style={{ width: 13, height: 13 }} />
               {tasting.location}
             </span>
           )}
         </div>
-        {tasting.hostReflection && (
+        {(openingNarration || tasting.hostReflection) && (
           <p style={{
-            fontSize: 18, color: "rgba(255,255,255,0.75)", fontStyle: "italic",
-            lineHeight: 1.6, maxWidth: 520, margin: "0 auto",
-            padding: "16px 24px", borderRadius: 12,
-            background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)",
+            fontSize: 16, color: STORY.dim, fontStyle: "italic",
+            lineHeight: 1.75, maxWidth: 540, margin: "0 auto",
+            borderLeft: `2px solid ${STORY.amber}`, paddingLeft: 20,
+            textAlign: "left",
           }}>
-            "{tasting.hostReflection}"
+            {openingNarration || tasting.hostReflection}
           </p>
         )}
       </div>
@@ -173,8 +181,9 @@ function Act1Opening({ tasting, eventPhotos }: { tasting: any; eventPhotos: any[
   );
 }
 
-function Act2Whisky({ whisky, index, totalWhiskies, blindMode }: { whisky: any; index: number; totalWhiskies: number; blindMode: boolean }) {
+function Act2Whisky({ whisky, index, totalWhiskies, blindMode, portrait }: { whisky: any; index: number; totalWhiskies: number; blindMode: boolean; portrait: string }) {
   const label = blindMode ? `Dram ${String.fromCharCode(65 + index)}` : (whisky.name || `Whisky ${index + 1}`);
+  const displayText = portrait || (!blindMode && whisky.notes ? (whisky.notes.length > 240 ? whisky.notes.slice(0, 240) + "…" : whisky.notes) : "");
   return (
     <SlideContainer>
       <div style={{ maxWidth: 600, margin: "0 auto", width: "100%" }}>
@@ -183,45 +192,45 @@ function Act2Whisky({ whisky, index, totalWhiskies, blindMode }: { whisky: any; 
           <div style={{ width: 120, height: 160, flexShrink: 0 }}>
             <WhiskyImage imageUrl={whisky.imageUrl} name={label} size={120} height={160} whiskyId={whisky.id} />
           </div>
-          <div style={{ textAlign: "center" }}>
+          <div style={{ textAlign: "center", width: "100%" }}>
             <h2 className="labs-serif" style={{
               fontSize: "clamp(22px, 4vw, 42px)", fontWeight: 700,
-              color: "var(--labs-text)", marginBottom: 8, lineHeight: 1.1,
+              color: STORY.text, marginBottom: 8, lineHeight: 1.1,
             }}>
               {label}
             </h2>
             {!blindMode && (
-              <p style={{ fontSize: 15, color: "rgba(255,255,255,0.75)", marginBottom: 12 }}>
+              <p style={{ fontSize: 14, color: STORY.dim, marginBottom: 12 }}>
                 {[whisky.distillery, whisky.region, whisky.country].filter(Boolean).join(" · ")}
               </p>
             )}
             {!blindMode && (whisky.age || whisky.abv) && (
-              <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: displayText ? 20 : 0 }}>
                 {whisky.age && (
-                  <span style={{ padding: "4px 12px", borderRadius: 8, background: "rgba(212,162,86,0.1)", border: "1px solid rgba(212,162,86,0.25)", fontSize: 12, color: "var(--labs-accent)", fontWeight: 600 }}>
+                  <span style={{ padding: "4px 12px", borderRadius: 8, background: STORY.amberGlow, border: `1px solid ${STORY.amberBorder}`, fontSize: 12, color: STORY.amber, fontWeight: 600 }}>
                     {whisky.age}y
                   </span>
                 )}
                 {whisky.abv && (
-                  <span style={{ padding: "4px 12px", borderRadius: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", fontSize: 12, color: "var(--labs-text)", fontWeight: 600 }}>
+                  <span style={{ padding: "4px 12px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", fontSize: 12, color: STORY.text, fontWeight: 600 }}>
                     {whisky.abv}%
                   </span>
                 )}
                 {whisky.caskType && (
-                  <span style={{ padding: "4px 12px", borderRadius: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", fontSize: 12, color: "var(--labs-text)" }}>
+                  <span style={{ padding: "4px 12px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", fontSize: 12, color: STORY.dim }}>
                     {whisky.caskType}
                   </span>
                 )}
               </div>
             )}
-            {!blindMode && whisky.notes && (
+            {displayText && (
               <p style={{
-                marginTop: 16, fontSize: 14, color: "rgba(255,255,255,0.75)",
-                lineHeight: 1.6, fontStyle: "italic", maxWidth: 420,
-                padding: "12px 16px", borderRadius: 10,
-                background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)",
+                marginTop: 4, fontSize: 15, color: STORY.dim,
+                lineHeight: 1.75, fontStyle: "italic", maxWidth: 460, margin: "0 auto",
+                borderLeft: `2px solid ${STORY.amber}`, paddingLeft: 18,
+                textAlign: "left",
               }}>
-                {whisky.notes.length > 200 ? whisky.notes.slice(0, 200) + "…" : whisky.notes}
+                {displayText}
               </p>
             )}
           </div>
@@ -235,37 +244,37 @@ function Act3Tasters({ participants, participantFunFacts }: { participants: any[
   const tasters = participants.filter(p => !p.excludedFromResults);
   return (
     <SlideContainer>
-      <div style={{ maxWidth: 700, margin: "0 auto", width: "100%" }}>
+      <div style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
         <ActLabel number="Akt III" title="Die Verkoster" />
-        <Users style={{ width: 44, height: 44, color: "var(--labs-accent)", marginBottom: 16, display: "block", margin: "0 auto 20px" }} />
+        <Users style={{ width: 40, height: 40, color: STORY.amber, display: "block", margin: "0 auto 20px" }} />
         <h2 className="labs-serif" style={{
           fontSize: "clamp(22px, 4vw, 42px)", fontWeight: 700,
-          color: "var(--labs-text)", marginBottom: 32, textAlign: "center",
+          color: STORY.text, marginBottom: 32, textAlign: "center",
         }}>
           {tasters.length} {tasters.length === 1 ? "Verkoster" : "Verkoster"} · Eine Mission
         </h2>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 14, justifyContent: "center" }}>
           {tasters.map((tp: any) => {
             const name = stripGuestSuffix(tp.participant?.name || tp.participant?.email || "Anonymous");
-            const funFact = participantFunFacts[name] ?? "";
+            const sketch = participantFunFacts[name] ?? "";
             return (
               <div key={tp.participantId} style={{
-                padding: "14px 18px", borderRadius: 16, width: "clamp(160px, 28vw, 260px)",
-                background: "rgba(212,162,86,0.06)", border: "1px solid rgba(212,162,86,0.2)",
+                padding: "16px 20px", borderRadius: 14, width: "clamp(160px, 28vw, 280px)",
+                background: STORY.amberGlow, border: `1px solid ${STORY.amberBorder}`,
                 display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center",
               }} data-testid={`story-taster-${tp.participantId}`}>
                 <div style={{
-                  width: 48, height: 48, borderRadius: 24,
-                  background: "linear-gradient(135deg, var(--labs-accent), #e8c878)",
-                  color: "var(--labs-bg)", fontSize: 18, fontWeight: 700,
+                  width: 46, height: 46, borderRadius: 23,
+                  background: `linear-gradient(135deg, ${STORY.amber}, #e8c878)`,
+                  color: STORY.bg, fontSize: 17, fontWeight: 700,
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
                   {name.charAt(0).toUpperCase()}
                 </div>
-                <span style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>{name}</span>
-                {funFact && (
-                  <span style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", lineHeight: 1.4, fontStyle: "italic" }}>
-                    {funFact}
+                <span style={{ fontSize: 14, fontWeight: 600, color: STORY.text }}>{name}</span>
+                {sketch && (
+                  <span style={{ fontSize: 13, color: STORY.dim, lineHeight: 1.55, fontStyle: "italic" }}>
+                    {sketch}
                   </span>
                 )}
               </div>
@@ -288,10 +297,10 @@ function Act4Discovery({ whisky, rank, totalWhiskies, aiComment, maxScore }: {
           <div style={{ width: 90, height: 120, flexShrink: 0 }}>
             <WhiskyImage imageUrl={whisky.imageUrl} name={whisky.name || "?"} size={90} height={120} whiskyId={whisky.id} />
           </div>
-          <div style={{ textAlign: "center" }}>
+          <div style={{ textAlign: "center", width: "100%" }}>
             <div style={{
               fontSize: "clamp(48px, 8vw, 88px)", fontWeight: 900,
-              color: rank <= 3 ? "var(--labs-accent)" : "rgba(255,255,255,0.6)",
+              color: rank <= 3 ? STORY.amber : STORY.dim,
               fontVariantNumeric: "tabular-nums", lineHeight: 1,
               marginBottom: 8,
             }}>
@@ -299,31 +308,31 @@ function Act4Discovery({ whisky, rank, totalWhiskies, aiComment, maxScore }: {
             </div>
             <h2 className="labs-serif" style={{
               fontSize: "clamp(20px, 4vw, 38px)", fontWeight: 700,
-              color: "var(--labs-text)", marginBottom: 6, lineHeight: 1.1,
+              color: STORY.text, marginBottom: 6, lineHeight: 1.1,
             }}>
               {whisky.name || "Unknown"}
             </h2>
             {whisky.distillery && (
-              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.75)", marginBottom: 16 }}>{whisky.distillery}</p>
+              <p style={{ fontSize: 14, color: STORY.dim, marginBottom: 16 }}>{whisky.distillery}</p>
             )}
             {whisky.avgOverall != null && (
               <div style={{
                 fontSize: "clamp(32px, 6vw, 56px)", fontWeight: 900,
-                color: "var(--labs-accent)", marginBottom: 16,
+                color: STORY.amber, marginBottom: 16,
                 fontVariantNumeric: "tabular-nums",
               }}>
                 {formatScore(whisky.avgOverall)}
-                <span style={{ fontSize: "0.4em", color: "rgba(255,255,255,0.75)", fontWeight: 400 }}>
+                <span style={{ fontSize: "0.4em", color: STORY.dim, fontWeight: 400 }}>
                   {" "}/ {maxScore}
                 </span>
               </div>
             )}
             {aiComment && (
               <p style={{
-                fontSize: 14, color: "rgba(255,255,255,0.75)", fontStyle: "italic",
-                lineHeight: 1.6, maxWidth: 420, margin: "0 auto",
-                padding: "12px 16px", borderRadius: 10,
-                background: "rgba(212,162,86,0.08)", border: "1px solid rgba(212,162,86,0.2)",
+                fontSize: 15, color: STORY.dim, fontStyle: "italic",
+                lineHeight: 1.75, maxWidth: 440, margin: "0 auto",
+                borderLeft: `2px solid ${STORY.amber}`, paddingLeft: 18,
+                textAlign: "left",
               }}>
                 {aiComment}
               </p>
@@ -335,45 +344,55 @@ function Act4Discovery({ whisky, rank, totalWhiskies, aiComment, maxScore }: {
   );
 }
 
-function Act5Surprise({ blindReveal, tasting }: { blindReveal: any[]; tasting: any }) {
+function Act5Surprise({ blindReveal, tasting, blindNarration }: { blindReveal: any[]; tasting: any; blindNarration: string }) {
   const hasRevealData = blindReveal.some(w => w.guesses.length > 0);
   return (
     <SlideContainer>
       <div style={{ maxWidth: 700, margin: "0 auto", width: "100%" }}>
         <ActLabel number="Akt V" title="Die Überraschung" />
-        <Sparkles style={{ width: 44, height: 44, color: "var(--labs-accent)", marginBottom: 16, display: "block", margin: "0 auto 20px" }} />
+        <Sparkles style={{ width: 40, height: 40, color: STORY.amber, display: "block", margin: "0 auto 20px" }} />
         <h2 className="labs-serif" style={{
           fontSize: "clamp(22px, 4vw, 42px)", fontWeight: 700,
-          color: "var(--labs-text)", marginBottom: 12, textAlign: "center",
+          color: STORY.text, marginBottom: 12, textAlign: "center",
         }}>
           Blind-Tasting-Auflösung
         </h2>
-        <p style={{ fontSize: 14, color: "rgba(255,255,255,0.75)", marginBottom: 28, textAlign: "center" }}>
-          {tasting.blindMode ? "Wer hatte Recht? Wer lag daneben?" : "Das Tasting war nicht blind."}
-        </p>
+        {blindNarration ? (
+          <p style={{
+            fontSize: 15, color: STORY.dim, fontStyle: "italic",
+            lineHeight: 1.75, maxWidth: 540, margin: "0 auto 24px",
+            borderLeft: `2px solid ${STORY.amber}`, paddingLeft: 18, textAlign: "left",
+          }}>
+            {blindNarration}
+          </p>
+        ) : (
+          <p style={{ fontSize: 14, color: STORY.dim, marginBottom: 24, textAlign: "center" }}>
+            {tasting.blindMode ? "Wer hatte Recht? Wer lag daneben?" : "Das Tasting war nicht blind."}
+          </p>
+        )}
         {hasRevealData && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {blindReveal.filter(w => w.guesses.length > 0).slice(0, 5).map((w: any) => {
               const sorted = [...w.guesses].sort((a, b) => (a.delta ?? 99) - (b.delta ?? 99));
               const best = sorted[0];
               const worst = sorted[sorted.length - 1];
               return (
                 <div key={w.whiskyId} style={{
-                  padding: "14px 18px", borderRadius: 12,
-                  background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)",
+                  padding: "12px 16px", borderRadius: 10,
+                  background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
                 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", marginBottom: 8 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: STORY.text, marginBottom: 8 }}>
                     {w.whiskyName || "Whisky"} · {w.guesses[0]?.actualAbv != null ? `${w.guesses[0].actualAbv}% ABV` : ""}
                   </p>
                   <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
                     {best && (
-                      <span style={{ fontSize: 12, color: "var(--labs-success)", display: "flex", alignItems: "center", gap: 4 }}>
+                      <span style={{ fontSize: 12, color: "#6ee7b7", display: "flex", alignItems: "center", gap: 4 }}>
                         <Check style={{ width: 12, height: 12 }} />
-                        Nächste Schätzung: {best.guessAbv}% (Δ {best.delta?.toFixed(1)}%)
+                        Nächste: {best.guessAbv}% (Δ {best.delta?.toFixed(1)}%)
                       </span>
                     )}
                     {worst && worst !== best && (
-                      <span style={{ fontSize: 12, color: "var(--labs-danger)", display: "flex", alignItems: "center", gap: 4 }}>
+                      <span style={{ fontSize: 12, color: "#fca5a5", display: "flex", alignItems: "center", gap: 4 }}>
                         Weiteste: {worst.guessAbv}% (Δ {worst.delta?.toFixed(1)}%)
                       </span>
                     )}
@@ -395,7 +414,7 @@ function Act6Winner({ winner, aiComment, winnerNarration, maxScore }: {
     return (
       <SlideContainer>
         <ActLabel number="Akt VI" title="Der Sieger" />
-        <p style={{ color: "var(--labs-text-muted)" }}>Noch keine Ergebnisse.</p>
+        <p style={{ color: STORY.dim }}>Noch keine Ergebnisse.</p>
       </SlideContainer>
     );
   }
@@ -403,16 +422,16 @@ function Act6Winner({ winner, aiComment, winnerNarration, maxScore }: {
     <SlideContainer>
       <style>{`
         @keyframes story-shimmer { 0%{background-position:-200% center} 100%{background-position:200% center} }
-        .story-winner-title { background: linear-gradient(90deg, var(--labs-accent), #e8c878, var(--labs-accent)); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: story-shimmer 3s linear infinite; }
+        .story-winner-title { background: linear-gradient(90deg, ${STORY.amber}, #e8c878, ${STORY.amber}); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: story-shimmer 3.5s linear infinite; }
       `}</style>
       <div style={{ maxWidth: 600, margin: "0 auto", width: "100%" }}>
         <ActLabel number="Akt VI" title="Der Sieger" />
-        <Trophy style={{ width: 56, height: 56, color: "#FFD700", marginBottom: 20, display: "block", margin: "0 auto 20px" }} />
+        <Trophy style={{ width: 52, height: 52, color: "#FFD700", display: "block", margin: "0 auto 20px" }} />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
           <div style={{ width: 120, height: 160 }}>
             <WhiskyImage imageUrl={winner.imageUrl} name={winner.name || "Winner"} size={120} height={160} whiskyId={winner.id} />
           </div>
-          <div style={{ textAlign: "center" }}>
+          <div style={{ textAlign: "center", width: "100%" }}>
             <h2 className="labs-serif story-winner-title" style={{
               fontSize: "clamp(24px, 5vw, 52px)", fontWeight: 900,
               lineHeight: 1.05, marginBottom: 8,
@@ -420,24 +439,24 @@ function Act6Winner({ winner, aiComment, winnerNarration, maxScore }: {
               {winner.name || "Unknown"}
             </h2>
             {winner.distillery && (
-              <p style={{ fontSize: 15, color: "rgba(255,255,255,0.75)", marginBottom: 16 }}>{winner.distillery}</p>
+              <p style={{ fontSize: 15, color: STORY.dim, marginBottom: 16 }}>{winner.distillery}</p>
             )}
             <div style={{
               fontSize: "clamp(40px, 7vw, 72px)", fontWeight: 900,
-              color: "var(--labs-accent)", marginBottom: 20,
+              color: STORY.amber, marginBottom: 20,
               fontVariantNumeric: "tabular-nums",
             }}>
               {formatScore(winner.avgOverall ?? 0)}
-              <span style={{ fontSize: "0.4em", color: "rgba(255,255,255,0.75)", fontWeight: 400 }}>
+              <span style={{ fontSize: "0.4em", color: STORY.dim, fontWeight: 400 }}>
                 {" "}/ {maxScore}
               </span>
             </div>
             {(winnerNarration || aiComment) && (
               <p style={{
-                fontSize: 16, color: "rgba(255,255,255,0.75)", fontStyle: "italic",
-                lineHeight: 1.6, maxWidth: 460, margin: "0 auto",
-                padding: "16px 20px", borderRadius: 12,
-                background: "rgba(212,162,86,0.08)", border: "1px solid rgba(212,162,86,0.25)",
+                fontSize: 16, color: STORY.dim, fontStyle: "italic",
+                lineHeight: 1.75, maxWidth: 480, margin: "0 auto",
+                borderLeft: `2px solid ${STORY.amber}`, paddingLeft: 20,
+                textAlign: "left",
               }}>
                 {winnerNarration || aiComment}
               </p>
@@ -449,48 +468,118 @@ function Act6Winner({ winner, aiComment, winnerNarration, maxScore }: {
   );
 }
 
-function Act7Finale({ tasting, whiskies, eventPhotos }: { tasting: any; whiskies: any[]; eventPhotos: any[] }) {
+function Act7Finale({ tasting, whiskies, eventPhotos, closingReflection, aiNarrative, isHost, onGenerateNarrative, narrativeLoading }: {
+  tasting: any; whiskies: any[]; eventPhotos: any[];
+  closingReflection: string;
+  aiNarrative: string | null;
+  isHost: boolean;
+  onGenerateNarrative: () => void;
+  narrativeLoading: boolean;
+}) {
+  const [narrativeExpanded, setNarrativeExpanded] = useState(false);
   const closingPhoto = eventPhotos[eventPhotos.length - 1];
+  const narrativePreview = aiNarrative ? aiNarrative.slice(0, 320) + (aiNarrative.length > 320 ? "…" : "") : null;
   return (
-    <SlideContainer>
+    <SlideContainer centered={false}>
       {closingPhoto && (
         <>
           <div style={{
             position: "absolute", inset: 0, zIndex: 0,
             background: `url(${closingPhoto.photoUrl}) center/cover no-repeat`,
-            opacity: 0.35,
+            opacity: 0.25,
           }} />
           <div style={{
             position: "absolute", inset: 0, zIndex: 0,
-            background: "rgba(0,0,0,0.45)",
+            background: "linear-gradient(to top, #0B0906 40%, rgba(11,9,6,0.5) 100%)",
           }} />
         </>
       )}
-      <div style={{ position: "relative", zIndex: 1, maxWidth: 700, margin: "0 auto", width: "100%", textAlign: "center" }}>
+      <div style={{ position: "relative", zIndex: 1, maxWidth: 700, margin: "0 auto", width: "100%" }}>
         <ActLabel number="Akt VII" title="Das Bild des Abends" />
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", marginBottom: 28 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
           {whiskies.slice(0, 8).map((w: any, i: number) => (
             <div key={w.id} style={{ opacity: 1 - i * 0.08 }}>
-              <WhiskyImage imageUrl={w.imageUrl} name={w.name || "?"} size={54} height={70} whiskyId={w.id} />
+              <WhiskyImage imageUrl={w.imageUrl} name={w.name || "?"} size={50} height={64} whiskyId={w.id} />
             </div>
           ))}
         </div>
         <h2 className="labs-serif" style={{
           fontSize: "clamp(22px, 4vw, 42px)", fontWeight: 700,
-          color: "var(--labs-text)", marginBottom: 12,
+          color: STORY.text, marginBottom: 8,
         }}>
           Ein Abend. Unvergesslich.
         </h2>
-        <p style={{ fontSize: 15, color: "rgba(255,255,255,0.75)", marginBottom: 32 }}>
+        <p style={{ fontSize: 14, color: STORY.dim, marginBottom: closingReflection ? 20 : 28 }}>
           {tasting.date} · {tasting.location}
         </p>
+        {closingReflection && (
+          <p style={{
+            fontSize: 15, color: STORY.dim, fontStyle: "italic",
+            lineHeight: 1.75, maxWidth: 540,
+            borderLeft: `2px solid ${STORY.amber}`, paddingLeft: 18,
+            marginBottom: 24,
+          }}>
+            {closingReflection}
+          </p>
+        )}
+
+        {/* Abendnarration section */}
+        {aiNarrative ? (
+          <div style={{ marginBottom: 24, maxWidth: 580 }}>
+            <button
+              onClick={() => setNarrativeExpanded(e => !e)}
+              style={{
+                display: "flex", alignItems: "center", gap: 8, background: "none",
+                border: "none", cursor: "pointer", padding: 0, marginBottom: 10,
+              }}
+              data-testid="story-expand-narrative-btn"
+            >
+              <div style={{ width: 20, height: 1, background: STORY.amber }} />
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: STORY.amber }}>
+                Abendgeschichte
+              </span>
+              <span style={{ fontSize: 11, color: STORY.dim, marginLeft: 4 }}>
+                {narrativeExpanded ? "▲" : "▼"}
+              </span>
+            </button>
+            <p style={{
+              fontSize: 14, color: STORY.dim, lineHeight: 1.7,
+              borderLeft: `1px solid rgba(201,169,97,0.3)`, paddingLeft: 16,
+              maxHeight: narrativeExpanded ? "none" : undefined,
+              overflow: "hidden",
+            }}>
+              {narrativeExpanded ? aiNarrative : narrativePreview}
+            </p>
+          </div>
+        ) : isHost ? (
+          <div style={{ marginBottom: 24 }}>
+            <button
+              onClick={onGenerateNarrative}
+              disabled={narrativeLoading}
+              style={{
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "8px 18px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit",
+                background: STORY.amberGlow, border: `1px solid ${STORY.amberBorder}`,
+                color: STORY.amber, fontSize: 13, fontWeight: 600,
+                opacity: narrativeLoading ? 0.7 : 1,
+              }}
+              data-testid="story-generate-narrative-btn"
+            >
+              {narrativeLoading
+                ? <Loader2 style={{ width: 13, height: 13, animation: "spin 1s linear infinite" }} />
+                : <Sparkles style={{ width: 13, height: 13 }} />}
+              {narrativeLoading ? "Generiere…" : "Abendgeschichte generieren"}
+            </button>
+          </div>
+        ) : null}
+
         <div style={{
           display: "inline-flex", alignItems: "center", gap: 8,
-          padding: "10px 24px", borderRadius: 12,
-          background: "rgba(212,162,86,0.12)", border: "1px solid rgba(212,162,86,0.3)",
+          padding: "8px 20px", borderRadius: 10,
+          background: STORY.amberGlow, border: `1px solid ${STORY.amberBorder}`,
         }}>
-          <Wine style={{ width: 16, height: 16, color: "var(--labs-accent)" }} />
-          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-accent)", letterSpacing: "0.06em" }}>
+          <Wine style={{ width: 14, height: 14, color: STORY.amber }} />
+          <span style={{ fontSize: 13, fontWeight: 700, color: STORY.amber, letterSpacing: "0.06em" }}>
             CaskSense
           </span>
         </div>
@@ -810,6 +899,7 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
   const [pdfProgress, setPdfProgress] = useState<{ current: number; total: number; label: string } | null>(null);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [narrativeLoading, setNarrativeLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const touchStartX = useRef<number | null>(null);
@@ -902,6 +992,19 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
     setStoryToggling(false);
   };
 
+  const handleGenerateNarrative = async () => {
+    if (!tastingId || narrativeLoading) return;
+    setNarrativeLoading(true);
+    try {
+      const pid = currentParticipant?.id;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (pid) headers["x-participant-id"] = pid;
+      const res = await fetch(`/api/tastings/${tastingId}/ai-narrative`, { method: "POST", headers, body: JSON.stringify({ language: "de" }) });
+      if (res.ok) await qc.invalidateQueries({ queryKey: ["tasting-story", tastingId] });
+    } catch {}
+    setNarrativeLoading(false);
+  };
+
   const handlePdfExport = async () => {
     if (!storyData || isPdfExporting) return;
     setIsPdfExporting(true);
@@ -964,14 +1067,14 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
     );
   }
 
-  const { whiskies, sortedRanking, participants, blindReveal, aiComments, participantFunFacts, winnerNarration, winner } = storyData;
+  const { whiskies, sortedRanking, participants, blindReveal, aiComments, participantFunFacts, winnerNarration, winner, openingNarration, discoveryTexts, blindNarration, closingReflection } = storyData;
   const currentSlide = slides[slideIndex];
 
   return (
     <>
     <div
       ref={containerRef}
-      style={{ position: "fixed", inset: 0, background: "var(--labs-bg)", display: "flex", flexDirection: "column", overflow: "hidden", zIndex: 100 }}
+      style={{ position: "fixed", inset: 0, background: STORY.bg, display: "flex", flexDirection: "column", overflow: "hidden", zIndex: 100 }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       data-testid="story-presentation-overlay"
@@ -980,6 +1083,13 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
       `}</style>
+      {/* Film grain overlay */}
+      <div style={{
+        position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E")`,
+        backgroundRepeat: "repeat", backgroundSize: "200px 200px",
+        opacity: 0.04, mixBlendMode: "overlay",
+      }} />
 
       {/* Top bar */}
       <div style={{
@@ -1105,7 +1215,7 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
             onClick={e => e.stopPropagation()}
           >
             {currentSlide?.type === "act1-opening" && (
-              <Act1Opening tasting={tasting} eventPhotos={eventPhotos} />
+              <Act1Opening tasting={tasting} eventPhotos={eventPhotos} openingNarration={openingNarration ?? ""} />
             )}
             {currentSlide?.type === "act2-whisky" && (
               <Act2Whisky
@@ -1113,6 +1223,7 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
                 index={currentSlide.index}
                 totalWhiskies={whiskies.length}
                 blindMode={!!tasting.blindMode}
+                portrait={(storyData.whiskyPortraits ?? {})[whiskies[currentSlide.index]?.name] ?? ""}
               />
             )}
             {currentSlide?.type === "act3-tasters" && (
@@ -1121,29 +1232,39 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
             {currentSlide?.type === "act4-discovery" && (() => {
               const revIdx = sortedRanking.length - 1 - currentSlide.index;
               const w = sortedRanking[revIdx];
+              const discText = (discoveryTexts ?? {})[w?.name] ?? aiComments?.[w?.name] ?? "";
               return w ? (
                 <Act4Discovery
                   whisky={w}
                   rank={revIdx + 1}
                   totalWhiskies={sortedRanking.length}
-                  aiComment={aiComments?.[w.name] ?? ""}
+                  aiComment={discText}
                   maxScore={maxScore}
                 />
               ) : null;
             })()}
             {currentSlide?.type === "act5-surprise" && (
-              <Act5Surprise blindReveal={blindReveal ?? []} tasting={tasting} />
+              <Act5Surprise blindReveal={blindReveal ?? []} tasting={tasting} blindNarration={blindNarration ?? ""} />
             )}
             {currentSlide?.type === "act6-winner" && (
               <Act6Winner
                 winner={winner}
                 aiComment={aiComments?.[winner?.name] ?? ""}
-                winnerNarration={winnerNarration ?? ""}
+                winnerNarration={(storyData.winnerStory ?? "") || (winnerNarration ?? "")}
                 maxScore={maxScore}
               />
             )}
             {currentSlide?.type === "act7-finale" && (
-              <Act7Finale tasting={tasting} whiskies={whiskies} eventPhotos={eventPhotos} />
+              <Act7Finale
+                tasting={tasting}
+                whiskies={whiskies}
+                eventPhotos={eventPhotos}
+                closingReflection={closingReflection ?? ""}
+                aiNarrative={tasting?.aiNarrative ?? null}
+                isHost={isHost}
+                onGenerateNarrative={handleGenerateNarrative}
+                narrativeLoading={narrativeLoading}
+              />
             )}
           </motion.div>
         </AnimatePresence>

@@ -17770,41 +17770,51 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
         });
       }
 
-      // AI narration (generate per-whisky comments + winner sentence)
+      // AI narration (rich prose per whisky, per taster, opening/closing paragraphs)
       let aiComments: Record<string, string> = {};
       let winnerNarration = "";
       let participantFunFacts: Record<string, string> = {};
+      let openingNarration = "";
+      let discoveryTexts: Record<string, string> = {};
+      let blindNarration = "";
+      let closingReflection = "";
 
       try {
         const { client: aiClient } = await getAIClient(participantId ?? tasting.hostId, "ai_narrative");
         if (aiClient) {
-          const whiskyDataForAI = sorted.slice(0, 8).map(w => ({
+          const whiskyDataForAI = sorted.slice(0, 10).map(w => ({
             name: w.name,
             distillery: w.distillery,
             region: w.region,
+            age: w.age,
+            abv: w.abv,
+            caskType: w.caskType,
             avgScore: w.avgOverall != null ? Math.round(w.avgOverall * 10) / 10 : null,
-            tasterNotes: w.ratings.slice(0, 4).map(r => r.notes).filter(Boolean).join("; "),
+            tasterNotes: w.ratings.slice(0, 5).map((r: any) => r.notes).filter(Boolean).join("; "),
           }));
-          const participantsForAI = participantList.filter(p => !p.excludedFromResults).slice(0, 8).map(p => ({
+          const participantsForAI = participantList.filter(p => !p.excludedFromResults).slice(0, 10).map(p => ({
             name: p.participant?.name ?? "Unknown",
           }));
+          const existingNarrative = tasting.aiNarrative ? `\n\nExisting evening narrative for style reference:\n${(tasting.aiNarrative as string).slice(0, 800)}` : "";
 
           const aiResp = await aiClient.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [
               {
                 role: "system",
-                content: `You are a warm, witty whisky storyteller. Given tasting data, generate:
-1. A short 1-2 sentence narrative comment per whisky (highlight score, character, any surprises).
-2. A fun fact / personality trait per taster (lighthearted, fictional, whisky-themed).
-3. A single "winner sentence" celebrating the top whisky.
-Respond in JSON format:
+                content: `You are a literary whisky journalist writing slide copy for a cinematic tasting presentation. Write with warmth and craft — like a skilled short story author covering a cultural event. Sentences should be vivid, specific, and evocative, never generic.${existingNarrative}
+
+Respond ONLY with valid JSON matching this exact structure:
 {
-  "whiskies": { "<name>": "<1-2 sentence comment>" },
-  "tasters": { "<name>": "<fun fact>" },
-  "winnerSentence": "<sentence>"
+  "openingNarration": "<3-4 sentence opening: capture the mood, setting, who gathered, what the evening promised>",
+  "whiskyPortraits": { "<whiskyName>": "<3-4 sentence prose portrait: origin and character, what the group tasted, any surprises or consensus>", ... },
+  "tasterSketches": { "<name>": "<1-2 sentence character sketch in the story's voice — their palate personality or something distinctive they brought to the table>", ... },
+  "discoveryTexts": { "<whiskyName>": "<2-3 sentence text building dramatic tension around this whisky's ranking>", ... },
+  "blindNarration": "<2-3 sentence narrative on the blind guessing — who was close, what the results reveal about the group>",
+  "winnerStory": "<3-4 sentence winner celebration — why this one won, what it represents, how the group reacted>",
+  "closingReflection": "<3-4 sentence closing: the atmosphere as the evening wound down, what lingers>"
 }
-Language: German if tasting title appears German, otherwise English. Tone: warm, erzählerisch, slightly humorous.`,
+Language: German if the tasting title or participant names appear German, otherwise English. Tone: cinematic, literary, warm.`,
               },
               {
                 role: "user",
@@ -17814,18 +17824,23 @@ Language: German if tasting title appears German, otherwise English. Tone: warm,
                   location: tasting.location,
                   whiskies: whiskyDataForAI,
                   participants: participantsForAI,
-                  winner: winner ? { name: winner.name, score: winner.avgOverall } : null,
+                  winner: winner ? { name: winner.name, distillery: winner.distillery, score: winner.avgOverall } : null,
+                  blindMode: tasting.blindMode,
                 }),
               },
             ],
-            max_tokens: 1200,
-            temperature: 0.85,
+            max_tokens: 3000,
+            temperature: 0.82,
             response_format: { type: "json_object" },
           });
           const parsed = JSON.parse(aiResp.choices[0]?.message?.content ?? "{}");
-          aiComments = parsed.whiskies ?? {};
-          participantFunFacts = parsed.tasters ?? {};
-          winnerNarration = parsed.winnerSentence ?? "";
+          aiComments = parsed.whiskyPortraits ?? {};
+          participantFunFacts = parsed.tasterSketches ?? {};
+          winnerNarration = parsed.winnerStory ?? "";
+          openingNarration = parsed.openingNarration ?? "";
+          discoveryTexts = parsed.discoveryTexts ?? {};
+          blindNarration = parsed.blindNarration ?? "";
+          closingReflection = parsed.closingReflection ?? "";
         }
       } catch (aiErr) {
         console.warn("Story AI narration failed:", (aiErr as any)?.message ?? aiErr);
@@ -17842,6 +17857,10 @@ Language: German if tasting title appears German, otherwise English. Tone: warm,
         aiComments,
         participantFunFacts,
         winnerNarration,
+        openingNarration,
+        discoveryTexts,
+        blindNarration,
+        closingReflection,
       });
     } catch (e: any) {
       console.error("Story endpoint error:", e.message);

@@ -946,8 +946,8 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
 
   if (loadingTasting || loadingWhiskies) {
     return (
-      <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "var(--labs-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Loader2 style={{ width: 32, height: 32, color: "var(--labs-accent)", animation: "spin 1s linear infinite" }} />
+      <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "#0B0906", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Loader2 style={{ width: 32, height: 32, color: "#C9A961", animation: "spin 1s linear infinite" }} />
       </div>
     );
   }
@@ -957,7 +957,7 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
 
   if (!tasting || !isHost || !isAllowedStatus) {
     return (
-      <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "var(--labs-bg)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
+      <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "#0B0906", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
         <Wine style={{ width: 40, height: 40, color: "var(--labs-text-muted)" }} />
         <p style={{ color: "var(--labs-text-muted)" }}>{!tasting ? t("m2.results.tastingNotFound") : t("m2.results.notAvailableYet")}</p>
         <button className="labs-btn-secondary" onClick={() => navigate(`/labs/results/${tastingId}`)} data-testid="present-back-btn">{t("m2.results.backToResults")}</button>
@@ -989,7 +989,7 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
       onTouchEnd={handleTouchEnd}
       style={{
         position: "fixed", inset: 0, zIndex: 9999,
-        background: "var(--labs-bg)",
+        background: "#0B0906",
         display: "flex", flexDirection: "column",
         overflow: "hidden", userSelect: "none",
       }}
@@ -999,6 +999,13 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
       `}</style>
+      {/* Film grain overlay */}
+      <div style={{
+        position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E")`,
+        backgroundRepeat: "repeat", backgroundSize: "200px 200px",
+        opacity: 0.04, mixBlendMode: "overlay",
+      }} />
 
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0, zIndex: 10,
