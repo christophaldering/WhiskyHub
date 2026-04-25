@@ -1188,13 +1188,25 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
 
   const handleRegenerateSlides = async () => {
     if (!tastingId || isRegenerating) return;
+    const hostPid = currentParticipant?.id;
+    if (!hostPid) {
+      toast({ title: "Nicht eingeloggt", description: "Bitte Seite neu laden – Host-ID nicht gefunden.", variant: "destructive" });
+      return;
+    }
     setIsRegenerating(true);
     try {
-      const res = await fetch(`/api/tastings/${tastingId}/story?refresh=true`, { headers: pidHeaders() });
+      const res = await fetch(`/api/tastings/${tastingId}/story?refresh=true`, {
+        headers: { "x-participant-id": hostPid },
+      });
       if (res.ok) {
         const fresh = await res.json();
-        qc.setQueryData(["tasting-story", tastingId], fresh);
-        toast({ title: "Story neu generiert", description: "Die KI-Texte wurden aktualisiert." });
+        if (fresh.cached === true) {
+          toast({ title: "Regenerierung fehlgeschlagen", description: "Der Server hat gecachte Inhalte zurückgegeben. Bitte Seite neu laden.", variant: "destructive" });
+        } else {
+          qc.setQueryData(["tasting-story", tastingId], fresh);
+          await qc.invalidateQueries({ queryKey: ["tasting-story", tastingId] });
+          toast({ title: "Story neu generiert", description: "Die KI-Texte wurden aktualisiert." });
+        }
       } else {
         toast({ title: "Regenerierung fehlgeschlagen", description: "Die Story konnte nicht neu generiert werden.", variant: "destructive" });
       }
@@ -1365,11 +1377,11 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
           {isHost && (
             <button
               className="labs-btn-ghost"
-              style={{ padding: "6px 12px", fontSize: 12, display: "flex", alignItems: "center", gap: 6, opacity: isRegenerating ? 0.6 : 1 }}
+              style={{ padding: "6px 12px", fontSize: 12, display: "flex", alignItems: "center", gap: 6, opacity: (isRegenerating || !currentParticipant?.id) ? 0.6 : 1 }}
               onClick={handleRegenerateSlides}
-              disabled={isRegenerating}
+              disabled={isRegenerating || !currentParticipant?.id}
               data-testid="story-regenerate-btn"
-              title="KI-Texte neu generieren"
+              title={!currentParticipant?.id ? "Host-ID nicht verfügbar – bitte Seite neu laden" : "KI-Texte neu generieren"}
             >
               <RefreshCw style={{ width: 13, height: 13, animation: isRegenerating ? "spin 1s linear infinite" : "none" }} />
               <span>{isRegenerating ? "Generiere…" : "Neu generieren"}</span>

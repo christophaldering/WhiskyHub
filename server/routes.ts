@@ -17877,7 +17877,12 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       const validActKeys = new Set(["opening", "whiskies", "tasters", "discoveries", "blind", "winner", "photos", "finale"]);
 
       const currentRatingCount = allRatings.length;
-      const forceRefresh = isHost && req.query.refresh === "true";
+      const refreshRequested = req.query.refresh === "true";
+      if (refreshRequested && !isHost) {
+        console.warn(`[story] forceRefresh blocked: participantId=${auth.participant.id} is not the host (hostId=${tasting.hostId}) for tasting ${req.params.id}`);
+        return res.status(403).json({ message: "Only the host can regenerate the story." });
+      }
+      const forceRefresh = isHost && refreshRequested;
       // no_generate=true: return computed data only, never trigger AI (used for metadata-only checks)
       const noGenerate = req.query.no_generate === "true";
       // Prevent participants from triggering the first AI generation.
