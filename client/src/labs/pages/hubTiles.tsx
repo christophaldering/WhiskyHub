@@ -19,7 +19,7 @@ export interface HubTileDef {
   role?: HubTileRole;
 }
 
-export type TastingsHubFilter = "all" | "hosting" | "joined" | "archive";
+export type TastingsHubFilter = "active" | "completed";
 
 export interface TastingsHubTileDef extends HubTileDef {
   filter: TastingsHubFilter;
@@ -28,39 +28,21 @@ export interface TastingsHubTileDef extends HubTileDef {
 export const TASTINGS_HUB_TILES: TastingsHubTileDef[] = [
   {
     icon: Layers,
-    filter: "all",
-    labelKey: "myTastePage.tastingsHub.all",
-    labelFallback: "All",
-    descKey: "myTastePage.tastingsHub.allDesc",
-    descFallback: "All your tastings",
-    testId: "tile-meine-welt-tastings-all",
-  },
-  {
-    icon: Crown,
-    filter: "hosting",
-    labelKey: "myTastePage.tastingsHub.hosting",
-    labelFallback: "Hosting",
-    descKey: "myTastePage.tastingsHub.hostingDesc",
-    descFallback: "Tastings you host",
-    testId: "tile-meine-welt-tastings-hosting",
-  },
-  {
-    icon: Users,
-    filter: "joined",
-    labelKey: "myTastePage.tastingsHub.joined",
-    labelFallback: "Joined",
-    descKey: "myTastePage.tastingsHub.joinedDesc",
-    descFallback: "Tastings you joined",
-    testId: "tile-meine-welt-tastings-joined",
+    filter: "active",
+    labelKey: "myTastePage.tastingsHub.active",
+    labelFallback: "Aktiv",
+    descKey: "myTastePage.tastingsHub.activeDesc",
+    descFallback: "Laufende und geplante Tastings",
+    testId: "tile-meine-welt-tastings-active",
   },
   {
     icon: Archive,
-    filter: "archive",
-    labelKey: "myTastePage.tastingsHub.archive",
-    labelFallback: "My Archive",
-    descKey: "myTastePage.tastingsHub.archiveDesc",
-    descFallback: "Completed tastings",
-    testId: "tile-meine-welt-tastings-archive",
+    filter: "completed",
+    labelKey: "myTastePage.tastingsHub.completed",
+    labelFallback: "Abgeschlossen",
+    descKey: "myTastePage.tastingsHub.completedDesc",
+    descFallback: "Deine archivierten Tastings",
+    testId: "tile-meine-welt-tastings-completed",
   },
 ];
 

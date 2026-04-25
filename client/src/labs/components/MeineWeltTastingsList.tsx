@@ -45,53 +45,52 @@ export default function MeineWeltTastingsList({ filter }: Props) {
   const { data: tastings, isLoading: isTastingsLoading } = useQuery({
     queryKey: ["tastings", participantId],
     queryFn: () => tastingApi.getAll(participantId),
-    enabled: !!participantId && filter !== "archive",
+    enabled: !!participantId && filter === "active",
     staleTime: 60_000,
   });
 
   const { data: historyData, isLoading: isHistoryLoading } = useQuery({
     queryKey: ["tasting-history", participantId],
     queryFn: () => tastingHistoryApi.get(participantId!),
-    enabled: !!participantId && filter === "archive",
+    enabled: !!participantId && filter === "completed",
     staleTime: 60_000,
   });
 
-  const filtered = useMemo(() => {
-    if (!tastings || filter === "archive") return [];
-    let result = [...tastings].filter((tasting: any) => !tasting.isTestData);
-    result = result.filter(
-      (tasting: any) =>
-        (tasting.status === "open" || tasting.status === "draft") && !tasting.invitePending,
-    );
-    if (filter === "hosting") {
-      result = result.filter((tasting: any) => tasting.hostId === participantId);
-    } else if (filter === "joined") {
-      result = result.filter((tasting: any) => tasting.hostId !== participantId);
-    }
-    result.sort((a: any, b: any) => {
-      const statusOrder: Record<string, number> = { open: 0, draft: 1 };
-      const orderA = statusOrder[a.status] ?? 2;
-      const orderB = statusOrder[b.status] ?? 2;
-      if (orderA !== orderB) return orderA - orderB;
-      return new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime();
-    });
-    return result;
-  }, [tastings, filter, participantId]);
+  const activeItems = useMemo(() => {
+    if (!tastings || filter !== "active") return [];
+    return [...tastings]
+      .filter(
+        (tasting: any) =>
+          !tasting.isTestData &&
+          !tasting.invitePending &&
+          (tasting.status === "open" || tasting.status === "draft"),
+      )
+      .sort((a: any, b: any) => {
+        const statusOrder: Record<string, number> = { open: 0, draft: 1 };
+        const orderA = statusOrder[a.status] ?? 2;
+        const orderB = statusOrder[b.status] ?? 2;
+        if (orderA !== orderB) return orderA - orderB;
+        return new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime();
+      });
+  }, [tastings, filter]);
 
-  const archiveItems = useMemo(() => {
-    if (filter !== "archive") return [];
+  const completedItems = useMemo(() => {
+    if (filter !== "completed") return [];
     const list = historyData?.tastings ?? [];
-    const items = list.filter(
-      (tasting: any) =>
-        tasting.status !== "open" && tasting.status !== "draft" && tasting.status !== "deleted",
-    );
-    return [...items].sort(
-      (a: any, b: any) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime(),
-    );
+    return [...list]
+      .filter(
+        (tasting: any) =>
+          tasting.status !== "open" &&
+          tasting.status !== "draft" &&
+          tasting.status !== "deleted",
+      )
+      .sort(
+        (a: any, b: any) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime(),
+      );
   }, [historyData, filter]);
 
-  const isLoading = filter === "archive" ? isHistoryLoading : isTastingsLoading;
-  const items = filter === "archive" ? archiveItems : filtered;
+  const isLoading = filter === "completed" ? isHistoryLoading : isTastingsLoading;
+  const items = filter === "completed" ? completedItems : activeItems;
 
   if (isLoading) {
     return (
@@ -105,21 +104,11 @@ export default function MeineWeltTastingsList({ filter }: Props) {
 
   if (items.length === 0) {
     const emptyKey =
-      filter === "archive"
-        ? "tastings.archiveEmptyTitle"
-        : filter === "hosting"
-          ? "tastings.emptyHostingTitle"
-          : filter === "joined"
-            ? "tastings.emptyJoinedTitle"
-            : "tastings.emptyAllTitle";
+      filter === "completed" ? "tastings.archiveEmptyTitle" : "tastings.emptyActiveTitle";
     const emptyFallback =
-      filter === "archive"
-        ? "Your archive is still empty"
-        : filter === "hosting"
-          ? "No tastings you host yet"
-          : filter === "joined"
-            ? "No tastings joined yet"
-            : "No active tastings";
+      filter === "completed"
+        ? "Noch keine abgeschlossenen Tastings"
+        : "Keine aktiven Tastings";
     return (
       <div
         className="labs-empty labs-fade-in"
@@ -130,8 +119,6 @@ export default function MeineWeltTastingsList({ filter }: Props) {
     );
   }
 
-  const hrefBase = filter === "archive" ? "/labs/history" : "/labs/tastings";
-
   return (
     <div
       className="labs-grouped-list labs-fade-in"
@@ -140,15 +127,21 @@ export default function MeineWeltTastingsList({ filter }: Props) {
       {items.map((tasting: any) => {
         const statusCfg = getStatusConfig(tasting.status);
         const isHost =
-          filter === "archive" ? !!tasting.isHost : tasting.hostId === participantId;
+          filter === "completed" ? !!tasting.isHost : tasting.hostId === participantId;
         const isLive = tasting.status === "open";
         const formattedDate = formatTastingDate(tasting.date);
         const showStoryBtn =
-          filter === "archive" &&
+          filter === "completed" &&
           (tasting.status === "archived" || tasting.status === "completed") &&
           (isHost || tasting.storyEnabled);
+
+        const href =
+          filter === "completed"
+            ? `/labs/history/${tasting.id}?from=my-tastings`
+            : `/labs/tastings/${tasting.id}`;
+
         return (
-          <Link key={tasting.id} href={`${hrefBase}/${tasting.id}`}>
+          <Link key={tasting.id} href={href}>
             <div
               className="labs-list-row"
               data-testid={`meine-welt-tasting-card-${tasting.id}`}
@@ -174,6 +167,14 @@ export default function MeineWeltTastingsList({ filter }: Props) {
                   </span>
                   <div className="labs-tasting-card-badges">
                     <span
+                      className={`labs-badge labs-badge--role ${isHost ? "labs-badge--host" : "labs-badge--guest"}`}
+                      data-testid={`meine-welt-tasting-role-${tasting.id}`}
+                    >
+                      {isHost
+                        ? t("tastings.roleHost", "HOST")
+                        : t("tastings.roleGuest", "GAST")}
+                    </span>
+                    <span
                       className={statusCfg.cssClass}
                       data-testid={`meine-welt-tasting-status-${tasting.id}`}
                     >
@@ -182,20 +183,14 @@ export default function MeineWeltTastingsList({ filter }: Props) {
                     </span>
                   </div>
                 </div>
-                <div className="labs-tasting-card-host">
-                  {isHost ? (
-                    <span className="labs-tasting-role-text">
-                      {t("tastingStatus.yourTasting", "Your Tasting")}
+                {!isHost && tasting.hostName && (
+                  <div className="labs-tasting-card-host">
+                    <Crown className="labs-tasting-card-host-icon" />
+                    <span className="labs-tasting-card-host-name">
+                      {stripGuestSuffix(tasting.hostName)}
                     </span>
-                  ) : tasting.hostName ? (
-                    <>
-                      <Crown className="labs-tasting-card-host-icon" />
-                      <span className="labs-tasting-card-host-name">
-                        {stripGuestSuffix(tasting.hostName)}
-                      </span>
-                    </>
-                  ) : null}
-                </div>
+                  </div>
+                )}
                 <div className="labs-tasting-card-meta">
                   {formattedDate && (
                     <span className="labs-tasting-card-meta-item">

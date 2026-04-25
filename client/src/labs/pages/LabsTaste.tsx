@@ -145,7 +145,7 @@ export default function LabsTaste() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
-  const [activeTastingsFilter, setActiveTastingsFilter] = useState<TastingsHubFilter>("all");
+  const [activeTastingsFilter, setActiveTastingsFilter] = useState<TastingsHubFilter>("active");
   const [activeCollectionTile, setActiveCollectionTile] = useState<string | null>(
     initialTab === "collection" && initialSub && COLLECTION_SUB_IDS.has(initialSub) ? initialSub : null,
   );
@@ -219,7 +219,7 @@ export default function LabsTaste() {
     setActiveCollectionTile(null);
     setActiveAITile(null);
     setActiveAnalyticsTile(null);
-    setActiveTastingsFilter("all");
+    setActiveTastingsFilter("active");
     setActiveTab(next);
   };
 
@@ -262,11 +262,6 @@ export default function LabsTaste() {
     [historyData, journalData, currentParticipant?.id, currentParticipant?.preferredRatingScale],
   );
 
-  const archiveCount = useMemo(() => {
-    const list: any[] = historyData?.tastings ?? [];
-    return list.filter((t: any) => t.status !== "open" && t.status !== "draft" && t.status !== "deleted").length;
-  }, [historyData]);
-
   if (!currentParticipant) {
     return (
       <AuthGateMessage
@@ -285,33 +280,21 @@ export default function LabsTaste() {
           <HubTileGrid
             tiles={TASTINGS_HUB_TILES}
             t={t}
-            variant="four-row"
+            variant="single-row"
             role="filter"
             activeTestId={activeTile?.testId}
             onTileClick={(tile) => {
               const next = (tile as (typeof TASTINGS_HUB_TILES)[number]).filter;
               if (!next) return;
-              // Role C: re-click on active filter resets to default "all"
-              if (next === activeTastingsFilter) setActiveTastingsFilter("all");
+              if (next === activeTastingsFilter) setActiveTastingsFilter("active");
               else setActiveTastingsFilter(next);
             }}
-            tileBadges={archiveCount > 0 ? { "tile-meine-welt-tastings-archive": archiveCount } : undefined}
           />
           <div
             style={{ marginTop: 16 }}
             data-testid={`meine-welt-tastings-inline-${activeTastingsFilter}`}
           >
             <MeineWeltTastingsList filter={activeTastingsFilter} />
-          </div>
-          <div style={{ marginTop: 24 }}>
-            <RecentRatedList
-              items={recentItems}
-              limit={12}
-              sectionTestId="meine-welt-tastings-recent-section"
-              viewAllHref="/labs/taste/drams"
-              headerVariant="meine-welt"
-              hideViewAll
-            />
           </div>
         </div>
       );

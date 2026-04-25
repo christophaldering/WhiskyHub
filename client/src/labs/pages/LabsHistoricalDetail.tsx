@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useParams, Link } from "wouter";
+import { useParams, useSearch, Link } from "wouter";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { getParticipantId } from "@/lib/api";
 import {
@@ -371,6 +371,8 @@ export default function LabsHistoricalDetail() {
   const lang = i18n.language;
   const params = useParams<{ id: string }>();
   const tastingId = params.id;
+  const search = useSearch();
+  const fromMyTastings = new URLSearchParams(search).get("from") === "my-tastings";
   const pid = getParticipantId();
   const queryClient = useQueryClient();
   const [showRatings, setShowRatings] = useState<Set<string>>(new Set());
@@ -592,7 +594,7 @@ export default function LabsHistoricalDetail() {
             </div>
           </div>
 
-          {pid && (
+          {pid && !fromMyTastings && (
             <div
               className="labs-card"
               style={{
