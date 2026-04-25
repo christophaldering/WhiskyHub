@@ -107,6 +107,7 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
 .photos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.5rem;margin-top:2rem;padding:0 2rem;}
 .photo-item img{width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:2px;box-shadow:0 20px 40px rgba(0,0,0,.5);}
 .photo-item__caption{font-family:var(--serif);font-style:italic;font-size:.85rem;color:var(--ink-faint);margin-top:.5rem;}
+.photo-item__slide-text{font-family:var(--serif);font-size:.8rem;color:var(--ink-dim);margin-top:.4rem;line-height:1.55;}
 
 /* Finale */
 .finale{text-align:center;padding:var(--section-pad) 2rem;min-height:80vh;display:flex;align-items:center;justify-content:center;}
@@ -328,8 +329,15 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
       </summary>
       <div style="margin-top:.6rem;">
         <div id="photoMgmtGrid" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:8px;"></div>
-        <input type="file" id="photoFileInput" accept="image/*" multiple style="display:none;" data-testid="input-photo-upload" onchange="handlePhotoUpload(this.files)">
+        <input type="file" id="photoFileInput" accept="image/*" multiple style="display:none;" data-testid="input-photo-upload" onchange="showPhotoCaptionInput(this.files)">
         <button style="font-family:var(--sans);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);background:rgba(201,169,97,.08);border:1px solid rgba(201,169,97,.25);border-radius:3px;padding:.4rem .75rem;cursor:pointer;width:100%;transition:background .2s;" data-testid="button-add-photo" id="photoUploadBtn" onmouseenter="this.style.background='rgba(201,169,97,.18)'" onmouseleave="this.style.background='rgba(201,169,97,.08)'" onclick="document.getElementById('photoFileInput').click()">+ Foto hinzufügen</button>
+        <div id="photoCaptionArea" style="display:none;margin-top:.5rem;">
+          <input type="text" id="photoCaptionInput" placeholder="Bildunterschrift (optional)" data-testid="input-photo-caption-template" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.05);border:1px solid rgba(201,169,97,.2);border-radius:3px;padding:.4rem .6rem;font-family:var(--sans);font-size:.75rem;color:var(--ink);margin-bottom:.4rem;">
+          <div style="display:flex;gap:.4rem;">
+            <button id="photoUploadWithCaptionBtn" style="font-family:var(--sans);font-size:.7rem;color:var(--amber);background:rgba(201,169,97,.12);border:1px solid rgba(201,169,97,.3);border-radius:3px;padding:.35rem .6rem;cursor:pointer;flex:1;" data-testid="button-upload-with-caption" onclick="doPhotoUpload(true)">Hochladen</button>
+            <button style="font-family:var(--sans);font-size:.7rem;color:var(--ink-dim);background:none;border:1px solid rgba(201,169,97,.1);border-radius:3px;padding:.35rem .6rem;cursor:pointer;" data-testid="button-upload-no-caption" onclick="doPhotoUpload(false)">Ohne Beschriftung</button>
+          </div>
+        </div>
         <div id="photoUploadStatus" style="font-family:var(--sans);font-size:.7rem;color:var(--ink-faint);margin-top:4px;min-height:1em;"></div>
       </div>
     </details>
@@ -653,14 +661,35 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
   }
   window.deleteEventPhoto = deleteEventPhoto;
 
-  async function handlePhotoUpload(files) {
+  let pendingPhotoFiles = null;
+
+  function showPhotoCaptionInput(files) {
+    if (!files || files.length === 0) return;
+    pendingPhotoFiles = files;
+    const captionArea = $('photoCaptionArea');
+    const captionInput = $('photoCaptionInput');
+    if (captionArea) { captionArea.style.display = 'block'; if (captionInput) captionInput.value = ''; }
+  }
+  window.showPhotoCaptionInput = showPhotoCaptionInput;
+
+  async function doPhotoUpload(withCaption) {
+    const files = pendingPhotoFiles;
+    pendingPhotoFiles = null;
+    const captionArea = $('photoCaptionArea');
+    if (captionArea) captionArea.style.display = 'none';
+    const caption = withCaption ? (($('photoCaptionInput') && $('photoCaptionInput').value.trim()) || '') : '';
+    await handlePhotoUpload(files, caption);
+  }
+  window.doPhotoUpload = doPhotoUpload;
+
+  async function handlePhotoUpload(files, caption) {
     if (!files || files.length === 0) return;
     const statusEl = $('photoUploadStatus');
     const btn = $('photoUploadBtn');
     btn.disabled = true;
-    const headers = {};
+    const authHeaders = {};
     const p = pid();
-    if (p) headers['x-participant-id'] = p;
+    if (p) authHeaders['x-participant-id'] = p;
     let uploaded = 0;
     const maxNew = Math.max(0, 10 - currentPhotos.length);
     for (let i = 0; i < Math.min(files.length, maxNew); i++) {
@@ -670,8 +699,9 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
       statusEl.textContent = `Hochladen ${i + 1}/${Math.min(files.length, maxNew)}…`;
       const fd = new FormData();
       fd.append('file', file);
+      if (caption) fd.append('caption', caption);
       try {
-        const res = await fetch(`/api/tastings/${tastingId}/event-photos/upload`, { method: 'POST', headers, body: fd });
+        const res = await fetch(`/api/tastings/${tastingId}/event-photos/upload`, { method: 'POST', headers: authHeaders, body: fd });
         if (res.ok) { uploaded++; }
         else { const j = await res.json().catch(() => ({})); statusEl.textContent = j.message || 'Fehler beim Hochladen'; }
       } catch(e) { statusEl.textContent = 'Fehler beim Hochladen'; }
@@ -707,7 +737,7 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
       const photos = await res.json();
       const tasting = storyData.tasting;
       const photoList = buildPhotoList(photos, tasting);
-      const photosHtml = buildPhotosActHtml(photoList, true);
+      const photosHtml = buildPhotosActHtml(photoList, true, storyData.photoSlideTexts);
       const existing = $('act-photos');
       let navChanged = false;
       if (existing) {
@@ -751,17 +781,22 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
     return list;
   }
 
-  function buildPhotosActHtml(photoList, alreadyVisible) {
+  function buildPhotosActHtml(photoList, alreadyVisible, photoSlideTexts) {
     if (!photoList || photoList.length === 0) return '';
     const revealCls = alreadyVisible ? 'reveal is-visible' : 'reveal';
+    const slideTexts = photoSlideTexts && typeof photoSlideTexts === 'object' ? photoSlideTexts : {};
     return `<div id="act-photos" data-act="Bilder">
       <section>
         <div class="${revealCls}"><div class="divider"></div><div class="act-label">Der Abend in Bildern</div></div>
       </section>
-      <div class="photos-grid ${revealCls} reveal--d1">${photoList.map(p => `<div class="photo-item ${revealCls}">
-        <img src="${esc(p.photoUrl)}" alt="${esc(p.caption || '')}" loading="lazy">
-        ${p.caption ? `<div class="photo-item__caption">${esc(p.caption)}</div>` : ''}
-      </div>`).join('')}</div>
+      <div class="photos-grid ${revealCls} reveal--d1">${photoList.map((p, i) => {
+        const slideText = p.slideText || (i >= 1 ? slideTexts[String(i)] : null) || null;
+        return `<div class="photo-item ${revealCls}">
+          <img src="${esc(p.photoUrl)}" alt="${esc(p.caption || '')}" loading="lazy">
+          ${p.caption ? `<div class="photo-item__caption">${esc(p.caption)}</div>` : ''}
+          ${slideText ? `<div class="photo-item__slide-text">${esc(slideText)}</div>` : ''}
+        </div>`;
+      }).join('')}</div>
     </div>`;
   }
 
@@ -893,7 +928,7 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
         </div>
       </section>`,
 
-      photos: () => buildPhotosActHtml(photoList, false),
+      photos: () => buildPhotosActHtml(photoList, false, data.photoSlideTexts),
 
       finale: () => `<section id="act-finale" data-act="Finale">
         <div class="finale reveal">

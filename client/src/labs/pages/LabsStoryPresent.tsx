@@ -672,6 +672,61 @@ function Act7Finale({ tasting, whiskies, eventPhotos, closingReflection, aiNarra
   );
 }
 
+// ---- Caption Modal (for photo upload) ----
+function CaptionModal({ previewUrl, onConfirm, onSkip }: {
+  previewUrl: string; onConfirm: (caption: string) => void; onSkip: () => void;
+}) {
+  const [text, setText] = useState("");
+  return (
+    <ModalPortal open onClose={onSkip} testId="caption-modal">
+      <div style={{
+        background: "var(--labs-surface, #1e1a14)", border: "1px solid rgba(212,162,86,0.2)",
+        borderRadius: 12, padding: "24px", width: "100%", maxWidth: 380,
+        display: "flex", flexDirection: "column", gap: 16,
+      }}>
+        <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "var(--labs-text)" }}>Bildunterschrift hinzufügen</p>
+        <img
+          src={previewUrl}
+          alt=""
+          style={{ width: "100%", maxHeight: 180, objectFit: "cover", borderRadius: 8, border: "1px solid var(--labs-border)" }}
+        />
+        <textarea
+          value={text}
+          onChange={e => setText(e.target.value)}
+          placeholder="Was ist auf diesem Foto zu sehen? (optional)"
+          rows={2}
+          style={{
+            width: "100%", boxSizing: "border-box", resize: "vertical",
+            background: "rgba(255,255,255,0.05)", border: "1px solid rgba(212,162,86,0.2)",
+            borderRadius: 8, padding: "10px 12px", fontSize: 13,
+            color: "var(--labs-text)", fontFamily: "inherit",
+          }}
+          data-testid="input-photo-caption"
+          autoFocus
+        />
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <button
+            className="labs-btn-ghost"
+            style={{ fontSize: 13, padding: "8px 16px" }}
+            onClick={onSkip}
+            data-testid="button-caption-skip"
+          >
+            Überspringen
+          </button>
+          <button
+            className="labs-btn-primary"
+            style={{ fontSize: 13, padding: "8px 16px" }}
+            onClick={() => onConfirm(text.trim())}
+            data-testid="button-caption-save"
+          >
+            Speichern
+          </button>
+        </div>
+      </div>
+    </ModalPortal>
+  );
+}
+
 // ---- Photo Upload Panel ----
 function PhotoUploadPanel({ tastingId, photos, onRefresh, canUpload }: {
   tastingId: string; photos: any[]; onRefresh: () => void; canUpload: boolean;
@@ -681,24 +736,44 @@ function PhotoUploadPanel({ tastingId, photos, onRefresh, canUpload }: {
   const inputRef = useRef<HTMLInputElement>(null);
   const { uploadFile } = useUpload();
   const qc = useQueryClient();
+  const [pendingFiles, setPendingFiles] = useState<{ file: File; previewUrl: string }[]>([]);
 
-  const handleFiles = async (files: FileList) => {
+  const finishUpload = () => {
+    onRefresh();
+    qc.invalidateQueries({ queryKey: ["event-photos", tastingId] });
+  };
+
+  const processNext = async (queue: { file: File; previewUrl: string }[], caption: string) => {
+    setUploading(true);
+    setError(null);
+    const current = queue[0];
+    if (!current) { setUploading(false); finishUpload(); return; }
+    try {
+      const result = await uploadFile(current.file);
+      if (result?.objectPath) {
+        await addEventPhoto(tastingId, result.objectPath, caption || undefined).catch(e => setError(e.message));
+      }
+    } catch (e: any) {
+      setError(e.message);
+    }
+    URL.revokeObjectURL(current.previewUrl);
+    const rest = queue.slice(1);
+    setPendingFiles(rest);
+    setUploading(false);
+    if (rest.length === 0) finishUpload();
+  };
+
+  const handleFiles = (files: FileList) => {
     if (!files.length) return;
     const remaining = 10 - photos.length;
     if (remaining <= 0) { setError("Maximal 10 Fotos erlaubt."); return; }
-    setUploading(true);
-    setError(null);
+    const selected: { file: File; previewUrl: string }[] = [];
     for (let i = 0; i < Math.min(files.length, remaining); i++) {
       const file = files[i];
       if (!file.type.startsWith("image/")) continue;
-      const result = await uploadFile(file);
-      if (result?.objectPath) {
-        await addEventPhoto(tastingId, result.objectPath).catch(e => setError(e.message));
-      }
+      selected.push({ file, previewUrl: URL.createObjectURL(file) });
     }
-    setUploading(false);
-    onRefresh();
-    qc.invalidateQueries({ queryKey: ["event-photos", tastingId] });
+    if (selected.length > 0) setPendingFiles(selected);
   };
 
   const handleDelete = async (photoId: string) => {
@@ -709,6 +784,14 @@ function PhotoUploadPanel({ tastingId, photos, onRefresh, canUpload }: {
 
   return (
     <div style={{ padding: "16px 20px", borderRadius: 14, background: "var(--labs-surface)", border: "1px solid var(--labs-border)" }}>
+      {pendingFiles.length > 0 && (
+        <CaptionModal
+          previewUrl={pendingFiles[0].previewUrl}
+          onConfirm={caption => processNext(pendingFiles, caption)}
+          onSkip={() => processNext(pendingFiles, "")}
+        />
+      )}
+
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
         <Camera style={{ width: 16, height: 16, color: "var(--labs-accent)" }} />
         <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>
@@ -726,6 +809,7 @@ function PhotoUploadPanel({ tastingId, photos, onRefresh, canUpload }: {
               <img
                 src={p.photoUrl}
                 alt={p.caption || "Event photo"}
+                title={p.caption || undefined}
                 style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8, border: "1px solid var(--labs-border)" }}
               />
               {canUpload && (
@@ -756,6 +840,7 @@ function PhotoUploadPanel({ tastingId, photos, onRefresh, canUpload }: {
             multiple
             style={{ display: "none" }}
             onChange={e => e.target.files && handleFiles(e.target.files)}
+            onClick={e => { (e.target as HTMLInputElement).value = ""; }}
             data-testid="event-photo-file-input"
           />
           <button
@@ -997,6 +1082,7 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
   const [autoPlay, setAutoPlay] = useState(false);
   const [direction, setDirection] = useState(1);
   const [showPhotoPanel, setShowPhotoPanel] = useState(false);
+  const [showStoryRef, setShowStoryRef] = useState(false);
   const [storyToggling, setStoryToggling] = useState(false);
   const [isPdfExporting, setIsPdfExporting] = useState(false);
   const [pdfProgress, setPdfProgress] = useState<{ current: number; total: number; label: string } | null>(null);
@@ -1243,10 +1329,21 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
             <button
               className="labs-btn-ghost"
               style={{ padding: "6px 12px", fontSize: 13 }}
-              onClick={() => setShowPhotoPanel(p => !p)}
+              onClick={() => { setShowPhotoPanel(p => !p); setShowStoryRef(false); }}
               data-testid="story-toggle-photo-panel"
             >
               <Camera style={{ width: 14, height: 14 }} />
+            </button>
+          )}
+          {isHost && storyData?.openingNarration && (
+            <button
+              className="labs-btn-ghost"
+              style={{ padding: "6px 12px", fontSize: 13 }}
+              onClick={() => { setShowStoryRef(p => !p); setShowPhotoPanel(false); }}
+              data-testid="story-toggle-story-ref"
+              title="Aktueller Story-Text"
+            >
+              <BookOpen style={{ width: 14, height: 14 }} />
             </button>
           )}
         </div>
@@ -1341,6 +1438,61 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
               onRefresh={refetchPhotos}
               canUpload={isHost}
             />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Story reference panel overlay */}
+      <AnimatePresence>
+        {showStoryRef && storyData && (
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            style={{
+              position: "absolute", top: 52, left: 16, right: 16, zIndex: 30,
+              maxWidth: 600, margin: "0 auto", maxHeight: "70vh", overflowY: "auto",
+            }}
+          >
+            <div style={{ padding: "16px 20px", borderRadius: 14, background: "var(--labs-surface)", border: "1px solid var(--labs-border)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <BookOpen style={{ width: 15, height: 15, color: "var(--labs-accent)" }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>Aktueller Story-Text</span>
+                </div>
+                <button
+                  className="labs-btn-ghost"
+                  style={{ padding: 4 }}
+                  onClick={() => setShowStoryRef(false)}
+                  data-testid="story-ref-close"
+                >
+                  <X style={{ width: 14, height: 14 }} />
+                </button>
+              </div>
+              {storyData.openingNarration && (
+                <div style={{ marginBottom: 14 }}>
+                  <p style={{ margin: "0 0 4px", fontSize: 10, fontWeight: 700, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.1em" }}>Eröffnung</p>
+                  <p style={{ margin: 0, fontSize: 12, color: "var(--labs-text)", lineHeight: 1.6 }} data-testid="story-ref-opening">{storyData.openingNarration}</p>
+                </div>
+              )}
+              {storyData.aiComments && Object.keys(storyData.aiComments).length > 0 && (
+                <div style={{ marginBottom: 14 }}>
+                  <p style={{ margin: "0 0 6px", fontSize: 10, fontWeight: 700, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.1em" }}>Whisky-Portraits</p>
+                  {Object.entries(storyData.aiComments as Record<string, string>).map(([name, text]) => (
+                    <div key={name} style={{ marginBottom: 8 }}>
+                      <p style={{ margin: "0 0 2px", fontSize: 11, fontWeight: 600, color: "var(--labs-accent)" }}>{name}</p>
+                      <p style={{ margin: 0, fontSize: 12, color: "var(--labs-text)", lineHeight: 1.6 }} data-testid={`story-ref-portrait-${name}`}>{text}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {storyData.closingReflection && (
+                <div>
+                  <p style={{ margin: "0 0 4px", fontSize: 10, fontWeight: 700, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.1em" }}>Abschluss</p>
+                  <p style={{ margin: 0, fontSize: 12, color: "var(--labs-text)", lineHeight: 1.6 }} data-testid="story-ref-closing">{storyData.closingReflection}</p>
+                </div>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

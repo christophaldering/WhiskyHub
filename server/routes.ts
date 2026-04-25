@@ -17717,10 +17717,11 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       if (!file) return res.status(400).json({ message: "No file provided" });
       if (file.buffer.length > 10 * 1024 * 1024) return res.status(400).json({ message: "Datei zu groß (max 10 MB)" });
       const photoUrl = await uploadBufferToObjectStorage(objectStorage, file.buffer, file.mimetype);
+      const captionValue = typeof req.body?.caption === "string" && req.body.caption.trim() ? req.body.caption.trim() : null;
       const photo = await storage.createTastingEventPhoto({
         tastingId: req.params.id,
         photoUrl,
-        caption: null,
+        caption: captionValue,
         sortOrder: existingPhotos.length,
       });
       res.json(photo);
@@ -17869,6 +17870,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       let blindNarration = "";
       let closingReflection = "";
       let storyStructure: string[] = [];
+      let photoSlideTexts: Record<string, string> = {};
       const defaultStoryStructure = tasting.blindMode
         ? ["opening", "whiskies", "tasters", "discoveries", "blind", "winner", "photos", "finale"]
         : ["opening", "whiskies", "tasters", "discoveries", "winner", "photos", "finale"];
@@ -17906,15 +17908,40 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
           storyStructure = Array.isArray(rawCachedStructure)
             ? [...new Set((rawCachedStructure as string[]).filter((k: string) => validActKeys.has(k)))]
             : [];
+          photoSlideTexts = (cached.photoSlideTexts && typeof cached.photoSlideTexts === "object" && !Array.isArray(cached.photoSlideTexts)) ? cached.photoSlideTexts : {};
           servedFromCache = true;
         } catch {}
       }
+
+      const existingStoryForAI: Record<string, unknown> | null = tasting.storySlidesCache ? (() => {
+        try {
+          const c = JSON.parse(tasting.storySlidesCache);
+          return {
+            openingNarration: c.openingNarration ?? "",
+            whiskyPortraits: c.aiComments ?? {},
+            tasterSketches: c.participantFunFacts ?? {},
+            discoveryTexts: c.discoveryTexts ?? {},
+            blindNarration: c.blindNarration ?? "",
+            winnerStory: c.winnerNarration ?? "",
+            closingReflection: c.closingReflection ?? "",
+          };
+        } catch { return null; }
+      })() : null;
 
       if (!servedFromCache && !noGenerate && !participantGenerationBlocked) {
         try {
           const { client: aiClient } = await getAIClient(participantId ?? tasting.hostId, "ai_narrative");
           if (aiClient) {
             const groupAvgOverall = sorted.length > 0 ? sorted.reduce((s, w) => s + (w.avgOverall ?? 0), 0) / sorted.length : 0;
+
+            const flavorProfileTagMap: Record<string, string[]> = {
+              "sherried-rich":    ["Sherry", "Trockenfrüchte", "Würze"],
+              "bourbon-classic":  ["Vanille", "Karamell", "Eiche"],
+              "peated-maritime":  ["Rauch", "Salz", "Torf"],
+              "highland-elegant": ["Honig", "Blumen", "Frucht"],
+              "speyside-fruity":  ["Apfel", "Birne", "Malz"],
+              "island-coastal":   ["Meeresluft", "Heide", "Gewürz"],
+            };
 
             const whiskyDataForAI = sorted.slice(0, 10).map((w, idx) => {
               const overallVals = w.ratings.map((r: any) => r.overall).filter((v: any) => v != null) as number[];
@@ -17946,6 +17973,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
                 topRater: topRating && topRating !== bottomRating ? { name: getPN(topRating.participantId), score: topRating.overall } : null,
                 bottomRater: bottomRating && topRating !== bottomRating ? { name: getPN(bottomRating.participantId), score: bottomRating.overall } : null,
                 tasterNotes: w.ratings.slice(0, 5).map((r: any) => r.notes).filter(Boolean).join("; "),
+                topFlavorTags: w.flavorProfile ? (flavorProfileTagMap[w.flavorProfile] ?? []) : [],
               };
             });
 
@@ -17987,11 +18015,15 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
 
 CRITICAL SPOILER GUARD: The rank-1 winner must NEVER be named, described with superlatives, or strongly implied in openingNarration, whiskyPortraits, tasterSketches, or discoveryTexts. discoveryTexts only covers rank 2 and lower — do not write a discoveryTexts entry for the rank-1 whisky at all. The winner appears for the first time only in winnerStory.
 
-For whiskyPortraits: Draw on your real-world knowledge of each distillery's character, region style, typical flavour profile, and age/cask context — do not merely echo the tasting notes. Blend that background with the group's actual scores and comments to create a portrait grounded in both tradition and the specific evening.
+For whiskyPortraits: Draw on your real-world knowledge of each distillery's character, region style, typical flavour profile, and age/cask context — do not merely echo the tasting notes. Blend that background with the group's actual scores and comments to create a portrait grounded in both tradition and the specific evening. If a whisky has topFlavorTags, weave those specific descriptors naturally into its portrait.
 
 For tasterSketches: Use the provided per-dimension averages and divergenceFromGroup to reveal each person's palate personality — high scorer vs. tough critic, nose-forward vs. finish-focused, consensus follower vs. contrarian. You may name each person's topRatedWhisky as their personal highlight of the evening (omit if topRatedWhisky is rank 1 — do not name the winner).
 
 For discoveryTexts (ranks 2 and below only): Reference specific rating highlights from the data — e.g. "the evening's highest nose score", "the group was split: [Name] gave it [X], [Name] held back". Make the reveal feel data-driven and personal. Never name, hint at, or describe the rank-1 whisky here.${existingNarrative}
+
+If existingStory is provided in the user data, you are in REFINEMENT MODE. Preserve all story sections that the hostContext does not explicitly ask to change — copy them verbatim into your response. Only rewrite the sections the host has clearly instructed to modify. Return ALL JSON fields, using the existingStory text for unchanged sections.
+
+If eventPhotos are provided, each entry has an index (1-based) and a caption describing a real moment from the evening. Reference specific captions in openingNarration or closingReflection where they fit naturally. Additionally, for photos that have captions, you may produce a photoSlideTexts entry — a short 1-2 sentence text celebrating or contextualising that photo moment.
 
 Respond ONLY with valid JSON matching this exact structure:
 {
@@ -18002,6 +18034,7 @@ Respond ONLY with valid JSON matching this exact structure:
   "blindNarration": "<2-3 sentence narrative on the blind guessing — who was closest, what the results reveal about the group>",
   "winnerStory": "<3-4 sentence winner celebration — why this one won, what it represents, how the group reacted>",
   "closingReflection": "<3-4 sentence closing: the atmosphere as the evening wound down, what lingers>",
+  "photoSlideTexts": { "<photoIndex as string, e.g. '1', '2'>": "<1-2 sentence text for that photo — only for captioned photos>", ... },
   "storyStructure": ["opening","whiskies","tasters","discoveries","winner","photos","finale"]
 }
 The storyStructure array defines the order and selection of acts. Available act keys: "opening", "whiskies", "tasters", "discoveries", "blind" (only include if blindMode is true), "winner", "photos", "finale". The cover is always first and must not be in this array. Default order: ["opening","whiskies","tasters","discoveries","winner","photos","finale"]. Reorder or omit acts only when the hostContext contains clear structural or ordering instructions.
@@ -18020,6 +18053,12 @@ If the user data includes a "hostContext" field, treat it as additional creative
                     winner: winner ? { name: winner.name, distillery: winner.distillery, score: winner.avgOverall } : null,
                     blindMode: tasting.blindMode,
                     ...(tasting.storyPrompt ? { hostContext: tasting.storyPrompt } : {}),
+                    ...(existingStoryForAI ? { existingStory: existingStoryForAI } : {}),
+                    ...(eventPhotos.length > 0 ? {
+                      eventPhotos: eventPhotos
+                        .map((p: any, i: number) => ({ index: i + 1, caption: p.caption || null }))
+                        .filter((p: any) => p.caption),
+                    } : {}),
                   }),
                 },
               ],
@@ -18035,6 +18074,9 @@ If the user data includes a "hostContext" field, treat it as additional creative
             discoveryTexts = parsed.discoveryTexts ?? {};
             blindNarration = parsed.blindNarration ?? "";
             closingReflection = parsed.closingReflection ?? "";
+            photoSlideTexts = (parsed.photoSlideTexts && typeof parsed.photoSlideTexts === "object" && !Array.isArray(parsed.photoSlideTexts))
+              ? parsed.photoSlideTexts as Record<string, string>
+              : {};
             const rawAiStructure: unknown = parsed.storyStructure;
             storyStructure = Array.isArray(rawAiStructure)
               ? [...new Set((rawAiStructure as unknown[]).filter(k => typeof k === "string" && validActKeys.has(k as string)) as string[])]
@@ -18055,6 +18097,7 @@ If the user data includes a "hostContext" field, treat it as additional creative
                   blindNarration,
                   closingReflection,
                   storyStructure,
+                  photoSlideTexts,
                 }),
                 storySlidesRatingCount: currentRatingCount,
               };
@@ -18107,6 +18150,7 @@ If the user data includes a "hostContext" field, treat it as additional creative
         winnerStory: winnerNarration,
         closingReflection,
         storyStructure,
+        photoSlideTexts,
         cached: servedFromCache,
       });
     } catch (e: any) {
