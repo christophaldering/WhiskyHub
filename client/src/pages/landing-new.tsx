@@ -8,13 +8,15 @@ import { useAppStore } from "@/lib/store";
 import { getSession } from "@/lib/session";
 import heroImage from "@/assets/images/hero-whisky.png";
 
-const ACCENT = "#c8a97e";
-const ACCENT_DIM = "#a8834a";
+const ACCENT = "#C9A961";
+const ACCENT_DIM = "#8E7640";
 
 const font = {
-  display: "'Playfair Display', Georgia, 'Times New Roman', serif",
-  body: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+  display: "'EB Garamond', Georgia, 'Times New Roman', serif",
+  body: "'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
 };
+
+const FILM_GRAIN_BG = "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E\")";
 
 const container: React.CSSProperties = {
   maxWidth: 1000,
@@ -1173,7 +1175,10 @@ export default function LandingNew() {
         color: v.text,
         minHeight: "100dvh",
         overflowX: "hidden",
+        fontFamily: font.body,
+        position: "relative",
       }}
+      data-testid="landing-root"
     >
       <style>{`
         @media (prefers-reduced-motion: reduce) {
@@ -1183,6 +1188,18 @@ export default function LandingNew() {
           }
         }
       `}</style>
+      <div
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          inset: 0,
+          pointerEvents: "none",
+          zIndex: 999,
+          opacity: 0.04,
+          mixBlendMode: "overlay",
+          backgroundImage: FILM_GRAIN_BG,
+        }}
+      />
       <HeroSection />
       <FeaturesSection />
       <LiveStatsSection />

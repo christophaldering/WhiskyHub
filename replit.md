@@ -1,5 +1,14 @@
 # CaskSense - Whisky Tasting Application
 
+## Brand Visual Direction (Standing Directive — until revoked, 25.04.2026)
+Die LandingPage (`client/src/pages/landing-new.tsx`, Route `/`) MUSS visuell im Stil der Tasting-Story (`client/public/tasting-story/template.html`) gehalten werden — Wiedererkennungseffekt ist erklärtes Brand-Ziel:
+- Display-Schrift: `EB Garamond` (Italic für narrative Akzente).
+- Body-Schrift: `Inter`.
+- Akzentfarbe Amber: `#C9A961` (mit Dim-Variante `#8E7640`).
+- Subtiles Filmkorn-Overlay (SVG-`fractalNoise`, opacity ~0.04, `mix-blend-mode: overlay`) als Atmosphäre-Layer auf der gesamten Seite.
+- Eyebrow-Labels: kleine, weit ausgesperrte Caps in Amber.
+- Bei jeder zukünftigen Änderung an der LandingPage: dieses Set bewahren, nicht einzelne Komponenten in einen anderen Stil zurückwandern lassen. Gilt bis zum ausdrücklichen Widerruf durch den Nutzer.
+
 ## Checkpoint: "Tasting-Story Cinematic Standalone Page" (25.04.2026)
 Task #972: Die Tasting-Story wurde als cinematische Standalone-HTML-Seite neu umgesetzt.
 - **`client/public/tasting-story/template.html`**: Vollständige self-contained HTML-Story-Seite mit EB Garamond + Inter, Ink/Amber-Palette, Film-Grain-Overlay, parallax Cover-Slide, Scroll-Reveal-Animationen und IntersectionObserver-basiertem Act-Nav.
