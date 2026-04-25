@@ -6,7 +6,7 @@ import {
   ChevronLeft, ChevronRight, X, Trophy, Wine, Users,
   Camera, Upload, Trash2, Play, Pause, Download,
   Sparkles, Star, Eye, EyeOff, Loader2, Check, BookOpen, MapPin, Calendar, Mail, Plus, CheckCheck,
-  Maximize, Minimize, RefreshCw,
+  Maximize, Minimize, RefreshCw, Edit2,
 } from "lucide-react";
 import { getParticipantId, pidHeaders } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
@@ -1083,6 +1083,9 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
   const [direction, setDirection] = useState(1);
   const [showPhotoPanel, setShowPhotoPanel] = useState(false);
   const [showStoryRef, setShowStoryRef] = useState(false);
+  const [showPromptPanel, setShowPromptPanel] = useState(false);
+  const [promptText, setPromptText] = useState("");
+  const [promptSaving, setPromptSaving] = useState(false);
   const [storyToggling, setStoryToggling] = useState(false);
   const [isPdfExporting, setIsPdfExporting] = useState(false);
   const [pdfProgress, setPdfProgress] = useState<{ current: number; total: number; label: string } | null>(null);
@@ -1184,6 +1187,54 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
     await toggleStoryEnabled(tastingId, !tasting.storyEnabled).catch(console.error);
     await qc.invalidateQueries({ queryKey: ["tasting-story", tastingId] });
     setStoryToggling(false);
+  };
+
+  const saveStoryPrompt = async (text: string): Promise<boolean> => {
+    const hostPid = currentParticipant?.id;
+    if (!hostPid) return false;
+    const res = await fetch(`/api/tastings/${tastingId}/story-prompt`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", "x-participant-id": hostPid },
+      body: JSON.stringify({ storyPrompt: text }),
+    });
+    return res.ok;
+  };
+
+  const handleSavePrompt = async () => {
+    setPromptSaving(true);
+    try {
+      const ok = await saveStoryPrompt(promptText);
+      if (ok) {
+        await qc.invalidateQueries({ queryKey: ["tasting-story", tastingId] });
+        setShowPromptPanel(false);
+        toast({ title: "Anweisungen gespeichert" });
+      } else {
+        toast({ title: "Fehler beim Speichern", description: "Bitte erneut versuchen.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Verbindungsfehler", variant: "destructive" });
+    }
+    setPromptSaving(false);
+  };
+
+  const handleSaveAndRegenerate = async () => {
+    setPromptSaving(true);
+    try {
+      const ok = await saveStoryPrompt(promptText);
+      if (!ok) {
+        toast({ title: "Fehler beim Speichern", description: "Bitte erneut versuchen.", variant: "destructive" });
+        setPromptSaving(false);
+        return;
+      }
+      qc.removeQueries({ queryKey: ["tasting-story", tastingId] });
+      setShowPromptPanel(false);
+    } catch {
+      toast({ title: "Verbindungsfehler", variant: "destructive" });
+      setPromptSaving(false);
+      return;
+    }
+    setPromptSaving(false);
+    await handleRegenerateSlides();
   };
 
   const handleRegenerateSlides = async () => {
@@ -1341,17 +1392,33 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
             <button
               className="labs-btn-ghost"
               style={{ padding: "6px 12px", fontSize: 13 }}
-              onClick={() => { setShowPhotoPanel(p => !p); setShowStoryRef(false); }}
+              onClick={() => { setShowPhotoPanel(p => !p); setShowStoryRef(false); setShowPromptPanel(false); }}
               data-testid="story-toggle-photo-panel"
             >
               <Camera style={{ width: 14, height: 14 }} />
+            </button>
+          )}
+          {isHost && (
+            <button
+              className="labs-btn-ghost"
+              style={{ padding: "6px 12px", fontSize: 13 }}
+              onClick={() => {
+                setPromptText(tasting?.storyPrompt ?? "");
+                setShowPromptPanel(p => !p);
+                setShowPhotoPanel(false);
+                setShowStoryRef(false);
+              }}
+              data-testid="story-toggle-prompt-panel"
+              title="KI-Anweisungen bearbeiten"
+            >
+              <Edit2 style={{ width: 14, height: 14 }} />
             </button>
           )}
           {isHost && storyData && (storyData.openingNarration || storyData.closingReflection || storyData.winnerNarration || storyData.blindNarration || (storyData.aiComments && Object.keys(storyData.aiComments).length > 0)) && (
             <button
               className="labs-btn-ghost"
               style={{ padding: "6px 12px", fontSize: 13 }}
-              onClick={() => { setShowStoryRef(p => !p); setShowPhotoPanel(false); }}
+              onClick={() => { setShowStoryRef(p => !p); setShowPhotoPanel(false); setShowPromptPanel(false); }}
               data-testid="story-toggle-story-ref"
               title="Aktueller Story-Text"
             >
@@ -1450,6 +1517,88 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
               onRefresh={refetchPhotos}
               canUpload={isHost}
             />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Prompt panel overlay */}
+      <AnimatePresence>
+        {showPromptPanel && isHost && (
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            style={{
+              position: "absolute", top: 52, left: 16, right: 16, zIndex: 30,
+              maxWidth: 540, margin: "0 auto",
+            }}
+          >
+            <div style={{ padding: "16px 20px", borderRadius: 14, background: "var(--labs-surface)", border: "1px solid var(--labs-border)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Edit2 style={{ width: 15, height: 15, color: "var(--labs-accent)" }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>KI-Anweisungen</span>
+                </div>
+                <button
+                  className="labs-btn-ghost"
+                  style={{ padding: 4 }}
+                  onClick={() => setShowPromptPanel(false)}
+                  data-testid="story-prompt-panel-close"
+                >
+                  <X style={{ width: 14, height: 14 }} />
+                </button>
+              </div>
+              <textarea
+                value={promptText}
+                onChange={(e) => setPromptText(e.target.value)}
+                placeholder="Gib der KI zusätzliche Hinweise für die Story…"
+                rows={5}
+                style={{
+                  width: "100%", resize: "vertical",
+                  background: "var(--labs-bg)", color: "var(--labs-text)",
+                  border: "1px solid var(--labs-border)", borderRadius: 10,
+                  padding: "10px 12px", fontSize: 13, lineHeight: 1.6,
+                  fontFamily: "inherit", outline: "none",
+                  boxSizing: "border-box",
+                }}
+                data-testid="story-prompt-textarea"
+              />
+              <div style={{ marginTop: 10, marginBottom: 14, padding: "10px 12px", borderRadius: 8, background: "var(--labs-bg)" }}>
+                <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 600, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Mögliche Anweisungen</p>
+                <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, color: "var(--labs-text-muted)", lineHeight: 1.8 }}>
+                  <li>Teilnehmer-Hintergründe: Wer ist Whisky-Neuling, wer Experte?</li>
+                  <li>Gewünschte Struktur: z.B. "Beginne mit dem Sieger" oder "Lasse Verkoster-Portraits weg"</li>
+                  <li>Fotos-Hinweise: z.B. "Das erste Foto zeigt die Gruppe beim Einschenken"</li>
+                  <li>Sprache & Ton: z.B. "Schreibe auf Englisch" oder "Humorvoller Stil"</li>
+                </ul>
+              </div>
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                <button
+                  className="labs-btn-ghost"
+                  style={{ padding: "7px 14px", fontSize: 12, opacity: promptSaving ? 0.6 : 1 }}
+                  onClick={handleSavePrompt}
+                  disabled={promptSaving}
+                  data-testid="story-prompt-save"
+                >
+                  {promptSaving ? <Loader2 style={{ width: 12, height: 12, animation: "spin 1s linear infinite" }} /> : <Check style={{ width: 12, height: 12 }} />}
+                  <span style={{ marginLeft: 5 }}>Speichern</span>
+                </button>
+                <button
+                  className="labs-btn-ghost"
+                  style={{
+                    padding: "7px 14px", fontSize: 12,
+                    opacity: (promptSaving || isRegenerating || !currentParticipant?.id) ? 0.6 : 1,
+                    color: "var(--labs-accent)", border: "1px solid var(--labs-accent-muted)",
+                  }}
+                  onClick={handleSaveAndRegenerate}
+                  disabled={promptSaving || isRegenerating || !currentParticipant?.id}
+                  data-testid="story-prompt-save-regenerate"
+                >
+                  {(promptSaving || isRegenerating) ? <Loader2 style={{ width: 12, height: 12, animation: "spin 1s linear infinite" }} /> : <RefreshCw style={{ width: 12, height: 12 }} />}
+                  <span style={{ marginLeft: 5 }}>Speichern & Neu generieren</span>
+                </button>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
