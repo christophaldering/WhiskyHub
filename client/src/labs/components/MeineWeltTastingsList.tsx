@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -32,6 +32,8 @@ function formatTastingDate(dateStr: string | null | undefined): string {
   }
 }
 
+type ArchiveRoleFilter = "all" | "host" | "guest";
+
 interface Props {
   filter: TastingsHubFilter;
   searchQuery?: string;
@@ -42,6 +44,9 @@ export default function MeineWeltTastingsList({ filter, searchQuery = "" }: Prop
   const { currentParticipant } = useAppStore();
   const participantId = currentParticipant?.id;
   const [, navigate] = useLocation();
+
+  const [roleFilter, setRoleFilter] = useState<ArchiveRoleFilter>("all");
+  const [yearFilter, setYearFilter] = useState<string | null>(null);
 
   const { data: tastings, isLoading: isTastingsLoading } = useQuery({
     queryKey: ["tastings", participantId],
@@ -87,7 +92,7 @@ export default function MeineWeltTastingsList({ filter, searchQuery = "" }: Prop
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tastings, filter, searchQuery]);
 
-  const completedItems = useMemo(() => {
+  const baseCompletedItems = useMemo(() => {
     if (filter !== "completed") return [];
     const list = historyData?.tastings ?? [];
     return [...list]
@@ -104,6 +109,32 @@ export default function MeineWeltTastingsList({ filter, searchQuery = "" }: Prop
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [historyData, filter, searchQuery]);
 
+  const availableYears = useMemo(() => {
+    const years = new Set<string>();
+    for (const t of baseCompletedItems) {
+      if (t.date) {
+        try {
+          const y = new Date(t.date).getFullYear();
+          if (!isNaN(y)) years.add(String(y));
+        } catch {}
+      }
+    }
+    return [...years].sort((a, b) => Number(b) - Number(a));
+  }, [baseCompletedItems]);
+
+  const completedItems = useMemo(() => {
+    let items = baseCompletedItems;
+    if (roleFilter === "host") items = items.filter((t: any) => !!t.isHost);
+    if (roleFilter === "guest") items = items.filter((t: any) => !t.isHost);
+    if (yearFilter) {
+      items = items.filter((t: any) => {
+        if (!t.date) return false;
+        try { return String(new Date(t.date).getFullYear()) === yearFilter; } catch { return false; }
+      });
+    }
+    return items;
+  }, [baseCompletedItems, roleFilter, yearFilter]);
+
   const isLoading = filter === "completed" ? isHistoryLoading : isTastingsLoading;
   const items = filter === "completed" ? completedItems : activeItems;
 
@@ -117,153 +148,234 @@ export default function MeineWeltTastingsList({ filter, searchQuery = "" }: Prop
     );
   }
 
-  if (items.length === 0) {
-    const hasSearch = searchQuery.trim().length > 0;
-    const emptyKey = hasSearch
-      ? "tastings.emptySearchTitle"
-      : filter === "completed"
-        ? "tastings.archiveEmptyTitle"
-        : "tastings.emptyActiveTitle";
-    const emptyFallback = hasSearch
-      ? "Keine Tastings gefunden"
-      : filter === "completed"
-        ? "Noch keine abgeschlossenen Tastings"
-        : "Keine aktiven Tastings";
-    return (
-      <div
-        className="labs-empty labs-fade-in"
-        data-testid={`meine-welt-tastings-list-${filter}-empty`}
-      >
-        <h2 className="labs-empty-title">{t(emptyKey, emptyFallback)}</h2>
-      </div>
-    );
-  }
+  const showFilters = filter === "completed" && (baseCompletedItems.length > 0 || roleFilter !== "all" || yearFilter !== null);
 
   return (
-    <div
-      className="labs-grouped-list labs-fade-in"
-      data-testid={`meine-welt-tastings-list-${filter}`}
-    >
-      {items.map((tasting: any) => {
-        const statusCfg = getStatusConfig(tasting.status);
-        const isHost =
-          filter === "completed" ? !!tasting.isHost : tasting.hostId === participantId;
-        const isLive = tasting.status === "open";
-        const formattedDate = formatTastingDate(tasting.date);
-        const showStoryBtn =
-          filter === "completed" &&
-          (tasting.status === "archived" || tasting.status === "completed") &&
-          (isHost || tasting.storyEnabled);
-
-        const href =
-          filter === "completed"
-            ? `/labs/history/${tasting.id}?from=my-tastings`
-            : `/labs/tastings/${tasting.id}`;
-
-        return (
-          <Link key={tasting.id} href={href}>
-            <div
-              className="labs-list-row"
-              data-testid={`meine-welt-tasting-card-${tasting.id}`}
-            >
-              <div
-                className={`labs-tasting-card-icon ${
-                  isLive ? "labs-tasting-card-icon--live" : "labs-tasting-card-icon--default"
-                }`}
+    <>
+      {showFilters && (
+        <div
+          style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}
+          data-testid="meine-welt-archive-filters"
+        >
+          {(["all", "host", "guest"] as ArchiveRoleFilter[]).map((r) => {
+            const label =
+              r === "all"
+                ? t("tastings.archiveFilterAll", "Alle")
+                : r === "host"
+                  ? t("tastings.archiveFilterHost", "Host")
+                  : t("tastings.archiveFilterGuest", "Teilnehmer");
+            const active = roleFilter === r;
+            return (
+              <button
+                key={r}
+                onClick={() => setRoleFilter(r)}
+                data-testid={`meine-welt-filter-role-${r}`}
+                style={{
+                  padding: "4px 12px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  borderRadius: 20,
+                  border: `1.5px solid ${active ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                  background: active ? "var(--labs-accent-muted)" : "transparent",
+                  color: active ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
               >
-                <Wine
-                  className={`labs-tasting-card-icon-sm ${
-                    isLive ? "labs-icon-success" : "labs-icon-accent"
-                  }`}
-                />
-              </div>
-              <div className="labs-tasting-card-body">
-                <div className="labs-tasting-card-title-row">
-                  <span
-                    className="labs-tasting-card-title"
-                    data-testid={`meine-welt-tasting-title-${tasting.id}`}
-                  >
-                    {String(tasting.title ?? "")}
-                  </span>
-                  <div className="labs-tasting-card-badges">
-                    <span
-                      className={`labs-badge labs-badge--role ${isHost ? "labs-badge--host" : "labs-badge--guest"}`}
-                      data-testid={`meine-welt-tasting-role-${tasting.id}`}
-                    >
-                      {isHost ? (
-                        <>
-                          <Crown style={{ width: 9, height: 9 }} />
-                          {t("tastings.roleHost", "HOST")}
-                        </>
-                      ) : (
-                        <>
-                          <Users style={{ width: 9, height: 9 }} />
-                          {t("tastings.roleGuest", "GAST")}
-                        </>
-                      )}
-                    </span>
-                    <span
-                      className={statusCfg.cssClass}
-                      data-testid={`meine-welt-tasting-status-${tasting.id}`}
-                    >
-                      {isLive && <span className="labs-status-live-dot" />}
-                      {t(statusCfg.labelKey, statusCfg.fallbackLabel)}
-                    </span>
-                  </div>
-                </div>
-                {!isHost && tasting.hostName && (
-                  <div className="labs-tasting-card-host">
-                    <Crown className="labs-tasting-card-host-icon" />
-                    <span className="labs-tasting-card-host-name">
-                      {stripGuestSuffix(tasting.hostName)}
-                    </span>
-                  </div>
-                )}
-                <div className="labs-tasting-card-meta">
-                  {formattedDate && (
-                    <span className="labs-tasting-card-meta-item">
-                      <Calendar className="labs-tasting-card-meta-icon" />
-                      {formattedDate}
-                    </span>
-                  )}
-                  {tasting.location && (
-                    <span className="labs-tasting-card-meta-item labs-tasting-card-meta-item--location">
-                      <MapPin className="labs-tasting-card-meta-icon" />
-                      <span className="labs-tasting-card-host-name">
-                        {String(tasting.location ?? "")}
-                      </span>
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="labs-tasting-card-actions" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                {showStoryBtn && (
+                {label}
+              </button>
+            );
+          })}
+          {availableYears.length > 1 && (
+            <>
+              <div style={{ width: 1, background: "var(--labs-border)", margin: "0 2px" }} />
+              <button
+                onClick={() => setYearFilter(null)}
+                data-testid="meine-welt-filter-year-all"
+                style={{
+                  padding: "4px 12px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  borderRadius: 20,
+                  border: `1.5px solid ${yearFilter === null ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                  background: yearFilter === null ? "var(--labs-accent-muted)" : "transparent",
+                  color: yearFilter === null ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+              >
+                {t("tastings.archiveFilterAllYears", "Alle Jahre")}
+              </button>
+              {availableYears.map((y) => {
+                const active = yearFilter === y;
+                return (
                   <button
-                    type="button"
-                    data-testid={`meine-welt-story-btn-${tasting.id}`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      navigate(`/labs/results/${tasting.id}/story`);
-                    }}
+                    key={y}
+                    onClick={() => setYearFilter(active ? null : y)}
+                    data-testid={`meine-welt-filter-year-${y}`}
                     style={{
-                      display: "flex", alignItems: "center", gap: 4,
-                      padding: "4px 8px", fontSize: 11, fontWeight: 600,
-                      borderRadius: 8, border: "1px solid var(--labs-accent)",
-                      color: "var(--labs-accent)", background: "transparent",
-                      cursor: "pointer", whiteSpace: "nowrap",
+                      padding: "4px 12px",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      borderRadius: 20,
+                      border: `1.5px solid ${active ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                      background: active ? "var(--labs-accent-muted)" : "transparent",
+                      color: active ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                      cursor: "pointer",
+                      transition: "all 0.15s",
                     }}
                   >
-                    <BookOpen style={{ width: 11, height: 11 }} />
-                    Story
+                    {y}
                   </button>
-                )}
-                <ChevronRight className="labs-tasting-chevron" />
-              </div>
-            </div>
-          </Link>
-        );
-      })}
-    </div>
+                );
+              })}
+            </>
+          )}
+        </div>
+      )}
+
+      {items.length === 0 ? (
+        <div
+          className="labs-empty labs-fade-in"
+          data-testid={`meine-welt-tastings-list-${filter}-empty`}
+        >
+          <h2 className="labs-empty-title">
+            {roleFilter !== "all" || yearFilter
+              ? t("tastings.emptySearchTitle", "Keine Tastings gefunden")
+              : searchQuery.trim()
+                ? t("tastings.emptySearchTitle", "Keine Tastings gefunden")
+                : filter === "completed"
+                  ? t("tastings.archiveEmptyTitle", "Noch keine abgeschlossenen Tastings")
+                  : t("tastings.emptyActiveTitle", "Keine aktiven Tastings")}
+          </h2>
+        </div>
+      ) : (
+        <div
+          className="labs-grouped-list labs-fade-in"
+          data-testid={`meine-welt-tastings-list-${filter}`}
+        >
+          {items.map((tasting: any) => {
+            const statusCfg = getStatusConfig(tasting.status);
+            const isHost =
+              filter === "completed" ? !!tasting.isHost : tasting.hostId === participantId;
+            const isLive = tasting.status === "open";
+            const formattedDate = formatTastingDate(tasting.date);
+            const showStoryBtn =
+              filter === "completed" &&
+              (tasting.status === "archived" || tasting.status === "completed") &&
+              (isHost || tasting.storyEnabled);
+
+            const href =
+              filter === "completed"
+                ? `/labs/tastings/${tasting.id}?from=my-tastings`
+                : `/labs/tastings/${tasting.id}`;
+
+            return (
+              <Link key={tasting.id} href={href}>
+                <div
+                  className="labs-list-row"
+                  data-testid={`meine-welt-tasting-card-${tasting.id}`}
+                >
+                  <div
+                    className={`labs-tasting-card-icon ${
+                      isLive ? "labs-tasting-card-icon--live" : "labs-tasting-card-icon--default"
+                    }`}
+                  >
+                    <Wine
+                      className={`labs-tasting-card-icon-sm ${
+                        isLive ? "labs-icon-success" : "labs-icon-accent"
+                      }`}
+                    />
+                  </div>
+                  <div className="labs-tasting-card-body">
+                    <div className="labs-tasting-card-title-row">
+                      <span
+                        className="labs-tasting-card-title"
+                        data-testid={`meine-welt-tasting-title-${tasting.id}`}
+                      >
+                        {String(tasting.title ?? "")}
+                      </span>
+                      <div className="labs-tasting-card-badges">
+                        <span
+                          className={`labs-badge labs-badge--role ${isHost ? "labs-badge--host" : "labs-badge--guest"}`}
+                          data-testid={`meine-welt-tasting-role-${tasting.id}`}
+                        >
+                          {isHost ? (
+                            <>
+                              <Crown style={{ width: 9, height: 9 }} />
+                              {t("tastings.roleHost", "HOST")}
+                            </>
+                          ) : (
+                            <>
+                              <Users style={{ width: 9, height: 9 }} />
+                              {t("tastings.roleGuest", "GAST")}
+                            </>
+                          )}
+                        </span>
+                        <span
+                          className={statusCfg.cssClass}
+                          data-testid={`meine-welt-tasting-status-${tasting.id}`}
+                        >
+                          {isLive && <span className="labs-status-live-dot" />}
+                          {t(statusCfg.labelKey, statusCfg.fallbackLabel)}
+                        </span>
+                      </div>
+                    </div>
+                    {!isHost && tasting.hostName && (
+                      <div className="labs-tasting-card-host">
+                        <Crown className="labs-tasting-card-host-icon" />
+                        <span className="labs-tasting-card-host-name">
+                          {stripGuestSuffix(tasting.hostName)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="labs-tasting-card-meta">
+                      {formattedDate && (
+                        <span className="labs-tasting-card-meta-item">
+                          <Calendar className="labs-tasting-card-meta-icon" />
+                          {formattedDate}
+                        </span>
+                      )}
+                      {tasting.location && (
+                        <span className="labs-tasting-card-meta-item labs-tasting-card-meta-item--location">
+                          <MapPin className="labs-tasting-card-meta-icon" />
+                          <span className="labs-tasting-card-host-name">
+                            {String(tasting.location ?? "")}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="labs-tasting-card-actions" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    {showStoryBtn && (
+                      <button
+                        type="button"
+                        data-testid={`meine-welt-story-btn-${tasting.id}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          navigate(`/labs/results/${tasting.id}/story`);
+                        }}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 4,
+                          padding: "4px 8px", fontSize: 11, fontWeight: 600,
+                          borderRadius: 8, border: "1px solid var(--labs-accent)",
+                          color: "var(--labs-accent)", background: "transparent",
+                          cursor: "pointer", whiteSpace: "nowrap",
+                        }}
+                      >
+                        <BookOpen style={{ width: 11, height: 11 }} />
+                        Story
+                      </button>
+                    )}
+                    <ChevronRight className="labs-tasting-chevron" />
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </>
   );
 }

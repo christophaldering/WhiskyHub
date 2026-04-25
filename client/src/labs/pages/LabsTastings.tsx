@@ -85,6 +85,8 @@ export default function LabsTastings() {
 
   const [filterTab, setFilterTab] = useState<TastingsHubFilter>("active");
   const [searchQuery, setSearchQuery] = useState("");
+  const [archiveRoleFilter, setArchiveRoleFilter] = useState<"all" | "host" | "guest">("all");
+  const [archiveYearFilter, setArchiveYearFilter] = useState<string | null>(null);
   const [acceptingInvite, setAcceptingInvite] = useState<string | null>(null);
   const [copiedShareId, setCopiedShareId] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -167,7 +169,7 @@ export default function LabsTastings() {
     staleTime: 60_000,
   });
 
-  const completedItems = useMemo(() => {
+  const baseCompletedItems = useMemo(() => {
     const list = historyData?.tastings ?? [];
     let items = list.filter(
       (t: any) =>
@@ -187,6 +189,32 @@ export default function LabsTastings() {
     );
     return items;
   }, [historyData, searchQuery]);
+
+  const archiveAvailableYears = useMemo(() => {
+    const years = new Set<string>();
+    for (const item of baseCompletedItems) {
+      if (item.date) {
+        try {
+          const y = new Date(item.date).getFullYear();
+          if (!isNaN(y)) years.add(String(y));
+        } catch {}
+      }
+    }
+    return [...years].sort((a, b) => Number(b) - Number(a));
+  }, [baseCompletedItems]);
+
+  const completedItems = useMemo(() => {
+    let items = baseCompletedItems;
+    if (archiveRoleFilter === "host") items = items.filter((t: any) => !!t.isHost);
+    if (archiveRoleFilter === "guest") items = items.filter((t: any) => !t.isHost);
+    if (archiveYearFilter) {
+      items = items.filter((t: any) => {
+        if (!t.date) return false;
+        try { return String(new Date(t.date).getFullYear()) === archiveYearFilter; } catch { return false; }
+      });
+    }
+    return items;
+  }, [baseCompletedItems, archiveRoleFilter, archiveYearFilter]);
 
   if (!currentParticipant) {
     if (activeTab) {
@@ -452,6 +480,8 @@ export default function LabsTastings() {
                 if (next === filterTab) return;
                 setFilterTab(next);
                 setSearchQuery("");
+                setArchiveRoleFilter("all");
+                setArchiveYearFilter(null);
               }}
             />
           </div>
@@ -473,6 +503,78 @@ export default function LabsTastings() {
 
           {filterTab === "completed" ? (
             <>
+              {!isHistoryLoading && baseCompletedItems.length > 0 && (
+                <div
+                  style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}
+                  data-testid="labs-tastings-archive-filters"
+                >
+                  {(["all", "host", "guest"] as const).map((r) => {
+                    const label =
+                      r === "all"
+                        ? t("tastings.archiveFilterAll", "Alle")
+                        : r === "host"
+                          ? t("tastings.archiveFilterHost", "Host")
+                          : t("tastings.archiveFilterGuest", "Teilnehmer");
+                    const active = archiveRoleFilter === r;
+                    return (
+                      <button
+                        key={r}
+                        onClick={() => setArchiveRoleFilter(r)}
+                        data-testid={`labs-tastings-filter-role-${r}`}
+                        style={{
+                          padding: "4px 12px", fontSize: 12, fontWeight: 600,
+                          borderRadius: 20,
+                          border: `1.5px solid ${active ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                          background: active ? "var(--labs-accent-muted)" : "transparent",
+                          color: active ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                          cursor: "pointer", transition: "all 0.15s",
+                        }}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                  {archiveAvailableYears.length > 1 && (
+                    <>
+                      <div style={{ width: 1, background: "var(--labs-border)", margin: "0 2px" }} />
+                      <button
+                        onClick={() => setArchiveYearFilter(null)}
+                        data-testid="labs-tastings-filter-year-all"
+                        style={{
+                          padding: "4px 12px", fontSize: 12, fontWeight: 600,
+                          borderRadius: 20,
+                          border: `1.5px solid ${archiveYearFilter === null ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                          background: archiveYearFilter === null ? "var(--labs-accent-muted)" : "transparent",
+                          color: archiveYearFilter === null ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                          cursor: "pointer", transition: "all 0.15s",
+                        }}
+                      >
+                        {t("tastings.archiveFilterAllYears", "Alle Jahre")}
+                      </button>
+                      {archiveAvailableYears.map((y) => {
+                        const active = archiveYearFilter === y;
+                        return (
+                          <button
+                            key={y}
+                            onClick={() => setArchiveYearFilter(active ? null : y)}
+                            data-testid={`labs-tastings-filter-year-${y}`}
+                            style={{
+                              padding: "4px 12px", fontSize: 12, fontWeight: 600,
+                              borderRadius: 20,
+                              border: `1.5px solid ${active ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                              background: active ? "var(--labs-accent-muted)" : "transparent",
+                              color: active ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                              cursor: "pointer", transition: "all 0.15s",
+                            }}
+                          >
+                            {y}
+                          </button>
+                        );
+                      })}
+                    </>
+                  )}
+                </div>
+              )}
               {isHistoryLoading ? (
                 <div className="labs-tastings-skeleton" style={{ marginTop: 12 }}>
                   <div className="labs-skeleton labs-skeleton--h20 labs-skeleton--w60" />
@@ -481,7 +583,7 @@ export default function LabsTastings() {
               ) : completedItems.length === 0 ? (
                 <div className="labs-empty labs-fade-in" data-testid="labs-tastings-archive-empty" style={{ marginTop: 12 }}>
                   <p className="labs-empty-sub">
-                    {searchQuery
+                    {searchQuery || archiveRoleFilter !== "all" || archiveYearFilter
                       ? t("tastings.emptySearchTitle", "Keine Tastings gefunden")
                       : t("tastings.archiveEmptyTitle", "Dein Archiv ist noch leer")}
                   </p>
@@ -494,7 +596,7 @@ export default function LabsTastings() {
                     const formattedDate = formatTastingDate(tasting.date);
 
                     return (
-                      <Link key={tasting.id} href={`/labs/history/${tasting.id}?from=my-tastings`}>
+                      <Link key={tasting.id} href={`/labs/tastings/${tasting.id}?from=my-tastings`}>
                         <div className="labs-list-row" data-testid={`labs-archive-card-${tasting.id}`}>
                           <div className="labs-tasting-card-icon labs-tasting-card-icon--default">
                             <Archive className="labs-tasting-card-icon-sm" style={{ color: "var(--labs-text-muted)" }} />
