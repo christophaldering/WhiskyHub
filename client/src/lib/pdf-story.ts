@@ -81,10 +81,14 @@ function buildPhotoLayout(
     const ar = cur.p.width / cur.p.height;
     if (ar >= 1) {
       const rawH = slotW / ar;
-      const h = Math.max(minRowH, Math.min(maxRowH, rawH));
+      const cappedH = Math.min(maxRowH, rawH);
+      const wFromCappedH = cappedH * ar;
+      const widthToUse = Math.min(slotW, wFromCappedH);
+      const heightToUse = widthToUse / ar;
+      const offset = (slotW - widthToUse) / 2;
       slots.push({
-        items: [{ idx: cur.idx, x: 0, w: slotW, h }],
-        h,
+        items: [{ idx: cur.idx, x: offset, w: widthToUse, h: heightToUse }],
+        h: heightToUse,
       });
       i++;
     } else {
@@ -272,7 +276,7 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false, onPro
   drawBg(); drawHeader();
   let y = 18;
 
-  const firstPhoto = eventPhotoData[0]?.dataUrl ?? null;
+  const firstPhoto = validPhotos.length > 0 ? validPhotos[0].data.dataUrl : null;
   if (firstPhoto) {
     try {
       doc.addImage(firstPhoto, "JPEG", 0, 0, pageW, 110, undefined, "FAST");
@@ -614,6 +618,20 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false, onPro
     doc.setFontSize(7.5); doc.setTextColor(...accent); doc.setFont("helvetica", "bold");
     doc.text("EVENT FOTOS", pageW / 2, y, { align: "center" }); y += 10;
 
+    const fitCaption = (text: string, maxW: number): string => {
+      if (doc.getTextWidth(text) <= maxW) return text;
+      const ellipsis = "…";
+      let lo = 0;
+      let hi = text.length;
+      while (lo < hi) {
+        const mid = Math.ceil((lo + hi) / 2);
+        const candidate = text.slice(0, mid) + ellipsis;
+        if (doc.getTextWidth(candidate) <= maxW) lo = mid;
+        else hi = mid - 1;
+      }
+      return lo > 0 ? text.slice(0, lo) + ellipsis : ellipsis;
+    };
+
     for (const row of photoLayoutRows) {
       const rowBlockH = row.h + photoCaptionGap + photoCaptionH;
       if (y + rowBlockH > pageH - 22) {
@@ -635,10 +653,7 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false, onPro
           const caption = photo.entry?.caption;
           if (caption) {
             doc.setFontSize(6.5); doc.setTextColor(...muted); doc.setFont("helvetica", "italic");
-            const captionMaxChars = Math.max(12, Math.floor(item.w / 1.6));
-            const captionText = caption.length > captionMaxChars
-              ? caption.slice(0, captionMaxChars - 1) + "…"
-              : caption;
+            const captionText = fitCaption(String(caption), item.w);
             doc.text(captionText, ix, iy + item.h + photoCaptionGap);
           }
         } catch { /* skip broken image */ }
