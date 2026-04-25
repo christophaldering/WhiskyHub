@@ -1326,6 +1326,39 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
           </motion.div>
         </AnimatePresence>
 
+        {/* Regeneration loading overlay */}
+        <AnimatePresence>
+          {isRegenerating && (
+            <motion.div
+              key="regen-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              style={{
+                position: "absolute", inset: 0, zIndex: 20,
+                background: "rgba(0,0,0,0.35)",
+                backdropFilter: "blur(2px)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                pointerEvents: "none",
+              }}
+              data-testid="story-regen-overlay"
+            >
+              <div style={{
+                display: "flex", alignItems: "center", gap: 10,
+                background: "rgba(20,12,4,0.82)", border: `1px solid ${STORY.amber}44`,
+                borderRadius: 40, padding: "10px 20px",
+                boxShadow: `0 4px 24px rgba(0,0,0,0.4), 0 0 0 1px ${STORY.amber}22`,
+              }}>
+                <Loader2 style={{ width: 16, height: 16, color: STORY.amber, animation: "spin 1s linear infinite", flexShrink: 0 }} />
+                <span style={{ fontSize: 13, fontWeight: 600, color: STORY.amber, letterSpacing: "0.01em" }}>
+                  Wird aktualisiert…
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Click zones (left/right) */}
         <div
           style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: "30%", zIndex: 10, cursor: "pointer" }}
