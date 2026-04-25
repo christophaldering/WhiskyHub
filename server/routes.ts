@@ -18036,22 +18036,47 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
               | { type: "text"; text: string }
               | { type: "image_url"; image_url: { url: string; detail: "low" } };
 
+            const resolveAbsoluteUrl = (photoUrl: string): string | null => {
+              if (!photoUrl) return null;
+              if (photoUrl.startsWith("https://") || photoUrl.startsWith("http://")) {
+                return photoUrl;
+              }
+              const replitDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPL_SLUG;
+              if (replitDomain && !replitDomain.includes(".")) {
+                return null;
+              }
+              if (replitDomain) {
+                const base = replitDomain.startsWith("http") ? replitDomain : `https://${replitDomain}`;
+                return `${base}${photoUrl.startsWith("/") ? photoUrl : `/${photoUrl}`}`;
+              }
+              const host = req.headers.host;
+              if (host) {
+                const protocol = req.headers["x-forwarded-proto"] || "https";
+                return `${protocol}://${host}${photoUrl.startsWith("/") ? photoUrl : `/${photoUrl}`}`;
+              }
+              return null;
+            };
+
             const userContent: UserContentPart[] = [{ type: "text", text: textPayload }];
             for (const photo of photosForVision) {
               if (photo.photoUrl) {
-                userContent.push({
-                  type: "image_url",
-                  image_url: { url: photo.photoUrl, detail: "low" },
-                });
+                const absoluteUrl = resolveAbsoluteUrl(photo.photoUrl);
+                if (absoluteUrl) {
+                  userContent.push({
+                    type: "image_url",
+                    image_url: { url: absoluteUrl, detail: "low" },
+                  });
+                }
               }
             }
 
-            const aiResp = await aiClient.chat.completions.create({
-              model: "gpt-4o",
-              messages: [
-                {
-                  role: "system",
-                  content: `You are a literary whisky journalist writing slide copy for a cinematic tasting presentation. Write with warmth and craft — like a skilled short story author covering a cultural event. Sentences should be vivid, specific, and evocative, never generic.
+            const makeStoryRequest = (content: UserContentPart[]) =>
+              aiClient.chat.completions.create({
+                model: "gpt-4o",
+                messages: [
+                  {
+                    role: "system",
+                    content: `You are a literary whisky journalist writing slide copy for a cinematic tasting presentation. Write with warmth and craft — like a skilled short story author covering a cultural event. Sentences should be vivid, specific, and evocative, never generic.
 
 CRITICAL SPOILER GUARD: The rank-1 winner must NEVER be named, described with superlatives, or strongly implied in openingNarration, whiskyPortraits, tasterSketches, or discoveryTexts. discoveryTexts only covers rank 2 and lower — do not write a discoveryTexts entry for the rank-1 whisky at all. The winner appears for the first time only in winnerStory.
 
@@ -18082,15 +18107,24 @@ Language: German if the tasting title or participant names appear German, otherw
 
 If the user data includes a "hostContext" field, treat it as additional creative direction from the host — honour the mood, anecdotes, and emphasis they describe, weaving them naturally into the narration. Additionally, if the hostContext contains structural or ordering directions (e.g. "Beginne mit dem Sieger", "Lasse Verkoster-Portraits weg", "Fotos zwischen Whiskys und Entdeckungen"), honour them by adjusting the storyStructure array accordingly. If no structural direction is given, use the default order.`,
                 },
-                {
-                  role: "user",
-                  content: userContent,
-                },
-              ],
-              max_tokens: 3500,
-              temperature: 0.82,
-              response_format: { type: "json_object" },
-            });
+                  {
+                    role: "user",
+                    content,
+                  },
+                ],
+                max_tokens: 3500,
+                temperature: 0.82,
+                response_format: { type: "json_object" },
+              });
+
+            let aiResp;
+            try {
+              aiResp = await makeStoryRequest(userContent);
+            } catch (visionErr) {
+              console.warn("[story] Vision request failed, retrying without images:", visionErr instanceof Error ? visionErr.message : visionErr);
+              const textOnlyContent: UserContentPart[] = userContent.filter(p => p.type === "text");
+              aiResp = await makeStoryRequest(textOnlyContent);
+            }
             const parsed = JSON.parse(aiResp.choices[0]?.message?.content ?? "{}");
             aiComments = parsed.whiskyPortraits ?? {};
             participantFunFacts = parsed.tasterSketches ?? {};
