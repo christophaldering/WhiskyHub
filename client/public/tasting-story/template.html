@@ -161,12 +161,69 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
 @keyframes pulse{0%,100%{opacity:.4;}50%{opacity:.9;}}
 @keyframes spin{to{transform:rotate(360deg);}}
 
+/* PDF-Save button */
+.topnav__pdf{font-family:var(--sans);font-size:.75rem;color:var(--amber);text-decoration:none;letter-spacing:.15em;text-transform:uppercase;border:1px solid rgba(201,169,97,.35);border-radius:3px;padding:.35rem .85rem;cursor:pointer;background:rgba(201,169,97,.08);transition:all .3s;margin-left:1rem;}
+.topnav__pdf:hover{background:rgba(201,169,97,.2);border-color:var(--amber);}
+
 /* Print */
 @media print{
-  .topnav,.act-nav,.progress,.hero__scroll,.host-regen{display:none!important;}
-  body{background:#fff;color:#1a1007;}
-  .hero{min-height:auto;page-break-after:always;}
-  section{page-break-inside:avoid;}
+  /* Hide screen-only chrome */
+  .topnav,.act-nav,.progress,.hero__scroll,.host-regen,
+  .reveal-animations,.btn-primary,.btn-ghost,.topnav__pdf{display:none!important;}
+
+  /* Reset film grain overlay */
+  body::before{display:none!important;}
+
+  /* Light background, dark text for readability on paper */
+  :root{
+    --ink:#1a1007;
+    --ink-dim:#4a3a28;
+    --ink-faint:#7a6a58;
+    --bg:#ffffff;
+    --bg-lift:#f7f0e6;
+    --amber:#8B6914;
+    --amber-dim:#6a5010;
+    --amber-glow:rgba(139,105,20,.12);
+  }
+  html,body{background:#fff!important;color:#1a1007!important;}
+
+  /* Page size */
+  @page{size:A4 portrait;margin:18mm 16mm 18mm 16mm;}
+
+  /* Cover hero — compact for print */
+  .hero{min-height:auto!important;padding:2rem 0 2rem!important;page-break-after:always;border-bottom:1px solid #c9a961;}
+  .hero__bg{display:none!important;}
+  .hero__eyebrow{opacity:1!important;animation:none!important;color:#8B6914!important;}
+  .hero__title{opacity:1!important;animation:none!important;font-size:3rem!important;color:#1a1007!important;}
+  .hero__meta{opacity:1!important;animation:none!important;color:#7a6a58!important;}
+
+  /* Sections */
+  section{padding:1.5rem 0!important;page-break-inside:avoid;max-width:100%!important;}
+
+  /* Make all reveal elements visible */
+  .reveal{opacity:1!important;transform:none!important;transition:none!important;}
+
+  /* Cards and grids */
+  .whisky-card{background:#f7f0e6!important;border-color:#c9a961!important;break-inside:avoid;}
+  .whisky-card__score{color:#8B6914!important;}
+  .taster-card{background:#f7f0e6!important;border-color:#c9a961!important;break-inside:avoid;}
+  .taster-card__avatar{background:linear-gradient(135deg,#c9a961,#e8c878)!important;}
+  .blind-item{background:#f7f0e6!important;border-color:#c9a961!important;break-inside:avoid;}
+  .winner-hero{page-break-inside:avoid;}
+  .winner-hero__score{color:#8B6914!important;}
+  .finale{min-height:auto!important;}
+  .quote{border-left-color:#8B6914!important;}
+  .badge{background:#f0e8d0!important;border-color:#c9a961!important;color:#8B6914!important;}
+  .divider{background:#c9a961!important;}
+  .act-label{color:#8B6914!important;}
+  .act-title,.act-sub,.act-sub *{color:#1a1007!important;}
+
+  /* Photos grid */
+  .photos-grid{page-break-inside:avoid;}
+
+  /* Finale */
+  .finale__tagline strong{color:#8B6914!important;}
+  .finale__brand{color:#7a6a58!important;}
 }
 
 @media(max-width:640px){
@@ -182,7 +239,10 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
 
 <nav class="topnav">
   <div class="topnav__brand">Cask<strong>Sense</strong> <em>Story</em></div>
-  <button class="topnav__back" onclick="history.back()">← Zurück</button>
+  <div style="display:flex;align-items:center;gap:.5rem;">
+    <button class="topnav__pdf" id="pdfBtn" onclick="window.print()" style="display:none;" data-testid="button-save-pdf" title="Story als PDF speichern">↓ Als PDF speichern</button>
+    <button class="topnav__back" onclick="history.back()">← Zurück</button>
+  </div>
 </nav>
 
 <nav class="act-nav" id="actNav" aria-label="Akte"></nav>
@@ -419,10 +479,10 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
   }
 
   // --- Show/hide screens ---
-  function showLoading() { $('loadingScreen').style.display=''; $('hostPromptScreen').style.display='none'; $('errorScreen').style.display='none'; $('storyContent').style.display='none'; }
-  function showError(msg) { $('loadingScreen').style.display='none'; $('hostPromptScreen').style.display='none'; $('errorScreen').style.display=''; $('storyContent').style.display='none'; $('errorMsg').textContent = msg || 'Unbekannter Fehler'; }
-  function showPrompt() { $('loadingScreen').style.display='none'; $('hostPromptScreen').style.display=''; $('errorScreen').style.display='none'; $('storyContent').style.display='none'; }
-  function showStory() { $('loadingScreen').style.display='none'; $('hostPromptScreen').style.display='none'; $('errorScreen').style.display='none'; $('storyContent').style.display=''; }
+  function showLoading() { $('loadingScreen').style.display=''; $('hostPromptScreen').style.display='none'; $('errorScreen').style.display='none'; $('storyContent').style.display='none'; $('pdfBtn').style.display='none'; }
+  function showError(msg) { $('loadingScreen').style.display='none'; $('hostPromptScreen').style.display='none'; $('errorScreen').style.display=''; $('storyContent').style.display='none'; $('errorMsg').textContent = msg || 'Unbekannter Fehler'; $('pdfBtn').style.display='none'; }
+  function showPrompt() { $('loadingScreen').style.display='none'; $('hostPromptScreen').style.display=''; $('errorScreen').style.display='none'; $('storyContent').style.display='none'; $('pdfBtn').style.display='none'; }
+  function showStory() { $('loadingScreen').style.display='none'; $('hostPromptScreen').style.display='none'; $('errorScreen').style.display='none'; $('storyContent').style.display=''; $('pdfBtn').style.display=''; }
 
   // --- Fetch story ---
   // noGenerate=true → server skips AI call (metadata/cache check only, safe for prompt decision)
