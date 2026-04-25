@@ -63,6 +63,7 @@ async function toggleStoryEnabled(tastingId: string, enabled: boolean) {
 
 // ---- Slide types ----
 type Slide =
+  | { type: "act0-cover" }
   | { type: "act1-opening" }
   | { type: "act2-whisky"; index: number }
   | { type: "act3-tasters" }
@@ -71,8 +72,9 @@ type Slide =
   | { type: "act6-winner" }
   | { type: "act7-finale" };
 
-function buildSlides(whiskyCount: number, sortedCount: number, hasBlind: boolean): Slide[] {
+function buildSlides(whiskyCount: number, sortedCount: number, hasBlind: boolean, hasCoverPhoto: boolean): Slide[] {
   const slides: Slide[] = [];
+  if (hasCoverPhoto) slides.push({ type: "act0-cover" });
   slides.push({ type: "act1-opening" });
   for (let i = 0; i < whiskyCount; i++) slides.push({ type: "act2-whisky", index: i });
   slides.push({ type: "act3-tasters" });
@@ -113,11 +115,11 @@ function ActLabel({ number, title }: { number: string; title: string }) {
 function SlideContainer({ children, centered = true }: { children: React.ReactNode; centered?: boolean }) {
   return (
     <div style={{
-      width: "100%", height: "100%",
+      width: "100%", height: "100%", minHeight: "100dvh",
       display: "flex", flexDirection: "column",
       alignItems: centered ? "center" : "flex-start",
       justifyContent: centered ? "center" : "flex-start",
-      padding: "clamp(24px, 5vw, 60px)",
+      padding: "clamp(20px, 5vw, 60px)",
       textAlign: centered ? "center" : "left",
       overflowY: "auto",
     }}>
@@ -126,20 +128,72 @@ function SlideContainer({ children, centered = true }: { children: React.ReactNo
   );
 }
 
-function Act1Opening({ tasting, eventPhotos, openingNarration }: { tasting: any; eventPhotos: any[]; openingNarration: string }) {
-  const mainPhoto = eventPhotos[0];
+function Act0Cover({ tasting, eventPhotos }: { tasting: any; eventPhotos: any[] }) {
+  const coverUrl = tasting.coverImageUrl || eventPhotos[0]?.photoUrl;
+  if (!coverUrl) return null;
+  return (
+    <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
+      <div style={{
+        position: "absolute", inset: 0,
+        backgroundImage: `url(${coverUrl})`,
+        backgroundSize: "cover", backgroundPosition: "center",
+        filter: "brightness(0.8) contrast(1.05)",
+      }} />
+      <div style={{
+        position: "absolute", inset: 0,
+        background: "linear-gradient(to top, rgba(11,9,6,0.92) 0%, rgba(11,9,6,0.5) 50%, rgba(11,9,6,0.25) 100%)",
+      }} />
+      <div style={{
+        position: "absolute", inset: 0,
+        display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "flex-end",
+        padding: "clamp(28px, 6vw, 72px)",
+        textAlign: "center",
+      }}>
+        <div style={{ width: 40, height: 1, background: STORY.amber, marginBottom: 16 }} />
+        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.35em", textTransform: "uppercase", color: STORY.amber, marginBottom: 20 }}>
+          CaskSense Story
+        </div>
+        <h1 className="labs-serif" style={{
+          fontSize: "clamp(32px, 7vw, 80px)", fontWeight: 700,
+          color: STORY.text, lineHeight: 1.0, marginBottom: 20,
+          textShadow: "0 2px 20px rgba(0,0,0,0.5)",
+        }}>
+          {tasting.title}
+        </h1>
+        <div style={{ display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap" }}>
+          {tasting.date && (
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "clamp(13px, 2vw, 16px)", color: STORY.dim }}>
+              <Calendar style={{ width: 13, height: 13 }} />
+              {tasting.date}
+            </span>
+          )}
+          {tasting.location && (
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "clamp(13px, 2vw, 16px)", color: STORY.dim }}>
+              <MapPin style={{ width: 13, height: 13 }} />
+              {tasting.location}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Act1Opening({ tasting, openingNarration, bgPhotoUrl }: { tasting: any; openingNarration: string; bgPhotoUrl?: string }) {
   return (
     <SlideContainer>
-      {mainPhoto && (
+      {bgPhotoUrl && (
         <>
           <div style={{
             position: "absolute", inset: 0, zIndex: 0,
-            background: `url(${mainPhoto.photoUrl}) center/cover no-repeat`,
-            opacity: 0.3,
+            backgroundImage: `url(${bgPhotoUrl})`,
+            backgroundSize: "cover", backgroundPosition: "center",
+            opacity: 0.18,
           }} />
           <div style={{
             position: "absolute", inset: 0, zIndex: 0,
-            background: "linear-gradient(to top, #0B0906 30%, rgba(11,9,6,0.6) 100%)",
+            background: "linear-gradient(to top, #0B0906 40%, rgba(11,9,6,0.7) 100%)",
           }} />
         </>
       )}
@@ -168,7 +222,7 @@ function Act1Opening({ tasting, eventPhotos, openingNarration }: { tasting: any;
         </div>
         {(openingNarration || tasting.hostReflection) && (
           <p style={{
-            fontSize: 16, color: STORY.dim, fontStyle: "italic",
+            fontSize: "clamp(14px, 2vw, 17px)", color: STORY.dim, fontStyle: "italic",
             lineHeight: 1.75, maxWidth: 540, margin: "0 auto",
             borderLeft: `2px solid ${STORY.amber}`, paddingLeft: 20,
             textAlign: "left",
@@ -181,26 +235,40 @@ function Act1Opening({ tasting, eventPhotos, openingNarration }: { tasting: any;
   );
 }
 
-function Act2Whisky({ whisky, index, totalWhiskies, blindMode, portrait }: { whisky: any; index: number; totalWhiskies: number; blindMode: boolean; portrait: string }) {
+function Act2Whisky({ whisky, index, totalWhiskies, blindMode, portrait, bgPhotoUrl }: { whisky: any; index: number; totalWhiskies: number; blindMode: boolean; portrait: string; bgPhotoUrl?: string }) {
   const label = blindMode ? `Dram ${String.fromCharCode(65 + index)}` : (whisky.name || `Whisky ${index + 1}`);
   const displayText = portrait || (!blindMode && whisky.notes ? (whisky.notes.length > 240 ? whisky.notes.slice(0, 240) + "…" : whisky.notes) : "");
   return (
     <SlideContainer>
-      <div style={{ maxWidth: 600, margin: "0 auto", width: "100%" }}>
+      {bgPhotoUrl && (
+        <>
+          <div style={{
+            position: "absolute", inset: 0, zIndex: 0,
+            backgroundImage: `url(${bgPhotoUrl})`,
+            backgroundSize: "cover", backgroundPosition: "center",
+            opacity: 0.14,
+          }} />
+          <div style={{
+            position: "absolute", inset: 0, zIndex: 0,
+            background: "linear-gradient(135deg, #0B0906 0%, rgba(11,9,6,0.7) 100%)",
+          }} />
+        </>
+      )}
+      <div style={{ position: "relative", zIndex: 1, maxWidth: 600, margin: "0 auto", width: "100%" }}>
         <ActLabel number="Akt II" title={`Die Whiskys · ${index + 1} / ${totalWhiskies}`} />
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
-          <div style={{ width: 120, height: 160, flexShrink: 0 }}>
-            <WhiskyImage imageUrl={whisky.imageUrl} name={label} size={120} height={160} whiskyId={whisky.id} />
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "clamp(16px, 3vw, 28px)" }}>
+          <div style={{ width: "clamp(90px, 15vw, 140px)", height: "clamp(120px, 20vw, 180px)", flexShrink: 0 }}>
+            <WhiskyImage imageUrl={whisky.imageUrl} name={label} size={140} height={180} whiskyId={whisky.id} />
           </div>
           <div style={{ textAlign: "center", width: "100%" }}>
             <h2 className="labs-serif" style={{
-              fontSize: "clamp(22px, 4vw, 42px)", fontWeight: 700,
+              fontSize: "clamp(22px, 4vw, 44px)", fontWeight: 700,
               color: STORY.text, marginBottom: 8, lineHeight: 1.1,
             }}>
               {label}
             </h2>
             {!blindMode && (
-              <p style={{ fontSize: 14, color: STORY.dim, marginBottom: 12 }}>
+              <p style={{ fontSize: "clamp(13px, 1.8vw, 15px)", color: STORY.dim, marginBottom: 12 }}>
                 {[whisky.distillery, whisky.region, whisky.country].filter(Boolean).join(" · ")}
               </p>
             )}
@@ -225,8 +293,8 @@ function Act2Whisky({ whisky, index, totalWhiskies, blindMode, portrait }: { whi
             )}
             {displayText && (
               <p style={{
-                marginTop: 4, fontSize: 15, color: STORY.dim,
-                lineHeight: 1.75, fontStyle: "italic", maxWidth: 460, margin: "0 auto",
+                marginTop: 4, fontSize: "clamp(13px, 2vw, 16px)", color: STORY.dim,
+                lineHeight: 1.75, fontStyle: "italic", maxWidth: 480, margin: "0 auto",
                 borderLeft: `2px solid ${STORY.amber}`, paddingLeft: 18,
                 textAlign: "left",
               }}>
@@ -240,11 +308,25 @@ function Act2Whisky({ whisky, index, totalWhiskies, blindMode, portrait }: { whi
   );
 }
 
-function Act3Tasters({ participants, participantFunFacts }: { participants: any[]; participantFunFacts: Record<string, string> }) {
+function Act3Tasters({ participants, participantFunFacts, bgPhotoUrl }: { participants: any[]; participantFunFacts: Record<string, string>; bgPhotoUrl?: string }) {
   const tasters = participants.filter(p => !p.excludedFromResults);
   return (
     <SlideContainer>
-      <div style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
+      {bgPhotoUrl && (
+        <>
+          <div style={{
+            position: "absolute", inset: 0, zIndex: 0,
+            backgroundImage: `url(${bgPhotoUrl})`,
+            backgroundSize: "cover", backgroundPosition: "center",
+            opacity: 0.15,
+          }} />
+          <div style={{
+            position: "absolute", inset: 0, zIndex: 0,
+            background: "linear-gradient(to bottom, #0B0906 0%, rgba(11,9,6,0.6) 50%, #0B0906 100%)",
+          }} />
+        </>
+      )}
+      <div style={{ position: "relative", zIndex: 1, maxWidth: 720, margin: "0 auto", width: "100%" }}>
         <ActLabel number="Akt III" title="Die Verkoster" />
         <Users style={{ width: 40, height: 40, color: STORY.amber, display: "block", margin: "0 auto 20px" }} />
         <h2 className="labs-serif" style={{
@@ -259,7 +341,8 @@ function Act3Tasters({ participants, participantFunFacts }: { participants: any[
             const sketch = participantFunFacts[name] ?? "";
             return (
               <div key={tp.participantId} style={{
-                padding: "16px 20px", borderRadius: 14, width: "clamp(160px, 28vw, 280px)",
+                padding: "clamp(12px, 2vw, 18px) clamp(14px, 2.5vw, 22px)",
+                borderRadius: 14, width: "clamp(150px, 26vw, 280px)",
                 background: STORY.amberGlow, border: `1px solid ${STORY.amberBorder}`,
                 display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center",
               }} data-testid={`story-taster-${tp.participantId}`}>
@@ -268,12 +351,13 @@ function Act3Tasters({ participants, participantFunFacts }: { participants: any[
                   background: `linear-gradient(135deg, ${STORY.amber}, #e8c878)`,
                   color: STORY.bg, fontSize: 17, fontWeight: 700,
                   display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
                 }}>
                   {name.charAt(0).toUpperCase()}
                 </div>
-                <span style={{ fontSize: 14, fontWeight: 600, color: STORY.text }}>{name}</span>
+                <span style={{ fontSize: "clamp(13px, 1.8vw, 15px)", fontWeight: 600, color: STORY.text }}>{name}</span>
                 {sketch && (
-                  <span style={{ fontSize: 13, color: STORY.dim, lineHeight: 1.55, fontStyle: "italic" }}>
+                  <span style={{ fontSize: "clamp(12px, 1.6vw, 14px)", color: STORY.dim, lineHeight: 1.6, fontStyle: "italic" }}>
                     {sketch}
                   </span>
                 )}
@@ -313,7 +397,7 @@ function Act4Discovery({ whisky, rank, totalWhiskies, aiComment, maxScore }: {
               {whisky.name || "Unknown"}
             </h2>
             {whisky.distillery && (
-              <p style={{ fontSize: 14, color: STORY.dim, marginBottom: 16 }}>{whisky.distillery}</p>
+              <p style={{ fontSize: "clamp(12px, 1.8vw, 15px)", color: STORY.dim, marginBottom: 16 }}>{whisky.distillery}</p>
             )}
             {whisky.avgOverall != null && (
               <div style={{
@@ -329,8 +413,8 @@ function Act4Discovery({ whisky, rank, totalWhiskies, aiComment, maxScore }: {
             )}
             {aiComment && (
               <p style={{
-                fontSize: 15, color: STORY.dim, fontStyle: "italic",
-                lineHeight: 1.75, maxWidth: 440, margin: "0 auto",
+                fontSize: "clamp(13px, 2vw, 16px)", color: STORY.dim, fontStyle: "italic",
+                lineHeight: 1.75, maxWidth: 460, margin: "0 auto",
                 borderLeft: `2px solid ${STORY.amber}`, paddingLeft: 18,
                 textAlign: "left",
               }}>
@@ -359,14 +443,14 @@ function Act5Surprise({ blindReveal, tasting, blindNarration }: { blindReveal: a
         </h2>
         {blindNarration ? (
           <p style={{
-            fontSize: 15, color: STORY.dim, fontStyle: "italic",
+            fontSize: "clamp(13px, 2vw, 16px)", color: STORY.dim, fontStyle: "italic",
             lineHeight: 1.75, maxWidth: 540, margin: "0 auto 24px",
             borderLeft: `2px solid ${STORY.amber}`, paddingLeft: 18, textAlign: "left",
           }}>
             {blindNarration}
           </p>
         ) : (
-          <p style={{ fontSize: 14, color: STORY.dim, marginBottom: 24, textAlign: "center" }}>
+          <p style={{ fontSize: "clamp(13px, 1.8vw, 15px)", color: STORY.dim, marginBottom: 24, textAlign: "center" }}>
             {tasting.blindMode ? "Wer hatte Recht? Wer lag daneben?" : "Das Tasting war nicht blind."}
           </p>
         )}
@@ -378,21 +462,21 @@ function Act5Surprise({ blindReveal, tasting, blindNarration }: { blindReveal: a
               const worst = sorted[sorted.length - 1];
               return (
                 <div key={w.whiskyId} style={{
-                  padding: "12px 16px", borderRadius: 10,
+                  padding: "clamp(10px, 2vw, 14px) clamp(12px, 2.5vw, 18px)", borderRadius: 10,
                   background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
                 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: STORY.text, marginBottom: 8 }}>
+                  <p style={{ fontSize: "clamp(12px, 1.6vw, 14px)", fontWeight: 600, color: STORY.text, marginBottom: 8 }}>
                     {w.whiskyName || "Whisky"} · {w.guesses[0]?.actualAbv != null ? `${w.guesses[0].actualAbv}% ABV` : ""}
                   </p>
                   <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
                     {best && (
-                      <span style={{ fontSize: 12, color: "#6ee7b7", display: "flex", alignItems: "center", gap: 4 }}>
+                      <span style={{ fontSize: "clamp(11px, 1.5vw, 13px)", color: "#6ee7b7", display: "flex", alignItems: "center", gap: 4 }}>
                         <Check style={{ width: 12, height: 12 }} />
                         Nächste: {best.guessAbv}% (Δ {best.delta?.toFixed(1)}%)
                       </span>
                     )}
                     {worst && worst !== best && (
-                      <span style={{ fontSize: 12, color: "#fca5a5", display: "flex", alignItems: "center", gap: 4 }}>
+                      <span style={{ fontSize: "clamp(11px, 1.5vw, 13px)", color: "#fca5a5", display: "flex", alignItems: "center", gap: 4 }}>
                         Weiteste: {worst.guessAbv}% (Δ {worst.delta?.toFixed(1)}%)
                       </span>
                     )}
@@ -439,7 +523,7 @@ function Act6Winner({ winner, aiComment, winnerNarration, maxScore }: {
               {winner.name || "Unknown"}
             </h2>
             {winner.distillery && (
-              <p style={{ fontSize: 15, color: STORY.dim, marginBottom: 16 }}>{winner.distillery}</p>
+              <p style={{ fontSize: "clamp(12px, 1.8vw, 16px)", color: STORY.dim, marginBottom: 16 }}>{winner.distillery}</p>
             )}
             <div style={{
               fontSize: "clamp(40px, 7vw, 72px)", fontWeight: 900,
@@ -453,7 +537,7 @@ function Act6Winner({ winner, aiComment, winnerNarration, maxScore }: {
             </div>
             {(winnerNarration || aiComment) && (
               <p style={{
-                fontSize: 16, color: STORY.dim, fontStyle: "italic",
+                fontSize: "clamp(13px, 2vw, 17px)", color: STORY.dim, fontStyle: "italic",
                 lineHeight: 1.75, maxWidth: 480, margin: "0 auto",
                 borderLeft: `2px solid ${STORY.amber}`, paddingLeft: 20,
                 textAlign: "left",
@@ -509,12 +593,12 @@ function Act7Finale({ tasting, whiskies, eventPhotos, closingReflection, aiNarra
         }}>
           Ein Abend. Unvergesslich.
         </h2>
-        <p style={{ fontSize: 14, color: STORY.dim, marginBottom: closingReflection ? 20 : 28 }}>
+        <p style={{ fontSize: "clamp(12px, 1.8vw, 15px)", color: STORY.dim, marginBottom: closingReflection ? 20 : 28 }}>
           {tasting.date} · {tasting.location}
         </p>
         {closingReflection && (
           <p style={{
-            fontSize: 15, color: STORY.dim, fontStyle: "italic",
+            fontSize: "clamp(13px, 2vw, 16px)", color: STORY.dim, fontStyle: "italic",
             lineHeight: 1.75, maxWidth: 540,
             borderLeft: `2px solid ${STORY.amber}`, paddingLeft: 18,
             marginBottom: 24,
@@ -543,7 +627,7 @@ function Act7Finale({ tasting, whiskies, eventPhotos, closingReflection, aiNarra
               </span>
             </button>
             <p style={{
-              fontSize: 14, color: STORY.dim, lineHeight: 1.7,
+              fontSize: "clamp(12px, 1.8vw, 15px)", color: STORY.dim, lineHeight: 1.7,
               borderLeft: `1px solid rgba(201,169,97,0.3)`, paddingLeft: 16,
               maxHeight: narrativeExpanded ? "none" : undefined,
               overflow: "hidden",
@@ -943,8 +1027,11 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
     if (!storyData) return [];
     const { whiskies, sortedRanking, blindReveal } = storyData;
     const hasBlind = tasting?.blindMode && blindReveal?.some((w: any) => w.guesses.length > 0);
-    return buildSlides(whiskies?.length ?? 0, sortedRanking?.length ?? 0, hasBlind);
-  }, [storyData, tasting]);
+    const hasCoverPhoto = !!(tasting?.coverImageUrl || eventPhotos?.length > 0);
+    // Act IV shows ranks 2..N (winner excluded — it debuts in Act VI only)
+    const actIVCount = Math.max(0, (sortedRanking?.length ?? 1) - 1);
+    return buildSlides(whiskies?.length ?? 0, actIVCount, hasBlind, hasCoverPhoto);
+  }, [storyData, tasting, eventPhotos]);
 
   const goTo = useCallback((idx: number) => {
     const next = Math.max(0, Math.min(idx, slides.length - 1));
@@ -1271,21 +1358,35 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
             style={{ position: "absolute", inset: 0 }}
             onClick={e => e.stopPropagation()}
           >
-            {currentSlide?.type === "act1-opening" && (
-              <Act1Opening tasting={tasting} eventPhotos={eventPhotos} openingNarration={openingNarration ?? ""} />
+            {currentSlide?.type === "act0-cover" && (
+              <Act0Cover tasting={tasting} eventPhotos={eventPhotos} />
             )}
-            {currentSlide?.type === "act2-whisky" && (
-              <Act2Whisky
-                whisky={whiskies[currentSlide.index]}
-                index={currentSlide.index}
-                totalWhiskies={whiskies.length}
-                blindMode={!!tasting.blindMode}
-                portrait={(storyData.whiskyPortraits ?? {})[whiskies[currentSlide.index]?.name] ?? ""}
-              />
-            )}
-            {currentSlide?.type === "act3-tasters" && (
-              <Act3Tasters participants={participants} participantFunFacts={participantFunFacts ?? {}} />
-            )}
+            {currentSlide?.type === "act1-opening" && (() => {
+              const hasCoverSlide = !!(tasting?.coverImageUrl || eventPhotos?.length > 0);
+              const bgPhoto = !hasCoverSlide && eventPhotos?.length > 0 ? eventPhotos[0]?.photoUrl : undefined;
+              return <Act1Opening tasting={tasting} openingNarration={openingNarration ?? ""} bgPhotoUrl={bgPhoto} />;
+            })()}
+            {currentSlide?.type === "act2-whisky" && (() => {
+              const bgPhoto = eventPhotos?.length > 0
+                ? eventPhotos[currentSlide.index % eventPhotos.length]?.photoUrl
+                : undefined;
+              return (
+                <Act2Whisky
+                  whisky={whiskies[currentSlide.index]}
+                  index={currentSlide.index}
+                  totalWhiskies={whiskies.length}
+                  blindMode={!!tasting.blindMode}
+                  portrait={(storyData.whiskyPortraits ?? {})[whiskies[currentSlide.index]?.name] ?? ""}
+                  bgPhotoUrl={bgPhoto}
+                />
+              );
+            })()}
+            {currentSlide?.type === "act3-tasters" && (() => {
+              const bgPhoto = eventPhotos?.length > 0
+                ? eventPhotos[Math.floor(eventPhotos.length / 2)]?.photoUrl
+                : undefined;
+              return <Act3Tasters participants={participants} participantFunFacts={participantFunFacts ?? {}} bgPhotoUrl={bgPhoto} />;
+            })()}
             {currentSlide?.type === "act4-discovery" && (() => {
               const revIdx = sortedRanking.length - 1 - currentSlide.index;
               const w = sortedRanking[revIdx];

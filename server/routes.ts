@@ -17830,19 +17830,68 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
         try {
           const { client: aiClient } = await getAIClient(participantId ?? tasting.hostId, "ai_narrative");
           if (aiClient) {
-            const whiskyDataForAI = sorted.slice(0, 10).map(w => ({
-              name: w.name,
-              distillery: w.distillery,
-              region: w.region,
-              age: w.age,
-              abv: w.abv,
-              caskType: w.caskType,
-              avgScore: w.avgOverall != null ? Math.round(w.avgOverall * 10) / 10 : null,
-              tasterNotes: w.ratings.slice(0, 5).map((r: any) => r.notes).filter(Boolean).join("; "),
-            }));
-            const participantsForAI = participantList.filter(p => !p.excludedFromResults).slice(0, 10).map(p => ({
-              name: p.participant?.name ?? "Unknown",
-            }));
+            const groupAvgOverall = sorted.length > 0 ? sorted.reduce((s, w) => s + (w.avgOverall ?? 0), 0) / sorted.length : 0;
+
+            const whiskyDataForAI = sorted.slice(0, 10).map((w, idx) => {
+              const overallVals = w.ratings.map((r: any) => r.overall).filter((v: any) => v != null) as number[];
+              const ratedRatings = w.ratings.filter((r: any) => r.overall != null);
+              const topRating = ratedRatings.length > 1 ? ratedRatings.reduce((best: any, r: any) => !best || r.overall > best.overall ? r : best, null as any) : null;
+              const bottomRating = ratedRatings.length > 1 ? ratedRatings.reduce((worst: any, r: any) => !worst || r.overall < worst.overall ? r : worst, null as any) : null;
+              const getPN = (pid: string) => {
+                const tp = participantList.find(p => p.participantId === pid);
+                return (tp?.participant?.name ?? "Unknown").replace(/#guest$/i, "").trim();
+              };
+              const scores: Record<string, number | null> = { nose: w.avgNose, taste: w.avgTaste, finish: w.avgFinish };
+              const topDim = Object.entries(scores).filter(([, v]) => v != null).sort((a, b) => (b[1] as number) - (a[1] as number))[0]?.[0] ?? null;
+              const spread = overallVals.length > 1 ? Math.round((Math.max(...overallVals) - Math.min(...overallVals)) * 10) / 10 : null;
+              return {
+                rank: idx + 1,
+                name: w.name,
+                distillery: w.distillery,
+                region: w.region,
+                country: w.country,
+                age: w.age,
+                abv: w.abv,
+                caskType: w.caskType,
+                avgScore: w.avgOverall != null ? Math.round(w.avgOverall * 10) / 10 : null,
+                avgNose: w.avgNose != null ? Math.round(w.avgNose * 10) / 10 : null,
+                avgTaste: w.avgTaste != null ? Math.round(w.avgTaste * 10) / 10 : null,
+                avgFinish: w.avgFinish != null ? Math.round(w.avgFinish * 10) / 10 : null,
+                topDimension: topDim,
+                groupSpread: spread,
+                topRater: topRating && topRating !== bottomRating ? { name: getPN(topRating.participantId), score: topRating.overall } : null,
+                bottomRater: bottomRating && topRating !== bottomRating ? { name: getPN(bottomRating.participantId), score: bottomRating.overall } : null,
+                tasterNotes: w.ratings.slice(0, 5).map((r: any) => r.notes).filter(Boolean).join("; "),
+              };
+            });
+
+            const participantsForAI = participantList.filter(p => !p.excludedFromResults).slice(0, 10).map(p => {
+              const name = (p.participant?.name ?? "Unknown").replace(/#guest$/i, "").trim();
+              const pRatings = allRatings.filter(r => r.participantId === p.participantId);
+              const pAvg = (field: "nose" | "taste" | "finish" | "overall") => {
+                const vals = pRatings.map(r => r[field]).filter(v => v != null) as number[];
+                return vals.length ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10 : null;
+              };
+              const pAvgOverall = pAvg("overall");
+              const pAvgNose = pAvg("nose");
+              const pAvgTaste = pAvg("taste");
+              const pAvgFinish = pAvg("finish");
+              const divergence = pAvgOverall != null ? Math.round((pAvgOverall - groupAvgOverall) * 10) / 10 : null;
+              const topRated = pRatings.reduce((best: any, r: any) => !best || (r.overall ?? 0) > (best.overall ?? 0) ? r : best, null as any);
+              const topWhiskyName = topRated ? whiskyResults.find(w => w.id === topRated.whiskyId)?.name ?? null : null;
+              const dimScores = [{ d: "nose", v: pAvgNose }, { d: "taste", v: pAvgTaste }, { d: "finish", v: pAvgFinish }].filter(x => x.v != null).sort((a, b) => (b.v as number) - (a.v as number));
+              return {
+                name,
+                avgOverall: pAvgOverall,
+                avgNose: pAvgNose,
+                avgTaste: pAvgTaste,
+                avgFinish: pAvgFinish,
+                divergenceFromGroup: divergence,
+                strongestDimension: dimScores[0]?.d ?? null,
+                topRatedWhisky: topWhiskyName,
+              };
+            });
+
             const existingNarrative = tasting.aiNarrative ? `\n\nExisting evening narrative for style reference:\n${(tasting.aiNarrative as string).slice(0, 800)}` : "";
 
             const aiResp = await aiClient.chat.completions.create({
@@ -17850,15 +17899,23 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
               messages: [
                 {
                   role: "system",
-                  content: `You are a literary whisky journalist writing slide copy for a cinematic tasting presentation. Write with warmth and craft — like a skilled short story author covering a cultural event. Sentences should be vivid, specific, and evocative, never generic.${existingNarrative}
+                  content: `You are a literary whisky journalist writing slide copy for a cinematic tasting presentation. Write with warmth and craft — like a skilled short story author covering a cultural event. Sentences should be vivid, specific, and evocative, never generic.
+
+CRITICAL SPOILER GUARD: The rank-1 winner must NEVER be named, described with superlatives, or strongly implied in openingNarration, whiskyPortraits, tasterSketches, or discoveryTexts. discoveryTexts only covers rank 2 and lower — do not write a discoveryTexts entry for the rank-1 whisky at all. The winner appears for the first time only in winnerStory.
+
+For whiskyPortraits: Draw on your real-world knowledge of each distillery's character, region style, typical flavour profile, and age/cask context — do not merely echo the tasting notes. Blend that background with the group's actual scores and comments to create a portrait grounded in both tradition and the specific evening.
+
+For tasterSketches: Use the provided per-dimension averages and divergenceFromGroup to reveal each person's palate personality — high scorer vs. tough critic, nose-forward vs. finish-focused, consensus follower vs. contrarian. You may name each person's topRatedWhisky as their personal highlight of the evening (omit if topRatedWhisky is rank 1 — do not name the winner).
+
+For discoveryTexts (ranks 2 and below only): Reference specific rating highlights from the data — e.g. "the evening's highest nose score", "the group was split: [Name] gave it [X], [Name] held back". Make the reveal feel data-driven and personal. Never name, hint at, or describe the rank-1 whisky here.${existingNarrative}
 
 Respond ONLY with valid JSON matching this exact structure:
 {
   "openingNarration": "<3-4 sentence opening: capture the mood, setting, who gathered, what the evening promised>",
-  "whiskyPortraits": { "<whiskyName>": "<3-4 sentence prose portrait: origin and character, what the group tasted, any surprises or consensus>", ... },
-  "tasterSketches": { "<name>": "<1-2 sentence character sketch in the story's voice — their palate personality or something distinctive they brought to the table>", ... },
-  "discoveryTexts": { "<whiskyName>": "<2-3 sentence text building dramatic tension around this whisky's ranking>", ... },
-  "blindNarration": "<2-3 sentence narrative on the blind guessing — who was close, what the results reveal about the group>",
+  "whiskyPortraits": { "<whiskyName>": "<3-4 sentence prose portrait: distillery/region character + group scores + any surprises>", ... },
+  "tasterSketches": { "<name>": "<1-2 sentence character sketch revealing palate personality from their scoring behaviour>", ... },
+  "discoveryTexts": { "<whiskyName (rank 2+ only)>": "<2-3 sentence text with concrete data highlights building tension around this ranking>", ... },
+  "blindNarration": "<2-3 sentence narrative on the blind guessing — who was closest, what the results reveal about the group>",
   "winnerStory": "<3-4 sentence winner celebration — why this one won, what it represents, how the group reacted>",
   "closingReflection": "<3-4 sentence closing: the atmosphere as the evening wound down, what lingers>"
 }
@@ -17877,7 +17934,7 @@ Language: German if the tasting title or participant names appear German, otherw
                   }),
                 },
               ],
-              max_tokens: 3000,
+              max_tokens: 3500,
               temperature: 0.82,
               response_format: { type: "json_object" },
             });
