@@ -32,6 +32,16 @@ import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 import WhiskyHandoutManager from "@/labs/components/WhiskyHandoutManager";
 import PdfSplitterDialog from "@/labs/components/PdfSplitterDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import TastingHandoutManager from "@/labs/components/TastingHandoutManager";
 import AutoHandoutManager from "@/labs/components/AutoHandoutManager";
 import { downloadDataUrl } from "@/lib/download";
@@ -5022,6 +5032,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const [desktopConfirmDelete, setDesktopConfirmDelete] = useState(false);
   const [desktopTransferTargetId, setDesktopTransferTargetId] = useState<string | null>(null);
   const [desktopTransferring, setDesktopTransferring] = useState(false);
+  const [showArchiveWarning, setShowArchiveWarning] = useState(false);
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
 
   const { data: tasting, isLoading: tastingLoading, isError: tastingError } = useQuery({
     queryKey: ["tasting", tastingId],
@@ -5084,6 +5096,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     await tastingApi.updateDetails(tastingId, currentParticipant?.id || "", { lockedDrams: JSON.stringify(next) });
     queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
   };
+
+  const isHost = currentParticipant?.id === tasting?.hostId;
 
   const desktopTransferGuests = (participants || []).filter(
     (tp: { participant: { id: string } }) => tp.participant.id !== currentParticipant?.id
@@ -6466,20 +6480,22 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                     <Play className="w-4 h-4" />
                     Reopen
                   </button>
-                  <button
-                    className="labs-btn-ghost flex items-center gap-2"
-                    onClick={() => statusMutation.mutate({ status: "archived" })}
-                    disabled={statusMutation.isPending}
-                    data-testid="labs-host-archive"
-                  >
-                    Archive
-                  </button>
+                  {isHost && (
+                    <button
+                      className="labs-btn-ghost flex items-center gap-2"
+                      onClick={() => setShowArchiveWarning(true)}
+                      disabled={statusMutation.isPending}
+                      data-testid="labs-host-archive"
+                    >
+                      Archive
+                    </button>
+                  )}
                 </>
               )}
-              {tasting.status === "reveal" && (
+              {tasting.status === "reveal" && isHost && (
                 <button
                   className="labs-btn-ghost flex items-center gap-2"
-                  onClick={() => statusMutation.mutate({ status: "archived" })}
+                  onClick={() => setShowArchiveWarning(true)}
                   disabled={statusMutation.isPending}
                   data-testid="labs-host-archive-reveal"
                 >
@@ -7605,6 +7621,58 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           whiskies={whiskies as any}
         />
       )}
+
+      <AlertDialog open={showArchiveWarning} onOpenChange={setShowArchiveWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              {t("m2.host.archiveWarningTitle", "Tasting archivieren?")}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>{t("m2.host.archiveWarningIntro", "Bitte lies die folgenden Hinweise sorgfältig:")}</p>
+                <ul className="list-disc list-inside space-y-1 pl-1">
+                  <li>{t("m2.host.archiveWarning1", "Das Tasting wird dauerhaft abgeschlossen")}</li>
+                  <li>{t("m2.host.archiveWarning2", "Keine weiteren Bewertungen oder Änderungen sind möglich")}</li>
+                  <li>{t("m2.host.archiveWarning3", "Ein unveränderlicher Archiv-Snapshot wird erstellt")}</li>
+                  <li>{t("m2.host.archiveWarning4", "Rückgängigmachen ist nicht möglich (nur durch Admin)")}</li>
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("m2.host.archiveCancel", "Abbrechen")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { setShowArchiveWarning(false); setShowArchiveConfirm(true); }}
+              data-testid="labs-host-archive-warning-continue"
+            >
+              {t("m2.host.archiveWarningContinue", "Weiter")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showArchiveConfirm} onOpenChange={setShowArchiveConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("m2.host.archiveConfirmTitle", "Archivierung bestätigen")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("m2.host.archiveConfirmMessage", "Bist du sicher, dass du dieses Tasting jetzt archivieren möchtest? Diese Aktion kann nicht rückgängig gemacht werden.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("m2.host.archiveCancel", "Abbrechen")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { statusMutation.mutate({ status: "archived" }); setShowArchiveConfirm(false); }}
+              disabled={statusMutation.isPending}
+              data-testid="labs-host-archive-confirm"
+            >
+              {t("m2.host.archiveConfirmAction", "Ja, jetzt archivieren")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

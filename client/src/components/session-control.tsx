@@ -52,8 +52,11 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
   const [showRevealConfirm, setShowRevealConfirm] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
   const [confirmName, setConfirmName] = useState("");
+  const [showArchiveWarning, setShowArchiveWarning] = useState(false);
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
 
   const isAdmin = currentParticipant?.role === "admin";
+  const isHost = currentParticipant?.id === tasting.hostId;
 
   const updateStatus = useMutation({
     mutationFn: (params: { status: string; currentAct?: string }) =>
@@ -93,12 +96,17 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
       if (currentAct === "act1") updateStatus.mutate({ status: "reveal", currentAct: "act2" });
       else if (currentAct === "act2") updateStatus.mutate({ status: "reveal", currentAct: "act3" });
       else if (currentAct === "act3") updateStatus.mutate({ status: "reveal", currentAct: "act4" });
-      else if (currentAct === "act4") handleArchive();
+      else if (currentAct === "act4" && isHost) handleArchive();
     }
   };
 
   const handleArchive = () => {
+    setShowArchiveWarning(true);
+  };
+
+  const handleArchiveConfirmed = () => {
     updateStatus.mutate({ status: "archived" });
+    setShowArchiveConfirm(false);
   };
 
   const handleSoftDelete = () => {
@@ -188,6 +196,62 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
     </AlertDialog>
   );
 
+  const ArchiveWarningDialog = () => (
+    <AlertDialog open={showArchiveWarning} onOpenChange={setShowArchiveWarning}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-amber-500" />
+            {t('session.actions.archiveWarningTitle', 'Tasting archivieren?')}
+          </AlertDialogTitle>
+          <AlertDialogDescription asChild>
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p>{t('session.actions.archiveWarningIntro', 'Bitte lies die folgenden Hinweise sorgfältig:')}</p>
+              <ul className="list-disc list-inside space-y-1 pl-1">
+                <li>{t('session.actions.archiveWarning1', 'Das Tasting wird dauerhaft abgeschlossen')}</li>
+                <li>{t('session.actions.archiveWarning2', 'Keine weiteren Bewertungen oder Änderungen sind möglich')}</li>
+                <li>{t('session.actions.archiveWarning3', 'Ein unveränderlicher Archiv-Snapshot wird erstellt')}</li>
+                <li>{t('session.actions.archiveWarning4', 'Rückgängigmachen ist nicht möglich (nur durch Admin)')}</li>
+              </ul>
+            </div>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t('session.actions.deleteCancel', 'Abbrechen')}</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => { setShowArchiveWarning(false); setShowArchiveConfirm(true); }}
+            data-testid="button-archive-warning-continue"
+          >
+            {t('session.actions.archiveWarningContinue', 'Weiter')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
+  const ArchiveConfirmDialog = () => (
+    <AlertDialog open={showArchiveConfirm} onOpenChange={setShowArchiveConfirm}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t('session.actions.archiveConfirmTitle', 'Archivierung bestätigen')}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t('session.actions.archiveConfirmMessage', 'Bist du sicher, dass du dieses Tasting jetzt archivieren möchtest? Diese Aktion kann nicht rückgängig gemacht werden.')}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t('session.actions.deleteCancel', 'Abbrechen')}</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleArchiveConfirmed}
+            disabled={updateStatus.isPending}
+            data-testid="button-archive-confirm"
+          >
+            {t('session.actions.archiveConfirmAction', 'Ja, jetzt archivieren')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
   const PermanentDeleteDialog = () => (
     <Dialog open={showPermanentDeleteDialog} onOpenChange={(open) => { setShowPermanentDeleteDialog(open); if (!open) setConfirmName(""); }}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
@@ -260,7 +324,7 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
     if (!showArchiveDelete) return null;
     return (
       <div className="flex flex-col gap-1">
-        {tasting.status !== "draft" && tasting.status !== "open" && (
+        {isHost && tasting.status !== "draft" && tasting.status !== "open" && (
           <button
             onClick={() => { handleArchive(); setShowDrawer(false); }}
             className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors rounded-sm hover:bg-secondary/50 w-full"
@@ -437,6 +501,8 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
 
       <SoftDeleteDialog />
       <RevealConfirmDialog />
+      <ArchiveWarningDialog />
+      <ArchiveConfirmDialog />
     </>
   );
 }
