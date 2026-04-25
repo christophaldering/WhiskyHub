@@ -86,6 +86,7 @@ export const tastings = pgTable("tastings", {
   isTestData: boolean("is_test_data").default(false),
   sharedPrintMaterials: text("shared_print_materials"),
   storyEnabled: boolean("story_enabled").default(false), // Host has enabled story access for participants
+  storyPdfObjectKey: text("story_pdf_object_key"), // Object Storage path to cached story PDF
   // Tasting-wide handout (one per tasting, e.g. "von Rudi" Programmheft)
   handoutUrl: text("handout_url"), // Object storage path to handout file (PDF or image)
   handoutContentType: text("handout_content_type"), // MIME type

@@ -710,6 +710,8 @@ function StoryEmailDialog({
   const [sendState, setSendState] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [sendResult, setSendResult] = useState<{ sent: number; failed: number } | null>(null);
   const [sendError, setSendError] = useState("");
+  // Tracks whether a cached PDF is available for this session (either pre-existing or uploaded during this session)
+  const [sessionHasCache, setSessionHasCache] = useState<boolean>(Boolean(tasting?.storyPdfObjectKey));
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   function toggleEmail(email: string) {
@@ -741,14 +743,31 @@ function StoryEmailDialog({
     setSendState("sending");
     setSendError("");
     try {
-      const pdfBase64 = await exportStoryPdf({ ...storyData, eventPhotos }, true) as string;
-      const res = await fetch(`/api/tastings/${tastingId}/story-pdf-email`, {
+      let pdfBase64: string | undefined;
+      if (!sessionHasCache) {
+        // No cached PDF available — render it now; server will cache it for future sends
+        pdfBase64 = await exportStoryPdf({ ...storyData, eventPhotos }, true) as string;
+      }
+      let res = await fetch(`/api/tastings/${tastingId}/story-pdf-email`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...pidHeaders() },
-        body: JSON.stringify({ recipients, pdfBase64, tastingTitle: tasting?.title }),
+        body: JSON.stringify({ recipients, ...(pdfBase64 ? { pdfBase64 } : {}), tastingTitle: tasting?.title }),
       });
-      const data = await res.json();
+      let data = await res.json();
+      // If the server reported stale/missing cache, clear local flag and retry once with fresh render
+      if (!res.ok && res.status === 400 && data.message === "PDF data required") {
+        setSessionHasCache(false);
+        pdfBase64 = await exportStoryPdf({ ...storyData, eventPhotos }, true) as string;
+        res = await fetch(`/api/tastings/${tastingId}/story-pdf-email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...pidHeaders() },
+          body: JSON.stringify({ recipients, pdfBase64, tastingTitle: tasting?.title }),
+        });
+        data = await res.json();
+      }
       if (!res.ok) throw new Error(data.message || "Fehler beim Senden");
+      // Only mark cache as available when server confirms it was persisted
+      if (data.cacheStored) setSessionHasCache(true);
       setSendResult({ sent: data.sent, failed: data.failed });
       setSendState("done");
     } catch (e: any) {

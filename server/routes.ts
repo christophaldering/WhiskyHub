@@ -17867,7 +17867,11 @@ Language: German if the tasting title or participant names appear German, otherw
             closingReflection = parsed.closingReflection ?? "";
 
             try {
-              await storage.updateTasting(req.params.id, {
+              const slidesUpdate: {
+                storySlidesCache: string;
+                storySlidesRatingCount: number;
+                storyPdfObjectKey?: string | null;
+              } = {
                 storySlidesCache: JSON.stringify({
                   aiComments,
                   participantFunFacts,
@@ -17878,7 +17882,20 @@ Language: German if the tasting title or participant names appear German, otherw
                   closingReflection,
                 }),
                 storySlidesRatingCount: currentRatingCount,
-              });
+              };
+              // Invalidate the cached story PDF — it was rendered from the old slides
+              if (tasting.storyPdfObjectKey) {
+                try {
+                  const { bucketName, objectName } = parseStoragePath(tasting.storyPdfObjectKey);
+                  await objectStorageClient.bucket(bucketName).file(objectName).delete({ ignoreNotFound: true });
+                } catch {
+                  // best-effort deletion; ignore errors
+                }
+                slidesUpdate.storyPdfObjectKey = null;
+                // Keep response tasting in sync so client sees cleared key
+                tasting.storyPdfObjectKey = null;
+              }
+              await storage.updateTasting(req.params.id, slidesUpdate);
             } catch (saveErr) {
               console.warn("Story slides cache save failed:", (saveErr as any)?.message ?? saveErr);
             }
@@ -17921,23 +17938,61 @@ Language: German if the tasting title or participant names appear German, otherw
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
       if (tasting.hostId !== auth.participant.id) return res.status(403).json({ message: "Only the host can share the Story PDF" });
 
-      const { recipients, pdfBase64, tastingTitle } = req.body;
+      const { recipients, pdfBase64: pdfBase64Input, tastingTitle } = req.body;
       if (!Array.isArray(recipients) || recipients.length === 0) {
         return res.status(400).json({ message: "At least one recipient required" });
       }
       if (recipients.length > 30) {
         return res.status(400).json({ message: "Max 30 recipients per send" });
       }
-      if (!pdfBase64 || typeof pdfBase64 !== "string") {
-        return res.status(400).json({ message: "PDF data required" });
-      }
-      const pdfSizeMb = Buffer.byteLength(pdfBase64, "utf8") / (1024 * 1024);
-      if (pdfSizeMb > 15) {
-        return res.status(413).json({ message: "PDF zu groß (max. 15 MB)" });
-      }
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       const validRecipients: string[] = recipients.filter((r: any) => typeof r === "string" && emailRegex.test(r.trim()));
       if (validRecipients.length === 0) return res.status(400).json({ message: "No valid email addresses" });
+
+      let pdfBase64: string;
+      let cacheStored = false;
+
+      if (pdfBase64Input && typeof pdfBase64Input === "string") {
+        const pdfSizeMb = Buffer.byteLength(pdfBase64Input, "utf8") / (1024 * 1024);
+        if (pdfSizeMb > 15) {
+          return res.status(413).json({ message: "PDF zu groß (max. 15 MB)" });
+        }
+        pdfBase64 = pdfBase64Input;
+
+        // Cache the PDF to Object Storage for future sends
+        try {
+          const dir = objectStorage.getPrivateObjectDir();
+          const trimmed = dir.endsWith("/") ? dir.slice(0, -1) : dir;
+          const objectKey = `${trimmed}/tastings/${req.params.id}/story.pdf`;
+          const { bucketName, objectName } = parseStoragePath(objectKey);
+          const pdfBuffer = Buffer.from(pdfBase64, "base64");
+          await objectStorageClient.bucket(bucketName).file(objectName).save(pdfBuffer, {
+            contentType: "application/pdf",
+            resumable: false,
+            metadata: { cacheControl: "private, no-cache" },
+          });
+          await storage.updateTasting(req.params.id, { storyPdfObjectKey: objectKey });
+          cacheStored = true;
+          console.log(`[story-pdf] cached to object storage: ${objectKey}`);
+        } catch (cacheErr) {
+          console.warn("[story-pdf] cache save failed, continuing with provided PDF:", (cacheErr as any)?.message ?? cacheErr);
+        }
+      } else if (tasting.storyPdfObjectKey) {
+        // No PDF provided — try to use cached version from Object Storage
+        try {
+          const { bucketName, objectName } = parseStoragePath(tasting.storyPdfObjectKey);
+          const [pdfBuffer] = await objectStorageClient.bucket(bucketName).file(objectName).download();
+          pdfBase64 = pdfBuffer.toString("base64");
+          console.log(`[story-pdf] served from object storage cache: ${tasting.storyPdfObjectKey}`);
+        } catch (cacheErr) {
+          console.warn("[story-pdf] cache download failed, clearing stale key:", (cacheErr as any)?.message ?? cacheErr);
+          // Clear the stale key so the client falls back to re-rendering on next attempt
+          try { await storage.updateTasting(req.params.id, { storyPdfObjectKey: null }); } catch {}
+          return res.status(400).json({ message: "PDF data required" });
+        }
+      } else {
+        return res.status(400).json({ message: "PDF data required" });
+      }
 
       const title = (typeof tastingTitle === "string" && tastingTitle.trim()) ? tastingTitle.trim() : tasting.title || "CaskSense Tasting";
       const safeFilename = title.replace(/[^a-zA-Z0-9äöüÄÖÜß\-_ ]/g, "").trim().replace(/\s+/g, "_") || "story";
@@ -17968,7 +18023,7 @@ Language: German if the tasting title or participant names appear German, otherw
       );
       const sent = results.filter(Boolean).length;
       const failed = results.length - sent;
-      res.json({ sent, failed, total: validRecipients.length });
+      res.json({ sent, failed, total: validRecipients.length, cacheStored });
     } catch (e: any) {
       console.error("Story PDF email error:", e.message);
       res.status(500).json({ message: e.message });
