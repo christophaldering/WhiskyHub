@@ -17715,6 +17715,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       if (existingPhotos.length >= 10) return res.status(400).json({ message: "Maximum 10 event photos allowed" });
       const file = (req as any).file as Express.Multer.File | undefined;
       if (!file) return res.status(400).json({ message: "No file provided" });
+      if (file.buffer.length > 10 * 1024 * 1024) return res.status(400).json({ message: "Datei zu groß (max 10 MB)" });
       const photoUrl = await uploadBufferToObjectStorage(objectStorage, file.buffer, file.mimetype);
       const photo = await storage.createTastingEventPhoto({
         tastingId: req.params.id,

@@ -309,16 +309,18 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
       <button class="btn-primary" style="font-size:.8rem;padding:.45rem 1rem;" data-testid="button-regen-story" onclick="regenStory()">Neu generieren</button>
       <button class="btn-ghost" style="font-size:.7rem;" onclick="closeRegenPanel()">Abbrechen</button>
     </div>
-    <div style="margin-top:1rem;border-top:1px solid rgba(201,169,97,.15);padding-top:.75rem;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
+    <details style="margin-top:1rem;border-top:1px solid rgba(201,169,97,.15);padding-top:.75rem;" id="photosSection">
+      <summary style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;list-style:none;outline:none;">
         <span style="font-family:var(--sans);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim);">Event-Fotos</span>
         <span id="photoCount" style="font-family:var(--sans);font-size:.7rem;color:var(--ink-faint);"></span>
+      </summary>
+      <div style="margin-top:.6rem;">
+        <div id="photoMgmtGrid" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:8px;"></div>
+        <input type="file" id="photoFileInput" accept="image/*" multiple style="display:none;" data-testid="input-photo-upload" onchange="handlePhotoUpload(this.files)">
+        <button style="font-family:var(--sans);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);background:rgba(201,169,97,.08);border:1px solid rgba(201,169,97,.25);border-radius:3px;padding:.4rem .75rem;cursor:pointer;width:100%;transition:background .2s;" data-testid="button-add-photo" id="photoUploadBtn" onmouseenter="this.style.background='rgba(201,169,97,.18)'" onmouseleave="this.style.background='rgba(201,169,97,.08)'" onclick="document.getElementById('photoFileInput').click()">+ Foto hinzufügen</button>
+        <div id="photoUploadStatus" style="font-family:var(--sans);font-size:.7rem;color:var(--ink-faint);margin-top:4px;min-height:1em;"></div>
       </div>
-      <div id="photoMgmtGrid" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:8px;"></div>
-      <input type="file" id="photoFileInput" accept="image/*" multiple style="display:none;" data-testid="input-photo-upload" onchange="handlePhotoUpload(this.files)">
-      <button style="font-family:var(--sans);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);background:rgba(201,169,97,.08);border:1px solid rgba(201,169,97,.25);border-radius:3px;padding:.4rem .75rem;cursor:pointer;width:100%;transition:background .2s;" data-testid="button-add-photo" id="photoUploadBtn" onmouseenter="this.style.background='rgba(201,169,97,.18)'" onmouseleave="this.style.background='rgba(201,169,97,.08)'" onclick="document.getElementById('photoFileInput').click()">+ Foto hinzufügen</button>
-      <div id="photoUploadStatus" style="font-family:var(--sans);font-size:.7rem;color:var(--ink-faint);margin-top:4px;min-height:1em;"></div>
-    </div>
+    </details>
   </div>
   <button class="host-regen__btn" onclick="toggleRegenPanel()" id="regenToggleBtn" data-testid="button-story-settings">Story anpassen</button>
 </div>
@@ -546,7 +548,7 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
     for (let i = 0; i < Math.min(files.length, maxNew); i++) {
       const file = files[i];
       if (!file.type.startsWith('image/')) continue;
-      if (file.size > 20 * 1024 * 1024) { statusEl.textContent = `${file.name}: zu groß (max 20 MB)`; continue; }
+      if (file.size > 10 * 1024 * 1024) { statusEl.textContent = `${file.name}: zu groß (max 10 MB)`; continue; }
       statusEl.textContent = `Hochladen ${i + 1}/${Math.min(files.length, maxNew)}…`;
       const fd = new FormData();
       fd.append('file', file);
@@ -564,6 +566,18 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
   }
   window.handlePhotoUpload = handlePhotoUpload;
 
+  function rebuildActNav() {
+    if (!storyData) return;
+    const structure = Array.isArray(storyData.storyStructure) ? storyData.storyStructure : [];
+    const sections = [{ id: 'act-cover', label: 'Titel' }];
+    structure.forEach(key => {
+      const id = `act-${key}`;
+      if (document.getElementById(id)) sections.push({ id, label: ACT_NAV_LABELS[key] || key });
+    });
+    buildActNav(sections);
+    setupActSpy(sections.map(s => s.id));
+  }
+
   async function refreshPhotosInStory() {
     if (!storyData) return;
     const headers = {};
@@ -577,13 +591,35 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
       const photoList = buildPhotoList(photos, tasting);
       const photosHtml = buildPhotosActHtml(photoList, true);
       const existing = $('act-photos');
+      let navChanged = false;
       if (existing) {
-        if (photosHtml) existing.outerHTML = photosHtml;
-        else existing.remove();
+        if (photosHtml) {
+          existing.outerHTML = photosHtml;
+        } else {
+          existing.remove();
+          navChanged = true;
+        }
       } else if (photosHtml) {
-        const actContainer = $('actContainer');
-        if (actContainer) actContainer.insertAdjacentHTML('beforeend', photosHtml);
+        const structure = Array.isArray(storyData.storyStructure) ? storyData.storyStructure : [];
+        const photosIdx = structure.indexOf('photos');
+        let inserted = false;
+        if (photosIdx >= 0) {
+          for (let i = photosIdx + 1; i < structure.length; i++) {
+            const nextEl = document.getElementById(`act-${structure[i]}`);
+            if (nextEl) {
+              nextEl.insertAdjacentHTML('beforebegin', photosHtml);
+              inserted = true;
+              break;
+            }
+          }
+        }
+        if (!inserted) {
+          const actContainer = $('actContainer');
+          if (actContainer) actContainer.insertAdjacentHTML('beforeend', photosHtml);
+        }
+        navChanged = true;
       }
+      if (navChanged) rebuildActNav();
     } catch(e) { /* silent */ }
   }
 
