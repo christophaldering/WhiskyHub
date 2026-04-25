@@ -120,7 +120,7 @@ export default function LabsTastings() {
     if (!tastings) return { invitations: [], filtered: [] };
     const list = [...tastings].filter((t: any) => !t.isTestData);
     const activeOnly = list.filter((t: any) => t.status === "open" || t.status === "draft");
-    const invites = activeOnly.filter((t: any) => t.invitePending === true);
+    let invites = activeOnly.filter((t: any) => t.invitePending === true);
     let result = activeOnly.filter((t: any) => !t.invitePending);
 
     if (searchQuery.trim()) {
@@ -130,6 +130,7 @@ export default function LabsTastings() {
         t.location?.toLowerCase().includes(q) ||
         t.hostName?.toLowerCase().includes(q);
       result = result.filter(matchesSearch);
+      invites = invites.filter(matchesSearch);
     }
 
     result.sort((a: any, b: any) => {
