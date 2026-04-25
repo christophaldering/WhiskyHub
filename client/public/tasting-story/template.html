@@ -607,12 +607,24 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
   function closeRegenPanel() { $('regenPanel').classList.remove('open'); }
   window.closeRegenPanel = closeRegenPanel;
 
+  async function clearStoryCache() {
+    const headers = {};
+    const p = pid();
+    if (p) headers['x-participant-id'] = p;
+    const res = await fetch(`/api/tastings/${tastingId}/story-cache`, { method: 'DELETE', headers });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      throw new Error(j.message || `Cache konnte nicht gelöscht werden (HTTP ${res.status})`);
+    }
+  }
+
   async function regenStory() {
     const prompt = ($('regenPromptInput').value || '').trim();
     closeRegenPanel();
     showLoading();
     try {
       await savePrompt(prompt);
+      await clearStoryCache();
       const [data, photos] = await Promise.all([fetchStory(true, false), fetchPhotos()]);
       storyData = data;
       renderStory(data, photos);
