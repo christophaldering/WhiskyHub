@@ -10930,6 +10930,11 @@ const resources = {
         whisky_one: "Whisky",
         whisky_other: "Whiskys",
         exportCsv: "CSV",
+        emptyCommunity: "Noch keine Community-Vergleiche verfügbar",
+        emptyCommunityHintOne: "Der 1 Whisky, den du bewertet hast, wurde bisher nur von dir bewertet. Community-Vergleiche erscheinen, sobald andere Nutzer denselben Whisky ebenfalls bewerten.",
+        emptyCommunityHintMany: "Die {{count}} Whiskys, die du bewertet hast, wurden bisher nur von dir bewertet. Community-Vergleiche erscheinen, sobald andere Nutzer dieselben Whiskys ebenfalls bewerten.",
+        excludedOne: "1 Whisky, den du bewertet hast, ist ausgeblendet – er hat noch keine Community-Bewertungen zum Vergleich.",
+        excludedMany: "{{count}} Whiskys, die du bewertet hast, sind ausgeblendet – sie haben noch keine Community-Bewertungen zum Vergleich.",
       },
       drams: {
         title: "Meine Drams",
