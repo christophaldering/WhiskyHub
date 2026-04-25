@@ -1000,8 +1000,14 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (pid) headers["x-participant-id"] = pid;
       const res = await fetch(`/api/tastings/${tastingId}/ai-narrative`, { method: "POST", headers, body: JSON.stringify({ language: "de" }) });
-      if (res.ok) await qc.invalidateQueries({ queryKey: ["tasting-story", tastingId] });
-    } catch {}
+      if (res.ok) {
+        await qc.invalidateQueries({ queryKey: ["tasting-story", tastingId] });
+      } else {
+        toast({ title: "Abendgeschichte fehlgeschlagen", description: "Die KI-Narration konnte nicht generiert werden.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Abendgeschichte fehlgeschlagen", description: "Verbindungsfehler beim Generieren der Narration.", variant: "destructive" });
+    }
     setNarrativeLoading(false);
   };
 
@@ -1045,9 +1051,9 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
 
   if (isLoading) {
     return (
-      <div style={{ position: "fixed", inset: 0, background: "var(--labs-bg)", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }}>
-        <Loader2 style={{ width: 32, height: 32, color: "var(--labs-accent)", animation: "spin 1s linear infinite" }} />
-        <p style={{ color: "var(--labs-text-muted)", fontSize: 14 }}>Lade Story…</p>
+      <div style={{ position: "fixed", inset: 0, background: STORY.bg, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }}>
+        <Loader2 style={{ width: 32, height: 32, color: STORY.amber, animation: "spin 1s linear infinite" }} />
+        <p style={{ color: STORY.dim, fontSize: 14 }}>Lade Story…</p>
         <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -1055,7 +1061,7 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
 
   if (error || !storyData) {
     return (
-      <div style={{ position: "fixed", inset: 0, background: "var(--labs-bg)", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16, padding: 24 }}>
+      <div style={{ position: "fixed", inset: 0, background: STORY.bg, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16, padding: 24 }}>
         <p style={{ color: "var(--labs-danger)", fontSize: 16, fontWeight: 600 }}>Story nicht verfügbar</p>
         <p style={{ color: "var(--labs-text-muted)", fontSize: 13 }}>
           {(error as Error)?.message || "Keine Daten gefunden."}
@@ -1306,7 +1312,7 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
               style={{
                 width: i === slideIndex ? 20 : 6,
                 height: 6, borderRadius: 3,
-                background: i === slideIndex ? "var(--labs-accent)" : "rgba(255,255,255,0.3)",
+                background: i === slideIndex ? STORY.amber : "rgba(255,255,255,0.2)",
                 border: "none", cursor: "pointer", padding: 0,
                 transition: "all 0.2s",
               }}
@@ -1375,12 +1381,12 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
             minWidth: 300, maxWidth: 400, width: "90%",
             display: "flex", flexDirection: "column", alignItems: "center", gap: 20,
           }}>
-            <Loader2 style={{ width: 32, height: 32, color: "var(--labs-accent)", animation: "spin 1s linear infinite" }} />
+            <Loader2 style={{ width: 32, height: 32, color: STORY.amber, animation: "spin 1s linear infinite" }} />
             <div style={{ width: "100%", textAlign: "center" }}>
-              <p style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", marginBottom: 6 }}>
+              <p style={{ fontSize: 15, fontWeight: 600, color: STORY.text, marginBottom: 6 }}>
                 PDF wird erstellt…
               </p>
-              <p style={{ fontSize: 12, color: "var(--labs-text-muted)", marginBottom: 16 }} data-testid="pdf-progress-label">
+              <p style={{ fontSize: 12, color: STORY.dim, marginBottom: 16 }} data-testid="pdf-progress-label">
                 {pdfProgress
                   ? `Seite ${pdfProgress.current} von ${pdfProgress.total} · ${pdfProgress.label}`
                   : "Vorbereitung…"}
@@ -1395,7 +1401,7 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
                   transition={{ duration: 0.25, ease: "easeOut" }}
                   style={{
                     height: "100%", borderRadius: 3,
-                    background: "linear-gradient(90deg, var(--labs-accent), #e8c878)",
+                    background: `linear-gradient(90deg, ${STORY.amber}, #e8c878)`,
                   }}
                   data-testid="pdf-progress-bar"
                 />

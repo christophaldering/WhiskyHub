@@ -17861,6 +17861,7 @@ Language: German if the tasting title or participant names appear German, otherw
         whiskyPortraits: aiComments,
         discoveryTexts,
         blindNarration,
+        winnerStory: winnerNarration,
         closingReflection,
       });
     } catch (e: any) {
