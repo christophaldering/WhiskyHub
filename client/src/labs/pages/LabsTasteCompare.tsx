@@ -122,6 +122,7 @@ export default function LabsTasteCompare() {
 
   const ratedWhiskies = data?.ratedWhiskies || [];
   const whiskyComparison = data?.whiskyComparison || [];
+  const excludedCount = Math.max(0, ratedWhiskies.length - whiskyComparison.length);
 
   const datePeriodLabels: Record<DatePeriod, string> = {
     all: t("compare.periodAll", "All time"),
@@ -253,6 +254,18 @@ export default function LabsTasteCompare() {
           <Wine className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
           <p style={{ color: "var(--labs-text-secondary)", fontSize: 14 }}>{t("compare.emptyRate", "Rate whiskies to start comparing your scores")}</p>
         </div>
+      ) : whiskyComparison.length === 0 && ratedWhiskies.length > 0 ? (
+        <div className="labs-empty labs-fade-in" data-testid="compare-no-community-ratings">
+          <Info className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
+          <p style={{ color: "var(--labs-text-secondary)", fontSize: 14, fontWeight: 500, marginBottom: 6 }}>
+            {t("compare.emptyCommunity", "No community comparisons available yet")}
+          </p>
+          <p style={{ color: "var(--labs-text-muted)", fontSize: 12, maxWidth: 340, textAlign: "center" }}>
+            {ratedWhiskies.length === 1
+              ? t("compare.emptyCommunityHintOne", "The 1 whisky you've rated has only been rated by you so far. Community comparisons appear once other users also rate the same whisky.")
+              : t("compare.emptyCommunityHintMany", "The {{count}} whiskies you've rated have only been rated by you so far. Community comparisons appear once other users also rate the same whisky.", { count: ratedWhiskies.length })}
+          </p>
+        </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {whiskyComparison.length > 0 && (
@@ -330,6 +343,19 @@ export default function LabsTasteCompare() {
                   </div>
                 )}
 
+                {excludedCount > 0 && (
+                  <div
+                    style={{ padding: "8px 16px", display: "flex", alignItems: "center", gap: 6, background: "color-mix(in srgb, var(--labs-accent) 8%, transparent)", borderBottom: "1px solid var(--labs-border)" }}
+                    data-testid="compare-excluded-notice"
+                  >
+                    <Info className="w-3 h-3 flex-shrink-0" style={{ color: "var(--labs-accent)", opacity: 0.7 }} />
+                    <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                      {excludedCount === 1
+                        ? t("compare.excludedOne", "1 whisky you've rated is hidden — it has no community ratings yet to compare against.")
+                        : t("compare.excludedMany", "{{count}} whiskies you've rated are hidden — they have no community ratings yet to compare against.", { count: excludedCount })}
+                    </span>
+                  </div>
+                )}
                 <div style={{ padding: "8px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--labs-border)" }}>
                   <span style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>
                     {filteredComparison.length} {filteredComparison.length === 1 ? t("compare.whisky_one", "whisky") : t("compare.whisky_other", "whiskies")}
