@@ -17793,6 +17793,14 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
     return serialized;
   }
 
+  async function deleteStoryManualImage(url: string | null | undefined): Promise<void> {
+    if (!url || typeof url !== "string" || !url.startsWith("/objects/")) return;
+    try {
+      const objectFile = await objectStorage.getObjectEntityFile(url);
+      await objectFile.delete({ ignoreNotFound: true });
+    } catch { /* */ }
+  }
+
   // Story data aggregation endpoint
   app.patch("/api/tastings/:id/story-prompt", async (req: Request, res: Response) => {
     try {
@@ -18560,6 +18568,7 @@ If the user data includes a "hostContext" field, treat it as additional creative
         const overrides = readManualOverridesFromCache(tasting.storySlidesCache);
         const manualImages = overrides.manualImages ?? { whiskies: {}, tasters: {}, photos: {} };
         const bucket: "whiskies" | "tasters" | "photos" = kind === "whisky" ? "whiskies" : (kind === "taster" ? "tasters" : "photos");
+        const previousUrl = manualImages[bucket]?.[slideId];
         const next = {
           whiskies: { ...(manualImages.whiskies ?? {}) },
           tasters: { ...(manualImages.tasters ?? {}) },
@@ -18567,6 +18576,7 @@ If the user data includes a "hostContext" field, treat it as additional creative
         };
         next[bucket][slideId] = url;
         await persistStoryCacheUpdate(req.params.id, tasting.storySlidesCache, { manualImages: next });
+        if (previousUrl && previousUrl !== url) await deleteStoryManualImage(previousUrl);
         if (tasting.storyPdfObjectKey) {
           try {
             const { bucketName, objectName } = parseStoragePath(tasting.storyPdfObjectKey);
@@ -18596,7 +18606,8 @@ If the user data includes a "hostContext" field, treat it as additional creative
       if (!slideId) return res.status(400).json({ message: "slideId fehlt" });
       const overrides = readManualOverridesFromCache(tasting.storySlidesCache);
       const manualImages = overrides.manualImages ?? { whiskies: {}, tasters: {}, photos: {} };
-      const bucket = kind === "whisky" ? "whiskies" : (kind === "taster" ? "tasters" : "photos");
+      const bucket: "whiskies" | "tasters" | "photos" = kind === "whisky" ? "whiskies" : (kind === "taster" ? "tasters" : "photos");
+      const previousUrl = manualImages[bucket]?.[slideId];
       const next = {
         whiskies: { ...(manualImages.whiskies ?? {}) },
         tasters: { ...(manualImages.tasters ?? {}) },
@@ -18604,6 +18615,7 @@ If the user data includes a "hostContext" field, treat it as additional creative
       };
       delete next[bucket][slideId];
       await persistStoryCacheUpdate(req.params.id, tasting.storySlidesCache, { manualImages: next });
+      if (previousUrl) await deleteStoryManualImage(previousUrl);
       if (tasting.storyPdfObjectKey) {
         try {
           const { bucketName, objectName } = parseStoragePath(tasting.storyPdfObjectKey);
