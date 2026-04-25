@@ -282,8 +282,8 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
 <!-- Story content -->
 <div id="storyContent" style="display:none;">
 
-  <!-- Act 0: Cover hero -->
-  <section class="section--full" id="act-cover" data-act="Eröffnung">
+  <!-- Act 0: Cover hero (always first) -->
+  <section class="section--full" id="act-cover" data-act="Titel">
     <div class="hero" id="coverHero">
       <div class="hero__bg" id="coverBg"></div>
       <div class="hero__content">
@@ -295,96 +295,8 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
     </div>
   </section>
 
-  <!-- Act 1: Opening -->
-  <section id="act-opening" data-act="Akt I">
-    <div class="reveal">
-      <div class="divider"></div>
-      <div class="act-label">Akt I · Eröffnung</div>
-      <h2 class="act-title" id="openingTitle">—</h2>
-      <p class="act-sub" id="openingMeta"></p>
-    </div>
-    <div class="reveal reveal--d1" id="openingNarration" style="margin-top:2.5rem;"></div>
-  </section>
-
-  <!-- Act 2: Whiskies -->
-  <section id="act-whiskies" data-act="Akt II">
-    <div class="reveal">
-      <div class="divider"></div>
-      <div class="act-label">Akt II · Die Whiskys</div>
-      <h2 class="act-title">Die Auswahl des Abends</h2>
-    </div>
-    <div class="whisky-grid reveal reveal--d1" id="whiskiesGrid"></div>
-  </section>
-
-  <!-- Act 3: Tasters -->
-  <section id="act-tasters" data-act="Akt III">
-    <div class="reveal">
-      <div class="divider"></div>
-      <div class="act-label">Akt III · Die Verkoster</div>
-      <h2 class="act-title" id="tastersTitle">—</h2>
-    </div>
-    <div class="tasters-grid reveal reveal--d1" id="tastersGrid"></div>
-  </section>
-
-  <!-- Act 4: Discoveries / Ranking -->
-  <section id="act-discoveries" data-act="Akt IV">
-    <div class="reveal">
-      <div class="divider"></div>
-      <div class="act-label">Akt IV · Entdeckungen</div>
-      <h2 class="act-title">Die Platzierungen</h2>
-    </div>
-    <div id="discoveriesContent" style="margin-top:2rem;"></div>
-  </section>
-
-  <!-- Act 5: Blind surprise (conditional) -->
-  <section id="act-blind" data-act="Akt V" style="display:none;">
-    <div class="reveal">
-      <div class="divider"></div>
-      <div class="act-label">Akt V · Die Überraschung</div>
-      <h2 class="act-title">Blind-Tasting-Auflösung</h2>
-    </div>
-    <div class="reveal reveal--d1" id="blindNarration" style="margin-top:2rem;"></div>
-    <div id="blindGrid" style="margin-top:1.5rem;"></div>
-  </section>
-
-  <!-- Act 6: Winner -->
-  <section id="act-winner" data-act="Akt VI">
-    <div class="winner-hero reveal">
-      <div class="divider"></div>
-      <div class="act-label">Akt VI · Der Sieger</div>
-      <span class="winner-hero__crown">🏆</span>
-      <div class="winner-hero__label">Der Sieger des Abends</div>
-      <h2 class="winner-hero__name" id="winnerName">—</h2>
-      <div class="winner-hero__score" id="winnerScore"></div>
-      <div class="winner-hero__story reveal reveal--d1">
-        <div class="quote" id="winnerStory"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Photos (conditional) -->
-  <div id="act-photos" style="display:none;">
-    <section>
-      <div class="reveal">
-        <div class="divider"></div>
-        <div class="act-label">Der Abend in Bildern</div>
-      </div>
-    </section>
-    <div class="photos-grid reveal reveal--d1" id="photosGrid"></div>
-  </div>
-
-  <!-- Act 7: Finale -->
-  <section id="act-finale" data-act="Finale">
-    <div class="finale reveal">
-      <div style="width:100%;">
-        <div class="divider"></div>
-        <div class="act-label">Finale</div>
-        <div class="finale__tagline" id="finalTagline"><em>Der Abend <strong>bleibt.</strong></em></div>
-        <div class="finale__closing" id="closingReflection"></div>
-        <div class="finale__brand" style="margin-top:3rem;">CaskSense · Where Tasting becomes Reflection</div>
-      </div>
-    </div>
-  </section>
+  <!-- Dynamic acts rendered by renderStory() -->
+  <div id="actContainer"></div>
 
 </div><!-- /storyContent -->
 
@@ -392,13 +304,23 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
 <div class="host-regen" id="hostRegen">
   <div class="host-regen__panel" id="regenPanel">
     <div class="host-regen__label">Story-Prompt anpassen:</div>
-    <textarea class="host-regen__textarea" id="regenPromptInput" rows="3" placeholder="Neue Hinweise für die KI…"></textarea>
+    <textarea class="host-regen__textarea" id="regenPromptInput" rows="6" placeholder="Neue Hinweise für die KI… z.B. &quot;Beginne mit dem Sieger&quot;, &quot;Lasse Verkoster-Portraits weg&quot;, &quot;Fotos zwischen Whiskys und Entdeckungen&quot;"></textarea>
     <div style="display:flex;gap:.5rem;margin-top:.6rem;">
-      <button class="btn-primary" style="font-size:.8rem;padding:.45rem 1rem;" onclick="regenStory()">Neu generieren</button>
+      <button class="btn-primary" style="font-size:.8rem;padding:.45rem 1rem;" data-testid="button-regen-story" onclick="regenStory()">Neu generieren</button>
       <button class="btn-ghost" style="font-size:.7rem;" onclick="closeRegenPanel()">Abbrechen</button>
     </div>
+    <div style="margin-top:1rem;border-top:1px solid rgba(201,169,97,.15);padding-top:.75rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
+        <span style="font-family:var(--sans);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim);">Event-Fotos</span>
+        <span id="photoCount" style="font-family:var(--sans);font-size:.7rem;color:var(--ink-faint);"></span>
+      </div>
+      <div id="photoMgmtGrid" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:8px;"></div>
+      <input type="file" id="photoFileInput" accept="image/*" multiple style="display:none;" data-testid="input-photo-upload" onchange="handlePhotoUpload(this.files)">
+      <button style="font-family:var(--sans);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);background:rgba(201,169,97,.08);border:1px solid rgba(201,169,97,.25);border-radius:3px;padding:.4rem .75rem;cursor:pointer;width:100%;transition:background .2s;" data-testid="button-add-photo" id="photoUploadBtn" onmouseenter="this.style.background='rgba(201,169,97,.18)'" onmouseleave="this.style.background='rgba(201,169,97,.08)'" onclick="document.getElementById('photoFileInput').click()">+ Foto hinzufügen</button>
+      <div id="photoUploadStatus" style="font-family:var(--sans);font-size:.7rem;color:var(--ink-faint);margin-top:4px;min-height:1em;"></div>
+    </div>
   </div>
-  <button class="host-regen__btn" onclick="toggleRegenPanel()" id="regenToggleBtn">✦ Story anpassen</button>
+  <button class="host-regen__btn" onclick="toggleRegenPanel()" id="regenToggleBtn" data-testid="button-story-settings">Story anpassen</button>
 </div>
 
 <script>
@@ -549,6 +471,7 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
     panel.classList.toggle('open');
     if (panel.classList.contains('open') && storyData) {
       $('regenPromptInput').value = storyData.tasting?.storyPrompt || '';
+      loadPhotoMgmt();
     }
   }
   window.toggleRegenPanel = toggleRegenPanel;
@@ -561,7 +484,6 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
     closeRegenPanel();
     showLoading();
     try {
-      // Always save the prompt (even empty string) to allow explicit clearing
       await savePrompt(prompt);
       const [data, photos] = await Promise.all([fetchStory(true, false), fetchPhotos()]);
       storyData = data;
@@ -572,16 +494,141 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
   }
   window.regenStory = regenStory;
 
+  // --- Photo management ---
+  let currentPhotos = [];
+
+  async function loadPhotoMgmt() {
+    const headers = {};
+    const p = pid();
+    if (p) headers['x-participant-id'] = p;
+    try {
+      const res = await fetch(`/api/tastings/${tastingId}/event-photos`, { headers });
+      if (!res.ok) return;
+      currentPhotos = await res.json();
+      renderPhotoMgmt();
+    } catch(e) { /* silent */ }
+  }
+
+  function renderPhotoMgmt() {
+    const grid = $('photoMgmtGrid');
+    const countEl = $('photoCount');
+    if (!grid) return;
+    countEl.textContent = `${currentPhotos.length}/10`;
+    grid.innerHTML = currentPhotos.map(p => `<div style="position:relative;width:52px;height:52px;flex-shrink:0;">
+      <img src="${esc(p.photoUrl)}" style="width:52px;height:52px;object-fit:cover;border-radius:3px;border:1px solid rgba(201,169,97,.2);" alt="">
+      <button onclick="deleteEventPhoto('${esc(p.id)}')" data-testid="button-delete-photo-${esc(p.id)}" style="position:absolute;top:-5px;right:-5px;width:16px;height:16px;border-radius:50%;background:#8B2A2A;border:none;color:#fff;cursor:pointer;font-size:10px;line-height:16px;text-align:center;padding:0;display:flex;align-items:center;justify-content:center;">×</button>
+    </div>`).join('');
+  }
+
+  async function deleteEventPhoto(photoId) {
+    const headers = {};
+    const p = pid();
+    if (p) headers['x-participant-id'] = p;
+    try {
+      const res = await fetch(`/api/tastings/${tastingId}/event-photos/${photoId}`, { method: 'DELETE', headers });
+      if (!res.ok) return;
+      await loadPhotoMgmt();
+      await refreshPhotosInStory();
+    } catch(e) { /* silent */ }
+  }
+  window.deleteEventPhoto = deleteEventPhoto;
+
+  async function handlePhotoUpload(files) {
+    if (!files || files.length === 0) return;
+    const statusEl = $('photoUploadStatus');
+    const btn = $('photoUploadBtn');
+    btn.disabled = true;
+    const headers = {};
+    const p = pid();
+    if (p) headers['x-participant-id'] = p;
+    let uploaded = 0;
+    const maxNew = Math.max(0, 10 - currentPhotos.length);
+    for (let i = 0; i < Math.min(files.length, maxNew); i++) {
+      const file = files[i];
+      if (!file.type.startsWith('image/')) continue;
+      if (file.size > 20 * 1024 * 1024) { statusEl.textContent = `${file.name}: zu groß (max 20 MB)`; continue; }
+      statusEl.textContent = `Hochladen ${i + 1}/${Math.min(files.length, maxNew)}…`;
+      const fd = new FormData();
+      fd.append('file', file);
+      try {
+        const res = await fetch(`/api/tastings/${tastingId}/event-photos/upload`, { method: 'POST', headers, body: fd });
+        if (res.ok) { uploaded++; }
+        else { const j = await res.json().catch(() => ({})); statusEl.textContent = j.message || 'Fehler beim Hochladen'; }
+      } catch(e) { statusEl.textContent = 'Fehler beim Hochladen'; }
+    }
+    statusEl.textContent = uploaded > 0 ? `${uploaded} Foto${uploaded > 1 ? 's' : ''} hochgeladen` : statusEl.textContent;
+    btn.disabled = false;
+    $('photoFileInput').value = '';
+    await loadPhotoMgmt();
+    await refreshPhotosInStory();
+  }
+  window.handlePhotoUpload = handlePhotoUpload;
+
+  async function refreshPhotosInStory() {
+    if (!storyData) return;
+    const headers = {};
+    const p = pid();
+    if (p) headers['x-participant-id'] = p;
+    try {
+      const res = await fetch(`/api/tastings/${tastingId}/event-photos`, { headers });
+      if (!res.ok) return;
+      const photos = await res.json();
+      const tasting = storyData.tasting;
+      const photoList = buildPhotoList(photos, tasting);
+      const photosHtml = buildPhotosActHtml(photoList, true);
+      const existing = $('act-photos');
+      if (existing) {
+        if (photosHtml) existing.outerHTML = photosHtml;
+        else existing.remove();
+      } else if (photosHtml) {
+        const actContainer = $('actContainer');
+        if (actContainer) actContainer.insertAdjacentHTML('beforeend', photosHtml);
+      }
+    } catch(e) { /* silent */ }
+  }
+
+  function buildPhotoList(photos, tasting) {
+    const list = (photos || []).filter(p => p.photoUrl);
+    if (tasting && tasting.coverImageUrl) {
+      const idx = list.findIndex(p => p.photoUrl === tasting.coverImageUrl);
+      if (idx > 0) { const [cp] = list.splice(idx, 1); list.unshift(cp); }
+      else if (idx < 0) { list.unshift({ photoUrl: tasting.coverImageUrl, caption: null }); }
+    }
+    return list;
+  }
+
+  function buildPhotosActHtml(photoList, alreadyVisible) {
+    if (!photoList || photoList.length === 0) return '';
+    const revealCls = alreadyVisible ? 'reveal is-visible' : 'reveal';
+    return `<div id="act-photos" data-act="Bilder">
+      <section>
+        <div class="${revealCls}"><div class="divider"></div><div class="act-label">Der Abend in Bildern</div></div>
+      </section>
+      <div class="photos-grid ${revealCls} reveal--d1">${photoList.map(p => `<div class="photo-item ${revealCls}">
+        <img src="${esc(p.photoUrl)}" alt="${esc(p.caption || '')}" loading="lazy">
+        ${p.caption ? `<div class="photo-item__caption">${esc(p.caption)}</div>` : ''}
+      </div>`).join('')}</div>
+    </div>`;
+  }
+
   // --- Render story ---
+  const ACT_NAV_LABELS = {
+    opening: 'Eröffnung', whiskies: 'Whiskys', tasters: 'Verkoster',
+    discoveries: 'Rangliste', blind: 'Überraschung', winner: 'Sieger',
+    photos: 'Bilder', finale: 'Finale',
+  };
+
   function renderStory(data, photos) {
     const { tasting, sortedRanking, winner, participants, blindReveal, aiComments,
             participantFunFacts, openingNarration, discoveryTexts, blindNarration,
             closingReflection, winnerStory, winnerNarration } = data;
 
-    // Prefer server-returned isHost (trusted); fall back to localStorage pid comparison.
+    const structure = Array.isArray(data.storyStructure) && data.storyStructure.length > 0
+      ? data.storyStructure
+      : ['opening', 'whiskies', 'tasters', 'discoveries', 'winner', 'photos', 'finale'];
+
     isHost = data.isHost ?? (tasting.hostId && tasting.hostId === pid());
 
-    // Cover
     const coverUrl = tasting.coverImageUrl || (photos && photos[0]?.photoUrl) || '';
     if (coverUrl) {
       $('coverBg').style.backgroundImage = `url(${coverUrl})`;
@@ -593,115 +640,138 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
     $('coverMeta').textContent = metaParts;
     document.title = `${tasting.title || 'Story'} · CaskSense`;
 
-    // Opening
-    $('openingTitle').textContent = tasting.title || '';
-    $('openingMeta').textContent = metaParts;
-    if (openingNarration || tasting.hostReflection) {
-      $('openingNarration').innerHTML = `<div class="quote">${esc(openingNarration || tasting.hostReflection)}</div>`;
-    }
-
-    // Whiskies
     const ranked = sortedRanking || [];
     const rScale = tasting.ratingScale || 100;
-    $('whiskiesGrid').innerHTML = ranked.map((w, i) => {
-      const badges = [w.age && `${w.age}y`, w.abv && `${w.abv}%`, w.caskType].filter(Boolean);
-      const portrait = (aiComments && aiComments[w.name]) || '';
-      return `<div class="whisky-card reveal reveal--d${(i % 3) + 1}">
-        <div class="whisky-card__rank">Platz ${i + 1}</div>
-        <div class="whisky-card__name">${esc(w.name || '?')}</div>
-        <div class="whisky-card__distillery">${esc([w.distillery, w.region].filter(Boolean).join(' · '))}</div>
-        ${w.avgOverall != null ? `<div class="whisky-card__score">${esc(fmtScore(w.avgOverall))}<span> / ${rScale}</span></div>` : ''}
-        ${badges.length ? `<div class="whisky-card__badges">${badges.map(b => `<span class="badge">${esc(b)}</span>`).join('')}</div>` : ''}
-        ${portrait ? `<div class="whisky-card__portrait">${esc(portrait)}</div>` : ''}
-      </div>`;
-    }).join('');
-
-    // Tasters
-    const tasters = (participants || []).filter(p => !p.excludedFromResults);
-    $('tastersTitle').textContent = `${tasters.length} ${tasters.length === 1 ? 'Verkoster' : 'Verkoster'} · Eine Mission`;
-    $('tastersGrid').innerHTML = tasters.map(tp => {
-      const name = stripGuest(tp.participant?.name || tp.participant?.email || 'Anonym');
-      const sketch = (participantFunFacts && participantFunFacts[name]) || '';
-      return `<div class="taster-card">
-        <div class="taster-card__avatar">${esc(name.charAt(0).toUpperCase())}</div>
-        <div class="taster-card__name">${esc(name)}</div>
-        ${sketch ? `<div class="taster-card__sketch">${esc(sketch)}</div>` : ''}
-      </div>`;
-    }).join('');
-
-    // Discoveries (rank 2+)
-    const disc = ranked.slice(1);
-    $('discoveriesContent').innerHTML = disc.map((w, i) => {
-      const text = (discoveryTexts && discoveryTexts[w.name]) || (aiComments && aiComments[w.name]) || '';
-      return `<div style="margin-bottom:2.5rem;" class="reveal reveal--d${(i % 2) + 1}">
-        <div style="display:flex;align-items:baseline;gap:1rem;margin-bottom:.5rem;">
-          <span style="font-size:3rem;font-weight:700;color:${i < 2 ? 'var(--amber)' : 'var(--ink-faint)'};line-height:1;">#${i + 2}</span>
-          <div>
-            <div style="font-family:var(--serif);font-size:1.4rem;color:var(--ink);">${esc(w.name || '?')}</div>
-            ${w.distillery ? `<div style="font-family:var(--sans);font-size:.8rem;color:var(--ink-faint);">${esc(w.distillery)}</div>` : ''}
-          </div>
-          ${w.avgOverall != null ? `<div style="margin-left:auto;font-size:1.8rem;font-weight:700;color:var(--amber);font-variant-numeric:tabular-nums;">${esc(fmtScore(w.avgOverall))}</div>` : ''}
-        </div>
-        ${text ? `<div class="quote">${esc(text)}</div>` : ''}
-      </div>`;
-    }).join('');
-
-    // Blind
+    const tasterList = (participants || []).filter(p => !p.excludedFromResults);
     const blindData = (blindReveal || []).filter(w => w.guesses && w.guesses.length > 0);
-    if (blindData.length > 0 || blindNarration) {
-      $('act-blind').style.display = '';
-      if (blindNarration) {
-        $('blindNarration').innerHTML = `<div class="quote">${esc(blindNarration)}</div>`;
-      }
-      $('blindGrid').innerHTML = blindData.map(w => {
-        const sorted = [...w.guesses].sort((a, b) => (a.delta ?? 99) - (b.delta ?? 99));
-        const best = sorted[0], worst = sorted[sorted.length - 1];
-        return `<div class="blind-item">
-          <div class="blind-item__name">${esc(w.whiskyName || 'Whisky')}${w.guesses[0]?.actualAbv != null ? ` · ${w.guesses[0].actualAbv}% ABV` : ''}</div>
-          ${best ? `<div class="blind-item__row best">✓ Nächste: ${best.guessAbv}% (Δ ${best.delta != null ? best.delta.toFixed(1) : '?'}%)</div>` : ''}
-          ${worst && worst !== best ? `<div class="blind-item__row worst">✗ Weiteste: ${worst.guessAbv}% (Δ ${worst.delta != null ? worst.delta.toFixed(1) : '?'}%)</div>` : ''}
-        </div>`;
-      }).join('');
-    }
-
-    // Winner
     const winnerText = winnerStory || winnerNarration || '';
-    if (winner) {
-      $('winnerName').textContent = winner.name || '—';
-      $('winnerScore').innerHTML = winner.avgOverall != null ? `${fmtScore(winner.avgOverall)}<span style="font-size:.35em;color:var(--ink-faint);font-weight:400;"> / ${rScale}</span>` : '';
-      $('winnerStory').textContent = winnerText;
-    }
+    const photoList = buildPhotoList(photos, tasting);
 
-    // Photos
-    const photoList = (photos || []).filter(p => p.photoUrl);
-    if (photoList.length > 0) {
-      $('act-photos').style.display = '';
-      $('photosGrid').innerHTML = photoList.map(p => `<div class="photo-item reveal">
-        <img src="${esc(p.photoUrl)}" alt="${esc(p.caption || '')}" loading="lazy">
-        ${p.caption ? `<div class="photo-item__caption">${esc(p.caption)}</div>` : ''}
-      </div>`).join('');
-    }
+    const actBuilders = {
+      opening: () => `<section id="act-opening" data-act="Eröffnung">
+        <div class="reveal"><div class="divider"></div><div class="act-label">Eröffnung</div>
+          <h2 class="act-title">${esc(tasting.title || '')}</h2>
+          <p class="act-sub">${esc(metaParts)}</p>
+        </div>
+        ${(openingNarration || tasting.hostReflection) ? `<div class="reveal reveal--d1" style="margin-top:2.5rem;"><div class="quote">${esc(openingNarration || tasting.hostReflection)}</div></div>` : ''}
+      </section>`,
 
-    // Finale
-    const closing = closingReflection || '';
-    $('closingReflection').innerHTML = closing ? `<div class="quote">${esc(closing)}</div>` : '';
+      whiskies: () => `<section id="act-whiskies" data-act="Die Whiskys">
+        <div class="reveal"><div class="divider"></div><div class="act-label">Die Whiskys</div>
+          <h2 class="act-title">Die Auswahl des Abends</h2>
+        </div>
+        <div class="whisky-grid reveal reveal--d1">${ranked.map((w, i) => {
+          const badges = [w.age && `${w.age}y`, w.abv && `${w.abv}%`, w.caskType].filter(Boolean);
+          const portrait = (aiComments && aiComments[w.name]) || '';
+          return `<div class="whisky-card reveal reveal--d${(i % 3) + 1}">
+            <div class="whisky-card__rank">Platz ${i + 1}</div>
+            <div class="whisky-card__name">${esc(w.name || '?')}</div>
+            <div class="whisky-card__distillery">${esc([w.distillery, w.region].filter(Boolean).join(' · '))}</div>
+            ${w.avgOverall != null ? `<div class="whisky-card__score">${esc(fmtScore(w.avgOverall))}<span> / ${rScale}</span></div>` : ''}
+            ${badges.length ? `<div class="whisky-card__badges">${badges.map(b => `<span class="badge">${esc(b)}</span>`).join('')}</div>` : ''}
+            ${portrait ? `<div class="whisky-card__portrait">${esc(portrait)}</div>` : ''}
+          </div>`;
+        }).join('')}</div>
+      </section>`,
 
-    // Act nav & spy — Act V condition matches section visibility exactly
-    const blindActVisible = blindData.length > 0 || !!blindNarration;
-    const sections = [
-      { id: 'act-cover', label: 'Eröffnung' },
-      { id: 'act-opening', label: 'Akt I' },
-      { id: 'act-whiskies', label: 'Akt II' },
-      { id: 'act-tasters', label: 'Akt III' },
-      { id: 'act-discoveries', label: 'Akt IV' },
-      ...(blindActVisible ? [{ id: 'act-blind', label: 'Akt V' }] : []),
-      { id: 'act-winner', label: 'Akt VI' },
-      { id: 'act-finale', label: 'Finale' },
-    ];
+      tasters: () => `<section id="act-tasters" data-act="Die Verkoster">
+        <div class="reveal"><div class="divider"></div><div class="act-label">Die Verkoster</div>
+          <h2 class="act-title">${esc(tasterList.length + ' Verkoster · Eine Mission')}</h2>
+        </div>
+        <div class="tasters-grid reveal reveal--d1">${tasterList.map(tp => {
+          const name = stripGuest(tp.participant?.name || tp.participant?.email || 'Anonym');
+          const sketch = (participantFunFacts && participantFunFacts[name]) || '';
+          return `<div class="taster-card">
+            <div class="taster-card__avatar">${esc(name.charAt(0).toUpperCase())}</div>
+            <div class="taster-card__name">${esc(name)}</div>
+            ${sketch ? `<div class="taster-card__sketch">${esc(sketch)}</div>` : ''}
+          </div>`;
+        }).join('')}</div>
+      </section>`,
+
+      discoveries: () => `<section id="act-discoveries" data-act="Entdeckungen">
+        <div class="reveal"><div class="divider"></div><div class="act-label">Die Platzierungen</div>
+          <h2 class="act-title">Die Rangliste</h2>
+        </div>
+        <div style="margin-top:2rem;">${ranked.slice(1).map((w, i) => {
+          const text = (discoveryTexts && discoveryTexts[w.name]) || (aiComments && aiComments[w.name]) || '';
+          return `<div style="margin-bottom:2.5rem;" class="reveal reveal--d${(i % 2) + 1}">
+            <div style="display:flex;align-items:baseline;gap:1rem;margin-bottom:.5rem;">
+              <span style="font-size:3rem;font-weight:700;color:${i < 2 ? 'var(--amber)' : 'var(--ink-faint)'};line-height:1;">#${i + 2}</span>
+              <div>
+                <div style="font-family:var(--serif);font-size:1.4rem;color:var(--ink);">${esc(w.name || '?')}</div>
+                ${w.distillery ? `<div style="font-family:var(--sans);font-size:.8rem;color:var(--ink-faint);">${esc(w.distillery)}</div>` : ''}
+              </div>
+              ${w.avgOverall != null ? `<div style="margin-left:auto;font-size:1.8rem;font-weight:700;color:var(--amber);font-variant-numeric:tabular-nums;">${esc(fmtScore(w.avgOverall))}</div>` : ''}
+            </div>
+            ${text ? `<div class="quote">${esc(text)}</div>` : ''}
+          </div>`;
+        }).join('')}</div>
+      </section>`,
+
+      blind: () => {
+        if (blindData.length === 0 && !blindNarration) return '';
+        return `<section id="act-blind" data-act="Überraschung">
+          <div class="reveal"><div class="divider"></div><div class="act-label">Die Überraschung</div>
+            <h2 class="act-title">Blind-Tasting-Auflösung</h2>
+          </div>
+          ${blindNarration ? `<div class="reveal reveal--d1" style="margin-top:2rem;"><div class="quote">${esc(blindNarration)}</div></div>` : ''}
+          <div style="margin-top:1.5rem;">${blindData.map(w => {
+            const sorted = [...w.guesses].sort((a, b) => (a.delta ?? 99) - (b.delta ?? 99));
+            const best = sorted[0], worst = sorted[sorted.length - 1];
+            return `<div class="blind-item">
+              <div class="blind-item__name">${esc(w.whiskyName || 'Whisky')}${w.guesses[0]?.actualAbv != null ? ` · ${w.guesses[0].actualAbv}% ABV` : ''}</div>
+              ${best ? `<div class="blind-item__row best">Nächste: ${best.guessAbv}% (Δ ${best.delta != null ? best.delta.toFixed(1) : '?'}%)</div>` : ''}
+              ${worst && worst !== best ? `<div class="blind-item__row worst">Weiteste: ${worst.guessAbv}% (Δ ${worst.delta != null ? worst.delta.toFixed(1) : '?'}%)</div>` : ''}
+            </div>`;
+          }).join('')}</div>
+        </section>`;
+      },
+
+      winner: () => `<section id="act-winner" data-act="Der Sieger">
+        <div class="winner-hero reveal">
+          <div class="divider"></div>
+          <div class="act-label">Der Sieger</div>
+          <div class="winner-hero__label">Der Sieger des Abends</div>
+          <h2 class="winner-hero__name">${esc(winner?.name || '—')}</h2>
+          <div class="winner-hero__score">${winner?.avgOverall != null ? `${esc(fmtScore(winner.avgOverall))}<span style="font-size:.35em;color:var(--ink-faint);font-weight:400;"> / ${rScale}</span>` : ''}</div>
+          <div class="winner-hero__story reveal reveal--d1"><div class="quote">${esc(winnerText)}</div></div>
+        </div>
+      </section>`,
+
+      photos: () => buildPhotosActHtml(photoList, false),
+
+      finale: () => `<section id="act-finale" data-act="Finale">
+        <div class="finale reveal">
+          <div style="width:100%;">
+            <div class="divider"></div>
+            <div class="act-label">Finale</div>
+            <div class="finale__tagline"><em>Der Abend <strong>bleibt.</strong></em></div>
+            ${closingReflection ? `<div class="finale__closing"><div class="quote">${esc(closingReflection)}</div></div>` : ''}
+            <div class="finale__brand" style="margin-top:3rem;">CaskSense · Where Tasting becomes Reflection</div>
+          </div>
+        </div>
+      </section>`,
+    };
+
+    const actContainer = $('actContainer');
+    const renderedActs = [];
+    structure.forEach(key => {
+      if (actBuilders[key]) {
+        const html = actBuilders[key]();
+        if (html) renderedActs.push({ key, html });
+      }
+    });
+    actContainer.innerHTML = renderedActs.map(a => a.html).join('');
+
+    const sections = [{ id: 'act-cover', label: 'Titel' }];
+    renderedActs.forEach(({ key }) => {
+      const id = `act-${key}`;
+      if (document.getElementById(id)) sections.push({ id, label: ACT_NAV_LABELS[key] || key });
+    });
     buildActNav(sections);
     setupActSpy(sections.map(s => s.id));
 
-    // Cover parallax
     const heroBg = $('coverBg');
     if (heroBg && coverUrl) {
       window.addEventListener('scroll', () => {
@@ -712,12 +782,10 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
       }, { passive: true });
     }
 
-    // Host regen button
     if (isHost) {
       $('hostRegen').classList.add('visible');
     }
 
-    // Setup reveal
     setupReveal();
   }
 

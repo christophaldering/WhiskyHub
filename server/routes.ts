@@ -17704,6 +17704,30 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
     }
   });
 
+  app.post("/api/tastings/:id/event-photos/upload", memUpload.single("file"), async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      if (tasting.hostId !== auth.participant.id) return res.status(403).json({ message: "Only host can upload event photos" });
+      const existingPhotos = await storage.getTastingEventPhotos(req.params.id);
+      if (existingPhotos.length >= 10) return res.status(400).json({ message: "Maximum 10 event photos allowed" });
+      const file = (req as any).file as Express.Multer.File | undefined;
+      if (!file) return res.status(400).json({ message: "No file provided" });
+      const photoUrl = await uploadBufferToObjectStorage(objectStorage, file.buffer, file.mimetype);
+      const photo = await storage.createTastingEventPhoto({
+        tastingId: req.params.id,
+        photoUrl,
+        caption: null,
+        sortOrder: existingPhotos.length,
+      });
+      res.json(photo);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // Story enable/disable toggle
   app.patch("/api/tastings/:id/story-enabled", async (req: Request, res: Response) => {
     try {
@@ -17843,6 +17867,11 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       let discoveryTexts: Record<string, string> = {};
       let blindNarration = "";
       let closingReflection = "";
+      let storyStructure: string[] = [];
+      const defaultStoryStructure = tasting.blindMode
+        ? ["opening", "whiskies", "tasters", "discoveries", "blind", "winner", "photos", "finale"]
+        : ["opening", "whiskies", "tasters", "discoveries", "winner", "photos", "finale"];
+      const validActKeys = new Set(["opening", "whiskies", "tasters", "discoveries", "blind", "winner", "photos", "finale"]);
 
       const currentRatingCount = allRatings.length;
       const forceRefresh = isHost && req.query.refresh === "true";
@@ -17872,6 +17901,10 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
           discoveryTexts = cached.discoveryTexts ?? {};
           blindNarration = cached.blindNarration ?? "";
           closingReflection = cached.closingReflection ?? "";
+          const rawCachedStructure = cached.storyStructure;
+          storyStructure = Array.isArray(rawCachedStructure)
+            ? [...new Set((rawCachedStructure as string[]).filter((k: string) => validActKeys.has(k)))]
+            : [];
           servedFromCache = true;
         } catch {}
       }
@@ -17967,11 +18000,13 @@ Respond ONLY with valid JSON matching this exact structure:
   "discoveryTexts": { "<whiskyName (rank 2+ only)>": "<2-3 sentence text with concrete data highlights building tension around this ranking>", ... },
   "blindNarration": "<2-3 sentence narrative on the blind guessing — who was closest, what the results reveal about the group>",
   "winnerStory": "<3-4 sentence winner celebration — why this one won, what it represents, how the group reacted>",
-  "closingReflection": "<3-4 sentence closing: the atmosphere as the evening wound down, what lingers>"
+  "closingReflection": "<3-4 sentence closing: the atmosphere as the evening wound down, what lingers>",
+  "storyStructure": ["opening","whiskies","tasters","discoveries","winner","photos","finale"]
 }
+The storyStructure array defines the order and selection of acts. Available act keys: "opening", "whiskies", "tasters", "discoveries", "blind" (only include if blindMode is true), "winner", "photos", "finale". The cover is always first and must not be in this array. Default order: ["opening","whiskies","tasters","discoveries","winner","photos","finale"]. Reorder or omit acts only when the hostContext contains clear structural or ordering instructions.
 Language: German if the tasting title or participant names appear German, otherwise English. Tone: cinematic, literary, warm.
 
-If the user data includes a "hostContext" field, treat it as additional creative direction from the host — honour the mood, anecdotes, and emphasis they describe, weaving them naturally into the narration.`,
+If the user data includes a "hostContext" field, treat it as additional creative direction from the host — honour the mood, anecdotes, and emphasis they describe, weaving them naturally into the narration. Additionally, if the hostContext contains structural or ordering directions (e.g. "Beginne mit dem Sieger", "Lasse Verkoster-Portraits weg", "Fotos zwischen Whiskys und Entdeckungen"), honour them by adjusting the storyStructure array accordingly. If no structural direction is given, use the default order.`,
                 },
                 {
                   role: "user",
@@ -17999,6 +18034,10 @@ If the user data includes a "hostContext" field, treat it as additional creative
             discoveryTexts = parsed.discoveryTexts ?? {};
             blindNarration = parsed.blindNarration ?? "";
             closingReflection = parsed.closingReflection ?? "";
+            const rawAiStructure: unknown = parsed.storyStructure;
+            storyStructure = Array.isArray(rawAiStructure)
+              ? [...new Set((rawAiStructure as unknown[]).filter(k => typeof k === "string" && validActKeys.has(k as string)) as string[])]
+              : [];
 
             try {
               const slidesUpdate: {
@@ -18014,6 +18053,7 @@ If the user data includes a "hostContext" field, treat it as additional creative
                   discoveryTexts,
                   blindNarration,
                   closingReflection,
+                  storyStructure,
                 }),
                 storySlidesRatingCount: currentRatingCount,
               };
@@ -18041,6 +18081,12 @@ If the user data includes a "hostContext" field, treat it as additional creative
         }
       }
 
+      if (storyStructure.length === 0) storyStructure = [...defaultStoryStructure];
+      if (!tasting.blindMode) {
+        storyStructure = storyStructure.filter(k => k !== "blind");
+        blindNarration = "";
+      }
+
       res.json({
         tasting,
         isHost,
@@ -18059,6 +18105,7 @@ If the user data includes a "hostContext" field, treat it as additional creative
         blindNarration,
         winnerStory: winnerNarration,
         closingReflection,
+        storyStructure,
         cached: servedFromCache,
       });
     } catch (e: any) {
