@@ -136,6 +136,11 @@ const LabsGroupReport = lazy(() => import("@/labs/pages/LabsGroupReport"));
 const LabsAiImages = lazy(() => import("@/labs/pages/LabsAiImages"));
 
 
+function ExternalRedirect({ to }: { to: string }) {
+  useEffect(() => { window.location.replace(to); }, [to]);
+  return null;
+}
+
 function LazyFallback() {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60dvh" }}>
@@ -641,10 +646,7 @@ function Router() {
         {/* === CASKSENSE LABS === */}
         <Route path="/labs/results/:id/present" component={LabsResultsPresent} />
         <Route path="/labs/results/:id/report" component={LabsGroupReport} />
-        <Route path="/labs/results/:id/story">{({ id }: { id: string }) => {
-          if (typeof window !== "undefined") window.location.replace(`/tasting-story/${id}`);
-          return null;
-        }}</Route>
+        <Route path="/labs/results/:id/story">{({ id }: { id: string }) => <ExternalRedirect to={`/tasting-story/${id}`} />}</Route>
         <Route path="/labs">{() => <Redirect to="/labs/onboarding" />}</Route>
         <Route path="/labs/*">
           <LabsLayout>
