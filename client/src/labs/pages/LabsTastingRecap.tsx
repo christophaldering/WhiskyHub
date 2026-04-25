@@ -434,7 +434,7 @@ export default function LabsTastingRecap() {
           </h1>
         </div>
         <div className="labs-recap-actions" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {(recap.tasting.status === "archived" || recap.tasting.status === "completed") && (
+          {(recap.tasting.status === "archived" || recap.tasting.status === "completed" || recap.tasting.status === "reveal" || recap.tasting.status === "closed") && (
             <button
               className="labs-btn-secondary"
               onClick={() => navigate(`/labs/results/${recap.tasting.id}/story`)}

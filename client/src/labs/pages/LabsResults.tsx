@@ -1243,7 +1243,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                   Story
                 </button>
               )}
-              {!!tasting.storyEnabled && currentParticipant?.id !== tasting.hostId && (tasting.status === "archived" || tasting.status === "completed") && (
+              {!!tasting.storyEnabled && currentParticipant?.id !== tasting.hostId && (tasting.status === "archived" || tasting.status === "completed" || tasting.status === "reveal") && (
                 <button
                   className="labs-btn-ghost flex items-center gap-2"
                   onClick={() => navigate(`/labs/results/${tastingId}/story`)}

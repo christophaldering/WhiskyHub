@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo, useEffect } from "react";
 import { useLocation, useSearch, Link } from "wouter";
-import { Wine, Calendar, MapPin, ChevronRight, Search, Crown, PenLine, Users, Mail, Share2, Settings, Check, LogIn } from "lucide-react";
+import { Wine, Calendar, MapPin, ChevronRight, Search, Crown, PenLine, Users, Mail, Share2, Settings, Check, LogIn, Archive } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, tastingHistoryApi, journalApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
@@ -568,121 +568,225 @@ export default function LabsTastings() {
             </div>
           )}
 
-          <div className="labs-recent-section-head labs-fade-in labs-stagger-3" data-testid="section-upcoming-head">
-            <span className="labs-section-label">
-              {t("tastings.upcomingHeader", "Upcoming Tastings")}
-            </span>
-            <Link
-              href="/labs/taste?tab=tastings"
-              className="labs-recent-view-all"
-              data-testid="link-upcoming-view-all"
-            >
-              {t("myTastePage.viewAll", "View all")}
-              <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
+          {filterTab === "archive" ? (
+            <>
+              <div className="labs-recent-section-head labs-fade-in labs-stagger-3" data-testid="section-archive-head">
+                <span className="labs-section-label">
+                  {t("tastings.archiveHeader", "Mein Archiv")}
+                </span>
+              </div>
 
-          {filtered.length === 0 ? (
-            <div className="labs-empty labs-fade-in" data-testid="labs-tastings-upcoming-empty">
-              <p className="labs-empty-sub">
-                {searchQuery
-                  ? t("tastings.upcomingEmptySearch", "Keine passenden Tastings gefunden.")
-                  : t("tastings.upcomingEmpty", "Keine anstehenden Tastings.")}
-              </p>
-            </div>
-          ) : (
-            <div className="labs-grouped-list labs-fade-in">
-              {filtered.map((tasting: any) => {
-                const statusCfg = getStatusConfig(tasting.status);
-                const isHost = tasting.hostId === currentParticipant?.id;
-                const isLive = tasting.status === "open";
-                const formattedDate = formatTastingDate(tasting.date);
+              {isHistoryLoading ? (
+                <div className="labs-tastings-skeleton">
+                  <div className="labs-skeleton labs-skeleton--h20 labs-skeleton--w60" />
+                  <div className="labs-skeleton labs-skeleton--h14 labs-skeleton--w80 labs-skeleton--mt8" />
+                </div>
+              ) : archiveItems.length === 0 ? (
+                <div className="labs-empty labs-fade-in" data-testid="labs-tastings-archive-empty">
+                  <p className="labs-empty-sub">
+                    {searchQuery
+                      ? t("tastings.archiveEmptySearch", "Keine passenden Tastings gefunden.")
+                      : t("tastings.archiveEmpty", "Noch keine abgeschlossenen Tastings.")}
+                  </p>
+                </div>
+              ) : (
+                <div className="labs-grouped-list labs-fade-in">
+                  {archiveItems.map((tasting: any) => {
+                    const statusCfg = getStatusConfig(tasting.status);
+                    const isHost = tasting.hostId === currentParticipant?.id;
+                    const formattedDate = formatTastingDate(tasting.date);
 
-                return (
-                  <Link key={tasting.id} href={`/labs/tastings/${tasting.id}`}>
-                    <div className="labs-list-row" data-testid={`labs-tasting-card-${tasting.id}`}>
-                      <div className={`labs-tasting-card-icon ${isLive ? "labs-tasting-card-icon--live" : "labs-tasting-card-icon--default"}`}>
-                        <Wine className={`labs-tasting-card-icon-sm ${isLive ? "labs-icon-success" : "labs-icon-accent"}`} />
-                      </div>
-                      <div className="labs-tasting-card-body">
-                        <div className="labs-tasting-card-title-row">
-                          <span className="labs-tasting-card-title" data-testid={`labs-tasting-title-${tasting.id}`}>
-                            {String(tasting.title ?? "")}
-                          </span>
-                          <div className="labs-tasting-card-badges">
-                            <span className={statusCfg.cssClass} data-testid={`labs-tasting-status-${tasting.id}`}>
-                              {isLive && <span className="labs-status-live-dot" />}
-                              {t(statusCfg.labelKey, statusCfg.fallbackLabel)}
-                            </span>
+                    return (
+                      <Link key={tasting.id} href={`/labs/results/${tasting.id}`}>
+                        <div className="labs-list-row" data-testid={`labs-archive-card-${tasting.id}`}>
+                          <div className="labs-tasting-card-icon labs-tasting-card-icon--default">
+                            <Archive className="labs-tasting-card-icon-sm" style={{ color: "var(--labs-text-muted)" }} />
+                          </div>
+                          <div className="labs-tasting-card-body">
+                            <div className="labs-tasting-card-title-row">
+                              <span className="labs-tasting-card-title" data-testid={`labs-archive-title-${tasting.id}`}>
+                                {String(tasting.title ?? "")}
+                              </span>
+                              <div className="labs-tasting-card-badges">
+                                <span className={statusCfg.cssClass} data-testid={`labs-archive-status-${tasting.id}`}>
+                                  {t(statusCfg.labelKey, statusCfg.fallbackLabel)}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="labs-tasting-card-host" data-testid={`labs-archive-hostname-${tasting.id}`}>
+                              {isHost ? (
+                                <span className="labs-tasting-role-text">{t("tastingStatus.yourTasting", "Your Tasting")}</span>
+                              ) : tasting.hostName ? (
+                                <>
+                                  <Crown className="labs-tasting-card-host-icon" />
+                                  <span className="labs-tasting-card-host-name">{stripGuestSuffix(tasting.hostName)}</span>
+                                </>
+                              ) : null}
+                            </div>
+                            <div className="labs-tasting-card-meta">
+                              {formattedDate && (
+                                <span className="labs-tasting-card-meta-item">
+                                  <Calendar className="labs-tasting-card-meta-icon" />
+                                  {formattedDate}
+                                </span>
+                              )}
+                              {tasting.location && (
+                                <span className="labs-tasting-card-meta-item labs-tasting-card-meta-item--location">
+                                  <MapPin className="labs-tasting-card-meta-icon" />
+                                  <span className="labs-tasting-card-host-name">{String(tasting.location ?? "")}</span>
+                                </span>
+                              )}
+                              {(tasting.ratedCount != null || tasting.whiskyCount != null) && (
+                                <span className="labs-tasting-card-meta-item" data-testid={`labs-archive-counts-${tasting.id}`}>
+                                  <Wine className="labs-tasting-card-meta-icon" />
+                                  {tasting.ratedCount ?? 0}/{tasting.whiskyCount ?? 0} {t("tastings.archiveRated", "bewertet")}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="labs-tasting-card-actions">
+                            <ChevronRight className="labs-tasting-chevron" />
                           </div>
                         </div>
-                        <div className="labs-tasting-card-host" data-testid={`labs-tasting-hostname-${tasting.id}`}>
-                          {isHost ? (
-                            <span className="labs-tasting-role-text">{t("tastingStatus.yourTasting", "Your Tasting")}</span>
-                          ) : tasting.hostName && (isAdmin || !isHost) ? (
-                            <>
-                              <Crown className="labs-tasting-card-host-icon" />
-                              <span className="labs-tasting-card-host-name">{stripGuestSuffix(tasting.hostName)}</span>
-                            </>
-                          ) : null}
-                        </div>
-                        <div className="labs-tasting-card-meta">
-                          {formattedDate && (
-                            <span className="labs-tasting-card-meta-item">
-                              <Calendar className="labs-tasting-card-meta-icon" />
-                              {formattedDate}
-                            </span>
-                          )}
-                          {tasting.location && (
-                            <span className="labs-tasting-card-meta-item labs-tasting-card-meta-item--location">
-                              <MapPin className="labs-tasting-card-meta-icon" />
-                              <span className="labs-tasting-card-host-name">{String(tasting.location ?? "")}</span>
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="labs-tasting-card-actions">
-                        {tasting.code && (
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              const link = `${window.location.origin}/labs/join?code=${tasting.code}`;
-                              navigator.clipboard.writeText(link).then(() => {
-                                setCopiedShareId(tasting.id);
-                                setTimeout(() => setCopiedShareId(null), 2000);
-                              });
-                            }}
-                            className="labs-btn-ghost labs-tasting-action-btn"
-                            data-testid={`labs-tasting-share-${tasting.id}`}
-                          >
-                            {copiedShareId === tasting.id ? (
-                              <Check className="labs-tasting-action-icon labs-icon-success" />
-                            ) : (
-                              <Share2 className="labs-tasting-action-icon" />
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="labs-recent-section-head labs-fade-in labs-stagger-3" data-testid="section-upcoming-head">
+                <span className="labs-section-label">
+                  {t("tastings.upcomingHeader", "Upcoming Tastings")}
+                </span>
+                <Link
+                  href="/labs/taste?tab=tastings"
+                  className="labs-recent-view-all"
+                  data-testid="link-upcoming-view-all"
+                >
+                  {t("myTastePage.viewAll", "View all")}
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+
+              {filtered.length === 0 ? (
+                <div className="labs-empty labs-fade-in" data-testid="labs-tastings-upcoming-empty">
+                  <p className="labs-empty-sub">
+                    {searchQuery
+                      ? t("tastings.upcomingEmptySearch", "Keine passenden Tastings gefunden.")
+                      : t("tastings.upcomingEmpty", "Keine anstehenden Tastings.")}
+                  </p>
+                  {!searchQuery && filterTab === "joined" && archiveItems.length > 0 && (
+                    <p className="labs-empty-sub" style={{ marginTop: 8 }} data-testid="text-joined-archive-hint">
+                      {t("tastings.joinedArchiveHint", "Abgeschlossene Tastings findest du unter")}{" "}
+                      <button
+                        className="labs-link"
+                        onClick={() => setFilterTab("archive")}
+                        data-testid="button-goto-archive-hint"
+                        style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "var(--labs-accent)", fontFamily: "inherit", fontSize: "inherit" }}
+                      >
+                        {t("tastings.archiveTabLabel", "Mein Archiv")}
+                      </button>
+                      .
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="labs-grouped-list labs-fade-in">
+                  {filtered.map((tasting: any) => {
+                    const statusCfg = getStatusConfig(tasting.status);
+                    const isHost = tasting.hostId === currentParticipant?.id;
+                    const isLive = tasting.status === "open";
+                    const formattedDate = formatTastingDate(tasting.date);
+
+                    return (
+                      <Link key={tasting.id} href={`/labs/tastings/${tasting.id}`}>
+                        <div className="labs-list-row" data-testid={`labs-tasting-card-${tasting.id}`}>
+                          <div className={`labs-tasting-card-icon ${isLive ? "labs-tasting-card-icon--live" : "labs-tasting-card-icon--default"}`}>
+                            <Wine className={`labs-tasting-card-icon-sm ${isLive ? "labs-icon-success" : "labs-icon-accent"}`} />
+                          </div>
+                          <div className="labs-tasting-card-body">
+                            <div className="labs-tasting-card-title-row">
+                              <span className="labs-tasting-card-title" data-testid={`labs-tasting-title-${tasting.id}`}>
+                                {String(tasting.title ?? "")}
+                              </span>
+                              <div className="labs-tasting-card-badges">
+                                <span className={statusCfg.cssClass} data-testid={`labs-tasting-status-${tasting.id}`}>
+                                  {isLive && <span className="labs-status-live-dot" />}
+                                  {t(statusCfg.labelKey, statusCfg.fallbackLabel)}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="labs-tasting-card-host" data-testid={`labs-tasting-hostname-${tasting.id}`}>
+                              {isHost ? (
+                                <span className="labs-tasting-role-text">{t("tastingStatus.yourTasting", "Your Tasting")}</span>
+                              ) : tasting.hostName && (isAdmin || !isHost) ? (
+                                <>
+                                  <Crown className="labs-tasting-card-host-icon" />
+                                  <span className="labs-tasting-card-host-name">{stripGuestSuffix(tasting.hostName)}</span>
+                                </>
+                              ) : null}
+                            </div>
+                            <div className="labs-tasting-card-meta">
+                              {formattedDate && (
+                                <span className="labs-tasting-card-meta-item">
+                                  <Calendar className="labs-tasting-card-meta-icon" />
+                                  {formattedDate}
+                                </span>
+                              )}
+                              {tasting.location && (
+                                <span className="labs-tasting-card-meta-item labs-tasting-card-meta-item--location">
+                                  <MapPin className="labs-tasting-card-meta-icon" />
+                                  <span className="labs-tasting-card-host-name">{String(tasting.location ?? "")}</span>
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="labs-tasting-card-actions">
+                            {tasting.code && (
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  const link = `${window.location.origin}/labs/join?code=${tasting.code}`;
+                                  navigator.clipboard.writeText(link).then(() => {
+                                    setCopiedShareId(tasting.id);
+                                    setTimeout(() => setCopiedShareId(null), 2000);
+                                  });
+                                }}
+                                className="labs-btn-ghost labs-tasting-action-btn"
+                                data-testid={`labs-tasting-share-${tasting.id}`}
+                              >
+                                {copiedShareId === tasting.id ? (
+                                  <Check className="labs-tasting-action-icon labs-icon-success" />
+                                ) : (
+                                  <Share2 className="labs-tasting-action-icon" />
+                                )}
+                              </button>
                             )}
-                          </button>
-                        )}
-                        {isHost && (
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              navigate(`/labs/host/${tasting.id}`);
-                            }}
-                            className="labs-btn-ghost labs-tasting-action-btn"
-                            data-testid={`labs-tasting-settings-${tasting.id}`}
-                          >
-                            <Settings className="labs-tasting-action-icon" />
-                          </button>
-                        )}
-                        <ChevronRight className="labs-tasting-chevron" />
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
+                            {isHost && (
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  navigate(`/labs/host/${tasting.id}`);
+                                }}
+                                className="labs-btn-ghost labs-tasting-action-btn"
+                                data-testid={`labs-tasting-settings-${tasting.id}`}
+                              >
+                                <Settings className="labs-tasting-action-icon" />
+                              </button>
+                            )}
+                            <ChevronRight className="labs-tasting-chevron" />
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </>
       )}
