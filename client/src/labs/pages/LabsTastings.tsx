@@ -83,6 +83,10 @@ export default function LabsTastings() {
     setActiveTab((prev) => (prev === tab ? null : tab));
   };
 
+  const [lastViewedCompletedId] = useState<string | null>(() => {
+    try { return localStorage.getItem("lastViewedCompletedTastingId"); } catch { return null; }
+  });
+
   const [filterTab, setFilterTab] = useState<TastingsHubFilter>(() => {
     try {
       const params = new URLSearchParams(searchStr);
@@ -600,9 +604,10 @@ export default function LabsTastings() {
                     const statusCfg = getStatusConfig(tasting.status);
                     const isHost = !!tasting.isHost;
                     const formattedDate = formatTastingDate(tasting.date);
+                    const isLastViewed = lastViewedCompletedId === tasting.id;
 
                     return (
-                      <Link key={tasting.id} href={`/labs/tastings/${tasting.id}?from=my-tastings`}>
+                      <Link key={tasting.id} href={`/labs/results/${tasting.id}?from=my-tastings`}>
                         <div className="labs-list-row" data-testid={`labs-archive-card-${tasting.id}`}>
                           <div className="labs-tasting-card-icon labs-tasting-card-icon--default">
                             <Archive className="labs-tasting-card-icon-sm" style={{ color: "var(--labs-text-muted)" }} />
@@ -641,6 +646,15 @@ export default function LabsTastings() {
                               </div>
                             )}
                             <div className="labs-tasting-card-meta">
+                              {isLastViewed && (
+                                <span
+                                  className="labs-tasting-card-meta-item"
+                                  style={{ color: "var(--labs-accent)", fontWeight: 600 }}
+                                  data-testid={`labs-archive-last-viewed-${tasting.id}`}
+                                >
+                                  {t("tastings.lastViewed", "Zuletzt angesehen")}
+                                </span>
+                              )}
                               {formattedDate && (
                                 <span className="labs-tasting-card-meta-item">
                                   <Calendar className="labs-tasting-card-meta-icon" />
