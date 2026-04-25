@@ -963,8 +963,8 @@ export default function LabsResults({ params }: LabsResultsProps) {
       setEditCaptionPhotoId(null);
       refetchEventPhotos();
       qcPhotos.invalidateQueries({ queryKey: ["tasting-event-photos", tastingId] });
-    } catch (e: any) {
-      setPhotosError(e.message);
+    } catch (e: unknown) {
+      setPhotosError(e instanceof Error ? e.message : "Speichern fehlgeschlagen");
     } finally {
       setCaptionSaving(false);
     }
