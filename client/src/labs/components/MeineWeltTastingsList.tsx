@@ -118,10 +118,15 @@ export default function MeineWeltTastingsList({ filter, searchQuery = "" }: Prop
   }
 
   if (items.length === 0) {
-    const emptyKey =
-      filter === "completed" ? "tastings.archiveEmptyTitle" : "tastings.emptyActiveTitle";
-    const emptyFallback =
-      filter === "completed"
+    const hasSearch = searchQuery.trim().length > 0;
+    const emptyKey = hasSearch
+      ? "tastings.emptySearchTitle"
+      : filter === "completed"
+        ? "tastings.archiveEmptyTitle"
+        : "tastings.emptyActiveTitle";
+    const emptyFallback = hasSearch
+      ? "Keine Tastings gefunden"
+      : filter === "completed"
         ? "Noch keine abgeschlossenen Tastings"
         : "Keine aktiven Tastings";
     return (
