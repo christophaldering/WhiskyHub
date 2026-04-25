@@ -1095,8 +1095,16 @@ export const tastingAiReports = pgTable("tasting_ai_reports", {
   medianTasterId: varchar("median_taster_id"),
   medianTasterName: text("median_taster_name"),
   consistencyScores: jsonb("consistency_scores").$type<Array<{ participantId: string; participantName: string; avgDeviation: number }>>(),
-  individualReports: jsonb("individual_reports").$type<Record<string, { narrative: string; narrativeEn: string; preferenceProfile: { topRegion?: string; peatLevel?: string; topCask?: string }; closestMatchId?: string; closestMatchName?: string; }>>(),
+  // Per-participant narratives keyed by participantId. Each entry carries its own
+  // `generatedAt` so the host can selectively (re)generate a missing analysis without
+  // touching report-level timestamps. Authoritative for surfacing per-participant
+  // freshness in `aiReportSummary.individualReportsUpdatedAt`.
+  individualReports: jsonb("individual_reports").$type<Record<string, { narrative: string; narrativeEn: string; preferenceProfile: { topRegion?: string; peatLevel?: string; topCask?: string }; closestMatchId?: string; closestMatchName?: string; generatedAt?: string; }>>(),
   aiReportEnabled: boolean("ai_report_enabled").default(false),
+  // Report-level marker. Bumped only on full report (re)generation and on host
+  // (re-)enabling sharing — NOT on selective single-participant generation. Surprise
+  // freshness for participant X = max(this column, individualReports[X].generatedAt).
+  individualReportsUpdatedAt: timestamp("individual_reports_updated_at"),
 }, (t) => ({
   tastingIdx: index("idx_tasting_ai_reports_tasting").on(t.tastingId),
 }));

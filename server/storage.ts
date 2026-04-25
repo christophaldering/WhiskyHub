@@ -791,6 +791,7 @@ export interface IStorage {
 
   // Tasting AI Reports
   getTastingAiReport(tastingId: string): Promise<TastingAiReport | undefined>;
+  getTastingAiReportsByTastingIds(tastingIds: string[]): Promise<TastingAiReport[]>;
   saveTastingAiReport(data: InsertTastingAiReport): Promise<TastingAiReport>;
   updateTastingAiReport(tastingId: string, data: Partial<InsertTastingAiReport>): Promise<TastingAiReport | undefined>;
 
@@ -4429,6 +4430,11 @@ export class DatabaseStorage implements IStorage {
   async getTastingAiReport(tastingId: string): Promise<TastingAiReport | undefined> {
     const [result] = await db.select().from(tastingAiReports).where(eq(tastingAiReports.tastingId, tastingId));
     return result;
+  }
+
+  async getTastingAiReportsByTastingIds(tastingIds: string[]): Promise<TastingAiReport[]> {
+    if (tastingIds.length === 0) return [];
+    return db.select().from(tastingAiReports).where(inArray(tastingAiReports.tastingId, tastingIds));
   }
 
   async saveTastingAiReport(data: InsertTastingAiReport): Promise<TastingAiReport> {

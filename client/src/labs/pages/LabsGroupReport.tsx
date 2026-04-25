@@ -247,6 +247,11 @@ export default function LabsGroupReport({ params }: LabsGroupReportProps) {
   const [selectedParticipant, setSelectedParticipant] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState("");
+  const [generatingMissing, setGeneratingMissing] = useState(false);
+  const [generatingPid, setGeneratingPid] = useState<string | null>(null);
+  const [missingError, setMissingError] = useState("");
+  // Progress for batched per-participant generation: { done, total, currentName }
+  const [genProgress, setGenProgress] = useState<{ done: number; total: number; currentName: string | null } | null>(null);
 
   const { data: tasting } = useQuery({
     queryKey: ["tasting", tastingId],
@@ -293,8 +298,78 @@ export default function LabsGroupReport({ params }: LabsGroupReportProps) {
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["tasting-ai-report", tastingId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tasting-ai-report", tastingId] });
+      qc.invalidateQueries({ queryKey: ["tastings"] });
+    },
   });
+
+  async function generateIndividualReports(participantIds: string[] | null) {
+    setMissingError("");
+    // Resolve the actual list of IDs we'll process (so progress is accurate even when
+    // the caller passes `null` meaning "all missing").
+    const resolvedIds: string[] = participantIds && participantIds.length > 0
+      ? participantIds
+      : activeParticipants.filter((p: any) => !indReports[p.id]).map((p: any) => p.id);
+
+    if (resolvedIds.length === 0) return;
+
+    const isSingle = resolvedIds.length === 1;
+    if (isSingle) setGeneratingPid(resolvedIds[0]);
+    else setGeneratingMissing(true);
+    setGenProgress({ done: 0, total: resolvedIds.length, currentName: null });
+
+    let firstError: string | null = null;
+    const failedNames: string[] = [];
+    let processed = 0;
+
+    // Issue one request per participant so the user sees true X/Y progress instead of
+    // a single opaque spinner for the whole batch.
+    for (const targetId of resolvedIds) {
+      const targetName = activeParticipants.find((p: any) => p.id === targetId)?.name ?? null;
+      setGenProgress({ done: processed, total: resolvedIds.length, currentName: targetName });
+      if (!isSingle) setGeneratingPid(targetId);
+      try {
+        const res = await fetch(`/api/tastings/${tastingId}/ai-report/individual-reports`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...pidHeaders(pid || "") },
+          body: JSON.stringify({ participantIds: [targetId] }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          if (!firstError) firstError = err.message || t("aiReport.missingError", "Konnte nicht generieren.");
+          if (targetName) failedNames.push(targetName);
+        } else {
+          // 200 OK but the per-participant AI call may still have failed silently;
+          // server returns failedParticipantIds. Surface those names too.
+          const body = await res.json().catch(() => ({} as { generated?: number; failedParticipantIds?: string[] }));
+          if (Array.isArray(body.failedParticipantIds) && body.failedParticipantIds.includes(targetId) && targetName) {
+            failedNames.push(targetName);
+          }
+        }
+      } catch {
+        if (!firstError) firstError = t("aiReport.networkError", "Netzwerkfehler");
+        if (targetName) failedNames.push(targetName);
+      }
+      processed += 1;
+      setGenProgress({ done: processed, total: resolvedIds.length, currentName: targetName });
+    }
+
+    setGeneratingMissing(false);
+    setGeneratingPid(null);
+    setGenProgress(null);
+    if (failedNames.length > 0) {
+      setMissingError(
+        firstError
+          ? `${firstError} (${failedNames.join(", ")})`
+          : t("aiReport.partialFailure", "Konnte nicht für alle generieren: {{names}}", { names: failedNames.join(", ") }),
+      );
+    } else if (firstError) {
+      setMissingError(firstError);
+    }
+    await refetchReport();
+    qc.invalidateQueries({ queryKey: ["tastings"] });
+  }
 
   const isHostLocal = currentParticipant?.id === tasting?.hostId;
   const isHostServer = reportData?.isHost === true;
@@ -343,6 +418,11 @@ export default function LabsGroupReport({ params }: LabsGroupReportProps) {
   const selectedReport = selectedParticipant ? indReports[selectedParticipant] : null;
   const selectedParticipantData = activeParticipants.find((p: any) => p.id === selectedParticipant);
 
+  const generatedCount = activeParticipants.filter((p: any) => indReports[p.id]).length;
+  const totalActive = activeParticipants.length;
+  const missingCount = totalActive - generatedCount;
+  const missingParticipantIds = activeParticipants.filter((p: any) => !indReports[p.id]).map((p: any) => p.id);
+
   const pairingsSorted = useMemo(() => {
     const pairs = (report?.correlationData?.pairings || []) as Array<{ aId: string; aName: string; bId: string; bName: string; score: number }>;
     return pairs.slice(0, 8);
@@ -388,9 +468,28 @@ export default function LabsGroupReport({ params }: LabsGroupReportProps) {
 
       <div style={{ maxWidth: 700, margin: "0 auto", padding: "24px 16px" }}>
         <div style={{ marginBottom: 24 }}>
-          <h1 className="labs-serif" style={{ fontSize: 24, fontWeight: 700, color: "var(--labs-text)", marginBottom: 4 }}>
-            {tasting?.title || "Tasting"}
-          </h1>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <h1 className="labs-serif" style={{ fontSize: 24, fontWeight: 700, color: "var(--labs-text)", marginBottom: 4 }}>
+              {tasting?.title || "Tasting"}
+            </h1>
+            {isHost && report && activeParticipants.length > 0 && (
+              <span
+                data-testid="badge-individual-count-header"
+                title={t("aiReport.individualCountHeaderTooltip", "Persönliche KI-Analysen: {{generated}} von {{total}} erstellt", { generated: generatedCount, total: activeParticipants.length })}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  padding: "4px 10px", borderRadius: 999,
+                  border: "1px solid var(--labs-border)",
+                  background: "var(--labs-surface)",
+                  color: "var(--labs-text-muted)",
+                  fontSize: 11, fontWeight: 700, letterSpacing: 0.3,
+                }}
+              >
+                <Sparkles style={{ width: 10, height: 10, color: "var(--labs-accent)" }} />
+                {t("aiReport.individualCountHeader", "{{generated}}/{{total}} persönlich", { generated: generatedCount, total: activeParticipants.length })}
+              </span>
+            )}
+          </div>
           <p style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>
             {tasting?.date}{tasting?.location ? ` · ${tasting.location}` : ""} · {activeParticipants.length} {t("ui.tasters", "Taster")}
           </p>
@@ -401,13 +500,24 @@ export default function LabsGroupReport({ params }: LabsGroupReportProps) {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", marginBottom: 2 }}>
-                  {t("aiReport.unlockForParticipants", "Report für Teilnehmer freischalten")}
+                  {t("aiReport.unlockForParticipants", "Persönliche Analyse für Teilnehmer freischalten")}
                 </div>
-                <div style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>
+                <div style={{ fontSize: 12, color: "var(--labs-text-muted)", lineHeight: 1.5 }}>
                   {report.aiReportEnabled
-                    ? t("aiReport.unlockEnabled", "Alle Teilnehmer können den Report abrufen.")
-                    : t("aiReport.unlockDisabled", "Nur du siehst den Report. Schalte ihn frei, damit alle Teilnehmer ihn sehen können.")}
+                    ? t("aiReport.unlockEnabledV3", "Teilnehmer sehen den Gruppen-Report und – sofern vorhanden – ihre eigene persönliche KI-Analyse. Du allein siehst alle persönlichen Analysen.")
+                    : t("aiReport.unlockDisabledV3", "Aktuell siehst nur du den Report. Schalte ihn frei, damit Teilnehmer den Gruppen-Report und – sofern vorhanden – ihre eigene persönliche KI-Analyse abrufen können. Persönliche Analysen anderer Teilnehmer bleiben dir vorbehalten.")}
                 </div>
+                {missingCount > 0 && (
+                  <div
+                    data-testid="text-unlock-missing-hint"
+                    style={{ marginTop: 8, fontSize: 11, color: "var(--labs-accent)", lineHeight: 1.5, display: "flex", alignItems: "center", gap: 6 }}
+                  >
+                    <Sparkles style={{ width: 11, height: 11, flexShrink: 0 }} />
+                    <span>
+                      {t("aiReport.unlockMissingHint", "Noch nicht alle Teilnehmer haben eine persönliche Analyse ({{generated}}/{{total}}). Du kannst sie unten gezielt nachgenerieren.", { generated: generatedCount, total: activeParticipants.length })}
+                    </span>
+                  </div>
+                )}
               </div>
               <button
                 onClick={() => enableMut.mutate(!report.aiReportEnabled)}
@@ -640,28 +750,119 @@ export default function LabsGroupReport({ params }: LabsGroupReportProps) {
               </Card>
             )}
 
-            {isHost && activeParticipants.length > 0 && Object.keys(indReports).length > 0 && (
+            {isHost && activeParticipants.length > 0 && (
               <Card style={{ marginBottom: 20 }}>
-                <SectionTitle icon={<Users style={{ width: 15, height: 15 }} />}>
-                  {t("aiReport.individualTitle", "Individuelle Analysen")}
-                </SectionTitle>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+                  <SectionTitle icon={<Users style={{ width: 15, height: 15 }} />}>
+                    {t("aiReport.individualTitle", "Individuelle Analysen")}
+                  </SectionTitle>
+                  <span
+                    data-testid="text-individual-counter"
+                    style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text-muted)", padding: "4px 10px", borderRadius: 999, background: "rgba(255,255,255,0.04)", border: "1px solid var(--labs-border)" }}
+                  >
+                    {generatedCount} / {totalActive} {t("aiReport.individualGenerated", "generiert")}
+                  </span>
+                </div>
+
+                <p style={{ fontSize: 12, color: "var(--labs-text-muted)", marginTop: -4, marginBottom: 14, lineHeight: 1.5 }}>
+                  {missingCount > 0
+                    ? t("aiReport.individualMissingDesc", "Einige Teilnehmer haben noch keine persönliche KI-Analyse. Du kannst sie nachträglich generieren – auch nach dem Verteilen.")
+                    : t("aiReport.individualCompleteDesc", "Alle aktiven Teilnehmer haben eine persönliche KI-Analyse.")}
+                </p>
+
+                {missingError && (
+                  <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#ef4444", marginBottom: 12 }} data-testid="text-individual-error">
+                    {missingError}
+                  </div>
+                )}
+
+                {(missingCount > 0 || genProgress) && (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
+                    {genProgress ? (
+                      <div style={{ flex: 1, minWidth: 0 }} data-testid="text-generate-progress">
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 4 }}>
+                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {genProgress.currentName && genProgress.done < genProgress.total
+                              ? t("aiReport.progressCurrent", "{{done}}/{{total}} erstellt · {{name}} läuft …", { done: genProgress.done, total: genProgress.total, name: genProgress.currentName })
+                              : t("aiReport.progressDone", "{{done}}/{{total}} erstellt", { done: genProgress.done, total: genProgress.total })}
+                          </span>
+                        </div>
+                        <div style={{ height: 4, borderRadius: 999, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                          <div style={{
+                            width: `${Math.round((genProgress.done / Math.max(1, genProgress.total)) * 100)}%`,
+                            height: "100%",
+                            background: "var(--labs-accent)",
+                            borderRadius: 999,
+                            transition: "width 0.2s ease",
+                          }} />
+                        </div>
+                      </div>
+                    ) : <div />}
+                    {missingCount > 0 && (
+                      <button
+                        onClick={() => generateIndividualReports(missingParticipantIds)}
+                        disabled={generatingMissing || generatingPid !== null}
+                        data-testid="button-generate-missing-individual"
+                        style={{
+                          display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px",
+                          borderRadius: 10, border: "none", background: "var(--labs-accent)",
+                          color: "var(--labs-bg)", fontWeight: 700, fontSize: 12,
+                          cursor: generatingMissing ? "not-allowed" : "pointer", opacity: generatingMissing ? 0.7 : 1,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {generatingMissing
+                          ? <Loader2 style={{ width: 12, height: 12, animation: "spin 1s linear infinite" }} />
+                          : <Sparkles style={{ width: 12, height: 12 }} />}
+                        {generatingMissing && genProgress
+                          ? t("aiReport.generatingProgress", "{{done}} / {{total}} …", { done: genProgress.done, total: genProgress.total })
+                          : generatingMissing
+                            ? t("aiReport.generatingMissing", "Generiere …")
+                            : t("aiReport.generateMissing", "{{n}} fehlende generieren", { n: missingCount })}
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-                  {activeParticipants.filter((p: any) => indReports[p.id]).map((p: any) => (
-                    <button
-                      key={p.id}
-                      onClick={() => setSelectedParticipant(selectedParticipant === p.id ? null : p.id)}
-                      data-testid={`button-select-participant-${p.id}`}
-                      style={{
-                        padding: "6px 12px", borderRadius: 20, border: "1px solid",
-                        borderColor: selectedParticipant === p.id ? "var(--labs-accent)" : "var(--labs-border)",
-                        background: selectedParticipant === p.id ? "var(--labs-accent-muted, rgba(212,162,86,0.1))" : "transparent",
-                        color: selectedParticipant === p.id ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                        fontSize: 12, fontWeight: 600, cursor: "pointer",
-                      }}
-                    >
-                      {p.name}
-                    </button>
-                  ))}
+                  {activeParticipants.map((p: any) => {
+                    const has = !!indReports[p.id];
+                    const isPidGenerating = generatingPid === p.id;
+                    const isSelected = selectedParticipant === p.id;
+                    return (
+                      <div key={p.id} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                        <button
+                          onClick={() => has ? setSelectedParticipant(isSelected ? null : p.id) : generateIndividualReports([p.id])}
+                          disabled={isPidGenerating || generatingMissing || (!has && (generatingMissing || generatingPid !== null))}
+                          data-testid={`button-select-participant-${p.id}`}
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: 6,
+                            padding: "6px 12px", borderRadius: 20, border: "1px solid",
+                            borderColor: isSelected ? "var(--labs-accent)" : has ? "var(--labs-border)" : "rgba(212,162,86,0.4)",
+                            background: isSelected
+                              ? "var(--labs-accent-muted, rgba(212,162,86,0.1))"
+                              : has ? "transparent" : "rgba(212,162,86,0.06)",
+                            color: isSelected ? "var(--labs-accent)" : has ? "var(--labs-text-muted)" : "var(--labs-accent)",
+                            fontSize: 12, fontWeight: 600,
+                            cursor: isPidGenerating ? "not-allowed" : "pointer",
+                            opacity: isPidGenerating ? 0.6 : 1,
+                          }}
+                        >
+                          {isPidGenerating
+                            ? <Loader2 style={{ width: 11, height: 11, animation: "spin 1s linear infinite" }} />
+                            : has
+                              ? <CheckCircle style={{ width: 11, height: 11, color: "var(--labs-success, #4ade80)" }} />
+                              : <Sparkles style={{ width: 11, height: 11 }} />}
+                          {p.name}
+                          {!has && !isPidGenerating && (
+                            <span style={{ fontSize: 10, fontWeight: 500, color: "var(--labs-accent)" }} data-testid={`status-participant-missing-${p.id}`}>
+                              · {t("aiReport.individualMissing", "fehlt")}
+                            </span>
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {selectedParticipant && selectedReport && (

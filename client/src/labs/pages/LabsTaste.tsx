@@ -21,6 +21,7 @@ import {
   type TastingsHubFilter,
 } from "./hubTiles";
 import MeineWeltTastingsList from "@/labs/components/MeineWeltTastingsList";
+import SurprisePanel from "@/labs/components/SurprisePanel";
 import { EmbeddedMeineWeltProvider } from "@/labs/embeddedMeineWeltContext";
 import LabsTasteDrams from "./LabsTasteDrams";
 import LabsTasteCollection from "./LabsTasteCollection";
@@ -471,6 +472,9 @@ export default function LabsTaste() {
       <div className="labs-fade-in" data-testid={`meine-welt-content-${activeTab}`}>
         {renderInlineContent()}
       </div>
+
+      {/* Lives in the free area below the tile rows on Meine Welt. */}
+      <SurprisePanel />
     </div>
   );
 }

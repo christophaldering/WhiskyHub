@@ -586,6 +586,11 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       await dbJournal.execute(sqlJ`UPDATE tastings SET cover_image_upload_url = cover_image_url, cover_image_source = 'upload' WHERE cover_image_url IS NOT NULL AND cover_image_upload_url IS NULL AND cover_image_ai_url IS NULL AND cover_image_source IS NULL`);
       log("Ensured tastings has cover-slot columns and backfilled legacy covers", "startup");
 
+      // Safety net for tasting_ai_reports.individual_reports_updated_at — used by
+      // the participant Surprise panel + "Neu" badge. Idempotent.
+      await dbJournal.execute(sqlJ`ALTER TABLE tasting_ai_reports ADD COLUMN IF NOT EXISTS individual_reports_updated_at timestamp`);
+      log("Ensured tasting_ai_reports has individual_reports_updated_at column", "startup");
+
       // One-time migration: copy legacy 1:1 handout columns into the new
       // n:m whisky_handouts / tasting_handouts tables, only when no row yet
       // exists for the source. Idempotent — safe to run on every boot.

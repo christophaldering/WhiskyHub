@@ -2,12 +2,13 @@ import { useState, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Wine, Calendar, MapPin, ChevronRight, Crown, BookOpen, Users } from "lucide-react";
+import { Wine, Calendar, MapPin, ChevronRight, Crown, BookOpen, Users, Sparkles } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, tastingHistoryApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
 import type { TastingsHubFilter } from "@/labs/pages/hubTiles";
+import { useSurprises } from "@/labs/hooks/useSurprises";
 
 function formatTastingDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "";
@@ -47,6 +48,8 @@ export default function MeineWeltTastingsList({ filter, searchQuery = "" }: Prop
 
   const [roleFilter, setRoleFilter] = useState<ArchiveRoleFilter>("all");
   const [yearFilter, setYearFilter] = useState<string | null>(null);
+
+  const { hasSurpriseForTasting } = useSurprises();
 
   const [lastViewedId] = useState<string | null>(() => {
     try { return localStorage.getItem("lastViewedCompletedTastingId"); } catch { return null; }
@@ -327,6 +330,22 @@ export default function MeineWeltTastingsList({ filter, searchQuery = "" }: Prop
                           {isLive && <span className="labs-status-live-dot" />}
                           {t(statusCfg.labelKey, statusCfg.fallbackLabel)}
                         </span>
+                        {hasSurpriseForTasting(tasting.id) && (
+                          <span
+                            data-testid={`meine-welt-tasting-new-${tasting.id}`}
+                            aria-label={t("surprises.tastingBadgeTooltip", "Neue persönliche KI-Analyse verfügbar")}
+                            title={t("surprises.tastingBadgeTooltip", "Neue persönliche KI-Analyse verfügbar")}
+                            style={{
+                              display: "inline-block",
+                              width: 8,
+                              height: 8,
+                              borderRadius: "50%",
+                              background: "var(--labs-accent)",
+                              boxShadow: "0 0 0 2px rgba(212,162,86,0.18)",
+                              flexShrink: 0,
+                            }}
+                          />
+                        )}
                       </div>
                     </div>
                     {!isHost && tasting.hostName && (

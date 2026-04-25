@@ -9,7 +9,7 @@ import { readExcelBuffer, sheetToArrayOfArrays, sheetToJson, sheetToCsv, jsonToS
 // @ts-ignore
 import AdmZip from "adm-zip";
 import { storage, getUniquePersonCount, deduplicateParticipantList, getAllCommunityRatings, buildCommunityWhiskyKey, invalidateCommunityRatingsCache } from "./storage";
-import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema, insertBenchmarkEntrySchema, type Participant, type WhiskyFriend, type WhiskybaseCollectionItem, type JournalEntry, type PdfSplitPage, type WhiskyHandoutLibraryEntry, type InsertWhiskyHandoutLibraryEntry } from "@shared/schema";
+import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema, insertBenchmarkEntrySchema, type Participant, type WhiskyFriend, type WhiskybaseCollectionItem, type JournalEntry, type PdfSplitPage, type WhiskyHandoutLibraryEntry, type InsertWhiskyHandoutLibraryEntry, type InsertTastingAiReport } from "@shared/schema";
 import OpenAI from "openai";
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
@@ -1898,15 +1898,51 @@ export async function registerRoutes(
     );
     const allTastingIds = tastings.map((t: any) => t.id).filter(Boolean);
     const participantsMap = await storage.getParticipantsForTastingsBatch(allTastingIds);
+
+    // Per-requester AI report summary so the client can compute "surprises" without
+    // hitting one /ai-report endpoint per tasting.
+    const aiReports = await storage.getTastingAiReportsByTastingIds(allTastingIds);
+    const aiReportMap = new Map(aiReports.map((r) => [r.tastingId, r]));
+
     const enriched = tastings.map((t: any) => {
       const tParticipants: { id: string; name: string }[] = participantsMap.get(t.id) ?? [];
       if (t.hostId && hostMap[t.hostId] && !tParticipants.some((p) => p.id === t.hostId)) {
         tParticipants.unshift({ id: t.hostId, name: hostMap[t.hostId] });
       }
+      const report = aiReportMap.get(t.id);
+      const isHost = t.hostId === requesterId;
+      const enabled = report?.aiReportEnabled === true;
+      const individuals = (report?.individualReports as Record<string, { generatedAt?: string } | undefined> | null) ?? {};
+      const myEntry = individuals[requesterId];
+      const hasIndividualForMe = !isHost && !!myEntry;
+      // The participant-side surprise must fire when EITHER:
+      //   (a) the host (re-)enables sharing — bumps the report-level timestamp, OR
+      //   (b) THIS participant's own analysis is freshly (re-)generated.
+      // Take the newer of the two so neither path is masked by the other.
+      const reportLevelTs = report?.individualReportsUpdatedAt
+        ? new Date(report.individualReportsUpdatedAt).getTime()
+        : null;
+      const myEntryTs = myEntry?.generatedAt ? Date.parse(myEntry.generatedAt) : null;
+      const candidateTs: number[] = [];
+      if (reportLevelTs !== null && Number.isFinite(reportLevelTs)) candidateTs.push(reportLevelTs);
+      if (hasIndividualForMe && myEntryTs !== null && Number.isFinite(myEntryTs)) candidateTs.push(myEntryTs);
+      const individualReportsUpdatedAt = candidateTs.length > 0
+        ? new Date(Math.max(...candidateTs)).toISOString()
+        : null;
+      const aiReportSummary = report
+        ? {
+            exists: true,
+            enabled,
+            individualReportsUpdatedAt,
+            hasIndividualForMe,
+            visibleToMe: isHost || (enabled && hasIndividualForMe),
+          }
+        : { exists: false, enabled: false, individualReportsUpdatedAt: null, hasIndividualForMe: false, visibleToMe: false };
       return {
         ...t,
         hostName: hostMap[t.hostId] || null,
         participants: tParticipants,
+        aiReportSummary,
         ...(invitedTastingMap[t.id] || {}),
       };
     });
@@ -8272,7 +8308,9 @@ Beste Übereinstimmungen: ${pairings.slice(0, 2).map(p => `${p.aName} & ${p.bNam
       } catch {}
 
       // --- Individual narratives ---
-      const individualReports: Record<string, { narrative: string; narrativeEn: string; preferenceProfile: { topRegion?: string; peatLevel?: string; topCask?: string }; closestMatchId?: string; closestMatchName?: string }> = {};
+      // `generatedAt` is stored per-participant so the participant-side "Surprise"
+      // detection only fires for participants whose own analysis is actually new.
+      const individualReports: Record<string, { narrative: string; narrativeEn: string; preferenceProfile: { topRegion?: string; peatLevel?: string; topCask?: string }; closestMatchId?: string; closestMatchName?: string; generatedAt: string }> = {};
       try {
         await Promise.all(pids.map(async (pid) => {
           const ps = participantSummaries.find(p => p.id === pid)!;
@@ -8281,15 +8319,213 @@ Beste Übereinstimmungen: ${pairings.slice(0, 2).map(p => `${p.aName} & ${p.bNam
             aiClient.chat.completions.create({ model: "gpt-4o-mini", messages: [{ role: "system", content: `Schreibe für ${ps.name} einen personalisierten Tasting-Kommentar auf Deutsch (80-120 Wörter, warm und spezifisch, epistemic tone). Was zeigen seine/ihre Bewertungen über den Gaumen?` }, { role: "user", content: `Bewertungen: ${myScores}. Stärkste Übereinstimmung mit: ${ps.closestMatch || "niemand"}. Präferenzen: Region ${ps.preferences?.topRegion || "??"}, Fass ${ps.preferences?.topCask || "??"}, Torf ${ps.preferences?.peatLevel || "??"}. Median-Taster: ${ps.isMedianTaster ? "Ja" : "Nein"}.` }], max_tokens: 250, temperature: 0.8 }),
             aiClient.chat.completions.create({ model: "gpt-4o-mini", messages: [{ role: "system", content: `Write a personalized tasting comment for ${ps.name} in English (80-120 words, warm, epistemic tone). What do their scores reveal about their palate?` }, { role: "user", content: `Scores: ${myScores}. Closest match: ${ps.closestMatch || "none"}. Preferences: region ${ps.preferences?.topRegion || "??"}, cask ${ps.preferences?.topCask || "??"}, peat ${ps.preferences?.peatLevel || "??"}. Is median taster: ${ps.isMedianTaster ? "yes" : "no"}.` }], max_tokens: 250, temperature: 0.8 }),
           ]);
-          individualReports[pid] = { narrative: deR.choices[0]?.message?.content || "", narrativeEn: enR.choices[0]?.message?.content || "", preferenceProfile: preferenceProfiles[pid], closestMatchId: closestMatches[pid]?.id, closestMatchName: closestMatches[pid]?.name };
+          individualReports[pid] = { narrative: deR.choices[0]?.message?.content || "", narrativeEn: enR.choices[0]?.message?.content || "", preferenceProfile: preferenceProfiles[pid], closestMatchId: closestMatches[pid]?.id, closestMatchName: closestMatches[pid]?.name, generatedAt: new Date().toISOString() };
         }));
       } catch {}
 
-      const saved = await storage.saveTastingAiReport({ tastingId: req.params.id, ratingCountAtGeneration: ratingCount, groupNarrative, groupNarrativeEn, whiskyCharacteristics, correlationData: { pairings: pairings.slice(0, 15) }, outlierMoments, medianTasterId, medianTasterName, consistencyScores, individualReports, aiReportEnabled: existing?.aiReportEnabled ?? false });
+      const saved = await storage.saveTastingAiReport({ tastingId: req.params.id, ratingCountAtGeneration: ratingCount, groupNarrative, groupNarrativeEn, whiskyCharacteristics, correlationData: { pairings: pairings.slice(0, 15) }, outlierMoments, medianTasterId, medianTasterName, consistencyScores, individualReports, aiReportEnabled: existing?.aiReportEnabled ?? false, individualReportsUpdatedAt: new Date() });
       res.json({ report: saved, cached: false });
     } catch (e: any) {
       console.error("AI report error:", e.message);
       res.status(500).json({ message: "Could not generate AI report" });
+    }
+  });
+
+  // Selectively generate missing individual analyses for participants who don't have one yet.
+  // Only patches `individualReports` (each new entry carries its own `generatedAt`) — does NOT
+  // regenerate group narrative, whisky characteristics, pairings, outliers, median or consistency,
+  // and does NOT bump report-level `individualReportsUpdatedAt`. Per-participant freshness is
+  // surfaced to the client via `aiReportSummary.individualReportsUpdatedAt = max(report-level, own entry generatedAt)`.
+  app.post("/api/tastings/:id/ai-report/individual-reports", async (req: any, res: any) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Not found" });
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (requesterId !== tasting.hostId) return res.status(403).json({ message: "Host only" });
+      if (!["closed", "reveal", "archived", "completed"].includes(tasting.status)) {
+        return res.status(400).json({ message: "Report only available after tasting ends" });
+      }
+
+      const existing = await storage.getTastingAiReport(req.params.id);
+      if (!existing) {
+        return res.status(409).json({ message: "Generate the full report first" });
+      }
+
+      const tpRecords = await storage.getTastingParticipants(req.params.id);
+      const activeParticipants = tpRecords.filter(tp => !tp.excludedFromResults);
+      const participantMap = new Map<string, string>();
+      for (const tp of activeParticipants) participantMap.set(tp.participantId, tp.participant.name);
+
+      const targetIds: string[] = Array.isArray(req.body?.participantIds)
+        ? (req.body.participantIds as string[]).filter((id) => participantMap.has(id))
+        : [];
+      const force = req.body?.force === true;
+
+      type IndividualReportEntry = {
+        narrative: string;
+        narrativeEn: string;
+        preferenceProfile?: { topRegion?: string; peatLevel?: string; topCask?: string };
+        closestMatchId?: string;
+        closestMatchName?: string;
+        // ISO timestamp the entry was last (re)generated. Drives the participant
+        // "Surprise" panel so it only fires for participants whose own analysis
+        // is genuinely new.
+        generatedAt?: string;
+      };
+      const existingIndividual: Record<string, IndividualReportEntry> =
+        (existing.individualReports as Record<string, IndividualReportEntry> | null) ?? {};
+      const allActiveIds = Array.from(participantMap.keys());
+      const candidates = targetIds.length > 0 ? targetIds : allActiveIds;
+      const toGenerate = force ? candidates : candidates.filter((pid) => !existingIndividual[pid]);
+
+      if (toGenerate.length === 0) {
+        return res.json({ report: existing, generated: 0, skipped: candidates.length });
+      }
+
+      const allRatings = await storage.getRatingsForTasting(req.params.id);
+      const tastingWhiskies = await storage.getWhiskiesForTasting(req.params.id);
+      const activeRatings = allRatings.filter(r => participantMap.has(r.participantId));
+
+      const wids = tastingWhiskies.map(w => w.id);
+      const scoreMatrix: Record<string, Record<string, number | null>> = {};
+      for (const pid of allActiveIds) {
+        scoreMatrix[pid] = {};
+        for (const wid of wids) scoreMatrix[pid][wid] = null;
+      }
+      for (const r of activeRatings) {
+        if (scoreMatrix[r.participantId]) {
+          scoreMatrix[r.participantId][r.whiskyId] = r.overall ?? null;
+        }
+      }
+
+      const whiskyGroupAvg: Record<string, number> = {};
+      for (const wid of wids) {
+        const scores = allActiveIds.map(p => scoreMatrix[p][wid]).filter((s): s is number => s !== null);
+        whiskyGroupAvg[wid] = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+      }
+
+      // Preference profiles per target participant
+      const preferenceProfiles: Record<string, { topRegion?: string; peatLevel?: string; topCask?: string }> = {};
+      for (const pid of toGenerate) {
+        const regionScores: Record<string, { sum: number; count: number }> = {};
+        const caskScores: Record<string, { sum: number; count: number }> = {};
+        let totalPeat = 0; let peatCount = 0;
+        for (const r of activeRatings.filter(r => r.participantId === pid)) {
+          const w = tastingWhiskies.find(w => w.id === r.whiskyId);
+          if (!w) continue;
+          const s = r.overall ?? 0;
+          if (w.region) { if (!regionScores[w.region]) regionScores[w.region] = { sum: 0, count: 0 }; regionScores[w.region].sum += s; regionScores[w.region].count++; }
+          if (w.caskType) { if (!caskScores[w.caskType]) caskScores[w.caskType] = { sum: 0, count: 0 }; caskScores[w.caskType].sum += s; caskScores[w.caskType].count++; }
+          if (w.peatLevel !== undefined && w.peatLevel !== null) { totalPeat += (w.peatLevel as number); peatCount++; }
+        }
+        const topRegion = Object.entries(regionScores).sort(([, a], [, b]) => b.sum / b.count - a.sum / a.count)[0]?.[0];
+        const topCask = Object.entries(caskScores).sort(([, a], [, b]) => b.sum / b.count - a.sum / a.count)[0]?.[0];
+        const avgPeat = peatCount > 0 ? totalPeat / peatCount : null;
+        preferenceProfiles[pid] = { topRegion, topCask, peatLevel: avgPeat !== null ? (avgPeat > 2 ? "peaty" : avgPeat > 1 ? "medium" : "light") : undefined };
+      }
+
+      // Closest match per target participant — based on Pearson correlation with all other participants
+      function pearson(a: (number | null)[], b: (number | null)[]): number | null {
+        const pairs = a.map((v, i) => [v, b[i]] as [number | null, number | null]).filter(([x, y]) => x !== null && y !== null) as [number, number][];
+        if (pairs.length < 2) return null;
+        const n = pairs.length;
+        const meanA = pairs.reduce((s, [x]) => s + x, 0) / n;
+        const meanB = pairs.reduce((s, [, y]) => s + y, 0) / n;
+        const num = pairs.reduce((s, [x, y]) => s + (x - meanA) * (y - meanB), 0);
+        const denomA = Math.sqrt(pairs.reduce((s, [x]) => s + (x - meanA) ** 2, 0));
+        const denomB = Math.sqrt(pairs.reduce((s, [, y]) => s + (y - meanB) ** 2, 0));
+        if (denomA === 0 || denomB === 0) return null;
+        return num / (denomA * denomB);
+      }
+      const closestMatches: Record<string, { id: string; name: string }> = {};
+      for (const pid of toGenerate) {
+        const myVec = wids.map(wid => scoreMatrix[pid][wid]);
+        let best: { id: string; name: string; score: number } | null = null;
+        for (const otherId of allActiveIds) {
+          if (otherId === pid) continue;
+          const otherVec = wids.map(wid => scoreMatrix[otherId][wid]);
+          const corr = pearson(myVec, otherVec);
+          if (corr === null) continue;
+          if (!best || corr > best.score) {
+            best = { id: otherId, name: participantMap.get(otherId)!, score: corr };
+          }
+        }
+        if (best) closestMatches[pid] = { id: best.id, name: best.name };
+      }
+
+      // Median taster identity (recomputed for context only)
+      let medianTasterId = "";
+      let lowestAvgDev = Infinity;
+      for (const pid of allActiveIds) {
+        const devs = wids.map(wid => {
+          const s = scoreMatrix[pid][wid];
+          const g = whiskyGroupAvg[wid];
+          return s !== null && g > 0 ? Math.abs(s - g) : null;
+        }).filter((d): d is number => d !== null);
+        const avgDev = devs.length > 0 ? devs.reduce((a, b) => a + b, 0) / devs.length : Infinity;
+        if (avgDev < lowestAvgDev) { lowestAvgDev = avgDev; medianTasterId = pid; }
+      }
+
+      const { client: aiClient, error: aiError } = await getAIClient(requesterId, "ai_narrative");
+      if (aiError === "AI_LIMIT_EXCEEDED") return res.status(429).json({ message: "AI_LIMIT_EXCEEDED" });
+      if (!aiClient) return res.status(503).json({ message: "AI service not available" });
+
+      const merged: Record<string, IndividualReportEntry> = { ...existingIndividual };
+      let generatedCount = 0;
+      const failedParticipantIds: string[] = [];
+      try {
+        await Promise.all(toGenerate.map(async (pid) => {
+          const name = participantMap.get(pid)!;
+          const myScores = wids
+            .map(wid => ({ whiskyName: tastingWhiskies.find(w => w.id === wid)?.name || "?", score: scoreMatrix[pid][wid] }))
+            .filter(s => s.score !== null)
+            .map(s => `${s.whiskyName}: ${s.score}`)
+            .join(", ");
+          const isMedian = pid === medianTasterId;
+          const closestName = closestMatches[pid]?.name;
+          const prefs = preferenceProfiles[pid];
+          try {
+            const [deR, enR] = await Promise.all([
+              aiClient.chat.completions.create({ model: "gpt-4o-mini", messages: [{ role: "system", content: `Schreibe für ${name} einen personalisierten Tasting-Kommentar auf Deutsch (80-120 Wörter, warm und spezifisch, epistemic tone). Was zeigen seine/ihre Bewertungen über den Gaumen?` }, { role: "user", content: `Bewertungen: ${myScores}. Stärkste Übereinstimmung mit: ${closestName || "niemand"}. Präferenzen: Region ${prefs?.topRegion || "??"}, Fass ${prefs?.topCask || "??"}, Torf ${prefs?.peatLevel || "??"}. Median-Taster: ${isMedian ? "Ja" : "Nein"}.` }], max_tokens: 250, temperature: 0.8 }),
+              aiClient.chat.completions.create({ model: "gpt-4o-mini", messages: [{ role: "system", content: `Write a personalized tasting comment for ${name} in English (80-120 words, warm, epistemic tone). What do their scores reveal about their palate?` }, { role: "user", content: `Scores: ${myScores}. Closest match: ${closestName || "none"}. Preferences: region ${prefs?.topRegion || "??"}, cask ${prefs?.topCask || "??"}, peat ${prefs?.peatLevel || "??"}. Is median taster: ${isMedian ? "yes" : "no"}.` }], max_tokens: 250, temperature: 0.8 }),
+            ]);
+            merged[pid] = {
+              narrative: deR.choices[0]?.message?.content || "",
+              narrativeEn: enR.choices[0]?.message?.content || "",
+              preferenceProfile: prefs,
+              closestMatchId: closestMatches[pid]?.id,
+              closestMatchName: closestName,
+              generatedAt: new Date().toISOString(),
+            };
+            generatedCount++;
+          } catch (err) {
+            // Skip individual failures so a single AI hiccup doesn't block the rest.
+            failedParticipantIds.push(pid);
+          }
+        }));
+      } catch {}
+
+      // Persist only when at least one new individual narrative was produced.
+      // We deliberately do NOT bump report-level `individualReportsUpdatedAt`
+      // here — per-entry `generatedAt` already encodes per-participant freshness,
+      // and bumping the report-level timestamp would trigger a "Neu" surprise
+      // for OTHER participants whose own analysis didn't change. The report-level
+      // timestamp is reserved for "host (re-)enabled sharing" (PATCH /enable).
+      let updated = existing;
+      if (generatedCount > 0) {
+        updated = await storage.updateTastingAiReport(req.params.id, {
+          individualReports: merged,
+        });
+      }
+      res.json({
+        report: updated,
+        generated: generatedCount,
+        skipped: toGenerate.length - generatedCount,
+        failedParticipantIds,
+      });
+    } catch (e: any) {
+      console.error("AI individual reports error:", e.message);
+      res.status(500).json({ message: "Could not generate individual reports" });
     }
   });
 
@@ -8300,9 +8536,13 @@ Beste Übereinstimmungen: ${pairings.slice(0, 2).map(p => `${p.aName} & ${p.bNam
       const requesterId = req.headers["x-participant-id"] as string;
       if (requesterId !== tasting.hostId) return res.status(403).json({ message: "Host only" });
       const enabled = req.body?.enabled === true;
-      const updated = await storage.updateTastingAiReport(req.params.id, { aiReportEnabled: enabled });
+      const patch: Partial<InsertTastingAiReport> = { aiReportEnabled: enabled };
+      // When the host opens the report up, refresh the "newness" marker so participants
+      // see the surprise panel on Meine Welt the next time they open the app.
+      if (enabled) patch.individualReportsUpdatedAt = new Date();
+      const updated = await storage.updateTastingAiReport(req.params.id, patch);
       if (!updated) return res.status(404).json({ message: "Report not found – generate first" });
-      res.json({ aiReportEnabled: updated.aiReportEnabled });
+      res.json({ aiReportEnabled: updated.aiReportEnabled, individualReportsUpdatedAt: updated.individualReportsUpdatedAt });
     } catch (e: any) {
       res.status(500).json({ message: "Could not update report" });
     }
