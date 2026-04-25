@@ -1594,15 +1594,6 @@ export default function LabsResults({ params }: LabsResultsProps) {
                     {photosUploading ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> : <Plus style={{ width: 14, height: 14 }} />}
                     {photosUploading ? "Wird hochgeladen…" : "Fotos hinzufügen"}
                   </button>
-                  <button
-                    className="labs-btn-ghost"
-                    onClick={() => navigate(`/labs/results/${tastingId}/story`)}
-                    data-testid="button-open-story-from-photos"
-                    style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}
-                  >
-                    <BookOpen style={{ width: 13, height: 13 }} />
-                    Story öffnen
-                  </button>
                 </div>
               </div>
             </div>
