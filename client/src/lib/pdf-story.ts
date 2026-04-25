@@ -21,7 +21,12 @@ async function fetchImageAsBase64(url: string): Promise<string | null> {
 export type PdfProgressCallback = (current: number, total: number, label: string) => void;
 
 export async function exportStoryPdf(storyData: any, returnBase64 = false, onProgress?: PdfProgressCallback): Promise<string | void> {
-  const { tasting, sortedRanking, participants, eventPhotos, winner, winnerNarration, aiComments, blindReveal, participantFunFacts } = storyData;
+  const {
+    tasting, sortedRanking, participants, eventPhotos, winner,
+    winnerNarration, aiComments, blindReveal, participantFunFacts,
+    openingNarration, discoveryTexts, blindNarration, closingReflection,
+    whiskyPortraits, winnerStory,
+  } = storyData;
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageW = 210, pageH = 297, marginX = 18, contentW = pageW - marginX * 2;
   const accent: [number, number, number] = [212, 162, 86];
@@ -64,6 +69,18 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false, onPro
   const drawSurface = (x: number, y: number, w: number, h: number) => {
     doc.setFillColor(...surface); doc.roundedRect(x, y, w, h, 2, 2, "F");
     doc.setDrawColor(212, 162, 86); doc.setLineWidth(0.2); doc.roundedRect(x, y, w, h, 2, 2, "S");
+  };
+
+  const drawNarrativeBlock = (text: string, yStart: number, boxH: number, indentX = marginX, boxW = contentW): number => {
+    doc.setFillColor(...surface);
+    doc.roundedRect(indentX, yStart, boxW, boxH, 2, 2, "F");
+    doc.setDrawColor(...accent);
+    doc.setLineWidth(0.5);
+    doc.line(indentX, yStart, indentX, yStart + boxH);
+    doc.setLineWidth(0.2);
+    doc.roundedRect(indentX, yStart, boxW, boxH, 2, 2, "S");
+    const textY = yStart + 5;
+    return addTextWrapped(`"${text}"`, indentX + 6, textY, boxW - 12, 8, muted, "italic");
   };
 
   const eventPhotoB64s: (string | null)[] = await Promise.all(
@@ -144,11 +161,9 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false, onPro
 
   doc.setDrawColor(...accent); doc.setLineWidth(0.4); doc.line(marginX + 20, y, pageW - marginX - 20, y); y += 10;
 
-  if (tasting.hostReflection) {
-    drawSurface(marginX, y, contentW, 22);
-    y += 5;
-    y = addTextWrapped(`"${tasting.hostReflection.slice(0, 200)}"`, marginX + 5, y, contentW - 10, 8, muted, "italic") + 4;
-    y += 6;
+  const openingQuote = openingNarration || tasting.hostReflection;
+  if (openingQuote) {
+    y = drawNarrativeBlock(openingQuote.slice(0, 220), y, 24) + 8;
   }
 
   if (tasters.length > 0) {
@@ -318,10 +333,18 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false, onPro
 
     doc.setDrawColor(...muted); doc.setLineWidth(0.15); doc.line(marginX, y, pageW - marginX, y); y += 8;
 
-    if (aiComments?.[w.name]) {
+    const portraitText = whiskyPortraits?.[w.name];
+    if (portraitText) {
+      doc.setFontSize(7.5); doc.setTextColor(...accent); doc.setFont("helvetica", "bold");
+      doc.text("WHISKY PORTRAIT", marginX, y); y += 5;
+      y = drawNarrativeBlock(portraitText.slice(0, 200), y, 20) + 8;
+    }
+
+    const discoveryComment = discoveryTexts?.[w.name] || aiComments?.[w.name];
+    if (discoveryComment) {
       doc.setFontSize(7.5); doc.setTextColor(...accent); doc.setFont("helvetica", "bold");
       doc.text("STORY", marginX, y); y += 5;
-      y = addTextWrapped(`"${aiComments[w.name]}"`, marginX, y, contentW, 8.5, muted, "italic") + 6;
+      y = drawNarrativeBlock(discoveryComment.slice(0, 220), y, 22) + 6;
     }
 
     if (w.ratings && w.ratings.length > 0) {
@@ -352,9 +375,14 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false, onPro
     y = drawActLabel("AKT V", "Die Überraschung", y);
 
     doc.setFontSize(20); doc.setTextColor(...textColor); doc.setFont("helvetica", "bold");
-    doc.text("Blind-Tasting-Auflösung", pageW / 2, y, { align: "center" }); y += 8;
-    doc.setFontSize(9); doc.setTextColor(...muted); doc.setFont("helvetica", "normal");
-    doc.text("Wer hatte Recht? Wer lag daneben?", pageW / 2, y, { align: "center" }); y += 14;
+    doc.text("Blind-Tasting-Auflösung", pageW / 2, y, { align: "center" }); y += 10;
+
+    if (blindNarration) {
+      y = drawNarrativeBlock(blindNarration.slice(0, 220), y, 22) + 10;
+    } else {
+      doc.setFontSize(9); doc.setTextColor(...muted); doc.setFont("helvetica", "normal");
+      doc.text("Wer hatte Recht? Wer lag daneben?", pageW / 2, y, { align: "center" }); y += 14;
+    }
 
     for (const w of blindData.slice(0, 6)) {
       if (y > pageH - 40) break;
@@ -428,13 +456,12 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false, onPro
       y += 24;
     }
 
-    if (winnerNarration) {
+    const finalWinnerNarration = winnerStory || winnerNarration;
+    if (finalWinnerNarration) {
       y += 4;
       doc.setDrawColor(...accent); doc.setLineWidth(0.3);
       doc.line(marginX + 15, y, pageW - marginX - 15, y); y += 8;
-      drawSurface(marginX + 8, y, contentW - 16, 30);
-      y += 5;
-      y = addTextWrapped(`"${winnerNarration}"`, marginX + 12, y, contentW - 24, 9, muted, "italic") + 6;
+      y = drawNarrativeBlock(finalWinnerNarration.slice(0, 260), y, 32, marginX + 8, contentW - 16) + 6;
     }
 
     drawFooter("Der Sieger");
@@ -528,7 +555,11 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false, onPro
 
   doc.setFontSize(9.5); doc.setTextColor(...muted); doc.setFont("helvetica", "normal");
   const closingMeta = [tasting.date, tasting.location].filter(Boolean).join("  ·  ");
-  if (closingMeta) { doc.text(closingMeta, pageW / 2, y, { align: "center" }); y += 16; }
+  if (closingMeta) { doc.text(closingMeta, pageW / 2, y, { align: "center" }); y += 12; }
+
+  if (closingReflection) {
+    y = drawNarrativeBlock(closingReflection.slice(0, 220), y, 24) + 8;
+  }
 
   doc.setDrawColor(...accent); doc.setLineWidth(0.4); doc.line(marginX + 30, y, pageW - marginX - 30, y); y += 14;
 
