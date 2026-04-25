@@ -18,6 +18,127 @@ async function fetchImageAsBase64(url: string): Promise<string | null> {
   }
 }
 
+type PhotoData = { dataUrl: string; width: number; height: number };
+
+function loadHtmlImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.decoding = "async";
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("img load failed"));
+    img.src = src;
+  });
+}
+
+async function fetchImageWithDimensions(url: string): Promise<PhotoData | null> {
+  try {
+    const response = await fetch(url, { mode: "cors" });
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    try {
+      const img = await loadHtmlImage(objectUrl);
+      const w = img.naturalWidth || img.width;
+      const h = img.naturalHeight || img.height;
+      if (!w || !h) return null;
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return null;
+      ctx.drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+      return { dataUrl, width: w, height: h };
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  } catch {
+    return null;
+  }
+}
+
+type PhotoLayoutItem = { idx: number; x: number; w: number; h: number };
+type PhotoLayoutRow = { items: PhotoLayoutItem[]; h: number };
+
+function buildPhotoLayout(
+  photos: PhotoData[],
+  contentW: number,
+  slotGap: number,
+): PhotoLayoutRow[] {
+  const slotW = (contentW - slotGap) / 2;
+  const innerGap = 4;
+  const portraitW = (slotW - innerGap) / 2;
+  const minRowH = 32;
+  const maxRowH = 95;
+
+  type Slot = { items: PhotoLayoutItem[]; h: number };
+  const slots: Slot[] = [];
+  const queue = photos.map((p, idx) => ({ p, idx }));
+  let i = 0;
+  while (i < queue.length) {
+    const cur = queue[i];
+    const ar = cur.p.width / cur.p.height;
+    if (ar >= 1) {
+      const rawH = slotW / ar;
+      const h = Math.max(minRowH, Math.min(maxRowH, rawH));
+      slots.push({
+        items: [{ idx: cur.idx, x: 0, w: slotW, h }],
+        h,
+      });
+      i++;
+    } else {
+      const next = queue[i + 1];
+      if (next && next.p.width / next.p.height < 1) {
+        const arA = cur.p.width / cur.p.height;
+        const arB = next.p.width / next.p.height;
+        const hA = portraitW / arA;
+        const hB = portraitW / arB;
+        const rawH = Math.min(hA, hB);
+        const h = Math.max(minRowH, Math.min(maxRowH, rawH));
+        const wA = h * arA;
+        const wB = h * arB;
+        const totalW = wA + innerGap + wB;
+        const offset = (slotW - totalW) / 2;
+        slots.push({
+          items: [
+            { idx: cur.idx, x: offset, w: wA, h },
+            { idx: next.idx, x: offset + wA + innerGap, w: wB, h },
+          ],
+          h,
+        });
+        i += 2;
+      } else {
+        const rawH = portraitW / ar;
+        const h = Math.max(minRowH, Math.min(maxRowH, rawH));
+        const w = h * ar;
+        const offset = (slotW - w) / 2;
+        slots.push({
+          items: [{ idx: cur.idx, x: offset, w, h }],
+          h,
+        });
+        i++;
+      }
+    }
+  }
+
+  const rows: PhotoLayoutRow[] = [];
+  for (let s = 0; s < slots.length; s += 2) {
+    const a = slots[s];
+    const b = slots[s + 1];
+    const rowH = Math.max(a.h, b ? b.h : 0);
+    const items: PhotoLayoutItem[] = a.items.map((it) => ({ ...it, x: it.x }));
+    if (b) {
+      const offsetX = slotW + slotGap;
+      for (const it of b.items) {
+        items.push({ ...it, x: it.x + offsetX });
+      }
+    }
+    rows.push({ items, h: rowH });
+  }
+  return rows;
+}
+
 export type PdfProgressCallback = (current: number, total: number, label: string) => void;
 
 export async function exportStoryPdf(storyData: any, returnBase64 = false, onProgress?: PdfProgressCallback): Promise<string | void> {
@@ -83,8 +204,8 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false, onPro
     return addTextWrapped(`"${text}"`, indentX + 6, textY, boxW - 12, 8, muted, "italic");
   };
 
-  const eventPhotoB64s: (string | null)[] = await Promise.all(
-    (eventPhotos || []).map((ep: any) => fetchImageAsBase64(ep.photoUrl))
+  const eventPhotoData: (PhotoData | null)[] = await Promise.all(
+    (eventPhotos || []).map((ep: any) => fetchImageWithDimensions(ep.photoUrl))
   );
 
   const whiskyImgB64s: Map<string, string | null> = new Map();
@@ -97,18 +218,36 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false, onPro
   const tasters = (participants || []).filter((p: any) => !p.excludedFromResults);
 
   const blindData = (blindReveal || []).filter((w: any) => w.guesses && w.guesses.length > 0);
-  const photoEntries = (eventPhotos || []).filter((_: any, i: number) => eventPhotoB64s[i]);
 
-  // Pre-simulate photo layout to get an accurate page count
+  type PhotoEntry = { entry: any; data: PhotoData };
+  const validPhotos: PhotoEntry[] = (eventPhotos || [])
+    .map((entry: any, idx: number) => {
+      const data = eventPhotoData[idx];
+      return data ? { entry, data } : null;
+    })
+    .filter((v: PhotoEntry | null): v is PhotoEntry => v !== null);
+
+  const photoSlotGap = 6;
+  const photoLayoutRows = buildPhotoLayout(
+    validPhotos.map((v) => v.data),
+    contentW,
+    photoSlotGap,
+  );
+  const photoCaptionGap = 4;
+  const photoCaptionH = 4;
+  const photoRowGap = 10;
+
   const photoPageCount = (() => {
-    if (photoEntries.length === 0) return 0;
-    const simPhotoW = (contentW - 6) / 2;
-    const simPhotoH = simPhotoW * 0.65;
-    let pages = 1, col = 0, yy = 28;
-    for (let pi = 0; pi < photoEntries.length; pi++) {
-      if (yy + simPhotoH > pageH - 22) { pages++; yy = 28; col = 0; }
-      col++;
-      if (col >= 2) { col = 0; yy += simPhotoH + 14; }
+    if (photoLayoutRows.length === 0) return 0;
+    let pages = 1;
+    let yy = 28;
+    for (const row of photoLayoutRows) {
+      const rowAdvance = row.h + photoCaptionGap + photoCaptionH + photoRowGap;
+      if (yy + row.h + photoCaptionGap + photoCaptionH > pageH - 22) {
+        pages++;
+        yy = 28;
+      }
+      yy += rowAdvance;
     }
     return pages;
   })();
@@ -133,7 +272,7 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false, onPro
   drawBg(); drawHeader();
   let y = 18;
 
-  const firstPhoto = eventPhotoB64s[0];
+  const firstPhoto = eventPhotoData[0]?.dataUrl ?? null;
   if (firstPhoto) {
     try {
       doc.addImage(firstPhoto, "JPEG", 0, 0, pageW, 110, undefined, "FAST");
@@ -468,40 +607,44 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false, onPro
   }
 
   // ===== EVENT PHOTOS PAGES =====
-  if (photoEntries.length > 0) {
+  if (validPhotos.length > 0 && photoLayoutRows.length > 0) {
     await progress("Event Fotos");
     doc.addPage(); drawBg(); drawHeader();
     y = 18;
     doc.setFontSize(7.5); doc.setTextColor(...accent); doc.setFont("helvetica", "bold");
     doc.text("EVENT FOTOS", pageW / 2, y, { align: "center" }); y += 10;
 
-    const cols = 2, photoW = (contentW - 6) / cols, photoH = photoW * 0.65;
-    let col = 0;
-    for (let pi = 0; pi < photoEntries.length; pi++) {
-      const b64 = eventPhotoB64s[pi];
-      if (!b64) continue;
-      const px = marginX + col * (photoW + 6);
-      if (y + photoH > pageH - 22) {
+    for (const row of photoLayoutRows) {
+      const rowBlockH = row.h + photoCaptionGap + photoCaptionH;
+      if (y + rowBlockH > pageH - 22) {
         drawFooter("Event Fotos");
         await progress("Event Fotos");
         doc.addPage(); drawBg(); drawHeader(); y = 18;
         doc.setFontSize(7.5); doc.setTextColor(...accent); doc.setFont("helvetica", "bold");
         doc.text("EVENT FOTOS", pageW / 2, y, { align: "center" }); y += 10;
-        col = 0;
       }
-      try {
-        doc.addImage(b64, "JPEG", px, y, photoW, photoH, undefined, "FAST");
-        doc.setDrawColor(...accent); doc.setLineWidth(0.2); doc.rect(px, y, photoW, photoH, "S");
-        const caption = photoEntries[pi].caption;
-        if (caption) {
-          doc.setFontSize(6.5); doc.setTextColor(...muted); doc.setFont("helvetica", "italic");
-          doc.text(caption.slice(0, 38), px, y + photoH + 4);
-        }
-      } catch { /* skip broken image */ }
-      col++;
-      if (col >= cols) { col = 0; y += photoH + 14; }
+      const rowTopY = y;
+      for (const item of row.items) {
+        const photo = validPhotos[item.idx];
+        if (!photo) continue;
+        const ix = marginX + item.x;
+        const iy = rowTopY + (row.h - item.h) / 2;
+        try {
+          doc.addImage(photo.data.dataUrl, "JPEG", ix, iy, item.w, item.h, undefined, "FAST");
+          doc.setDrawColor(...accent); doc.setLineWidth(0.2); doc.rect(ix, iy, item.w, item.h, "S");
+          const caption = photo.entry?.caption;
+          if (caption) {
+            doc.setFontSize(6.5); doc.setTextColor(...muted); doc.setFont("helvetica", "italic");
+            const captionMaxChars = Math.max(12, Math.floor(item.w / 1.6));
+            const captionText = caption.length > captionMaxChars
+              ? caption.slice(0, captionMaxChars - 1) + "…"
+              : caption;
+            doc.text(captionText, ix, iy + item.h + photoCaptionGap);
+          }
+        } catch { /* skip broken image */ }
+      }
+      y += rowBlockH + photoRowGap;
     }
-    if (col > 0) y += photoH + 14;
     drawFooter("Event Fotos");
   }
 
@@ -510,10 +653,10 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false, onPro
   doc.addPage(); drawBg(); drawHeader();
   y = 18;
 
-  const lastPhotoB64 = eventPhotoB64s.length > 0 ? eventPhotoB64s[eventPhotoB64s.length - 1] : null;
-  if (lastPhotoB64) {
+  const lastValidPhoto = validPhotos.length > 0 ? validPhotos[validPhotos.length - 1].data.dataUrl : null;
+  if (lastValidPhoto) {
     try {
-      doc.addImage(lastPhotoB64, "JPEG", 0, 0, pageW, pageH, undefined, "FAST");
+      doc.addImage(lastValidPhoto, "JPEG", 0, 0, pageW, pageH, undefined, "FAST");
       doc.setFillColor(...bg);
       doc.setGState(doc.GState({ opacity: 0.78 }));
       doc.rect(0, 0, pageW, pageH, "F");
