@@ -17722,6 +17722,44 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
   });
 
   // Story data aggregation endpoint
+  app.patch("/api/tastings/:id/story-prompt", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      // auth.participant.id is the server-trusted identity, consistent with the story PDF email route
+      // and safer than the client-supplied x-participant-id header used in read-only story views.
+      if (tasting.hostId !== auth.participant.id) return res.status(403).json({ message: "Only the host can set the story prompt" });
+      const { storyPrompt } = req.body as { storyPrompt?: string };
+      // Normalize: trim whitespace, convert blank string to null for deterministic storage
+      const normalizedPrompt = storyPrompt != null ? (storyPrompt.trim() || null) : null;
+      const promptUpdate: {
+        storyPrompt: string | null;
+        storySlidesCache: null;
+        storySlidesRatingCount: null;
+        storyPdfObjectKey: null;
+      } = {
+        storyPrompt: normalizedPrompt,
+        storySlidesCache: null,
+        storySlidesRatingCount: null,
+        storyPdfObjectKey: null,
+      };
+      // Best-effort: delete the stale PDF from object storage
+      if (tasting.storyPdfObjectKey) {
+        try {
+          const { bucketName, objectName } = parseStoragePath(tasting.storyPdfObjectKey);
+          await objectStorageClient.bucket(bucketName).file(objectName).delete({ ignoreNotFound: true });
+        } catch { /* best-effort */ }
+      }
+      await storage.updateTasting(req.params.id, promptUpdate);
+      res.json({ ok: true });
+    } catch (e: any) {
+      console.error("Story prompt patch error:", e.message);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.get("/api/tastings/:id/story", async (req: Request, res: Response) => {
     try {
       const auth = await requireAuth(req);
@@ -17729,7 +17767,9 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
       const participantId = (req.headers["x-participant-id"] as string) || (req.query.pid as string);
-      const isHost = tasting.hostId === participantId;
+      // Use the server-trusted auth identity for host privilege checks (refresh, generation control).
+      // Client-supplied participantId is still used for participant membership validation.
+      const isHost = tasting.hostId === auth.participant.id;
       if (!isHost) {
         if (!tasting.storyEnabled) return res.status(403).json({ message: "Story not yet available" });
         if (!participantId) return res.status(403).json({ message: "Participant ID required" });
@@ -17806,6 +17846,16 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
 
       const currentRatingCount = allRatings.length;
       const forceRefresh = isHost && req.query.refresh === "true";
+      // no_generate=true: return computed data only, never trigger AI (used for metadata-only checks)
+      const noGenerate = req.query.no_generate === "true";
+      // Prevent participants from triggering the first AI generation.
+      // If there is no story cache yet, only the host may kick off generation
+      // so the host has the opportunity to set a story prompt first.
+      const hasAnyCache = !!tasting.storySlidesCache;
+      if (!isHost && !hasAnyCache && req.query.no_generate !== "true") {
+        return res.status(403).json({ message: "Story not yet available — the host is still setting up the story." });
+      }
+      const participantGenerationBlocked = !isHost && !hasAnyCache;
       let servedFromCache = false;
 
       if (
@@ -17826,7 +17876,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
         } catch {}
       }
 
-      if (!servedFromCache) {
+      if (!servedFromCache && !noGenerate && !participantGenerationBlocked) {
         try {
           const { client: aiClient } = await getAIClient(participantId ?? tasting.hostId, "ai_narrative");
           if (aiClient) {
@@ -17919,7 +17969,9 @@ Respond ONLY with valid JSON matching this exact structure:
   "winnerStory": "<3-4 sentence winner celebration — why this one won, what it represents, how the group reacted>",
   "closingReflection": "<3-4 sentence closing: the atmosphere as the evening wound down, what lingers>"
 }
-Language: German if the tasting title or participant names appear German, otherwise English. Tone: cinematic, literary, warm.`,
+Language: German if the tasting title or participant names appear German, otherwise English. Tone: cinematic, literary, warm.
+
+If the user data includes a "hostContext" field, treat it as additional creative direction from the host — honour the mood, anecdotes, and emphasis they describe, weaving them naturally into the narration.`,
                 },
                 {
                   role: "user",
@@ -17931,6 +17983,7 @@ Language: German if the tasting title or participant names appear German, otherw
                     participants: participantsForAI,
                     winner: winner ? { name: winner.name, distillery: winner.distillery, score: winner.avgOverall } : null,
                     blindMode: tasting.blindMode,
+                    ...(tasting.storyPrompt ? { hostContext: tasting.storyPrompt } : {}),
                   }),
                 },
               ],
@@ -17988,6 +18041,7 @@ Language: German if the tasting title or participant names appear German, otherw
 
       res.json({
         tasting,
+        isHost,
         whiskies: whiskyResults,
         sortedRanking: sorted,
         winner,
@@ -24133,6 +24187,21 @@ ${cleaned.slice(0, 60000)}`;
     } catch (e: any) {
       console.error("[batch-import/commit] error:", e);
       res.status(500).json({ message: e?.message || "Commit fehlgeschlagen" });
+    }
+  });
+
+  // Serve the cinematic tasting story standalone page
+  app.get("/tasting-story/:id", (req: Request, res: Response) => {
+    const templatePath = path.join(process.cwd(), "client", "public", "tasting-story", "template.html");
+    try {
+      let html = fs.readFileSync(templatePath, "utf-8");
+      html = html.replace("__TASTING_ID__", req.params.id.replace(/[^a-zA-Z0-9_-]/g, ""));
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      res.send(html);
+    } catch (e: any) {
+      console.error("tasting-story template read error:", e.message);
+      res.status(500).send("Story page template not found.");
     }
   });
 

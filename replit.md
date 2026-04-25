@@ -1,5 +1,16 @@
 # CaskSense - Whisky Tasting Application
 
+## Checkpoint: "Tasting-Story Cinematic Standalone Page" (25.04.2026)
+Task #972: Die Tasting-Story wurde als cinematische Standalone-HTML-Seite neu umgesetzt.
+- **`client/public/tasting-story/template.html`**: Vollständige self-contained HTML-Story-Seite mit EB Garamond + Inter, Ink/Amber-Palette, Film-Grain-Overlay, parallax Cover-Slide, Scroll-Reveal-Animationen und IntersectionObserver-basiertem Act-Nav.
+- **`/tasting-story/:id` Server-Route** (in `server/routes.ts`): Liest das Template, injiziert die Tasting-ID als `<meta name="tasting-id">` und liefert die Seite aus.
+- **React-Redirect**: `/labs/results/:id/story` in `client/src/App.tsx` leitet jetzt per `window.location.replace` direkt auf `/tasting-story/:id` weiter.
+- **Host-Prompt UI**: Vor der ersten Generierung sieht der Host ein optionales Eingabefeld für Story-Kontext. Im Story-View gibt es einen "Story anpassen"-Button mit Regen-Panel.
+- **`PATCH /api/tastings/:id/story-prompt`**: Speichert den Host-Prompt in `tasting.storyPrompt`, invalidiert den Story-Cache (setzt `storySlidesCache` + `storySlidesRatingCount` auf null).
+- **`storyPrompt` Schema-Feld**: Neu in `shared/schema.ts` (Drizzle-Push ausgeführt).
+- **AI-Injection**: `hostContext` (= `tasting.storyPrompt`) wird an den GPT-4o-mini-User-Content und den System-Prompt weitergegeben, damit die KI die Host-Hinweise als kreative Richtung nutzt.
+- Alle Story-Sektionen: Cover-Slide, Akt I (Opening), Akt II (Whiskys), Akt III (Verkoster), Akt IV (Entdeckungen/Ranking), Akt V (Blind-Tasting optional), Akt VI (Sieger), Fotos, Finale.
+
 ## Checkpoint: "Score-Clamp" (21.04.2026)
 Task #787: Normalisierte Scores (`normalized_score`, `normalized_nose`, `normalized_taste`, `normalized_finish`) werden jetzt durchgaengig auf [0,100] geklemmt. Neuer Helper `shared/score-utils.ts` (`clampNormalized`) wird in allen `?? overall * norm`-Pfaden in `server/storage.ts`, `server/routes.ts`, `server/archive-lifecycle.ts` angewendet. `normalizeDim` (Rating-Submit) und `normDim` (CSV-Import) clampen Roh- und normalisierten Wert. Frontend `ScoreBadge` und `BarRow` in `ExploreStatistics.tsx` clampen als letzte Verteidigung; `LabsHistoricalDetail` und `LabsTasteAnalytics` ebenso. Startup-Migration in `server/index.ts` korrigiert bestehende DB-Zeilen (idempotent), zusaetzliche SQL-Datei `migrations/0023_clamp_normalized_scores.sql`.
 

@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="tasting-id" content="__TASTING_ID__">
+<title>Tasting Story · CaskSense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #F5EDE0;
+  --ink-dim: #A89A85;
+  --ink-faint: #6B5F4F;
+  --bg: #0B0906;
+  --bg-lift: #141009;
+  --amber: #C9A961;
+  --amber-dim: #8E7640;
+  --amber-glow: rgba(201, 169, 97, 0.15);
+  --serif: 'EB Garamond', Georgia, serif;
+  --sans: 'Inter', system-ui, sans-serif;
+  --max-width: 900px;
+  --section-pad: clamp(4rem, 10vw, 8rem);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;}
+body{background:var(--bg);color:var(--ink);font-family:var(--serif);font-size:18px;line-height:1.6;overflow-x:hidden;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;opacity:.04;z-index:1000;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");mix-blend-mode:overlay;}
+
+/* Nav */
+.topnav{position:fixed;top:0;left:0;right:0;padding:1.25rem 2rem;display:flex;justify-content:space-between;align-items:center;z-index:100;background:linear-gradient(to bottom,rgba(11,9,6,.92),rgba(11,9,6,.5) 70%,transparent);backdrop-filter:blur(8px);}
+.topnav__brand{font-family:var(--serif);font-size:1.1rem;font-style:italic;color:var(--amber);}
+.topnav__brand strong{font-weight:500;font-style:normal;color:var(--ink);}
+.topnav__back{font-family:var(--sans);font-size:.75rem;color:var(--ink-dim);text-decoration:none;letter-spacing:.15em;text-transform:uppercase;border-bottom:1px solid transparent;padding-bottom:2px;transition:all .3s;cursor:pointer;background:none;border-top:none;border-left:none;border-right:none;}
+.topnav__back:hover{color:var(--amber);border-bottom-color:var(--amber);}
+.progress{position:fixed;top:0;left:0;height:2px;background:var(--amber);width:0%;z-index:101;box-shadow:0 0 8px var(--amber-glow);}
+
+/* Act nav */
+.act-nav{position:fixed;right:1.25rem;top:50%;transform:translateY(-50%);z-index:50;display:flex;flex-direction:column;gap:.9rem;font-family:var(--sans);}
+.act-nav__item{display:flex;align-items:center;gap:.75rem;color:var(--ink-faint);text-decoration:none;font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;transition:all .3s;opacity:.5;cursor:pointer;background:none;border:none;}
+.act-nav__item::before{content:'';display:block;width:16px;height:1px;background:currentColor;transition:all .3s;}
+.act-nav__item:hover,.act-nav__item.is-active{color:var(--amber);opacity:1;}
+.act-nav__item:hover::before,.act-nav__item.is-active::before{width:28px;background:var(--amber);}
+@media(max-width:768px){.act-nav{display:none;}}
+
+/* Cover hero */
+.hero{min-height:100vh;position:relative;display:flex;align-items:flex-end;padding:0 2rem var(--section-pad);overflow:hidden;}
+.hero__bg{position:absolute;inset:0;z-index:-1;background-size:cover;background-position:center;filter:brightness(.75) contrast(1.05);}
+.hero__bg::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(11,9,6,.3) 0%,rgba(11,9,6,.6) 60%,var(--bg) 100%);}
+.hero__content{max-width:var(--max-width);margin:0 auto;width:100%;position:relative;z-index:1;}
+.hero__eyebrow{font-family:var(--sans);font-size:.75rem;letter-spacing:.3em;text-transform:uppercase;color:var(--amber);margin-bottom:1.5rem;opacity:0;animation:fadeUp 1s ease-out .3s forwards;}
+.hero__title{font-family:var(--serif);font-size:clamp(3rem,10vw,7rem);line-height:.95;font-weight:500;letter-spacing:-.03em;color:var(--ink);margin-bottom:1rem;opacity:0;animation:fadeUp 1.2s ease-out .6s forwards;}
+.hero__meta{font-family:var(--sans);font-size:.7rem;letter-spacing:.25em;text-transform:uppercase;color:var(--ink-faint);opacity:0;animation:fadeUp 1s ease-out .9s forwards;margin-top:1.5rem;}
+.hero__scroll{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);font-family:var(--sans);font-size:.7rem;letter-spacing:.25em;text-transform:uppercase;color:var(--ink-faint);opacity:0;animation:fadeUp 1s ease-out 1.2s forwards,pulse 2s ease-in-out 2s infinite;text-align:center;}
+.hero__scroll::after{content:'';display:block;width:1px;height:24px;background:var(--amber-dim);margin:.75rem auto 0;}
+.hero--placeholder{background:linear-gradient(160deg,#1a1007 0%,#0b0906 100%);}
+
+/* Sections */
+section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto;}
+.section--full{max-width:100%;padding-left:0;padding-right:0;}
+.divider{width:50px;height:1px;background:var(--amber);margin:0 auto 2.5rem;}
+.act-label{font-family:var(--sans);font-size:.75rem;letter-spacing:.4em;text-transform:uppercase;color:var(--amber);margin-bottom:1rem;text-align:center;}
+.act-title{font-family:var(--serif);font-style:italic;font-size:clamp(2rem,5vw,3.25rem);color:var(--ink);font-weight:400;letter-spacing:-.02em;margin-bottom:.75rem;text-align:center;}
+.act-sub{font-family:var(--serif);font-size:clamp(1rem,1.5vw,1.15rem);color:var(--ink-dim);max-width:520px;margin:0 auto;font-style:italic;line-height:1.6;text-align:center;}
+
+/* Narrative quote */
+.quote{font-family:var(--serif);font-style:italic;font-size:clamp(1.15rem,2vw,1.4rem);line-height:1.65;color:var(--ink-dim);padding-left:1.5rem;border-left:2px solid var(--amber);margin:2rem 0;}
+.quote em{font-style:normal;color:var(--ink);}
+.quote strong{font-weight:500;color:var(--ink);}
+
+/* Whisky card */
+.whisky-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:2rem;margin-top:2rem;}
+.whisky-card{background:rgba(201,169,97,.06);border:1px solid rgba(201,169,97,.18);border-radius:4px;padding:1.5rem;position:relative;}
+.whisky-card__rank{font-family:var(--sans);font-size:.65rem;letter-spacing:.3em;text-transform:uppercase;color:var(--amber);margin-bottom:.5rem;}
+.whisky-card__name{font-family:var(--serif);font-size:1.4rem;color:var(--ink);margin-bottom:.25rem;font-weight:500;}
+.whisky-card__distillery{font-family:var(--sans);font-size:.8rem;color:var(--ink-faint);margin-bottom:.75rem;letter-spacing:.05em;}
+.whisky-card__score{font-size:2.5rem;font-weight:700;color:var(--amber);line-height:1;margin-bottom:.5rem;font-variant-numeric:tabular-nums;}
+.whisky-card__score span{font-size:.45em;color:var(--ink-faint);font-weight:400;}
+.whisky-card__badges{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1rem;}
+.badge{padding:3px 10px;border-radius:4px;background:rgba(201,169,97,.1);border:1px solid rgba(201,169,97,.2);font-family:var(--sans);font-size:.7rem;color:var(--amber);letter-spacing:.05em;}
+.whisky-card__portrait{font-family:var(--serif);font-style:italic;font-size:.95rem;color:var(--ink-dim);line-height:1.6;border-top:1px solid rgba(201,169,97,.15);padding-top:.75rem;margin-top:.75rem;}
+
+/* Winner */
+.winner-hero{text-align:center;padding:var(--section-pad) 2rem;}
+.winner-hero__crown{font-size:3rem;margin-bottom:1rem;display:block;}
+.winner-hero__label{font-family:var(--sans);font-size:.7rem;letter-spacing:.4em;text-transform:uppercase;color:var(--amber);margin-bottom:1.5rem;}
+.winner-hero__name{font-family:var(--serif);font-size:clamp(2.5rem,6vw,5rem);color:var(--ink);line-height:.95;font-weight:500;margin-bottom:1rem;}
+.winner-hero__score{font-size:clamp(3rem,8vw,6rem);font-weight:700;color:var(--amber);line-height:1;margin-bottom:1.5rem;font-variant-numeric:tabular-nums;}
+.winner-hero__story{max-width:600px;margin:0 auto;}
+
+/* Tasters grid */
+.tasters-grid{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;margin-top:2rem;}
+.taster-card{padding:1rem 1.25rem;border-radius:12px;background:rgba(201,169,97,.08);border:1px solid rgba(201,169,97,.2);text-align:center;min-width:160px;max-width:220px;}
+.taster-card__avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--amber),#e8c878);color:#0B0906;font-size:1.1rem;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto .75rem;}
+.taster-card__name{font-family:var(--serif);font-size:1rem;color:var(--ink);font-weight:500;margin-bottom:.25rem;}
+.taster-card__sketch{font-family:var(--serif);font-style:italic;font-size:.85rem;color:var(--ink-dim);line-height:1.5;}
+
+/* Reveal: blind guesses */
+.blind-item{padding:1rem 1.25rem;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);margin-bottom:.75rem;}
+.blind-item__name{font-family:var(--sans);font-size:.9rem;font-weight:600;color:var(--ink);margin-bottom:.5rem;}
+.blind-item__row{font-family:var(--sans);font-size:.8rem;color:var(--ink-dim);display:flex;align-items:center;gap:.5rem;}
+.blind-item__row.best{color:#6ee7b7;}
+.blind-item__row.worst{color:#fca5a5;}
+
+/* Photos */
+.photos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.5rem;margin-top:2rem;padding:0 2rem;}
+.photo-item img{width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:2px;box-shadow:0 20px 40px rgba(0,0,0,.5);}
+.photo-item__caption{font-family:var(--serif);font-style:italic;font-size:.85rem;color:var(--ink-faint);margin-top:.5rem;}
+
+/* Finale */
+.finale{text-align:center;padding:var(--section-pad) 2rem;min-height:80vh;display:flex;align-items:center;justify-content:center;}
+.finale__tagline{font-family:var(--serif);font-style:italic;font-size:clamp(2rem,5vw,4rem);line-height:1.15;color:var(--ink);margin-bottom:1.5rem;}
+.finale__tagline strong{font-style:normal;font-weight:500;color:var(--amber);}
+.finale__closing{font-family:var(--serif);font-style:italic;font-size:clamp(1rem,1.5vw,1.2rem);color:var(--ink-dim);max-width:540px;margin:0 auto;}
+.finale__brand{margin-top:3rem;font-family:var(--sans);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-faint);}
+
+/* Host Prompt UI */
+.host-prompt-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;}
+.host-prompt-card{max-width:620px;width:100%;text-align:center;}
+.host-prompt-card .divider{margin-bottom:2rem;}
+.host-prompt-card__eyebrow{font-family:var(--sans);font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;color:var(--amber);margin-bottom:1rem;}
+.host-prompt-card__title{font-family:var(--serif);font-style:italic;font-size:clamp(1.8rem,4vw,2.8rem);color:var(--ink);margin-bottom:.75rem;}
+.host-prompt-card__sub{font-family:var(--serif);font-style:italic;font-size:1.05rem;color:var(--ink-dim);margin-bottom:2.5rem;line-height:1.55;}
+.host-prompt-textarea{width:100%;background:rgba(201,169,97,.06);border:1px solid rgba(201,169,97,.25);border-radius:4px;color:var(--ink);font-family:var(--serif);font-style:italic;font-size:1rem;padding:1rem 1.25rem;resize:vertical;min-height:120px;line-height:1.6;outline:none;transition:border-color .3s;}
+.host-prompt-textarea:focus{border-color:var(--amber);}
+.host-prompt-textarea::placeholder{color:var(--ink-faint);}
+.btn-primary{display:inline-block;margin-top:1.5rem;font-family:var(--serif);font-style:italic;font-size:1.1rem;color:#0B0906;background:var(--amber);border:none;padding:.75rem 2.5rem;cursor:pointer;border-radius:2px;transition:all .3s;letter-spacing:.02em;}
+.btn-primary:hover{background:#e8c878;}
+.btn-ghost{display:inline-block;margin-top:1rem;font-family:var(--sans);font-size:.75rem;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-faint);background:none;border:none;cursor:pointer;text-decoration:underline;text-underline-offset:4px;}
+.btn-ghost:hover{color:var(--ink-dim);}
+
+/* Regen button (for host on story page) */
+.host-regen{position:fixed;bottom:2rem;right:2rem;z-index:200;display:none;}
+.host-regen.visible{display:block;}
+.host-regen__btn{font-family:var(--sans);font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-dim);background:rgba(11,9,6,.85);border:1px solid rgba(201,169,97,.3);padding:.6rem 1rem;cursor:pointer;border-radius:4px;backdrop-filter:blur(8px);transition:all .3s;}
+.host-regen__btn:hover{color:var(--amber);border-color:var(--amber);}
+.host-regen__panel{display:none;margin-top:.5rem;background:rgba(11,9,6,.95);border:1px solid rgba(201,169,97,.25);border-radius:4px;padding:1rem;width:300px;backdrop-filter:blur(12px);}
+.host-regen__panel.open{display:block;}
+.host-regen__label{font-family:var(--serif);font-style:italic;font-size:.9rem;color:var(--ink-dim);margin-bottom:.5rem;}
+.host-regen__textarea{width:100%;background:rgba(201,169,97,.05);border:1px solid rgba(201,169,97,.2);color:var(--ink);font-family:var(--serif);font-style:italic;font-size:.85rem;padding:.6rem .75rem;resize:vertical;min-height:80px;border-radius:2px;outline:none;font-size:.85rem;}
+.host-regen__textarea:focus{border-color:var(--amber);}
+
+/* Loading / Error */
+.loading-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1.5rem;text-align:center;}
+.loading-spinner{width:32px;height:32px;border:2px solid rgba(201,169,97,.2);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite;}
+.loading-text{font-family:var(--serif);font-style:italic;font-size:1.1rem;color:var(--ink-dim);}
+.error-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem;text-align:center;padding:2rem;}
+.error-title{font-family:var(--serif);font-size:1.5rem;color:var(--ink);}
+.error-sub{font-family:var(--serif);font-style:italic;color:var(--ink-dim);}
+
+/* Reveal animations */
+.reveal{opacity:0;transform:translateY(40px);transition:opacity 1.2s cubic-bezier(.16,1,.3,1),transform 1.2s cubic-bezier(.16,1,.3,1);}
+.reveal.is-visible{opacity:1;transform:translateY(0);}
+.reveal--d1{transition-delay:.1s;}
+.reveal--d2{transition-delay:.25s;}
+.reveal--d3{transition-delay:.4s;}
+
+/* Animations */
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
+@keyframes pulse{0%,100%{opacity:.4;}50%{opacity:.9;}}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* Print */
+@media print{
+  .topnav,.act-nav,.progress,.hero__scroll,.host-regen{display:none!important;}
+  body{background:#fff;color:#1a1007;}
+  .hero{min-height:auto;page-break-after:always;}
+  section{page-break-inside:avoid;}
+}
+
+@media(max-width:640px){
+  .hero{padding:0 1.25rem 3rem;}
+  section{padding:3rem 1.25rem;}
+  .topnav{padding:1rem 1.25rem;}
+}
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<nav class="topnav">
+  <div class="topnav__brand">Cask<strong>Sense</strong> <em>Story</em></div>
+  <button class="topnav__back" onclick="history.back()">← Zurück</button>
+</nav>
+
+<nav class="act-nav" id="actNav" aria-label="Akte"></nav>
+
+<!-- Loading -->
+<div class="loading-screen" id="loadingScreen">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Story wird geladen…</div>
+</div>
+
+<!-- Host prompt (before generation) -->
+<div id="hostPromptScreen" style="display:none;">
+  <div class="host-prompt-screen">
+    <div class="host-prompt-card">
+      <div class="divider"></div>
+      <div class="host-prompt-card__eyebrow">Nur für dich sichtbar</div>
+      <h1 class="host-prompt-card__title">Was soll die Story besonders hervorheben?</h1>
+      <p class="host-prompt-card__sub">Erzähl der KI vom Abend — besondere Momente, die Stimmung, lustige Anekdoten oder was du herausgearbeitet haben möchtest. Optional, du kannst diesen Schritt auch überspringen.</p>
+      <textarea id="promptInput" class="host-prompt-textarea" placeholder="z.B. »Es war ein gemütlicher Winterabend, wir haben uns besonders über den Islay gestritten und Max hat als einziger den Torf wirklich gemocht…«"></textarea>
+      <br>
+      <button class="btn-primary" onclick="generateStory()">Story generieren</button>
+      <br>
+      <button class="btn-ghost" onclick="generateStory(true)">Überspringen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Error -->
+<div id="errorScreen" style="display:none;">
+  <div class="error-screen">
+    <div class="error-title">Story nicht verfügbar</div>
+    <div class="error-sub" id="errorMsg">Bitte versuche es erneut.</div>
+    <button class="btn-primary" style="margin-top:1rem;" onclick="window.location.reload()">Neu laden</button>
+  </div>
+</div>
+
+<!-- Story content -->
+<div id="storyContent" style="display:none;">
+
+  <!-- Act 0: Cover hero -->
+  <section class="section--full" id="act-cover" data-act="Eröffnung">
+    <div class="hero" id="coverHero">
+      <div class="hero__bg" id="coverBg"></div>
+      <div class="hero__content">
+        <div class="hero__eyebrow">CaskSense Story</div>
+        <h1 class="hero__title" id="coverTitle">—</h1>
+        <div class="hero__meta" id="coverMeta"></div>
+      </div>
+      <div class="hero__scroll">Scroll</div>
+    </div>
+  </section>
+
+  <!-- Act 1: Opening -->
+  <section id="act-opening" data-act="Akt I">
+    <div class="reveal">
+      <div class="divider"></div>
+      <div class="act-label">Akt I · Eröffnung</div>
+      <h2 class="act-title" id="openingTitle">—</h2>
+      <p class="act-sub" id="openingMeta"></p>
+    </div>
+    <div class="reveal reveal--d1" id="openingNarration" style="margin-top:2.5rem;"></div>
+  </section>
+
+  <!-- Act 2: Whiskies -->
+  <section id="act-whiskies" data-act="Akt II">
+    <div class="reveal">
+      <div class="divider"></div>
+      <div class="act-label">Akt II · Die Whiskys</div>
+      <h2 class="act-title">Die Auswahl des Abends</h2>
+    </div>
+    <div class="whisky-grid reveal reveal--d1" id="whiskiesGrid"></div>
+  </section>
+
+  <!-- Act 3: Tasters -->
+  <section id="act-tasters" data-act="Akt III">
+    <div class="reveal">
+      <div class="divider"></div>
+      <div class="act-label">Akt III · Die Verkoster</div>
+      <h2 class="act-title" id="tastersTitle">—</h2>
+    </div>
+    <div class="tasters-grid reveal reveal--d1" id="tastersGrid"></div>
+  </section>
+
+  <!-- Act 4: Discoveries / Ranking -->
+  <section id="act-discoveries" data-act="Akt IV">
+    <div class="reveal">
+      <div class="divider"></div>
+      <div class="act-label">Akt IV · Entdeckungen</div>
+      <h2 class="act-title">Die Platzierungen</h2>
+    </div>
+    <div id="discoveriesContent" style="margin-top:2rem;"></div>
+  </section>
+
+  <!-- Act 5: Blind surprise (conditional) -->
+  <section id="act-blind" data-act="Akt V" style="display:none;">
+    <div class="reveal">
+      <div class="divider"></div>
+      <div class="act-label">Akt V · Die Überraschung</div>
+      <h2 class="act-title">Blind-Tasting-Auflösung</h2>
+    </div>
+    <div class="reveal reveal--d1" id="blindNarration" style="margin-top:2rem;"></div>
+    <div id="blindGrid" style="margin-top:1.5rem;"></div>
+  </section>
+
+  <!-- Act 6: Winner -->
+  <section id="act-winner" data-act="Akt VI">
+    <div class="winner-hero reveal">
+      <div class="divider"></div>
+      <div class="act-label">Akt VI · Der Sieger</div>
+      <span class="winner-hero__crown">🏆</span>
+      <div class="winner-hero__label">Der Sieger des Abends</div>
+      <h2 class="winner-hero__name" id="winnerName">—</h2>
+      <div class="winner-hero__score" id="winnerScore"></div>
+      <div class="winner-hero__story reveal reveal--d1">
+        <div class="quote" id="winnerStory"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Photos (conditional) -->
+  <div id="act-photos" style="display:none;">
+    <section>
+      <div class="reveal">
+        <div class="divider"></div>
+        <div class="act-label">Der Abend in Bildern</div>
+      </div>
+    </section>
+    <div class="photos-grid reveal reveal--d1" id="photosGrid"></div>
+  </div>
+
+  <!-- Act 7: Finale -->
+  <section id="act-finale" data-act="Finale">
+    <div class="finale reveal">
+      <div style="width:100%;">
+        <div class="divider"></div>
+        <div class="act-label">Finale</div>
+        <div class="finale__tagline" id="finalTagline"><em>Der Abend <strong>bleibt.</strong></em></div>
+        <div class="finale__closing" id="closingReflection"></div>
+        <div class="finale__brand" style="margin-top:3rem;">CaskSense · Where Tasting becomes Reflection</div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /storyContent -->
+
+<!-- Host: Regenerate panel -->
+<div class="host-regen" id="hostRegen">
+  <div class="host-regen__panel" id="regenPanel">
+    <div class="host-regen__label">Story-Prompt anpassen:</div>
+    <textarea class="host-regen__textarea" id="regenPromptInput" rows="3" placeholder="Neue Hinweise für die KI…"></textarea>
+    <div style="display:flex;gap:.5rem;margin-top:.6rem;">
+      <button class="btn-primary" style="font-size:.8rem;padding:.45rem 1rem;" onclick="regenStory()">Neu generieren</button>
+      <button class="btn-ghost" style="font-size:.7rem;" onclick="closeRegenPanel()">Abbrechen</button>
+    </div>
+  </div>
+  <button class="host-regen__btn" onclick="toggleRegenPanel()" id="regenToggleBtn">✦ Story anpassen</button>
+</div>
+
+<script>
+(function(){
+  // --- Helpers ---
+  const $ = id => document.getElementById(id);
+  const pid = () => localStorage.getItem('casksense_participant_id') || sessionStorage.getItem('session_pid') || '';
+
+  // Get tasting ID from meta tag (injected by server) or from URL
+  function getTastingId() {
+    const meta = document.querySelector('meta[name="tasting-id"]');
+    if (meta && meta.content && meta.content !== '__TASTING_ID__') return meta.content;
+    const parts = window.location.pathname.split('/');
+    return parts[parts.length - 1] || parts[parts.length - 2] || '';
+  }
+
+  const tastingId = getTastingId();
+  let storyData = null;
+  let isHost = false;
+
+  // Progress bar
+  window.addEventListener('scroll', () => {
+    const total = document.body.scrollHeight - window.innerHeight;
+    $('progress').style.width = (total > 0 ? (window.scrollY / total) * 100 : 0) + '%';
+  });
+
+  // IntersectionObserver for reveal animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('is-visible'); observer.unobserve(e.target); }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+
+  function setupReveal() {
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  }
+
+  // Act nav
+  function buildActNav(sections) {
+    const nav = $('actNav');
+    nav.innerHTML = '';
+    sections.forEach(({ id, label }) => {
+      const btn = document.createElement('button');
+      btn.className = 'act-nav__item';
+      btn.setAttribute('aria-label', label);
+      btn.textContent = label;
+      btn.addEventListener('click', () => { document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }); });
+      nav.appendChild(btn);
+    });
+  }
+
+  // Scroll spy for act nav
+  function setupActSpy(sectionIds) {
+    const items = $('actNav').querySelectorAll('.act-nav__item');
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        const idx = sectionIds.indexOf(e.target.id);
+        if (idx < 0) return;
+        if (e.isIntersecting) items[idx]?.classList.add('is-active');
+        else items[idx]?.classList.remove('is-active');
+      });
+    }, { threshold: 0.3 });
+    sectionIds.forEach(id => { const el = document.getElementById(id); if (el) io.observe(el); });
+  }
+
+  // Format score
+  function fmtScore(v) {
+    if (v == null) return '—';
+    return Number.isInteger(v) ? String(v) : v.toFixed(1).replace(/\.0$/, '');
+  }
+
+  // Strip guest suffix
+  function stripGuest(name) { return (name || '').replace(/#guest$/i, '').trim(); }
+
+  // Escape HTML
+  function esc(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // --- Show/hide screens ---
+  function showLoading() { $('loadingScreen').style.display=''; $('hostPromptScreen').style.display='none'; $('errorScreen').style.display='none'; $('storyContent').style.display='none'; }
+  function showError(msg) { $('loadingScreen').style.display='none'; $('hostPromptScreen').style.display='none'; $('errorScreen').style.display=''; $('storyContent').style.display='none'; $('errorMsg').textContent = msg || 'Unbekannter Fehler'; }
+  function showPrompt() { $('loadingScreen').style.display='none'; $('hostPromptScreen').style.display=''; $('errorScreen').style.display='none'; $('storyContent').style.display='none'; }
+  function showStory() { $('loadingScreen').style.display='none'; $('hostPromptScreen').style.display='none'; $('errorScreen').style.display='none'; $('storyContent').style.display=''; }
+
+  // --- Fetch story ---
+  // noGenerate=true → server skips AI call (metadata/cache check only, safe for prompt decision)
+  async function fetchStory(refresh, noGenerate) {
+    const params = new URLSearchParams();
+    if (refresh) params.set('refresh', 'true');
+    if (noGenerate) params.set('no_generate', 'true');
+    const qs = params.toString();
+    const url = `/api/tastings/${tastingId}/story${qs ? '?' + qs : ''}`;
+    const headers = { 'Content-Type': 'application/json' };
+    const p = pid();
+    if (p) headers['x-participant-id'] = p;
+    const res = await fetch(url, { headers });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      throw new Error(j.message || `HTTP ${res.status}`);
+    }
+    return res.json();
+  }
+
+  async function fetchPhotos() {
+    const headers = {};
+    const p = pid();
+    if (p) headers['x-participant-id'] = p;
+    const res = await fetch(`/api/tastings/${tastingId}/event-photos`, { headers });
+    if (!res.ok) return [];
+    return res.json();
+  }
+
+  // --- Save story prompt ---
+  async function savePrompt(prompt) {
+    const headers = { 'Content-Type': 'application/json' };
+    const p = pid();
+    if (p) headers['x-participant-id'] = p;
+    const res = await fetch(`/api/tastings/${tastingId}/story-prompt`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ storyPrompt: prompt }),
+    });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      throw new Error(j.message || `Prompt konnte nicht gespeichert werden (HTTP ${res.status})`);
+    }
+  }
+
+  // --- Generate (from host prompt screen) ---
+  async function generateStory(skip) {
+    const prompt = skip ? '' : ($('promptInput').value || '').trim();
+    showLoading();
+    try {
+      // Always persist the prompt (even empty on skip) so any prior prompt is cleared.
+      await savePrompt(prompt);
+      const [data, photos] = await Promise.all([fetchStory(true, false), fetchPhotos()]);
+      storyData = data;
+      renderStory(data, photos);
+      showStory();
+    } catch(e) { showError(e.message); }
+  }
+  window.generateStory = generateStory;
+
+  // --- Regen panel ---
+  function toggleRegenPanel() {
+    const panel = $('regenPanel');
+    panel.classList.toggle('open');
+    if (panel.classList.contains('open') && storyData) {
+      $('regenPromptInput').value = storyData.tasting?.storyPrompt || '';
+    }
+  }
+  window.toggleRegenPanel = toggleRegenPanel;
+
+  function closeRegenPanel() { $('regenPanel').classList.remove('open'); }
+  window.closeRegenPanel = closeRegenPanel;
+
+  async function regenStory() {
+    const prompt = ($('regenPromptInput').value || '').trim();
+    closeRegenPanel();
+    showLoading();
+    try {
+      // Always save the prompt (even empty string) to allow explicit clearing
+      await savePrompt(prompt);
+      const [data, photos] = await Promise.all([fetchStory(true, false), fetchPhotos()]);
+      storyData = data;
+      renderStory(data, photos);
+      showStory();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch(e) { showError(e.message); }
+  }
+  window.regenStory = regenStory;
+
+  // --- Render story ---
+  function renderStory(data, photos) {
+    const { tasting, sortedRanking, winner, participants, blindReveal, aiComments,
+            participantFunFacts, openingNarration, discoveryTexts, blindNarration,
+            closingReflection, winnerStory, winnerNarration } = data;
+
+    // Prefer server-returned isHost (trusted); fall back to localStorage pid comparison.
+    isHost = data.isHost ?? (tasting.hostId && tasting.hostId === pid());
+
+    // Cover
+    const coverUrl = tasting.coverImageUrl || (photos && photos[0]?.photoUrl) || '';
+    if (coverUrl) {
+      $('coverBg').style.backgroundImage = `url(${coverUrl})`;
+    } else {
+      $('coverHero').classList.add('hero--placeholder');
+    }
+    $('coverTitle').textContent = tasting.title || 'Tasting Story';
+    const metaParts = [tasting.date, tasting.location].filter(Boolean).join('  ·  ');
+    $('coverMeta').textContent = metaParts;
+    document.title = `${tasting.title || 'Story'} · CaskSense`;
+
+    // Opening
+    $('openingTitle').textContent = tasting.title || '';
+    $('openingMeta').textContent = metaParts;
+    if (openingNarration || tasting.hostReflection) {
+      $('openingNarration').innerHTML = `<div class="quote">${esc(openingNarration || tasting.hostReflection)}</div>`;
+    }
+
+    // Whiskies
+    const ranked = sortedRanking || [];
+    const rScale = tasting.ratingScale || 100;
+    $('whiskiesGrid').innerHTML = ranked.map((w, i) => {
+      const badges = [w.age && `${w.age}y`, w.abv && `${w.abv}%`, w.caskType].filter(Boolean);
+      const portrait = (aiComments && aiComments[w.name]) || '';
+      return `<div class="whisky-card reveal reveal--d${(i % 3) + 1}">
+        <div class="whisky-card__rank">Platz ${i + 1}</div>
+        <div class="whisky-card__name">${esc(w.name || '?')}</div>
+        <div class="whisky-card__distillery">${esc([w.distillery, w.region].filter(Boolean).join(' · '))}</div>
+        ${w.avgOverall != null ? `<div class="whisky-card__score">${esc(fmtScore(w.avgOverall))}<span> / ${rScale}</span></div>` : ''}
+        ${badges.length ? `<div class="whisky-card__badges">${badges.map(b => `<span class="badge">${esc(b)}</span>`).join('')}</div>` : ''}
+        ${portrait ? `<div class="whisky-card__portrait">${esc(portrait)}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    // Tasters
+    const tasters = (participants || []).filter(p => !p.excludedFromResults);
+    $('tastersTitle').textContent = `${tasters.length} ${tasters.length === 1 ? 'Verkoster' : 'Verkoster'} · Eine Mission`;
+    $('tastersGrid').innerHTML = tasters.map(tp => {
+      const name = stripGuest(tp.participant?.name || tp.participant?.email || 'Anonym');
+      const sketch = (participantFunFacts && participantFunFacts[name]) || '';
+      return `<div class="taster-card">
+        <div class="taster-card__avatar">${esc(name.charAt(0).toUpperCase())}</div>
+        <div class="taster-card__name">${esc(name)}</div>
+        ${sketch ? `<div class="taster-card__sketch">${esc(sketch)}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    // Discoveries (rank 2+)
+    const disc = ranked.slice(1);
+    $('discoveriesContent').innerHTML = disc.map((w, i) => {
+      const text = (discoveryTexts && discoveryTexts[w.name]) || (aiComments && aiComments[w.name]) || '';
+      return `<div style="margin-bottom:2.5rem;" class="reveal reveal--d${(i % 2) + 1}">
+        <div style="display:flex;align-items:baseline;gap:1rem;margin-bottom:.5rem;">
+          <span style="font-size:3rem;font-weight:700;color:${i < 2 ? 'var(--amber)' : 'var(--ink-faint)'};line-height:1;">#${i + 2}</span>
+          <div>
+            <div style="font-family:var(--serif);font-size:1.4rem;color:var(--ink);">${esc(w.name || '?')}</div>
+            ${w.distillery ? `<div style="font-family:var(--sans);font-size:.8rem;color:var(--ink-faint);">${esc(w.distillery)}</div>` : ''}
+          </div>
+          ${w.avgOverall != null ? `<div style="margin-left:auto;font-size:1.8rem;font-weight:700;color:var(--amber);font-variant-numeric:tabular-nums;">${esc(fmtScore(w.avgOverall))}</div>` : ''}
+        </div>
+        ${text ? `<div class="quote">${esc(text)}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    // Blind
+    const blindData = (blindReveal || []).filter(w => w.guesses && w.guesses.length > 0);
+    if (blindData.length > 0 || blindNarration) {
+      $('act-blind').style.display = '';
+      if (blindNarration) {
+        $('blindNarration').innerHTML = `<div class="quote">${esc(blindNarration)}</div>`;
+      }
+      $('blindGrid').innerHTML = blindData.map(w => {
+        const sorted = [...w.guesses].sort((a, b) => (a.delta ?? 99) - (b.delta ?? 99));
+        const best = sorted[0], worst = sorted[sorted.length - 1];
+        return `<div class="blind-item">
+          <div class="blind-item__name">${esc(w.whiskyName || 'Whisky')}${w.guesses[0]?.actualAbv != null ? ` · ${w.guesses[0].actualAbv}% ABV` : ''}</div>
+          ${best ? `<div class="blind-item__row best">✓ Nächste: ${best.guessAbv}% (Δ ${best.delta != null ? best.delta.toFixed(1) : '?'}%)</div>` : ''}
+          ${worst && worst !== best ? `<div class="blind-item__row worst">✗ Weiteste: ${worst.guessAbv}% (Δ ${worst.delta != null ? worst.delta.toFixed(1) : '?'}%)</div>` : ''}
+        </div>`;
+      }).join('');
+    }
+
+    // Winner
+    const winnerText = winnerStory || winnerNarration || '';
+    if (winner) {
+      $('winnerName').textContent = winner.name || '—';
+      $('winnerScore').innerHTML = winner.avgOverall != null ? `${fmtScore(winner.avgOverall)}<span style="font-size:.35em;color:var(--ink-faint);font-weight:400;"> / ${rScale}</span>` : '';
+      $('winnerStory').textContent = winnerText;
+    }
+
+    // Photos
+    const photoList = (photos || []).filter(p => p.photoUrl);
+    if (photoList.length > 0) {
+      $('act-photos').style.display = '';
+      $('photosGrid').innerHTML = photoList.map(p => `<div class="photo-item reveal">
+        <img src="${esc(p.photoUrl)}" alt="${esc(p.caption || '')}" loading="lazy">
+        ${p.caption ? `<div class="photo-item__caption">${esc(p.caption)}</div>` : ''}
+      </div>`).join('');
+    }
+
+    // Finale
+    const closing = closingReflection || '';
+    $('closingReflection').innerHTML = closing ? `<div class="quote">${esc(closing)}</div>` : '';
+
+    // Act nav & spy — Act V condition matches section visibility exactly
+    const blindActVisible = blindData.length > 0 || !!blindNarration;
+    const sections = [
+      { id: 'act-cover', label: 'Eröffnung' },
+      { id: 'act-opening', label: 'Akt I' },
+      { id: 'act-whiskies', label: 'Akt II' },
+      { id: 'act-tasters', label: 'Akt III' },
+      { id: 'act-discoveries', label: 'Akt IV' },
+      ...(blindActVisible ? [{ id: 'act-blind', label: 'Akt V' }] : []),
+      { id: 'act-winner', label: 'Akt VI' },
+      { id: 'act-finale', label: 'Finale' },
+    ];
+    buildActNav(sections);
+    setupActSpy(sections.map(s => s.id));
+
+    // Cover parallax
+    const heroBg = $('coverBg');
+    if (heroBg && coverUrl) {
+      window.addEventListener('scroll', () => {
+        const scrolled = window.scrollY;
+        if (scrolled < window.innerHeight * 1.5) {
+          heroBg.style.transform = `translateY(${scrolled * 0.35}px)`;
+        }
+      }, { passive: true });
+    }
+
+    // Host regen button
+    if (isHost) {
+      $('hostRegen').classList.add('visible');
+    }
+
+    // Setup reveal
+    setupReveal();
+  }
+
+  // --- Init ---
+  async function init() {
+    if (!tastingId) { showError('Keine Tasting-ID gefunden.'); return; }
+    showLoading();
+    try {
+      // Step 1: fetch with no_generate=true so the server computes rankings but never calls AI.
+      // This is safe to use as a metadata probe — no AI cost, no side-effects.
+      const [metaData, photos] = await Promise.all([fetchStory(false, true), fetchPhotos()]);
+      const p = pid();
+      // Prefer server-returned isHost (trusted); fall back to localStorage pid comparison.
+      isHost = metaData.isHost ?? (metaData.tasting?.hostId && metaData.tasting.hostId === p);
+
+      // If host and story was never generated (no storySlidesCache), show the prompt screen.
+      // "cached" is false even for a no_generate call when there is no cache.
+      const hasCache = !!metaData.tasting?.storySlidesCache;
+      if (isHost && !hasCache) {
+        // Pre-fill the prompt field if a previous prompt exists
+        if (metaData.tasting?.storyPrompt) {
+          $('promptInput').value = metaData.tasting.storyPrompt;
+        }
+        showPrompt();
+        return;
+      }
+
+      // Step 2: fetch with generate enabled (serves from cache or generates as needed)
+      const data = await fetchStory(false, false);
+      storyData = data;
+      renderStory(data, photos);
+      showStory();
+    } catch(e) {
+      if (e.message && e.message.includes('Story not yet available')) {
+        showError('Diese Story ist noch nicht für Teilnehmer freigegeben.');
+      } else {
+        showError(e.message || 'Story konnte nicht geladen werden.');
+      }
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>
