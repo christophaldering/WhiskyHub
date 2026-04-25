@@ -59,6 +59,7 @@ const SimpleTestPage = lazy(() => import("@/pages/simple-test"));
 const InternalLandingGlasses = lazy(() => import("@/pages/internal-landing-glasses"));
 const AuthPage = lazy(() => import("@/pages/login-page"));
 const AuthMagicPage = lazy(() => import("@/pages/auth-magic-page"));
+const StorybuilderDemo = lazy(() => import("@/pages/storybuilder-demo"));
 
 import AdminLayout from "@/components/admin/AdminLayout";
 
@@ -530,6 +531,7 @@ function Router() {
         <Route path="/internal/landing-glasses" component={InternalLandingGlasses} />
         <Route path="/simple-test" component={SimpleTestPage} />
         <Route path="/simple-feedback" component={SimpleFeedbackPage} />
+        <Route path="/storybuilder-demo" component={StorybuilderDemo} />
         <Route path="/support">{() => <Redirect to="/admin/support" />}</Route>
         <Route path="/admin/support" component={SupportConsole} />
         <Route path="/impressum" component={Impressum} />

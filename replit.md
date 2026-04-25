@@ -1,5 +1,13 @@
 # CaskSense - Whisky Tasting Application
 
+## Checkpoint: "Storybuilder Phase 1" (25.04.2026)
+Task #1018 (Phase 1 von 6): Wiederverwendbare Block-basierte Storybuilder-Bibliothek als Fundament für Tasting-Story und LandingPage-CMS.
+- **Schema**: `tastings.storyBlocks` (jsonb) plus drei neue Tabellen `cms_pages`, `story_versions`, `story_templates` in `shared/schema.ts`. DB synchronisiert per Direct-SQL (Rename-Prompt von drizzle-kit umgangen).
+- **Bibliothek `client/src/storybuilder/`**: Modul-Layout mit `core/types.ts` (StoryDocument, StoryBlock, BlockDefinition mit Zod-Schema), `themes/` (registry + casksense-editorial in EB Garamond/Inter/Amber/Grain), `blocks/` (Registry mit Runtime-Validierung), `renderer/StoryRenderer.tsx` (Theme-Wrapping, Grain-Overlay, Validation-Warnings im Editor-Modus), `editor/StoryEditor.tsx` (3-Spalten: Block-Liste mit Reorder/Duplicate/Hide/Delete, Live-Preview, Properties-Panel).
+- **5 generische Block-Typen**: `hero-cover`, `text-section` (mit Akt-Intro-Variante), `full-width-image`, `quote`, `divider` — alle mit Renderer + Editor-Panel + Zod-Payload-Schema.
+- **Demo-Route `/storybuilder-demo`**: Vollständig funktionsfähiger Editor mit Seed-Inhalt zur Validierung.
+- **Folge-Phasen** als Drafts: #1020 Editor-Vollausbau (DnD, TipTap, Auto-Save, +5 Blöcke), #1021 Versionen+Templates+KI, #1022 Tasting-Story-Migration, #1023 LandingPage-CMS, #1024 Cutover+Politur.
+
 ## Brand Visual Direction (Standing Directive — until revoked, 25.04.2026)
 Die LandingPage (`client/src/pages/landing-new.tsx`, Route `/`) MUSS visuell im Stil der Tasting-Story (`client/public/tasting-story/template.html`) gehalten werden — Wiedererkennungseffekt ist erklärtes Brand-Ziel:
 - Display-Schrift: `EB Garamond` (Italic für narrative Akzente).

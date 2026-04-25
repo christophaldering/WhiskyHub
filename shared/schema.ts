@@ -88,6 +88,7 @@ export const tastings = pgTable("tastings", {
   storyEnabled: boolean("story_enabled").default(false), // Host has enabled story access for participants
   storyPdfObjectKey: text("story_pdf_object_key"), // Object Storage path to cached story PDF
   storyPrompt: text("story_prompt"), // Optional host-written context that guides AI story generation
+  storyBlocks: jsonb("story_blocks"), // Storybuilder document (block-based JSON) — Story 3.0
   // Tasting-wide handout (one per tasting, e.g. "von Rudi" Programmheft)
   handoutUrl: text("handout_url"), // Object storage path to handout file (PDF or image)
   handoutContentType: text("handout_content_type"), // MIME type
@@ -1496,6 +1497,59 @@ export interface AutoHandoutSelectedImage {
   source: string;
   license?: string;
 }
+
+export const cmsPages = pgTable("cms_pages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  slug: varchar("slug").notNull(),
+  title: text("title").notNull(),
+  blocksJson: jsonb("blocks_json"),
+  draftBlocksJson: jsonb("draft_blocks_json"),
+  theme: text("theme").default("casksense-editorial").notNull(),
+  publishedAt: timestamp("published_at"),
+  createdById: varchar("created_by_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  slugIdx: uniqueIndex("idx_cms_pages_slug").on(table.slug),
+}));
+
+export const insertCmsPageSchema = createInsertSchema(cmsPages).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCmsPage = z.infer<typeof insertCmsPageSchema>;
+export type CmsPage = typeof cmsPages.$inferSelect;
+
+export const storyVersions = pgTable("story_versions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sourceType: varchar("source_type").notNull(),
+  sourceId: varchar("source_id").notNull(),
+  name: text("name"),
+  blocksJson: jsonb("blocks_json").notNull(),
+  isAuto: boolean("is_auto").default(false).notNull(),
+  createdById: varchar("created_by_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  sourceIdx: index("idx_story_versions_source").on(table.sourceType, table.sourceId, table.createdAt),
+}));
+
+export const insertStoryVersionSchema = createInsertSchema(storyVersions).omit({ id: true, createdAt: true });
+export type InsertStoryVersion = z.infer<typeof insertStoryVersionSchema>;
+export type StoryVersion = typeof storyVersions.$inferSelect;
+
+export const storyTemplates = pgTable("story_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  scope: varchar("scope").default("user").notNull(),
+  ownerId: varchar("owner_id"),
+  blocksJson: jsonb("blocks_json").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  scopeOwnerIdx: index("idx_story_templates_scope_owner").on(table.scope, table.ownerId),
+}));
+
+export const insertStoryTemplateSchema = createInsertSchema(storyTemplates).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertStoryTemplate = z.infer<typeof insertStoryTemplateSchema>;
+export type StoryTemplate = typeof storyTemplates.$inferSelect;
 
 export const AUTO_HANDOUT_CHAPTER_TYPES = {
   distillery: [
