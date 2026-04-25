@@ -4080,7 +4080,7 @@ export class DatabaseStorage implements IStorage {
     return { tastings: dataQuery, total: countQuery[0]?.count ?? 0 };
   }
 
-  async getHistoricalTastingsEnriched(options?: { limit?: number; offset?: number; search?: string; tastingIds?: string[] }): Promise<{ tastings: Array<HistoricalTasting & { avgTotalScore: number | null; winnerDistillery: string | null; winnerName: string | null; winnerScore: number | null }>; total: number }> {
+  async getHistoricalTastingsEnriched(options?: { limit?: number; offset?: number; search?: string; tastingIds?: string[] }): Promise<{ tastings: Array<HistoricalTasting & { avgTotalScore: number | null; winnerDistillery: string | null; winnerName: string | null; winnerScore: number | null; liveTastingStatus: string | null }>; total: number }> {
     const base = await this.getHistoricalTastings(options);
     if (base.tastings.length === 0) return { tastings: [], total: base.total };
 
@@ -4092,6 +4092,21 @@ export class DatabaseStorage implements IStorage {
       const arr = grouped.get(e.historicalTastingId) || [];
       arr.push(e);
       grouped.set(e.historicalTastingId, arr);
+    }
+
+    const liveOriginIds = base.tastings
+      .filter(t => t.originType === "live" && t.originTastingId)
+      .map(t => t.originTastingId as string);
+
+    const liveTastingStatusMap = new Map<string, string>();
+    if (liveOriginIds.length > 0) {
+      const liveRows = await db
+        .select({ id: tastings.id, status: tastings.status })
+        .from(tastings)
+        .where(inArray(tastings.id, liveOriginIds));
+      for (const row of liveRows) {
+        liveTastingStatusMap.set(row.id, row.status);
+      }
     }
 
     const enriched = base.tastings.map(t => {
@@ -4107,12 +4122,14 @@ export class DatabaseStorage implements IStorage {
         return best;
       }, null);
       const winnerNorm = winner ? (winner.normalizedTotal ?? (winner.totalScore != null ? winner.totalScore * 10 : null)) : null;
+      const liveTastingStatus = t.originTastingId ? (liveTastingStatusMap.get(t.originTastingId) ?? null) : null;
       return {
         ...t,
         avgTotalScore: avgTotalScore != null ? Math.round(avgTotalScore) : null,
         winnerDistillery: winner?.distilleryRaw ?? null,
         winnerName: winner?.whiskyNameRaw ?? null,
         winnerScore: winnerNorm != null ? Math.round(winnerNorm) : null,
+        liveTastingStatus,
       };
     });
 

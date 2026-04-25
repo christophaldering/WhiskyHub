@@ -34,6 +34,9 @@ interface EnrichedTasting {
   winnerDistillery: string | null;
   winnerName: string | null;
   winnerScore: number | null;
+  originTastingId?: string | null;
+  originType?: string | null;
+  liveTastingStatus?: string | null;
 }
 
 interface AnalyticsData {
@@ -244,7 +247,14 @@ function LabsHistoryList() {
               const pCount = participantCounts[tasting.id] || 0;
               return (
                 <div key={tasting.id} className="labs-card-interactive" style={{ padding: "14px 16px" }} data-testid={`tasting-card-${tasting.tastingNumber}`}>
-                  <Link href={`/labs/history/${tasting.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                  <Link
+                    href={
+                      tasting.originTastingId && (tasting.liveTastingStatus === "reveal" || tasting.liveTastingStatus === "closed")
+                        ? `/labs/tastings/${tasting.originTastingId}`
+                        : `/labs/history/${tasting.id}`
+                    }
+                    style={{ textDecoration: "none", color: "inherit" }}
+                  >
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                       <div style={{
                         width: 40, height: 40, borderRadius: 10,

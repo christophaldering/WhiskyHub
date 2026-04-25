@@ -474,12 +474,19 @@ export default function LabsHistoricalDetail() {
   });
 
   const liveTastingIsActive = liveTasting && (liveTasting.status === "reveal" || liveTasting.status === "closed");
+  const snapshotAttemptedRef = useRef(false);
 
   useEffect(() => {
     if (!liveTastingIsActive || !tastingId || !pid) return;
+    if (snapshotAttemptedRef.current) return;
+    snapshotAttemptedRef.current = true;
     fetch(`/api/tastings/${tastingId}/ensure-archive-snapshot`, {
       method: "POST",
       headers: { "x-participant-id": pid },
+    }).then(res => {
+      if (res.ok) {
+        setTimeout(() => refetch(), 1500);
+      }
     }).catch(() => undefined);
   }, [liveTastingIsActive, tastingId, pid]);
 
