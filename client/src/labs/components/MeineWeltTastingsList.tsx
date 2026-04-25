@@ -269,9 +269,12 @@ export default function MeineWeltTastingsList({ filter, searchQuery = "" }: Prop
               (tasting.status === "archived" || tasting.status === "completed") &&
               (isHost || tasting.storyEnabled);
 
+            const isRevealOrClosed = tasting.status === "reveal" || tasting.status === "closed";
             const href =
               filter === "completed"
-                ? `/labs/results/${tasting.id}?from=my-tastings`
+                ? isRevealOrClosed
+                  ? `/labs/tastings/${tasting.id}`
+                  : `/labs/results/${tasting.id}?from=my-tastings`
                 : `/labs/tastings/${tasting.id}`;
             const isLastViewed = filter === "completed" && lastViewedId === tasting.id;
 

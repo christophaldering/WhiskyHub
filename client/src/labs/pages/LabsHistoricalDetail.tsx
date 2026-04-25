@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useParams, useSearch, Link } from "wouter";
+import { useParams, useSearch, Link, useLocation } from "wouter";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { getParticipantId } from "@/lib/api";
 import {
@@ -456,6 +456,33 @@ export default function LabsHistoricalDetail() {
 
   const isForbidden = error instanceof ForbiddenError;
   const isNotFound = !isForbidden && error instanceof Error && error.message.includes("404");
+
+  const [, navigate] = useLocation();
+
+  const { data: liveTasting } = useQuery<{ id: string; status: string; title: string } | null>({
+    queryKey: ["live-tasting-fallback", tastingId],
+    queryFn: async () => {
+      const headers: Record<string, string> = {};
+      if (pid) headers["x-participant-id"] = pid;
+      const res = await fetch(`/api/tastings/${tastingId}`, { headers });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!tastingId && isNotFound,
+    retry: false,
+    staleTime: 30_000,
+  });
+
+  const liveTastingIsActive = liveTasting && (liveTasting.status === "reveal" || liveTasting.status === "closed");
+
+  useEffect(() => {
+    if (!liveTastingIsActive || !tastingId || !pid) return;
+    fetch(`/api/tastings/${tastingId}/ensure-archive-snapshot`, {
+      method: "POST",
+      headers: { "x-participant-id": pid },
+    }).catch(() => undefined);
+  }, [liveTastingIsActive, tastingId, pid]);
+
   const title = data
     ? (lang.startsWith("de") ? data.titleDe : data.titleEn) || data.titleDe || `Tasting #${data.tastingNumber}`
     : "";
@@ -532,13 +559,23 @@ export default function LabsHistoricalDetail() {
 
       {isError && !isForbidden && isNotFound && (
         <div className="labs-card" style={{ textAlign: "center", padding: "60px 16px", marginTop: 16 }} data-testid="detail-not-found">
-          <div style={{ fontSize: 32, marginBottom: 12 }}>🗂️</div>
+          <Wine style={{ width: 36, height: 36, color: "var(--labs-text-muted)", margin: "0 auto 14px", display: "block" }} strokeWidth={1.2} />
           <p style={{ fontSize: 14, color: "var(--labs-text)", fontWeight: 600, marginBottom: 4 }}>
             {t("m2.historicalDetail.notInArchive", "Diese Verkostung ist noch nicht im Archiv verfügbar.")}
           </p>
-          <p style={{ fontSize: 13, color: "var(--labs-text-muted)", lineHeight: 1.5, maxWidth: 340, margin: "0 auto" }}>
-            {t("m2.historicalDetail.notInArchiveHint", "The archive snapshot is created once the tasting enters the reveal phase.")}
+          <p style={{ fontSize: 13, color: "var(--labs-text-muted)", lineHeight: 1.5, maxWidth: 340, margin: "0 auto", marginBottom: liveTastingIsActive ? 20 : 0 }}>
+            {t("m2.historicalDetail.notInArchiveHint", "Der Archiv-Snapshot wird erstellt, sobald die Verkostung in die Auswertungsphase eintritt.")}
           </p>
+          {liveTastingIsActive && (
+            <button
+              className="labs-btn-primary"
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+              onClick={() => navigate(`/labs/tastings/${tastingId}`)}
+              data-testid="detail-go-to-session"
+            >
+              {t("m2.historicalDetail.goToSession", "Zur Tasting-Session")}
+            </button>
+          )}
         </div>
       )}
 

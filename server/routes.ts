@@ -2058,7 +2058,7 @@ export async function registerRoutes(
         const snapshotResult = await createArchiveSnapshot(updated, tastingWhiskies, tastingRatings);
         console.log(`[ARCHIVE] Snapshot result: historical=${snapshotResult.historicalTastingId} entries=${snapshotResult.entriesCreated} alreadyExists=${snapshotResult.alreadyExists}`);
       } catch (archiveErr: any) {
-        console.error(`[ARCHIVE] Failed to create snapshot for tasting=${req.params.id}:`, archiveErr.message || archiveErr);
+        console.error(`[ARCHIVE] Failed to create snapshot for tasting=${req.params.id}:`, archiveErr);
       }
     }
 
@@ -2101,6 +2101,30 @@ export async function registerRoutes(
       const updated = await storage.updateTastingDetails(req.params.id, { title: trimmedTitle });
       res.json(updated);
     } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/ensure-archive-snapshot", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Not found" });
+      const pid = req.headers["x-participant-id"] as string | undefined;
+      const requester = pid ? await storage.getParticipant(pid) : null;
+      if (tasting.hostId !== pid && (!requester || requester.role !== "admin")) {
+        return res.status(403).json({ message: "Only the host can trigger snapshot creation" });
+      }
+      if (tasting.status !== "reveal" && tasting.status !== "archived" && tasting.status !== "completed" && tasting.status !== "closed") {
+        return res.status(400).json({ message: "Snapshot only available for reveal/archived/completed/closed tastings" });
+      }
+      const tastingWhiskies = await storage.getWhiskiesForTasting(req.params.id);
+      const tastingRatings = await storage.getRatingsForTasting(req.params.id);
+      const { createArchiveSnapshot } = await import("./archive-lifecycle");
+      const result = await createArchiveSnapshot(tasting, tastingWhiskies, tastingRatings);
+      console.log(`[ARCHIVE] ensure-snapshot tasting=${req.params.id}: historical=${result.historicalTastingId} entries=${result.entriesCreated} alreadyExists=${result.alreadyExists}`);
+      res.json(result);
+    } catch (e: any) {
+      console.error(`[ARCHIVE] ensure-snapshot failed for tasting=${req.params.id}:`, e);
       res.status(500).json({ message: e.message });
     }
   });

@@ -671,6 +671,46 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       log(`Journal score columns migration: ${e.message}`, "startup");
     }
 
+    try {
+      const { db: dbArch } = await import("./db");
+      const { tastings: tastingsTable, historicalTastings: histTable } = await import("@shared/schema");
+      const { inArray, eq: eqArch } = await import("drizzle-orm");
+      const revealRows = await dbArch
+        .select({ id: tastingsTable.id })
+        .from(tastingsTable)
+        .where(inArray(tastingsTable.status, ["reveal", "archived", "completed"]));
+      let backfilled = 0;
+      for (const row of revealRows) {
+        const sourceKey = `live-tasting-${row.id}`;
+        const existing = await dbArch
+          .select({ id: histTable.id })
+          .from(histTable)
+          .where(eqArch(histTable.sourceKey, sourceKey))
+          .limit(1);
+        if (existing.length === 0) {
+          try {
+            const tasting = await storage.getTasting(row.id);
+            if (!tasting) continue;
+            const tastingWhiskies = await storage.getWhiskiesForTasting(row.id);
+            const tastingRatings = await storage.getRatingsForTasting(row.id);
+            const { createArchiveSnapshot } = await import("./archive-lifecycle");
+            const snap = await createArchiveSnapshot(tasting, tastingWhiskies, tastingRatings);
+            if (!snap.alreadyExists) {
+              backfilled++;
+              log(`Backfilled archive snapshot for tasting=${row.id}`, "startup");
+            }
+          } catch (snapErr: any) {
+            log(`Archive backfill failed for tasting=${row.id}: ${snapErr.message}`, "startup");
+          }
+        }
+      }
+      if (backfilled > 0) {
+        log(`Backfilled ${backfilled} missing archive snapshots`, "startup");
+      }
+    } catch (backfillErr: any) {
+      log(`Archive backfill migration skipped: ${backfillErr.message}`, "startup");
+    }
+
     ready = true;
     log("Application fully initialized");
 
