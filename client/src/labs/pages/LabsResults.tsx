@@ -783,7 +783,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
   const { currentParticipant } = useAppStore();
   const [, navigate] = useLocation();
   const searchStr = useSearch();
-  const fromMyTastings = searchStr.includes("from=my-tastings");
+  const fromMyTastings = (() => { try { return new URLSearchParams(searchStr).get("from") === "my-tastings"; } catch { return false; } })();
   const goBack = useLabsBack("/labs/tastings");
   const [expandedWhisky, setExpandedWhisky] = useState<string | null>(null);
   const [historyExpanded, setHistoryExpanded] = useState<Record<string, boolean>>({});
