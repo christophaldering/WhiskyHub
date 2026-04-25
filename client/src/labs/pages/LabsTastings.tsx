@@ -1,9 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo, useEffect } from "react";
 import { useLocation, useSearch, Link } from "wouter";
-import { Wine, Calendar, MapPin, ChevronRight, Search, Crown, PenLine, Users, Mail, Share2, Settings, Check, LogIn, Archive } from "lucide-react";
+import { Wine, Calendar, MapPin, ChevronRight, Search, Crown, PenLine, Users, Mail, Share2, Settings, Check, LogIn } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { tastingApi, tastingHistoryApi } from "@/lib/api";
+import { tastingApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
 import { useTranslation } from "react-i18next";
@@ -13,7 +13,6 @@ import LabsSolo from "@/labs/pages/LabsSolo";
 import LabsHost from "@/labs/pages/LabsHost";
 import LabsBottleSharing from "@/labs/pages/LabsBottleSharing";
 import { EmbeddedTastingsProvider } from "@/labs/embeddedTastingsContext";
-import { type TastingsHubFilter } from "@/labs/pages/hubTiles";
 import heroImage from "@/assets/images/hero-whisky.png";
 
 type TastingsTab = "join" | "solo" | "host" | "share";
@@ -83,20 +82,7 @@ export default function LabsTastings() {
     setActiveTab((prev) => (prev === tab ? null : tab));
   };
 
-  const [lastViewedCompletedId] = useState<string | null>(() => {
-    try { return localStorage.getItem("lastViewedCompletedTastingId"); } catch { return null; }
-  });
-
-  const [filterTab, setFilterTab] = useState<TastingsHubFilter>(() => {
-    try {
-      const params = new URLSearchParams(searchStr);
-      if (params.get("tab") === "completed") return "completed";
-    } catch {}
-    return "active";
-  });
   const [searchQuery, setSearchQuery] = useState("");
-  const [archiveRoleFilter, setArchiveRoleFilter] = useState<"all" | "host" | "guest">("all");
-  const [archiveYearFilter, setArchiveYearFilter] = useState<string | null>(null);
   const [acceptingInvite, setAcceptingInvite] = useState<string | null>(null);
   const [copiedShareId, setCopiedShareId] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -106,7 +92,7 @@ export default function LabsTastings() {
   const { data: tastings, isLoading } = useQuery({
     queryKey: ["tastings", currentParticipant?.id],
     queryFn: () => tastingApi.getAll(currentParticipant?.id),
-    enabled: !!currentParticipant && filterTab === "active",
+    enabled: !!currentParticipant,
   });
 
   const handleAcceptInvite = async (tasting: any) => {
@@ -172,59 +158,6 @@ export default function LabsTastings() {
     }
   }, [currentParticipant, openAuthDialog]);
 
-  const { data: historyData, isLoading: isHistoryLoading } = useQuery({
-    queryKey: ["tasting-history", currentParticipant?.id],
-    queryFn: () => tastingHistoryApi.get(currentParticipant!.id),
-    enabled: !!currentParticipant?.id && filterTab === "completed",
-    staleTime: 60_000,
-  });
-
-  const baseCompletedItems = useMemo(() => {
-    const list = historyData?.tastings ?? [];
-    let items = list.filter(
-      (t: any) =>
-        t.status !== "open" && t.status !== "draft" && t.status !== "deleted",
-    );
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      items = items.filter(
-        (t: any) =>
-          t.title?.toLowerCase().includes(q) ||
-          t.location?.toLowerCase().includes(q) ||
-          t.hostName?.toLowerCase().includes(q),
-      );
-    }
-    items = [...items].sort(
-      (a: any, b: any) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime(),
-    );
-    return items;
-  }, [historyData, searchQuery]);
-
-  const archiveAvailableYears = useMemo(() => {
-    const years = new Set<string>();
-    for (const item of baseCompletedItems) {
-      if (item.date) {
-        try {
-          const y = new Date(item.date).getFullYear();
-          if (!isNaN(y)) years.add(String(y));
-        } catch {}
-      }
-    }
-    return [...years].sort((a, b) => Number(b) - Number(a));
-  }, [baseCompletedItems]);
-
-  const completedItems = useMemo(() => {
-    let items = baseCompletedItems;
-    if (archiveRoleFilter === "host") items = items.filter((t: any) => !!t.isHost);
-    if (archiveRoleFilter === "guest") items = items.filter((t: any) => !t.isHost);
-    if (archiveYearFilter) {
-      items = items.filter((t: any) => {
-        if (!t.date) return false;
-        try { return String(new Date(t.date).getFullYear()) === archiveYearFilter; } catch { return false; }
-      });
-    }
-    return items;
-  }, [baseCompletedItems, archiveRoleFilter, archiveYearFilter]);
 
   if (!currentParticipant) {
     if (activeTab) {
@@ -363,7 +296,7 @@ export default function LabsTastings() {
           >
             {t("tastings.pageTitle", "Tastings")}
           </h1>
-          {liveCount > 0 && filterTab === "active" && (
+          {liveCount > 0 && (
             <span
               className="labs-badge labs-badge-success"
               style={{ fontSize: 11 }}
@@ -454,7 +387,7 @@ export default function LabsTastings() {
 
       {!activeTab && (
         <>
-          {filterTab === "active" && !searchQuery.trim() && (
+          {!searchQuery.trim() && (
             <section
               className="labs-tastings-hero labs-fade-in"
               data-testid="section-tastings-hero"
@@ -482,194 +415,14 @@ export default function LabsTastings() {
             <Search className="labs-tastings-search-icon w-4 h-4" />
             <input
               className="labs-input labs-tastings-search-input"
-              placeholder={
-                filterTab === "completed"
-                  ? t("tastings.archiveSearchPlaceholder", "Archiv durchsuchen...")
-                  : t("tastings.searchPlaceholder", "Tastings durchsuchen...")
-              }
+              placeholder={t("tastings.searchPlaceholder", "Tastings durchsuchen...")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               data-testid="labs-tastings-search"
             />
           </div>
 
-          {filterTab === "completed" ? (
-            <>
-              {!isHistoryLoading && baseCompletedItems.length > 0 && (
-                <div
-                  style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}
-                  data-testid="labs-tastings-archive-filters"
-                >
-                  {(["all", "host", "guest"] as const).map((r) => {
-                    const label =
-                      r === "all"
-                        ? t("tastings.archiveFilterAll", "Alle")
-                        : r === "host"
-                          ? t("tastings.archiveFilterHost", "Host")
-                          : t("tastings.archiveFilterGuest", "Teilnehmer");
-                    const active = archiveRoleFilter === r;
-                    return (
-                      <button
-                        key={r}
-                        onClick={() => setArchiveRoleFilter(r)}
-                        data-testid={`labs-tastings-filter-role-${r}`}
-                        style={{
-                          padding: "4px 12px", fontSize: 12, fontWeight: 600,
-                          borderRadius: 20,
-                          border: `1.5px solid ${active ? "var(--labs-accent)" : "var(--labs-border)"}`,
-                          background: active ? "var(--labs-accent-muted)" : "transparent",
-                          color: active ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                          cursor: "pointer", transition: "all 0.15s",
-                        }}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                  {archiveAvailableYears.length > 1 && (
-                    <>
-                      <div style={{ width: 1, background: "var(--labs-border)", margin: "0 2px" }} />
-                      <button
-                        onClick={() => setArchiveYearFilter(null)}
-                        data-testid="labs-tastings-filter-year-all"
-                        style={{
-                          padding: "4px 12px", fontSize: 12, fontWeight: 600,
-                          borderRadius: 20,
-                          border: `1.5px solid ${archiveYearFilter === null ? "var(--labs-accent)" : "var(--labs-border)"}`,
-                          background: archiveYearFilter === null ? "var(--labs-accent-muted)" : "transparent",
-                          color: archiveYearFilter === null ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                          cursor: "pointer", transition: "all 0.15s",
-                        }}
-                      >
-                        {t("tastings.archiveFilterAllYears", "Alle Jahre")}
-                      </button>
-                      {archiveAvailableYears.map((y) => {
-                        const active = archiveYearFilter === y;
-                        return (
-                          <button
-                            key={y}
-                            onClick={() => setArchiveYearFilter(active ? null : y)}
-                            data-testid={`labs-tastings-filter-year-${y}`}
-                            style={{
-                              padding: "4px 12px", fontSize: 12, fontWeight: 600,
-                              borderRadius: 20,
-                              border: `1.5px solid ${active ? "var(--labs-accent)" : "var(--labs-border)"}`,
-                              background: active ? "var(--labs-accent-muted)" : "transparent",
-                              color: active ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                              cursor: "pointer", transition: "all 0.15s",
-                            }}
-                          >
-                            {y}
-                          </button>
-                        );
-                      })}
-                    </>
-                  )}
-                </div>
-              )}
-              {isHistoryLoading ? (
-                <div className="labs-tastings-skeleton" style={{ marginTop: 12 }}>
-                  <div className="labs-skeleton labs-skeleton--h20 labs-skeleton--w60" />
-                  <div className="labs-skeleton labs-skeleton--h14 labs-skeleton--w80 labs-skeleton--mt8" />
-                </div>
-              ) : completedItems.length === 0 ? (
-                <div className="labs-empty labs-fade-in" data-testid="labs-tastings-archive-empty" style={{ marginTop: 12 }}>
-                  <p className="labs-empty-sub">
-                    {searchQuery || archiveRoleFilter !== "all" || archiveYearFilter
-                      ? t("tastings.emptySearchTitle", "Keine Tastings gefunden")
-                      : t("tastings.archiveEmptyTitle", "Dein Archiv ist noch leer")}
-                  </p>
-                </div>
-              ) : (
-                <div className="labs-grouped-list labs-fade-in" style={{ marginTop: 12 }}>
-                  {completedItems.map((tasting: any) => {
-                    const statusCfg = getStatusConfig(tasting.status);
-                    const isHost = !!tasting.isHost;
-                    const formattedDate = formatTastingDate(tasting.date);
-                    const isLastViewed = lastViewedCompletedId === tasting.id;
-
-                    return (
-                      <Link key={tasting.id} href={`/labs/results/${tasting.id}?from=my-tastings`}>
-                        <div className="labs-list-row" data-testid={`labs-archive-card-${tasting.id}`}>
-                          <div className="labs-tasting-card-icon labs-tasting-card-icon--default">
-                            <Archive className="labs-tasting-card-icon-sm" style={{ color: "var(--labs-text-muted)" }} />
-                          </div>
-                          <div className="labs-tasting-card-body">
-                            <div className="labs-tasting-card-title-row">
-                              <span className="labs-tasting-card-title" data-testid={`labs-archive-title-${tasting.id}`}>
-                                {String(tasting.title ?? "")}
-                              </span>
-                              <div className="labs-tasting-card-badges">
-                                <span
-                                  className={`labs-badge labs-badge--role ${isHost ? "labs-badge--host" : "labs-badge--guest"}`}
-                                  data-testid={`labs-archive-role-${tasting.id}`}
-                                >
-                                  {isHost ? (
-                                    <>
-                                      <Crown style={{ width: 9, height: 9 }} />
-                                      {t("tastings.roleHost", "HOST")}
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Users style={{ width: 9, height: 9 }} />
-                                      {t("tastings.roleGuest", "GAST")}
-                                    </>
-                                  )}
-                                </span>
-                                <span className={statusCfg.cssClass} data-testid={`labs-archive-status-${tasting.id}`}>
-                                  {t(statusCfg.labelKey, statusCfg.fallbackLabel)}
-                                </span>
-                              </div>
-                            </div>
-                            {!isHost && tasting.hostName && (
-                              <div className="labs-tasting-card-host" data-testid={`labs-archive-hostname-${tasting.id}`}>
-                                <Crown className="labs-tasting-card-host-icon" />
-                                <span className="labs-tasting-card-host-name">{stripGuestSuffix(tasting.hostName)}</span>
-                              </div>
-                            )}
-                            <div className="labs-tasting-card-meta">
-                              {isLastViewed && (
-                                <span
-                                  className="labs-tasting-card-meta-item"
-                                  style={{ color: "var(--labs-accent)", fontWeight: 600 }}
-                                  data-testid={`labs-archive-last-viewed-${tasting.id}`}
-                                >
-                                  {t("tastings.lastViewed", "Zuletzt angesehen")}
-                                </span>
-                              )}
-                              {formattedDate && (
-                                <span className="labs-tasting-card-meta-item">
-                                  <Calendar className="labs-tasting-card-meta-icon" />
-                                  {formattedDate}
-                                </span>
-                              )}
-                              {tasting.location && (
-                                <span className="labs-tasting-card-meta-item labs-tasting-card-meta-item--location">
-                                  <MapPin className="labs-tasting-card-meta-icon" />
-                                  <span className="labs-tasting-card-host-name">{String(tasting.location ?? "")}</span>
-                                </span>
-                              )}
-                              {(tasting.ratedCount != null || tasting.whiskyCount != null) && (
-                                <span className="labs-tasting-card-meta-item" data-testid={`labs-archive-counts-${tasting.id}`}>
-                                  <Wine className="labs-tasting-card-meta-icon" />
-                                  {tasting.ratedCount ?? 0}/{tasting.whiskyCount ?? 0} {t("tastings.archiveRated", "bewertet")}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="labs-tasting-card-actions">
-                            <ChevronRight className="labs-tasting-chevron" />
-                          </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              {isLoading ? (
+          {isLoading ? (
                 <div className="labs-tastings-skeleton" style={{ marginTop: 12 }}>
                   <div className="labs-skeleton labs-skeleton--h20 labs-skeleton--w60" />
                   <div className="labs-skeleton labs-skeleton--h14 labs-skeleton--w40" />
@@ -876,8 +629,6 @@ export default function LabsTastings() {
                   )}
                 </>
               )}
-            </>
-          )}
         </>
       )}
     </div>
