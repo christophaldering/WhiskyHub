@@ -259,8 +259,24 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
 <!-- Loading -->
 <div class="loading-screen" id="loadingScreen">
   <div class="loading-spinner"></div>
-  <div class="loading-text">Story wird geladen…</div>
+  <div class="loading-text" id="loadingText">Story wird geladen…</div>
 </div>
+
+<!-- Confirm dialog (full-regen) -->
+<div id="confirmRegenOverlay" style="display:none;position:fixed;inset:0;z-index:1200;background:rgba(11,9,6,.78);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:1rem;">
+  <div style="max-width:440px;width:100%;background:#15110b;border:1px solid rgba(201,169,97,.25);border-radius:10px;padding:1.5rem;box-shadow:0 20px 60px rgba(0,0,0,.6);" data-testid="dialog-confirm-regen">
+    <div style="font-family:var(--sans);font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:#fca5a5;margin-bottom:.6rem;">Achtung</div>
+    <h2 class="labs-serif" style="font-size:1.4rem;color:var(--ink);margin:0 0 .6rem 0;">Komplett neu generieren?</h2>
+    <p style="font-family:var(--sans);font-size:.85rem;color:var(--ink-dim);line-height:1.55;margin:0 0 1.2rem 0;">Alle bestehenden KI-Texte (Eröffnung, Whisky-Portraits, Verkoster-Sketche, Sieger-Story, Finale) werden gelöscht und von der KI komplett neu erstellt. Deine Event-Fotos und Bewertungen bleiben erhalten. Wenn du nur kleine Änderungen willst, nutze stattdessen <strong style="color:var(--amber);">Verfeinern</strong>.</p>
+    <div style="display:flex;gap:.6rem;justify-content:flex-end;flex-wrap:wrap;">
+      <button class="btn-ghost" style="font-size:.8rem;" data-testid="button-confirm-regen-cancel" onclick="closeConfirmRegen()">Abbrechen</button>
+      <button class="btn-primary" style="font-size:.8rem;padding:.5rem 1.1rem;background:#7f1d1d;border-color:#fca5a5;" data-testid="button-confirm-regen-yes" onclick="closeConfirmRegen();regenStory('full')">Ja, alles neu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="storyToast" style="display:none;position:fixed;left:50%;bottom:1.5rem;transform:translateX(-50%);z-index:1300;background:#15110b;border:1px solid rgba(201,169,97,.4);border-radius:8px;padding:.7rem 1.1rem;font-family:var(--sans);font-size:.8rem;color:var(--ink);box-shadow:0 10px 30px rgba(0,0,0,.5);max-width:90vw;" data-testid="toast-story"></div>
 
 <!-- Host prompt (before generation) -->
 <div id="hostPromptScreen" style="display:none;">
@@ -318,9 +334,15 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
       <div class="act-order-preview__label">Akt-Reihenfolge Vorschau</div>
       <div class="act-order-preview__chips" id="actOrderChips"></div>
     </div>
-    <div style="display:flex;gap:.5rem;margin-top:.6rem;">
-      <button class="btn-primary" style="font-size:.8rem;padding:.45rem 1rem;" data-testid="button-regen-story" onclick="regenStory()">Neu generieren</button>
-      <button class="btn-ghost" style="font-size:.7rem;" onclick="closeRegenPanel()">Abbrechen</button>
+    <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.6rem;">
+      <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
+        <button class="btn-primary" style="font-size:.8rem;padding:.45rem 1rem;" data-testid="button-refine-story" onclick="regenStory('refine')">Verfeinern</button>
+        <button class="btn-ghost" style="font-size:.7rem;" onclick="closeRegenPanel()">Abbrechen</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:.4rem;padding-top:.4rem;border-top:1px dashed rgba(201,169,97,.15);">
+        <button class="btn-ghost" style="font-size:.7rem;color:#fca5a5;border-color:rgba(252,165,165,.3);" data-testid="button-regen-story" onclick="confirmFullRegen()">Komplett neu generieren</button>
+        <span style="font-family:var(--sans);font-size:.65rem;color:var(--ink-faint);">Setzt alle KI-Texte zurück</span>
+      </div>
     </div>
     <details style="margin-top:1rem;border-top:1px solid rgba(201,169,97,.15);padding-top:.75rem;" id="photosSection">
       <summary style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;list-style:none;outline:none;">
@@ -423,7 +445,29 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
   }
 
   // --- Show/hide screens ---
-  function showLoading() { $('loadingScreen').style.display=''; $('hostPromptScreen').style.display='none'; $('errorScreen').style.display='none'; $('storyContent').style.display='none'; $('pdfBtn').style.display='none'; }
+  function showLoading(text) {
+    if (text) { $('loadingText').textContent = text; }
+    else { $('loadingText').textContent = 'Story wird geladen…'; }
+    $('loadingScreen').style.display='';
+    $('hostPromptScreen').style.display='none';
+    $('errorScreen').style.display='none';
+    $('storyContent').style.display='none';
+    $('pdfBtn').style.display='none';
+  }
+  let _toastTimer = null;
+  function showToast(msg) {
+    const el = $('storyToast');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = '';
+    if (_toastTimer) clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => { el.style.display = 'none'; }, 3500);
+  }
+  window.showToast = showToast;
+  function confirmFullRegen() { $('confirmRegenOverlay').style.display = 'flex'; }
+  window.confirmFullRegen = confirmFullRegen;
+  function closeConfirmRegen() { $('confirmRegenOverlay').style.display = 'none'; }
+  window.closeConfirmRegen = closeConfirmRegen;
   function showError(msg) { $('loadingScreen').style.display='none'; $('hostPromptScreen').style.display='none'; $('errorScreen').style.display=''; $('storyContent').style.display='none'; $('errorMsg').textContent = msg || 'Unbekannter Fehler'; $('pdfBtn').style.display='none'; }
   function showPrompt() { $('loadingScreen').style.display='none'; $('hostPromptScreen').style.display=''; $('errorScreen').style.display='none'; $('storyContent').style.display='none'; $('pdfBtn').style.display='none'; }
   function showStory() { $('loadingScreen').style.display='none'; $('hostPromptScreen').style.display='none'; $('errorScreen').style.display='none'; $('storyContent').style.display=''; $('pdfBtn').style.display=''; }
@@ -618,18 +662,29 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
     }
   }
 
-  async function regenStory() {
+  async function regenStory(mode) {
+    const isFull = mode === 'full';
     const prompt = ($('regenPromptInput').value || '').trim();
+    if (mode === 'refine' && !prompt) {
+      showToast('Bitte gib einen Hinweis ein, was die KI verfeinern soll.');
+      return;
+    }
     closeRegenPanel();
-    showLoading();
+    const loadingMsg = isFull
+      ? 'Generiere komplett neu… die KI schreibt von vorn.'
+      : 'Verfeinere Story… bestehende Texte bleiben erhalten.';
+    showLoading(loadingMsg);
     try {
       await savePrompt(prompt);
-      await clearStoryCache();
+      if (isFull) {
+        await clearStoryCache();
+      }
       const [data, photos] = await Promise.all([fetchStory(true, false), fetchPhotos()]);
       storyData = data;
       renderStory(data, photos);
       showStory();
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      showToast(isFull ? 'Story komplett neu generiert.' : 'Story verfeinert — Änderungen übernommen.');
     } catch(e) { showError(e.message); }
   }
   window.regenStory = regenStory;
