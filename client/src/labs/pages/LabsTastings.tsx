@@ -13,7 +13,7 @@ import LabsSolo from "@/labs/pages/LabsSolo";
 import LabsHost from "@/labs/pages/LabsHost";
 import LabsBottleSharing from "@/labs/pages/LabsBottleSharing";
 import { EmbeddedTastingsProvider } from "@/labs/embeddedTastingsContext";
-import { TASTINGS_HUB_TILES, HubTileGrid, type TastingsHubFilter } from "@/labs/pages/hubTiles";
+import { TASTINGS_HUB_TILES, HubTileGrid, type TastingsHubFilter, type TastingsHubTileDef } from "@/labs/pages/hubTiles";
 import heroImage from "@/assets/images/hero-whisky.png";
 
 type TastingsTab = "join" | "solo" | "host" | "share";
@@ -446,8 +446,8 @@ export default function LabsTastings() {
               variant="single-row"
               role="filter"
               activeTestId={TASTINGS_HUB_TILES.find((tile) => tile.filter === filterTab)?.testId}
-              onTileClick={(tile: any) => {
-                const next: TastingsHubFilter = tile.filter;
+              onTileClick={(tile) => {
+                const next = (tile as TastingsHubTileDef).filter;
                 if (next === filterTab) return;
                 setFilterTab(next);
                 setSearchQuery("");
