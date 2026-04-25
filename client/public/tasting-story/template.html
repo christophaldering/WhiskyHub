@@ -882,11 +882,12 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
     const overrideBadge = isManualOverride ? ' (manuell)' : '';
     const safeKind = esc(kind);
     const safeId = esc(String(slideId));
-    return `<div style="display:flex;align-items:center;gap:.5rem;background:rgba(255,255,255,.03);border:1px solid rgba(201,169,97,.15);border-radius:3px;padding:.35rem .5rem;">
+    const showRemove = (kind === 'whisky' || kind === 'taster' || (kind === 'photo' && isManualOverride));
+    return `<div class="slide-image-row" style="display:flex;align-items:center;gap:.5rem;background:rgba(255,255,255,.03);border:1px solid rgba(201,169,97,.15);border-radius:3px;padding:.35rem .5rem;">
       <div style="width:36px;height:36px;flex-shrink:0;border-radius:3px;overflow:hidden;background:rgba(255,255,255,.05);">${hasUrl ? `<img src="${esc(url)}" style="width:100%;height:100%;object-fit:cover;" alt="">` : ''}</div>
       <span style="flex:1;font-family:var(--sans);font-size:.7rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" data-testid="text-slide-label-${safeKind}-${safeId}">${esc(label)}${overrideBadge}</span>
-      <button class="btn-ghost" style="font-size:.65rem;padding:.2rem .45rem;" data-testid="button-slide-image-upload-${safeKind}-${safeId}" onclick="triggerSlideImageUpload('${safeKind}','${safeId}')">Bild ändern</button>
-      ${(kind === 'whisky' || kind === 'taster' || (kind === 'photo' && isManualOverride)) ? `<button class="btn-ghost" style="font-size:.65rem;padding:.2rem .45rem;color:#fca5a5;" data-testid="button-slide-image-remove-${safeKind}-${safeId}" onclick="removeSlideImage('${safeKind}','${safeId}')">Entfernen</button>` : ''}
+      <button type="button" class="btn-ghost slide-image-upload-btn" style="font-size:.65rem;padding:.2rem .45rem;" data-kind="${safeKind}" data-slide-id="${safeId}" data-testid="button-slide-image-upload-${safeKind}-${safeId}">Bild ändern</button>
+      ${showRemove ? `<button type="button" class="btn-ghost slide-image-remove-btn" style="font-size:.65rem;padding:.2rem .45rem;color:#fca5a5;" data-kind="${safeKind}" data-slide-id="${safeId}" data-testid="button-slide-image-remove-${safeKind}-${safeId}">Entfernen</button>` : ''}
     </div>`;
   }
 
@@ -1470,6 +1471,20 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
       slideInput.addEventListener('change', (ev) => {
         const file = ev.target.files && ev.target.files[0];
         if (file) uploadSlideImage(file);
+      });
+    }
+    const slideList = $('slideImagesList');
+    if (slideList) {
+      slideList.addEventListener('click', (ev) => {
+        const target = ev.target instanceof Element ? ev.target.closest('button[data-kind][data-slide-id]') : null;
+        if (!target) return;
+        const kind = target.getAttribute('data-kind') || '';
+        const slideId = target.getAttribute('data-slide-id') || '';
+        if (target.classList.contains('slide-image-upload-btn')) {
+          triggerSlideImageUpload(kind, slideId);
+        } else if (target.classList.contains('slide-image-remove-btn')) {
+          removeSlideImage(kind, slideId);
+        }
       });
     }
   });
