@@ -63,15 +63,15 @@ export function createBlock(type: BlockType): StoryBlock | null {
 
 export type ValidationResult =
   | { ok: true; payload: unknown }
-  | { ok: false; payload: unknown; error: z.ZodError };
+  | { ok: false; payload: unknown; reason: "unknown-type" | "schema-error"; error: z.ZodError | null };
 
 export function validatePayload(type: BlockType, raw: unknown): ValidationResult {
   const def = registry.get(type);
-  if (!def) return { ok: false, payload: raw, error: undefined as unknown as z.ZodError };
+  if (!def) return { ok: false, payload: raw, reason: "unknown-type", error: null };
   const parsed = def.payloadSchema.safeParse(raw);
   if (parsed.success) return { ok: true, payload: parsed.data };
   const fallback = def.defaultPayload();
-  return { ok: false, payload: fallback, error: parsed.error };
+  return { ok: false, payload: fallback, reason: "schema-error", error: parsed.error };
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {

@@ -531,7 +531,7 @@ function Router() {
         <Route path="/internal/landing-glasses" component={InternalLandingGlasses} />
         <Route path="/simple-test" component={SimpleTestPage} />
         <Route path="/simple-feedback" component={SimpleFeedbackPage} />
-        <Route path="/storybuilder-demo" component={StorybuilderDemo} />
+        <Route path="/storybuilder-demo">{() => <Redirect to="/admin/storybuilder-demo" />}</Route>
         <Route path="/support">{() => <Redirect to="/admin/support" />}</Route>
         <Route path="/admin/support" component={SupportConsole} />
         <Route path="/impressum" component={Impressum} />
@@ -553,6 +553,11 @@ function Router() {
         <Route path="/admin/distillery-aliases">
           <AdminLayout>
             <AdminDistilleryAliases />
+          </AdminLayout>
+        </Route>
+        <Route path="/admin/storybuilder-demo">
+          <AdminLayout>
+            <StorybuilderDemo />
           </AdminLayout>
         </Route>
         <Route path="/admin">
