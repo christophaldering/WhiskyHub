@@ -3,7 +3,7 @@ import { useLocation, useSearch } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Archive, Sparkles, BarChart3, Compass, GlassWater,
+  Archive, Sparkles, BarChart3, Compass, GlassWater, Search,
 } from "lucide-react";
 import type { ElementType } from "react";
 import { useAppStore } from "@/lib/store";
@@ -146,6 +146,7 @@ export default function LabsTaste() {
   }, []);
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const [activeTastingsFilter, setActiveTastingsFilter] = useState<TastingsHubFilter>("active");
+  const [tastingsSearchQuery, setTastingsSearchQuery] = useState("");
   const [activeCollectionTile, setActiveCollectionTile] = useState<string | null>(
     initialTab === "collection" && initialSub && COLLECTION_SUB_IDS.has(initialSub) ? initialSub : null,
   );
@@ -220,6 +221,7 @@ export default function LabsTaste() {
     setActiveAITile(null);
     setActiveAnalyticsTile(null);
     setActiveTastingsFilter("active");
+    setTastingsSearchQuery("");
     setActiveTab(next);
   };
 
@@ -291,10 +293,28 @@ export default function LabsTaste() {
             }}
           />
           <div
-            style={{ marginTop: 16 }}
+            className="labs-tastings-search-wrapper"
+            style={{ marginTop: 12 }}
+            data-testid="meine-welt-tastings-search-wrapper"
+          >
+            <Search className="labs-tastings-search-icon w-4 h-4" />
+            <input
+              className="labs-input labs-tastings-search-input"
+              placeholder={
+                activeTastingsFilter === "completed"
+                  ? t("tastings.archiveSearchPlaceholder", "Archiv durchsuchen...")
+                  : t("tastings.searchPlaceholder", "Tastings durchsuchen...")
+              }
+              value={tastingsSearchQuery}
+              onChange={(e) => setTastingsSearchQuery(e.target.value)}
+              data-testid="meine-welt-tastings-search"
+            />
+          </div>
+          <div
+            style={{ marginTop: 12 }}
             data-testid={`meine-welt-tastings-inline-${activeTastingsFilter}`}
           >
-            <MeineWeltTastingsList filter={activeTastingsFilter} />
+            <MeineWeltTastingsList filter={activeTastingsFilter} searchQuery={tastingsSearchQuery} />
           </div>
         </div>
       );

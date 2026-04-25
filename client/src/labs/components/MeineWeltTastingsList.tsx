@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Wine, Calendar, MapPin, ChevronRight, Crown, BookOpen } from "lucide-react";
+import { Wine, Calendar, MapPin, ChevronRight, Crown, BookOpen, Users } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, tastingHistoryApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
@@ -34,9 +34,10 @@ function formatTastingDate(dateStr: string | null | undefined): string {
 
 interface Props {
   filter: TastingsHubFilter;
+  searchQuery?: string;
 }
 
-export default function MeineWeltTastingsList({ filter }: Props) {
+export default function MeineWeltTastingsList({ filter, searchQuery = "" }: Props) {
   const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
   const participantId = currentParticipant?.id;
@@ -56,6 +57,16 @@ export default function MeineWeltTastingsList({ filter }: Props) {
     staleTime: 60_000,
   });
 
+  const matchesSearch = (tasting: any): boolean => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      tasting.title?.toLowerCase().includes(q) ||
+      tasting.location?.toLowerCase().includes(q) ||
+      tasting.hostName?.toLowerCase().includes(q)
+    );
+  };
+
   const activeItems = useMemo(() => {
     if (!tastings || filter !== "active") return [];
     return [...tastings]
@@ -63,7 +74,8 @@ export default function MeineWeltTastingsList({ filter }: Props) {
         (tasting: any) =>
           !tasting.isTestData &&
           !tasting.invitePending &&
-          (tasting.status === "open" || tasting.status === "draft"),
+          (tasting.status === "open" || tasting.status === "draft") &&
+          matchesSearch(tasting),
       )
       .sort((a: any, b: any) => {
         const statusOrder: Record<string, number> = { open: 0, draft: 1 };
@@ -72,7 +84,8 @@ export default function MeineWeltTastingsList({ filter }: Props) {
         if (orderA !== orderB) return orderA - orderB;
         return new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime();
       });
-  }, [tastings, filter]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tastings, filter, searchQuery]);
 
   const completedItems = useMemo(() => {
     if (filter !== "completed") return [];
@@ -82,12 +95,14 @@ export default function MeineWeltTastingsList({ filter }: Props) {
         (tasting: any) =>
           tasting.status !== "open" &&
           tasting.status !== "draft" &&
-          tasting.status !== "deleted",
+          tasting.status !== "deleted" &&
+          matchesSearch(tasting),
       )
       .sort(
         (a: any, b: any) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime(),
       );
-  }, [historyData, filter]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [historyData, filter, searchQuery]);
 
   const isLoading = filter === "completed" ? isHistoryLoading : isTastingsLoading;
   const items = filter === "completed" ? completedItems : activeItems;
@@ -170,9 +185,17 @@ export default function MeineWeltTastingsList({ filter }: Props) {
                       className={`labs-badge labs-badge--role ${isHost ? "labs-badge--host" : "labs-badge--guest"}`}
                       data-testid={`meine-welt-tasting-role-${tasting.id}`}
                     >
-                      {isHost
-                        ? t("tastings.roleHost", "HOST")
-                        : t("tastings.roleGuest", "GAST")}
+                      {isHost ? (
+                        <>
+                          <Crown style={{ width: 9, height: 9 }} />
+                          {t("tastings.roleHost", "HOST")}
+                        </>
+                      ) : (
+                        <>
+                          <Users style={{ width: 9, height: 9 }} />
+                          {t("tastings.roleGuest", "GAST")}
+                        </>
+                      )}
                     </span>
                     <span
                       className={statusCfg.cssClass}
