@@ -19,9 +19,13 @@ export function applyUpdate() {
   const waiting = swRegistration?.waiting;
   if (waiting) {
     waiting.postMessage({ type: "SKIP_WAITING" });
-  } else if (swRegistration) {
-    swRegistration.update();
+    setTimeout(() => window.location.reload(), 1500);
+    return;
   }
+  if (swRegistration) {
+    try { swRegistration.update(); } catch { /* ignore */ }
+  }
+  window.location.reload();
 }
 
 function doRegister() {
