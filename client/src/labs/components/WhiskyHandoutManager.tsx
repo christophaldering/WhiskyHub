@@ -24,6 +24,12 @@ function isIos(): boolean {
   return /Mac/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1;
 }
 
+function withViewFit(url: string): string {
+  if (!url.includes("#")) return `${url}#view=Fit`;
+  if (url.includes("view=")) return url;
+  return `${url}&view=Fit`;
+}
+
 interface Props {
   whisky: Whisky;
   hostId: string;
@@ -497,11 +503,11 @@ function SingleHandoutView({ fileUrl, contentType, title, author, description, t
         </div>
       ) : useIframe ? (
         <div style={{ position: "relative", width: "100%", aspectRatio: "1 / 1.414", borderRadius: 8, border: "1px solid var(--labs-border)", background: "var(--labs-surface)", overflow: "hidden" }}>
-          <iframe src={fileUrl.includes("#") ? fileUrl : `${fileUrl}#view=Fit`} title={title || "Handout PDF"} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none", background: "var(--labs-surface)" }} data-testid={`${testId}-iframe`} />
+          <iframe src={withViewFit(fileUrl)} title={title || "Handout PDF"} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none", background: "var(--labs-surface)" }} data-testid={`${testId}-iframe`} />
         </div>
       ) : (
         <div style={{ position: "relative", width: "100%", aspectRatio: "1 / 1.414", borderRadius: 8, border: "1px solid var(--labs-border)", background: "var(--labs-surface)", overflow: "hidden" }}>
-          <object data={fileUrl.includes("#") ? fileUrl : `${fileUrl}#view=Fit`} type="application/pdf" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none", background: "var(--labs-surface)" }} aria-label={title || "Handout PDF"}>
+          <object data={withViewFit(fileUrl)} type="application/pdf" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none", background: "var(--labs-surface)" }} aria-label={title || "Handout PDF"}>
             <p style={{ fontSize: 12, color: "var(--labs-text-muted)", padding: 12 }}>PDF kann hier nicht inline angezeigt werden. Nutze „Öffnen" oder „Download".</p>
           </object>
         </div>
