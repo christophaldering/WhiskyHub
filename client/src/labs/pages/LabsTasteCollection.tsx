@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -1299,14 +1299,30 @@ function ImportSyncSheet({
 }) {
   const { t } = useTranslation();
   const [confirmUndoId, setConfirmUndoId] = useState<string | null>(null);
+  const [isDesktop, setIsDesktop] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(min-width: 640px)").matches;
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(min-width: 640px)");
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    if (mq.addEventListener) mq.addEventListener("change", handler);
+    else mq.addListener(handler);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", handler);
+      else mq.removeListener(handler);
+    };
+  }, []);
   const history = importHistory || [];
   return (
     <div
       style={{
         position: "fixed", inset: 0, zIndex: 9999,
-        display: "flex", alignItems: "flex-end", justifyContent: "center",
+        display: "flex", alignItems: isDesktop ? "center" : "flex-end", justifyContent: "center",
         background: "var(--overlay-backdrop)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)",
         animation: "fadeIn 0.2s ease-out",
+        padding: isDesktop ? 16 : 0,
       }}
       onClick={onClose}
       data-testid="sheet-import-sync"
@@ -1315,15 +1331,16 @@ function ImportSyncSheet({
         style={{
           width: "100%", maxWidth: 520,
           background: "var(--labs-bg)",
-          borderRadius: "20px 20px 0 0",
+          borderRadius: isDesktop ? "16px" : "20px 20px 0 0",
           padding: "20px 24px 32px",
           maxHeight: "85vh",
           overflowY: "auto",
           animation: "sheetSlideUp 0.3s ease-out",
+          margin: isDesktop ? "auto" : "auto auto 0",
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--labs-border)", margin: "0 auto 16px" }} />
+        {!isDesktop && <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--labs-border)", margin: "0 auto 16px" }} />}
 
         <h2 className="text-lg font-bold mb-1" style={{ color: "var(--labs-text)" }} data-testid="text-sheet-title">
           {hasCollection ? t("collectionUi.importSync") : t("collectionUi.importCollection")}

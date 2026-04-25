@@ -31,6 +31,21 @@ export function CollectionPicker({ participantId, onSelect, onClose }: Collectio
   const [error, setError] = useState<string | null>(null);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const isAuthenticated = Boolean(participantId);
+  const [isDesktop, setIsDesktop] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(min-width: 640px)").matches;
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(min-width: 640px)");
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    if (mq.addEventListener) mq.addEventListener("change", handler);
+    else mq.addListener(handler);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", handler);
+      else mq.removeListener(handler);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -173,8 +188,9 @@ export function CollectionPicker({ participantId, onSelect, onClose }: Collectio
         inset: 0,
         zIndex: 9999,
         display: "flex",
-        alignItems: "flex-end",
+        alignItems: isDesktop ? "center" : "flex-end",
         justifyContent: "center",
+        padding: isDesktop ? 16 : 0,
       }}
     >
       <div
@@ -195,12 +211,13 @@ export function CollectionPicker({ participantId, onSelect, onClose }: Collectio
           width: "100%",
           maxWidth: 768,
           background: "var(--labs-bg)",
-          borderRadius: "20px 20px 0 0",
-          maxHeight: "85vh",
+          borderRadius: isDesktop ? "16px" : "20px 20px 0 0",
+          maxHeight: isDesktop ? "90vh" : "85vh",
           display: "flex",
           flexDirection: "column",
           zIndex: 1,
-          paddingBottom: "max(env(safe-area-inset-bottom, 0px), 16px)",
+          paddingBottom: isDesktop ? 0 : "max(env(safe-area-inset-bottom, 0px), 16px)",
+          margin: isDesktop ? "auto" : "auto auto 0",
         }}
         onClick={(e) => e.stopPropagation()}
         data-testid="collection-picker-sheet"

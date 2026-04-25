@@ -1591,6 +1591,21 @@ function FriendDetailSheet({
 }) {
   const { t } = useTranslation();
   const [showInvitePicker, setShowInvitePicker] = useState(false);
+  const [isDesktop, setIsDesktop] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(min-width: 640px)").matches;
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(min-width: 640px)");
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    if (mq.addEventListener) mq.addEventListener("change", handler);
+    else mq.addListener(handler);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", handler);
+      else mq.removeListener(handler);
+    };
+  }, []);
   const isSelf = friend.participantId === pid;
   const initials = friend.name.trim().split(/\s+/).map(p => p[0]).join("").toUpperCase().slice(0, 2);
   const friendSessions = sharedSessions.filter((s) => {
@@ -1603,7 +1618,8 @@ function FriendDetailSheet({
       style={{
         position: "fixed", inset: 0, zIndex: "var(--z-overlay)",
         background: "rgba(0, 0, 0, 0.75)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)",
-        display: "flex", alignItems: "flex-end", justifyContent: "center",
+        display: "flex", alignItems: isDesktop ? "center" : "flex-end", justifyContent: "center",
+        padding: isDesktop ? 16 : 0,
       }}
       onClick={onClose}
       data-testid="friend-detail-overlay"
@@ -1613,12 +1629,13 @@ function FriendDetailSheet({
         className="labs-fade-in"
         style={{
           width: "100%", maxWidth: 480,
-          background: "var(--labs-surface)", borderRadius: "20px 20px 0 0",
+          background: "var(--labs-surface)", borderRadius: isDesktop ? "var(--labs-radius)" : "20px 20px 0 0",
           padding: "28px 24px 36px",
           maxHeight: "75vh", overflowY: "auto",
+          margin: isDesktop ? "auto" : "auto auto 0",
         }}
       >
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--labs-border)", margin: "0 auto 20px" }} />
+        {!isDesktop && <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--labs-border)", margin: "0 auto 20px" }} />}
 
         <div className="flex flex-col items-center gap-3 mb-6">
           <div className="relative">
@@ -1802,12 +1819,28 @@ function InvitePickerSheet({
   onInvite: (tastingId: string) => void;
   isLoading: boolean;
 }) {
+  const [isDesktop, setIsDesktop] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(min-width: 640px)").matches;
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(min-width: 640px)");
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    if (mq.addEventListener) mq.addEventListener("change", handler);
+    else mq.addListener(handler);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", handler);
+      else mq.removeListener(handler);
+    };
+  }, []);
   return createPortal(
     <div
       style={{
         position: "fixed", inset: 0, zIndex: "var(--z-overlay)",
         background: "rgba(0, 0, 0, 0.75)", backdropFilter: "var(--overlay-blur)", WebkitBackdropFilter: "var(--overlay-blur)",
-        display: "flex", alignItems: "flex-end", justifyContent: "center",
+        display: "flex", alignItems: isDesktop ? "center" : "flex-end", justifyContent: "center",
+        padding: isDesktop ? 16 : 0,
       }}
       onClick={onClose}
       data-testid="invite-picker-overlay"
@@ -1817,12 +1850,13 @@ function InvitePickerSheet({
         className="labs-fade-in"
         style={{
           width: "100%", maxWidth: 480,
-          background: "var(--labs-surface)", borderRadius: "20px 20px 0 0",
+          background: "var(--labs-surface)", borderRadius: isDesktop ? "var(--labs-radius)" : "20px 20px 0 0",
           padding: "28px 24px 36px",
           maxHeight: "60vh", overflowY: "auto",
+          margin: isDesktop ? "auto" : "auto auto 0",
         }}
       >
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--labs-border)", margin: "0 auto 20px" }} />
+        {!isDesktop && <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--labs-border)", margin: "0 auto 20px" }} />}
         <p className="text-sm font-bold labs-serif mb-1" style={{ color: "var(--labs-text)" }}>
           {stripGuestSuffix(friend.name)} einladen
         </p>

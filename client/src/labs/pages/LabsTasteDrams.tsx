@@ -1437,6 +1437,21 @@ function FilterBottomSheet({
   onClose: () => void; onClear: () => void; activeCount: number;
 }) {
   const { t } = useTranslation();
+  const [isDesktop, setIsDesktop] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(min-width: 640px)").matches;
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(min-width: 640px)");
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    if (mq.addEventListener) mq.addEventListener("change", handler);
+    else mq.addListener(handler);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", handler);
+      else mq.removeListener(handler);
+    };
+  }, []);
   const selectStyle = (isActive: boolean) => ({
     width: "100%", padding: "10px 32px 10px 12px", fontSize: 14, fontWeight: isActive ? 600 : 400,
     color: isActive ? "var(--labs-accent)" : "var(--labs-text)",
@@ -1446,9 +1461,9 @@ function FilterBottomSheet({
   });
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 100 }} data-testid="filter-bottom-sheet">
+    <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: isDesktop ? "center" : "flex-end", justifyContent: "center", padding: isDesktop ? 16 : 0 }} data-testid="filter-bottom-sheet">
       <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }} onClick={onClose} />
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, maxHeight: "80vh", maxWidth: 672, margin: "0 auto", background: "var(--labs-bg, #0e0b05)", borderRadius: "20px 20px 0 0", overflow: "auto", padding: "0 0 env(safe-area-inset-bottom, 20px)", boxShadow: "0 -8px 32px rgba(0,0,0,0.4)" }}>
+      <div style={{ position: "relative", zIndex: 1, width: "100%", maxHeight: isDesktop ? "90vh" : "80vh", maxWidth: 672, margin: isDesktop ? "auto" : "0 auto", background: "var(--labs-bg, #0e0b05)", borderRadius: isDesktop ? "16px" : "20px 20px 0 0", overflow: "auto", padding: "0 0 env(safe-area-inset-bottom, 20px)", boxShadow: "0 -8px 32px rgba(0,0,0,0.4)" }}>
         <div style={{ position: "sticky", top: 0, background: "var(--labs-bg, #0e0b05)", padding: "16px 20px 12px", borderBottom: "1px solid var(--labs-border)", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>{t("drams.filters")}</h3>
           <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} data-testid="button-close-filter-sheet">

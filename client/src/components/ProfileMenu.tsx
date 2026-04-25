@@ -81,6 +81,21 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
   const [regPinConfirm, setRegPinConfirm] = useState("");
   const [regShowPin, setRegShowPin] = useState(false);
   const [signInShowPin, setSignInShowPin] = useState(false);
+  const [isDesktop, setIsDesktop] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(min-width: 640px)").matches;
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(min-width: 640px)");
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    if (mq.addEventListener) mq.addEventListener("change", handler);
+    else mq.addListener(handler);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", handler);
+      else mq.removeListener(handler);
+    };
+  }, []);
   const [resetShowPin, setResetShowPin] = useState(false);
   const [regSuccess, setRegSuccess] = useState(false);
   const [regConsent, setRegConsent] = useState(false);
@@ -1303,8 +1318,9 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         background: "rgba(0,0,0,0.5)",
         zIndex: 200,
         display: "flex",
-        alignItems: "flex-end",
+        alignItems: isDesktop ? "center" : "flex-end",
         justifyContent: "center",
+        padding: isDesktop ? 16 : 0,
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       data-testid="m2-profile-overlay"
@@ -1314,11 +1330,12 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
           width: "100%",
           maxWidth: 420,
           background: tv.card,
-          borderRadius: "16px 16px 0 0",
-          padding: "20px 16px calc(80px + env(safe-area-inset-bottom, 0px))",
+          borderRadius: isDesktop ? "16px" : "16px 16px 0 0",
+          padding: isDesktop ? "20px 16px 24px" : "20px 16px calc(80px + env(safe-area-inset-bottom, 0px))",
           maxHeight: "85vh",
           overflowY: "auto",
           WebkitOverflowScrolling: "touch",
+          margin: isDesktop ? "auto" : "auto auto 0",
         }}
         data-testid="m2-profile-menu"
       >
