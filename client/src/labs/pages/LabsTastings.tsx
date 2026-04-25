@@ -13,7 +13,7 @@ import LabsSolo from "@/labs/pages/LabsSolo";
 import LabsHost from "@/labs/pages/LabsHost";
 import LabsBottleSharing from "@/labs/pages/LabsBottleSharing";
 import { EmbeddedTastingsProvider } from "@/labs/embeddedTastingsContext";
-import { TASTINGS_HUB_TILES, HubTileGrid, type TastingsHubFilter, type TastingsHubTileDef } from "@/labs/pages/hubTiles";
+import { type TastingsHubFilter } from "@/labs/pages/hubTiles";
 import heroImage from "@/assets/images/hero-whisky.png";
 
 type TastingsTab = "join" | "solo" | "host" | "share";
@@ -478,25 +478,7 @@ export default function LabsTastings() {
             </section>
           )}
 
-          <div style={{ marginTop: 16 }} data-testid="labs-tastings-filter-tabs">
-            <HubTileGrid
-              tiles={TASTINGS_HUB_TILES}
-              t={t}
-              variant="single-row"
-              role="filter"
-              activeTestId={TASTINGS_HUB_TILES.find((tile) => tile.filter === filterTab)?.testId}
-              onTileClick={(tile) => {
-                const next = (tile as TastingsHubTileDef).filter;
-                if (next === filterTab) return;
-                setFilterTab(next);
-                setSearchQuery("");
-                setArchiveRoleFilter("all");
-                setArchiveYearFilter(null);
-              }}
-            />
-          </div>
-
-          <div className="labs-tastings-search-wrapper labs-fade-in" style={{ marginTop: 12 }}>
+          <div className="labs-tastings-search-wrapper labs-fade-in" style={{ marginTop: 16 }}>
             <Search className="labs-tastings-search-icon w-4 h-4" />
             <input
               className="labs-input labs-tastings-search-input"

@@ -17977,7 +17977,7 @@ const resources = {
       },
       tastingActions: {
         join: "Teilnehmen",
-        joinDesc: "Tasting-Code eingeben",
+        joinDesc: "gemeinsam genießen",
         solo: "Solo",
         soloDesc: "Allein verkosten & notieren",
         host: "Host",
