@@ -477,6 +477,10 @@ export default function LabsHistoricalDetail() {
   const snapshotAttemptedRef = useRef(false);
 
   useEffect(() => {
+    snapshotAttemptedRef.current = false;
+  }, [tastingId]);
+
+  useEffect(() => {
     if (!liveTastingIsActive || !tastingId || !pid) return;
     if (snapshotAttemptedRef.current) return;
     snapshotAttemptedRef.current = true;

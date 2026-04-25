@@ -700,7 +700,7 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
               log(`Backfilled archive snapshot for tasting=${row.id}`, "startup");
             }
           } catch (snapErr: any) {
-            log(`Archive backfill failed for tasting=${row.id}: ${snapErr.message}`, "startup");
+            console.error(`[ARCHIVE] Startup backfill failed for tasting=${row.id}:`, snapErr);
           }
         }
       }
