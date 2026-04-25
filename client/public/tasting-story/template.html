@@ -284,14 +284,30 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
     <div class="host-prompt-card">
       <div class="divider"></div>
       <div class="host-prompt-card__eyebrow">Nur für dich sichtbar</div>
-      <h1 class="host-prompt-card__title">Was soll die Story besonders hervorheben?</h1>
-      <p class="host-prompt-card__sub">Erzähl der KI vom Abend — besondere Momente, die Stimmung, lustige Anekdoten oder was du herausgearbeitet haben möchtest. Optional, du kannst diesen Schritt auch überspringen.</p>
-      <textarea id="promptInput" class="host-prompt-textarea" placeholder="z.B. »Es war ein gemütlicher Winterabend, wir haben uns besonders über den Islay gestritten und Max hat als einziger den Torf wirklich gemocht…«"></textarea>
-      <br>
-      <button class="btn-primary" onclick="generateStory()">Story generieren</button>
-      <br>
-      <button class="btn-ghost" onclick="generateStory(true)">Überspringen</button>
+      <h1 class="host-prompt-card__title">Wie soll deine Story klingen?</h1>
+      <p class="host-prompt-card__sub">Du kannst entweder direkt loslegen mit unserer empfohlenen Standard-Erzählweise — oder der KI eigene Hinweise geben, was sie besonders hervorheben soll.</p>
+      <div id="hostPromptChoiceArea" style="display:flex;flex-direction:column;gap:.7rem;margin-top:1.2rem;">
+        <button class="btn-primary" data-testid="button-generate-default-story" onclick="generateDefaultStory()">Standard-Story generieren</button>
+        <p style="font-family:var(--sans);font-size:.75rem;color:var(--ink-faint);line-height:1.5;margin:0 0 .4rem 0;text-align:left;">Empfohlen: Die KI nutzt unsere bewährte Erzählweise — dramaturgisch aufgebaut, mit dem Programmheft als Faktenbasis und einem warmen, persönlichen Ton.</p>
+        <button class="btn-ghost" data-testid="button-show-custom-prompt" onclick="showCustomPromptArea()">Eigene Anweisung eingeben</button>
+      </div>
+      <div id="hostPromptCustomArea" style="display:none;margin-top:1rem;text-align:left;">
+        <p style="font-family:var(--sans);font-size:.75rem;color:var(--ink-faint);line-height:1.5;margin:0 0 .6rem 0;">Erzähl der KI was Besonderes — Stimmung, Anekdoten, gewünschter Ton. Optional.</p>
+        <textarea id="promptInput" data-testid="textarea-host-prompt" class="host-prompt-textarea" placeholder="z.B. »Es war ein gemütlicher Winterabend, wir haben uns besonders über den Islay gestritten und Max hat als einziger den Torf wirklich gemocht…«"></textarea>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem;">
+          <button class="btn-primary" data-testid="button-generate-custom-story" onclick="generateStory()">Story mit Anweisung generieren</button>
+          <button class="btn-ghost" data-testid="button-back-to-choice" onclick="hideCustomPromptArea()">Zurück</button>
+        </div>
+      </div>
     </div>
+  </div>
+</div>
+
+<!-- Pending (participant view, story not yet ready) -->
+<div id="pendingScreen" style="display:none;">
+  <div class="error-screen">
+    <div class="error-title">Story noch nicht bereit</div>
+    <div class="error-sub" id="pendingMsg" data-testid="text-pending-message">Der Gastgeber bereitet die Story noch vor. Bitte schaue später wieder vorbei.</div>
   </div>
 </div>
 
@@ -339,11 +355,50 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
         <button class="btn-primary" style="font-size:.8rem;padding:.45rem 1rem;" data-testid="button-refine-story" onclick="regenStory('refine')">Verfeinern</button>
         <button class="btn-ghost" style="font-size:.7rem;" onclick="closeRegenPanel()">Abbrechen</button>
       </div>
+      <p style="font-family:var(--sans);font-size:.65rem;color:var(--ink-faint);margin:0;line-height:1.5;">Verfeinern: Bestehende Texte bleiben weitgehend erhalten, nur die im Anweisungsfeld genannten Punkte werden angepasst.</p>
       <div style="display:flex;align-items:center;gap:.4rem;padding-top:.4rem;border-top:1px dashed rgba(201,169,97,.15);">
         <button class="btn-ghost" style="font-size:.7rem;color:#fca5a5;border-color:rgba(252,165,165,.3);" data-testid="button-regen-story" onclick="confirmFullRegen()">Komplett neu generieren</button>
         <span style="font-family:var(--sans);font-size:.65rem;color:var(--ink-faint);">Setzt alle KI-Texte zurück</span>
       </div>
+      <p style="font-family:var(--sans);font-size:.65rem;color:var(--ink-faint);margin:0;line-height:1.5;">Komplett neu: Alle KI-Texte werden verworfen und auf Basis der aktuellen Daten neu geschrieben — manuelle Bilder und Reihenfolge bleiben erhalten.</p>
     </div>
+
+    <details style="margin-top:1rem;border-top:1px solid rgba(201,169,97,.15);padding-top:.75rem;" id="structureSection">
+      <summary style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;list-style:none;outline:none;" data-testid="summary-structure">
+        <span style="font-family:var(--sans);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim);">Kapitel-Reihenfolge & Sichtbarkeit</span>
+        <span style="font-family:var(--sans);font-size:.7rem;color:var(--ink-faint);">Manuell</span>
+      </summary>
+      <div style="margin-top:.6rem;">
+        <div id="structureList" style="display:flex;flex-direction:column;gap:.35rem;"></div>
+        <button class="btn-ghost" style="font-size:.65rem;margin-top:.6rem;" data-testid="button-reset-structure" onclick="resetStructure()">Auf KI-Vorschlag zurücksetzen</button>
+      </div>
+    </details>
+
+    <details style="margin-top:1rem;border-top:1px solid rgba(201,169,97,.15);padding-top:.75rem;" id="slideImagesSection">
+      <summary style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;list-style:none;outline:none;" data-testid="summary-slide-images">
+        <span style="font-family:var(--sans);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim);">Bilder pro Folie</span>
+        <span style="font-family:var(--sans);font-size:.7rem;color:var(--ink-faint);">Whisky · Verkoster · Foto</span>
+      </summary>
+      <div style="margin-top:.6rem;">
+        <div id="slideImagesList" style="display:flex;flex-direction:column;gap:.5rem;"></div>
+        <input type="file" id="slideImageFileInput" accept="image/*" style="display:none;" data-testid="input-slide-image-upload">
+      </div>
+    </details>
+
+    <details style="margin-top:1rem;border-top:1px solid rgba(201,169,97,.15);padding-top:.75rem;" id="versionsSection">
+      <summary style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;list-style:none;outline:none;" data-testid="summary-versions">
+        <span style="font-family:var(--sans);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim);">Versionen</span>
+        <span id="versionsCount" style="font-family:var(--sans);font-size:.7rem;color:var(--ink-faint);">0</span>
+      </summary>
+      <div style="margin-top:.6rem;">
+        <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
+          <input type="text" id="versionNameInput" placeholder="Name (optional)" data-testid="input-version-name" style="flex:1;min-width:120px;background:rgba(255,255,255,.05);border:1px solid rgba(201,169,97,.2);border-radius:3px;padding:.4rem .6rem;font-family:var(--sans);font-size:.75rem;color:var(--ink);">
+          <button class="btn-ghost" style="font-size:.7rem;color:var(--amber);" data-testid="button-save-version" onclick="saveCurrentAsVersion()">Als neue Version speichern</button>
+        </div>
+        <p style="font-family:var(--sans);font-size:.65rem;color:var(--ink-faint);margin:.4rem 0 0 0;line-height:1.5;">Speichert die aktuelle Story als wiederherstellbaren Stand. Beim Laden ersetzt die Version die aktuelle Story.</p>
+        <div id="versionsList" style="margin-top:.7rem;display:flex;flex-direction:column;gap:.35rem;"></div>
+      </div>
+    </details>
     <details style="margin-top:1rem;border-top:1px solid rgba(201,169,97,.15);padding-top:.75rem;" id="photosSection">
       <summary style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;list-style:none;outline:none;">
         <span style="font-family:var(--sans);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim);">Event-Fotos</span>
@@ -468,16 +523,22 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
   window.confirmFullRegen = confirmFullRegen;
   function closeConfirmRegen() { $('confirmRegenOverlay').style.display = 'none'; }
   window.closeConfirmRegen = closeConfirmRegen;
-  function showError(msg) { $('loadingScreen').style.display='none'; $('hostPromptScreen').style.display='none'; $('errorScreen').style.display=''; $('storyContent').style.display='none'; $('errorMsg').textContent = msg || 'Unbekannter Fehler'; $('pdfBtn').style.display='none'; }
-  function showPrompt() { $('loadingScreen').style.display='none'; $('hostPromptScreen').style.display=''; $('errorScreen').style.display='none'; $('storyContent').style.display='none'; $('pdfBtn').style.display='none'; }
-  function showStory() { $('loadingScreen').style.display='none'; $('hostPromptScreen').style.display='none'; $('errorScreen').style.display='none'; $('storyContent').style.display=''; $('pdfBtn').style.display=''; }
+  function showError(msg) { $('loadingScreen').style.display='none'; $('hostPromptScreen').style.display='none'; $('errorScreen').style.display=''; $('storyContent').style.display='none'; $('pendingScreen').style.display='none'; $('errorMsg').textContent = msg || 'Unbekannter Fehler'; $('pdfBtn').style.display='none'; }
+  function showPrompt() { $('loadingScreen').style.display='none'; $('hostPromptScreen').style.display=''; $('errorScreen').style.display='none'; $('storyContent').style.display='none'; $('pendingScreen').style.display='none'; $('pdfBtn').style.display='none'; }
+  function showStory() { $('loadingScreen').style.display='none'; $('hostPromptScreen').style.display='none'; $('errorScreen').style.display='none'; $('storyContent').style.display=''; $('pendingScreen').style.display='none'; $('pdfBtn').style.display=''; }
+  function showPending(msg) { $('loadingScreen').style.display='none'; $('hostPromptScreen').style.display='none'; $('errorScreen').style.display='none'; $('storyContent').style.display='none'; $('pendingScreen').style.display=''; $('pdfBtn').style.display='none'; if (msg) $('pendingMsg').textContent = msg; }
+  function showCustomPromptArea() { $('hostPromptChoiceArea').style.display='none'; $('hostPromptCustomArea').style.display=''; }
+  function hideCustomPromptArea() { $('hostPromptChoiceArea').style.display=''; $('hostPromptCustomArea').style.display='none'; }
+  window.showCustomPromptArea = showCustomPromptArea;
+  window.hideCustomPromptArea = hideCustomPromptArea;
 
   // --- Fetch story ---
   // noGenerate=true → server skips AI call (metadata/cache check only, safe for prompt decision)
-  async function fetchStory(refresh, noGenerate) {
+  async function fetchStory(refresh, noGenerate, useDefaultPrompt) {
     const params = new URLSearchParams();
     if (refresh) params.set('refresh', 'true');
     if (noGenerate) params.set('no_generate', 'true');
+    if (useDefaultPrompt) params.set('useDefaultPrompt', 'true');
     const qs = params.toString();
     const url = `/api/tastings/${tastingId}/story${qs ? '?' + qs : ''}`;
     const headers = { 'Content-Type': 'application/json' };
@@ -523,13 +584,24 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
     try {
       // Always persist the prompt (even empty on skip) so any prior prompt is cleared.
       await savePrompt(prompt);
-      const [data, photos] = await Promise.all([fetchStory(true, false), fetchPhotos()]);
+      const [data, photos] = await Promise.all([fetchStory(true, false, false), fetchPhotos()]);
       storyData = data;
       renderStory(data, photos);
       showStory();
     } catch(e) { showError(e.message); }
   }
   window.generateStory = generateStory;
+
+  async function generateDefaultStory() {
+    showLoading('Generiere Standard-Story…');
+    try {
+      const [data, photos] = await Promise.all([fetchStory(true, false, true), fetchPhotos()]);
+      storyData = data;
+      renderStory(data, photos);
+      showStory();
+    } catch(e) { showError(e.message); }
+  }
+  window.generateDefaultStory = generateDefaultStory;
 
   // --- Act order preview ---
   const ACT_LABELS_PREVIEW = {
@@ -644,6 +716,9 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
       $('regenPromptInput').value = storyData.tasting?.storyPrompt || '';
       loadPhotoMgmt();
       updateActOrderPreview();
+      renderStructureEditor();
+      renderSlideImagesEditor();
+      loadVersions();
     }
   }
   window.toggleRegenPanel = toggleRegenPanel;
@@ -661,6 +736,295 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
       throw new Error(j.message || `Cache konnte nicht gelöscht werden (HTTP ${res.status})`);
     }
   }
+
+  function getEffectiveStructure() {
+    if (!storyData) return [];
+    const manual = Array.isArray(storyData.manualStructure) && storyData.manualStructure.length > 0
+      ? storyData.manualStructure
+      : (Array.isArray(storyData.aiSuggestedStructure) && storyData.aiSuggestedStructure.length > 0
+        ? storyData.aiSuggestedStructure
+        : (Array.isArray(storyData.storyStructure) ? storyData.storyStructure : []));
+    return manual.slice();
+  }
+
+  function renderStructureEditor() {
+    const list = $('structureList');
+    if (!list || !storyData) return;
+    const order = getEffectiveStructure();
+    const hidden = new Set(Array.isArray(storyData.manualHiddenActs) ? storyData.manualHiddenActs : []);
+    list.innerHTML = order.map((act, i) => {
+      const label = ACT_NAV_LABELS[act] || act;
+      const isHidden = hidden.has(act);
+      return `<div style="display:flex;align-items:center;gap:.4rem;background:rgba(255,255,255,.03);border:1px solid rgba(201,169,97,.15);border-radius:3px;padding:.35rem .5rem;${isHidden ? 'opacity:.5;' : ''}">
+        <span style="flex:1;font-family:var(--sans);font-size:.75rem;color:${isHidden ? 'var(--ink-faint)' : 'var(--ink)'};" data-testid="text-structure-act-${esc(act)}">${esc(label)}${isHidden ? ' (versteckt)' : ''}</span>
+        <button class="btn-ghost" style="font-size:.7rem;padding:.2rem .45rem;" data-testid="button-structure-up-${esc(act)}" ${i === 0 ? 'disabled' : ''} onclick="moveActOrder('${esc(act)}', -1)" title="Nach oben">↑</button>
+        <button class="btn-ghost" style="font-size:.7rem;padding:.2rem .45rem;" data-testid="button-structure-down-${esc(act)}" ${i === order.length - 1 ? 'disabled' : ''} onclick="moveActOrder('${esc(act)}', 1)" title="Nach unten">↓</button>
+        <button class="btn-ghost" style="font-size:.65rem;padding:.2rem .45rem;" data-testid="button-structure-toggle-${esc(act)}" onclick="toggleActHidden('${esc(act)}')">${isHidden ? 'Zeigen' : 'Verstecken'}</button>
+      </div>`;
+    }).join('');
+  }
+
+  async function patchStructure(manualStructure, manualHiddenActs) {
+    const headers = { 'Content-Type': 'application/json' };
+    const p = pid();
+    if (p) headers['x-participant-id'] = p;
+    const body = {};
+    if (manualStructure !== undefined) body.manualStructure = manualStructure;
+    if (manualHiddenActs !== undefined) body.manualHiddenActs = manualHiddenActs;
+    const res = await fetch(`/api/tastings/${tastingId}/story-cache/structure`, {
+      method: 'PATCH', headers, body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      throw new Error(j.message || `HTTP ${res.status}`);
+    }
+  }
+
+  async function moveActOrder(act, delta) {
+    if (!storyData) return;
+    const order = getEffectiveStructure();
+    const idx = order.indexOf(act);
+    if (idx < 0) return;
+    const target = idx + delta;
+    if (target < 0 || target >= order.length) return;
+    const next = order.slice();
+    [next[idx], next[target]] = [next[target], next[idx]];
+    try {
+      await patchStructure(next, undefined);
+      storyData.manualStructure = next;
+      renderStructureEditor();
+      const photos = await fetchPhotos();
+      const fresh = await fetchStory(false, false, false);
+      storyData = fresh;
+      renderStory(fresh, photos);
+      showStory();
+      showToast('Reihenfolge gespeichert.');
+    } catch(e) { showToast(e.message); }
+  }
+  window.moveActOrder = moveActOrder;
+
+  async function toggleActHidden(act) {
+    if (!storyData) return;
+    const hidden = new Set(Array.isArray(storyData.manualHiddenActs) ? storyData.manualHiddenActs : []);
+    if (hidden.has(act)) hidden.delete(act); else hidden.add(act);
+    const arr = [...hidden];
+    try {
+      await patchStructure(undefined, arr);
+      storyData.manualHiddenActs = arr;
+      renderStructureEditor();
+      const photos = await fetchPhotos();
+      const fresh = await fetchStory(false, false, false);
+      storyData = fresh;
+      renderStory(fresh, photos);
+      showStory();
+      showToast('Sichtbarkeit gespeichert.');
+    } catch(e) { showToast(e.message); }
+  }
+  window.toggleActHidden = toggleActHidden;
+
+  async function resetStructure() {
+    if (!storyData) return;
+    if (!confirm('Manuelle Reihenfolge & Sichtbarkeit verwerfen und KI-Vorschlag verwenden?')) return;
+    try {
+      await patchStructure(null, null);
+      storyData.manualStructure = null;
+      storyData.manualHiddenActs = [];
+      renderStructureEditor();
+      const photos = await fetchPhotos();
+      const fresh = await fetchStory(false, false, false);
+      storyData = fresh;
+      renderStory(fresh, photos);
+      showStory();
+      showToast('Reihenfolge zurückgesetzt.');
+    } catch(e) { showToast(e.message); }
+  }
+  window.resetStructure = resetStructure;
+
+  let slideImageUploadTarget = null;
+
+  function renderSlideImagesEditor() {
+    const list = $('slideImagesList');
+    if (!list || !storyData) return;
+    const manualImages = storyData.manualImages || { whiskies: {}, tasters: {}, photos: {} };
+    const ranked = storyData.sortedRanking || [];
+    const tasterList = (storyData.participants || []).filter(p => !p.excludedFromResults);
+    const sections = [];
+    if (ranked.length > 0) {
+      sections.push(`<div style="font-family:var(--sans);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-top:.3rem;">Whiskys</div>`);
+      ranked.forEach(w => {
+        const id = w.id || w.whiskyId || w.name;
+        const url = manualImages.whiskies?.[id];
+        sections.push(slideImageRow('whisky', id, w.name || 'Whisky', url));
+      });
+    }
+    if (tasterList.length > 0) {
+      sections.push(`<div style="font-family:var(--sans);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-top:.5rem;">Verkoster</div>`);
+      tasterList.forEach(tp => {
+        const name = stripGuest(tp.participant?.name || tp.participant?.email || 'Anonym');
+        const url = manualImages.tasters?.[name];
+        sections.push(slideImageRow('taster', name, name, url));
+      });
+    }
+    const photos = currentPhotos.length > 0 ? currentPhotos : (storyData.eventPhotos || []);
+    if (photos.length > 0) {
+      sections.push(`<div style="font-family:var(--sans);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-top:.5rem;">Fotos</div>`);
+      photos.forEach((p, i) => {
+        const id = p.id || String(i);
+        const url = manualImages.photos?.[id] || p.photoUrl;
+        sections.push(slideImageRow('photo', id, p.caption || `Foto ${i + 1}`, url, !!manualImages.photos?.[id]));
+      });
+    }
+    list.innerHTML = sections.join('') || `<div style="font-family:var(--sans);font-size:.7rem;color:var(--ink-faint);">Keine Folien verfügbar.</div>`;
+  }
+
+  function slideImageRow(kind, slideId, label, url, isManualOverride) {
+    const hasUrl = !!url;
+    const overrideBadge = isManualOverride ? ' (manuell)' : '';
+    const safeKind = esc(kind);
+    const safeId = esc(String(slideId));
+    return `<div style="display:flex;align-items:center;gap:.5rem;background:rgba(255,255,255,.03);border:1px solid rgba(201,169,97,.15);border-radius:3px;padding:.35rem .5rem;">
+      <div style="width:36px;height:36px;flex-shrink:0;border-radius:3px;overflow:hidden;background:rgba(255,255,255,.05);">${hasUrl ? `<img src="${esc(url)}" style="width:100%;height:100%;object-fit:cover;" alt="">` : ''}</div>
+      <span style="flex:1;font-family:var(--sans);font-size:.7rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" data-testid="text-slide-label-${safeKind}-${safeId}">${esc(label)}${overrideBadge}</span>
+      <button class="btn-ghost" style="font-size:.65rem;padding:.2rem .45rem;" data-testid="button-slide-image-upload-${safeKind}-${safeId}" onclick="triggerSlideImageUpload('${safeKind}','${safeId}')">Bild ändern</button>
+      ${(kind === 'whisky' || kind === 'taster' || (kind === 'photo' && isManualOverride)) ? `<button class="btn-ghost" style="font-size:.65rem;padding:.2rem .45rem;color:#fca5a5;" data-testid="button-slide-image-remove-${safeKind}-${safeId}" onclick="removeSlideImage('${safeKind}','${safeId}')">Entfernen</button>` : ''}
+    </div>`;
+  }
+
+  function triggerSlideImageUpload(kind, slideId) {
+    slideImageUploadTarget = { kind, slideId };
+    const input = $('slideImageFileInput');
+    if (input) { input.value = ''; input.click(); }
+  }
+  window.triggerSlideImageUpload = triggerSlideImageUpload;
+
+  async function uploadSlideImage(file) {
+    if (!file || !slideImageUploadTarget) return;
+    const { kind, slideId } = slideImageUploadTarget;
+    if (file.size > 10 * 1024 * 1024) { showToast('Datei zu groß (max 10 MB).'); return; }
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('kind', kind);
+    fd.append('slideId', slideId);
+    const headers = {};
+    const p = pid();
+    if (p) headers['x-participant-id'] = p;
+    try {
+      const res = await fetch(`/api/tastings/${tastingId}/story-cache/slide-image`, { method: 'POST', headers, body: fd });
+      if (!res.ok) { const j = await res.json().catch(() => ({})); throw new Error(j.message || `HTTP ${res.status}`); }
+      const photos = await fetchPhotos();
+      const fresh = await fetchStory(false, false, false);
+      storyData = fresh;
+      renderStory(fresh, photos);
+      showStory();
+      renderSlideImagesEditor();
+      showToast('Bild aktualisiert.');
+    } catch(e) { showToast(e.message); }
+  }
+
+  async function removeSlideImage(kind, slideId) {
+    if (!confirm('Manuelles Bild für diese Folie entfernen?')) return;
+    const headers = { 'Content-Type': 'application/json' };
+    const p = pid();
+    if (p) headers['x-participant-id'] = p;
+    try {
+      const res = await fetch(`/api/tastings/${tastingId}/story-cache/slide-image`, {
+        method: 'DELETE', headers, body: JSON.stringify({ kind, slideId }),
+      });
+      if (!res.ok) { const j = await res.json().catch(() => ({})); throw new Error(j.message || `HTTP ${res.status}`); }
+      const photos = await fetchPhotos();
+      const fresh = await fetchStory(false, false, false);
+      storyData = fresh;
+      renderStory(fresh, photos);
+      showStory();
+      renderSlideImagesEditor();
+      showToast('Bild entfernt.');
+    } catch(e) { showToast(e.message); }
+  }
+  window.removeSlideImage = removeSlideImage;
+
+  async function loadVersions() {
+    const headers = {};
+    const p = pid();
+    if (p) headers['x-participant-id'] = p;
+    try {
+      const res = await fetch(`/api/tastings/${tastingId}/story-versions`, { headers });
+      if (!res.ok) return;
+      const versions = await res.json();
+      renderVersions(versions);
+    } catch(e) { /* silent */ }
+  }
+
+  function renderVersions(versions) {
+    const list = $('versionsList');
+    const countEl = $('versionsCount');
+    if (!list) return;
+    countEl.textContent = String(versions.length);
+    if (versions.length === 0) {
+      list.innerHTML = `<div style="font-family:var(--sans);font-size:.7rem;color:var(--ink-faint);">Noch keine gespeicherten Versionen.</div>`;
+      return;
+    }
+    list.innerHTML = versions.map(v => {
+      const dateStr = v.createdAt ? new Date(v.createdAt).toLocaleString('de-DE') : '';
+      return `<div style="display:flex;align-items:center;gap:.4rem;background:rgba(255,255,255,.03);border:1px solid rgba(201,169,97,.15);border-radius:3px;padding:.35rem .5rem;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:var(--sans);font-size:.75rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" data-testid="text-version-name-${esc(v.id)}">${esc(v.name || 'Version')}</div>
+          <div style="font-family:var(--sans);font-size:.65rem;color:var(--ink-faint);">${esc(dateStr)}</div>
+        </div>
+        <button class="btn-ghost" style="font-size:.65rem;padding:.2rem .45rem;color:var(--amber);" data-testid="button-version-load-${esc(v.id)}" onclick="loadVersion('${esc(v.id)}')">Laden</button>
+        <button class="btn-ghost" style="font-size:.65rem;padding:.2rem .45rem;color:#fca5a5;" data-testid="button-version-delete-${esc(v.id)}" onclick="deleteVersion('${esc(v.id)}')">Löschen</button>
+      </div>`;
+    }).join('');
+  }
+
+  async function saveCurrentAsVersion() {
+    const name = ($('versionNameInput').value || '').trim();
+    const headers = { 'Content-Type': 'application/json' };
+    const p = pid();
+    if (p) headers['x-participant-id'] = p;
+    try {
+      const res = await fetch(`/api/tastings/${tastingId}/story-versions`, {
+        method: 'POST', headers, body: JSON.stringify({ name }),
+      });
+      if (!res.ok) { const j = await res.json().catch(() => ({})); throw new Error(j.message || `HTTP ${res.status}`); }
+      $('versionNameInput').value = '';
+      await loadVersions();
+      showToast('Version gespeichert.');
+    } catch(e) { showToast(e.message); }
+  }
+  window.saveCurrentAsVersion = saveCurrentAsVersion;
+
+  async function loadVersion(versionId) {
+    if (!confirm('Diese Version laden? Die aktuelle Story wird ersetzt (bisheriger Stand bleibt als Version erhalten, falls zuvor gespeichert).')) return;
+    const headers = { 'Content-Type': 'application/json' };
+    const p = pid();
+    if (p) headers['x-participant-id'] = p;
+    showLoading('Version wird geladen…');
+    try {
+      const res = await fetch(`/api/tastings/${tastingId}/story-versions/${versionId}/activate`, { method: 'POST', headers });
+      if (!res.ok) { const j = await res.json().catch(() => ({})); throw new Error(j.message || `HTTP ${res.status}`); }
+      const photos = await fetchPhotos();
+      const fresh = await fetchStory(false, false, false);
+      storyData = fresh;
+      renderStory(fresh, photos);
+      showStory();
+      showToast('Version geladen.');
+    } catch(e) { showError(e.message); }
+  }
+  window.loadVersion = loadVersion;
+
+  async function deleteVersion(versionId) {
+    if (!confirm('Diese Version unwiderruflich löschen?')) return;
+    const headers = {};
+    const p = pid();
+    if (p) headers['x-participant-id'] = p;
+    try {
+      const res = await fetch(`/api/tastings/${tastingId}/story-versions/${versionId}`, { method: 'DELETE', headers });
+      if (!res.ok) { const j = await res.json().catch(() => ({})); throw new Error(j.message || `HTTP ${res.status}`); }
+      await loadVersions();
+      showToast('Version gelöscht.');
+    } catch(e) { showToast(e.message); }
+  }
+  window.deleteVersion = deleteVersion;
 
   async function regenStory(mode) {
     const isFull = mode === 'full';
@@ -835,13 +1199,18 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
   }
 
   function buildPhotoList(photos, tasting) {
-    const list = (photos || []).filter(p => p.photoUrl);
+    const list = (photos || []).filter(p => p.photoUrl).map(p => ({ ...p }));
     if (tasting && tasting.coverImageUrl) {
       const idx = list.findIndex(p => p.photoUrl === tasting.coverImageUrl);
       if (idx > 0) { const [cp] = list.splice(idx, 1); list.unshift(cp); }
       else if (idx < 0) { list.unshift({ photoUrl: tasting.coverImageUrl, caption: null }); }
     }
-    return list;
+    const overrides = (storyData && storyData.manualImages && storyData.manualImages.photos) || {};
+    return list.map((p, i) => {
+      const id = p.id || String(i);
+      const overrideUrl = overrides[id];
+      return overrideUrl ? { ...p, photoUrl: overrideUrl } : p;
+    });
   }
 
   function buildPhotosActHtml(photoList, alreadyVisible, photoSlideTexts) {
@@ -875,6 +1244,7 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
             participantFunFacts, openingNarration, discoveryTexts, blindNarration,
             closingReflection, winnerStory, winnerNarration } = data;
 
+    const manualImages = data.manualImages || { whiskies: {}, tasters: {}, photos: {} };
     const structure = Array.isArray(data.storyStructure) && data.storyStructure.length > 0
       ? data.storyStructure
       : ['opening', 'whiskies', 'tasters', 'discoveries', 'winner', 'photos', 'finale'];
@@ -915,8 +1285,11 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
         <div class="whisky-grid reveal reveal--d1">${ranked.map((w, i) => {
           const badges = [w.age && `${w.age}y`, w.abv && `${w.abv}%`, w.caskType].filter(Boolean);
           const portrait = (aiComments && aiComments[w.name]) || '';
+          const wid = w.id || w.whiskyId || w.name;
+          const imgUrl = (manualImages.whiskies && manualImages.whiskies[wid]) || '';
           return `<div class="whisky-card reveal reveal--d${(i % 3) + 1}">
             <div class="whisky-card__rank">Platz ${i + 1}</div>
+            ${imgUrl ? `<img src="${esc(imgUrl)}" alt="${esc(w.name || '')}" loading="lazy" style="width:100%;height:160px;object-fit:cover;border-radius:4px;margin-bottom:.6rem;border:1px solid rgba(201,169,97,.18);">` : ''}
             <div class="whisky-card__name">${esc(w.name || '?')}</div>
             <div class="whisky-card__distillery">${esc([w.distillery, w.region].filter(Boolean).join(' · '))}</div>
             ${w.avgOverall != null ? `<div class="whisky-card__score">${esc(fmtScore(w.avgOverall))}<span> / ${rScale}</span></div>` : ''}
@@ -933,8 +1306,9 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
         <div class="tasters-grid reveal reveal--d1">${tasterList.map(tp => {
           const name = stripGuest(tp.participant?.name || tp.participant?.email || 'Anonym');
           const sketch = (participantFunFacts && participantFunFacts[name]) || '';
+          const imgUrl = (manualImages.tasters && manualImages.tasters[name]) || '';
           return `<div class="taster-card">
-            <div class="taster-card__avatar">${esc(name.charAt(0).toUpperCase())}</div>
+            ${imgUrl ? `<img src="${esc(imgUrl)}" alt="${esc(name)}" loading="lazy" style="width:84px;height:84px;border-radius:50%;object-fit:cover;margin:0 auto .6rem;display:block;border:2px solid rgba(201,169,97,.3);">` : `<div class="taster-card__avatar">${esc(name.charAt(0).toUpperCase())}</div>`}
             <div class="taster-card__name">${esc(name)}</div>
             ${sketch ? `<div class="taster-card__sketch">${esc(sketch)}</div>` : ''}
           </div>`;
@@ -1048,7 +1422,13 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
     try {
       // Step 1: fetch with no_generate=true so the server computes rankings but never calls AI.
       // This is safe to use as a metadata probe — no AI cost, no side-effects.
-      const [metaData, photos] = await Promise.all([fetchStory(false, true), fetchPhotos()]);
+      const [metaData, photos] = await Promise.all([fetchStory(false, true, false), fetchPhotos()]);
+      if (metaData && metaData.pending) {
+        showPending(metaData.reason === 'not_enabled'
+          ? 'Der Gastgeber hat die Story noch nicht freigegeben. Bitte schaue später wieder vorbei.'
+          : 'Der Gastgeber bereitet die Story noch vor. Bitte schaue später wieder vorbei.');
+        return;
+      }
       const p = pid();
       // Prefer server-returned isHost (trusted); fall back to localStorage pid comparison.
       isHost = metaData.isHost ?? (metaData.tasting?.hostId && metaData.tasting.hostId === p);
@@ -1057,29 +1437,42 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
       // "cached" is false even for a no_generate call when there is no cache.
       const hasCache = !!metaData.tasting?.storySlidesCache;
       if (isHost && !hasCache) {
-        // Pre-fill the prompt field if a previous prompt exists
         if (metaData.tasting?.storyPrompt) {
           $('promptInput').value = metaData.tasting.storyPrompt;
+          showCustomPromptArea();
         }
         showPrompt();
         return;
       }
 
       // Step 2: fetch with generate enabled (serves from cache or generates as needed)
-      const data = await fetchStory(false, false);
+      const data = await fetchStory(false, false, false);
+      if (data && data.pending) {
+        showPending('Der Gastgeber bereitet die Story noch vor. Bitte schaue später wieder vorbei.');
+        return;
+      }
       storyData = data;
       renderStory(data, photos);
       showStory();
     } catch(e) {
-      if (e.message && e.message.includes('Story not yet available')) {
-        showError('Diese Story ist noch nicht für Teilnehmer freigegeben.');
+      if (e.message && (e.message.includes('Story not yet available') || e.message.includes('noch nicht'))) {
+        showPending('Diese Story ist noch nicht für Teilnehmer freigegeben.');
       } else {
         showError(e.message || 'Story konnte nicht geladen werden.');
       }
     }
   }
 
-  document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('DOMContentLoaded', () => {
+    init();
+    const slideInput = $('slideImageFileInput');
+    if (slideInput) {
+      slideInput.addEventListener('change', (ev) => {
+        const file = ev.target.files && ev.target.files[0];
+        if (file) uploadSlideImage(file);
+      });
+    }
+  });
 })();
 </script>
 </body>

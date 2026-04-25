@@ -17816,7 +17816,6 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
     }
   });
 
-  // Clear the story cache to force a full fresh generation (no refinement mode).
   app.delete("/api/tastings/:id/story-cache", async (req: Request, res: Response) => {
     try {
       const auth = await requireAuth(req);
@@ -17824,14 +17823,35 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
       if (tasting.hostId !== auth.participant.id) return res.status(403).json({ message: "Only the host can clear the story cache" });
-      // Best-effort: delete the stale PDF from object storage
       if (tasting.storyPdfObjectKey) {
         try {
           const { bucketName, objectName } = parseStoragePath(tasting.storyPdfObjectKey);
           await objectStorageClient.bucket(bucketName).file(objectName).delete({ ignoreNotFound: true });
-        } catch { /* best-effort */ }
+        } catch { /* */ }
       }
-      await storage.clearStoryCache(req.params.id);
+      const preserved = readManualOverridesFromCache(tasting.storySlidesCache);
+      const hasManual =
+        (Array.isArray(preserved.manualStructure) && preserved.manualStructure.length > 0) ||
+        (Array.isArray(preserved.manualHiddenActs) && preserved.manualHiddenActs.length > 0) ||
+        (preserved.manualImages && (
+          Object.keys(preserved.manualImages.whiskies ?? {}).length > 0 ||
+          Object.keys(preserved.manualImages.tasters ?? {}).length > 0 ||
+          Object.keys(preserved.manualImages.photos ?? {}).length > 0
+        ));
+      if (hasManual) {
+        const minimal = JSON.stringify({
+          manualStructure: preserved.manualStructure ?? null,
+          manualHiddenActs: preserved.manualHiddenActs ?? [],
+          manualImages: preserved.manualImages ?? { whiskies: {}, tasters: {}, photos: {} },
+        });
+        await storage.updateTasting(req.params.id, {
+          storySlidesCache: minimal,
+          storySlidesRatingCount: 0,
+          storyPdfObjectKey: null,
+        });
+      } else {
+        await storage.clearStoryCache(req.params.id);
+      }
       res.json({ ok: true });
     } catch (e: any) {
       console.error("Story cache delete error:", e.message);
@@ -18391,6 +18411,209 @@ If the user data includes a "hostContext" field, treat it as additional creative
       res.json({ sent, failed, total: validRecipients.length, cacheStored });
     } catch (e: any) {
       console.error("Story PDF email error:", e.message);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/tastings/:id/story-versions", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      if (tasting.hostId !== auth.participant.id) return res.status(403).json({ message: "Only the host can view story versions" });
+      const versions = await storage.listTastingStoryVersions(req.params.id);
+      res.json(versions.map(v => ({ id: v.id, name: v.name, createdAt: v.createdAt, prompt: v.prompt })));
+    } catch (e: any) {
+      console.error("Story versions list error:", e.message);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/story-versions", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      if (tasting.hostId !== auth.participant.id) return res.status(403).json({ message: "Only the host can save story versions" });
+      if (!tasting.storySlidesCache) return res.status(400).json({ message: "Keine Story zum Speichern vorhanden" });
+      const rawName = typeof req.body?.name === "string" ? req.body.name.trim() : "";
+      const name = rawName || `Version ${new Date().toLocaleString("de-DE")}`;
+      const created = await storage.createTastingStoryVersion({
+        tastingId: req.params.id,
+        name,
+        slidesCache: tasting.storySlidesCache,
+        prompt: tasting.storyPrompt ?? null,
+        createdById: auth.participant.id,
+      });
+      res.json({ id: created.id, name: created.name, createdAt: created.createdAt });
+    } catch (e: any) {
+      console.error("Story version create error:", e.message);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/story-versions/:versionId/activate", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      if (tasting.hostId !== auth.participant.id) return res.status(403).json({ message: "Only the host can activate story versions" });
+      const version = await storage.getTastingStoryVersion(req.params.versionId);
+      if (!version || version.tastingId !== req.params.id) return res.status(404).json({ message: "Version not found" });
+      if (tasting.storyPdfObjectKey) {
+        try {
+          const { bucketName, objectName } = parseStoragePath(tasting.storyPdfObjectKey);
+          await objectStorageClient.bucket(bucketName).file(objectName).delete({ ignoreNotFound: true });
+        } catch { /* best-effort */ }
+      }
+      await storage.updateTasting(req.params.id, {
+        storySlidesCache: version.slidesCache,
+        storyPrompt: version.prompt ?? null,
+        storyPdfObjectKey: null,
+      });
+      res.json({ ok: true });
+    } catch (e: any) {
+      console.error("Story version activate error:", e.message);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/tastings/:id/story-versions/:versionId", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      if (tasting.hostId !== auth.participant.id) return res.status(403).json({ message: "Only the host can delete story versions" });
+      const version = await storage.getTastingStoryVersion(req.params.versionId);
+      if (!version || version.tastingId !== req.params.id) return res.status(404).json({ message: "Version not found" });
+      await storage.deleteTastingStoryVersion(req.params.versionId);
+      res.json({ ok: true });
+    } catch (e: any) {
+      console.error("Story version delete error:", e.message);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/tastings/:id/story-cache/structure", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      if (tasting.hostId !== auth.participant.id) return res.status(403).json({ message: "Only the host can edit story structure" });
+      if (!tasting.storySlidesCache) return res.status(400).json({ message: "Keine Story-Daten vorhanden" });
+      const validActKeys = new Set(["opening", "whiskies", "tasters", "discoveries", "blind", "winner", "photos", "finale"]);
+      const body = req.body as { manualStructure?: unknown; manualHiddenActs?: unknown };
+      const patch: Record<string, unknown> = {};
+      if (body.manualStructure === null) {
+        patch.manualStructure = null;
+      } else if (Array.isArray(body.manualStructure)) {
+        const cleaned = (body.manualStructure as unknown[]).filter(k => typeof k === "string" && validActKeys.has(k as string)) as string[];
+        patch.manualStructure = [...new Set(cleaned)];
+      }
+      if (body.manualHiddenActs === null) {
+        patch.manualHiddenActs = [];
+      } else if (Array.isArray(body.manualHiddenActs)) {
+        const cleaned = (body.manualHiddenActs as unknown[]).filter(k => typeof k === "string" && validActKeys.has(k as string)) as string[];
+        patch.manualHiddenActs = [...new Set(cleaned)];
+      }
+      if (Object.keys(patch).length === 0) return res.status(400).json({ message: "Keine gültigen Felder" });
+      await persistStoryCacheUpdate(req.params.id, tasting.storySlidesCache, patch);
+      if (tasting.storyPdfObjectKey) {
+        try {
+          const { bucketName, objectName } = parseStoragePath(tasting.storyPdfObjectKey);
+          await objectStorageClient.bucket(bucketName).file(objectName).delete({ ignoreNotFound: true });
+          await storage.updateTasting(req.params.id, { storyPdfObjectKey: null });
+        } catch { /* best-effort */ }
+      }
+      res.json({ ok: true });
+    } catch (e: any) {
+      console.error("Story structure patch error:", e.message);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/story-cache/slide-image", (req: Request, res: Response) => {
+    memUpload.single("file")(req, res, async (err: unknown) => {
+      if (err) {
+        const msg = err instanceof Error ? err.message : "Upload-Fehler";
+        return res.status(400).json({ message: msg });
+      }
+      try {
+        const auth = await requireAuth(req);
+        if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+        const tasting = await storage.getTasting(req.params.id);
+        if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+        if (tasting.hostId !== auth.participant.id) return res.status(403).json({ message: "Only the host can upload slide images" });
+        if (!tasting.storySlidesCache) return res.status(400).json({ message: "Keine Story-Daten vorhanden" });
+        const file = req.file;
+        if (!file) return res.status(400).json({ message: "Datei fehlt" });
+        const kind = String((req.body?.kind ?? "")).trim();
+        const slideId = String((req.body?.slideId ?? "")).trim();
+        if (!["whisky", "taster", "photo"].includes(kind)) return res.status(400).json({ message: "Ungültiger kind-Wert" });
+        if (!slideId) return res.status(400).json({ message: "slideId fehlt" });
+        const url = await uploadBufferToObjectStorage(objectStorage, file.buffer, file.mimetype);
+        const overrides = readManualOverridesFromCache(tasting.storySlidesCache);
+        const manualImages = overrides.manualImages ?? { whiskies: {}, tasters: {}, photos: {} };
+        const bucket: "whiskies" | "tasters" | "photos" = kind === "whisky" ? "whiskies" : (kind === "taster" ? "tasters" : "photos");
+        const next = {
+          whiskies: { ...(manualImages.whiskies ?? {}) },
+          tasters: { ...(manualImages.tasters ?? {}) },
+          photos: { ...(manualImages.photos ?? {}) },
+        };
+        next[bucket][slideId] = url;
+        await persistStoryCacheUpdate(req.params.id, tasting.storySlidesCache, { manualImages: next });
+        if (tasting.storyPdfObjectKey) {
+          try {
+            const { bucketName, objectName } = parseStoragePath(tasting.storyPdfObjectKey);
+            await objectStorageClient.bucket(bucketName).file(objectName).delete({ ignoreNotFound: true });
+            await storage.updateTasting(req.params.id, { storyPdfObjectKey: null });
+          } catch { /* */ }
+        }
+        res.json({ ok: true, url });
+      } catch (e: any) {
+        console.error("Slide image upload error:", e.message);
+        res.status(500).json({ message: e.message });
+      }
+    });
+  });
+
+  app.delete("/api/tastings/:id/story-cache/slide-image", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      if (tasting.hostId !== auth.participant.id) return res.status(403).json({ message: "Only the host can delete slide images" });
+      if (!tasting.storySlidesCache) return res.status(400).json({ message: "Keine Story-Daten vorhanden" });
+      const kind = String((req.body?.kind ?? "")).trim();
+      const slideId = String((req.body?.slideId ?? "")).trim();
+      if (!["whisky", "taster", "photo"].includes(kind)) return res.status(400).json({ message: "Ungültiger kind-Wert" });
+      if (!slideId) return res.status(400).json({ message: "slideId fehlt" });
+      const overrides = readManualOverridesFromCache(tasting.storySlidesCache);
+      const manualImages = overrides.manualImages ?? { whiskies: {}, tasters: {}, photos: {} };
+      const bucket = kind === "whisky" ? "whiskies" : (kind === "taster" ? "tasters" : "photos");
+      const next = {
+        whiskies: { ...(manualImages.whiskies ?? {}) },
+        tasters: { ...(manualImages.tasters ?? {}) },
+        photos: { ...(manualImages.photos ?? {}) },
+      };
+      delete next[bucket][slideId];
+      await persistStoryCacheUpdate(req.params.id, tasting.storySlidesCache, { manualImages: next });
+      if (tasting.storyPdfObjectKey) {
+        try {
+          const { bucketName, objectName } = parseStoragePath(tasting.storyPdfObjectKey);
+          await objectStorageClient.bucket(bucketName).file(objectName).delete({ ignoreNotFound: true });
+          await storage.updateTasting(req.params.id, { storyPdfObjectKey: null });
+        } catch { /* best-effort */ }
+      }
+      res.json({ ok: true });
+    } catch (e: any) {
+      console.error("Slide image delete error:", e.message);
       res.status(500).json({ message: e.message });
     }
   });
