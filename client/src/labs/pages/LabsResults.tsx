@@ -1265,6 +1265,16 @@ export default function LabsResults({ params }: LabsResultsProps) {
             <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
               {currentParticipant?.id === tasting.hostId && (tasting.status === "archived" || tasting.status === "completed" || tasting.status === "closed" || tasting.status === "reveal") && (
                 <button
+                  className="labs-btn-primary flex items-center gap-2"
+                  onClick={() => navigate(`/labs/results/${tastingId}/present`)}
+                  data-testid="button-labs-present-results"
+                >
+                  <Monitor className="w-4 h-4" />
+                  Present
+                </button>
+              )}
+              {currentParticipant?.id === tasting.hostId && (tasting.status === "archived" || tasting.status === "completed" || tasting.status === "closed" || tasting.status === "reveal") && (
+                <button
                   className="labs-btn-secondary flex items-center gap-2"
                   onClick={() => navigate(`/labs/results/${tastingId}/story`)}
                   data-testid="button-labs-story"
@@ -1281,16 +1291,6 @@ export default function LabsResults({ params }: LabsResultsProps) {
                 >
                   <BookOpen className="w-4 h-4" />
                   Story
-                </button>
-              )}
-              {currentParticipant?.id === tasting.hostId && (tasting.status === "archived" || tasting.status === "completed" || tasting.status === "closed" || tasting.status === "reveal") && (
-                <button
-                  className="labs-btn-primary flex items-center gap-2"
-                  onClick={() => navigate(`/labs/results/${tastingId}/present`)}
-                  data-testid="button-labs-present-results"
-                >
-                  <Monitor className="w-4 h-4" />
-                  Present
                 </button>
               )}
               {currentParticipant?.id === tasting.hostId && tasting.status === "reveal" && (
