@@ -367,6 +367,7 @@ export interface IStorage {
 
   // Tasting Participants
   getTastingParticipants(tastingId: string): Promise<(TastingParticipant & { participant: Participant; ratingCount: number })[]>;
+  getParticipantsForTastingsBatch(tastingIds: string[]): Promise<Map<string, { id: string; name: string }[]>>;
   addParticipantToTasting(data: InsertTastingParticipant): Promise<TastingParticipant>;
   isParticipantInTasting(tastingId: string, participantId: string): Promise<boolean>;
   getTastingParticipantByRejoinCode(tastingId: string, rejoinCode: string): Promise<(TastingParticipant & { participant: Participant }) | undefined>;
@@ -1175,6 +1176,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   // --- Tasting Participants ---
+  async getParticipantsForTastingsBatch(tastingIds: string[]): Promise<Map<string, { id: string; name: string }[]>> {
+    if (tastingIds.length === 0) return new Map();
+    const rows = await db
+      .select({
+        tastingId: tastingParticipants.tastingId,
+        participantId: tastingParticipants.participantId,
+        participantName: participants.name,
+      })
+      .from(tastingParticipants)
+      .innerJoin(participants, eq(tastingParticipants.participantId, participants.id))
+      .where(inArray(tastingParticipants.tastingId, tastingIds));
+    const result = new Map<string, { id: string; name: string }[]>();
+    for (const row of rows) {
+      if (!result.has(row.tastingId)) result.set(row.tastingId, []);
+      result.get(row.tastingId)!.push({ id: row.participantId, name: row.participantName || "" });
+    }
+    return result;
+  }
+
   async getTastingParticipants(tastingId: string): Promise<(TastingParticipant & { participant: Participant; ratingCount: number })[]> {
     const ratingCounts = db
       .select({

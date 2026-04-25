@@ -1896,11 +1896,20 @@ export async function registerRoutes(
         if (p) hostMap[hid] = p.name || p.email || "";
       })
     );
-    const enriched = tastings.map((t: any) => ({
-      ...t,
-      hostName: hostMap[t.hostId] || null,
-      ...(invitedTastingMap[t.id] || {}),
-    }));
+    const allTastingIds = tastings.map((t: any) => t.id).filter(Boolean);
+    const participantsMap = await storage.getParticipantsForTastingsBatch(allTastingIds);
+    const enriched = tastings.map((t: any) => {
+      const tParticipants: { id: string; name: string }[] = participantsMap.get(t.id) ?? [];
+      if (t.hostId && hostMap[t.hostId] && !tParticipants.some((p) => p.id === t.hostId)) {
+        tParticipants.unshift({ id: t.hostId, name: hostMap[t.hostId] });
+      }
+      return {
+        ...t,
+        hostName: hostMap[t.hostId] || null,
+        participants: tParticipants,
+        ...(invitedTastingMap[t.id] || {}),
+      };
+    });
     return res.json(enriched);
   });
 

@@ -1610,7 +1610,12 @@ function FriendDetailSheet({
   const initials = friend.name.trim().split(/\s+/).map(p => p[0]).join("").toUpperCase().slice(0, 2);
   const friendSessions = sharedSessions.filter((s) => {
     const participants = (s.participants || []) as Array<Record<string, unknown>>;
-    return participants.some((p) => p.id === friend.participantId || (p.name as string)?.toLowerCase() === friend.name.toLowerCase());
+    const friendNameNorm = stripGuestSuffix(friend.name).trim().toLowerCase();
+    return participants.some((p) => {
+      if (friend.participantId && p.id === friend.participantId) return true;
+      const pName = stripGuestSuffix(p.name as string).trim().toLowerCase();
+      return pName.length > 0 && pName === friendNameNorm;
+    });
   });
 
   return createPortal(
