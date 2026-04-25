@@ -1012,6 +1012,7 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
     queryKey: ["tasting-story", tastingId],
     queryFn: () => fetchStoryData(tastingId),
     retry: 1,
+    staleTime: 10 * 60 * 1000,
   });
 
   const { data: eventPhotos = [], refetch: refetchPhotos } = useQuery({

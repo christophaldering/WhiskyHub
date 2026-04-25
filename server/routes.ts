@@ -18031,11 +18031,13 @@ If the user data includes a "hostContext" field, treat it as additional creative
               }
               await storage.updateTasting(req.params.id, slidesUpdate);
             } catch (saveErr) {
-              console.warn("Story slides cache save failed:", (saveErr as any)?.message ?? saveErr);
+              console.error("Story slides cache save failed:", (saveErr as any)?.message ?? saveErr);
+              throw saveErr;
             }
           }
         } catch (aiErr) {
-          console.warn("Story AI narration failed:", (aiErr as any)?.message ?? aiErr);
+          console.error("Story generation failed:", (aiErr as any)?.message ?? aiErr);
+          return res.status(500).json({ error: "Story generation failed. Please try again." });
         }
       }
 
