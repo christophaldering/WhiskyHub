@@ -17934,8 +17934,6 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
           if (aiClient) {
             const groupAvgOverall = sorted.length > 0 ? sorted.reduce((s, w) => s + (w.avgOverall ?? 0), 0) / sorted.length : 0;
 
-            const allFlavourDescriptors = await storage.getFlavourDescriptors();
-
             const whiskyDataForAI = sorted.slice(0, 10).map((w, idx) => {
               const overallVals = w.ratings.map((r: any) => r.overall).filter((v: any) => v != null) as number[];
               const ratedRatings = w.ratings.filter((r: any) => r.overall != null);
@@ -17955,25 +17953,10 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
                   if (t) explicitTagFreq[t] = (explicitTagFreq[t] ?? 0) + 1;
                 }
               }
-              const hasExplicitTags = Object.keys(explicitTagFreq).length > 0;
-              let topFlavorTags: string[];
-              if (hasExplicitTags) {
-                topFlavorTags = Object.entries(explicitTagFreq)
-                  .sort((a, b) => b[1] - a[1])
-                  .slice(0, 10)
-                  .map(([tag]) => tag);
-              } else {
-                const combinedNotes = w.ratings.map((r: any) => r.notes).filter(Boolean).join(" ").toLowerCase();
-                const descriptorCounts: { label: string; count: number }[] = allFlavourDescriptors.map(d => ({
-                  label: d.de,
-                  count: d.keywords.reduce((sum, kw) => sum + (combinedNotes.includes(kw.toLowerCase()) ? 1 : 0), 0),
-                }));
-                topFlavorTags = descriptorCounts
-                  .filter(d => d.count > 0)
-                  .sort((a, b) => b.count - a.count)
-                  .slice(0, 10)
-                  .map(d => d.label);
-              }
+              const topFlavorTags: string[] = Object.entries(explicitTagFreq)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10)
+                .map(([tag]) => tag);
               return {
                 rank: idx + 1,
                 name: w.name,

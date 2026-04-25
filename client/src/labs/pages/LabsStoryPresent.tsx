@@ -1335,7 +1335,7 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
               <Camera style={{ width: 14, height: 14 }} />
             </button>
           )}
-          {isHost && storyData?.openingNarration && (
+          {isHost && storyData && (storyData.openingNarration || storyData.closingReflection || storyData.winnerNarration || storyData.blindNarration || (storyData.aiComments && Object.keys(storyData.aiComments).length > 0)) && (
             <button
               className="labs-btn-ghost"
               style={{ padding: "6px 12px", fontSize: 13 }}
