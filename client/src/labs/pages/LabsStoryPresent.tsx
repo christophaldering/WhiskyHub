@@ -1241,6 +1241,8 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
   const handleClearAndRegenerate = async () => {
     const hostPid = currentParticipant?.id;
     if (!hostPid || isRegenerating) return;
+    if (!tastingId) return;
+    setIsRegenerating(true);
     try {
       const cacheRes = await fetch(`/api/tastings/${tastingId}/story-cache`, {
         method: "DELETE",
@@ -1248,31 +1250,45 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
       });
       if (!cacheRes.ok) {
         toast({ title: "Cache konnte nicht gelöscht werden", description: "Bitte Seite neu laden.", variant: "destructive" });
+        setIsRegenerating(false);
         return;
       }
-      qc.removeQueries({ queryKey: ["tasting-story", tastingId] });
     } catch {
       toast({ title: "Verbindungsfehler", variant: "destructive" });
+      setIsRegenerating(false);
       return;
     }
-    await handleRegenerateSlides();
+    try {
+      const res = await fetch(`/api/tastings/${tastingId}/story?refresh=true`, {
+        headers: { "x-participant-id": hostPid },
+      });
+      if (res.ok) {
+        const fresh = await res.json();
+        qc.setQueryData(["tasting-story", tastingId], fresh);
+        await qc.invalidateQueries({ queryKey: ["tasting-story", tastingId] });
+        toast({ title: "Story neu generiert", description: "Die KI-Texte wurden frisch erstellt." });
+      } else {
+        toast({ title: "Generierung fehlgeschlagen", description: "Die Story konnte nicht neu generiert werden.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Verbindungsfehler beim Generieren", variant: "destructive" });
+    }
+    setIsRegenerating(false);
   };
 
   const handleRestartStory = async () => {
+    const hostPid = currentParticipant?.id;
+    if (!hostPid || !tastingId) return;
     setPromptSaving(true);
+    setIsRegenerating(true);
+    const saveOk = await saveStoryPrompt(promptText);
+    if (!saveOk) {
+      toast({ title: "Fehler beim Speichern", description: "Bitte erneut versuchen.", variant: "destructive" });
+      setPromptSaving(false);
+      setIsRegenerating(false);
+      return;
+    }
     try {
-      const hostPid = currentParticipant?.id;
-      if (!hostPid) {
-        toast({ title: "Nicht eingeloggt", description: "Host-ID nicht gefunden.", variant: "destructive" });
-        setPromptSaving(false);
-        return;
-      }
-      const saveOk = await saveStoryPrompt(promptText);
-      if (!saveOk) {
-        toast({ title: "Fehler beim Speichern", description: "Bitte erneut versuchen.", variant: "destructive" });
-        setPromptSaving(false);
-        return;
-      }
       const cacheRes = await fetch(`/api/tastings/${tastingId}/story-cache`, {
         method: "DELETE",
         headers: { "x-participant-id": hostPid },
@@ -1280,17 +1296,33 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
       if (!cacheRes.ok) {
         toast({ title: "Cache konnte nicht gelöscht werden", description: "Bitte Seite neu laden.", variant: "destructive" });
         setPromptSaving(false);
+        setIsRegenerating(false);
         return;
       }
-      qc.removeQueries({ queryKey: ["tasting-story", tastingId] });
-      setShowPromptPanel(false);
     } catch {
       toast({ title: "Verbindungsfehler", variant: "destructive" });
       setPromptSaving(false);
+      setIsRegenerating(false);
       return;
     }
+    setShowPromptPanel(false);
     setPromptSaving(false);
-    await handleRegenerateSlides();
+    try {
+      const res = await fetch(`/api/tastings/${tastingId}/story?refresh=true`, {
+        headers: { "x-participant-id": hostPid },
+      });
+      if (res.ok) {
+        const fresh = await res.json();
+        qc.setQueryData(["tasting-story", tastingId], fresh);
+        await qc.invalidateQueries({ queryKey: ["tasting-story", tastingId] });
+        toast({ title: "Story neu gestartet", description: "Die KI-Texte wurden frisch erstellt." });
+      } else {
+        toast({ title: "Generierung fehlgeschlagen", description: "Die Story konnte nicht neu generiert werden.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Verbindungsfehler beim Generieren", variant: "destructive" });
+    }
+    setIsRegenerating(false);
   };
 
   const handleRegenerateSlides = async () => {
