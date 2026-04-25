@@ -6,7 +6,7 @@ import {
   ChevronLeft, ChevronRight, X, Trophy, Wine, Users,
   Camera, Upload, Trash2, Play, Pause, Download,
   Sparkles, Star, Eye, EyeOff, Loader2, Check, BookOpen, MapPin, Calendar, Mail, Plus, CheckCheck,
-  Maximize, Minimize, RefreshCw, Edit2,
+  Maximize, Minimize, RefreshCw, Edit2, RotateCcw,
 } from "lucide-react";
 import { getParticipantId, pidHeaders } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
@@ -1237,6 +1237,41 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
     await handleRegenerateSlides();
   };
 
+  const handleRestartStory = async () => {
+    setPromptSaving(true);
+    try {
+      const hostPid = currentParticipant?.id;
+      if (!hostPid) {
+        toast({ title: "Nicht eingeloggt", description: "Host-ID nicht gefunden.", variant: "destructive" });
+        setPromptSaving(false);
+        return;
+      }
+      const saveOk = await saveStoryPrompt(promptText);
+      if (!saveOk) {
+        toast({ title: "Fehler beim Speichern", description: "Bitte erneut versuchen.", variant: "destructive" });
+        setPromptSaving(false);
+        return;
+      }
+      const cacheRes = await fetch(`/api/tastings/${tastingId}/story-cache`, {
+        method: "DELETE",
+        headers: { "x-participant-id": hostPid },
+      });
+      if (!cacheRes.ok) {
+        toast({ title: "Cache konnte nicht gelöscht werden", description: "Bitte Seite neu laden.", variant: "destructive" });
+        setPromptSaving(false);
+        return;
+      }
+      qc.removeQueries({ queryKey: ["tasting-story", tastingId] });
+      setShowPromptPanel(false);
+    } catch {
+      toast({ title: "Verbindungsfehler", variant: "destructive" });
+      setPromptSaving(false);
+      return;
+    }
+    setPromptSaving(false);
+    await handleRegenerateSlides();
+  };
+
   const handleRegenerateSlides = async () => {
     if (!tastingId || isRegenerating) return;
     const hostPid = currentParticipant?.id;
@@ -1572,7 +1607,7 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
                   <li>Sprache & Ton: z.B. "Schreibe auf Englisch" oder "Humorvoller Stil"</li>
                 </ul>
               </div>
-              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
                 <button
                   className="labs-btn-ghost"
                   style={{ padding: "7px 14px", fontSize: 12, opacity: promptSaving ? 0.6 : 1 }}
@@ -1593,9 +1628,25 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
                   onClick={handleSaveAndRegenerate}
                   disabled={promptSaving || isRegenerating || !currentParticipant?.id}
                   data-testid="story-prompt-save-regenerate"
+                  title="Verfeinern: Bestehende Story-Texte bleiben erhalten, die KI passt nur die geänderten Teile an."
                 >
                   {(promptSaving || isRegenerating) ? <Loader2 style={{ width: 12, height: 12, animation: "spin 1s linear infinite" }} /> : <RefreshCw style={{ width: 12, height: 12 }} />}
-                  <span style={{ marginLeft: 5 }}>Speichern & Neu generieren</span>
+                  <span style={{ marginLeft: 5 }}>Verfeinern</span>
+                </button>
+                <button
+                  className="labs-btn-ghost"
+                  style={{
+                    padding: "7px 14px", fontSize: 12,
+                    opacity: (promptSaving || isRegenerating || !currentParticipant?.id) ? 0.6 : 1,
+                    color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)",
+                  }}
+                  onClick={handleRestartStory}
+                  disabled={promptSaving || isRegenerating || !currentParticipant?.id}
+                  data-testid="story-prompt-restart"
+                  title="Neu starten: Cache wird gelöscht, die KI generiert die gesamte Story von Grund auf neu."
+                >
+                  {(promptSaving || isRegenerating) ? <Loader2 style={{ width: 12, height: 12, animation: "spin 1s linear infinite" }} /> : <RotateCcw style={{ width: 12, height: 12 }} />}
+                  <span style={{ marginLeft: 5 }}>Neu starten</span>
                 </button>
               </div>
             </div>

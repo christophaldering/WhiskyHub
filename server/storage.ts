@@ -362,6 +362,7 @@ export interface IStorage {
   updateAiImageVisibility(id: string, visibility: "private" | "community"): Promise<AiImage | undefined>;
   deleteAiImage(id: string): Promise<AiImage | undefined>;
   updateTasting(id: string, data: Partial<Record<string, any>>): Promise<Tasting | undefined>;
+  clearStoryCache(id: string): Promise<Tasting | undefined>;
   transferTastingHost(id: string, newHostId: string): Promise<Tasting | undefined>;
   duplicateTasting(id: string, hostId: string): Promise<Tasting>;
 
@@ -1043,6 +1044,15 @@ export class DatabaseStorage implements IStorage {
   async updateTasting(id: string, data: Partial<Record<string, any>>): Promise<Tasting | undefined> {
     if (Object.keys(data).length === 0) return this.getTasting(id);
     const [result] = await db.update(tastings).set(data).where(eq(tastings.id, id)).returning();
+    return result;
+  }
+
+  async clearStoryCache(id: string): Promise<Tasting | undefined> {
+    const [result] = await db
+      .update(tastings)
+      .set({ storySlidesCache: null, storySlidesRatingCount: null, storyPdfObjectKey: null })
+      .where(eq(tastings.id, id))
+      .returning();
     return result;
   }
 

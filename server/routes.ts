@@ -17769,17 +17769,24 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       const { storyPrompt } = req.body as { storyPrompt?: string };
       // Normalize: trim whitespace, convert blank string to null for deterministic storage
       const normalizedPrompt = storyPrompt != null ? (storyPrompt.trim() || null) : null;
-      const promptUpdate: {
-        storyPrompt: string | null;
-        storySlidesCache: null;
-        storySlidesRatingCount: null;
-        storyPdfObjectKey: null;
-      } = {
-        storyPrompt: normalizedPrompt,
-        storySlidesCache: null,
-        storySlidesRatingCount: null,
-        storyPdfObjectKey: null,
-      };
+      // Only update the prompt — do NOT clear the cache so the AI can use the existing story
+      // for refinement mode when the host regenerates with the updated prompt.
+      await storage.updateTasting(req.params.id, { storyPrompt: normalizedPrompt });
+      res.json({ ok: true });
+    } catch (e: any) {
+      console.error("Story prompt patch error:", e.message);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // Clear the story cache to force a full fresh generation (no refinement mode).
+  app.delete("/api/tastings/:id/story-cache", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      if (tasting.hostId !== auth.participant.id) return res.status(403).json({ message: "Only the host can clear the story cache" });
       // Best-effort: delete the stale PDF from object storage
       if (tasting.storyPdfObjectKey) {
         try {
@@ -17787,10 +17794,10 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
           await objectStorageClient.bucket(bucketName).file(objectName).delete({ ignoreNotFound: true });
         } catch { /* best-effort */ }
       }
-      await storage.updateTasting(req.params.id, promptUpdate);
+      await storage.clearStoryCache(req.params.id);
       res.json({ ok: true });
     } catch (e: any) {
-      console.error("Story prompt patch error:", e.message);
+      console.error("Story cache delete error:", e.message);
       res.status(500).json({ message: e.message });
     }
   });
