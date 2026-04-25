@@ -6,7 +6,7 @@ import {
   ChevronLeft, ChevronRight, X, Trophy, Wine, Users,
   Camera, Upload, Trash2, Play, Pause, Download,
   Sparkles, Star, Eye, EyeOff, Loader2, Check, BookOpen, MapPin, Calendar, Mail, Plus, CheckCheck,
-  Maximize, Minimize,
+  Maximize, Minimize, RefreshCw,
 } from "lucide-react";
 import { getParticipantId, pidHeaders } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
@@ -900,6 +900,7 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [narrativeLoading, setNarrativeLoading] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const touchStartX = useRef<number | null>(null);
@@ -990,6 +991,24 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
     await toggleStoryEnabled(tastingId, !tasting.storyEnabled).catch(console.error);
     await qc.invalidateQueries({ queryKey: ["tasting-story", tastingId] });
     setStoryToggling(false);
+  };
+
+  const handleRegenerateSlides = async () => {
+    if (!tastingId || isRegenerating) return;
+    setIsRegenerating(true);
+    try {
+      const res = await fetch(`/api/tastings/${tastingId}/story?refresh=true`, { headers: pidHeaders() });
+      if (res.ok) {
+        const fresh = await res.json();
+        qc.setQueryData(["tasting-story", tastingId], fresh);
+        toast({ title: "Story neu generiert", description: "Die KI-Texte wurden aktualisiert." });
+      } else {
+        toast({ title: "Regenerierung fehlgeschlagen", description: "Die Story konnte nicht neu generiert werden.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Regenerierung fehlgeschlagen", description: "Verbindungsfehler beim Neu-Generieren.", variant: "destructive" });
+    }
+    setIsRegenerating(false);
   };
 
   const handleGenerateNarrative = async () => {
@@ -1137,6 +1156,19 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
               {storyToggling ? <Loader2 style={{ width: 13, height: 13, animation: "spin 1s linear infinite" }} /> :
                 tasting?.storyEnabled ? <EyeOff style={{ width: 13, height: 13 }} /> : <Eye style={{ width: 13, height: 13 }} />}
               <span>{tasting?.storyEnabled ? "Story verbergen" : "Story freigeben"}</span>
+            </button>
+          )}
+          {isHost && (
+            <button
+              className="labs-btn-ghost"
+              style={{ padding: "6px 12px", fontSize: 12, display: "flex", alignItems: "center", gap: 6, opacity: isRegenerating ? 0.6 : 1 }}
+              onClick={handleRegenerateSlides}
+              disabled={isRegenerating}
+              data-testid="story-regenerate-btn"
+              title="KI-Texte neu generieren"
+            >
+              <RefreshCw style={{ width: 13, height: 13, animation: isRegenerating ? "spin 1s linear infinite" : "none" }} />
+              <span>{isRegenerating ? "Generiere…" : "Neu generieren"}</span>
             </button>
           )}
           <button
