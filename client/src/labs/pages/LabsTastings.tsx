@@ -83,7 +83,13 @@ export default function LabsTastings() {
     setActiveTab((prev) => (prev === tab ? null : tab));
   };
 
-  const [filterTab, setFilterTab] = useState<TastingsHubFilter>("active");
+  const [filterTab, setFilterTab] = useState<TastingsHubFilter>(() => {
+    try {
+      const params = new URLSearchParams(searchStr);
+      if (params.get("tab") === "completed") return "completed";
+    } catch {}
+    return "active";
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [archiveRoleFilter, setArchiveRoleFilter] = useState<"all" | "host" | "guest">("all");
   const [archiveYearFilter, setArchiveYearFilter] = useState<string | null>(null);

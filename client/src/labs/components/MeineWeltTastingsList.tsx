@@ -48,6 +48,10 @@ export default function MeineWeltTastingsList({ filter, searchQuery = "" }: Prop
   const [roleFilter, setRoleFilter] = useState<ArchiveRoleFilter>("all");
   const [yearFilter, setYearFilter] = useState<string | null>(null);
 
+  const [lastViewedId] = useState<string | null>(() => {
+    try { return localStorage.getItem("lastViewedCompletedTastingId"); } catch { return null; }
+  });
+
   const { data: tastings, isLoading: isTastingsLoading } = useQuery({
     queryKey: ["tastings", participantId],
     queryFn: () => tastingApi.getAll(participantId),
@@ -267,8 +271,9 @@ export default function MeineWeltTastingsList({ filter, searchQuery = "" }: Prop
 
             const href =
               filter === "completed"
-                ? `/labs/tastings/${tasting.id}?from=my-tastings`
+                ? `/labs/results/${tasting.id}?from=my-tastings`
                 : `/labs/tastings/${tasting.id}`;
+            const isLastViewed = filter === "completed" && lastViewedId === tasting.id;
 
             return (
               <Link key={tasting.id} href={href}>
@@ -330,6 +335,15 @@ export default function MeineWeltTastingsList({ filter, searchQuery = "" }: Prop
                       </div>
                     )}
                     <div className="labs-tasting-card-meta">
+                      {isLastViewed && (
+                        <span
+                          className="labs-tasting-card-meta-item"
+                          style={{ color: "var(--labs-accent)", fontWeight: 600 }}
+                          data-testid={`meine-welt-tasting-last-viewed-${tasting.id}`}
+                        >
+                          {t("tastings.lastViewed", "Zuletzt angesehen")}
+                        </span>
+                      )}
                       {formattedDate && (
                         <span className="labs-tasting-card-meta-item">
                           <Calendar className="labs-tasting-card-meta-icon" />

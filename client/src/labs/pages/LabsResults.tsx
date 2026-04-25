@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Sparkles, Download, FileText, FileSpreadsheet, Clock, Monitor, Archive, Check, Info, Lock, Loader2, BookOpen, Camera, Trash2, Plus } from "lucide-react";
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
@@ -195,7 +195,7 @@ async function labsExportPdf(tasting: any, whiskyResults: any[], t: (key: string
   await saveJsPdf(doc, `${safeName}_results.pdf`);
 }
 
-function LabsExportDropdown({ tastingId, tasting, whiskyResults }: { tastingId: string; tasting: any; whiskyResults: any[] }) {
+function LabsExportDropdown({ tastingId, tasting, whiskyResults, tileMode }: { tastingId: string; tasting: any; whiskyResults: any[]; tileMode?: boolean }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
@@ -268,15 +268,35 @@ function LabsExportDropdown({ tastingId, tasting, whiskyResults }: { tastingId: 
 
   return (
     <div style={{ display: "inline-block" }}>
-      <button
-        ref={btnRef}
-        className="labs-btn-secondary flex items-center gap-2"
-        onClick={() => setOpen(!open)}
-        data-testid="button-labs-export-menu"
-      >
-        <Download className="w-4 h-4" />
-        {t("resultsUi.export")}
-      </button>
+      {tileMode ? (
+        <button
+          ref={btnRef}
+          type="button"
+          onClick={() => setOpen(!open)}
+          data-testid="button-labs-export-menu-tile"
+          style={{
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
+            padding: "10px 14px", borderRadius: 12, cursor: "pointer",
+            background: open ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated)",
+            border: `1.5px solid ${open ? "var(--labs-accent)" : "var(--labs-border)"}`,
+            color: open ? "var(--labs-accent)" : "var(--labs-text-secondary)",
+            fontFamily: "inherit", minWidth: 60, transition: "all 0.15s",
+          }}
+        >
+          <Download style={{ width: 18, height: 18 }} />
+          <span style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>{t("resultsUi.export")}</span>
+        </button>
+      ) : (
+        <button
+          ref={btnRef}
+          className="labs-btn-secondary flex items-center gap-2"
+          onClick={() => setOpen(!open)}
+          data-testid="button-labs-export-menu"
+        >
+          <Download className="w-4 h-4" />
+          {t("resultsUi.export")}
+        </button>
+      )}
       {open && pos && createPortal(
         <div
           ref={dropdownRef}
@@ -762,12 +782,19 @@ export default function LabsResults({ params }: LabsResultsProps) {
   const tastingId = params.id;
   const { currentParticipant } = useAppStore();
   const [, navigate] = useLocation();
+  const searchStr = useSearch();
+  const fromMyTastings = searchStr.includes("from=my-tastings");
   const goBack = useLabsBack("/labs/tastings");
   const [expandedWhisky, setExpandedWhisky] = useState<string | null>(null);
   const [historyExpanded, setHistoryExpanded] = useState<Record<string, boolean>>({});
   const [previousRatingsMap, setPreviousRatingsMap] = useState<Record<string, { date: string; tastingTitle: string; nose: number; taste: number; finish: number; overall: number }[]>>({});
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!tastingId) return;
+    try { localStorage.setItem("lastViewedCompletedTastingId", tastingId); } catch {}
+  }, [tastingId]);
 
   const { data: tasting, isLoading: loadingTasting, isError: tastingError } = useQuery({
     queryKey: ["tasting", tastingId],
@@ -1185,16 +1212,19 @@ export default function LabsResults({ params }: LabsResultsProps) {
     return null;
   };
 
+  const isCompleted = tasting.status === "archived" || tasting.status === "completed" || tasting.status === "closed";
+  const storyVisible = isCompleted && (isHost || !!tasting.storyEnabled);
+
   return (
     <div className="labs-page labs-fade-in">
       <button
-        onClick={goBack}
+        onClick={fromMyTastings ? () => navigate("/labs/tastings?tab=completed") : goBack}
         className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
         style={{ color: "var(--labs-text-muted)" }}
         data-testid="results-back-btn"
       >
         <ChevronLeft className="w-4 h-4" />
-        Tastings
+        {fromMyTastings ? t("tastings.myTastings", "Meine Tastings") : "Tastings"}
       </button>
 
       <div className="mb-6 labs-stagger-1 labs-fade-in">
@@ -1290,6 +1320,105 @@ export default function LabsResults({ params }: LabsResultsProps) {
           )}
         </div>
       </div>
+
+      {isCompleted && (
+        <div
+          data-testid="results-quick-access-bar"
+          style={{
+            display: "flex",
+            gap: 8,
+            overflowX: "auto",
+            paddingBottom: 4,
+            marginBottom: 16,
+            scrollbarWidth: "none",
+          }}
+        >
+          <button
+            type="button"
+            data-testid="results-quickaccess-results"
+            style={{
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
+              padding: "10px 14px", borderRadius: 12, cursor: "default",
+              background: "var(--labs-accent-muted)",
+              border: "1.5px solid var(--labs-accent)",
+              color: "var(--labs-accent)",
+              fontFamily: "inherit", minWidth: 60, flexShrink: 0,
+            }}
+          >
+            <BarChart3 style={{ width: 18, height: 18 }} />
+            <span style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>
+              {t("resultsUi.rankingTitle", "Rangliste")}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate(`/labs/results/${tastingId}/report`)}
+            data-testid="results-quickaccess-ai"
+            style={{
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
+              padding: "10px 14px", borderRadius: 12, cursor: "pointer",
+              background: "var(--labs-surface-elevated)",
+              border: "1.5px solid var(--labs-border)",
+              color: "var(--labs-text-secondary)",
+              fontFamily: "inherit", minWidth: 60, flexShrink: 0,
+              transition: "all 0.15s",
+            }}
+          >
+            <Sparkles style={{ width: 18, height: 18, color: "var(--labs-accent)" }} />
+            <span style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>
+              {t("resultsUi.kiReport", "KI-Analyse")}
+            </span>
+          </button>
+          {storyVisible && (
+            <button
+              type="button"
+              onClick={() => navigate(`/labs/results/${tastingId}/story`)}
+              data-testid="results-quickaccess-story"
+              style={{
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
+                padding: "10px 14px", borderRadius: 12, cursor: "pointer",
+                background: "var(--labs-surface-elevated)",
+                border: "1.5px solid var(--labs-border)",
+                color: "var(--labs-text-secondary)",
+                fontFamily: "inherit", minWidth: 60, flexShrink: 0,
+                transition: "all 0.15s",
+              }}
+            >
+              <BookOpen style={{ width: 18, height: 18 }} />
+              <span style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>
+                Story
+              </span>
+            </button>
+          )}
+          {isHost && (
+            <button
+              type="button"
+              onClick={() => navigate(`/labs/results/${tastingId}/present`)}
+              data-testid="results-quickaccess-present"
+              style={{
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
+                padding: "10px 14px", borderRadius: 12, cursor: "pointer",
+                background: "var(--labs-surface-elevated)",
+                border: "1.5px solid var(--labs-border)",
+                color: "var(--labs-text-secondary)",
+                fontFamily: "inherit", minWidth: 60, flexShrink: 0,
+                transition: "all 0.15s",
+              }}
+            >
+              <Monitor style={{ width: 18, height: 18 }} />
+              <span style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>
+                {t("tastingDetail.viewPresentation", "Präsentation")}
+              </span>
+            </button>
+          )}
+          <LabsExportDropdown
+            tastingId={tastingId}
+            tasting={tasting}
+            whiskyResults={whiskyResults}
+            tileMode
+          />
+        </div>
+      )}
 
       {isHostForStory && (
         <div className="labs-card-elevated labs-fade-in" style={{ marginBottom: 16 }} data-testid="results-story-photos-section">
