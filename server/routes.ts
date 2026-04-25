@@ -17878,7 +17878,7 @@ Language: German if the tasting title or participant names appear German, otherw
                   closingReflection,
                 }),
                 storySlidesRatingCount: currentRatingCount,
-              } as any);
+              });
             } catch (saveErr) {
               console.warn("Story slides cache save failed:", (saveErr as any)?.message ?? saveErr);
             }
