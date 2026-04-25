@@ -607,22 +607,47 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
 
         {(isLive || isReveal) && (
           <>
-            <button
-              className="labs-btn-primary w-full flex items-center justify-center gap-2 py-3 text-base font-semibold"
-              onClick={() => navigate(`/labs/live/${tastingId}`)}
-              data-testid="labs-detail-join-live"
-            >
-              <Play className="w-5 h-5" />
-              {isLive ? t("tastingDetail.enterLiveSession") : t("tastingDetail.viewReveal")}
-            </button>
-            {isHost && (
+            <div>
+              <button
+                className="labs-btn-primary w-full flex items-center justify-center gap-2 py-3 text-base font-semibold"
+                onClick={() => navigate(`/labs/live/${tastingId}`)}
+                data-testid="labs-detail-join-live"
+              >
+                <Play className="w-5 h-5" />
+                {isLive ? t("tastingDetail.enterLiveSession") : t("tastingDetail.viewReveal")}
+              </button>
+              <p className="text-xs mt-1 text-center" style={{ color: "var(--labs-text-muted)" }} data-testid="text-join-live-subtitle">
+                {isLive
+                  ? t("tastingDetail.enterLiveSessionSubtitle", "Tasting moderieren und Whiskys live enthüllen")
+                  : t("tastingDetail.viewRevealSubtitle", "Whiskys nacheinander dramatisch enthüllen")}
+              </p>
+            </div>
+            <div>
               <button
                 className="labs-btn-secondary w-full flex items-center justify-center gap-2"
-                onClick={() => navigate(`/labs/host/${tastingId}`)}
-                data-testid="labs-detail-manage"
+                onClick={() => navigate(`/labs/results/${tastingId}`)}
+                data-testid="labs-detail-view-results-reveal"
               >
-                {t("tastingDetail.manageSession")}
+                <BarChart3 className="w-5 h-5" />
+                {t("tastingDetail.viewResultsReveal", "Auswertung & Statistiken")}
               </button>
+              <p className="text-xs mt-1 text-center" style={{ color: "var(--labs-text-muted)" }} data-testid="text-view-results-reveal-subtitle">
+                {t("tastingDetail.viewResultsRevealSubtitle", "Charts, Rangliste und Detail-Statistiken pro Whisky")}
+              </p>
+            </div>
+            {isHost && (
+              <div>
+                <button
+                  className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+                  onClick={() => navigate(`/labs/host/${tastingId}`)}
+                  data-testid="labs-detail-manage"
+                >
+                  {t("tastingDetail.manageSession")}
+                </button>
+                <p className="text-xs mt-1 text-center" style={{ color: "var(--labs-text-muted)" }} data-testid="text-manage-session-subtitle">
+                  {t("tastingDetail.manageSessionSubtitle", "Reihenfolge, Whiskys und Reveal steuern")}
+                </p>
+              </div>
             )}
           </>
         )}
