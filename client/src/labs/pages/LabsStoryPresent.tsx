@@ -1238,6 +1238,26 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
     await handleRegenerateSlides();
   };
 
+  const handleClearAndRegenerate = async () => {
+    const hostPid = currentParticipant?.id;
+    if (!hostPid || isRegenerating) return;
+    try {
+      const cacheRes = await fetch(`/api/tastings/${tastingId}/story-cache`, {
+        method: "DELETE",
+        headers: { "x-participant-id": hostPid },
+      });
+      if (!cacheRes.ok) {
+        toast({ title: "Cache konnte nicht gelöscht werden", description: "Bitte Seite neu laden.", variant: "destructive" });
+        return;
+      }
+      qc.removeQueries({ queryKey: ["tasting-story", tastingId] });
+    } catch {
+      toast({ title: "Verbindungsfehler", variant: "destructive" });
+      return;
+    }
+    await handleRegenerateSlides();
+  };
+
   const handleRestartStory = async () => {
     setPromptSaving(true);
     try {
@@ -1481,10 +1501,10 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
             <button
               className="labs-btn-ghost"
               style={{ padding: "6px 12px", fontSize: 12, display: "flex", alignItems: "center", gap: 6, opacity: (isRegenerating || !currentParticipant?.id) ? 0.6 : 1 }}
-              onClick={handleRegenerateSlides}
+              onClick={handleClearAndRegenerate}
               disabled={isRegenerating || !currentParticipant?.id}
               data-testid="story-regenerate-btn"
-              title={!currentParticipant?.id ? "Host-ID nicht verfügbar – bitte Seite neu laden" : "KI-Texte neu generieren"}
+              title={!currentParticipant?.id ? "Host-ID nicht verfügbar – bitte Seite neu laden" : "Story komplett neu generieren"}
             >
               <RefreshCw style={{ width: 13, height: 13, animation: isRegenerating ? "spin 1s linear infinite" : "none" }} />
               <span>{isRegenerating ? "Generiere…" : "Neu generieren"}</span>
