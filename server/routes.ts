@@ -17780,30 +17780,53 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       let blindNarration = "";
       let closingReflection = "";
 
-      try {
-        const { client: aiClient } = await getAIClient(participantId ?? tasting.hostId, "ai_narrative");
-        if (aiClient) {
-          const whiskyDataForAI = sorted.slice(0, 10).map(w => ({
-            name: w.name,
-            distillery: w.distillery,
-            region: w.region,
-            age: w.age,
-            abv: w.abv,
-            caskType: w.caskType,
-            avgScore: w.avgOverall != null ? Math.round(w.avgOverall * 10) / 10 : null,
-            tasterNotes: w.ratings.slice(0, 5).map((r: any) => r.notes).filter(Boolean).join("; "),
-          }));
-          const participantsForAI = participantList.filter(p => !p.excludedFromResults).slice(0, 10).map(p => ({
-            name: p.participant?.name ?? "Unknown",
-          }));
-          const existingNarrative = tasting.aiNarrative ? `\n\nExisting evening narrative for style reference:\n${(tasting.aiNarrative as string).slice(0, 800)}` : "";
+      const currentRatingCount = allRatings.length;
+      const forceRefresh = isHost && req.query.refresh === "true";
+      let servedFromCache = false;
 
-          const aiResp = await aiClient.chat.completions.create({
-            model: "gpt-4o-mini",
-            messages: [
-              {
-                role: "system",
-                content: `You are a literary whisky journalist writing slide copy for a cinematic tasting presentation. Write with warmth and craft — like a skilled short story author covering a cultural event. Sentences should be vivid, specific, and evocative, never generic.${existingNarrative}
+      if (
+        !forceRefresh &&
+        tasting.storySlidesCache &&
+        tasting.storySlidesRatingCount === currentRatingCount
+      ) {
+        try {
+          const cached = JSON.parse(tasting.storySlidesCache);
+          aiComments = cached.aiComments ?? {};
+          participantFunFacts = cached.participantFunFacts ?? {};
+          winnerNarration = cached.winnerNarration ?? "";
+          openingNarration = cached.openingNarration ?? "";
+          discoveryTexts = cached.discoveryTexts ?? {};
+          blindNarration = cached.blindNarration ?? "";
+          closingReflection = cached.closingReflection ?? "";
+          servedFromCache = true;
+        } catch {}
+      }
+
+      if (!servedFromCache) {
+        try {
+          const { client: aiClient } = await getAIClient(participantId ?? tasting.hostId, "ai_narrative");
+          if (aiClient) {
+            const whiskyDataForAI = sorted.slice(0, 10).map(w => ({
+              name: w.name,
+              distillery: w.distillery,
+              region: w.region,
+              age: w.age,
+              abv: w.abv,
+              caskType: w.caskType,
+              avgScore: w.avgOverall != null ? Math.round(w.avgOverall * 10) / 10 : null,
+              tasterNotes: w.ratings.slice(0, 5).map((r: any) => r.notes).filter(Boolean).join("; "),
+            }));
+            const participantsForAI = participantList.filter(p => !p.excludedFromResults).slice(0, 10).map(p => ({
+              name: p.participant?.name ?? "Unknown",
+            }));
+            const existingNarrative = tasting.aiNarrative ? `\n\nExisting evening narrative for style reference:\n${(tasting.aiNarrative as string).slice(0, 800)}` : "";
+
+            const aiResp = await aiClient.chat.completions.create({
+              model: "gpt-4o-mini",
+              messages: [
+                {
+                  role: "system",
+                  content: `You are a literary whisky journalist writing slide copy for a cinematic tasting presentation. Write with warmth and craft — like a skilled short story author covering a cultural event. Sentences should be vivid, specific, and evocative, never generic.${existingNarrative}
 
 Respond ONLY with valid JSON matching this exact structure:
 {
@@ -17816,35 +17839,53 @@ Respond ONLY with valid JSON matching this exact structure:
   "closingReflection": "<3-4 sentence closing: the atmosphere as the evening wound down, what lingers>"
 }
 Language: German if the tasting title or participant names appear German, otherwise English. Tone: cinematic, literary, warm.`,
-              },
-              {
-                role: "user",
-                content: JSON.stringify({
-                  tastingTitle: tasting.title,
-                  date: tasting.date,
-                  location: tasting.location,
-                  whiskies: whiskyDataForAI,
-                  participants: participantsForAI,
-                  winner: winner ? { name: winner.name, distillery: winner.distillery, score: winner.avgOverall } : null,
-                  blindMode: tasting.blindMode,
+                },
+                {
+                  role: "user",
+                  content: JSON.stringify({
+                    tastingTitle: tasting.title,
+                    date: tasting.date,
+                    location: tasting.location,
+                    whiskies: whiskyDataForAI,
+                    participants: participantsForAI,
+                    winner: winner ? { name: winner.name, distillery: winner.distillery, score: winner.avgOverall } : null,
+                    blindMode: tasting.blindMode,
+                  }),
+                },
+              ],
+              max_tokens: 3000,
+              temperature: 0.82,
+              response_format: { type: "json_object" },
+            });
+            const parsed = JSON.parse(aiResp.choices[0]?.message?.content ?? "{}");
+            aiComments = parsed.whiskyPortraits ?? {};
+            participantFunFacts = parsed.tasterSketches ?? {};
+            winnerNarration = parsed.winnerStory ?? "";
+            openingNarration = parsed.openingNarration ?? "";
+            discoveryTexts = parsed.discoveryTexts ?? {};
+            blindNarration = parsed.blindNarration ?? "";
+            closingReflection = parsed.closingReflection ?? "";
+
+            try {
+              await storage.updateTasting(req.params.id, {
+                storySlidesCache: JSON.stringify({
+                  aiComments,
+                  participantFunFacts,
+                  winnerNarration,
+                  openingNarration,
+                  discoveryTexts,
+                  blindNarration,
+                  closingReflection,
                 }),
-              },
-            ],
-            max_tokens: 3000,
-            temperature: 0.82,
-            response_format: { type: "json_object" },
-          });
-          const parsed = JSON.parse(aiResp.choices[0]?.message?.content ?? "{}");
-          aiComments = parsed.whiskyPortraits ?? {};
-          participantFunFacts = parsed.tasterSketches ?? {};
-          winnerNarration = parsed.winnerStory ?? "";
-          openingNarration = parsed.openingNarration ?? "";
-          discoveryTexts = parsed.discoveryTexts ?? {};
-          blindNarration = parsed.blindNarration ?? "";
-          closingReflection = parsed.closingReflection ?? "";
+                storySlidesRatingCount: currentRatingCount,
+              } as any);
+            } catch (saveErr) {
+              console.warn("Story slides cache save failed:", (saveErr as any)?.message ?? saveErr);
+            }
+          }
+        } catch (aiErr) {
+          console.warn("Story AI narration failed:", (aiErr as any)?.message ?? aiErr);
         }
-      } catch (aiErr) {
-        console.warn("Story AI narration failed:", (aiErr as any)?.message ?? aiErr);
       }
 
       res.json({
@@ -17864,6 +17905,7 @@ Language: German if the tasting title or participant names appear German, otherw
         blindNarration,
         winnerStory: winnerNarration,
         closingReflection,
+        cached: servedFromCache,
       });
     } catch (e: any) {
       console.error("Story endpoint error:", e.message);

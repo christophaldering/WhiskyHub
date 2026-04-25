@@ -74,6 +74,8 @@ export const tastings = pgTable("tastings", {
   activeWhiskyId: varchar("active_whisky_id"), // tracks which whisky is currently being discussed
   aiHighlightsCache: text("ai_highlights_cache"), // Cached AI session highlights (JSON)
   aiHighlightsRatingCount: integer("ai_highlights_rating_count"), // Rating count when highlights were cached
+  storySlidesCache: text("story_slides_cache"), // Cached AI story slide narrations (JSON)
+  storySlidesRatingCount: integer("story_slides_rating_count"), // Rating count when story slides were cached
   aiNarrative: text("ai_narrative"), // AI-generated narrative session summary (Markdown)
   guestMode: text("guest_mode").default("standard"), // "standard" | "ultra" — guest participation flavor
   lockedDrams: text("locked_drams"), // JSON array of whisky IDs whose ratings are locked
