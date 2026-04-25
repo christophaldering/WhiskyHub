@@ -1090,6 +1090,7 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
   const [isPdfExporting, setIsPdfExporting] = useState(false);
   const [pdfProgress, setPdfProgress] = useState<{ current: number; total: number; label: string } | null>(null);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [narrativeLoading, setNarrativeLoading] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
@@ -1640,7 +1641,7 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
                     opacity: (promptSaving || isRegenerating || !currentParticipant?.id) ? 0.6 : 1,
                     color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)",
                   }}
-                  onClick={handleRestartStory}
+                  onClick={() => setShowRestartConfirm(true)}
                   disabled={promptSaving || isRegenerating || !currentParticipant?.id}
                   data-testid="story-prompt-restart"
                   title="Neu starten: Cache wird gelöscht, die KI generiert die gesamte Story von Grund auf neu."
@@ -1958,6 +1959,69 @@ export default function LabsStoryPresent({ params }: LabsStoryPresentProps) {
               </div>
             </div>
           </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+
+    <AnimatePresence>
+      {showRestartConfirm && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          style={{
+            position: "fixed", inset: 0, zIndex: 300,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: "rgba(0,0,0,0.72)", backdropFilter: "blur(8px)",
+          }}
+          data-testid="restart-confirm-overlay"
+          onClick={() => setShowRestartConfirm(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: "var(--labs-surface)",
+              border: "1px solid rgba(212,162,86,0.3)",
+              borderRadius: 18,
+              padding: "32px 36px",
+              minWidth: 300, maxWidth: 420, width: "90%",
+              display: "flex", flexDirection: "column", gap: 16,
+            }}
+            data-testid="restart-confirm-dialog"
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <RotateCcw style={{ width: 20, height: 20, color: STORY.amber, flexShrink: 0 }} />
+              <span style={{ fontSize: 16, fontWeight: 700, color: STORY.text }}>Story neu generieren?</span>
+            </div>
+            <p style={{ fontSize: 13, color: STORY.dim, lineHeight: 1.6, margin: 0 }}>
+              Möchtest du wirklich alle Story-Texte löschen und neu generieren? Dieser Vorgang kann nicht rückgängig gemacht werden und verbraucht KI-Credits.
+            </p>
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 4 }}>
+              <button
+                className="labs-btn-ghost"
+                style={{ padding: "8px 18px", fontSize: 13, color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)" }}
+                onClick={() => setShowRestartConfirm(false)}
+                data-testid="restart-confirm-cancel"
+              >
+                Abbrechen
+              </button>
+              <button
+                className="labs-btn-ghost"
+                style={{
+                  padding: "8px 18px", fontSize: 13, color: STORY.amber, border: `1px solid ${STORY.amber}`,
+                  opacity: (promptSaving || isRegenerating) ? 0.6 : 1,
+                }}
+                onClick={() => { setShowRestartConfirm(false); handleRestartStory(); }}
+                disabled={promptSaving || isRegenerating}
+                data-testid="restart-confirm-proceed"
+              >
+                Neu starten
+              </button>
+            </div>
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
