@@ -17858,6 +17858,7 @@ Language: German if the tasting title or participant names appear German, otherw
         participantFunFacts,
         winnerNarration,
         openingNarration,
+        whiskyPortraits: aiComments,
         discoveryTexts,
         blindNarration,
         closingReflection,
