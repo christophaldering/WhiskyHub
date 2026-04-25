@@ -619,28 +619,71 @@ function HandoutDetailSheet({ entry, isPdf, metaParts, actions, onClose, t, host
         {hostId && (
           <HandoutLinksSection entry={entry} hostId={hostId} t={t} onOpenWhisky={onOpenWhisky} onOpenTasting={onOpenTasting} locale={locale} />
         )}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, paddingTop: 6, borderTop: "1px solid var(--labs-border)" }}>
-          {actions.map((a) => {
-            const cls = a.variant === "primary"
-              ? "labs-btn-primary text-xs"
-              : a.variant === "danger"
-                ? "labs-btn-secondary text-xs"
-                : "labs-btn-secondary text-xs";
+        <div
+          role="list"
+          style={{ borderTop: "1px solid var(--labs-border)", marginTop: 2 }}
+        >
+          {actions.map((a, idx) => {
+            const isPrimary = a.variant === "primary";
+            const isDanger = a.variant === "danger";
+            const isFirstDanger = isDanger && (idx === 0 || actions[idx - 1].variant !== "danger");
+            const fgColor = isPrimary
+              ? "var(--labs-accent)"
+              : isDanger
+                ? "var(--labs-danger)"
+                : "var(--labs-text)";
             return (
-              <button
-                key={a.key}
-                type="button"
-                className={cls}
-                onClick={a.onClick}
-                disabled={a.disabled}
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px",
-                  color: a.variant === "danger" ? "var(--labs-danger)" : undefined,
-                }}
-                data-testid={a.testId}
-              >
-                {a.icon} {a.label}
-              </button>
+              <div key={a.key} role="listitem">
+                {isFirstDanger && idx > 0 && (
+                  <div style={{ height: 1, background: "var(--labs-border)", margin: "0" }} aria-hidden="true" />
+                )}
+                <button
+                  type="button"
+                  onClick={a.onClick}
+                  disabled={a.disabled}
+                  data-testid={a.testId}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 14,
+                    width: "100%",
+                    padding: "13px 0",
+                    background: "none",
+                    border: "none",
+                    borderBottom: idx < actions.length - 1 && !(isFirstDanger && idx > 0) ? "1px solid var(--labs-border-subtle, var(--labs-border))" : "none",
+                    cursor: a.disabled ? "not-allowed" : "pointer",
+                    opacity: a.disabled ? 0.4 : 1,
+                    color: fgColor,
+                    fontFamily: "inherit",
+                    textAlign: "left",
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 22,
+                      flexShrink: 0,
+                      color: fgColor,
+                    }}
+                    aria-hidden="true"
+                  >
+                    {a.icon}
+                  </span>
+                  <span
+                    style={{
+                      flex: 1,
+                      fontSize: 15,
+                      fontWeight: isPrimary ? 600 : 400,
+                      color: fgColor,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {a.label}
+                  </span>
+                </button>
+              </div>
             );
           })}
         </div>
