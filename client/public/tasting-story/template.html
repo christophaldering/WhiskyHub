@@ -671,11 +671,9 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
       : 'Verfeinere Story… bestehende Texte bleiben erhalten.';
     showLoading(loadingMsg);
     try {
+      await savePrompt(prompt);
       if (isFull) {
-        await savePrompt(prompt);
         await clearStoryCache();
-      } else if (prompt) {
-        await savePrompt(prompt);
       }
       const [data, photos] = await Promise.all([fetchStory(true, false), fetchPhotos()]);
       storyData = data;
