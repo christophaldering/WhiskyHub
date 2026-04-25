@@ -17651,7 +17651,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       const participantId = (req.headers["x-participant-id"] as string) || req.body?.participantId;
       if (tasting.hostId !== participantId) return res.status(403).json({ message: "Only host can add event photos" });
       const existingPhotos = await storage.getTastingEventPhotos(req.params.id);
-      if (existingPhotos.length >= 10) return res.status(400).json({ message: "Maximum 10 event photos allowed" });
+      if (existingPhotos.length >= 30) return res.status(400).json({ message: "Maximum 30 event photos allowed" });
       const { photoUrl, caption } = req.body;
       if (!photoUrl) return res.status(400).json({ message: "photoUrl required" });
       const photo = await storage.createTastingEventPhoto({
@@ -17712,7 +17712,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
       if (tasting.hostId !== auth.participant.id) return res.status(403).json({ message: "Only host can upload event photos" });
       const existingPhotos = await storage.getTastingEventPhotos(req.params.id);
-      if (existingPhotos.length >= 10) return res.status(400).json({ message: "Maximum 10 event photos allowed" });
+      if (existingPhotos.length >= 30) return res.status(400).json({ message: "Maximum 30 event photos allowed" });
       const file = (req as any).file as Express.Multer.File | undefined;
       if (!file) return res.status(400).json({ message: "No file provided" });
       if (file.buffer.length > 10 * 1024 * 1024) return res.status(400).json({ message: "Datei zu groß (max 10 MB)" });
@@ -18013,8 +18013,41 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
 
             const existingNarrative = tasting.aiNarrative ? `\n\nExisting evening narrative for style reference:\n${(tasting.aiNarrative as string).slice(0, 800)}` : "";
 
+            const photosForVision = eventPhotos.slice(0, 20);
+            const textPayload = JSON.stringify({
+              tastingTitle: tasting.title,
+              date: tasting.date,
+              location: tasting.location,
+              whiskies: whiskyDataForAI,
+              participants: participantsForAI,
+              winner: winner ? { name: winner.name, distillery: winner.distillery, score: winner.avgOverall } : null,
+              blindMode: tasting.blindMode,
+              ...(tasting.storyPrompt ? { hostContext: tasting.storyPrompt } : {}),
+              ...(existingStoryForAI ? { existingStory: existingStoryForAI } : {}),
+              ...(photosForVision.length > 0 ? {
+                eventPhotos: photosForVision.map((p: any, i: number) => ({
+                  index: i + 1,
+                  caption: p.caption || null,
+                })),
+              } : {}),
+            });
+
+            type UserContentPart =
+              | { type: "text"; text: string }
+              | { type: "image_url"; image_url: { url: string; detail: "low" } };
+
+            const userContent: UserContentPart[] = [{ type: "text", text: textPayload }];
+            for (const photo of photosForVision) {
+              if (photo.photoUrl) {
+                userContent.push({
+                  type: "image_url",
+                  image_url: { url: photo.photoUrl, detail: "low" },
+                });
+              }
+            }
+
             const aiResp = await aiClient.chat.completions.create({
-              model: "gpt-4o-mini",
+              model: "gpt-4o",
               messages: [
                 {
                   role: "system",
@@ -18030,7 +18063,7 @@ For discoveryTexts (ranks 2 and below only): Reference specific rating highlight
 
 If existingStory is provided in the user data, you are in REFINEMENT MODE. Preserve all story sections that the hostContext does not explicitly ask to change — copy them verbatim into your response. Only rewrite the sections the host has clearly instructed to modify. Return ALL JSON fields, using the existingStory text for unchanged sections.
 
-If eventPhotos are provided, each entry has an index (1-based) and a caption describing a real moment from the evening. Reference specific captions in openingNarration or closingReflection where they fit naturally. Additionally, for photos that have captions, you may produce a photoSlideTexts entry — a short 1-2 sentence text celebrating or contextualising that photo moment.
+If event photos are provided (as images and/or captions in the eventPhotos array): You can actually see the photos. Use your visual perception to describe the atmosphere, setting, mood, and any visible details — the lighting, the table arrangement, candlelight, glasses, expressions, the feel of the room. Weave these visual impressions naturally into openingNarration, closingReflection, and photoSlideTexts. For photos that have captions, reference those captions in openingNarration or closingReflection where they fit naturally. For each photo (captioned or not), you may produce a photoSlideTexts entry — a short 1-2 sentence text that celebrates or contextualises that moment based on what you see.
 
 Respond ONLY with valid JSON matching this exact structure:
 {
@@ -18041,7 +18074,7 @@ Respond ONLY with valid JSON matching this exact structure:
   "blindNarration": "<2-3 sentence narrative on the blind guessing — who was closest, what the results reveal about the group>",
   "winnerStory": "<3-4 sentence winner celebration — why this one won, what it represents, how the group reacted>",
   "closingReflection": "<3-4 sentence closing: the atmosphere as the evening wound down, what lingers>",
-  "photoSlideTexts": { "<photoIndex as string, e.g. '1', '2'>": "<1-2 sentence text for that photo — only for captioned photos>", ... },
+  "photoSlideTexts": { "<photoIndex as string, e.g. '1', '2'>": "<1-2 sentence text for that photo — based on visual content and caption if available>", ... },
   "storyStructure": ["opening","whiskies","tasters","discoveries","winner","photos","finale"]
 }
 The storyStructure array defines the order and selection of acts. Available act keys: "opening", "whiskies", "tasters", "discoveries", "blind" (only include if blindMode is true), "winner", "photos", "finale". The cover is always first and must not be in this array. Default order: ["opening","whiskies","tasters","discoveries","winner","photos","finale"]. Reorder or omit acts only when the hostContext contains clear structural or ordering instructions.
@@ -18051,22 +18084,7 @@ If the user data includes a "hostContext" field, treat it as additional creative
                 },
                 {
                   role: "user",
-                  content: JSON.stringify({
-                    tastingTitle: tasting.title,
-                    date: tasting.date,
-                    location: tasting.location,
-                    whiskies: whiskyDataForAI,
-                    participants: participantsForAI,
-                    winner: winner ? { name: winner.name, distillery: winner.distillery, score: winner.avgOverall } : null,
-                    blindMode: tasting.blindMode,
-                    ...(tasting.storyPrompt ? { hostContext: tasting.storyPrompt } : {}),
-                    ...(existingStoryForAI ? { existingStory: existingStoryForAI } : {}),
-                    ...(eventPhotos.length > 0 ? {
-                      eventPhotos: eventPhotos
-                        .map((p: any, i: number) => ({ index: i + 1, caption: p.caption || null }))
-                        .filter((p: any) => p.caption),
-                    } : {}),
-                  }),
+                  content: userContent,
                 },
               ],
               max_tokens: 3500,

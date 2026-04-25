@@ -765,8 +765,8 @@ function PhotoUploadPanel({ tastingId, photos, onRefresh, canUpload }: {
 
   const handleFiles = (files: FileList) => {
     if (!files.length) return;
-    const remaining = 10 - photos.length;
-    if (remaining <= 0) { setError("Maximal 10 Fotos erlaubt."); return; }
+    const remaining = 30 - photos.length;
+    if (remaining <= 0) { setError("Maximal 30 Fotos erlaubt."); return; }
     const selected: { file: File; previewUrl: string }[] = [];
     for (let i = 0; i < Math.min(files.length, remaining); i++) {
       const file = files[i];
@@ -795,7 +795,7 @@ function PhotoUploadPanel({ tastingId, photos, onRefresh, canUpload }: {
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
         <Camera style={{ width: 16, height: 16, color: "var(--labs-accent)" }} />
         <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>
-          Event-Fotos ({photos.length}/10)
+          Event-Fotos ({photos.length}/30)
         </span>
         <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
           · Atmosphäre, Tisch, Gruppenmoment
@@ -831,7 +831,7 @@ function PhotoUploadPanel({ tastingId, photos, onRefresh, canUpload }: {
         </div>
       )}
 
-      {canUpload && photos.length < 10 && (
+      {canUpload && photos.length < 30 && (
         <>
           <input
             ref={inputRef}

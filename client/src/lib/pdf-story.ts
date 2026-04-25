@@ -84,7 +84,7 @@ export async function exportStoryPdf(storyData: any, returnBase64 = false, onPro
   };
 
   const eventPhotoB64s: (string | null)[] = await Promise.all(
-    (eventPhotos || []).slice(0, 10).map((ep: any) => fetchImageAsBase64(ep.photoUrl))
+    (eventPhotos || []).map((ep: any) => fetchImageAsBase64(ep.photoUrl))
   );
 
   const whiskyImgB64s: Map<string, string | null> = new Map();
