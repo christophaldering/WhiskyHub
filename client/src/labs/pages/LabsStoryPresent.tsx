@@ -520,8 +520,7 @@ function PhotoUploadPanel({ tastingId, photos, onRefresh, canUpload }: {
       if (!file.type.startsWith("image/")) continue;
       const result = await uploadFile(file);
       if (result?.objectPath) {
-        const publicUrl = result.objectPath.startsWith("http") ? result.objectPath : `/api/uploads/serve/${result.objectPath}`;
-        await addEventPhoto(tastingId, publicUrl).catch(e => setError(e.message));
+        await addEventPhoto(tastingId, result.objectPath).catch(e => setError(e.message));
       }
     }
     setUploading(false);

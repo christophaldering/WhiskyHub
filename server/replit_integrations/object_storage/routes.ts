@@ -82,5 +82,18 @@ export function registerObjectStorageRoutes(app: Express): void {
       return res.status(500).json({ error: "Failed to serve object" });
     }
   });
+
+  app.get(/^\/api\/uploads\/serve\/{1,2}objects\/(.+)/, async (req, res) => {
+    try {
+      const objectPath = "/" + req.path.replace(/^\/api\/uploads\/serve\/*/, "");
+      const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
+      await objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      if (error instanceof ObjectNotFoundError) {
+        return res.status(404).json({ error: "Object not found" });
+      }
+      return res.status(500).json({ error: "Failed to serve object" });
+    }
+  });
 }
 

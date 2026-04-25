@@ -879,8 +879,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
       if (!file.type.startsWith("image/")) continue;
       const result = await uploadFile(file);
       if (result?.objectPath) {
-        const publicUrl = result.objectPath.startsWith("http") ? result.objectPath : `/api/uploads/serve/${result.objectPath}`;
-        await addEventPhoto(tastingId, publicUrl).catch(e => setPhotosError(e.message));
+        await addEventPhoto(tastingId, result.objectPath).catch(e => setPhotosError(e.message));
       }
     }
     setPhotosUploading(false);
