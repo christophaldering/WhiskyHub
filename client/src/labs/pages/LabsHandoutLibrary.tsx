@@ -633,12 +633,13 @@ function HandoutDetailSheet({ entry, isPdf, metaParts, actions, onClose, t, host
                 ? "var(--labs-danger)"
                 : "var(--labs-text)";
             return (
-              <div key={a.key} role="listitem">
+              <div key={a.key} role="listitem" style={isFirstDanger && idx > 0 ? { paddingTop: 6 } : undefined}>
                 {isFirstDanger && idx > 0 && (
-                  <div style={{ height: 1, background: "var(--labs-border)", margin: "0" }} aria-hidden="true" />
+                  <div style={{ height: 1, background: "var(--labs-border)", marginBottom: 6 }} aria-hidden="true" />
                 )}
                 <button
                   type="button"
+                  className="labs-btn-ghost"
                   onClick={a.onClick}
                   disabled={a.disabled}
                   data-testid={a.testId}
@@ -647,10 +648,11 @@ function HandoutDetailSheet({ entry, isPdf, metaParts, actions, onClose, t, host
                     alignItems: "center",
                     gap: 14,
                     width: "100%",
-                    padding: "13px 0",
+                    padding: "13px 4px",
                     background: "none",
                     border: "none",
                     borderBottom: idx < actions.length - 1 && !(isFirstDanger && idx > 0) ? "1px solid var(--labs-border-subtle, var(--labs-border))" : "none",
+                    borderRadius: 0,
                     cursor: a.disabled ? "not-allowed" : "pointer",
                     opacity: a.disabled ? 0.4 : 1,
                     color: fgColor,
