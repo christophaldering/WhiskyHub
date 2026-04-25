@@ -114,10 +114,11 @@ export default function LabsTastings() {
     }
   };
 
-  const { invitations, filtered } = useMemo(() => {
-    if (!tastings) return { invitations: [], filtered: [] };
+  const { invitations, filtered, rawActiveCount } = useMemo(() => {
+    if (!tastings) return { invitations: [], filtered: [], rawActiveCount: 0 };
     const list = [...tastings].filter((t: any) => !t.isTestData);
     const activeOnly = list.filter((t: any) => t.status === "open" || t.status === "draft");
+    const rawActiveCount = activeOnly.length;
     let invites = activeOnly.filter((t: any) => t.invitePending === true);
     let result = activeOnly.filter((t: any) => !t.invitePending);
 
@@ -139,7 +140,7 @@ export default function LabsTastings() {
       return new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime();
     });
 
-    return { invitations: invites, filtered: result };
+    return { invitations: invites, filtered: result, rawActiveCount };
   }, [tastings, searchQuery]);
 
   const liveCount = useMemo(() => {
@@ -411,16 +412,18 @@ export default function LabsTastings() {
             </section>
           )}
 
-          <div className="labs-tastings-search-wrapper labs-fade-in" style={{ marginTop: 16 }}>
-            <Search className="labs-tastings-search-icon w-4 h-4" />
-            <input
-              className="labs-input labs-tastings-search-input"
-              placeholder={t("tastings.searchPlaceholder", "Tastings durchsuchen...")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              data-testid="labs-tastings-search"
-            />
-          </div>
+          {!isLoading && rawActiveCount > 0 && (
+            <div className="labs-tastings-search-wrapper labs-fade-in" style={{ marginTop: 16 }}>
+              <Search className="labs-tastings-search-icon w-4 h-4" />
+              <input
+                className="labs-input labs-tastings-search-input"
+                placeholder={t("tastings.searchPlaceholder", "Tastings durchsuchen...")}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                data-testid="labs-tastings-search"
+              />
+            </div>
+          )}
 
           {isLoading ? (
                 <div className="labs-tastings-skeleton" style={{ marginTop: 12 }}>

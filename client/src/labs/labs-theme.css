@@ -2066,6 +2066,11 @@ a.labs-dram-item {
   transform: translateY(-50%);
   left: 14px;
   color: var(--labs-text-muted);
+  transition: color 0.15s ease;
+}
+
+.labs-tastings-search-wrapper:focus-within .labs-tastings-search-icon {
+  color: var(--labs-accent);
 }
 
 .labs-tastings-search-input {

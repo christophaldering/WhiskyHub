@@ -9,7 +9,7 @@ import type { ElementType } from "react";
 import { useAppStore } from "@/lib/store";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
-import { tastingHistoryApi, journalApi } from "@/lib/api";
+import { tastingApi, tastingHistoryApi, journalApi } from "@/lib/api";
 import { RecentRatedList, buildRecentRatedItems } from "@/labs/components/RecentRatedList";
 import {
   AI_INSIGHTS_HUB_TILES,
@@ -252,6 +252,27 @@ export default function LabsTaste() {
     staleTime: 60_000,
   });
 
+  const { data: activeTastingsData } = useQuery({
+    queryKey: ["tastings", currentParticipant?.id],
+    queryFn: () => tastingApi.getAll(currentParticipant!.id),
+    enabled: !!currentParticipant?.id && activeTab === "tastings" && activeTastingsFilter === "active",
+    staleTime: 60_000,
+  });
+
+  const rawTastingsCount = useMemo(() => {
+    if (activeTastingsFilter === "active") {
+      if (!activeTastingsData) return null;
+      return activeTastingsData.filter(
+        (t: any) => !t.isTestData && !t.invitePending && (t.status === "open" || t.status === "draft"),
+      ).length;
+    } else {
+      if (!historyData) return null;
+      return (historyData.tastings ?? []).filter(
+        (t: any) => t.status !== "open" && t.status !== "draft" && t.status !== "deleted",
+      ).length;
+    }
+  }, [activeTastingsFilter, activeTastingsData, historyData]);
+
   const { data: journalData } = useQuery({
     queryKey: ["journal-entries", currentParticipant?.id],
     queryFn: () => journalApi.getAll(currentParticipant!.id),
@@ -292,24 +313,26 @@ export default function LabsTaste() {
               else setActiveTastingsFilter(next);
             }}
           />
-          <div
-            className="labs-tastings-search-wrapper"
-            style={{ marginTop: 12 }}
-            data-testid="meine-welt-tastings-search-wrapper"
-          >
-            <Search className="labs-tastings-search-icon w-4 h-4" />
-            <input
-              className="labs-input labs-tastings-search-input"
-              placeholder={
-                activeTastingsFilter === "completed"
-                  ? t("tastings.archiveSearchPlaceholder", "Archiv durchsuchen...")
-                  : t("tastings.searchPlaceholder", "Tastings durchsuchen...")
-              }
-              value={tastingsSearchQuery}
-              onChange={(e) => setTastingsSearchQuery(e.target.value)}
-              data-testid="meine-welt-tastings-search"
-            />
-          </div>
+          {rawTastingsCount !== null && rawTastingsCount > 0 && (
+            <div
+              className="labs-tastings-search-wrapper"
+              style={{ marginTop: 12 }}
+              data-testid="meine-welt-tastings-search-wrapper"
+            >
+              <Search className="labs-tastings-search-icon w-4 h-4" />
+              <input
+                className="labs-input labs-tastings-search-input"
+                placeholder={
+                  activeTastingsFilter === "completed"
+                    ? t("tastings.archiveSearchPlaceholder", "Archiv durchsuchen...")
+                    : t("tastings.searchPlaceholder", "Tastings durchsuchen...")
+                }
+                value={tastingsSearchQuery}
+                onChange={(e) => setTastingsSearchQuery(e.target.value)}
+                data-testid="meine-welt-tastings-search"
+              />
+            </div>
+          )}
           <div
             style={{ marginTop: 12 }}
             data-testid={`meine-welt-tastings-inline-${activeTastingsFilter}`}
