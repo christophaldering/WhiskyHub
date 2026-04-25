@@ -262,6 +262,11 @@ export default function LabsTaste() {
     [historyData, journalData, currentParticipant?.id, currentParticipant?.preferredRatingScale],
   );
 
+  const archiveCount = useMemo(() => {
+    const list: any[] = historyData?.tastings ?? [];
+    return list.filter((t: any) => t.status !== "open" && t.status !== "draft" && t.status !== "deleted").length;
+  }, [historyData]);
+
   if (!currentParticipant) {
     return (
       <AuthGateMessage
@@ -290,6 +295,7 @@ export default function LabsTaste() {
               if (next === activeTastingsFilter) setActiveTastingsFilter("all");
               else setActiveTastingsFilter(next);
             }}
+            tileBadges={archiveCount > 0 ? { "tile-meine-welt-tastings-archive": archiveCount } : undefined}
           />
           <div
             style={{ marginTop: 16 }}

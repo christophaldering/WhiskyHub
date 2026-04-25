@@ -224,6 +224,7 @@ export function HubTileCard({
   onClick,
   active,
   role,
+  badge,
 }: {
   tile: HubTileDef;
   t: (key: string, fallback: string) => string;
@@ -231,6 +232,7 @@ export function HubTileCard({
   onClick?: () => void;
   active?: boolean;
   role?: HubTileRole;
+  badge?: number;
 }) {
   const Icon = tile.icon;
   const effectiveRole: HubTileRole = role ?? tile.role ?? "nav";
@@ -246,7 +248,18 @@ export function HubTileCard({
         <Icon className="labs-hub-tile-icon-svg" strokeWidth={1.8} />
       </div>
       <div className="labs-hub-tile-body">
-        <div className="labs-hub-tile-label">{t(tile.labelKey, tile.labelFallback)}</div>
+        <div className="labs-hub-tile-label">
+          {t(tile.labelKey, tile.labelFallback)}
+          {badge != null && badge > 0 && (
+            <span
+              className="labs-badge labs-badge-accent"
+              style={{ fontSize: 10, padding: "1px 6px", marginLeft: 6, verticalAlign: "middle" }}
+              data-testid={`badge-count-${tile.testId}`}
+            >
+              {badge}
+            </span>
+          )}
+        </div>
         <div className="labs-hub-tile-desc">{t(tile.descKey, tile.descFallback)}</div>
       </div>
       {showChevron && (
@@ -340,6 +353,7 @@ export function HubTileGrid({
   onTileClick,
   activeTestId,
   role,
+  tileBadges,
 }: {
   tiles: HubTileDef[];
   t: (key: string, fallback: string) => string;
@@ -348,6 +362,7 @@ export function HubTileGrid({
   onTileClick?: (tile: HubTileDef) => void;
   activeTestId?: string;
   role?: HubTileRole;
+  tileBadges?: Record<string, number>;
 }) {
   const useSingleRow = variant === "single-row" || variant === "four-row";
   const className =
@@ -374,6 +389,7 @@ export function HubTileGrid({
           onClick={onTileClick ? () => onTileClick(tile) : undefined}
           active={activeTestId === tile.testId}
           role={role}
+          badge={tileBadges?.[tile.testId]}
         />
       ))}
     </div>
