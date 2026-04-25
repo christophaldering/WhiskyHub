@@ -756,6 +756,22 @@ export const insertTastingEventPhotoSchema = createInsertSchema(tastingEventPhot
 export type InsertTastingEventPhoto = z.infer<typeof insertTastingEventPhotoSchema>;
 export type TastingEventPhoto = typeof tastingEventPhotos.$inferSelect;
 
+export const tastingStoryVersions = pgTable("tasting_story_versions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tastingId: varchar("tasting_id").notNull(),
+  name: text("name"),
+  slidesCache: text("slides_cache").notNull(),
+  prompt: text("prompt"),
+  createdById: varchar("created_by_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  tastingIdx: index("idx_tasting_story_versions_tasting").on(table.tastingId, table.createdAt),
+}));
+
+export const insertTastingStoryVersionSchema = createInsertSchema(tastingStoryVersions).omit({ id: true, createdAt: true });
+export type InsertTastingStoryVersion = z.infer<typeof insertTastingStoryVersionSchema>;
+export type TastingStoryVersion = typeof tastingStoryVersions.$inferSelect;
+
 // --- User Feedback ---
 export const userFeedback = pgTable("user_feedback", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

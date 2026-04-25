@@ -17756,6 +17756,43 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
     }
   });
 
+  const STANDARD_STORY_PROMPT = "Erzähle die komplette Geschichte des Abends in einer literarischen, dramaturgisch klar geordneten Form: Eröffnung mit Stimmungsbild und Anlass, Vorstellung der Whiskys mit Charakter und Region, Portraits der Verkoster, Ranglisten-Spannung mit Datenhighlights, Sieger-Auflösung und ein nachklingendes Finale. Nutze alle vorhandenen Daten — Bewertungen, Notizen, Geschmackstags, Handout-Beschreibungen und Fotos — und sorge für eine warme, kinoreife Tonalität.";
+
+  type StorySlideManualOverrides = {
+    manualStructure?: string[] | null;
+    manualHiddenActs?: string[] | null;
+    manualImages?: { whiskies?: Record<string, string>; tasters?: Record<string, string>; photos?: Record<string, string> } | null;
+  };
+
+  function readManualOverridesFromCache(cacheString: string | null | undefined): StorySlideManualOverrides {
+    if (!cacheString) return {};
+    try {
+      const parsed = JSON.parse(cacheString);
+      const ms = Array.isArray(parsed?.manualStructure) ? (parsed.manualStructure as unknown[]).filter(x => typeof x === "string") as string[] : null;
+      const mh = Array.isArray(parsed?.manualHiddenActs) ? (parsed.manualHiddenActs as unknown[]).filter(x => typeof x === "string") as string[] : null;
+      const miRaw = parsed?.manualImages;
+      const mi = miRaw && typeof miRaw === "object" && !Array.isArray(miRaw) ? {
+        whiskies: miRaw.whiskies && typeof miRaw.whiskies === "object" ? miRaw.whiskies as Record<string, string> : {},
+        tasters: miRaw.tasters && typeof miRaw.tasters === "object" ? miRaw.tasters as Record<string, string> : {},
+        photos: miRaw.photos && typeof miRaw.photos === "object" ? miRaw.photos as Record<string, string> : {},
+      } : null;
+      return { manualStructure: ms, manualHiddenActs: mh, manualImages: mi };
+    } catch {
+      return {};
+    }
+  }
+
+  async function persistStoryCacheUpdate(tastingId: string, currentCache: string | null | undefined, patch: Record<string, unknown>): Promise<string> {
+    let base: Record<string, unknown> = {};
+    if (currentCache) {
+      try { base = JSON.parse(currentCache); } catch { base = {}; }
+    }
+    const next = { ...base, ...patch };
+    const serialized = JSON.stringify(next);
+    await storage.updateTasting(tastingId, { storySlidesCache: serialized });
+    return serialized;
+  }
+
   // Story data aggregation endpoint
   app.patch("/api/tastings/:id/story-prompt", async (req: Request, res: Response) => {
     try {
@@ -17813,7 +17850,9 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       // Client-supplied participantId is still used for participant membership validation.
       const isHost = tasting.hostId === auth.participant.id;
       if (!isHost) {
-        if (!tasting.storyEnabled) return res.status(403).json({ message: "Story not yet available" });
+        if (!tasting.storyEnabled) {
+          return res.json({ pending: true, reason: "not_enabled", isHost: false, tasting: { id: tasting.id, title: tasting.title } });
+        }
         if (!participantId) return res.status(403).json({ message: "Participant ID required" });
         const isMember = await storage.isParticipantInTasting(req.params.id, participantId);
         if (!isMember) return res.status(403).json({ message: "Access restricted to invited participants" });
@@ -17901,15 +17940,17 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       const forceRefresh = isHost && refreshRequested;
       // no_generate=true: return computed data only, never trigger AI (used for metadata-only checks)
       const noGenerate = req.query.no_generate === "true";
+      const useDefaultPrompt = req.query.useDefaultPrompt === "true";
       // Prevent participants from triggering the first AI generation.
       // If there is no story cache yet, only the host may kick off generation
       // so the host has the opportunity to set a story prompt first.
       const hasAnyCache = !!tasting.storySlidesCache;
       if (!isHost && !hasAnyCache && req.query.no_generate !== "true") {
-        return res.status(403).json({ message: "Story not yet available — the host is still setting up the story." });
+        return res.json({ pending: true, reason: "not_ready", isHost: false, tasting: { id: tasting.id, title: tasting.title } });
       }
       const participantGenerationBlocked = !isHost && !hasAnyCache;
       let servedFromCache = false;
+      const cachedManualOverrides = readManualOverridesFromCache(tasting.storySlidesCache);
 
       if (
         !forceRefresh &&
@@ -17997,6 +18038,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
                 bottomRater: bottomRating && topRating !== bottomRating ? { name: getPN(bottomRating.participantId), score: bottomRating.overall } : null,
                 tasterNotes: w.ratings.slice(0, 5).map((r: any) => r.notes).filter(Boolean).join("; "),
                 topFlavorTags,
+                handoutDescription: w.handoutExcerpt ? w.handoutExcerpt.slice(0, 600) : null,
               };
             });
 
@@ -18038,7 +18080,9 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
               participants: participantsForAI,
               winner: winner ? { name: winner.name, distillery: winner.distillery, score: winner.avgOverall } : null,
               blindMode: tasting.blindMode,
-              ...(tasting.storyPrompt ? { hostContext: tasting.storyPrompt } : {}),
+              ...((useDefaultPrompt || (!tasting.storyPrompt && !hasAnyCache))
+                ? { hostContext: STANDARD_STORY_PROMPT }
+                : (tasting.storyPrompt ? { hostContext: tasting.storyPrompt } : {})),
               ...(existingStoryForAI ? { existingStory: existingStoryForAI } : {}),
               ...(photosForVision.length > 0 ? {
                 eventPhotos: photosForVision.map((p: any, i: number) => ({
@@ -18100,7 +18144,9 @@ For whiskyPortraits: Draw on your real-world knowledge of each distillery's char
 
 For tasterSketches: Use the provided per-dimension averages and divergenceFromGroup to reveal each person's palate personality — high scorer vs. tough critic, nose-forward vs. finish-focused, consensus follower vs. contrarian. You may name each person's topRatedWhisky as their personal highlight of the evening (omit if topRatedWhisky is rank 1 — do not name the winner).
 
-For discoveryTexts (ranks 2 and below only): Reference specific rating highlights from the data — e.g. "the evening's highest nose score", "the group was split: [Name] gave it [X], [Name] held back". Make the reveal feel data-driven and personal. Never name, hint at, or describe the rank-1 whisky here.${existingNarrative}
+For discoveryTexts (ranks 2 and below only): Reference specific rating highlights from the data — e.g. "the evening's highest nose score", "the group was split: [Name] gave it [X], [Name] held back". Make the reveal feel data-driven and personal. Never name, hint at, or describe the rank-1 whisky here.
+
+If a whisky has a handoutDescription field, treat it as the official Programmheft text the host prepared for that whisky — quote, paraphrase, or weave its concrete facts (history, distillery character, specific cask or vintage notes) into the whiskyPortrait when relevant, especially if the hostContext explicitly refers to "Handout", "Programmheft" or "vom Veranstalter vorbereiteten Texten".${existingNarrative}
 
 If existingStory is provided in the user data, you are in REFINEMENT MODE. Preserve all story sections that the hostContext does not explicitly ask to change — copy them verbatim into your response. Only rewrite the sections the host has clearly instructed to modify. Return ALL JSON fields, using the existingStory text for unchanged sections.
 
@@ -18173,6 +18219,9 @@ If the user data includes a "hostContext" field, treat it as additional creative
                   closingReflection,
                   storyStructure,
                   photoSlideTexts,
+                  manualStructure: cachedManualOverrides.manualStructure ?? null,
+                  manualHiddenActs: cachedManualOverrides.manualHiddenActs ?? null,
+                  manualImages: cachedManualOverrides.manualImages ?? null,
                 }),
                 storySlidesRatingCount: currentRatingCount,
               };
@@ -18206,6 +18255,14 @@ If the user data includes a "hostContext" field, treat it as additional creative
         blindNarration = "";
       }
 
+      const finalManualOverrides = readManualOverridesFromCache(tasting.storySlidesCache);
+      let effectiveStructure = Array.isArray(finalManualOverrides.manualStructure) && finalManualOverrides.manualStructure.length > 0
+        ? finalManualOverrides.manualStructure.filter(k => validActKeys.has(k))
+        : storyStructure;
+      const hiddenSet = new Set(finalManualOverrides.manualHiddenActs ?? []);
+      effectiveStructure = effectiveStructure.filter(k => !hiddenSet.has(k));
+      if (!tasting.blindMode) effectiveStructure = effectiveStructure.filter(k => k !== "blind");
+
       res.json({
         tasting,
         isHost,
@@ -18224,7 +18281,11 @@ If the user data includes a "hostContext" field, treat it as additional creative
         blindNarration,
         winnerStory: winnerNarration,
         closingReflection,
-        storyStructure,
+        storyStructure: effectiveStructure,
+        aiSuggestedStructure: storyStructure,
+        manualStructure: finalManualOverrides.manualStructure ?? null,
+        manualHiddenActs: finalManualOverrides.manualHiddenActs ?? [],
+        manualImages: finalManualOverrides.manualImages ?? { whiskies: {}, tasters: {}, photos: {} },
         photoSlideTexts,
         cached: servedFromCache,
       });
