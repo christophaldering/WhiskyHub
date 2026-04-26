@@ -9,6 +9,7 @@ const MARKER_KEY = "cms_purge_home_2d29f3e0_done";
 
 export async function purgeCmsHomeIfRequested(log: (msg: string, source?: string) => void): Promise<void> {
   try {
+    if (process.env.NODE_ENV !== "production") return;
     const marker = await storage.getAppSetting(MARKER_KEY);
     if (marker) return;
 
