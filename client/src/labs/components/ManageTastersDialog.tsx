@@ -382,6 +382,7 @@ export default function ManageTastersDialog({
                   background: "var(--labs-surface-elevated, var(--labs-surface))",
                   opacity: isExcluded ? 0.75 : 1,
                   overflow: "hidden",
+                  flexShrink: 0,
                 }}
                 data-testid={`manage-taster-row-${id}`}
               >
