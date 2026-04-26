@@ -600,10 +600,19 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   };
   const currentRatingWhisky = whiskies[hostRatingIdx] || null;
 
-  const totalParticipants = participants.length;
-  const totalRatings = ratings.length;
+  const includedParticipants = useMemo(
+    () => (participants as any[]).filter((p: any) => !p.excludedFromResults),
+    [participants]
+  );
+  const includedParticipantIds = useMemo(
+    () => new Set(includedParticipants.map((p: any) => pId(p))),
+    [includedParticipants]
+  );
+  const excludedParticipantsCount = (participants as any[]).length - includedParticipants.length;
+  const totalParticipants = includedParticipants.length;
+  const totalRatings = ratings.filter((r: any) => includedParticipantIds.has(r.participantId)).length;
   const totalExpected = whiskies.length * totalParticipants;
-  const overallProgress = totalExpected > 0 ? Math.round((totalRatings / totalExpected) * 100) : 0;
+  const overallProgress = totalExpected > 0 ? Math.min(100, Math.round((totalRatings / totalExpected) * 100)) : 0;
 
   const handleStartSession = async () => {
     await tastingApi.updateStatus(tastingId, "open", undefined, pid);
@@ -2125,7 +2134,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                     );
                   }
                   const whiskyRatings = activeWhisky
-                    ? ratings.filter((r: any) => r.whiskyId === activeWhisky.id)
+                    ? ratings.filter((r: any) => r.whiskyId === activeWhisky.id && includedParticipantIds.has(r.participantId))
                     : [];
                   const ratedCount = new Set(whiskyRatings.map((r: any) => r.participantId)).size;
                   const dims: { label: string; key: string }[] = [
@@ -2630,7 +2639,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
         {whiskies.map((w: any, idx: number) => {
           const isCurrent = isGuided ? idx === guidedIdx : idx === effectiveDramIdx;
           const isPast = isGuided ? idx < guidedIdx : false;
-          const whiskyRatings = ratings.filter((r: any) => r.whiskyId === w.id);
+          const whiskyRatings = ratings.filter((r: any) => r.whiskyId === w.id && includedParticipantIds.has(r.participantId));
           const ratedCount = new Set(whiskyRatings.map((r: any) => r.participantId)).size;
           const avgScore = whiskyRatings.length > 0
             ? Math.round(whiskyRatings.reduce((s: number, r: any) => s + (r.overall ?? 0), 0) / whiskyRatings.length * 2) / 2
@@ -2702,7 +2711,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
               {whiskies.map((w: any, idx: number) => {
                 const isCurrent = isGuided ? idx === guidedIdx : idx === effectiveDramIdx;
                 const isPast = isGuided ? idx < guidedIdx : false;
-                const whiskyRatings = ratings.filter((r: any) => r.whiskyId === w.id);
+                const whiskyRatings = ratings.filter((r: any) => r.whiskyId === w.id && includedParticipantIds.has(r.participantId));
                 const ratedCount = new Set(whiskyRatings.map((r: any) => r.participantId)).size;
                 const avgScore = whiskyRatings.length > 0
                   ? Math.round(whiskyRatings.reduce((s: number, r: any) => s + (r.overall ?? 0), 0) / whiskyRatings.length * 2) / 2
@@ -2777,8 +2786,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
       <div className="cockpit-card" data-testid="cockpit-participants">
         {(() => {
           const uniqueRaters = new Set(ratings.map((r: any) => r.participantId));
-          const ratedCount = participants.filter((p: any) => uniqueRaters.has(pId(p))).length;
-          const totalP = participants.length;
+          const ratedCount = includedParticipants.filter((p: any) => uniqueRaters.has(pId(p))).length;
+          const totalP = includedParticipants.length;
           const progressPct = totalP > 0 ? Math.round((ratedCount / totalP) * 100) : 0;
 
           return (
@@ -2827,17 +2836,20 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                 )}
 
                 {totalP === 0 ? (
-                  <div style={{ padding: 12, textAlign: "center", color: "var(--labs-text-muted)", fontSize: 12 }}>No participants yet.</div>
+                  <div style={{ padding: 12, textAlign: "center", color: "var(--labs-text-muted)", fontSize: 12 }}>
+                    {excludedParticipantsCount > 0
+                      ? t("cockpit.allExcluded", "Alle Taster sind aktuell ausgeschlossen.")
+                      : t("cockpit.noParticipantsYet", "No participants yet.")}
+                  </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    {participants.map((p: any) => {
+                    {includedParticipants.map((p: any) => {
                       const participantId = pId(p);
                       const source = getSource(participantId);
                       const totalWhiskiesRated = new Set(
                         ratings.filter((r: any) => r.participantId === participantId).map((r: any) => r.whiskyId)
                       ).size;
 
-                      const isExcluded = !!p.excludedFromResults;
                       const totalDrams = whiskies.length;
                       const isInProgress = totalDrams > 0 && totalWhiskiesRated > 0 && totalWhiskiesRated < totalDrams;
                       const isComplete = totalDrams > 0 && totalWhiskiesRated >= totalDrams;
@@ -2862,7 +2874,6 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                             }
                           }}
                           aria-label={t("cockpit.detail.openLabel", "Details öffnen für {{name}}", { name: pName(p) })}
-                          style={{ opacity: isExcluded ? 0.5 : 1 }}
                         >
                           <div className="cockpit-participant-avatar" style={{
                             background: source === "digital" ? "var(--labs-success-muted)" : source === "paper" ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated)",
@@ -2873,12 +2884,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                               ? <FileText style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
                               : <Clock style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />}
                           </div>
-                          <span style={{ flex: 1, fontSize: 13, color: isExcluded ? "var(--labs-text-muted)" : "var(--labs-text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: isExcluded ? "line-through" : "none" }}>{pName(p)}</span>
-                          {isExcluded && (
-                            <span title={t("manageTasters.excludedBadge", "Ausgeschlossen")} style={{ flexShrink: 0, color: "var(--labs-text-muted)" }}>
-                              <EyeOff style={{ width: 12, height: 12 }} />
-                            </span>
-                          )}
+                          <span style={{ flex: 1, fontSize: 13, color: "var(--labs-text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pName(p)}</span>
                           <span style={{ fontSize: 11, color: countColor, fontWeight: isInProgress ? 700 : 500, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
                             {totalWhiskiesRated}/{whiskies.length}
                           </span>
@@ -2886,6 +2892,35 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                       );
                     })}
                   </div>
+                )}
+                {excludedParticipantsCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowManageTasters(true)}
+                    data-testid="cockpit-excluded-hint"
+                    style={{
+                      marginTop: 10,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "4px 0",
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      color: "var(--labs-text-muted)",
+                      fontSize: 11,
+                      fontWeight: 500,
+                      textDecoration: "underline",
+                      textUnderlineOffset: 2,
+                    }}
+                  >
+                    <EyeOff style={{ width: 11, height: 11 }} />
+                    {t(
+                      "cockpit.excludedHint",
+                      "{{count}} ausgeschlossen — über „Taster verwalten“ anzeigen",
+                      { count: excludedParticipantsCount }
+                    )}
+                  </button>
                 )}
               </div>
             </>
