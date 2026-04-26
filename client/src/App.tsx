@@ -52,6 +52,9 @@ const Background = lazy(() => import("@/pages/background"));
 const Intro = lazy(() => import("@/pages/intro"));
 const AdminPanel = lazy(() => import("@/pages/admin-panel"));
 const AdminDistilleryAliases = lazy(() => import("@/pages/admin-distillery-aliases"));
+const AdminCms = lazy(() => import("@/pages/admin-cms"));
+const AdminCmsEditor = lazy(() => import("@/pages/admin-cms-editor"));
+const LandingCms = lazy(() => import("@/pages/landing-cms"));
 const SupportConsole = lazy(() => import("@/pages/support-console"));
 const Landing = lazy(() => import("@/pages/landing"));
 const SimpleFeedbackPage = lazy(() => import("@/pages/simple-feedback"));
@@ -508,7 +511,8 @@ function Router() {
       <ScrollRestoration />
       <Switch>
         {/* ── Public / Marketing ── */}
-        <Route path="/" component={LandingNew} />
+        <Route path="/" component={LandingCms} />
+        <Route path="/landing-static" component={LandingNew} />
         <Route path="/landing-old" component={PublicLanding} />
         <Route path="/presentation" component={GuidedPresentation} />
         <Route path="/landing-v2" component={LandingV2} />
@@ -558,6 +562,18 @@ function Router() {
         <Route path="/admin/storybuilder-demo">
           <AdminLayout>
             <StorybuilderDemo />
+          </AdminLayout>
+        </Route>
+        <Route path="/admin/cms/:id">
+          {({ id }: { id: string }) => (
+            <AdminLayout>
+              <AdminCmsEditor id={id} />
+            </AdminLayout>
+          )}
+        </Route>
+        <Route path="/admin/cms">
+          <AdminLayout>
+            <AdminCms />
           </AdminLayout>
         </Route>
         <Route path="/admin">

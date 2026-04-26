@@ -42,6 +42,8 @@ import {
   type InsertTastingStoryVersion, type TastingStoryVersion,
   type InsertStoryVersion, type StoryVersion,
   type InsertStoryTemplate, type StoryTemplate,
+  cmsPages,
+  type InsertCmsPage, type CmsPage,
   type InsertUserFeedback, type UserFeedback,
   notifications,
   type InsertNotification, type Notification,
@@ -698,6 +700,16 @@ export interface IStorage {
   getStoryTemplate(id: string): Promise<StoryTemplate | undefined>;
   createStoryTemplate(data: InsertStoryTemplate): Promise<StoryTemplate>;
   deleteStoryTemplate(id: string): Promise<void>;
+
+  // CMS Pages (Phase 5 — Landing-CMS)
+  listCmsPages(): Promise<CmsPage[]>;
+  getCmsPage(id: string): Promise<CmsPage | undefined>;
+  getCmsPageBySlug(slug: string): Promise<CmsPage | undefined>;
+  createCmsPage(data: InsertCmsPage): Promise<CmsPage>;
+  updateCmsPage(id: string, data: Partial<InsertCmsPage>): Promise<CmsPage | undefined>;
+  duplicateCmsPage(id: string, newSlug: string, newTitle: string): Promise<CmsPage | undefined>;
+  deleteCmsPage(id: string): Promise<void>;
+  publishCmsPage(id: string): Promise<CmsPage | undefined>;
 
   // User Feedback
   createUserFeedback(data: InsertUserFeedback): Promise<UserFeedback>;
@@ -3713,6 +3725,73 @@ export class DatabaseStorage implements IStorage {
 
   async deleteStoryTemplate(id: string): Promise<void> {
     await db.delete(storyTemplates).where(eq(storyTemplates.id, id));
+  }
+
+  // --- CMS Pages (Phase 5) ---
+  async listCmsPages(): Promise<CmsPage[]> {
+    return db.select().from(cmsPages).orderBy(desc(cmsPages.updatedAt));
+  }
+
+  async getCmsPage(id: string): Promise<CmsPage | undefined> {
+    const [row] = await db.select().from(cmsPages).where(eq(cmsPages.id, id)).limit(1);
+    return row;
+  }
+
+  async getCmsPageBySlug(slug: string): Promise<CmsPage | undefined> {
+    const [row] = await db.select().from(cmsPages).where(eq(cmsPages.slug, slug)).limit(1);
+    return row;
+  }
+
+  async createCmsPage(data: InsertCmsPage): Promise<CmsPage> {
+    const [row] = await db.insert(cmsPages).values(data).returning();
+    return row;
+  }
+
+  async updateCmsPage(id: string, data: Partial<InsertCmsPage>): Promise<CmsPage | undefined> {
+    const [row] = await db
+      .update(cmsPages)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(cmsPages.id, id))
+      .returning();
+    return row;
+  }
+
+  async duplicateCmsPage(id: string, newSlug: string, newTitle: string): Promise<CmsPage | undefined> {
+    const source = await this.getCmsPage(id);
+    if (!source) return undefined;
+    const [row] = await db
+      .insert(cmsPages)
+      .values({
+        slug: newSlug,
+        title: newTitle,
+        blocksJson: null,
+        draftBlocksJson: source.draftBlocksJson ?? source.blocksJson ?? [],
+        theme: source.theme,
+        publishedAt: null,
+        createdById: source.createdById,
+      })
+      .returning();
+    return row;
+  }
+
+  async deleteCmsPage(id: string): Promise<void> {
+    await db.delete(cmsPages).where(eq(cmsPages.id, id));
+  }
+
+  async publishCmsPage(id: string): Promise<CmsPage | undefined> {
+    const page = await this.getCmsPage(id);
+    if (!page) return undefined;
+    const blocks = page.draftBlocksJson ?? page.blocksJson ?? [];
+    const [row] = await db
+      .update(cmsPages)
+      .set({
+        blocksJson: blocks,
+        publishedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(cmsPages.id, id))
+      .returning();
+    return row;
   }
 
   // --- User Feedback ---

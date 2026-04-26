@@ -9,6 +9,11 @@ const payloadSchema = z.object({
   meta: z.string().optional().default(""),
   imageUrl: z.string().optional().default(""),
   alignment: z.enum(["left", "center"]).default("center"),
+  ctaLabel: z.string().optional().default(""),
+  ctaHref: z.string().optional().default(""),
+  ctaVariant: z.enum(["primary", "outline"]).optional().default("primary"),
+  ctaSecondaryLabel: z.string().optional().default(""),
+  ctaSecondaryHref: z.string().optional().default(""),
 });
 
 type Payload = z.infer<typeof payloadSchema>;
@@ -118,6 +123,62 @@ function Renderer({ payload, theme, mode }: BlockRendererProps<Payload>) {
             {payload.meta}
           </div>
         ) : null}
+        {(payload.ctaLabel && safeUrl(payload.ctaHref ?? "")) || (payload.ctaSecondaryLabel && safeUrl(payload.ctaSecondaryHref ?? "")) ? (
+          <div
+            style={{
+              display: "flex",
+              gap: 12,
+              marginTop: "2rem",
+              justifyContent: payload.alignment === "center" ? "center" : "flex-start",
+              flexWrap: "wrap",
+            }}
+          >
+            {payload.ctaLabel && safeUrl(payload.ctaHref ?? "") ? (
+              <a
+                href={safeUrl(payload.ctaHref ?? "")}
+                data-testid="link-hero-cta-primary"
+                style={{
+                  display: "inline-block",
+                  background: payload.ctaVariant === "outline" ? "transparent" : theme.colors.amber,
+                  color: payload.ctaVariant === "outline" ? theme.colors.amber : "#0B0906",
+                  border: `1px solid ${theme.colors.amber}`,
+                  padding: "12px 28px",
+                  fontFamily: theme.fonts.sans,
+                  fontSize: ".75rem",
+                  fontWeight: 600,
+                  letterSpacing: ".25em",
+                  textTransform: "uppercase",
+                  textDecoration: "none",
+                  borderRadius: 3,
+                }}
+              >
+                {payload.ctaLabel}
+              </a>
+            ) : null}
+            {payload.ctaSecondaryLabel && safeUrl(payload.ctaSecondaryHref ?? "") ? (
+              <a
+                href={safeUrl(payload.ctaSecondaryHref ?? "")}
+                data-testid="link-hero-cta-secondary"
+                style={{
+                  display: "inline-block",
+                  background: "transparent",
+                  color: theme.colors.ink,
+                  border: `1px solid ${theme.colors.amberDim}`,
+                  padding: "12px 28px",
+                  fontFamily: theme.fonts.sans,
+                  fontSize: ".75rem",
+                  fontWeight: 500,
+                  letterSpacing: ".25em",
+                  textTransform: "uppercase",
+                  textDecoration: "none",
+                  borderRadius: 3,
+                }}
+              >
+                {payload.ctaSecondaryLabel}
+              </a>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </section>
   );
@@ -190,9 +251,89 @@ function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
           <option value="left">Linksbündig</option>
         </select>
       </label>
+      <fieldset style={fieldsetStyle}>
+        <legend style={legendStyle}>Primärer CTA</legend>
+        <label style={labelStyle}>
+          <span>Label</span>
+          <input
+            type="text"
+            value={payload.ctaLabel ?? ""}
+            onChange={(e) => set("ctaLabel", e.target.value)}
+            placeholder="Jetzt starten"
+            style={inputStyle}
+            data-testid="input-hero-cta-label"
+          />
+        </label>
+        <label style={labelStyle}>
+          <span>Ziel-URL</span>
+          <input
+            type="text"
+            value={payload.ctaHref ?? ""}
+            onChange={(e) => set("ctaHref", e.target.value)}
+            placeholder="/labs/tastings"
+            style={inputStyle}
+            data-testid="input-hero-cta-href"
+          />
+        </label>
+        <label style={labelStyle}>
+          <span>Variante</span>
+          <select
+            value={payload.ctaVariant ?? "primary"}
+            onChange={(e) => set("ctaVariant", e.target.value === "outline" ? "outline" : "primary")}
+            style={inputStyle}
+            data-testid="select-hero-cta-variant"
+          >
+            <option value="primary">Solid (Amber)</option>
+            <option value="outline">Outline</option>
+          </select>
+        </label>
+      </fieldset>
+      <fieldset style={fieldsetStyle}>
+        <legend style={legendStyle}>Sekundärer CTA</legend>
+        <label style={labelStyle}>
+          <span>Label</span>
+          <input
+            type="text"
+            value={payload.ctaSecondaryLabel ?? ""}
+            onChange={(e) => set("ctaSecondaryLabel", e.target.value)}
+            placeholder="Mehr erfahren"
+            style={inputStyle}
+            data-testid="input-hero-cta-secondary-label"
+          />
+        </label>
+        <label style={labelStyle}>
+          <span>Ziel-URL</span>
+          <input
+            type="text"
+            value={payload.ctaSecondaryHref ?? ""}
+            onChange={(e) => set("ctaSecondaryHref", e.target.value)}
+            placeholder="/about"
+            style={inputStyle}
+            data-testid="input-hero-cta-secondary-href"
+          />
+        </label>
+      </fieldset>
     </div>
   );
 }
+
+const fieldsetStyle: React.CSSProperties = {
+  border: "1px solid rgba(201,169,97,0.15)",
+  borderRadius: 4,
+  padding: "8px 10px 10px",
+  display: "grid",
+  gap: 8,
+  margin: 0,
+};
+
+const legendStyle: React.CSSProperties = {
+  fontFamily: "'Inter', system-ui, sans-serif",
+  fontSize: 10,
+  letterSpacing: ".25em",
+  textTransform: "uppercase",
+  color: "#C9A961",
+  padding: "0 4px",
+};
 
 const labelStyle: React.CSSProperties = {
   display: "grid",
@@ -218,7 +359,7 @@ export const heroCoverBlock: BlockDefinition<Payload> = {
   label: "Cover-Hero",
   description: "Vollbild-Titel mit optionalem Hintergrundbild.",
   category: "generic",
-  defaultPayload: () => ({ eyebrow: "", title: "Titel", subtitle: "", meta: "", imageUrl: "", alignment: "center" }),
+  defaultPayload: () => ({ eyebrow: "", title: "Titel", subtitle: "", meta: "", imageUrl: "", alignment: "center", ctaLabel: "", ctaHref: "", ctaVariant: "primary", ctaSecondaryLabel: "", ctaSecondaryHref: "" }),
   payloadSchema,
   Renderer,
   EditorPanel,

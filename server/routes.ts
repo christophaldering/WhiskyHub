@@ -25296,6 +25296,335 @@ ${cleaned.slice(0, 60000)}`;
     }
   });
 
+  // ─── CMS Pages (Phase 5 — Landing-CMS) ───
+  const cmsSlugSchema = z
+    .string()
+    .min(1)
+    .max(120)
+    .transform((s) => s.trim().toLowerCase())
+    .refine((s) => /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(s), { message: "Ungültiger Slug" });
+  const cmsThemeSchema = z.string().min(1).max(80).default("casksense-editorial");
+
+  const computeCmsStatus = (page: { blocksJson: unknown; draftBlocksJson: unknown; publishedAt: Date | null }): "draft" | "live" | "live-changes" => {
+    if (!page.publishedAt || !page.blocksJson) return "draft";
+    if (!page.draftBlocksJson) return "live";
+    try {
+      return JSON.stringify(page.blocksJson) === JSON.stringify(page.draftBlocksJson) ? "live" : "live-changes";
+    } catch {
+      return "live";
+    }
+  };
+
+  const serializeCmsListItem = (page: Awaited<ReturnType<typeof storage.getCmsPage>>) => {
+    if (!page) return null;
+    const blocks = Array.isArray(page.draftBlocksJson) ? (page.draftBlocksJson as unknown[]) : Array.isArray(page.blocksJson) ? (page.blocksJson as unknown[]) : [];
+    return {
+      id: page.id,
+      slug: page.slug,
+      title: page.title,
+      theme: page.theme,
+      publishedAt: page.publishedAt,
+      updatedAt: page.updatedAt,
+      createdAt: page.createdAt,
+      status: computeCmsStatus(page),
+      blockCount: blocks.length,
+    };
+  };
+
+  const serializeCmsFull = (page: NonNullable<Awaited<ReturnType<typeof storage.getCmsPage>>>) => ({
+    id: page.id,
+    slug: page.slug,
+    title: page.title,
+    theme: page.theme,
+    publishedAt: page.publishedAt,
+    updatedAt: page.updatedAt,
+    createdAt: page.createdAt,
+    status: computeCmsStatus(page),
+    blocksJson: Array.isArray(page.blocksJson) ? page.blocksJson : [],
+    draftBlocksJson: Array.isArray(page.draftBlocksJson)
+      ? page.draftBlocksJson
+      : Array.isArray(page.blocksJson)
+        ? page.blocksJson
+        : [],
+  });
+
+  app.get("/api/admin/cms/pages", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const pages = await storage.listCmsPages();
+      return res.json({ pages: pages.map((p) => serializeCmsListItem(p)).filter((p) => p !== null) });
+    } catch (e: unknown) {
+      console.error("[cms/list] error:", e);
+      const msg = e instanceof Error ? e.message : "Laden fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.get("/api/admin/cms/pages/:id", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const page = await storage.getCmsPage(req.params.id);
+      if (!page) return res.status(404).json({ message: "Seite nicht gefunden" });
+      return res.json(serializeCmsFull(page));
+    } catch (e: unknown) {
+      console.error("[cms/get] error:", e);
+      const msg = e instanceof Error ? e.message : "Laden fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.post("/api/admin/cms/pages", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const bodySchema = z.object({
+        slug: cmsSlugSchema,
+        title: z.string().min(1).max(200),
+        theme: cmsThemeSchema.optional(),
+        draftBlocksJson: storyBlocksJsonSchema.optional(),
+      });
+      const parsed = bodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Ungültiger Request-Body", errors: parsed.error.flatten() });
+      }
+      const existing = await storage.getCmsPageBySlug(parsed.data.slug);
+      if (existing) return res.status(409).json({ message: "Slug bereits vergeben" });
+      const created = await storage.createCmsPage({
+        slug: parsed.data.slug,
+        title: parsed.data.title,
+        theme: parsed.data.theme ?? "casksense-editorial",
+        draftBlocksJson: parsed.data.draftBlocksJson ?? [],
+        blocksJson: null,
+        publishedAt: null,
+        createdById: auth.participant.id,
+      });
+      return res.json(serializeCmsFull(created));
+    } catch (e: unknown) {
+      console.error("[cms/create] error:", e);
+      const msg = e instanceof Error ? e.message : "Speichern fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.put("/api/admin/cms/pages/:id", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const bodySchema = z.object({
+        title: z.string().min(1).max(200).optional(),
+        slug: cmsSlugSchema.optional(),
+        theme: cmsThemeSchema.optional(),
+        draftBlocksJson: storyBlocksJsonSchema.optional(),
+      });
+      const parsed = bodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Ungültiger Request-Body", errors: parsed.error.flatten() });
+      }
+      const existing = await storage.getCmsPage(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Seite nicht gefunden" });
+      if (parsed.data.slug && parsed.data.slug !== existing.slug) {
+        const conflict = await storage.getCmsPageBySlug(parsed.data.slug);
+        if (conflict && conflict.id !== existing.id) {
+          return res.status(409).json({ message: "Slug bereits vergeben" });
+        }
+      }
+      const updated = await storage.updateCmsPage(req.params.id, parsed.data);
+      if (!updated) return res.status(404).json({ message: "Seite nicht gefunden" });
+      return res.json(serializeCmsFull(updated));
+    } catch (e: unknown) {
+      console.error("[cms/update] error:", e);
+      const msg = e instanceof Error ? e.message : "Speichern fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.post("/api/admin/cms/pages/:id/publish", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const published = await storage.publishCmsPage(req.params.id);
+      if (!published) return res.status(404).json({ message: "Seite nicht gefunden" });
+      return res.json(serializeCmsFull(published));
+    } catch (e: unknown) {
+      console.error("[cms/publish] error:", e);
+      const msg = e instanceof Error ? e.message : "Veröffentlichen fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.post("/api/admin/cms/pages/:id/duplicate", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const bodySchema = z.object({
+        slug: cmsSlugSchema,
+        title: z.string().min(1).max(200),
+      });
+      const parsed = bodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Ungültiger Request-Body", errors: parsed.error.flatten() });
+      }
+      const conflict = await storage.getCmsPageBySlug(parsed.data.slug);
+      if (conflict) return res.status(409).json({ message: "Slug bereits vergeben" });
+      const duplicated = await storage.duplicateCmsPage(req.params.id, parsed.data.slug, parsed.data.title);
+      if (!duplicated) return res.status(404).json({ message: "Quellseite nicht gefunden" });
+      return res.json(serializeCmsFull(duplicated));
+    } catch (e: unknown) {
+      console.error("[cms/duplicate] error:", e);
+      const msg = e instanceof Error ? e.message : "Duplizieren fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.delete("/api/admin/cms/pages/:id", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      await storage.deleteCmsPage(req.params.id);
+      return res.json({ ok: true });
+    } catch (e: unknown) {
+      console.error("[cms/delete] error:", e);
+      const msg = e instanceof Error ? e.message : "Löschen fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  const buildHomeSeedBlocks = (): unknown[] => {
+    const id = () => "blk_" + Math.random().toString(36).slice(2, 11);
+    return [
+      {
+        id: id(),
+        type: "hero-cover",
+        payload: {
+          eyebrow: "CaskSense Labs",
+          title: "Whisky verstehen.",
+          subtitle: "Sessions, Profile, Stories — die Plattform für ernsthafte Verkoster.",
+          meta: "Seit 2024 · Edinburgh & Berlin",
+          imageUrl: "",
+          alignment: "center",
+          ctaLabel: "Jetzt starten",
+          ctaHref: "/labs/tastings",
+          ctaVariant: "primary",
+          ctaSecondaryLabel: "Wie es funktioniert",
+          ctaSecondaryHref: "/intro",
+        },
+      },
+      {
+        id: id(),
+        type: "feature-cards",
+        payload: {
+          eyebrow: "Was CaskSense kann",
+          heading: "Vom ersten Schluck bis zur Story",
+          lead: "Vier Bausteine, die jede Verkostung in Substanz verwandeln.",
+          columns: "4",
+          items: [
+            { icon: "wine", title: "Geführte Sessions", description: "Hosts steuern Akt für Akt — synchron, lebendig, präzise.", ctaLabel: "", ctaHref: "" },
+            { icon: "users", title: "Verkoster-Profile", description: "Geschmack, Stabilität, Vorlieben — datengestützt sichtbar.", ctaLabel: "", ctaHref: "" },
+            { icon: "sparkles", title: "Story-Builder", description: "Aus jeder Session entsteht eine redaktionelle Story.", ctaLabel: "", ctaHref: "" },
+            { icon: "split", title: "Vergleich & Benchmarks", description: "Eigene Eindrücke gegen Community-Konsens stellen.", ctaLabel: "", ctaHref: "" },
+          ],
+        },
+      },
+      {
+        id: id(),
+        type: "live-stats",
+        payload: {
+          eyebrow: "Live aus dem Labor",
+          heading: "Was gerade passiert",
+          lead: "",
+          columns: "3",
+          items: [
+            { statKey: "registeredUsers", label: "Verkoster", hint: "" },
+            { statKey: "totalTastings", label: "Sessions", hint: "" },
+            { statKey: "whiskiesTasted", label: "Whiskys verkostet", hint: "" },
+          ],
+        },
+      },
+      {
+        id: id(),
+        type: "cta-button",
+        payload: {
+          text: "Konto erstellen",
+          href: "/register",
+          variant: "primary",
+          alignment: "center",
+          newTab: false,
+          helper: "Kostenlos. Keine Kreditkarte nötig.",
+        },
+      },
+    ];
+  };
+
+  app.post("/api/admin/cms/seed-home", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const existing = await storage.getCmsPageBySlug("home");
+      if (existing) return res.status(409).json({ message: "Slug 'home' bereits vorhanden", id: existing.id });
+      const seedBlocks = buildHomeSeedBlocks();
+      const created = await storage.createCmsPage({
+        slug: "home",
+        title: "Startseite",
+        theme: "casksense-editorial",
+        draftBlocksJson: seedBlocks,
+        blocksJson: null,
+        publishedAt: null,
+        createdById: auth.participant.id,
+      });
+      return res.json(serializeCmsFull(created));
+    } catch (e: unknown) {
+      console.error("[cms/seed] error:", e);
+      const msg = e instanceof Error ? e.message : "Seeding fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  // Public CMS endpoints
+  app.get("/api/cms/pages/:slug", async (req: Request, res: Response) => {
+    try {
+      const slugParsed = cmsSlugSchema.safeParse(req.params.slug);
+      if (!slugParsed.success) return res.status(400).json({ message: "Ungültiger Slug" });
+      const page = await storage.getCmsPageBySlug(slugParsed.data);
+      if (!page || !page.publishedAt || !Array.isArray(page.blocksJson) || page.blocksJson.length === 0) {
+        return res.status(404).json({ message: "Seite nicht gefunden" });
+      }
+      res.setHeader("Cache-Control", "public, max-age=60");
+      return res.json({
+        slug: page.slug,
+        title: page.title,
+        theme: page.theme,
+        publishedAt: page.publishedAt,
+        blocksJson: page.blocksJson,
+      });
+    } catch (e: unknown) {
+      console.error("[cms/public/get] error:", e);
+      const msg = e instanceof Error ? e.message : "Laden fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.get("/api/cms/live-stats", async (_req: Request, res: Response) => {
+    try {
+      const stats = await storage.getMakingOfLiveStats();
+      res.setHeader("Cache-Control", "public, max-age=30");
+      return res.json({ stats, fetchedAt: new Date().toISOString() });
+    } catch (e: unknown) {
+      console.error("[cms/live-stats] error:", e);
+      const msg = e instanceof Error ? e.message : "Statistiken nicht verfügbar";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
   // Serve the cinematic tasting story standalone page
   app.get("/tasting-story/:id", (req: Request, res: Response) => {
     const templatePath = path.join(process.cwd(), "client", "public", "tasting-story", "template.html");
