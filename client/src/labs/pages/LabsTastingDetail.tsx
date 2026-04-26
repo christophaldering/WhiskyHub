@@ -691,7 +691,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 {t("tastingDetail.viewStory", "Story anzeigen")}
               </button>
             )}
-            {isHost && (
+            {(isHost || currentParticipant?.role === "admin") && (
               <button
                 className="labs-btn-secondary w-full flex items-center justify-center gap-2"
                 onClick={() => navigate(`/labs/tastings/${tastingId}/story-editor`)}

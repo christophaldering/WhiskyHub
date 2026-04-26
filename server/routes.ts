@@ -18206,6 +18206,11 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
         console.warn(`[story] forceRefresh blocked: participantId=${auth.participant.id} is not the host (hostId=${tasting.hostId}) for tasting ${req.params.id}`);
         return res.status(403).json({ message: "Only the host can regenerate the story." });
       }
+      const hasBlockStory = Array.isArray(tasting.storyBlocks) && (tasting.storyBlocks as unknown[]).length > 0;
+      if (refreshRequested && hasBlockStory) {
+        console.warn(`[story] forceRefresh blocked: tasting ${req.params.id} has block-based story; legacy regeneration disabled.`);
+        return res.status(409).json({ message: "Diese Story wird im neuen Editor gepflegt. Bitte dort bearbeiten." });
+      }
       const forceRefresh = isHost && refreshRequested;
       // no_generate=true: return computed data only, never trigger AI (used for metadata-only checks)
       const noGenerate = req.query.no_generate === "true";
