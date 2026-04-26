@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
-import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Sparkles, Clock, Monitor, Archive, Check, Info, Lock, Loader2, BookOpen, Camera, Trash2, Plus, Sliders } from "lucide-react";
+import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Sparkles, Clock, Monitor, Archive, Check, Info, Lock, Loader2, BookOpen, Camera, Trash2, Plus, Sliders, Pencil } from "lucide-react";
 import ManageTastersDialog from "@/labs/components/ManageTastersDialog";
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
@@ -989,7 +989,11 @@ export default function LabsResults({ params }: LabsResultsProps) {
         const aiAvailable = ["archived", "completed", "closed", "reveal"].includes(tasting.status as string);
         const presentAvailable = isHost && aiAvailable;
         const storyAvailable = getStoryPdfAvailable(tasting, isHost);
-        const actions: { key: string; icon: React.ElementType; title: string; desc: string; onClick: () => void }[] = [];
+        const isAdmin = currentParticipant?.role === "admin";
+        const canEditStory = isHost || isAdmin;
+        const storyBlocksRaw = (tasting as { storyBlocks?: unknown }).storyBlocks;
+        const hasBlockStory = Array.isArray(storyBlocksRaw) && storyBlocksRaw.length > 0;
+        const actions: { key: string; icon: React.ElementType; title: string; desc: string; onClick: () => void; badge?: string }[] = [];
         if (aiAvailable) {
           actions.push({
             key: "ai",
@@ -1006,6 +1010,18 @@ export default function LabsResults({ params }: LabsResultsProps) {
             title: t("resultsUi.actionStoryTitle", "Tasting-Story"),
             desc: t("resultsUi.actionStoryDesc", "Magazin-Layout mit Highlights und Erzählung"),
             onClick: () => navigate(`/labs/results/${tastingId}/story`),
+            badge: canEditStory && !hasBlockStory ? t("resultsUi.actionStoryNotCreatedYet", "Neu erstellen") : undefined,
+          });
+        }
+        if (canEditStory) {
+          actions.push({
+            key: "story-editor",
+            icon: Pencil,
+            title: t("resultsUi.actionStoryEditorTitle", "Story bearbeiten"),
+            desc: hasBlockStory
+              ? t("resultsUi.actionStoryEditorDesc", "Block-Editor für Aufbau, Texte und Bilder")
+              : t("resultsUi.actionStoryEditorDescEmpty", "Neue Block-Story anlegen oder migrieren"),
+            onClick: () => navigate(`/labs/tastings/${tastingId}/story-editor`),
           });
         }
         if (presentAvailable) {
@@ -1057,9 +1073,30 @@ export default function LabsResults({ params }: LabsResultsProps) {
                       <Icon className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
-                        {a.title}
-                      </p>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
+                          {a.title}
+                        </p>
+                        {a.badge ? (
+                          <span
+                            data-testid={`badge-${a.key}`}
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 600,
+                              letterSpacing: "0.04em",
+                              textTransform: "uppercase",
+                              color: "var(--labs-accent)",
+                              background: "var(--labs-accent-muted)",
+                              border: "1px solid var(--labs-accent)",
+                              padding: "1px 6px",
+                              borderRadius: 999,
+                              lineHeight: 1.4,
+                            }}
+                          >
+                            {a.badge}
+                          </span>
+                        ) : null}
+                      </div>
                       <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
                         {a.desc}
                       </p>
