@@ -24895,6 +24895,85 @@ ${cleaned.slice(0, 60000)}`;
     }
   });
 
+  // ===== STORYBUILDER (admin) =====
+
+  const STORYBUILDER_SOURCE_TYPES = new Set(["demo", "distillery", "whisky", "tasting", "page"]);
+
+  const sanitizeStorybuilderId = (raw: string): string => raw.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 128);
+
+  const storyBlockSchema = z.object({
+    id: z.string().min(1).max(128),
+    type: z.string().min(1).max(64),
+    payload: z.record(z.unknown()),
+    hidden: z.boolean().optional(),
+  });
+  const storyBlocksJsonSchema = z.array(storyBlockSchema).max(500);
+
+  app.get("/api/admin/storybuilder/:sourceType/:sourceId", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const sourceType = req.params.sourceType;
+      if (!STORYBUILDER_SOURCE_TYPES.has(sourceType)) {
+        return res.status(400).json({ message: "Unbekannter sourceType" });
+      }
+      const sourceId = sanitizeStorybuilderId(req.params.sourceId);
+      if (!sourceId) return res.status(400).json({ message: "sourceId fehlt" });
+      const latest = await storage.getLatestStoryVersion(sourceType, sourceId);
+      if (!latest) return res.json({ exists: false });
+      return res.json({
+        exists: true,
+        id: latest.id,
+        blocksJson: latest.blocksJson,
+        isAuto: latest.isAuto,
+        createdAt: latest.createdAt,
+        createdById: latest.createdById,
+        name: latest.name ?? null,
+      });
+    } catch (e: unknown) {
+      console.error("[storybuilder/load] error:", e);
+      const msg = e instanceof Error ? e.message : "Laden fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.put("/api/admin/storybuilder/:sourceType/:sourceId", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const sourceType = req.params.sourceType;
+      if (!STORYBUILDER_SOURCE_TYPES.has(sourceType)) {
+        return res.status(400).json({ message: "Unbekannter sourceType" });
+      }
+      const sourceId = sanitizeStorybuilderId(req.params.sourceId);
+      if (!sourceId) return res.status(400).json({ message: "sourceId fehlt" });
+      const bodySchema = z.object({
+        blocksJson: storyBlocksJsonSchema,
+        isAuto: z.boolean().optional().default(true),
+        name: z.string().max(200).optional(),
+      });
+      const parsed = bodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Ungültiger Request-Body", errors: parsed.error.flatten() });
+      }
+      const saved = await storage.saveStoryVersion({
+        sourceType,
+        sourceId,
+        blocksJson: parsed.data.blocksJson,
+        isAuto: parsed.data.isAuto,
+        name: parsed.data.name ?? null,
+        createdById: auth.participant.id,
+      });
+      return res.json({ id: saved.id, createdAt: saved.createdAt, isAuto: saved.isAuto });
+    } catch (e: unknown) {
+      console.error("[storybuilder/save] error:", e);
+      const msg = e instanceof Error ? e.message : "Speichern fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
   // Serve the cinematic tasting story standalone page
   app.get("/tasting-story/:id", (req: Request, res: Response) => {
     const templatePath = path.join(process.cwd(), "client", "public", "tasting-story", "template.html");

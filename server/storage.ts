@@ -7,7 +7,7 @@ import { getParticipantOverallScores, computeStabilityScore } from "./participan
 import {
   participants, tastings, tastingParticipants, sharingParticipants, whiskies, whiskyHandoutLibrary, whiskyHandouts, tastingHandouts, distilleryHandouts, pdfSplitSessions, ratings,
   profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, whiskyGroups, whiskyGroupMembers, journalEntries, benchmarkEntries, wishlistEntries,
-  newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, tastingPhotos, tastingEventPhotos, tastingStoryVersions, userFeedback,
+  newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, tastingPhotos, tastingEventPhotos, tastingStoryVersions, storyVersions, userFeedback,
   type InsertParticipant, type Participant,
   type InsertTasting, type Tasting,
   type InsertTastingParticipant, type TastingParticipant,
@@ -40,6 +40,7 @@ import {
   type InsertTastingPhoto, type TastingPhoto,
   type InsertTastingEventPhoto, type TastingEventPhoto,
   type InsertTastingStoryVersion, type TastingStoryVersion,
+  type InsertStoryVersion, type StoryVersion,
   type InsertUserFeedback, type UserFeedback,
   notifications,
   type InsertNotification, type Notification,
@@ -684,6 +685,10 @@ export interface IStorage {
   getTastingStoryVersion(id: string): Promise<TastingStoryVersion | undefined>;
   createTastingStoryVersion(data: InsertTastingStoryVersion): Promise<TastingStoryVersion>;
   deleteTastingStoryVersion(id: string): Promise<void>;
+
+  // Storybuilder Versions (Phase 2 — generic block-based stories)
+  getLatestStoryVersion(sourceType: string, sourceId: string): Promise<StoryVersion | undefined>;
+  saveStoryVersion(data: InsertStoryVersion): Promise<StoryVersion>;
 
   // User Feedback
   createUserFeedback(data: InsertUserFeedback): Promise<UserFeedback>;
@@ -3620,6 +3625,22 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTastingStoryVersion(id: string): Promise<void> {
     await db.delete(tastingStoryVersions).where(eq(tastingStoryVersions.id, id));
+  }
+
+  // --- Storybuilder Versions ---
+  async getLatestStoryVersion(sourceType: string, sourceId: string): Promise<StoryVersion | undefined> {
+    const [row] = await db
+      .select()
+      .from(storyVersions)
+      .where(and(eq(storyVersions.sourceType, sourceType), eq(storyVersions.sourceId, sourceId)))
+      .orderBy(desc(storyVersions.createdAt))
+      .limit(1);
+    return row;
+  }
+
+  async saveStoryVersion(data: InsertStoryVersion): Promise<StoryVersion> {
+    const [row] = await db.insert(storyVersions).values(data).returning();
+    return row;
   }
 
   // --- User Feedback ---

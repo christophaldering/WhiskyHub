@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { BlockDefinition, BlockEditorPanelProps, BlockRendererProps } from "../core/types";
+import { RichTextEditor, sanitizeStoryHtml } from "../editor/RichTextEditor";
 
 const payloadSchema = z.object({
   eyebrow: z.string().optional().default(""),
@@ -10,6 +11,20 @@ const payloadSchema = z.object({
 });
 
 type Payload = z.infer<typeof payloadSchema>;
+
+function bodyAsHtml(body: string): string {
+  if (!body) return "";
+  const trimmed = body.trim();
+  if (trimmed.startsWith("<")) return sanitizeStoryHtml(trimmed);
+  const escaped = trimmed
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .split(/\n\n+/)
+    .map((para) => `<p>${para.replace(/\n/g, "<br/>")}</p>`)
+    .join("");
+  return sanitizeStoryHtml(escaped);
+}
 
 function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
   const isActIntro = payload.variant === "act-intro";
@@ -58,6 +73,7 @@ function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
       ) : null}
       {payload.body ? (
         <div
+          data-testid="text-section-body"
           style={{
             fontFamily: theme.fonts.serif,
             fontSize: "clamp(1rem, 1.5vw, 1.15rem)",
@@ -65,12 +81,10 @@ function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
             color: theme.colors.inkDim,
             maxWidth: payload.alignment === "center" ? 620 : "none",
             margin: payload.alignment === "center" ? "0 auto" : "0",
-            whiteSpace: "pre-wrap",
             textAlign: payload.alignment,
           }}
-        >
-          {payload.body}
-        </div>
+          dangerouslySetInnerHTML={{ __html: bodyAsHtml(payload.body) }}
+        />
       ) : null}
     </section>
   );
@@ -114,12 +128,11 @@ function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
       </label>
       <label style={labelStyle}>
         <span>Text</span>
-        <textarea
+        <RichTextEditor
           value={payload.body}
-          onChange={(e) => set("body", e.target.value)}
-          rows={8}
-          style={{ ...inputStyle, resize: "vertical", minHeight: 140, lineHeight: 1.6 }}
-          data-testid="textarea-text-body"
+          onChange={(html) => set("body", html)}
+          placeholder="Schreibe hier deinen Text…"
+          data-testid="richtext-text-body"
         />
       </label>
       <label style={labelStyle}>
@@ -160,9 +173,15 @@ const inputStyle: React.CSSProperties = {
 export const textSectionBlock: BlockDefinition<Payload> = {
   type: "text-section",
   label: "Text-Sektion",
-  description: "Klassischer Text-Block mit Überschrift und Fließtext.",
+  description: "Klassischer Text-Block mit Überschrift und formatiertem Fließtext.",
   category: "generic",
-  defaultPayload: () => ({ eyebrow: "", heading: "Eine Überschrift", body: "Schreibe hier deinen Text...", alignment: "left", variant: "default" }),
+  defaultPayload: () => ({
+    eyebrow: "",
+    heading: "Eine Überschrift",
+    body: "<p>Schreibe hier deinen Text…</p>",
+    alignment: "left",
+    variant: "default",
+  }),
   payloadSchema,
   Renderer,
   EditorPanel,

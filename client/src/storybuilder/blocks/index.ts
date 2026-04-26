@@ -6,6 +6,11 @@ import { textSectionBlock } from "./text-section";
 import { fullWidthImageBlock } from "./full-width-image";
 import { quoteBlock } from "./quote";
 import { dividerBlock } from "./divider";
+import { twoColumnBlock } from "./two-column";
+import { imageGalleryBlock } from "./image-gallery";
+import { statsGridBlock } from "./stats-grid";
+import { ctaButtonBlock } from "./cta-button";
+import { videoEmbedBlock } from "./video-embed";
 
 type RegisteredBlock = {
   type: BlockType;
@@ -39,6 +44,11 @@ register(textSectionBlock);
 register(fullWidthImageBlock);
 register(quoteBlock);
 register(dividerBlock);
+register(twoColumnBlock);
+register(imageGalleryBlock);
+register(statsGridBlock);
+register(ctaButtonBlock);
+register(videoEmbedBlock);
 
 export function getBlockDefinition(type: BlockType): RegisteredBlock | undefined {
   return registry.get(type);

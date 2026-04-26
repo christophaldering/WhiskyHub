@@ -1,19 +1,78 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import type { BlockType, RendererMode, StoryBlock, StoryDocument } from "../core/types";
 import { createBlock, getBlockDefinition, listBlockDefinitions, validatePayload } from "../blocks";
 import { getTheme } from "../themes";
 import { StoryRenderer } from "../renderer/StoryRenderer";
 
+const HISTORY_LIMIT = 50;
+const AUTO_SAVE_DELAY_MS = 2000;
+
+export type StoryEditorSaveStatus = "idle" | "saving" | "saved" | "error";
+
 type Props = {
   initialDocument: StoryDocument;
   onChange?: (document: StoryDocument) => void;
+  onSave?: (document: StoryDocument) => Promise<void>;
 };
 
-export function StoryEditor({ initialDocument, onChange }: Props) {
-  const [doc, setDoc] = useState<StoryDocument>(initialDocument);
+type HistoryState = {
+  past: StoryDocument[];
+  present: StoryDocument;
+  future: StoryDocument[];
+};
+
+function pushHistory(state: HistoryState, next: StoryDocument): HistoryState {
+  if (next === state.present) return state;
+  const past = [...state.past, state.present].slice(-HISTORY_LIMIT);
+  return { past, present: next, future: [] };
+}
+
+function undoHistory(state: HistoryState): HistoryState {
+  if (state.past.length === 0) return state;
+  const past = state.past.slice(0, -1);
+  const previous = state.past[state.past.length - 1];
+  return { past, present: previous, future: [state.present, ...state.future].slice(0, HISTORY_LIMIT) };
+}
+
+function redoHistory(state: HistoryState): HistoryState {
+  if (state.future.length === 0) return state;
+  const [next, ...rest] = state.future;
+  return { past: [...state.past, state.present].slice(-HISTORY_LIMIT), present: next, future: rest };
+}
+
+export function StoryEditor({ initialDocument, onChange, onSave }: Props) {
+  const [history, setHistory] = useState<HistoryState>({ past: [], present: initialDocument, future: [] });
+  const doc = history.present;
+
   const [selectedId, setSelectedId] = useState<string | null>(initialDocument.blocks[0]?.id ?? null);
   const [mode, setMode] = useState<RendererMode>("editor-preview");
   const [showPalette, setShowPalette] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<StoryEditorSaveStatus>("idle");
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const lastSavedJsonRef = useRef<string>(JSON.stringify(initialDocument.blocks));
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveChainRef = useRef<Promise<void>>(Promise.resolve());
+  const pendingSnapshotRef = useRef<StoryDocument | null>(null);
+  const isMountedRef = useRef<boolean>(true);
 
   const theme = getTheme(doc.theme);
   const selectedBlock = useMemo(() => doc.blocks.find((b) => b.id === selectedId) ?? null, [doc.blocks, selectedId]);
@@ -25,11 +84,109 @@ export function StoryEditor({ initialDocument, onChange }: Props) {
         ...next,
         metadata: { ...next.metadata, updatedAt: new Date().toISOString() },
       };
-      setDoc(stamped);
+      setHistory((h) => pushHistory(h, stamped));
       onChange?.(stamped);
     },
     [onChange],
   );
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, []);
+
+  const enqueueSave = useCallback(
+    (snapshot: StoryDocument) => {
+      if (!onSave) return;
+      pendingSnapshotRef.current = snapshot;
+      saveChainRef.current = saveChainRef.current.then(async () => {
+        const next = pendingSnapshotRef.current;
+        if (!next) return;
+        pendingSnapshotRef.current = null;
+        const json = JSON.stringify(next.blocks);
+        if (json === lastSavedJsonRef.current) {
+          if (isMountedRef.current) setSaveStatus("saved");
+          return;
+        }
+        if (isMountedRef.current) {
+          setSaveStatus("saving");
+          setSaveError(null);
+        }
+        try {
+          await onSave(next);
+          if (!isMountedRef.current) return;
+          lastSavedJsonRef.current = json;
+          setSaveStatus("saved");
+          setLastSavedAt(new Date());
+        } catch (err: unknown) {
+          if (!isMountedRef.current) return;
+          setSaveStatus("error");
+          setSaveError(err instanceof Error ? err.message : "Speichern fehlgeschlagen.");
+        }
+      });
+    },
+    [onSave],
+  );
+
+  useEffect(() => {
+    if (!onSave) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    const json = JSON.stringify(doc.blocks);
+    if (json === lastSavedJsonRef.current) return;
+    saveTimerRef.current = setTimeout(() => {
+      enqueueSave(doc);
+    }, AUTO_SAVE_DELAY_MS);
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [doc, onSave, enqueueSave]);
+
+  const triggerSaveNow = useCallback(() => {
+    if (!onSave) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    enqueueSave(doc);
+  }, [doc, onSave, enqueueSave]);
+
+  const undo = useCallback(() => {
+    setHistory((h) => {
+      if (h.past.length === 0) return h;
+      const next = undoHistory(h);
+      onChange?.(next.present);
+      return next;
+    });
+  }, [onChange]);
+
+  const redo = useCallback(() => {
+    setHistory((h) => {
+      if (h.future.length === 0) return h;
+      const next = redoHistory(h);
+      onChange?.(next.present);
+      return next;
+    });
+  }, [onChange]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const meta = e.metaKey || e.ctrlKey;
+      if (!meta) return;
+      const key = e.key.toLowerCase();
+      if (key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if ((key === "z" && e.shiftKey) || key === "y") {
+        e.preventDefault();
+        redo();
+      } else if (key === "s") {
+        e.preventDefault();
+        triggerSaveNow();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [undo, redo, triggerSaveNow]);
 
   const addBlock = useCallback(
     (type: BlockType) => {
@@ -61,10 +218,7 @@ export function StoryEditor({ initialDocument, onChange }: Props) {
       if (idx === -1) return;
       const target = idx + direction;
       if (target < 0 || target >= doc.blocks.length) return;
-      const blocks = [...doc.blocks];
-      const tmp = blocks[idx];
-      blocks[idx] = blocks[target];
-      blocks[target] = tmp;
+      const blocks = arrayMove(doc.blocks, idx, target);
       update({ ...doc, blocks });
     },
     [doc, update],
@@ -104,6 +258,27 @@ export function StoryEditor({ initialDocument, onChange }: Props) {
     },
     [doc, update],
   );
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = useCallback(
+    (e: DragEndEvent) => {
+      const { active, over } = e;
+      if (!over || active.id === over.id) return;
+      const fromIdx = doc.blocks.findIndex((b) => b.id === active.id);
+      const toIdx = doc.blocks.findIndex((b) => b.id === over.id);
+      if (fromIdx === -1 || toIdx === -1) return;
+      const blocks = arrayMove(doc.blocks, fromIdx, toIdx);
+      update({ ...doc, blocks });
+    },
+    [doc, update],
+  );
+
+  const canUndo = history.past.length > 0;
+  const canRedo = history.future.length > 0;
 
   return (
     <div
@@ -146,6 +321,8 @@ export function StoryEditor({ initialDocument, onChange }: Props) {
               marginBottom: 12,
               display: "grid",
               gap: 4,
+              maxHeight: "50vh",
+              overflowY: "auto",
             }}
           >
             {palette.map((def) => (
@@ -169,93 +346,24 @@ export function StoryEditor({ initialDocument, onChange }: Props) {
               Noch keine Blöcke. Klicke "+ Block".
             </div>
           ) : null}
-          {doc.blocks.map((block, idx) => {
-            const def = getBlockDefinition(block.type);
-            const isSelected = block.id === selectedId;
-            return (
-              <div
-                key={block.id}
-                style={{
-                  border: `1px solid ${isSelected ? theme.colors.amber : "rgba(201,169,97,0.1)"}`,
-                  borderRadius: 4,
-                  padding: "8px 10px",
-                  background: isSelected ? "rgba(201,169,97,0.08)" : "transparent",
-                  cursor: "pointer",
-                  opacity: block.hidden ? 0.5 : 1,
-                }}
-                onClick={() => setSelectedId(block.id)}
-                data-testid={`block-item-${block.id}`}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ fontSize: 12, color: theme.colors.ink, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {idx + 1}. {def?.label ?? block.type}
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      moveBlock(block.id, -1);
-                    }}
-                    style={miniButtonStyle}
-                    data-testid={`button-move-up-${block.id}`}
-                    title="Nach oben"
-                  >
-                    ↑
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      moveBlock(block.id, 1);
-                    }}
-                    style={miniButtonStyle}
-                    data-testid={`button-move-down-${block.id}`}
-                    title="Nach unten"
-                  >
-                    ↓
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      duplicateBlock(block.id);
-                    }}
-                    style={miniButtonStyle}
-                    data-testid={`button-duplicate-${block.id}`}
-                    title="Duplizieren"
-                  >
-                    ⎘
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleHidden(block.id);
-                    }}
-                    style={miniButtonStyle}
-                    data-testid={`button-toggle-hidden-${block.id}`}
-                    title={block.hidden ? "Einblenden" : "Ausblenden"}
-                  >
-                    {block.hidden ? "○" : "●"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (confirm("Diesen Block wirklich löschen?")) deleteBlock(block.id);
-                    }}
-                    style={{ ...miniButtonStyle, color: "#d97757" }}
-                    data-testid={`button-delete-${block.id}`}
-                    title="Löschen"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={doc.blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+              {doc.blocks.map((block, idx) => (
+                <SortableBlockItem
+                  key={block.id}
+                  block={block}
+                  index={idx}
+                  isSelected={block.id === selectedId}
+                  onSelect={() => setSelectedId(block.id)}
+                  onMoveUp={() => moveBlock(block.id, -1)}
+                  onMoveDown={() => moveBlock(block.id, 1)}
+                  onDuplicate={() => duplicateBlock(block.id)}
+                  onToggleHidden={() => toggleHidden(block.id)}
+                  onDelete={() => deleteBlock(block.id)}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
         </div>
       </aside>
 
@@ -278,10 +386,38 @@ export function StoryEditor({ initialDocument, onChange }: Props) {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            gap: 12,
           }}
         >
-          <div style={{ fontSize: 11, letterSpacing: ".2em", textTransform: "uppercase", color: theme.colors.inkDim }}>
-            Vorschau · {doc.blocks.length} Block(s)
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ fontSize: 11, letterSpacing: ".2em", textTransform: "uppercase", color: theme.colors.inkDim }}>
+              Vorschau · {doc.blocks.length} Block(s)
+            </div>
+            <div style={{ display: "flex", gap: 4 }}>
+              <button
+                type="button"
+                onClick={undo}
+                disabled={!canUndo}
+                style={canUndo ? historyButtonStyle : { ...historyButtonStyle, opacity: 0.3, cursor: "not-allowed" }}
+                title="Rückgängig (Cmd/Ctrl+Z)"
+                data-testid="button-undo"
+              >
+                ↶
+              </button>
+              <button
+                type="button"
+                onClick={redo}
+                disabled={!canRedo}
+                style={canRedo ? historyButtonStyle : { ...historyButtonStyle, opacity: 0.3, cursor: "not-allowed" }}
+                title="Wiederherstellen (Cmd/Ctrl+Shift+Z)"
+                data-testid="button-redo"
+              >
+                ↷
+              </button>
+            </div>
+            {onSave ? (
+              <SaveBadge status={saveStatus} lastSavedAt={lastSavedAt} error={saveError} onRetry={triggerSaveNow} />
+            ) : null}
           </div>
           <div style={{ display: "flex", gap: 6 }}>
             <button
@@ -324,6 +460,208 @@ export function StoryEditor({ initialDocument, onChange }: Props) {
           </div>
         )}
       </aside>
+    </div>
+  );
+}
+
+function SortableBlockItem({
+  block,
+  index,
+  isSelected,
+  onSelect,
+  onMoveUp,
+  onMoveDown,
+  onDuplicate,
+  onToggleHidden,
+  onDelete,
+}: {
+  block: StoryBlock;
+  index: number;
+  isSelected: boolean;
+  onSelect: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onDuplicate: () => void;
+  onToggleHidden: () => void;
+  onDelete: () => void;
+}) {
+  const def = getBlockDefinition(block.type);
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    border: `1px solid ${isSelected ? "#C9A961" : "rgba(201,169,97,0.1)"}`,
+    borderRadius: 4,
+    padding: "8px 10px",
+    background: isSelected ? "rgba(201,169,97,0.08)" : "transparent",
+    cursor: "pointer",
+    opacity: block.hidden ? 0.5 : isDragging ? 0.7 : 1,
+    boxShadow: isDragging ? "0 8px 24px rgba(0,0,0,0.5)" : undefined,
+    zIndex: isDragging ? 10 : undefined,
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      onClick={onSelect}
+      data-testid={`block-item-${block.id}`}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 4 }}>
+        <span
+          {...attributes}
+          {...listeners}
+          onClick={(e) => e.stopPropagation()}
+          title="Ziehen zum Sortieren"
+          data-testid={`drag-handle-${block.id}`}
+          style={{
+            cursor: "grab",
+            color: "#A89A85",
+            fontSize: 14,
+            padding: "0 6px 0 0",
+            userSelect: "none",
+          }}
+        >
+          ⋮⋮
+        </span>
+        <div style={{ fontSize: 12, color: "#F5EDE0", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {index + 1}. {def?.label ?? block.type}
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onMoveUp();
+          }}
+          style={miniButtonStyle}
+          data-testid={`button-move-up-${block.id}`}
+          title="Nach oben"
+        >
+          ↑
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onMoveDown();
+          }}
+          style={miniButtonStyle}
+          data-testid={`button-move-down-${block.id}`}
+          title="Nach unten"
+        >
+          ↓
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDuplicate();
+          }}
+          style={miniButtonStyle}
+          data-testid={`button-duplicate-${block.id}`}
+          title="Duplizieren"
+        >
+          ⎘
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleHidden();
+          }}
+          style={miniButtonStyle}
+          data-testid={`button-toggle-hidden-${block.id}`}
+          title={block.hidden ? "Einblenden" : "Ausblenden"}
+        >
+          {block.hidden ? "○" : "●"}
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (confirm("Diesen Block wirklich löschen?")) onDelete();
+          }}
+          style={{ ...miniButtonStyle, color: "#d97757" }}
+          data-testid={`button-delete-${block.id}`}
+          title="Löschen"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SaveBadge({
+  status,
+  lastSavedAt,
+  error,
+  onRetry,
+}: {
+  status: StoryEditorSaveStatus;
+  lastSavedAt: Date | null;
+  error: string | null;
+  onRetry: () => void;
+}) {
+  let label = "Auto-Save aktiv";
+  let bg = "rgba(201,169,97,0.08)";
+  let color = "#A89A85";
+  if (status === "saving") {
+    label = "Speichert…";
+    bg = "rgba(201,169,97,0.18)";
+    color = "#C9A961";
+  } else if (status === "saved") {
+    if (lastSavedAt) {
+      label = `Gespeichert · ${lastSavedAt.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`;
+    } else {
+      label = "Gespeichert";
+    }
+    bg = "rgba(86,160,80,0.16)";
+    color = "#7BB077";
+  } else if (status === "error") {
+    label = "Fehler beim Speichern";
+    bg = "rgba(217,119,87,0.18)";
+    color = "#d97757";
+  }
+  return (
+    <div
+      data-testid="badge-save-status"
+      data-status={status}
+      style={{
+        background: bg,
+        color,
+        border: `1px solid ${color}`,
+        padding: "3px 10px",
+        borderRadius: 999,
+        fontSize: 11,
+        letterSpacing: ".05em",
+        fontFamily: "'Inter', system-ui, sans-serif",
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+      }}
+      title={error ?? undefined}
+    >
+      <span>{label}</span>
+      {status === "error" ? (
+        <button
+          type="button"
+          onClick={onRetry}
+          data-testid="button-save-retry"
+          style={{
+            background: "transparent",
+            border: "none",
+            color,
+            cursor: "pointer",
+            textDecoration: "underline",
+            fontSize: 11,
+            padding: 0,
+          }}
+        >
+          Erneut
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -406,6 +744,18 @@ const miniButtonStyle: React.CSSProperties = {
   cursor: "pointer",
   fontFamily: "'Inter', system-ui, sans-serif",
   minWidth: 24,
+};
+
+const historyButtonStyle: React.CSSProperties = {
+  background: "rgba(201,169,97,0.08)",
+  border: "1px solid rgba(201,169,97,0.25)",
+  borderRadius: 3,
+  padding: "3px 9px",
+  fontSize: 13,
+  color: "#A89A85",
+  cursor: "pointer",
+  fontFamily: "'Inter', system-ui, sans-serif",
+  minWidth: 28,
 };
 
 const tabStyle: React.CSSProperties = {

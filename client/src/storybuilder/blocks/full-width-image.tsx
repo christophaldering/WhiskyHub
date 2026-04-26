@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { BlockDefinition, BlockEditorPanelProps, BlockRendererProps } from "../core/types";
+import { safeUrl } from "../editor/RichTextEditor";
 
 const payloadSchema = z.object({
   imageUrl: z.string().default(""),
@@ -11,7 +12,8 @@ const payloadSchema = z.object({
 type Payload = z.infer<typeof payloadSchema>;
 
 function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
-  if (!payload.imageUrl) {
+  const safeSrc = safeUrl(payload.imageUrl);
+  if (!safeSrc) {
     return (
       <section
         data-testid="block-full-width-image-empty"
@@ -40,7 +42,7 @@ function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
     >
       <figure style={{ margin: 0 }}>
         <img
-          src={payload.imageUrl}
+          src={safeSrc}
           alt={payload.alt}
           style={{
             width: "100%",

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { BlockDefinition, BlockEditorPanelProps, BlockRendererProps } from "../core/types";
+import { safeUrl } from "../editor/RichTextEditor";
 
 const payloadSchema = z.object({
   eyebrow: z.string().optional().default(""),
@@ -27,14 +28,14 @@ function Renderer({ payload, theme, mode }: BlockRendererProps<Payload>) {
         textAlign: payload.alignment,
       }}
     >
-      {payload.imageUrl ? (
+      {safeUrl(payload.imageUrl) ? (
         <div
           aria-hidden
           style={{
             position: "absolute",
             inset: 0,
             zIndex: 0,
-            backgroundImage: `linear-gradient(to bottom, rgba(11,9,6,0.3) 0%, rgba(11,9,6,0.6) 60%, ${theme.colors.bg} 100%), url("${payload.imageUrl}")`,
+            backgroundImage: `linear-gradient(to bottom, rgba(11,9,6,0.3) 0%, rgba(11,9,6,0.6) 60%, ${theme.colors.bg} 100%), url("${safeUrl(payload.imageUrl).replace(/"/g, "%22")}")`,
             backgroundSize: "cover",
             backgroundPosition: "center",
             filter: "brightness(0.75) contrast(1.05)",

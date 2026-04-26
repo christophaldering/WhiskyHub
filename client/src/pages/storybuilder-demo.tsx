@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { StoryEditor } from "@/storybuilder/editor/StoryEditor";
 import { createBlock } from "@/storybuilder/blocks";
 import { createEmptyDocument, type StoryBlock, type StoryDocument } from "@/storybuilder/core/types";
+import { pidHeaders } from "@/lib/api";
+
+const STORY_SOURCE_TYPE = "demo";
+const STORY_SOURCE_ID = "default";
 
 function buildSeedDocument(): StoryDocument {
   const doc = createEmptyDocument("casksense-editorial");
@@ -27,7 +31,7 @@ function buildSeedDocument(): StoryDocument {
     intro.payload = {
       eyebrow: "Akt I",
       heading: "Die Erwartung",
-      body: "Bevor das erste Glas die Lippen berührt, beginnt die Geschichte bereits im Kopf. Was erwarten wir? Welche Erinnerungen wecken die Etiketten, die Farben, die Namen? Heute Abend lassen wir uns überraschen.",
+      body: "<p>Bevor das erste Glas die Lippen berührt, beginnt die Geschichte bereits im Kopf. Was erwarten wir? Welche Erinnerungen wecken die Etiketten, die Farben, die Namen? Heute Abend lassen wir uns überraschen.</p>",
       alignment: "left",
       variant: "act-intro",
     };
@@ -43,7 +47,7 @@ function buildSeedDocument(): StoryDocument {
   const quote = createBlock("quote");
   if (quote) {
     quote.payload = {
-      text: "Whisky ist Sonnenlicht, gefangen mit Wasser.",
+      text: "<p>Whisky ist Sonnenlicht, gefangen mit Wasser.</p>",
       attribution: "Schottisches Sprichwort",
       role: "",
       variant: "block",
@@ -56,7 +60,7 @@ function buildSeedDocument(): StoryDocument {
     text2.payload = {
       eyebrow: "",
       heading: "",
-      body: "Ein Storybuilder-Demo zeigt, wie verschiedene Block-Typen zu einem stimmigen Ganzen werden. Füge links neue Blöcke hinzu, bearbeite ihre Eigenschaften rechts und sieh die Vorschau in Echtzeit in der Mitte.",
+      body: "<p>Ein Storybuilder-Demo zeigt, wie verschiedene Block-Typen zu einem stimmigen Ganzen werden. Füge links neue Blöcke hinzu, sortiere sie per Drag-and-Drop, bearbeite ihre Eigenschaften rechts und sieh die Vorschau in Echtzeit in der Mitte.</p>",
       alignment: "left",
       variant: "default",
     };
@@ -72,7 +76,7 @@ function useAdminProbe(): AdminProbe {
   const { isLoading, isError, error } = useQuery({
     queryKey: ["/api/admin/overview", "storybuilder-demo-probe"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/overview", { credentials: "include" });
+      const res = await fetch("/api/admin/overview", { credentials: "include", headers: pidHeaders() });
       if (!res.ok) {
         const code = res.status === 500 ? "error" : "denied";
         const err = new Error(code);
@@ -93,10 +97,54 @@ function useAdminProbe(): AdminProbe {
   return { status: "ok" };
 }
 
+type LoadState =
+  | { status: "loading" }
+  | { status: "ready"; doc: StoryDocument; loadedFromBackend: boolean };
+
+function useStoredDocument(seed: StoryDocument): LoadState {
+  const { data, isLoading } = useQuery({
+    queryKey: ["/api/admin/storybuilder", STORY_SOURCE_TYPE, STORY_SOURCE_ID],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/storybuilder/${STORY_SOURCE_TYPE}/${STORY_SOURCE_ID}`, {
+        credentials: "include",
+        headers: pidHeaders(),
+      });
+      if (!res.ok) throw new Error("load-failed");
+      return (await res.json()) as { exists: boolean; blocksJson?: unknown };
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+    staleTime: 60_000,
+  });
+
+  if (isLoading) return { status: "loading" };
+
+  if (data && data.exists && Array.isArray(data.blocksJson)) {
+    const restoredBlocks = data.blocksJson as StoryBlock[];
+    const restored: StoryDocument = { ...seed, blocks: restoredBlocks };
+    return { status: "ready", doc: restored, loadedFromBackend: true };
+  }
+  return { status: "ready", doc: seed, loadedFromBackend: false };
+}
+
 export default function StorybuilderDemoPage() {
   const probe = useAdminProbe();
-  const [doc] = useState<StoryDocument>(() => buildSeedDocument());
-  const [latest, setLatest] = useState<StoryDocument>(doc);
+  const seed = useMemo(() => buildSeedDocument(), []);
+  const stored = useStoredDocument(seed);
+  const [latest, setLatest] = useState<StoryDocument>(seed);
+
+  const handleSave = async (doc: StoryDocument) => {
+    const res = await fetch(`/api/admin/storybuilder/${STORY_SOURCE_TYPE}/${STORY_SOURCE_ID}`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...pidHeaders() },
+      body: JSON.stringify({ blocksJson: doc.blocks, isAuto: true }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: "Speichern fehlgeschlagen" }));
+      throw new Error(err.message || "Speichern fehlgeschlagen");
+    }
+  };
 
   if (probe.status === "loading") {
     return (
@@ -179,11 +227,36 @@ export default function StorybuilderDemoPage() {
     );
   }
 
+  if (stored.status === "loading") {
+    return (
+      <div
+        data-testid="storybuilder-demo-doc-loading"
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#0B0906",
+          color: "#A89A85",
+          fontFamily: "'Inter', system-ui, sans-serif",
+          fontSize: 13,
+          letterSpacing: ".15em",
+          textTransform: "uppercase",
+        }}
+      >
+        Lade Story…
+      </div>
+    );
+  }
+
   return (
     <div data-testid="page-storybuilder-demo">
-      <StoryEditor initialDocument={doc} onChange={setLatest} />
+      <StoryEditor initialDocument={stored.doc} onChange={setLatest} onSave={handleSave} />
       <div style={{ display: "none" }} data-testid="debug-block-count">
         {latest.blocks.length}
+      </div>
+      <div style={{ display: "none" }} data-testid="debug-loaded-from-backend">
+        {stored.loadedFromBackend ? "yes" : "no"}
       </div>
     </div>
   );

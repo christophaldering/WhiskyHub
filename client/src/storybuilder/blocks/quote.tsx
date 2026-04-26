@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { BlockDefinition, BlockEditorPanelProps, BlockRendererProps } from "../core/types";
+import { RichTextEditor, sanitizeStoryHtml } from "../editor/RichTextEditor";
 
 const payloadSchema = z.object({
   text: z.string().default(""),
@@ -9,6 +10,20 @@ const payloadSchema = z.object({
 });
 
 type Payload = z.infer<typeof payloadSchema>;
+
+function quoteAsHtml(text: string): string {
+  if (!text) return "";
+  const trimmed = text.trim();
+  if (trimmed.startsWith("<")) return sanitizeStoryHtml(trimmed);
+  const escaped = trimmed
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .split(/\n\n+/)
+    .map((para) => `<p>${para.replace(/\n/g, "<br/>")}</p>`)
+    .join("");
+  return sanitizeStoryHtml(escaped);
+}
 
 function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
   return (
@@ -21,6 +36,7 @@ function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
       }}
     >
       <blockquote
+        data-testid="quote-text"
         style={{
           fontFamily: theme.fonts.serif,
           fontStyle: "italic",
@@ -31,9 +47,8 @@ function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
           padding: payload.variant === "pull" ? "0 0 0 2rem" : "2rem 0 2rem 2rem",
           borderLeft: `2px solid ${theme.colors.amber}`,
         }}
-      >
-        {payload.text || "Hier dein Zitat..."}
-      </blockquote>
+        dangerouslySetInnerHTML={{ __html: quoteAsHtml(payload.text) || "<p>Hier dein Zitat…</p>" }}
+      />
       {payload.attribution || payload.role ? (
         <div
           style={{
@@ -61,12 +76,12 @@ function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
     <div style={{ display: "grid", gap: 12 }}>
       <label style={labelStyle}>
         <span>Zitat-Text</span>
-        <textarea
+        <RichTextEditor
           value={payload.text}
-          onChange={(e) => set("text", e.target.value)}
-          rows={4}
-          style={{ ...inputStyle, resize: "vertical", minHeight: 100 }}
-          data-testid="textarea-quote-text"
+          onChange={(html) => set("text", html)}
+          placeholder="Schreibe hier ein Zitat…"
+          minHeight={120}
+          data-testid="richtext-quote-text"
         />
       </label>
       <label style={labelStyle}>
@@ -118,7 +133,7 @@ export const quoteBlock: BlockDefinition<Payload> = {
   label: "Zitat",
   description: "Hervorgehobenes Zitat mit Amber-Trennlinie und optionaler Quelle.",
   category: "generic",
-  defaultPayload: () => ({ text: "Schreibe hier ein Zitat...", attribution: "", role: "", variant: "block" }),
+  defaultPayload: () => ({ text: "<p>Schreibe hier ein Zitat…</p>", attribution: "", role: "", variant: "block" }),
   payloadSchema,
   Renderer,
   EditorPanel,
