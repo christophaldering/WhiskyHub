@@ -268,3 +268,28 @@ export function buildInitialTastingStoryBlocks(args: {
 
   return blocks;
 }
+
+const INTRO_EYEBROW = "Begr\u00fc\u00dfung";
+const INTRO_COUNT_REGEX = /gemeinsam verkostet von (einer Person|\d+ Personen)/;
+
+export function rewriteAutoIntroParticipantCount(
+  blocks: StoryBlock[],
+  includedCount: number,
+): StoryBlock[] {
+  const expected = includedCount === 1 ? "einer Person" : `${includedCount} Personen`;
+  let mutated = false;
+  const out = blocks.map((b) => {
+    if (b.type !== "text-section") return b;
+    if (b.editedByHost === true) return b;
+    const payload = b.payload as Record<string, unknown>;
+    const eyebrow = (payload as { eyebrow?: unknown }).eyebrow;
+    if (typeof eyebrow !== "string" || eyebrow !== INTRO_EYEBROW) return b;
+    const body = typeof payload.body === "string" ? payload.body : "";
+    const m = body.match(INTRO_COUNT_REGEX);
+    if (!m || m[1] === expected) return b;
+    const newBody = body.replace(INTRO_COUNT_REGEX, `gemeinsam verkostet von ${expected}`);
+    mutated = true;
+    return { ...b, payload: { ...payload, body: newBody } };
+  });
+  return mutated ? out : blocks;
+}

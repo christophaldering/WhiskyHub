@@ -1471,6 +1471,25 @@ export class DatabaseStorage implements IStorage {
       .update(tastingParticipants)
       .set({ excludedFromResults: excluded })
       .where(and(eq(tastingParticipants.tastingId, tastingId), eq(tastingParticipants.participantId, participantId)));
+    try {
+      const current = await this.getTasting(tastingId);
+      const existingKey = current?.storyPdfObjectKey ?? null;
+      if (existingKey) {
+        try {
+          const { objectStorageClient } = await import("./replit_integrations/object_storage/objectStorage");
+          const parts = existingKey.split("/").filter((p) => p.length > 0);
+          if (parts.length < 2) throw new Error(`Invalid storage path: ${existingKey}`);
+          const bucketName = parts[0];
+          const objectName = parts.slice(1).join("/");
+          await objectStorageClient.bucket(bucketName).file(objectName).delete({ ignoreNotFound: true });
+        } catch (delErr) {
+          console.warn("[setParticipantInclusion] story pdf delete warning:", delErr instanceof Error ? delErr.message : delErr);
+        }
+      }
+    } catch (lookupErr) {
+      console.warn("[setParticipantInclusion] cache invalidate lookup warning:", lookupErr instanceof Error ? lookupErr.message : lookupErr);
+    }
+    await this.clearStoryCache(tastingId);
   }
 
   // --- Sharing Participants (Bottle-Sharing) ---
