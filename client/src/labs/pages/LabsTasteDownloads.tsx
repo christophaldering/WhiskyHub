@@ -6,6 +6,8 @@ import { useAppStore } from "@/lib/store";
 import { tastingApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
+import TastingDownloadGrid from "@/labs/components/TastingDownloadGrid";
+import { getStoryPdfAvailable } from "@/labs/utils/labsExports";
 import { downloadBlob } from "@/lib/download";
 import { generateBlankTastingSheet, generateBlankTastingMat } from "@/components/printable-tasting-sheets";
 import { Link , useLocation } from "wouter";
@@ -130,6 +132,66 @@ export default function LabsTasteDownloads() {
             );
           })}
         </div>
+      </div>
+
+      <div className="mb-7" data-testid="labs-tasting-results-section">
+        <p className="labs-section-label">{t("downloads.tastingResultsSection", "Tasting-Auswertungen")}</p>
+        <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>
+          {t("downloads.tastingResultsSectionDesc", "Lade Auswertungen deiner abgeschlossenen Tastings herunter")}
+        </p>
+        {(() => {
+          const eligible = (allTastings || []).filter((tg: any) => {
+            const status = tg.status;
+            return status === "reveal" || status === "completed" || status === "closed" || status === "archived";
+          });
+          if (eligible.length === 0) {
+            return (
+              <p className="text-sm" style={{ color: "var(--labs-text-muted)", padding: "12px 0" }} data-testid="text-no-eligible-tastings">
+                {t("downloads.tastingResultsEmpty", "Noch keine abgeschlossenen Tastings")}
+              </p>
+            );
+          }
+          return (
+            <div className="flex flex-col gap-3">
+              {eligible.map((tg: any) => {
+                const isHostOfThis = !!participantId && tg.hostId === participantId;
+                const storyAvailable = getStoryPdfAvailable(tg, isHostOfThis);
+                return (
+                  <div
+                    key={tg.id}
+                    className="labs-card p-4"
+                    data-testid={`tasting-result-card-${tg.id}`}
+                  >
+                    <div className="flex items-start gap-3 mb-3">
+                      <div style={{
+                        width: 36, height: 36, borderRadius: 10,
+                        background: "var(--labs-accent-muted)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        flexShrink: 0,
+                      }}>
+                        <Wine className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <h3 className="text-sm font-semibold" style={{ color: "var(--labs-text)", margin: 0 }}>
+                          {tg.title}
+                        </h3>
+                        <p className="text-xs mt-0.5" style={{ color: "var(--labs-text-muted)" }}>
+                          {[tg.date, tg.location].filter(Boolean).join(" · ")}
+                        </p>
+                      </div>
+                    </div>
+                    <TastingDownloadGrid
+                      tastingId={tg.id}
+                      storyAvailable={storyAvailable}
+                      variant="buttons"
+                      testIdPrefix={`tasting-download-${tg.id}`}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
 
       <div>

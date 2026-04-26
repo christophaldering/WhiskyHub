@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
-import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Sparkles, Download, FileText, FileSpreadsheet, Clock, Monitor, Archive, Check, Info, Lock, Loader2, BookOpen, Camera, Trash2, Plus } from "lucide-react";
+import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Sparkles, Clock, Monitor, Archive, Check, Info, Lock, Loader2, BookOpen, Camera, Trash2, Plus } from "lucide-react";
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,23 +12,10 @@ import { getStatusConfig } from "@/labs/utils/statusConfig";
 import LabsScoreRing from "@/labs/components/LabsScoreRing";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import CoverImage16x9 from "@/labs/components/CoverImage16x9";
-import { downloadBlob } from "@/lib/download";
-import { saveJsPdf } from "@/lib/pdf";
+import TastingDownloadGrid from "@/labs/components/TastingDownloadGrid";
+import { getStoryPdfAvailable } from "@/labs/utils/labsExports";
 import { stripGuestSuffix, formatScore } from "@/lib/utils";
-import jsPDF from "jspdf";
-import { exportStoryPdf } from "@/lib/pdf-story";
 import { useUpload } from "@/hooks/use-upload";
-
-async function labsExportFromServer(tastingId: string, format: "csv" | "xlsx"): Promise<boolean> {
-  const res = await fetch(`/api/tastings/${tastingId}/results/export?format=${format}`);
-  if (!res.ok) return false;
-  const blob = await res.blob();
-  const disp = res.headers.get("Content-Disposition");
-  const filenameMatch = disp?.match(/filename="?([^"]+)"?/);
-  const filename = filenameMatch?.[1] || `results.${format}`;
-  downloadBlob(blob, filename);
-  return true;
-}
 
 async function addEventPhoto(tastingId: string, photoUrl: string, caption?: string) {
   const pid = getParticipantId();
@@ -55,372 +42,6 @@ async function deleteEventPhoto(tastingId: string, photoId: string) {
     method: "DELETE",
     headers: { "x-participant-id": pid ?? "" },
   });
-}
-
-async function labsExportPdf(tasting: any, whiskyResults: any[], t: (key: string) => string) {
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const pageW = 210;
-  const pageH = 297;
-  const marginX = 18;
-  const contentW = pageW - marginX * 2;
-  const accent: [number, number, number] = [212, 162, 86];
-  const dark: [number, number, number] = [30, 28, 24];
-  const muted: [number, number, number] = [138, 126, 109];
-  const bg: [number, number, number] = [26, 23, 20];
-  const textColor: [number, number, number] = [245, 240, 232];
-
-  const drawPageBg = () => {
-    doc.setFillColor(...bg);
-    doc.rect(0, 0, pageW, pageH, "F");
-  };
-
-  const drawHeader = () => {
-    doc.setFillColor(...accent);
-    doc.rect(0, 0, pageW, 3, "F");
-  };
-
-  const drawFooter = () => {
-    const footerY = pageH - 12;
-    doc.setDrawColor(...accent);
-    doc.setLineWidth(0.3);
-    doc.line(marginX, footerY - 4, pageW - marginX, footerY - 4);
-    doc.setFontSize(7);
-    doc.setTextColor(...muted);
-    doc.text(t("resultsUi.generatedBy"), marginX, footerY);
-    doc.text(new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }), pageW - marginX, footerY, { align: "right" });
-  };
-
-  drawPageBg();
-  drawHeader();
-
-  let y = 18;
-
-  doc.setFontSize(10);
-  doc.setTextColor(...accent);
-  doc.setFont("helvetica", "bold");
-  doc.text(t("resultsUi.generatedBy"), pageW / 2, y, { align: "center" });
-  y += 10;
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.setTextColor(...textColor);
-  doc.text(tasting.title || t("resultsUi.tastingResults"), pageW / 2, y, { align: "center" });
-  y += 9;
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(...muted);
-  const totalRatings = whiskyResults.reduce((s, w) => s + w.ratingCount, 0);
-  doc.text(
-    `${whiskyResults.length} ${whiskyResults.length === 1 ? t("resultsUi.whisky") : t("resultsUi.whiskies")} \u00B7 ${totalRatings} ${totalRatings === 1 ? t("resultsUi.rating") : t("resultsUi.ratings")}`,
-    pageW / 2, y, { align: "center" }
-  );
-  y += 8;
-
-  doc.setDrawColor(...accent);
-  doc.setLineWidth(0.5);
-  doc.line(marginX, y, pageW - marginX, y);
-  y += 10;
-
-  const sorted = [...whiskyResults].sort((a, b) => (b.avgOverall || 0) - (a.avgOverall || 0));
-
-  sorted.forEach((r, i) => {
-    const blockH = 28;
-    if (y + blockH > pageH - 20) {
-      drawFooter();
-      doc.addPage();
-      drawPageBg();
-      drawHeader();
-      y = 18;
-    }
-
-    if (i < 3) {
-      doc.setFillColor(
-        Math.round(bg[0] + (accent[0] - bg[0]) * 0.12),
-        Math.round(bg[1] + (accent[1] - bg[1]) * 0.12),
-        Math.round(bg[2] + (accent[2] - bg[2]) * 0.12),
-      );
-      doc.roundedRect(marginX, y - 4, contentW, blockH - 2, 2, 2, "F");
-    }
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.setTextColor(...(i < 3 ? accent : textColor));
-    doc.text(`#${i + 1}`, marginX + 2, y + 2);
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(...textColor);
-    const nameText = (r.name || t("resultsUi.unknown")).length > 35 ? (r.name || t("resultsUi.unknown")).slice(0, 33) + "\u2026" : (r.name || t("resultsUi.unknown"));
-    doc.text(nameText, marginX + 16, y + 2);
-
-    if (r.distillery) {
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.setTextColor(...muted);
-      doc.text(r.distillery, marginX + 16, y + 7);
-    }
-
-    const resultsScaleMax = (tasting?.ratingScale as number) ?? 100;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.setTextColor(...accent);
-    doc.text(formatScore(r.avgOverall ?? 0), pageW - marginX, y + 3, { align: "right" });
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
-    doc.setTextColor(...muted);
-    doc.text(`${r.ratingCount} ${r.ratingCount === 1 ? t("resultsUi.rating") : t("resultsUi.ratings")}`, pageW - marginX, y + 8, { align: "right" });
-
-    const barY = y + 12;
-    const barLabels = [t("resultsUi.nose"), t("resultsUi.taste"), t("resultsUi.finish")];
-    const barVals = [r.avgNose, r.avgTaste, r.avgFinish];
-    const barMaxW = contentW - 50;
-
-    barLabels.forEach((lbl, bi) => {
-      const bx = marginX + 16;
-      const by = barY + bi * 5;
-      doc.setFontSize(6);
-      doc.setTextColor(...muted);
-      doc.text(lbl, bx, by + 1);
-      doc.setFillColor(60, 55, 45);
-      doc.roundedRect(bx + 24, by - 1.5, barMaxW * 0.25, 3, 1, 1, "F");
-      if (barVals[bi] != null) {
-        const userVal = barVals[bi]!;
-        const pct = resultsScaleMax > 0 ? Math.min(userVal, resultsScaleMax) / resultsScaleMax : 0;
-        doc.setFillColor(...accent);
-        doc.roundedRect(bx + 24, by - 1.5, barMaxW * 0.25 * pct, 3, 1, 1, "F");
-        doc.setFontSize(6);
-        doc.setTextColor(...textColor);
-        doc.text(formatScore(userVal), bx + 26 + barMaxW * 0.25, by + 1);
-      }
-    });
-
-    y += blockH + 4;
-  });
-
-  drawFooter();
-  const safeName = (tasting.title || "results").replace(/[^a-zA-Z0-9]/g, "_");
-  await saveJsPdf(doc, `${safeName}_results.pdf`);
-}
-
-function LabsExportDropdown({ tastingId, tasting, whiskyResults, tileMode }: { tastingId: string; tasting: any; whiskyResults: any[]; tileMode?: boolean }) {
-  const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState<string | null>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (
-        btnRef.current && !btnRef.current.contains(target) &&
-        dropdownRef.current && !dropdownRef.current.contains(target)
-      ) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-
-  useEffect(() => {
-    if (open && btnRef.current) {
-      const rect = btnRef.current.getBoundingClientRect();
-      setPos({
-        top: rect.bottom + 4,
-        right: window.innerWidth - rect.right,
-      });
-      const close = () => setOpen(false);
-      window.addEventListener("scroll", close, true);
-      window.addEventListener("resize", close);
-      return () => {
-        window.removeEventListener("scroll", close, true);
-        window.removeEventListener("resize", close);
-      };
-    }
-  }, [open]);
-
-  const handleServerExport = async (format: "csv" | "xlsx") => {
-    setLoading(format);
-    try {
-      await labsExportFromServer(tastingId, format);
-    } finally {
-      setLoading(null);
-      setOpen(false);
-    }
-  };
-
-  const handleStoryPdf = async () => {
-    setLoading("story-pdf");
-    try {
-      const [storyRes, photosRes] = await Promise.all([
-        fetch(`/api/tastings/${tastingId}/story`, { headers: pidHeaders() }),
-        fetch(`/api/tastings/${tastingId}/event-photos`, { headers: pidHeaders() }),
-      ]);
-      if (!storyRes.ok) throw new Error("Story-Daten konnten nicht geladen werden.");
-      const storyData = await storyRes.json();
-      if (!storyData?.tasting) throw new Error("Keine Tasting-Daten verfügbar.");
-      const eventPhotos = photosRes.ok ? await photosRes.json() : [];
-      await exportStoryPdf({ ...storyData, eventPhotos });
-      setOpen(false);
-    } catch (err) {
-      console.error("Story PDF export failed:", err);
-      setOpen(false);
-    } finally {
-      setLoading(null);
-    }
-  };
-
-  return (
-    <div style={{ display: "inline-block" }}>
-      {tileMode ? (
-        <button
-          ref={btnRef}
-          type="button"
-          onClick={() => setOpen(!open)}
-          data-testid="button-labs-export-menu-tile"
-          style={{
-            display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
-            padding: "10px 14px", borderRadius: 12, cursor: "pointer",
-            background: open ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated)",
-            border: `1.5px solid ${open ? "var(--labs-accent)" : "var(--labs-border)"}`,
-            color: open ? "var(--labs-accent)" : "var(--labs-text-secondary)",
-            fontFamily: "inherit", minWidth: 60, transition: "all 0.15s",
-          }}
-        >
-          <Download style={{ width: 18, height: 18 }} />
-          <span style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>{t("resultsUi.export")}</span>
-        </button>
-      ) : (
-        <button
-          ref={btnRef}
-          className="labs-btn-secondary flex items-center gap-2"
-          onClick={() => setOpen(!open)}
-          data-testid="button-labs-export-menu"
-        >
-          <Download className="w-4 h-4" />
-          {t("resultsUi.export")}
-        </button>
-      )}
-      {open && pos && createPortal(
-        <div
-          ref={dropdownRef}
-          style={{
-            position: "fixed",
-            top: pos.top,
-            right: pos.right,
-            background: "var(--labs-surface-elevated)",
-            border: "1px solid var(--labs-border)",
-            borderRadius: 10,
-            padding: 6,
-            minWidth: 160,
-            zIndex: 9999,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
-          }}
-          data-testid="dropdown-labs-export-menu"
-        >
-          <button
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              width: "100%",
-              padding: "8px 12px",
-              background: "transparent",
-              border: "none",
-              borderRadius: 6,
-              cursor: "pointer",
-              color: "var(--labs-text)",
-              fontSize: 13,
-              fontFamily: "inherit",
-              opacity: loading === "csv" ? 0.6 : 1,
-            }}
-            onClick={() => handleServerExport("csv")}
-            disabled={loading === "csv"}
-            data-testid="button-labs-export-csv"
-          >
-            {loading === "csv" ? <span className="labs-pulse-dot" style={{ width: 8, height: 8 }} /> : <FileText style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />}
-            {t("resultsUi.csv")}
-          </button>
-          <button
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              width: "100%",
-              padding: "8px 12px",
-              background: "transparent",
-              border: "none",
-              borderRadius: 6,
-              cursor: "pointer",
-              color: "var(--labs-text)",
-              fontSize: 13,
-              fontFamily: "inherit",
-              opacity: loading === "xlsx" ? 0.6 : 1,
-            }}
-            onClick={() => handleServerExport("xlsx")}
-            disabled={loading === "xlsx"}
-            data-testid="button-labs-export-excel"
-          >
-            {loading === "xlsx" ? <span className="labs-pulse-dot" style={{ width: 8, height: 8 }} /> : <FileSpreadsheet style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />}
-            {t("resultsUi.excel")}
-          </button>
-          <button
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              width: "100%",
-              padding: "8px 12px",
-              background: "transparent",
-              border: "none",
-              borderRadius: 6,
-              cursor: "pointer",
-              color: "var(--labs-text)",
-              fontSize: 13,
-              fontFamily: "inherit",
-            }}
-            onClick={async () => { await labsExportPdf(tasting, whiskyResults, t); setOpen(false); }}
-            data-testid="button-labs-export-pdf"
-          >
-            <Download style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />
-            {t("resultsUi.pdf")}
-          </button>
-          <button
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              width: "100%",
-              padding: "8px 12px",
-              background: "transparent",
-              border: "none",
-              borderRadius: 6,
-              cursor: loading === "story-pdf" ? "default" : "pointer",
-              color: "var(--labs-text)",
-              fontSize: 13,
-              fontFamily: "inherit",
-              opacity: loading === "story-pdf" ? 0.6 : 1,
-            }}
-            onClick={handleStoryPdf}
-            disabled={loading === "story-pdf"}
-            data-testid="button-labs-export-story-pdf"
-          >
-            {loading === "story-pdf"
-              ? <Loader2 style={{ width: 14, height: 14, color: "var(--labs-text-muted)", animation: "spin 1s linear infinite" }} />
-              : <BookOpen style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />
-            }
-            {t("resultsUi.storyPdf")}
-          </button>
-        </div>,
-        document.body
-      )}
-    </div>
-  );
 }
 
 const MEDAL_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32"];
@@ -1262,9 +883,6 @@ export default function LabsResults({ params }: LabsResultsProps) {
     return null;
   };
 
-  const isCompleted = tasting.status === "archived" || tasting.status === "completed" || tasting.status === "closed";
-  const storyVisible = isCompleted && (isHost || !!tasting.storyEnabled);
-
   return (
     <div className="labs-page labs-fade-in">
       <button
@@ -1277,7 +895,17 @@ export default function LabsResults({ params }: LabsResultsProps) {
         {fromMyTastings ? t("tastings.myTastings", "Meine Tastings") : "Tastings"}
       </button>
 
-      <div className="mb-6 labs-stagger-1 labs-fade-in">
+      <div className="mb-2 labs-fade-in" data-testid="results-page-context">
+        <p style={{
+          fontSize: 11, fontWeight: 600, letterSpacing: "0.08em",
+          textTransform: "uppercase", color: "var(--labs-text-muted)",
+          margin: 0,
+        }}>
+          {t("resultsUi.pageContext", "Auswertung & Statistiken")}
+        </p>
+      </div>
+
+      <div className="mb-3 labs-stagger-1 labs-fade-in">
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
           <div style={{ flex: "1 1 0", minWidth: 200 }}>
             <h1
@@ -1288,187 +916,184 @@ export default function LabsResults({ params }: LabsResultsProps) {
               {tasting.title}
             </h1>
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
+              <p className="text-sm" style={{ color: "var(--labs-text-muted)" }} data-testid="text-results-meta">
                 {tasting.date}{(tasting as any).time ? ` · ${(tasting as any).time}` : ""} · {tasting.location}
               </p>
-          {tasting.guidedMode && (
-            <span
-              className="labs-badge"
-              style={{ background: "var(--labs-info-muted)", color: "var(--labs-info)" }}
-              data-testid="results-guided-badge"
-            >
-              Guided Tasting
-            </span>
-          )}
-          {tasting.status === "archived" && (
-            <span
-              className={getStatusConfig("archived").cssClass}
-              data-testid="results-archived-badge"
-            >
-              <Lock className="w-3 h-3" />
-              {t(getStatusConfig("archived").labelKey, getStatusConfig("archived").fallbackLabel)}
-            </span>
-          )}
+              {tasting.guidedMode && (
+                <span
+                  className="labs-badge"
+                  style={{ background: "var(--labs-info-muted)", color: "var(--labs-info)" }}
+                  data-testid="results-guided-badge"
+                >
+                  Guided Tasting
+                </span>
+              )}
+              {tasting.status === "archived" && (
+                <span
+                  className={getStatusConfig("archived").cssClass}
+                  data-testid="results-archived-badge"
+                >
+                  <Lock className="w-3 h-3" />
+                  {t(getStatusConfig("archived").labelKey, getStatusConfig("archived").fallbackLabel)}
+                </span>
+              )}
             </div>
           </div>
-          {sorted.length > 0 && (
-            <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
-              {currentParticipant?.id === tasting.hostId && (tasting.status === "archived" || tasting.status === "completed" || tasting.status === "closed" || tasting.status === "reveal") && (
-                <button
-                  className="labs-btn-primary flex items-center gap-2"
-                  onClick={() => navigate(`/labs/results/${tastingId}/present`)}
-                  data-testid="button-labs-present-results"
-                >
-                  <Monitor className="w-4 h-4" />
-                  Present
-                </button>
-              )}
-              {currentParticipant?.id === tasting.hostId && (tasting.status === "archived" || tasting.status === "completed" || tasting.status === "closed" || tasting.status === "reveal") && (
-                <button
-                  className="labs-btn-secondary flex items-center gap-2"
-                  onClick={() => navigate(`/labs/results/${tastingId}/story`)}
-                  data-testid="button-labs-story"
-                >
-                  <BookOpen className="w-4 h-4" />
-                  Story
-                </button>
-              )}
-              {!!tasting.storyEnabled && currentParticipant?.id !== tasting.hostId && (tasting.status === "archived" || tasting.status === "completed" || tasting.status === "reveal") && (
-                <button
-                  className="labs-btn-ghost flex items-center gap-2"
-                  onClick={() => navigate(`/labs/results/${tastingId}/story`)}
-                  data-testid="button-labs-story-participant"
-                >
-                  <BookOpen className="w-4 h-4" />
-                  Story
-                </button>
-              )}
-              {currentParticipant?.id === tasting.hostId && tasting.status === "reveal" && (
-                <button
-                  className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
-                  style={{ background: "var(--labs-surface)", border: "1px solid var(--labs-border)", color: "var(--labs-text)", cursor: "pointer", fontFamily: "inherit" }}
-                  onClick={() => setShowArchiveDialog(true)}
-                  data-testid="button-archive-tasting"
-                >
-                  <Archive className="w-4 h-4" />
-                  Archive
-                </button>
-              )}
-              {(tasting.status === "archived" || tasting.status === "completed" || tasting.status === "closed" || tasting.status === "reveal") && (
-                <button
-                  className="flex items-center gap-2 text-sm font-semibold px-3 py-2 rounded-xl transition-colors"
-                  style={{ background: "var(--labs-surface)", border: "1px solid var(--labs-border)", color: "var(--labs-text)", cursor: "pointer", fontFamily: "inherit" }}
-                  onClick={() => navigate(`/labs/results/${tastingId}/report`)}
-                  data-testid="button-labs-ki-report"
-                >
-                  <Sparkles className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-                  KI-Report
-                </button>
-              )}
-              <LabsExportDropdown tastingId={tastingId} tasting={tasting} whiskyResults={whiskyResults} />
-            </div>
+          {isHost && tasting.status === "reveal" && (
+            <button
+              className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+              style={{ background: "var(--labs-surface)", border: "1px solid var(--labs-border)", color: "var(--labs-text)", cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}
+              onClick={() => setShowArchiveDialog(true)}
+              data-testid="button-archive-tasting"
+            >
+              <Archive className="w-4 h-4" />
+              Archive
+            </button>
           )}
         </div>
+        {sorted.length > 0 && (
+          <p
+            style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "6px 0 0" }}
+            data-testid="text-results-counts"
+          >
+            {t("resultsUi.metaWhiskies", { count: whiskyResults.length, defaultValue: `${whiskyResults.length} whiskies` })}
+            {" · "}
+            {t("resultsUi.metaRatings", { count: totalRatings, defaultValue: `${totalRatings} ratings` })}
+            {participantCount > 0 && (
+              <>
+                {" · "}
+                {t("resultsUi.metaParticipants", { count: participantCount, defaultValue: `${participantCount} participants` })}
+              </>
+            )}
+          </p>
+        )}
       </div>
 
-      {isCompleted && (
-        <div
-          data-testid="results-quick-access-bar"
+      {pid && sorted.length > 0 && (
+        <button
+          className="labs-card labs-fade-in"
           style={{
-            display: "flex",
-            gap: 8,
-            overflowX: "auto",
-            paddingBottom: 4,
-            marginBottom: 16,
-            scrollbarWidth: "none",
+            width: "100%", padding: "16px 18px", marginBottom: 16, display: "flex", alignItems: "center", gap: 14,
+            background: "linear-gradient(135deg, color-mix(in srgb, var(--labs-accent) 6%, var(--labs-surface)), color-mix(in srgb, var(--labs-gold, var(--labs-accent)) 4%, var(--labs-surface)))",
+            border: "1px solid color-mix(in srgb, var(--labs-accent) 15%, transparent)",
+            cursor: "pointer", fontFamily: "inherit", textAlign: "left",
           }}
+          onClick={async () => {
+            const lang = navigator.language?.startsWith("de") ? "de" : "en";
+            fetch(`/api/participants/${pid}/connoisseur-report`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", ...pidHeaders() },
+              body: JSON.stringify({ language: lang, tastingId }),
+            }).catch(() => {});
+            navigate(`/labs/taste/connoisseur?tastingId=${tastingId}&generating=1`);
+          }}
+          data-testid="cta-connoisseur-report"
         >
-          <button
-            type="button"
-            data-testid="results-quickaccess-results"
-            style={{
-              display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
-              padding: "10px 14px", borderRadius: 12, cursor: "default",
-              background: "var(--labs-accent-muted)",
-              border: "1.5px solid var(--labs-accent)",
-              color: "var(--labs-accent)",
-              fontFamily: "inherit", minWidth: 60, flexShrink: 0,
-            }}
-          >
-            <BarChart3 style={{ width: 18, height: 18 }} />
-            <span style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>
-              {t("resultsUi.rankingTitle", "Rangliste")}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(`/labs/results/${tastingId}/report`)}
-            data-testid="results-quickaccess-ai"
-            style={{
-              display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
-              padding: "10px 14px", borderRadius: 12, cursor: "pointer",
-              background: "var(--labs-surface-elevated)",
-              border: "1.5px solid var(--labs-border)",
-              color: "var(--labs-text-secondary)",
-              fontFamily: "inherit", minWidth: 60, flexShrink: 0,
-              transition: "all 0.15s",
-            }}
-          >
-            <Sparkles style={{ width: 18, height: 18, color: "var(--labs-accent)" }} />
-            <span style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>
-              {t("resultsUi.kiReport", "KI-Analyse")}
-            </span>
-          </button>
-          {storyVisible && (
-            <button
-              type="button"
-              onClick={() => navigate(`/labs/results/${tastingId}/story`)}
-              data-testid="results-quickaccess-story"
-              style={{
-                display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
-                padding: "10px 14px", borderRadius: 12, cursor: "pointer",
-                background: "var(--labs-surface-elevated)",
-                border: "1.5px solid var(--labs-border)",
-                color: "var(--labs-text-secondary)",
-                fontFamily: "inherit", minWidth: 60, flexShrink: 0,
-                transition: "all 0.15s",
-              }}
-            >
-              <BookOpen style={{ width: 18, height: 18 }} />
-              <span style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>
-                Story
-              </span>
-            </button>
-          )}
-          {isHost && (
-            <button
-              type="button"
-              onClick={() => navigate(`/labs/results/${tastingId}/present`)}
-              data-testid="results-quickaccess-present"
-              style={{
-                display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
-                padding: "10px 14px", borderRadius: 12, cursor: "pointer",
-                background: "var(--labs-surface-elevated)",
-                border: "1.5px solid var(--labs-border)",
-                color: "var(--labs-text-secondary)",
-                fontFamily: "inherit", minWidth: 60, flexShrink: 0,
-                transition: "all 0.15s",
-              }}
-            >
-              <Monitor style={{ width: 18, height: 18 }} />
-              <span style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>
-                {t("tastingDetail.viewPresentation", "Präsentation")}
-              </span>
-            </button>
-          )}
-          <LabsExportDropdown
-            tastingId={tastingId}
-            tasting={tasting}
-            whiskyResults={whiskyResults}
-            tileMode
-          />
-        </div>
+          <div style={{
+            width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+            background: "linear-gradient(135deg, var(--labs-accent), var(--labs-gold, var(--labs-accent)))",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Sparkles className="w-5 h-5" style={{ color: "#fff" }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
+              {t("resultsUi.connoisseurCardTitle", "Connoisseur Report")}
+            </p>
+            <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "2px 0 0" }}>
+              {t("resultsUi.connoisseurCardDesc", "Persönliche Geschmacks-Analyse über alle deine Bewertungen")}
+            </p>
+          </div>
+          <ChevronDown className="w-4 h-4" style={{ color: "var(--labs-accent)", transform: "rotate(-90deg)" }} />
+        </button>
       )}
+
+      {sorted.length > 0 && (() => {
+        const aiAvailable = ["archived", "completed", "closed", "reveal"].includes(tasting.status as string);
+        const presentAvailable = isHost && aiAvailable;
+        const storyAvailable = getStoryPdfAvailable(tasting, isHost);
+        const actions: { key: string; icon: React.ElementType; title: string; desc: string; onClick: () => void }[] = [];
+        if (aiAvailable) {
+          actions.push({
+            key: "ai",
+            icon: Sparkles,
+            title: t("resultsUi.actionAiTitle", "KI-Tasting-Report"),
+            desc: t("resultsUi.actionAiDesc", "Tiefgehende KI-Auswertung dieser Tastingrunde"),
+            onClick: () => navigate(`/labs/results/${tastingId}/report`),
+          });
+        }
+        if (storyAvailable) {
+          actions.push({
+            key: "story",
+            icon: BookOpen,
+            title: t("resultsUi.actionStoryTitle", "Tasting-Story"),
+            desc: t("resultsUi.actionStoryDesc", "Magazin-Layout mit Highlights und Erzählung"),
+            onClick: () => navigate(`/labs/results/${tastingId}/story`),
+          });
+        }
+        if (presentAvailable) {
+          actions.push({
+            key: "present",
+            icon: Monitor,
+            title: t("resultsUi.actionPresentTitle", "Live-Präsentation"),
+            desc: t("resultsUi.actionPresentDesc", "Ergebnisse als Show präsentieren"),
+            onClick: () => navigate(`/labs/results/${tastingId}/present`),
+          });
+        }
+        if (actions.length === 0) return null;
+        return (
+          <div className="mb-4" data-testid="results-actions-block">
+            <h2 style={{
+              fontSize: 13, fontWeight: 700, color: "var(--labs-text)",
+              margin: "0 0 8px", letterSpacing: "0.02em",
+            }}>
+              {t("resultsUi.actionsBlockTitle", "Tasting erkunden")}
+            </h2>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: `repeat(auto-fit, minmax(220px, 1fr))`,
+              gap: 10,
+            }}>
+              {actions.map(a => {
+                const Icon = a.icon;
+                return (
+                  <button
+                    key={a.key}
+                    type="button"
+                    onClick={a.onClick}
+                    className="labs-card"
+                    data-testid={`results-action-${a.key}`}
+                    style={{
+                      display: "flex", alignItems: "flex-start", gap: 12,
+                      padding: 14, textAlign: "left",
+                      background: "var(--labs-surface-elevated)",
+                      border: "1px solid var(--labs-border)",
+                      cursor: "pointer", fontFamily: "inherit",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                      background: "var(--labs-accent-muted)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <Icon className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
+                        {a.title}
+                      </p>
+                      <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
+                        {a.desc}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {isHostForStory && (
         <div className="labs-card-elevated labs-fade-in" style={{ marginBottom: 16 }} data-testid="results-story-photos-section">
@@ -2070,43 +1695,28 @@ export default function LabsResults({ params }: LabsResultsProps) {
         </div>
       )}
 
-      {pid && sorted.length > 0 && (
-        <button
-          className="labs-card labs-fade-in"
-          style={{
-            width: "100%", padding: "20px 20px", marginBottom: 20, display: "flex", alignItems: "center", gap: 14,
-            background: "linear-gradient(135deg, color-mix(in srgb, var(--labs-accent) 6%, var(--labs-surface)), color-mix(in srgb, var(--labs-gold, var(--labs-accent)) 4%, var(--labs-surface)))",
-            border: "1px solid color-mix(in srgb, var(--labs-accent) 15%, transparent)",
-            cursor: "pointer", fontFamily: "inherit", textAlign: "left",
-          }}
-          onClick={async () => {
-            const lang = navigator.language?.startsWith("de") ? "de" : "en";
-            fetch(`/api/participants/${pid}/connoisseur-report`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", ...pidHeaders() },
-              body: JSON.stringify({ language: lang, tastingId }),
-            }).catch(() => {});
-            navigate(`/labs/taste/connoisseur?tastingId=${tastingId}&generating=1`);
-          }}
-          data-testid="cta-connoisseur-report"
-        >
-          <div style={{
-            width: 40, height: 40, borderRadius: 12, flexShrink: 0,
-            background: "linear-gradient(135deg, var(--labs-accent), var(--labs-gold, var(--labs-accent)))",
-            display: "flex", alignItems: "center", justifyContent: "center",
+      {sorted.length > 0 && (
+        <div className="mt-6 mb-8 labs-fade-in" data-testid="results-downloads-block">
+          <h2 style={{
+            fontSize: 15, fontWeight: 700, color: "var(--labs-text)",
+            margin: "0 0 4px",
           }}>
-            <Sparkles className="w-5 h-5" style={{ color: "#fff" }} />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
-              {t("labs.connoisseur.navLabel", "Connoisseur Report")}
-            </p>
-            <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "2px 0 0" }}>
-              {t("labs.connoisseur.navDesc", "AI analysis of your whisky personality")}
-            </p>
-          </div>
-          <ChevronDown className="w-4 h-4" style={{ color: "var(--labs-accent)", transform: "rotate(-90deg)" }} />
-        </button>
+            {t("resultsUi.downloadsBlockTitle", "Daten & Dokumente herunterladen")}
+          </h2>
+          <p style={{
+            fontSize: 12, color: "var(--labs-text-muted)",
+            margin: "0 0 12px",
+          }}>
+            {t("resultsUi.downloadsBlockDesc", "Wähle das passende Format für deinen Anwendungsfall")}
+          </p>
+          <TastingDownloadGrid
+            tastingId={tastingId}
+            storyAvailable={getStoryPdfAvailable(tasting, isHost)}
+            inlineData={{ tasting, whiskyResults }}
+            variant="cards"
+            testIdPrefix="results-download"
+          />
+        </div>
       )}
 
       <div className="flex justify-center gap-3 pb-8">
