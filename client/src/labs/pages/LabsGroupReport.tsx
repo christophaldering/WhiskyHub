@@ -879,7 +879,7 @@ export default function LabsGroupReport({ params }: LabsGroupReportProps) {
                               : <Sparkles style={{ width: 11, height: 11 }} />}
                           {p.name}
                           {!has && !isPidGenerating && (
-                            <span style={{ fontSize: 10, fontWeight: 500, color: "var(--labs-accent)" }} data-testid={`status-participant-missing-${p.id}`}>
+                            <span style={{ fontSize: 10, fontWeight: 500, color: "var(--labs-accent)" }} data-testid={`status-participant-missing-${realPid}`}>
                               · {t("aiReport.individualMissing", "fehlt")}
                             </span>
                           )}
