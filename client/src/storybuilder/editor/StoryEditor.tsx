@@ -157,9 +157,14 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
     };
   }, []);
 
+  const saveImpl = adapter ? (next: StoryDocument) => adapter.saveDraft(next.blocks) : onSave;
+  const snapshotImpl = adapter
+    ? (next: StoryDocument, name?: string) => adapter.createVersion(next.blocks, name)
+    : onManualSnapshot;
+
   const enqueueSave = useCallback(
     (snapshot: StoryDocument) => {
-      if (!onSave) return;
+      if (!saveImpl) return;
       pendingSnapshotRef.current = snapshot;
       saveChainRef.current = saveChainRef.current.then(async () => {
         const next = pendingSnapshotRef.current;
@@ -175,7 +180,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
           setSaveError(null);
         }
         try {
-          await onSave(next);
+          await saveImpl(next);
           if (!isMountedRef.current) return;
           lastSavedJsonRef.current = json;
           setSaveStatus("saved");
@@ -187,11 +192,11 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
         }
       });
     },
-    [onSave],
+    [saveImpl],
   );
 
   useEffect(() => {
-    if (!onSave) return;
+    if (!saveImpl) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     const json = JSON.stringify(doc.blocks);
     if (json === lastSavedJsonRef.current) return;
@@ -201,21 +206,21 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
-  }, [doc, onSave, enqueueSave]);
+  }, [doc, saveImpl, enqueueSave]);
 
   const triggerSaveNow = useCallback(() => {
-    if (!onSave) return;
+    if (!saveImpl) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     enqueueSave(doc);
-  }, [doc, onSave, enqueueSave]);
+  }, [doc, saveImpl, enqueueSave]);
 
   const triggerManualSnapshot = useCallback(async () => {
-    if (!onManualSnapshot || snapshotBusy) return;
+    if (!snapshotImpl || snapshotBusy) return;
     const name = window.prompt("Name für diese Version (optional):", "")?.trim();
     setSnapshotBusy(true);
     setSnapshotInfo(null);
     try {
-      await onManualSnapshot(doc, name && name.length > 0 ? name : undefined);
+      await snapshotImpl(doc, name && name.length > 0 ? name : undefined);
       setSnapshotInfo("Version gespeichert");
       setTimeout(() => setSnapshotInfo(null), 2500);
     } catch (err: unknown) {
@@ -223,7 +228,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
     } finally {
       setSnapshotBusy(false);
     }
-  }, [doc, onManualSnapshot, snapshotBusy]);
+  }, [doc, snapshotImpl, snapshotBusy]);
 
   const handleVersionRestored = useCallback(
     (blocks: StoryBlock[]) => {
@@ -638,7 +643,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
                 ↷
               </button>
             </div>
-            {onSave ? (
+            {saveImpl ? (
               <SaveBadge status={saveStatus} lastSavedAt={lastSavedAt} error={saveError} onRetry={triggerSaveNow} />
             ) : null}
             {onRegenerateStory ? (
@@ -694,7 +699,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
                 >
                   Verlauf
                 </button>
-                {onManualSnapshot ? (
+                {snapshotImpl ? (
                   <button
                     type="button"
                     onClick={triggerManualSnapshot}

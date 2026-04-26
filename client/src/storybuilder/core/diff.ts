@@ -10,6 +10,7 @@ export type BlockDiffEntry = {
   oldIndex?: number;
   newIndex?: number;
   changedFields: string[];
+  movedOnly: boolean;
 };
 
 export type DiffSummary = {
@@ -36,12 +37,13 @@ export function diffStoryBlocks(oldBlocks: StoryBlock[], newBlocks: StoryBlock[]
         newBlock: nb,
         newIndex: ni,
         changedFields: [],
+        movedOnly: false,
       });
       return;
     }
     const ob = oldBlocks[oi];
     const changedFields = diffBlockFields(ob, nb);
-    if (oi !== ni) changedFields.push("position");
+    const movedOnly = changedFields.length === 0 && oi !== ni;
     if (changedFields.length === 0) {
       result.push({
         status: "unchanged",
@@ -51,6 +53,7 @@ export function diffStoryBlocks(oldBlocks: StoryBlock[], newBlocks: StoryBlock[]
         oldIndex: oi,
         newIndex: ni,
         changedFields: [],
+        movedOnly,
       });
     } else {
       result.push({
@@ -61,6 +64,7 @@ export function diffStoryBlocks(oldBlocks: StoryBlock[], newBlocks: StoryBlock[]
         oldIndex: oi,
         newIndex: ni,
         changedFields,
+        movedOnly: false,
       });
     }
   });
@@ -73,6 +77,7 @@ export function diffStoryBlocks(oldBlocks: StoryBlock[], newBlocks: StoryBlock[]
       oldBlock: ob,
       oldIndex: oi,
       changedFields: [],
+      movedOnly: false,
     });
   });
 

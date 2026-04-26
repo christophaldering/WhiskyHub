@@ -167,6 +167,14 @@ function DiffEntryCard({ entry }: { entry: BlockDiffEntry }) {
               {entry.changedFields.join(", ")}
             </span>
           ) : null}
+          {entry.status === "unchanged" && entry.movedOnly ? (
+            <span
+              data-testid={`diff-moved-${entry.blockId}`}
+              style={{ fontSize: 10, color: COLOR_UNCHANGED, letterSpacing: ".05em", fontStyle: "italic" }}
+            >
+              verschoben
+            </span>
+          ) : null}
         </div>
         <span style={{ fontSize: 10, color: COLOR_UNCHANGED }}>
           {entry.oldIndex !== undefined ? `#${entry.oldIndex + 1}` : "—"}{" "}

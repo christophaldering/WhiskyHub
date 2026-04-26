@@ -165,6 +165,13 @@ export default function AdminCmsEditorPage({ id }: Props) {
     sourceId: id,
     consumerScope: "cms",
     isAdmin: true,
+    load: async () => {
+      const fresh = await getCmsPage(id);
+      const blocks: StoryBlock[] = Array.isArray(fresh.draftBlocksJson) && fresh.draftBlocksJson.length > 0
+        ? fresh.draftBlocksJson
+        : Array.isArray(fresh.blocksJson) ? fresh.blocksJson : [];
+      return { blocks, theme: fresh.theme };
+    },
     saveDraft: async (blocks) => {
       await handleEditorSave({
         schemaVersion: 1,
@@ -173,7 +180,7 @@ export default function AdminCmsEditorPage({ id }: Props) {
         metadata: { createdAt: data.createdAt, updatedAt: new Date().toISOString(), title: data.title },
       });
     },
-    createSnapshot: async (blocks, name) => {
+    createVersion: async (blocks, name) => {
       await handleManualSnapshot({
         schemaVersion: 1,
         theme: data.theme,

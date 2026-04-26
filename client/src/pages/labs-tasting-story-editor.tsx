@@ -126,28 +126,6 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
     setActionError(null);
   };
 
-  const tastingAdapter: StoryPersistenceAdapter = {
-    sourceType: "tasting",
-    sourceId: id,
-    consumerScope: "tasting",
-    isAdmin: currentParticipant?.role === "admin",
-    saveDraft: async (blocks) => {
-      await saveTastingStory(id, blocks);
-      qc.invalidateQueries({ queryKey: ["/api/tasting-stories", id] });
-    },
-    createSnapshot: async (blocks, name) => {
-      await saveTastingStory(id, blocks);
-      await snapshotTastingStory(id, blocks, name);
-      qc.invalidateQueries({ queryKey: ["/api/tasting-stories", id] });
-    },
-    listVersions: (filter) => listStoryVersions("tasting", id, filter),
-    getVersion: (versionId) => getStoryVersion("tasting", id, versionId),
-    restoreVersion: async (versionId) => {
-      const result = await restoreStoryVersion("tasting", id, versionId);
-      return { blocks: result.blocksJson };
-    },
-  };
-
   const handleManualSnapshot = async (next: StoryDocument, name?: string): Promise<void> => {
     await saveTastingStory(id, next.blocks);
     await snapshotTastingStory(id, next.blocks, name);
@@ -233,6 +211,34 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
       return next ?? orig;
     });
     resolve(merged);
+  };
+
+  const tastingAdapter: StoryPersistenceAdapter = {
+    sourceType: "tasting",
+    sourceId: id,
+    consumerScope: "tasting",
+    isAdmin: currentParticipant?.role === "admin",
+    load: async () => {
+      const fresh = await getTastingStory(id);
+      return { blocks: fresh.document.blocks, theme: fresh.document.theme };
+    },
+    saveDraft: async (blocks) => {
+      await saveTastingStory(id, blocks);
+      qc.invalidateQueries({ queryKey: ["/api/tasting-stories", id] });
+    },
+    createVersion: async (blocks, name) => {
+      await saveTastingStory(id, blocks);
+      await snapshotTastingStory(id, blocks, name);
+      qc.invalidateQueries({ queryKey: ["/api/tasting-stories", id] });
+    },
+    listVersions: (filter) => listStoryVersions("tasting", id, filter),
+    getVersion: (versionId) => getStoryVersion("tasting", id, versionId),
+    restoreVersion: async (versionId) => {
+      const result = await restoreStoryVersion("tasting", id, versionId);
+      return { blocks: result.blocksJson };
+    },
+    regenerateBlock: handleRegenerateBlock,
+    regenerateStory: handleRegenerateStory,
   };
 
   const meta = data.tasting;

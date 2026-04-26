@@ -10,8 +10,9 @@ export type StoryPersistenceAdapter = {
   sourceId: string;
   consumerScope: ConsumerScope;
   isAdmin: boolean;
+  load: () => Promise<{ blocks: StoryBlock[]; theme?: string }>;
   saveDraft: (blocks: StoryBlock[]) => Promise<void>;
-  createSnapshot: (blocks: StoryBlock[], name?: string) => Promise<void>;
+  createVersion: (blocks: StoryBlock[], name?: string) => Promise<void>;
   listVersions: (filter: VersionFilter) => Promise<StoryVersionMeta[]>;
   getVersion: (versionId: string) => Promise<StoryVersionFull>;
   restoreVersion: (versionId: string) => Promise<{ blocks: StoryBlock[] }>;
