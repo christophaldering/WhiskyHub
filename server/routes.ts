@@ -25871,6 +25871,9 @@ ${cleaned.slice(0, 60000)}`;
         blocks: tastingStoryBlocksSchema,
         scope: z.enum(["all", "single"]),
         blockId: z.string().min(1).max(128).optional(),
+      }).refine((v) => v.scope !== "single" || (typeof v.blockId === "string" && v.blockId.length > 0), {
+        message: "blockId ist bei scope=single erforderlich",
+        path: ["blockId"],
       });
       const parsed = bodySchema.safeParse(req.body);
       if (!parsed.success) return res.status(422).json({ message: "Ungueltiger Request-Body" });
