@@ -853,6 +853,10 @@ export default function AdminPanel() {
             <Database className="w-3 h-3" />
             {t("admin.linkDistilleryAliases", { defaultValue: "Distillery aliases" })}
           </a>
+          <a href="/admin/cms" className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 transition-colors font-semibold" data-testid="link-admin-cms-shortcut">
+            <BookOpen className="w-3 h-3" />
+            Inhalte / CMS
+          </a>
         </div>
       </div>
 

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
+import { getSession } from "@/lib/session";
 import { StoryRenderer } from "@/storybuilder/renderer/StoryRenderer";
 import type { StoryDocument, StoryBlock } from "@/storybuilder/core/types";
 import { getCmsPage, type CmsPageFull } from "@/lib/cms-api";
@@ -13,7 +14,7 @@ type Props = { id: string };
 
 export default function AdminCmsPreviewPage({ id }: Props) {
   const { currentParticipant } = useAppStore();
-  const isAdmin = currentParticipant?.role === "admin";
+  const isAdmin = currentParticipant?.role === "admin" || getSession().role === "admin";
 
   const { data, isLoading, isError, error } = useQuery<CmsPageFull>({
     queryKey: ["/api/admin/cms/pages", id],

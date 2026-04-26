@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
+import { getSession } from "@/lib/session";
 import {
   listCmsPages,
   createCmsPage,
@@ -62,7 +63,7 @@ export default function AdminCmsPage() {
   const [newTitle, setNewTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const isAdmin = currentParticipant?.role === "admin";
+  const isAdmin = currentParticipant?.role === "admin" || getSession().role === "admin";
 
   const { data: pages, isLoading } = useQuery<CmsPageListItem[]>({
     queryKey: ["/api/admin/cms/pages"],

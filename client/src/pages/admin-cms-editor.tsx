@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
+import { getSession } from "@/lib/session";
 import { StoryEditor } from "@/storybuilder/editor/StoryEditor";
 import type { StoryDocument, StoryBlock } from "@/storybuilder/core/types";
 import { listThemes } from "@/storybuilder/themes";
@@ -45,7 +46,7 @@ export default function AdminCmsEditorPage({ id }: Props) {
   const { currentParticipant } = useAppStore();
   const qc = useQueryClient();
   const [, navigate] = useLocation();
-  const isAdmin = currentParticipant?.role === "admin";
+  const isAdmin = currentParticipant?.role === "admin" || getSession().role === "admin";
   const [actionError, setActionError] = useState<string | null>(null);
 
   const { data, isLoading, isError, error } = useQuery<CmsPageFull>({
