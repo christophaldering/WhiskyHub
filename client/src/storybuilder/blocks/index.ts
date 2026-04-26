@@ -11,6 +11,9 @@ import { imageGalleryBlock } from "./image-gallery";
 import { statsGridBlock } from "./stats-grid";
 import { ctaButtonBlock } from "./cta-button";
 import { videoEmbedBlock } from "./video-embed";
+import { featureCardsBlock } from "./feature-cards";
+import { benchmarkBlock } from "./benchmark-block";
+import { liveStatsBlock } from "./live-stats";
 
 type RegisteredBlock = {
   type: BlockType;
@@ -49,6 +52,9 @@ register(imageGalleryBlock);
 register(statsGridBlock);
 register(ctaButtonBlock);
 register(videoEmbedBlock);
+register(featureCardsBlock);
+register(benchmarkBlock);
+register(liveStatsBlock);
 
 export function getBlockDefinition(type: BlockType): RegisteredBlock | undefined {
   return registry.get(type);
