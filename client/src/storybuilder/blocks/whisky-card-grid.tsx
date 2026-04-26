@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { BlockDefinition, BlockEditorPanelProps, BlockRendererProps } from "../core/types";
 import { useTastingStoryData } from "../data/TastingStoryDataContext";
+import { ResponsiveImage } from "../renderer/ResponsiveImage";
 
 const overrideSchema = z.object({
   handoutText: z.string().optional().default(""),
@@ -71,19 +72,30 @@ function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
                 color: theme.colors.ink,
               }}
             >
-              <div
-                style={{
-                  width: "100%",
-                  aspectRatio: "1 / 1",
-                  backgroundImage: w.imageUrl ? `url(${w.imageUrl})` : "none",
-                  backgroundSize: "contain",
-                  backgroundPosition: "center",
-                  backgroundRepeat: "no-repeat",
-                  background: w.imageUrl ? undefined : "rgba(201,169,97,0.05)",
-                  filter: w.imageUrl ? "drop-shadow(0 12px 24px rgba(0,0,0,0.45))" : undefined,
-                }}
-                aria-hidden={w.imageUrl ? undefined : true}
-              />
+              {w.imageUrl ? (
+                <ResponsiveImage
+                  src={w.imageUrl}
+                  alt={w.name}
+                  sizes={`(max-width: 600px) 92vw, ${Math.max(180, Math.floor(1100 / cols))}px`}
+                  style={{
+                    width: "100%",
+                    aspectRatio: "1 / 1",
+                    objectFit: "contain",
+                    display: "block",
+                    filter: "drop-shadow(0 12px 24px rgba(0,0,0,0.45))",
+                  }}
+                  testId={`img-whisky-${w.id}`}
+                />
+              ) : (
+                <div
+                  aria-hidden
+                  style={{
+                    width: "100%",
+                    aspectRatio: "1 / 1",
+                    background: "rgba(201,169,97,0.05)",
+                  }}
+                />
+              )}
               <div>
                 <div
                   style={{

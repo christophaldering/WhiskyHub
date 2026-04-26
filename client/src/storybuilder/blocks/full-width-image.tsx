@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { BlockDefinition, BlockEditorPanelProps, BlockRendererProps } from "../core/types";
 import { safeUrl } from "../editor/RichTextEditor";
 import { ImageUploadField } from "../editor/ImageUploadField";
+import { ResponsiveImage } from "../renderer/ResponsiveImage";
 
 const payloadSchema = z.object({
   imageUrl: z.string().default(""),
@@ -42,11 +43,10 @@ function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
       }}
     >
       <figure style={{ margin: 0 }}>
-        <img
+        <ResponsiveImage
           src={safeSrc}
           alt={payload.alt}
-          loading="lazy"
-          decoding="async"
+          sizes="(max-width: 1100px) 100vw, 1100px"
           style={{
             width: "100%",
             display: "block",
@@ -54,6 +54,7 @@ function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
             aspectRatio,
             boxShadow: "0 30px 80px rgba(0,0,0,0.5)",
           }}
+          testId="img-full-width"
         />
         {payload.caption ? (
           <figcaption

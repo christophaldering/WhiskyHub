@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { BlockDefinition, BlockEditorPanelProps, BlockRendererProps } from "../core/types";
 import { safeUrl } from "../editor/RichTextEditor";
 import { ImageUploadField } from "../editor/ImageUploadField";
+import { ResponsiveImage } from "../renderer/ResponsiveImage";
 
 const itemSchema = z.object({
   url: z.string().default(""),
@@ -60,11 +61,10 @@ function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
       >
         {visible.map((item, idx) => (
           <figure key={idx} style={{ margin: 0 }} data-testid={`gallery-item-${idx}`}>
-            <img
+            <ResponsiveImage
               src={item.url}
               alt={item.alt ?? ""}
-              loading="lazy"
-              decoding="async"
+              sizes={`(max-width: 600px) 100vw, ${Math.floor(100 / cols)}vw`}
               style={{
                 width: "100%",
                 aspectRatio: "1 / 1",
@@ -73,6 +73,7 @@ function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
                 borderRadius: payload.rounded ? 8 : 2,
                 boxShadow: "0 12px 40px rgba(0,0,0,0.4)",
               }}
+              testId={`img-gallery-${idx}`}
             />
             {item.caption ? (
               <figcaption

@@ -68,6 +68,25 @@ export function ImageUploadField({ value, onChange, label, testId, placeholder }
     [uploadFile],
   );
 
+  const onPaste = useCallback(
+    (e: React.ClipboardEvent<HTMLDivElement>) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.kind === "file" && item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) {
+            e.preventDefault();
+            void uploadFile(file);
+            return;
+          }
+        }
+      }
+    },
+    [uploadFile],
+  );
+
   const baseTestId = testId ?? "image-upload";
   return (
     <div style={containerStyle}>
@@ -96,10 +115,15 @@ export function ImageUploadField({ value, onChange, label, testId, placeholder }
         }}
         onDragLeave={() => setDragOver(false)}
         onDrop={onDrop}
+        onPaste={onPaste}
+        tabIndex={0}
+        role="group"
+        aria-label="Bild-Drop-Bereich: Datei hierher ziehen oder Strg+V einfügen"
         style={{
           ...dropZoneStyle,
           background: dragOver ? "rgba(201,169,97,0.18)" : dropZoneStyle.background,
           borderColor: dragOver ? "#C9A961" : "rgba(201,169,97,0.35)",
+          outlineOffset: 2,
         }}
         data-testid={`dropzone-${baseTestId}`}
       >
@@ -113,7 +137,7 @@ export function ImageUploadField({ value, onChange, label, testId, placeholder }
         >
           {busy ? "Lädt hoch…" : "Hochladen"}
         </button>
-        <span style={hintStyle}>oder Datei hierher ziehen (JPG/PNG/WebP/GIF, max 20 MB)</span>
+        <span style={hintStyle}>oder Datei hierher ziehen, Strg+V zum Einfügen (JPG/PNG/WebP/GIF, max 20 MB)</span>
         <input
           ref={fileInputRef}
           type="file"

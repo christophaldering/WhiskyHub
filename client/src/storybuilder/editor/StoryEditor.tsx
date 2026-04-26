@@ -507,9 +507,12 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
         />
       ) : null}
       <aside
+        id="story-editor-blocks-panel"
         data-testid="editor-sidebar-blocks"
         aria-label="Blöcke"
         aria-hidden={isCompact && mobilePanel !== "blocks" ? true : undefined}
+        role={isCompact ? "dialog" : undefined}
+        aria-modal={isCompact && mobilePanel === "blocks" ? true : undefined}
         {...(isCompact && mobilePanel !== "blocks" ? { inert: "" as unknown as boolean } : {})}
         style={blocksAsideStyle}
       >
@@ -611,6 +614,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
                 style={toolbarBtnStyle}
                 aria-label="Blockliste öffnen"
                 aria-expanded={mobilePanel === "blocks"}
+                aria-controls="story-editor-blocks-panel"
                 data-testid="button-toggle-mobile-blocks"
               >
                 Blöcke
@@ -683,6 +687,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
                 style={toolbarBtnStyle}
                 aria-label="Eigenschaften öffnen"
                 aria-expanded={mobilePanel === "properties"}
+                aria-controls="story-editor-properties-panel"
                 data-testid="button-toggle-mobile-properties"
               >
                 Eigenschaften
@@ -753,9 +758,12 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
       </main>
 
       <aside
+        id="story-editor-properties-panel"
         data-testid="editor-sidebar-properties"
         aria-label="Eigenschaften"
         aria-hidden={isCompact && mobilePanel !== "properties" ? true : undefined}
+        role={isCompact ? "dialog" : undefined}
+        aria-modal={isCompact && mobilePanel === "properties" ? true : undefined}
         {...(isCompact && mobilePanel !== "properties" ? { inert: "" as unknown as boolean } : {})}
         style={propertiesAsideStyle}
       >

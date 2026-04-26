@@ -163,9 +163,24 @@ function PrintStyles() {
   }
   [data-testid="img-winner-bottle"],
   [data-testid^="img-whisky-"],
-  [data-testid^="img-taster-"] {
+  [data-testid^="img-taster-"],
+  [data-testid="img-full-width"],
+  [data-testid^="img-gallery-"] {
     max-height: 80mm !important;
     filter: none !important;
+  }
+  [data-testid="block-image-gallery"],
+  [data-testid="block-feature-cards"],
+  [data-testid="block-two-column"],
+  [data-testid="block-stats-grid"],
+  [data-testid="block-benchmark-block"] {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  [data-testid="block-feature-cards"] [data-testid^="feature-card-"],
+  [data-testid="block-image-gallery"] figure {
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
   img {
     max-width: 100% !important;
