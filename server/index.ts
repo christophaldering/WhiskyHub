@@ -833,6 +833,11 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
 
     warmupGmailToken();
 
+    void (async () => {
+      const { purgeCmsHomeIfRequested } = await import("./purge-cms-home");
+      await purgeCmsHomeIfRequested(log);
+    })();
+
     seedProductionData()
       .catch((e) => log(`Auto-seed error: ${(e as Error).message}`, "seed"))
       .then(() => import("./seed-demo").then(m => m.seedDemoTasting()))

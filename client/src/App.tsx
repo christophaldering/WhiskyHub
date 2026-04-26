@@ -10,24 +10,18 @@ import UpdateBanner from "@/components/UpdateBanner";
 import "@/lib/i18n";
 import { pushRoute, incrementNavIdx, saveScrollPosition, getScrollPosition, consumeBackNavigation } from "@/lib/navStack";
 import { trackingApi } from "@/lib/api";
+import { handlePotentialChunkError, triggerHardRecovery } from "@/lib/cacheRecovery";
 
 window.addEventListener("unhandledrejection", (event) => {
-  const msg = String(event.reason?.message || event.reason || "");
-  if (
-    msg.includes("Failed to fetch dynamically imported module") ||
-    msg.includes("Loading chunk") ||
-    msg.includes("error loading dynamically imported module") ||
-    msg.includes("Importing a module script failed") ||
-    msg.includes("Unable to preload CSS") ||
-    msg.includes("is not a valid JavaScript MIME type")
-  ) {
-    const key = "cs_chunk_reload";
-    const last = sessionStorage.getItem(key);
-    const now = Date.now();
-    if (!last || now - parseInt(last, 10) > 10000) {
-      sessionStorage.setItem(key, String(now));
-      window.location.reload();
-    }
+  const reason = event.reason;
+  if (handlePotentialChunkError(reason instanceof Error ? reason : reason?.message ?? reason)) {
+    return;
+  }
+});
+
+window.addEventListener("error", (event) => {
+  if (handlePotentialChunkError(event.error ?? event.message)) {
+    return;
   }
 });
 
@@ -172,23 +166,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
         boundary: "global",
       }),
     }).catch(() => {});
-    const msg = error.message || "";
-    if (
-      msg.includes("Loading chunk") ||
-      msg.includes("Failed to fetch dynamically imported module") ||
-      msg.includes("error loading dynamically imported module") ||
-      msg.includes("Importing a module script failed") ||
-      msg.includes("Unable to preload CSS") ||
-      msg.includes("is not a valid JavaScript MIME type")
-    ) {
-      const key = "cs_chunk_reload";
-      const last = sessionStorage.getItem(key);
-      const now = Date.now();
-      if (!last || now - parseInt(last, 10) > 10000) {
-        sessionStorage.setItem(key, String(now));
-        window.location.reload();
-      }
-    }
+    handlePotentialChunkError(error);
   }
   render() {
     if (this.state.error) {
@@ -197,8 +175,11 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
           <h2 style={{ color: "#d4a574", marginBottom: 12 }}>Something went wrong</h2>
           <pre style={{ fontSize: 13, whiteSpace: "pre-wrap", color: "#ff6b6b", marginBottom: 16 }}>{this.state.error.message}</pre>
           <pre style={{ fontSize: 11, whiteSpace: "pre-wrap", color: "#8a8070", marginBottom: 24, maxHeight: 200, overflow: "auto" }}>{this.state.error.stack}</pre>
-          <button onClick={() => { this.setState({ error: null }); window.history.back(); }} style={{ padding: "10px 20px", background: "#d4a574", color: "#1a1714", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 600, marginRight: 10 }}>Go Back</button>
-          <button onClick={() => { this.setState({ error: null }); window.location.href = "/"; }} style={{ padding: "10px 20px", background: "transparent", color: "#d4a574", border: "1px solid #3a3228", borderRadius: 8, cursor: "pointer" }}>Home</button>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+            <button onClick={() => { this.setState({ error: null }); window.history.back(); }} style={{ padding: "10px 20px", background: "#d4a574", color: "#1a1714", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 600 }} data-testid="button-error-go-back">Zurück</button>
+            <button onClick={() => { this.setState({ error: null }); window.location.href = "/"; }} style={{ padding: "10px 20px", background: "transparent", color: "#d4a574", border: "1px solid #3a3228", borderRadius: 8, cursor: "pointer" }} data-testid="button-error-home">Startseite</button>
+            <button onClick={() => triggerHardRecovery()} style={{ padding: "10px 20px", background: "transparent", color: "#d4a574", border: "1px solid #d4a574", borderRadius: 8, cursor: "pointer", fontWeight: 600 }} data-testid="button-error-hard-recover">Cache leeren &amp; neu laden</button>
+          </div>
         </div>
       );
     }

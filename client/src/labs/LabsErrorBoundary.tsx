@@ -1,5 +1,6 @@
 import { Component, ReactNode } from "react";
-import { Wine, RefreshCw } from "lucide-react";
+import { Wine, RefreshCw, Trash2 } from "lucide-react";
+import { isChunkLoadError, handlePotentialChunkError, triggerHardRecovery } from "@/lib/cacheRecovery";
 
 interface Props {
   children: ReactNode;
@@ -11,18 +12,6 @@ interface State {
   hasError: boolean;
   error: Error | null;
   isChunkError: boolean;
-}
-
-function isChunkLoadError(error: Error): boolean {
-  const msg = error.message || "";
-  return (
-    msg.includes("Loading chunk") ||
-    msg.includes("Failed to fetch dynamically imported module") ||
-    msg.includes("error loading dynamically imported module") ||
-    msg.includes("Importing a module script failed") ||
-    msg.includes("Unable to preload CSS") ||
-    (msg.includes("Load failed") && msg.includes("import"))
-  );
 }
 
 export default class LabsErrorBoundary extends Component<Props, State> {
@@ -51,24 +40,19 @@ export default class LabsErrorBoundary extends Component<Props, State> {
       }),
     }).catch(() => {});
 
-    if (isChunkLoadError(error)) {
-      const reloadKey = "cs_chunk_reload";
-      const lastReload = sessionStorage.getItem(reloadKey);
-      const now = Date.now();
-      if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
-        sessionStorage.setItem(reloadKey, String(now));
-        window.location.reload();
-        return;
-      }
-    }
+    handlePotentialChunkError(error);
   }
 
   handleRetry = () => {
     if (this.state.isChunkError) {
-      window.location.reload();
+      triggerHardRecovery();
     } else {
       this.setState({ hasError: false, error: null, isChunkError: false });
     }
+  };
+
+  handleHardRecover = () => {
+    triggerHardRecovery();
   };
 
   render() {
@@ -105,18 +89,26 @@ export default class LabsErrorBoundary extends Component<Props, State> {
             style={{ color: "var(--labs-text-muted)" }}
           >
             {this.state.isChunkError
-              ? "A new version is available. The page will reload automatically."
-              : "An unexpected error occurred while loading this page. Try refreshing, or head back to the home screen."}
+              ? "Eine neue Version ist verfügbar. Falls die Seite nicht automatisch neu lädt, leere den Cache und lade neu."
+              : "Beim Laden dieser Seite ist ein unerwarteter Fehler aufgetreten. Versuche es erneut oder gehe zurück zur Startseite."}
           </p>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-3">
             <button
               className="labs-btn-primary flex items-center gap-2"
               onClick={this.handleRetry}
               data-testid="labs-error-boundary-retry"
             >
               <RefreshCw className="w-4 h-4" />
-              {this.state.isChunkError ? "Reload Page" : "Try Again"}
+              {this.state.isChunkError ? "Neu laden" : "Erneut versuchen"}
+            </button>
+            <button
+              className="labs-btn-ghost flex items-center gap-2"
+              onClick={this.handleHardRecover}
+              data-testid="labs-error-boundary-hard-recover"
+            >
+              <Trash2 className="w-4 h-4" />
+              Cache leeren &amp; neu laden
             </button>
             {this.props.overlay && this.props.onClose ? (
               <button
@@ -124,7 +116,7 @@ export default class LabsErrorBoundary extends Component<Props, State> {
                 onClick={this.props.onClose}
                 data-testid="labs-error-boundary-close"
               >
-                Close
+                Schließen
               </button>
             ) : (
               <a
@@ -132,7 +124,7 @@ export default class LabsErrorBoundary extends Component<Props, State> {
                 className="labs-btn-ghost"
                 data-testid="labs-error-boundary-home"
               >
-                Back to Labs
+                Zurück zu Labs
               </a>
             )}
           </div>

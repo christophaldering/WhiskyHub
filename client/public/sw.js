@@ -1,7 +1,7 @@
 const CACHE_VERSION = '__BUILD_TIMESTAMP__';
 const SHELL_CACHE = 'casksense-shell-' + CACHE_VERSION;
 const OFFLINE_QUEUE = 'casksense-offline-queue';
-const SHELL_URLS = ['/', '/manifest.json'];
+const SHELL_URLS = ['/manifest.json'];
 
 function isHashedAsset(pathname) {
   if (!pathname.startsWith('/assets/')) return false;
@@ -52,7 +52,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (request.method === 'GET' && isHashedAsset(url.pathname)) {
-    event.respondWith(cacheFirstWithNetwork(request));
+    event.respondWith(staleWhileRevalidate(request));
     return;
   }
 
@@ -65,16 +65,8 @@ self.addEventListener('fetch', (event) => {
 async function networkFirstNavigation(request) {
   try {
     const response = await fetch(request);
-    if (response.ok) {
-      const cache = await caches.open(SHELL_CACHE);
-      cache.put(request, response.clone());
-    }
     return response;
   } catch (_e) {
-    const cached = await caches.match(request);
-    if (cached) return cached;
-    const fallback = await caches.match('/');
-    if (fallback) return fallback;
     return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
   }
 }
@@ -174,19 +166,23 @@ async function networkFirstWithCache(request) {
   }
 }
 
-async function cacheFirstWithNetwork(request) {
+async function staleWhileRevalidate(request) {
   const cached = await caches.match(request);
-  if (cached) return cached;
-  try {
-    const response = await fetch(request);
-    if (response.ok) {
-      const cache = await caches.open(SHELL_CACHE);
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch (_e) {
-    return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+  const networkPromise = fetch(request)
+    .then((response) => {
+      if (response.ok) {
+        caches.open(SHELL_CACHE).then((cache) => cache.put(request, response.clone())).catch(() => {});
+      }
+      return response;
+    })
+    .catch(() => undefined);
+  if (cached) {
+    networkPromise.catch(() => {});
+    return cached;
   }
+  const networkResponse = await networkPromise;
+  if (networkResponse) return networkResponse;
+  return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
 }
 
 function notifyClients(msg) {

@@ -46,6 +46,11 @@ integrations = ["google-mail:1.0.0", "javascript_object_storage:2.0.0", "javascr
 VITE_SUPPORT_PIN = "4937"
 SIMPLE_MODE_PIN = "#Sammy26"
 
+[userenv.development]
+
+[userenv.production]
+CMS_PURGE_HOME = "1"
+
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 120000
