@@ -74,8 +74,8 @@ export function registerObjectStorageRoutes(app: Express): void {
 
   function parseWidth(raw: unknown): number | undefined {
     if (typeof raw !== "string") return undefined;
-    const n = parseInt(raw, 10);
-    if (!Number.isFinite(n)) return undefined;
+    if (!/^\d+$/.test(raw)) return undefined;
+    const n = Number(raw);
     return ALLOWED_WIDTHS.has(n) ? n : undefined;
   }
 
