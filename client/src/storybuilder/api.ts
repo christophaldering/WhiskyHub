@@ -9,6 +9,7 @@ export type StoryVersionMeta = {
   name: string | null;
   createdAt: string;
   createdById: string | null;
+  blockCount: number;
 };
 
 export type StoryVersionFull = StoryVersionMeta & {

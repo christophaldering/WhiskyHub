@@ -25002,6 +25002,7 @@ ${cleaned.slice(0, 60000)}`;
           name: r.name ?? null,
           createdAt: r.createdAt,
           createdById: r.createdById ?? null,
+          blockCount: Array.isArray(r.blocksJson) ? (r.blocksJson as unknown[]).length : 0,
         })),
       });
     } catch (e: unknown) {

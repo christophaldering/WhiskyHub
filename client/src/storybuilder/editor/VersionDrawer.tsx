@@ -201,8 +201,11 @@ export function VersionDrawer({ open, onClose, sourceType, sourceId, currentThem
                           {v.isAuto ? "Auto" : "Manuell"}
                         </span>
                       </div>
+                      <div style={{ fontSize: 10, color: "#A89A85", marginTop: 4, letterSpacing: ".05em" }}>
+                        {v.blockCount} {v.blockCount === 1 ? "Block" : "Blöcke"}
+                      </div>
                       {v.name ? (
-                        <div style={{ fontSize: 11, color: "#A89A85", marginTop: 4 }}>{v.name}</div>
+                        <div style={{ fontSize: 11, color: "#A89A85", marginTop: 2 }}>{v.name}</div>
                       ) : null}
                     </button>
                   );
