@@ -272,6 +272,7 @@ export default function AdminCmsEditorPage({ id }: Props) {
           onManualSnapshot={handleManualSnapshot}
           sourceContext={{ sourceType: "page", sourceId: id }}
           isAdmin
+          paletteCategories={["generic", "landing"]}
         />
       </div>
     </div>

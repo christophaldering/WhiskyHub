@@ -41,6 +41,7 @@ type Props = {
   onManualSnapshot?: (document: StoryDocument, name?: string) => Promise<void>;
   sourceContext?: StoryEditorSourceContext;
   isAdmin?: boolean;
+  paletteCategories?: Array<"generic" | "tasting" | "landing">;
 };
 
 type HistoryState = {
@@ -68,7 +69,7 @@ function redoHistory(state: HistoryState): HistoryState {
   return { past: [...state.past, state.present].slice(-HISTORY_LIMIT), present: next, future: rest };
 }
 
-export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapshot, sourceContext, isAdmin }: Props) {
+export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapshot, sourceContext, isAdmin, paletteCategories }: Props) {
   const [history, setHistory] = useState<HistoryState>({ past: [], present: initialDocument, future: [] });
   const doc = history.present;
 
@@ -91,7 +92,20 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
 
   const theme = getTheme(doc.theme);
   const selectedBlock = useMemo(() => doc.blocks.find((b) => b.id === selectedId) ?? null, [doc.blocks, selectedId]);
-  const palette = useMemo(() => listBlockDefinitions("generic"), []);
+  const palette = useMemo(() => {
+    const categories: Array<"generic" | "tasting" | "landing"> =
+      paletteCategories && paletteCategories.length > 0 ? paletteCategories : ["generic"];
+    const seen = new Set<string>();
+    const result: ReturnType<typeof listBlockDefinitions> = [];
+    for (const cat of categories) {
+      for (const def of listBlockDefinitions(cat)) {
+        if (seen.has(def.type)) continue;
+        seen.add(def.type);
+        result.push(def);
+      }
+    }
+    return result;
+  }, [paletteCategories]);
 
   const update = useCallback(
     (next: StoryDocument) => {
