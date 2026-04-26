@@ -88,6 +88,87 @@ function applyManualImagesToBlocks(blocks: StoryBlock[], cache: SlideCacheShape)
   });
 }
 
+const PHOTO_CARRY_HEADING = "Eindruecke vom Abend";
+const OPENING_VARIANT = "act-intro";
+
+function actKeyForBlock(block: StoryBlock): string | null {
+  if (block.type === "hero-cover") return null;
+  if (block.type === "divider") return null;
+  if (block.type === "text-section") {
+    const variant = typeof block.payload.variant === "string" ? block.payload.variant : "";
+    const heading = typeof block.payload.heading === "string" ? block.payload.heading : "";
+    if (heading === PHOTO_CARRY_HEADING) return "photos";
+    if (variant === OPENING_VARIANT) return "opening";
+    return null;
+  }
+  switch (block.type) {
+    case "whisky-card-grid": return "whiskies";
+    case "taster-grid": return "tasters";
+    case "ranking-list": return "discoveries";
+    case "blind-results": return "blind";
+    case "winner-hero": return "winner";
+    case "finale-card": return "finale";
+    default: return null;
+  }
+}
+
+function applyStructureToBlocks(blocks: StoryBlock[], cache: SlideCacheShape): StoryBlock[] {
+  const manualStructure = Array.isArray(cache.manualStructure) ? cache.manualStructure : null;
+  const manualHiddenActs = new Set<string>(Array.isArray(cache.manualHiddenActs) ? cache.manualHiddenActs : []);
+  const storyStructure = Array.isArray(cache.storyStructure) ? cache.storyStructure : null;
+
+  if (manualHiddenActs.size > 0) {
+    blocks = blocks.map((b) => {
+      const act = actKeyForBlock(b);
+      if (act && manualHiddenActs.has(act)) return { ...b, hidden: true };
+      return b;
+    });
+  }
+
+  const desiredOrder = manualStructure && manualStructure.length > 0
+    ? manualStructure
+    : (storyStructure && storyStructure.length > 0 ? storyStructure : null);
+
+  if (!desiredOrder) return blocks;
+
+  const fixed: StoryBlock[] = [];
+  const movable: StoryBlock[] = [];
+  for (const b of blocks) {
+    if (b.type === "hero-cover" || b.type === "divider") {
+      fixed.push(b);
+    } else {
+      movable.push(b);
+    }
+  }
+
+  const buckets = new Map<string, StoryBlock[]>();
+  const orphan: StoryBlock[] = [];
+  for (const b of movable) {
+    const act = actKeyForBlock(b);
+    if (act) {
+      const arr = buckets.get(act) ?? [];
+      arr.push(b);
+      buckets.set(act, arr);
+    } else {
+      orphan.push(b);
+    }
+  }
+
+  const ordered: StoryBlock[] = [];
+  for (const act of desiredOrder) {
+    if (typeof act !== "string") continue;
+    const arr = buckets.get(act);
+    if (arr && arr.length > 0) {
+      ordered.push(...arr);
+      buckets.delete(act);
+    }
+  }
+  buckets.forEach((arr) => { ordered.push(...arr); });
+  ordered.push(...orphan);
+
+  return [...fixed, ...ordered];
+}
+
 function buildPhotoCarryOverBlocks(cache: SlideCacheShape, manualPhotoUrls: Record<string, string>): StoryBlock[] {
   const photoTexts = cache.photoSlideTexts ?? {};
   const photoUrls = manualPhotoUrls;
@@ -178,6 +259,7 @@ export async function migrateOne(tastingId: string, opts?: { force?: boolean }):
         blocks = [...blocks, ...photoBlocks];
       }
     }
+    blocks = applyStructureToBlocks(blocks, slideCache);
   }
 
   await storage.updateTasting(tastingId, { storyBlocks: blocks });
@@ -269,6 +351,7 @@ export async function migrateVersions(tastingId: string): Promise<MigrateVersion
         blocks = [...blocks, ...photoBlocks];
       }
     }
+    blocks = applyStructureToBlocks(blocks, slideCache);
     try {
       await storage.saveStoryVersion({
         sourceType: "tasting",
