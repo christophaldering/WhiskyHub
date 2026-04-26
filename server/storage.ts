@@ -7,7 +7,7 @@ import { getParticipantOverallScores, computeStabilityScore } from "./participan
 import {
   participants, tastings, tastingParticipants, sharingParticipants, whiskies, whiskyHandoutLibrary, whiskyHandouts, tastingHandouts, distilleryHandouts, pdfSplitSessions, ratings,
   profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, whiskyGroups, whiskyGroupMembers, journalEntries, benchmarkEntries, wishlistEntries,
-  newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, tastingPhotos, tastingEventPhotos, tastingStoryVersions, storyVersions, userFeedback,
+  newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, tastingPhotos, tastingEventPhotos, tastingStoryVersions, storyVersions, storyTemplates, userFeedback,
   type InsertParticipant, type Participant,
   type InsertTasting, type Tasting,
   type InsertTastingParticipant, type TastingParticipant,
@@ -41,6 +41,7 @@ import {
   type InsertTastingEventPhoto, type TastingEventPhoto,
   type InsertTastingStoryVersion, type TastingStoryVersion,
   type InsertStoryVersion, type StoryVersion,
+  type InsertStoryTemplate, type StoryTemplate,
   type InsertUserFeedback, type UserFeedback,
   notifications,
   type InsertNotification, type Notification,
@@ -689,6 +690,14 @@ export interface IStorage {
   // Storybuilder Versions (Phase 2 — generic block-based stories)
   getLatestStoryVersion(sourceType: string, sourceId: string): Promise<StoryVersion | undefined>;
   saveStoryVersion(data: InsertStoryVersion): Promise<StoryVersion>;
+  listStoryVersions(sourceType: string, sourceId: string, opts?: { limit?: number; isAuto?: boolean }): Promise<StoryVersion[]>;
+  getStoryVersion(id: string): Promise<StoryVersion | undefined>;
+  pruneOldAutoStoryVersions(sourceType: string, sourceId: string, keep: number): Promise<number>;
+  // Storybuilder Templates (Phase 3)
+  listStoryTemplates(opts?: { ownerId?: string | null; scope?: "user" | "global" }): Promise<StoryTemplate[]>;
+  getStoryTemplate(id: string): Promise<StoryTemplate | undefined>;
+  createStoryTemplate(data: InsertStoryTemplate): Promise<StoryTemplate>;
+  deleteStoryTemplate(id: string): Promise<void>;
 
   // User Feedback
   createUserFeedback(data: InsertUserFeedback): Promise<UserFeedback>;
@@ -3641,6 +3650,69 @@ export class DatabaseStorage implements IStorage {
   async saveStoryVersion(data: InsertStoryVersion): Promise<StoryVersion> {
     const [row] = await db.insert(storyVersions).values(data).returning();
     return row;
+  }
+
+  async listStoryVersions(sourceType: string, sourceId: string, opts?: { limit?: number; isAuto?: boolean }): Promise<StoryVersion[]> {
+    const conds = [eq(storyVersions.sourceType, sourceType), eq(storyVersions.sourceId, sourceId)];
+    if (typeof opts?.isAuto === "boolean") {
+      conds.push(eq(storyVersions.isAuto, opts.isAuto));
+    }
+    const limit = Math.max(1, Math.min(opts?.limit ?? 100, 200));
+    return db.select().from(storyVersions).where(and(...conds)).orderBy(desc(storyVersions.createdAt)).limit(limit);
+  }
+
+  async getStoryVersion(id: string): Promise<StoryVersion | undefined> {
+    const [row] = await db.select().from(storyVersions).where(eq(storyVersions.id, id)).limit(1);
+    return row;
+  }
+
+  async pruneOldAutoStoryVersions(sourceType: string, sourceId: string, keep: number): Promise<number> {
+    const safeKeep = Math.max(1, keep);
+    const autoRows = await db
+      .select({ id: storyVersions.id })
+      .from(storyVersions)
+      .where(and(eq(storyVersions.sourceType, sourceType), eq(storyVersions.sourceId, sourceId), eq(storyVersions.isAuto, true)))
+      .orderBy(desc(storyVersions.createdAt));
+    if (autoRows.length <= safeKeep) return 0;
+    const toRemove = autoRows.slice(safeKeep).map(r => r.id);
+    if (toRemove.length === 0) return 0;
+    await db.delete(storyVersions).where(inArray(storyVersions.id, toRemove));
+    return toRemove.length;
+  }
+
+  async listStoryTemplates(opts?: { ownerId?: string | null; scope?: "user" | "global" }): Promise<StoryTemplate[]> {
+    if (opts?.scope === "global") {
+      return db.select().from(storyTemplates).where(eq(storyTemplates.scope, "global")).orderBy(desc(storyTemplates.updatedAt));
+    }
+    if (opts?.scope === "user" && opts.ownerId) {
+      return db
+        .select()
+        .from(storyTemplates)
+        .where(and(eq(storyTemplates.scope, "user"), eq(storyTemplates.ownerId, opts.ownerId)))
+        .orderBy(desc(storyTemplates.updatedAt));
+    }
+    if (opts?.ownerId) {
+      return db
+        .select()
+        .from(storyTemplates)
+        .where(or(eq(storyTemplates.scope, "global"), and(eq(storyTemplates.scope, "user"), eq(storyTemplates.ownerId, opts.ownerId))))
+        .orderBy(desc(storyTemplates.updatedAt));
+    }
+    return db.select().from(storyTemplates).orderBy(desc(storyTemplates.updatedAt));
+  }
+
+  async getStoryTemplate(id: string): Promise<StoryTemplate | undefined> {
+    const [row] = await db.select().from(storyTemplates).where(eq(storyTemplates.id, id)).limit(1);
+    return row;
+  }
+
+  async createStoryTemplate(data: InsertStoryTemplate): Promise<StoryTemplate> {
+    const [row] = await db.insert(storyTemplates).values(data).returning();
+    return row;
+  }
+
+  async deleteStoryTemplate(id: string): Promise<void> {
+    await db.delete(storyTemplates).where(eq(storyTemplates.id, id));
   }
 
   // --- User Feedback ---

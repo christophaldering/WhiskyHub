@@ -146,6 +146,19 @@ export default function StorybuilderDemoPage() {
     }
   };
 
+  const handleManualSnapshot = async (doc: StoryDocument, name?: string) => {
+    const res = await fetch(`/api/admin/storybuilder/${STORY_SOURCE_TYPE}/${STORY_SOURCE_ID}`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...pidHeaders() },
+      body: JSON.stringify({ blocksJson: doc.blocks, isAuto: false, name }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: "Snapshot fehlgeschlagen" }));
+      throw new Error(err.message || "Snapshot fehlgeschlagen");
+    }
+  };
+
   if (probe.status === "loading") {
     return (
       <div
@@ -251,7 +264,14 @@ export default function StorybuilderDemoPage() {
 
   return (
     <div data-testid="page-storybuilder-demo">
-      <StoryEditor initialDocument={stored.doc} onChange={setLatest} onSave={handleSave} />
+      <StoryEditor
+        initialDocument={stored.doc}
+        onChange={setLatest}
+        onSave={handleSave}
+        onManualSnapshot={handleManualSnapshot}
+        sourceContext={{ sourceType: STORY_SOURCE_TYPE, sourceId: STORY_SOURCE_ID }}
+        isAdmin
+      />
       <div style={{ display: "none" }} data-testid="debug-block-count">
         {latest.blocks.length}
       </div>

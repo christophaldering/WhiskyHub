@@ -20,16 +20,27 @@ import type { BlockType, RendererMode, StoryBlock, StoryDocument } from "../core
 import { createBlock, getBlockDefinition, listBlockDefinitions, validatePayload } from "../blocks";
 import { getTheme } from "../themes";
 import { StoryRenderer } from "../renderer/StoryRenderer";
+import { VersionDrawer } from "./VersionDrawer";
+import { TemplateLibrary, type InsertStrategy } from "./TemplateLibrary";
+import { AiActionPanel } from "./AiActionPanel";
 
 const HISTORY_LIMIT = 50;
 const AUTO_SAVE_DELAY_MS = 2000;
 
 export type StoryEditorSaveStatus = "idle" | "saving" | "saved" | "error";
 
+export type StoryEditorSourceContext = {
+  sourceType: string;
+  sourceId: string;
+};
+
 type Props = {
   initialDocument: StoryDocument;
   onChange?: (document: StoryDocument) => void;
   onSave?: (document: StoryDocument) => Promise<void>;
+  onManualSnapshot?: (document: StoryDocument, name?: string) => Promise<void>;
+  sourceContext?: StoryEditorSourceContext;
+  isAdmin?: boolean;
 };
 
 type HistoryState = {
@@ -57,7 +68,7 @@ function redoHistory(state: HistoryState): HistoryState {
   return { past: [...state.past, state.present].slice(-HISTORY_LIMIT), present: next, future: rest };
 }
 
-export function StoryEditor({ initialDocument, onChange, onSave }: Props) {
+export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapshot, sourceContext, isAdmin }: Props) {
   const [history, setHistory] = useState<HistoryState>({ past: [], present: initialDocument, future: [] });
   const doc = history.present;
 
@@ -67,6 +78,10 @@ export function StoryEditor({ initialDocument, onChange, onSave }: Props) {
   const [saveStatus, setSaveStatus] = useState<StoryEditorSaveStatus>("idle");
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [showVersions, setShowVersions] = useState(false);
+  const [templateMode, setTemplateMode] = useState<"save" | "insert" | null>(null);
+  const [snapshotBusy, setSnapshotBusy] = useState(false);
+  const [snapshotInfo, setSnapshotInfo] = useState<string | null>(null);
 
   const lastSavedJsonRef = useRef<string>(JSON.stringify(initialDocument.blocks));
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -149,6 +164,57 @@ export function StoryEditor({ initialDocument, onChange, onSave }: Props) {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     enqueueSave(doc);
   }, [doc, onSave, enqueueSave]);
+
+  const triggerManualSnapshot = useCallback(async () => {
+    if (!onManualSnapshot || snapshotBusy) return;
+    const name = window.prompt("Name für diese Version (optional):", "")?.trim();
+    setSnapshotBusy(true);
+    setSnapshotInfo(null);
+    try {
+      await onManualSnapshot(doc, name && name.length > 0 ? name : undefined);
+      setSnapshotInfo("Version gespeichert");
+      setTimeout(() => setSnapshotInfo(null), 2500);
+    } catch (err: unknown) {
+      setSnapshotInfo(err instanceof Error ? err.message : "Snapshot fehlgeschlagen");
+    } finally {
+      setSnapshotBusy(false);
+    }
+  }, [doc, onManualSnapshot, snapshotBusy]);
+
+  const handleVersionRestored = useCallback(
+    (blocks: StoryBlock[]) => {
+      const next: StoryDocument = {
+        ...doc,
+        blocks,
+        metadata: { ...doc.metadata, updatedAt: new Date().toISOString() },
+      };
+      setHistory((h) => pushHistory(h, next));
+      onChange?.(next);
+      lastSavedJsonRef.current = JSON.stringify(blocks);
+      setSelectedId(blocks[0]?.id ?? null);
+    },
+    [doc, onChange],
+  );
+
+  const handleTemplateInsert = useCallback(
+    (blocks: StoryBlock[], strategy: InsertStrategy) => {
+      const fresh = blocks.map((b) => ({
+        ...b,
+        id: "blk_" + Math.random().toString(36).slice(2, 11),
+        payload: JSON.parse(JSON.stringify(b.payload)) as Record<string, unknown>,
+      }));
+      const merged = strategy === "replace" ? fresh : [...doc.blocks, ...fresh];
+      const next: StoryDocument = {
+        ...doc,
+        blocks: merged,
+        metadata: { ...doc.metadata, updatedAt: new Date().toISOString() },
+      };
+      setHistory((h) => pushHistory(h, next));
+      onChange?.(next);
+      setSelectedId(fresh[0]?.id ?? merged[0]?.id ?? null);
+    },
+    [doc, onChange],
+  );
 
   const undo = useCallback(() => {
     setHistory((h) => {
@@ -418,8 +484,59 @@ export function StoryEditor({ initialDocument, onChange, onSave }: Props) {
             {onSave ? (
               <SaveBadge status={saveStatus} lastSavedAt={lastSavedAt} error={saveError} onRetry={triggerSaveNow} />
             ) : null}
+            {snapshotInfo ? (
+              <span
+                data-testid="snapshot-info"
+                style={{ fontSize: 11, color: "#7BB077", letterSpacing: ".05em" }}
+              >
+                {snapshotInfo}
+              </span>
+            ) : null}
           </div>
-          <div style={{ display: "flex", gap: 6 }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {sourceContext ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setShowVersions(true)}
+                  style={toolbarBtnStyle}
+                  data-testid="button-open-versions"
+                  title="Versionsverlauf öffnen"
+                >
+                  Verlauf
+                </button>
+                {onManualSnapshot ? (
+                  <button
+                    type="button"
+                    onClick={triggerManualSnapshot}
+                    disabled={snapshotBusy}
+                    style={toolbarBtnStyle}
+                    data-testid="button-manual-snapshot"
+                    title="Aktuelle Version dauerhaft sichern"
+                  >
+                    {snapshotBusy ? "Sichere…" : "Snapshot"}
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => setTemplateMode("save")}
+                  style={toolbarBtnStyle}
+                  data-testid="button-save-as-template"
+                  title="Aktuelle Story als Vorlage speichern"
+                >
+                  Als Vorlage
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTemplateMode("insert")}
+                  style={toolbarBtnStyle}
+                  data-testid="button-insert-template"
+                  title="Vorlage einfügen"
+                >
+                  Vorlage einfügen
+                </button>
+              </>
+            ) : null}
             <button
               type="button"
               onClick={() => setMode("editor-preview")}
@@ -460,6 +577,26 @@ export function StoryEditor({ initialDocument, onChange, onSave }: Props) {
           </div>
         )}
       </aside>
+      {sourceContext ? (
+        <VersionDrawer
+          open={showVersions}
+          onClose={() => setShowVersions(false)}
+          sourceType={sourceContext.sourceType}
+          sourceId={sourceContext.sourceId}
+          currentTheme={doc.theme}
+          onRestored={handleVersionRestored}
+        />
+      ) : null}
+      {sourceContext && templateMode ? (
+        <TemplateLibrary
+          open={true}
+          mode={templateMode}
+          onClose={() => setTemplateMode(null)}
+          currentBlocks={doc.blocks}
+          onInsert={handleTemplateInsert}
+          isAdmin={isAdmin}
+        />
+      ) : null}
     </div>
   );
 }
@@ -676,6 +813,7 @@ function SelectedBlockEditor({ block, onChange }: { block: StoryBlock; onChange:
   }
   const Panel = def.EditorPanel;
   const validation = validatePayload(block.type, block.payload);
+  const aiFields = collectAiFields(block.type, validation.payload);
   return (
     <div>
       <div style={{ fontSize: 14, color: "#F5EDE0", marginBottom: 4 }}>{def.label}</div>
@@ -695,6 +833,15 @@ function SelectedBlockEditor({ block, onChange }: { block: StoryBlock; onChange:
           Daten ungültig — Standardwerte geladen.
         </div>
       ) : null}
+      {aiFields.length > 0 ? (
+        <AiActionPanel
+          fields={aiFields}
+          onApply={(key, html) => {
+            const current = isPlainRecord(validation.payload) ? validation.payload : {};
+            onChange({ ...current, [key]: html });
+          }}
+        />
+      ) : null}
       <Panel
         payload={validation.payload}
         onChange={(p) => {
@@ -704,6 +851,27 @@ function SelectedBlockEditor({ block, onChange }: { block: StoryBlock; onChange:
       />
     </div>
   );
+}
+
+function collectAiFields(
+  blockType: string,
+  payload: unknown,
+): Array<{ key: string; label: string; value: string }> {
+  if (!isPlainRecord(payload)) return [];
+  const out: Array<{ key: string; label: string; value: string }> = [];
+  const pickString = (key: string): string => {
+    const v = payload[key];
+    return typeof v === "string" ? v : "";
+  };
+  if (blockType === "text-section") {
+    out.push({ key: "body", label: "Fließtext", value: pickString("body") });
+  } else if (blockType === "quote") {
+    out.push({ key: "text", label: "Zitat", value: pickString("text") });
+  } else if (blockType === "two-column") {
+    out.push({ key: "leftBody", label: "Linke Spalte", value: pickString("leftBody") });
+    out.push({ key: "rightBody", label: "Rechte Spalte", value: pickString("rightBody") });
+  }
+  return out;
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
@@ -756,6 +924,19 @@ const historyButtonStyle: React.CSSProperties = {
   cursor: "pointer",
   fontFamily: "'Inter', system-ui, sans-serif",
   minWidth: 28,
+};
+
+const toolbarBtnStyle: React.CSSProperties = {
+  background: "rgba(201,169,97,0.08)",
+  border: "1px solid rgba(201,169,97,0.25)",
+  borderRadius: 3,
+  padding: "4px 10px",
+  fontSize: 11,
+  color: "#A89A85",
+  cursor: "pointer",
+  fontFamily: "'Inter', system-ui, sans-serif",
+  letterSpacing: ".1em",
+  textTransform: "uppercase",
 };
 
 const tabStyle: React.CSSProperties = {

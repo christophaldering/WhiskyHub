@@ -24966,10 +24966,331 @@ ${cleaned.slice(0, 60000)}`;
         name: parsed.data.name ?? null,
         createdById: auth.participant.id,
       });
+      if (parsed.data.isAuto) {
+        try {
+          await storage.pruneOldAutoStoryVersions(sourceType, sourceId, 20);
+        } catch (pruneErr: unknown) {
+          console.warn("[storybuilder/prune] failed:", pruneErr);
+        }
+      }
       return res.json({ id: saved.id, createdAt: saved.createdAt, isAuto: saved.isAuto });
     } catch (e: unknown) {
       console.error("[storybuilder/save] error:", e);
       const msg = e instanceof Error ? e.message : "Speichern fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.get("/api/admin/storybuilder/:sourceType/:sourceId/versions", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const sourceType = req.params.sourceType;
+      if (!STORYBUILDER_SOURCE_TYPES.has(sourceType)) {
+        return res.status(400).json({ message: "Unbekannter sourceType" });
+      }
+      const sourceId = sanitizeStorybuilderId(req.params.sourceId);
+      if (!sourceId) return res.status(400).json({ message: "sourceId fehlt" });
+      const filter = String(req.query.filter || "all");
+      const isAuto = filter === "auto" ? true : filter === "manual" ? false : undefined;
+      const rows = await storage.listStoryVersions(sourceType, sourceId, { limit: 100, isAuto });
+      return res.json({
+        versions: rows.map((r) => ({
+          id: r.id,
+          isAuto: r.isAuto,
+          name: r.name ?? null,
+          createdAt: r.createdAt,
+          createdById: r.createdById ?? null,
+        })),
+      });
+    } catch (e: unknown) {
+      console.error("[storybuilder/versions/list] error:", e);
+      const msg = e instanceof Error ? e.message : "Laden fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.get("/api/admin/storybuilder/:sourceType/:sourceId/versions/:versionId", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const sourceType = req.params.sourceType;
+      if (!STORYBUILDER_SOURCE_TYPES.has(sourceType)) {
+        return res.status(400).json({ message: "Unbekannter sourceType" });
+      }
+      const sourceId = sanitizeStorybuilderId(req.params.sourceId);
+      if (!sourceId) return res.status(400).json({ message: "sourceId fehlt" });
+      const versionId = sanitizeStorybuilderId(req.params.versionId);
+      if (!versionId) return res.status(400).json({ message: "versionId fehlt" });
+      const row = await storage.getStoryVersion(versionId);
+      if (!row || row.sourceType !== sourceType || row.sourceId !== sourceId) {
+        return res.status(404).json({ message: "Version nicht gefunden" });
+      }
+      return res.json({
+        id: row.id,
+        isAuto: row.isAuto,
+        name: row.name ?? null,
+        createdAt: row.createdAt,
+        blocksJson: row.blocksJson,
+      });
+    } catch (e: unknown) {
+      console.error("[storybuilder/versions/get] error:", e);
+      const msg = e instanceof Error ? e.message : "Laden fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.post("/api/admin/storybuilder/:sourceType/:sourceId/versions/:versionId/restore", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const sourceType = req.params.sourceType;
+      if (!STORYBUILDER_SOURCE_TYPES.has(sourceType)) {
+        return res.status(400).json({ message: "Unbekannter sourceType" });
+      }
+      const sourceId = sanitizeStorybuilderId(req.params.sourceId);
+      if (!sourceId) return res.status(400).json({ message: "sourceId fehlt" });
+      const versionId = sanitizeStorybuilderId(req.params.versionId);
+      if (!versionId) return res.status(400).json({ message: "versionId fehlt" });
+      const old = await storage.getStoryVersion(versionId);
+      if (!old || old.sourceType !== sourceType || old.sourceId !== sourceId) {
+        return res.status(404).json({ message: "Version nicht gefunden" });
+      }
+      const blocksParsed = storyBlocksJsonSchema.safeParse(old.blocksJson);
+      if (!blocksParsed.success) {
+        return res.status(422).json({ message: "Versionsdaten beschädigt" });
+      }
+      const restoredName = `Wiederhergestellt: ${old.name ?? new Date(old.createdAt).toLocaleString("de-DE")}`;
+      const saved = await storage.saveStoryVersion({
+        sourceType,
+        sourceId,
+        blocksJson: blocksParsed.data,
+        isAuto: false,
+        name: restoredName.slice(0, 200),
+        createdById: auth.participant.id,
+      });
+      return res.json({ id: saved.id, createdAt: saved.createdAt, isAuto: saved.isAuto, blocksJson: blocksParsed.data });
+    } catch (e: unknown) {
+      console.error("[storybuilder/versions/restore] error:", e);
+      const msg = e instanceof Error ? e.message : "Wiederherstellen fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.get("/api/admin/storybuilder-templates", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const rows = await storage.listStoryTemplates({ ownerId: auth.participant.id });
+      return res.json({
+        templates: rows.map((r) => ({
+          id: r.id,
+          name: r.name,
+          description: r.description ?? null,
+          scope: r.scope,
+          ownerId: r.ownerId ?? null,
+          createdAt: r.createdAt,
+          updatedAt: r.updatedAt,
+        })),
+      });
+    } catch (e: unknown) {
+      console.error("[storybuilder/templates/list] error:", e);
+      const msg = e instanceof Error ? e.message : "Laden fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.get("/api/admin/storybuilder-templates/:id", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const id = sanitizeStorybuilderId(req.params.id);
+      if (!id) return res.status(400).json({ message: "id fehlt" });
+      const row = await storage.getStoryTemplate(id);
+      if (!row) return res.status(404).json({ message: "Vorlage nicht gefunden" });
+      if (row.scope === "user" && row.ownerId !== auth.participant.id) {
+        return res.status(403).json({ message: "Keine Berechtigung für diese Vorlage" });
+      }
+      return res.json({
+        id: row.id,
+        name: row.name,
+        description: row.description ?? null,
+        scope: row.scope,
+        ownerId: row.ownerId ?? null,
+        blocksJson: row.blocksJson,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      });
+    } catch (e: unknown) {
+      console.error("[storybuilder/templates/get] error:", e);
+      const msg = e instanceof Error ? e.message : "Laden fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.post("/api/admin/storybuilder-templates", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const bodySchema = z.object({
+        name: z.string().min(1).max(120),
+        description: z.string().max(500).optional(),
+        scope: z.enum(["user", "global"]).default("user"),
+        blocksJson: storyBlocksJsonSchema,
+      });
+      const parsed = bodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Ungültiger Request-Body", errors: parsed.error.flatten() });
+      }
+      const created = await storage.createStoryTemplate({
+        name: parsed.data.name,
+        description: parsed.data.description ?? null,
+        scope: parsed.data.scope,
+        ownerId: parsed.data.scope === "user" ? auth.participant.id : null,
+        blocksJson: parsed.data.blocksJson,
+      });
+      return res.json({
+        id: created.id,
+        name: created.name,
+        description: created.description ?? null,
+        scope: created.scope,
+        ownerId: created.ownerId ?? null,
+        createdAt: created.createdAt,
+        updatedAt: created.updatedAt,
+      });
+    } catch (e: unknown) {
+      console.error("[storybuilder/templates/create] error:", e);
+      const msg = e instanceof Error ? e.message : "Speichern fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.delete("/api/admin/storybuilder-templates/:id", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const id = sanitizeStorybuilderId(req.params.id);
+      if (!id) return res.status(400).json({ message: "id fehlt" });
+      const row = await storage.getStoryTemplate(id);
+      if (!row) return res.status(404).json({ message: "Vorlage nicht gefunden" });
+      if (row.scope === "user" && row.ownerId !== auth.participant.id) {
+        return res.status(403).json({ message: "Keine Berechtigung für diese Vorlage" });
+      }
+      await storage.deleteStoryTemplate(id);
+      return res.json({ ok: true });
+    } catch (e: unknown) {
+      console.error("[storybuilder/templates/delete] error:", e);
+      const msg = e instanceof Error ? e.message : "Löschen fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  const STORY_AI_ACTIONS = {
+    shorten: {
+      label: "Kürzen",
+      system: "Du bist ein deutschsprachiger Redakteur für eine Whisky-Plattform. Kürze den vorgelegten Text auf etwa 60% seiner ursprünglichen Länge. Behalte Kernaussagen, Stimmung und HTML-Struktur (gleiche Tags). Antworte ausschließlich mit dem überarbeiteten HTML-Fragment ohne Code-Fences.",
+    },
+    inspire: {
+      label: "Inspirierender",
+      system: "Du bist ein deutschsprachiger Redakteur für eine Whisky-Plattform. Mache den vorgelegten Text inspirierender, atmosphärischer und sinnlicher, ohne Fakten zu verändern. Behalte die HTML-Struktur. Antworte ausschließlich mit dem überarbeiteten HTML-Fragment ohne Code-Fences.",
+    },
+    translate: {
+      label: "Ins Englische übersetzen",
+      system: "Du bist ein professioneller Übersetzer. Übersetze das vorgelegte HTML-Fragment ins Englische. Behalte alle HTML-Tags exakt bei. Antworte ausschließlich mit dem übersetzten HTML-Fragment ohne Code-Fences.",
+    },
+    correct: {
+      label: "Korrigieren",
+      system: "Du bist ein deutschsprachiger Lektor. Korrigiere Rechtschreibung, Grammatik und Zeichensetzung im vorgelegten HTML-Fragment, ohne den Stil zu verändern. Behalte die HTML-Struktur. Antworte ausschließlich mit dem überarbeiteten HTML-Fragment ohne Code-Fences.",
+    },
+  } as const;
+
+  type StoryAiAction = keyof typeof STORY_AI_ACTIONS;
+
+  const storyAiCache = new LRUCacheImpl<string>(200, 30 * 60 * 1000);
+  const storyAiRateLimit = new Map<string, { count: number; resetAt: number }>();
+  const STORY_AI_RATE_LIMIT = 30;
+  const STORY_AI_RATE_WINDOW_MS = 60 * 1000;
+
+  const checkStoryAiRate = (key: string): { allowed: boolean; retryAfterSeconds?: number } => {
+    const now = Date.now();
+    const entry = storyAiRateLimit.get(key);
+    if (!entry || now > entry.resetAt) {
+      storyAiRateLimit.set(key, { count: 1, resetAt: now + STORY_AI_RATE_WINDOW_MS });
+      return { allowed: true };
+    }
+    if (entry.count >= STORY_AI_RATE_LIMIT) {
+      return { allowed: false, retryAfterSeconds: Math.ceil((entry.resetAt - now) / 1000) };
+    }
+    entry.count++;
+    return { allowed: true };
+  };
+
+  const stripCodeFences = (raw: string): string => {
+    const trimmed = raw.trim();
+    const fenced = trimmed.match(/^```(?:html)?\s*([\s\S]*?)\s*```$/i);
+    if (fenced) return fenced[1].trim();
+    return trimmed;
+  };
+
+  app.post("/api/admin/storybuilder/ai-action", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const bodySchema = z.object({
+        action: z.enum(["shorten", "inspire", "translate", "correct"]),
+        html: z.string().min(1).max(20000),
+      });
+      const parsed = bodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Ungültiger Request-Body", errors: parsed.error.flatten() });
+      }
+      const rate = checkStoryAiRate(auth.participant.id);
+      if (!rate.allowed) {
+        return res.status(429).json({ message: `Zu viele Anfragen. Versuche es in ${rate.retryAfterSeconds ?? 30} Sekunden erneut.` });
+      }
+      const action: StoryAiAction = parsed.data.action;
+      const cacheKey = `${action}:${crypto.createHash("sha256").update(parsed.data.html).digest("hex")}`;
+      const cached = storyAiCache.get(cacheKey);
+      if (cached) {
+        return res.json({ result: cached, cached: true });
+      }
+      const aiResult = await getAIClient(auth.participant.id, "storybuilder");
+      if (!aiResult.client) {
+        if (aiResult.error === "AI_LIMIT_EXCEEDED") {
+          return res.status(429).json({ message: "KI-Kontingent erreicht. Bitte später erneut versuchen.", quotaInfo: aiResult.quotaInfo });
+        }
+        if (aiResult.error === "AI_DISABLED") {
+          return res.status(503).json({ message: "KI-Funktionen sind aktuell deaktiviert." });
+        }
+        return res.status(503).json({ message: "Kein KI-Anbieter verfügbar." });
+      }
+      const def = STORY_AI_ACTIONS[action];
+      const completion = await aiResult.client.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: def.system },
+          { role: "user", content: parsed.data.html },
+        ],
+        temperature: action === "correct" ? 0.2 : 0.7,
+        max_tokens: 1500,
+      });
+      const raw = completion.choices[0]?.message?.content;
+      if (!raw) return res.status(502).json({ message: "Leere KI-Antwort" });
+      const cleaned = stripCodeFences(raw);
+      if (!cleaned) return res.status(502).json({ message: "Leere KI-Antwort" });
+      storyAiCache.set(cacheKey, cleaned);
+      return res.json({ result: cleaned, cached: false });
+    } catch (e: unknown) {
+      console.error("[storybuilder/ai-action] error:", e);
+      const msg = e instanceof Error ? e.message : "KI-Aktion fehlgeschlagen";
       return res.status(500).json({ message: msg });
     }
   });
