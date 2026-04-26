@@ -988,12 +988,12 @@ export default function LabsResults({ params }: LabsResultsProps) {
       {sorted.length > 0 && (() => {
         const aiAvailable = ["archived", "completed", "closed", "reveal"].includes(tasting.status as string);
         const presentAvailable = isHost && aiAvailable;
-        const storyAvailable = getStoryPdfAvailable(tasting, isHost);
         const isAdmin = currentParticipant?.role === "admin";
         const canEditStory = isHost || isAdmin;
+        const storyAvailable = getStoryPdfAvailable(tasting, isHost) || (isAdmin && aiAvailable);
         const storyBlocksRaw = (tasting as { storyBlocks?: unknown }).storyBlocks;
         const hasBlockStory = Array.isArray(storyBlocksRaw) && storyBlocksRaw.length > 0;
-        const actions: { key: string; icon: React.ElementType; title: string; desc: string; onClick: () => void; badge?: string }[] = [];
+        const actions: { key: string; icon: React.ElementType; title: string; desc: string; onClick: () => void; badge?: string; testId?: string }[] = [];
         if (aiAvailable) {
           actions.push({
             key: "ai",
@@ -1013,7 +1013,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
             badge: canEditStory && !hasBlockStory ? t("resultsUi.actionStoryNotCreatedYet", "Neu erstellen") : undefined,
           });
         }
-        if (canEditStory) {
+        if (canEditStory && aiAvailable) {
           actions.push({
             key: "story-editor",
             icon: Pencil,
@@ -1022,6 +1022,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
               ? t("resultsUi.actionStoryEditorDesc", "Block-Editor für Aufbau, Texte und Bilder")
               : t("resultsUi.actionStoryEditorDescEmpty", "Neue Block-Story anlegen oder migrieren"),
             onClick: () => navigate(`/labs/tastings/${tastingId}/story-editor`),
+            testId: "labs-results-edit-story",
           });
         }
         if (presentAvailable) {
@@ -1055,7 +1056,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                     type="button"
                     onClick={a.onClick}
                     className="labs-card"
-                    data-testid={`results-action-${a.key}`}
+                    data-testid={a.testId ?? `results-action-${a.key}`}
                     style={{
                       display: "flex", alignItems: "flex-start", gap: 12,
                       padding: 14, textAlign: "left",
