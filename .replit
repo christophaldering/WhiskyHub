@@ -49,7 +49,6 @@ SIMPLE_MODE_PIN = "#Sammy26"
 [userenv.development]
 
 [userenv.production]
-CMS_PURGE_HOME = "1"
 
 [postMerge]
 path = "scripts/post-merge.sh"
