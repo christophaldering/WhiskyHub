@@ -225,12 +225,34 @@ export default function LabsAdmin() {
 
       <div style={{ marginBottom: 20 }}>
         <BackButton fallback="/labs/tastings" />
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 26,
                        fontWeight: 700, color: "var(--labs-text)", margin: 0 }}
               data-testid="labs-admin-title">
             {t("admin.adminPanel")}
           </h1>
+          <a
+            href="/admin/cms"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 14px",
+              borderRadius: 999,
+              background: "var(--labs-accent)",
+              color: "var(--labs-bg)",
+              fontSize: 13,
+              fontWeight: 600,
+              textDecoration: "none",
+              border: "none",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+            data-testid="link-labs-admin-cms"
+          >
+            <BookOpen className="w-4 h-4" />
+            CMS / Story-Editor
+          </a>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)",
