@@ -138,6 +138,26 @@ export default function AdminCmsEditorPage({ id }: Props) {
     const updated = await updateCmsPage(id, { draftBlocksJson: next.blocks });
     qc.setQueryData(["/api/admin/cms/pages", id], updated);
     qc.invalidateQueries({ queryKey: ["/api/admin/cms/pages"] });
+    try {
+      const res = await fetch(`/api/admin/storybuilder/page/${encodeURIComponent(id)}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", ...pidHeaders() },
+        body: JSON.stringify({ blocksJson: next.blocks, isAuto: true }),
+      });
+      if (!res.ok) {
+        try {
+          const errBody = await res.json();
+          if (errBody && typeof errBody.message === "string") {
+            console.warn("[cms-editor] auto-snapshot warning:", errBody.message);
+          }
+        } catch {
+          console.warn("[cms-editor] auto-snapshot warning: status", res.status);
+        }
+      }
+    } catch (versionErr) {
+      console.warn("[cms-editor] auto-snapshot exception:", versionErr);
+    }
   };
 
   const handleManualSnapshot = async (next: StoryDocument, name?: string): Promise<void> => {
