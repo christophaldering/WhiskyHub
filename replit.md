@@ -1,5 +1,14 @@
 # CaskSense - Whisky Tasting Application
 
+## Checkpoint: "Story-Editor geklärt" (26.04.2026)
+Task #1039: Klare Definition zu Funktion, Zugriff und Zweck des Story-Editors (CMS Story-Builder). Volle Doku in `docs/STORY_EDITOR.md`.
+- **Was er ist**: Block-basiertes CMS unter `/admin/cms` (Dashboard), `/admin/cms/:id` (Editor), `/admin/cms/:id/preview` (Vorschau). Baut auf der Storybuilder-Bibliothek auf. **Hinweis**: Die in älteren Notizen genannten Pfade `/admin/cms-editor/:slug` und `/admin/cms-preview/:slug` existieren nicht — die echten Routen verwenden die UUID `:id`.
+- **Wer darf**: Ausschließlich `role === 'admin'` (Christoph). Doppelt geprüft (Frontend `isAdmin`-Gate + Backend-Rollencheck pro Endpoint).
+- **Was er steuert**: Pflegbare Marketing-Seiten unter beliebigen Slugs. Slug `home` ist „magisch": sobald veröffentlicht, ersetzt er auf `/` die hartkodierte `landing-new.tsx` (siehe Routing-Logik in `client/src/pages/landing-cms.tsx`).
+- **Status heute**: Es ist **keine `home`-Seite veröffentlicht**, also sehen Besucher weiterhin `landing-new.tsx`. Der Editor ist vorbereitet, aber öffentlich noch nicht aktiv.
+- **Entscheidung**: Editor **bleibt produktiv**. Begründung: ist ausdrücklich Phase 1 des Storybuilder-Mehrphasenplans (Phasen #1020–#1024 als Drafts angelegt), Risiko = niedrig (admin-only, kapselt komplett unter `/admin/cms*`, Fallback `landing-new.tsx` bleibt als Sicherheitsnetz). Kein Aufräumen von Routen/Komponenten/`cms_pages`-Tabelle.
+- **Anleitung für Christoph**: Schritt-für-Schritt (Anlegen, Bearbeiten, Vorschau, Veröffentlichen, Notfall-Fallback) in `docs/STORY_EDITOR.md` Abschnitt 8.
+
 ## Checkpoint: "Storybuilder Phase 1" (25.04.2026)
 Task #1018 (Phase 1 von 6): Wiederverwendbare Block-basierte Storybuilder-Bibliothek als Fundament für Tasting-Story und LandingPage-CMS.
 - **Schema**: `tastings.storyBlocks` (jsonb) plus drei neue Tabellen `cms_pages`, `story_versions`, `story_templates` in `shared/schema.ts`. DB synchronisiert per Direct-SQL (Rename-Prompt von drizzle-kit umgangen).
