@@ -66,21 +66,51 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </div>
         </div>
 
-        <Link
-          href="/"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            fontSize: 13,
-            color: c.muted,
-            textDecoration: "none",
-          }}
-          data-testid="link-admin-back-to-app"
-        >
-          <ArrowLeft style={{ width: 14, height: 14 }} />
-          {t("about.backToApp", "Back to App")}
-        </Link>
+        <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+          <Link
+            href="/admin"
+            style={{
+              fontSize: 12,
+              letterSpacing: ".15em",
+              textTransform: "uppercase",
+              color: location === "/admin" ? c.accent : c.muted,
+              textDecoration: "none",
+              fontWeight: location === "/admin" ? 600 : 400,
+            }}
+            data-testid="link-admin-overview"
+          >
+            Übersicht
+          </Link>
+          <Link
+            href="/admin/cms"
+            style={{
+              fontSize: 12,
+              letterSpacing: ".15em",
+              textTransform: "uppercase",
+              color: location.startsWith("/admin/cms") ? c.accent : c.muted,
+              textDecoration: "none",
+              fontWeight: location.startsWith("/admin/cms") ? 600 : 400,
+            }}
+            data-testid="link-admin-cms"
+          >
+            Inhalte
+          </Link>
+          <Link
+            href="/"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 13,
+              color: c.muted,
+              textDecoration: "none",
+            }}
+            data-testid="link-admin-back-to-app"
+          >
+            <ArrowLeft style={{ width: 14, height: 14 }} />
+            {t("about.backToApp", "Back to App")}
+          </Link>
+        </div>
       </header>
 
       <main

@@ -25551,6 +25551,23 @@ ${cleaned.slice(0, 60000)}`;
       },
       {
         id: id(),
+        type: "benchmark-block",
+        payload: {
+          eyebrow: "Benchmark",
+          heading: "Wie du im Vergleich stehst",
+          lead: "Eigene Wahrnehmung gegen den Community-Konsens — transparent, fair, ohne Wertung.",
+          referenceLabel: "Community",
+          yourLabel: "Du",
+          items: [
+            { label: "Süße", value: 62, reference: 58, unit: "/100", hint: "" },
+            { label: "Rauch", value: 41, reference: 49, unit: "/100", hint: "" },
+            { label: "Eiche", value: 73, reference: 65, unit: "/100", hint: "" },
+            { label: "Frucht", value: 55, reference: 60, unit: "/100", hint: "" },
+          ],
+        },
+      },
+      {
+        id: id(),
         type: "cta-button",
         payload: {
           text: "Konto erstellen",
@@ -25559,6 +25576,21 @@ ${cleaned.slice(0, 60000)}`;
           alignment: "center",
           newTab: false,
           helper: "Kostenlos. Keine Kreditkarte nötig.",
+        },
+      },
+      {
+        id: id(),
+        type: "divider",
+        payload: { width: "wide" },
+      },
+      {
+        id: id(),
+        type: "text-section",
+        payload: {
+          eyebrow: "CaskSense Labs",
+          heading: "Edinburgh · Berlin",
+          body: "<p>Eine unabhängige Plattform für ernsthafte Whisky-Verkostung.</p><p>Kontakt: hello@casksense.io · Datenschutz · Impressum</p>",
+          alignment: "center",
         },
       },
     ];

@@ -54,6 +54,7 @@ const AdminPanel = lazy(() => import("@/pages/admin-panel"));
 const AdminDistilleryAliases = lazy(() => import("@/pages/admin-distillery-aliases"));
 const AdminCms = lazy(() => import("@/pages/admin-cms"));
 const AdminCmsEditor = lazy(() => import("@/pages/admin-cms-editor"));
+const AdminCmsPreview = lazy(() => import("@/pages/admin-cms-preview"));
 const LandingCms = lazy(() => import("@/pages/landing-cms"));
 const SupportConsole = lazy(() => import("@/pages/support-console"));
 const Landing = lazy(() => import("@/pages/landing"));
@@ -563,6 +564,13 @@ function Router() {
           <AdminLayout>
             <StorybuilderDemo />
           </AdminLayout>
+        </Route>
+        <Route path="/admin/cms/:id/preview">
+          {({ id }: { id: string }) => (
+            <AdminLayout>
+              <AdminCmsPreview id={id} />
+            </AdminLayout>
+          )}
         </Route>
         <Route path="/admin/cms/:id">
           {({ id }: { id: string }) => (

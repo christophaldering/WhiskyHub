@@ -219,6 +219,13 @@ export default function AdminCmsEditorPage({ id }: Props) {
               {metaSaveMut.isPending ? "…" : "Meta speichern"}
             </button>
           ) : null}
+          <Link
+            href={`/admin/cms/${id}/preview`}
+            style={{ ...secondaryButton, textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+            data-testid="link-preview-draft"
+          >
+            Vorschau
+          </Link>
           <button
             type="button"
             onClick={() => {
