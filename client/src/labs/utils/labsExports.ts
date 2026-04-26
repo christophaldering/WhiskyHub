@@ -292,10 +292,9 @@ export function computeFullStats(
   const stdDevs = whiskyRows.map(w => w.stdDev).filter((v): v is number => v != null);
   const avgStdDev = mean(stdDevs);
   let consensusIndex: number | null = null;
-  if (avgStdDev != null) {
-    const normalizedStdDev = scaleMax > 0 ? (avgStdDev / scaleMax) * 100 : 0;
-    consensusIndex = Math.max(0, Math.min(100, 100 - normalizedStdDev * 4));
-    consensusIndex = Math.round(consensusIndex);
+  if (avgStdDev != null && scaleMax > 0) {
+    const normalizedStdDev = (avgStdDev / scaleMax) * 100;
+    consensusIndex = Math.round(Math.max(0, Math.min(100, 100 - normalizedStdDev * 2)));
   }
 
   const histogram = histogramBuckets(allOverallVals, 0, scaleMax, 10);
