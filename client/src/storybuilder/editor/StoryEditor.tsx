@@ -1021,7 +1021,7 @@ function SaveBadge({
   );
 }
 
-const TASTING_REGEN_TYPES = new Set(["winner-hero", "finale-card", "taster-grid", "ranking-list", "blind-results"]);
+const TASTING_REGEN_TYPES = new Set(["winner-hero", "finale-card", "taster-grid", "ranking-list", "blind-results", "whisky-card-grid"]);
 
 function SelectedBlockEditor({
   block,

@@ -6,7 +6,8 @@ export type RegeneratableBlockType =
   | "finale-card"
   | "taster-grid"
   | "ranking-list"
-  | "blind-results";
+  | "blind-results"
+  | "whisky-card-grid";
 
 export const REGENERATABLE_BLOCK_TYPES: RegeneratableBlockType[] = [
   "winner-hero",
@@ -14,6 +15,7 @@ export const REGENERATABLE_BLOCK_TYPES: RegeneratableBlockType[] = [
   "taster-grid",
   "ranking-list",
   "blind-results",
+  "whisky-card-grid",
 ];
 
 export function isRegeneratable(type: string): type is RegeneratableBlockType {
@@ -134,6 +136,34 @@ async function regenerateRankingList(payload: Record<string, unknown>, data: Agg
   return { ...payload, overrides: nextOverrides };
 }
 
+async function regenerateWhiskyCardGrid(payload: Record<string, unknown>, data: AggregatedTastingStoryData, openai: OpenAI): Promise<Record<string, unknown> | null> {
+  if (data.whiskies.length === 0) return null;
+  const system = "Du bist ein deutschsprachiger Whisky-Redakteur. Schreibe pro Whisky einen kurzen, sinnlichen Steckbrief-Satz fuer das Tasting-Programm (max 22 Woerter, keine Anfuehrungszeichen, kein Werbe-Tonfall). Antworte ausschliesslich mit einem JSON-Objekt der Form {\"handout\": {\"<whiskyId>\": \"<text>\"}}.";
+  const lines = data.whiskies.map((w) => {
+    const desc = [w.distillery, w.region, w.age ? `${w.age}J` : null, w.caskType, w.abv ? `${w.abv}%` : null]
+      .filter(Boolean)
+      .join(" / ");
+    const note = w.handoutExcerpt ?? w.hostSummary ?? w.notes ?? "";
+    return `${w.id}|${w.name}|${desc}|${note.slice(0, 200)}`;
+  }).join("\n");
+  const user = `Tasting: ${data.meta.title}\nWhiskys (id|name|profil|notiz):\n${lines}`;
+  const raw = await callOpenAi(openai, system, user, true);
+  const parsed = parseJsonObject(raw);
+  const handout = parsed && isPlainRecord(parsed.handout) ? parsed.handout : null;
+  if (!handout) return null;
+  const overridesPrev = isPlainRecord(payload.overrides) ? payload.overrides : {};
+  const nextOverrides: Record<string, { handoutText: string; scoreLabel: string }> = {};
+  for (const w of data.whiskies) {
+    const cur = isPlainRecord(overridesPrev[w.id]) ? (overridesPrev[w.id] as { handoutText?: unknown; scoreLabel?: unknown }) : {};
+    const fresh = safeString(handout[w.id]);
+    nextOverrides[w.id] = {
+      handoutText: fresh.length > 0 ? trimSentence(fresh, 200) : safeString(cur.handoutText),
+      scoreLabel: safeString(cur.scoreLabel),
+    };
+  }
+  return { ...payload, overrides: nextOverrides };
+}
+
 async function regenerateBlindResults(payload: Record<string, unknown>, data: AggregatedTastingStoryData, openai: OpenAI): Promise<Record<string, unknown> | null> {
   const blind = data.blindResults;
   if (!blind || blind.length === 0) return null;
@@ -169,6 +199,7 @@ export async function regenerateBlockWithAi(
     case "taster-grid": return regenerateTasterGrid(currentPayload, data, openai);
     case "ranking-list": return regenerateRankingList(currentPayload, data, openai);
     case "blind-results": return regenerateBlindResults(currentPayload, data, openai);
+    case "whisky-card-grid": return regenerateWhiskyCardGrid(currentPayload, data, openai);
     default: return null;
   }
 }

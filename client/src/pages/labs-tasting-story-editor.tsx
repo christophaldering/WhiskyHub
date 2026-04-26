@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
@@ -28,6 +28,14 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
   const qc = useQueryClient();
   const [, navigate] = useLocation();
   const [actionError, setActionError] = useState<string | null>(null);
+  const [pendingRegen, setPendingRegen] = useState<{
+    original: StoryBlock[];
+    regenerated: StoryBlock[];
+    regeneratedIds: Set<string>;
+    skippedIds: Set<string>;
+  } | null>(null);
+  const pendingRegenAcceptedRef = useRef<Record<string, boolean>>({});
+  const pendingRegenResolveRef = useRef<((next: StoryBlock[] | null) => void) | null>(null);
 
   const { data, isLoading, isError, error } = useQuery<TastingStoryResponse>({
     queryKey: ["/api/tasting-stories", id],
@@ -151,11 +159,16 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
       editedByHost: b.editedByHost,
     }));
     const result = await regenerateTastingStoryBlocks(id, payload, "all");
-    const sanitized: StoryBlock[] = [];
+    const regeneratedIds = new Set(result.regenerated);
+    const skippedIds = new Set(result.skipped);
+    if (regeneratedIds.size === 0) {
+      return null;
+    }
+    const regenSanitized: StoryBlock[] = [];
     for (const b of result.blocks) {
       const original = currentBlocks.find((c) => c.id === b.id);
       if (!original) continue;
-      sanitized.push({
+      regenSanitized.push({
         id: b.id,
         type: original.type,
         payload: b.payload,
@@ -164,7 +177,38 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
         editedByHost: b.editedByHost,
       });
     }
-    return sanitized;
+    const accepted: Record<string, boolean> = {};
+    for (const rid of result.regenerated) accepted[rid] = true;
+    pendingRegenAcceptedRef.current = accepted;
+    return new Promise<StoryBlock[] | null>((resolve) => {
+      pendingRegenResolveRef.current = resolve;
+      setPendingRegen({
+        original: currentBlocks,
+        regenerated: regenSanitized,
+        regeneratedIds,
+        skippedIds,
+      });
+    });
+  };
+
+  const finishRegenPreview = (apply: boolean) => {
+    const resolve = pendingRegenResolveRef.current;
+    const preview = pendingRegen;
+    pendingRegenResolveRef.current = null;
+    setPendingRegen(null);
+    if (!resolve) return;
+    if (!apply || !preview) {
+      resolve(null);
+      return;
+    }
+    const accepted = pendingRegenAcceptedRef.current;
+    const merged: StoryBlock[] = preview.original.map((orig) => {
+      if (!preview.regeneratedIds.has(orig.id)) return orig;
+      if (!accepted[orig.id]) return orig;
+      const next = preview.regenerated.find((r) => r.id === orig.id);
+      return next ?? orig;
+    });
+    resolve(merged);
   };
 
   const meta = data.tasting;
@@ -287,8 +331,280 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
           />
         </TastingStoryDataProvider>
       </div>
+      {pendingRegen ? (
+        <RegenPreviewModal
+          preview={pendingRegen}
+          acceptedRef={pendingRegenAcceptedRef}
+          onCancel={() => finishRegenPreview(false)}
+          onApply={() => finishRegenPreview(true)}
+        />
+      ) : null}
     </div>
   );
+}
+
+type RegenPreviewState = {
+  original: StoryBlock[];
+  regenerated: StoryBlock[];
+  regeneratedIds: Set<string>;
+  skippedIds: Set<string>;
+};
+
+function RegenPreviewModal({
+  preview,
+  acceptedRef,
+  onCancel,
+  onApply,
+}: {
+  preview: RegenPreviewState;
+  acceptedRef: React.MutableRefObject<Record<string, boolean>>;
+  onCancel: () => void;
+  onApply: () => void;
+}) {
+  const [, forceRender] = useState(0);
+  const items = preview.original.filter((b) => preview.regeneratedIds.has(b.id));
+  const acceptedCount = items.reduce((sum, it) => sum + (acceptedRef.current[it.id] ? 1 : 0), 0);
+  const toggle = (id: string) => {
+    acceptedRef.current = { ...acceptedRef.current, [id]: !acceptedRef.current[id] };
+    forceRender((x) => x + 1);
+  };
+  const setAll = (val: boolean) => {
+    const next: Record<string, boolean> = {};
+    for (const it of items) next[it.id] = val;
+    acceptedRef.current = next;
+    forceRender((x) => x + 1);
+  };
+  return (
+    <div
+      data-testid="modal-regen-preview"
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.7)",
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 24,
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 960,
+          maxHeight: "90vh",
+          overflow: "hidden",
+          background: "#15110C",
+          border: `1px solid ${ACCENT_DIM}`,
+          borderRadius: 6,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <div
+          style={{
+            padding: "16px 24px",
+            borderBottom: `1px solid ${ACCENT_DIM}`,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 16,
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: 10,
+                letterSpacing: ".25em",
+                textTransform: "uppercase",
+                color: ACCENT,
+              }}
+            >
+              KI-Vorschau
+            </div>
+            <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 22, color: "#F5EDE0" }}>
+              {items.length} {items.length === 1 ? "Block" : "Bloecke"} neu generiert
+            </div>
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "#A89A85", marginTop: 4 }}>
+              Pruefe die Vorschlaege und uebernimm nur, was du moechtest.{preview.skippedIds.size > 0 ? ` ${preview.skippedIds.size} gesperrte Bloecke wurden uebersprungen.` : ""}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => setAll(true)}
+              data-testid="button-regen-preview-accept-all"
+              style={ghostButton}
+            >
+              Alle annehmen
+            </button>
+            <button
+              type="button"
+              onClick={() => setAll(false)}
+              data-testid="button-regen-preview-reject-all"
+              style={ghostButton}
+            >
+              Alle abwaehlen
+            </button>
+          </div>
+        </div>
+        <div style={{ overflow: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+          {items.map((orig) => {
+            const next = preview.regenerated.find((r) => r.id === orig.id);
+            const isAccepted = !!acceptedRef.current[orig.id];
+            const oldText = extractBlockSummary(orig.payload);
+            const newText = next ? extractBlockSummary(next.payload) : "";
+            return (
+              <div
+                key={orig.id}
+                data-testid={`regen-preview-item-${orig.id}`}
+                style={{
+                  border: `1px solid ${isAccepted ? ACCENT : "rgba(168,154,133,0.2)"}`,
+                  borderRadius: 4,
+                  padding: 12,
+                  background: "#0B0906",
+                }}
+              >
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    cursor: "pointer",
+                    marginBottom: 8,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isAccepted}
+                    onChange={() => toggle(orig.id)}
+                    data-testid={`checkbox-accept-${orig.id}`}
+                  />
+                  <span
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: 11,
+                      letterSpacing: ".2em",
+                      textTransform: "uppercase",
+                      color: "#F5EDE0",
+                    }}
+                  >
+                    {orig.type}
+                  </span>
+                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <DiffColumn label="Vorher" text={oldText} accent="#A89A85" />
+                  <DiffColumn label="Vorschlag" text={newText} accent={ACCENT} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div
+          style={{
+            padding: "12px 24px",
+            borderTop: `1px solid ${ACCENT_DIM}`,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "#A89A85" }}>
+            {acceptedCount} von {items.length} ausgewaehlt
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              type="button"
+              onClick={onCancel}
+              data-testid="button-regen-preview-cancel"
+              style={ghostButton}
+            >
+              Abbrechen
+            </button>
+            <button
+              type="button"
+              onClick={onApply}
+              disabled={acceptedCount === 0}
+              data-testid="button-regen-preview-apply"
+              style={{
+                ...primaryButton,
+                opacity: acceptedCount === 0 ? 0.4 : 1,
+                cursor: acceptedCount === 0 ? "not-allowed" : "pointer",
+              }}
+            >
+              {acceptedCount} uebernehmen
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DiffColumn({ label, text, accent }: { label: string; text: string; accent: string }) {
+  return (
+    <div>
+      <div
+        style={{
+          fontFamily: "'Inter', sans-serif",
+          fontSize: 9,
+          letterSpacing: ".25em",
+          textTransform: "uppercase",
+          color: accent,
+          marginBottom: 4,
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontFamily: "'EB Garamond', serif",
+          fontSize: 13,
+          lineHeight: 1.5,
+          color: "#F5EDE0",
+          whiteSpace: "pre-wrap",
+          maxHeight: 220,
+          overflow: "auto",
+          padding: 8,
+          background: "rgba(255,255,255,0.02)",
+          borderRadius: 3,
+        }}
+      >
+        {text || "—"}
+      </div>
+    </div>
+  );
+}
+
+function extractBlockSummary(payload: Record<string, unknown>): string {
+  const lines: string[] = [];
+  const stringKeys = ["eyebrow", "heading", "body", "kicker", "quote", "tagline", "title", "subtitle"];
+  for (const k of stringKeys) {
+    const v = payload[k];
+    if (typeof v === "string" && v.trim().length > 0) lines.push(`${k}: ${v.trim()}`);
+  }
+  const overrides = payload.overrides;
+  if (overrides && typeof overrides === "object" && !Array.isArray(overrides)) {
+    const entries = Object.entries(overrides as Record<string, unknown>);
+    for (const [id, value] of entries) {
+      if (!value || typeof value !== "object") continue;
+      const v = value as Record<string, unknown>;
+      const parts: string[] = [];
+      for (const [vk, vv] of Object.entries(v)) {
+        if (typeof vv === "string" && vv.trim().length > 0) parts.push(`${vk}: ${vv.trim()}`);
+      }
+      if (parts.length > 0) lines.push(`${id} → ${parts.join(" | ")}`);
+    }
+  }
+  if (lines.length === 0) {
+    try {
+      return JSON.stringify(payload, null, 2).slice(0, 600);
+    } catch {
+      return "";
+    }
+  }
+  return lines.join("\n");
 }
 
 const secondaryButton: React.CSSProperties = {
@@ -314,4 +630,30 @@ const linkButton: React.CSSProperties = {
   textTransform: "uppercase",
   cursor: "pointer",
   textDecoration: "none",
+};
+
+const ghostButton: React.CSSProperties = {
+  background: "transparent",
+  color: "#F5EDE0",
+  border: `1px solid ${ACCENT_DIM}`,
+  padding: "6px 12px",
+  fontFamily: "'Inter', sans-serif",
+  fontSize: 10,
+  letterSpacing: ".2em",
+  textTransform: "uppercase",
+  cursor: "pointer",
+  borderRadius: 3,
+};
+
+const primaryButton: React.CSSProperties = {
+  background: ACCENT,
+  color: "#0B0906",
+  border: `1px solid ${ACCENT}`,
+  padding: "8px 18px",
+  fontFamily: "'Inter', sans-serif",
+  fontSize: 11,
+  letterSpacing: ".2em",
+  textTransform: "uppercase",
+  borderRadius: 3,
+  fontWeight: 600,
 };
