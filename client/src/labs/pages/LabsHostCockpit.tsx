@@ -9,6 +9,7 @@ import {
   ChevronDown, Layers, Archive,
 } from "lucide-react";
 import ModalPortal from "@/labs/components/ModalPortal";
+import ManageTastersDialog, { invalidateTastingAggregates } from "@/labs/components/ManageTastersDialog";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { useAppStore } from "@/lib/store";
 import { stripGuestSuffix, formatScore } from "@/lib/utils";
@@ -200,8 +201,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   }, [isMobile]);
 
   const [showParticipantPicker, setShowParticipantPicker] = useState(false);
-  const [pickerExcluded, setPickerExcluded] = useState<Set<string>>(new Set());
   const [pickerSaving, setPickerSaving] = useState(false);
+  const [showManageTasters, setShowManageTasters] = useState(false);
   const [restartDialog, setRestartDialog] = useState<false | "choose" | "confirmClear">(false);
   const [hostRatingIdx, setHostRatingIdx] = useState(0);
   const [cockpitWizard, setCockpitWizard] = useState(() => {
@@ -270,12 +271,6 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
       queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
       queryClient.invalidateQueries({ queryKey: ["tastings"] });
     },
-  });
-
-  const setInclusionMut = useMutation({
-    mutationFn: ({ participantId, excluded }: { participantId: string; excluded: boolean }) =>
-      tastingApi.setParticipantInclusion(tastingId, participantId, excluded),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasting-participants", tastingId] }),
   });
 
   const restartMut = useMutation({
@@ -553,7 +548,10 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
 
   const groupStats = useMemo(() => {
     if (!activeWhisky) return null;
-    const whiskyRatings = ratings.filter((r: any) => r.whiskyId === activeWhisky.id);
+    const excludedIds = new Set(
+      participants.filter((p: any) => p.excludedFromResults).map((p: any) => pId(p))
+    );
+    const whiskyRatings = ratings.filter((r: any) => r.whiskyId === activeWhisky.id && !excludedIds.has(r.participantId));
     if (whiskyRatings.length === 0) return null;
     const dims = ["nose", "taste", "finish", "overall"] as const;
     const result: Record<string, { avg: number; min: number; max: number; count: number }> = {};
@@ -569,7 +567,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
       };
     }
     return result;
-  }, [activeWhisky, ratings]);
+  }, [activeWhisky, ratings, participants]);
 
   if (!tasting) return null;
 
@@ -602,28 +600,13 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   };
 
   const handleEndSession = () => {
-    const initExcluded = new Set<string>();
-    participants.forEach((p: any) => {
-      if (p.excludedFromResults) initExcluded.add(pId(p));
-    });
-    setPickerExcluded(initExcluded);
     setShowParticipantPicker(true);
   };
 
   const handlePickerConfirm = async () => {
     setPickerSaving(true);
     try {
-      await Promise.all(
-        participants.map((p: any) => {
-          const participantId = pId(p);
-          const shouldExclude = pickerExcluded.has(participantId);
-          if (shouldExclude !== !!p.excludedFromResults) {
-            return tastingApi.setParticipantInclusion(tastingId, participantId, shouldExclude);
-          }
-          return Promise.resolve();
-        })
-      );
-      queryClient.invalidateQueries({ queryKey: ["tasting-participants", tastingId] });
+      invalidateTastingAggregates(queryClient, tastingId);
       updateStatusMut.mutate("closed");
       setShowParticipantPicker(false);
     } catch {
@@ -2185,9 +2168,33 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                   <Users style={{ width: 13, height: 13, color: "var(--labs-accent)" }} />
                   Participants
                 </div>
-                <span style={{ color: "var(--labs-accent)", fontSize: 12, fontWeight: 700, fontVariantNumeric: "tabular-nums" }} data-testid="cockpit-rating-progress">
-                  {ratedCount}/{totalP}
-                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowManageTasters(true)}
+                    title={t("manageTasters.openButton", "Taster verwalten")}
+                    data-testid="cockpit-open-manage-tasters"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      padding: "4px 8px",
+                      borderRadius: 6,
+                      border: "1px solid var(--labs-border)",
+                      background: "transparent",
+                      color: "var(--labs-text-muted)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <Sliders style={{ width: 11, height: 11 }} />
+                    {t("manageTasters.openButton", "Taster verwalten")}
+                  </button>
+                  <span style={{ color: "var(--labs-accent)", fontSize: 12, fontWeight: 700, fontVariantNumeric: "tabular-nums" }} data-testid="cockpit-rating-progress">
+                    {ratedCount}/{totalP}
+                  </span>
+                </div>
               </div>
 
               <div className="cockpit-card-body" style={{ padding: "12px 16px" }}>
@@ -2211,7 +2218,6 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                       ).size;
 
                       const isExcluded = !!p.excludedFromResults;
-                      const canToggle = status === "closed" || status === "reveal";
                       return (
                         <div key={participantId} className="cockpit-participant-row" data-testid={`cockpit-participant-${participantId}`}
                           style={{ opacity: isExcluded ? 0.5 : 1 }}>
@@ -2225,19 +2231,14 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                               : <Clock style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />}
                           </div>
                           <span style={{ flex: 1, fontSize: 13, color: isExcluded ? "var(--labs-text-muted)" : "var(--labs-text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: isExcluded ? "line-through" : "none" }}>{pName(p)}</span>
+                          {isExcluded && (
+                            <span title={t("manageTasters.excludedBadge", "Ausgeschlossen")} style={{ flexShrink: 0, color: "var(--labs-text-muted)" }}>
+                              <EyeOff style={{ width: 12, height: 12 }} />
+                            </span>
+                          )}
                           <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
                             {totalWhiskiesRated}/{whiskies.length}
                           </span>
-                          {canToggle && (
-                            <button
-                              onClick={() => setInclusionMut.mutate({ participantId, excluded: !isExcluded })}
-                              title={isExcluded ? t("cockpit.participantPickerIncludeToggle") : t("cockpit.participantPickerExcludeToggle")}
-                              data-testid={`cockpit-participant-toggle-${participantId}`}
-                              style={{ flexShrink: 0, padding: "2px 4px", borderRadius: 4, border: "none", background: "transparent", cursor: "pointer", color: isExcluded ? "var(--labs-text-muted)" : "var(--labs-accent)", display: "flex", alignItems: "center" }}
-                            >
-                              {isExcluded ? <EyeOff style={{ width: 13, height: 13 }} /> : <Eye style={{ width: 13, height: 13 }} />}
-                            </button>
-                          )}
                         </div>
                       );
                     })}
@@ -2384,114 +2385,28 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
         </div>
       </div>
 
-      <ModalPortal
+      <ManageTastersDialog
         open={showParticipantPicker}
         onClose={() => setShowParticipantPicker(false)}
-        closeOnOverlayClick={false}
-        testId="modal-participant-picker"
-      >
-        <div style={{ background: "var(--labs-surface)", borderRadius: 16, padding: "28px 24px", maxWidth: 440, width: "100%", display: "flex", flexDirection: "column", gap: 16, maxHeight: "80vh", overflow: "hidden" }}>
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-            <div>
-              <h2 className="labs-serif" style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-text)", marginBottom: 4 }}>
-                {t("cockpit.participantPickerTitle")}
-              </h2>
-              <p style={{ fontSize: 12, color: "var(--labs-text-muted)", lineHeight: 1.5 }}>
-                {t("cockpit.participantPickerDesc")}
-              </p>
-            </div>
-            <button
-              onClick={() => setShowParticipantPicker(false)}
-              style={{ flexShrink: 0, background: "transparent", border: "none", cursor: "pointer", color: "var(--labs-text-muted)", padding: 4 }}
-              data-testid="modal-participant-picker-close"
-            >
-              <X style={{ width: 18, height: 18 }} />
-            </button>
-          </div>
+        tastingId={tastingId}
+        participants={participants as any}
+        hostId={tasting?.hostId || null}
+        confirmAction={{
+          label: t("cockpit.participantPickerConfirm", "Tasting schließen"),
+          icon: <Lock style={{ width: 14, height: 14 }} />,
+          variant: "danger",
+          busy: pickerSaving || updateStatusMut.isPending,
+          onConfirm: handlePickerConfirm,
+        }}
+      />
 
-          <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
-            {participants.length === 0 ? (
-              <div style={{ textAlign: "center", color: "var(--labs-text-muted)", fontSize: 13, padding: "20px 0" }}>
-                {t("cockpit.noParticipants")}
-              </div>
-            ) : (
-              participants.map((p: any) => {
-                const participantId = pId(p);
-                const isExcluded = pickerExcluded.has(participantId);
-                const rc = typeof p.ratingCount === "number" ? p.ratingCount : 0;
-                const joinedStr = p.joinedAt ? new Date(p.joinedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : null;
-                return (
-                  <button
-                    key={participantId}
-                    onClick={() => {
-                      setPickerExcluded(prev => {
-                        const next = new Set(prev);
-                        if (next.has(participantId)) next.delete(participantId);
-                        else next.add(participantId);
-                        return next;
-                      });
-                    }}
-                    data-testid={`picker-participant-${participantId}`}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 10, padding: "8px 10px",
-                      borderRadius: 10, border: "1px solid", cursor: "pointer",
-                      background: isExcluded ? "rgba(255,255,255,0.02)" : "rgba(212,162,86,0.05)",
-                      borderColor: isExcluded ? "rgba(255,255,255,0.06)" : "rgba(212,162,86,0.2)",
-                      textAlign: "left", opacity: isExcluded ? 0.55 : 1,
-                      transition: "all 150ms",
-                    }}
-                  >
-                    <div style={{
-                      width: 18, height: 18, borderRadius: 4, border: "1px solid",
-                      borderColor: isExcluded ? "var(--labs-border)" : "var(--labs-accent)",
-                      background: isExcluded ? "transparent" : "var(--labs-accent)",
-                      display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                    }}>
-                      {!isExcluded && <CheckCircle2 style={{ width: 11, height: 11, color: "var(--labs-bg)" }} />}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: isExcluded ? "var(--labs-text-muted)" : "var(--labs-text)", textDecoration: isExcluded ? "line-through" : "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {pName(p)}
-                      </div>
-                      <div style={{ fontSize: 11, color: rc === 0 ? "var(--labs-warning, #e67e22)" : "var(--labs-text-muted)", marginTop: 1, display: "flex", alignItems: "center", gap: 4 }}>
-                        {rc === 0 && <AlertTriangle style={{ width: 10, height: 10, flexShrink: 0 }} />}
-                        {rc} {rc === 1 ? t("ui.rating", "Bewertung") : t("ui.ratings", "Bewertungen")}
-                        {joinedStr && <span style={{ marginLeft: 6, opacity: 0.7 }}>· {joinedStr}</span>}
-                      </div>
-                    </div>
-                    {isExcluded && (
-                      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", color: "var(--labs-text-muted)", background: "rgba(255,255,255,0.06)", padding: "2px 6px", borderRadius: 4, flexShrink: 0 }}>
-                        {t("cockpit.participantPickerExcludedBadge")}
-                      </span>
-                    )}
-                  </button>
-                );
-              })
-            )}
-          </div>
-
-          <div style={{ display: "flex", gap: 8, paddingTop: 8, borderTop: "1px solid var(--labs-border)" }}>
-            <button
-              onClick={() => setShowParticipantPicker(false)}
-              className="cockpit-action-btn cockpit-action-secondary"
-              style={{ flex: 1 }}
-              data-testid="picker-cancel"
-            >
-              {t("ui.cancel")}
-            </button>
-            <button
-              onClick={handlePickerConfirm}
-              disabled={pickerSaving}
-              className="cockpit-action-btn cockpit-action-danger"
-              style={{ flex: 2 }}
-              data-testid="picker-confirm-close"
-            >
-              {pickerSaving ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <Lock style={{ width: 14, height: 14 }} />}
-              {t("cockpit.participantPickerConfirm")}
-            </button>
-          </div>
-        </div>
-      </ModalPortal>
+      <ManageTastersDialog
+        open={showManageTasters}
+        onClose={() => setShowManageTasters(false)}
+        tastingId={tastingId}
+        participants={participants as any}
+        hostId={tasting?.hostId || null}
+      />
       </>
     );
   }

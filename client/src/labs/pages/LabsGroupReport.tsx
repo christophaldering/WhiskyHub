@@ -3,8 +3,9 @@ import { useLabsBack } from "@/labs/LabsLayout";
 import {
   ChevronLeft, Sparkles, Users, Trophy, TrendingUp, TrendingDown,
   Heart, Target, Download, Loader2, Lock, Unlock,
-  CheckCircle, RefreshCw, User, Zap, Activity,
+  CheckCircle, RefreshCw, User, Zap, Activity, Sliders,
 } from "lucide-react";
+import ManageTastersDialog from "@/labs/components/ManageTastersDialog";
 import React, { useState, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi, getParticipantId, pidHeaders } from "@/lib/api";
@@ -250,6 +251,7 @@ export default function LabsGroupReport({ params }: LabsGroupReportProps) {
   const [generatingMissing, setGeneratingMissing] = useState(false);
   const [generatingPid, setGeneratingPid] = useState<string | null>(null);
   const [missingError, setMissingError] = useState("");
+  const [showManageTasters, setShowManageTasters] = useState(false);
   // Progress for batched per-participant generation: { done, total, currentName }
   const [genProgress, setGenProgress] = useState<{ done: number; total: number; currentName: string | null } | null>(null);
 
@@ -452,19 +454,40 @@ export default function LabsGroupReport({ params }: LabsGroupReportProps) {
             <Sparkles style={{ width: 15, height: 15, color: "var(--labs-accent)" }} />
             <span style={{ fontWeight: 700, fontSize: 15, color: "var(--labs-text)" }}>KI-Report</span>
           </div>
-          {report && (
-            <button
-              onClick={() => void exportGroupReportPdf(tasting, report, whiskyResults, activeParticipants, t)}
-              style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "1px solid var(--labs-border)", borderRadius: 8, cursor: "pointer", color: "var(--labs-text-muted)", fontSize: 12, fontWeight: 600, padding: "5px 10px" }}
-              data-testid="button-download-report-pdf"
-            >
-              <Download style={{ width: 13, height: 13 }} />
-              PDF
-            </button>
-          )}
-          {!report && <div style={{ width: 60 }} />}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {isHost && (
+              <button
+                onClick={() => setShowManageTasters(true)}
+                style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "1px solid var(--labs-border)", borderRadius: 8, cursor: "pointer", color: "var(--labs-text-muted)", fontSize: 12, fontWeight: 600, padding: "5px 10px" }}
+                data-testid="button-manage-tasters"
+                title={t("manageTasters.openButton", "Taster verwalten")}
+              >
+                <Sliders style={{ width: 13, height: 13 }} />
+                {t("manageTasters.openButtonShort", "Taster")}
+              </button>
+            )}
+            {report && (
+              <button
+                onClick={() => void exportGroupReportPdf(tasting, report, whiskyResults, activeParticipants, t)}
+                style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "1px solid var(--labs-border)", borderRadius: 8, cursor: "pointer", color: "var(--labs-text-muted)", fontSize: 12, fontWeight: 600, padding: "5px 10px" }}
+                data-testid="button-download-report-pdf"
+              >
+                <Download style={{ width: 13, height: 13 }} />
+                PDF
+              </button>
+            )}
+            {!isHost && !report && <div style={{ width: 60 }} />}
+          </div>
         </div>
       </div>
+
+      <ManageTastersDialog
+        open={showManageTasters}
+        onClose={() => setShowManageTasters(false)}
+        tastingId={tastingId}
+        participants={(participantsData as any) || []}
+        hostId={tasting?.hostId || null}
+      />
 
       <div style={{ maxWidth: 700, margin: "0 auto", padding: "24px 16px" }}>
         <div style={{ marginBottom: 24 }}>

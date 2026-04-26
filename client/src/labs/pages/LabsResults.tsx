@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
-import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Sparkles, Clock, Monitor, Archive, Check, Info, Lock, Loader2, BookOpen, Camera, Trash2, Plus } from "lucide-react";
+import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Sparkles, Clock, Monitor, Archive, Check, Info, Lock, Loader2, BookOpen, Camera, Trash2, Plus, Sliders } from "lucide-react";
+import ManageTastersDialog from "@/labs/components/ManageTastersDialog";
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -419,6 +420,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
   const [historyExpanded, setHistoryExpanded] = useState<Record<string, boolean>>({});
   const [previousRatingsMap, setPreviousRatingsMap] = useState<Record<string, { date: string; tastingTitle: string; nose: number; taste: number; finish: number; overall: number }[]>>({});
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+  const [showManageTasters, setShowManageTasters] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -939,16 +941,30 @@ export default function LabsResults({ params }: LabsResultsProps) {
               )}
             </div>
           </div>
-          {isHost && tasting.status === "reveal" && (
-            <button
-              className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
-              style={{ background: "var(--labs-surface)", border: "1px solid var(--labs-border)", color: "var(--labs-text)", cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}
-              onClick={() => setShowArchiveDialog(true)}
-              data-testid="button-archive-tasting"
-            >
-              <Archive className="w-4 h-4" />
-              Archive
-            </button>
+          {isHost && (
+            <div style={{ display: "flex", gap: 8, flexShrink: 0, flexWrap: "wrap" }}>
+              <button
+                className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+                style={{ background: "var(--labs-surface)", border: "1px solid var(--labs-border)", color: "var(--labs-text)", cursor: "pointer", fontFamily: "inherit" }}
+                onClick={() => setShowManageTasters(true)}
+                data-testid="button-manage-tasters"
+                title={t("manageTasters.openButton", "Taster verwalten")}
+              >
+                <Sliders className="w-4 h-4" />
+                {t("manageTasters.openButton", "Taster verwalten")}
+              </button>
+              {tasting.status === "reveal" && (
+                <button
+                  className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+                  style={{ background: "var(--labs-surface)", border: "1px solid var(--labs-border)", color: "var(--labs-text)", cursor: "pointer", fontFamily: "inherit" }}
+                  onClick={() => setShowArchiveDialog(true)}
+                  data-testid="button-archive-tasting"
+                >
+                  <Archive className="w-4 h-4" />
+                  Archive
+                </button>
+              )}
+            </div>
           )}
         </div>
         {sorted.length > 0 && (
@@ -1696,6 +1712,14 @@ export default function LabsResults({ params }: LabsResultsProps) {
           Tasting Details
         </button>
       </div>
+
+      <ManageTastersDialog
+        open={showManageTasters}
+        onClose={() => setShowManageTasters(false)}
+        tastingId={tastingId}
+        participants={(participants as any) || []}
+        hostId={tasting?.hostId || null}
+      />
 
       {showArchiveDialog && createPortal(
         <div

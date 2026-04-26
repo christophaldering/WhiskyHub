@@ -6140,7 +6140,10 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       return res.status(403).json({ message: "Analytics not available in Ritual Mode" });
     }
 
-    const allRatings = await storage.getRatingsForTasting(tastingId);
+    const tpRows = await storage.getTastingParticipants(tastingId);
+    const excludedSet = new Set(tpRows.filter((tp: any) => tp.excludedFromResults).map((tp: any) => tp.participantId));
+    const allRatingsRaw = await storage.getRatingsForTasting(tastingId);
+    const allRatings = allRatingsRaw.filter((r: any) => !excludedSet.has(r.participantId));
     const whiskyList = await storage.getWhiskiesForTasting(tastingId);
     const scale = (tasting as any).ratingScale || 100;
 
@@ -6297,7 +6300,10 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       return res.status(403).json({ message: "Analytics not available" });
     }
 
-    const allRatings = await storage.getRatingsForTasting(tastingId);
+    const tpRowsDl = await storage.getTastingParticipants(tastingId);
+    const excludedSetDl = new Set(tpRowsDl.filter((tp: any) => tp.excludedFromResults).map((tp: any) => tp.participantId));
+    const allRatingsRawDl = await storage.getRatingsForTasting(tastingId);
+    const allRatings = allRatingsRawDl.filter((r: any) => !excludedSetDl.has(r.participantId));
     const whiskyList = await storage.getWhiskiesForTasting(tastingId);
     const scale = (tasting as any).ratingScale || 100;
     const norm = (v: number) => Math.round((v / scale) * 1000) / 10;
