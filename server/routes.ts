@@ -25630,12 +25630,21 @@ ${cleaned.slice(0, 60000)}`;
       }
     }
     const { buildInitialTastingStoryBlocks } = await import("./tastingStoryAutoFill");
-    const whiskies = await storage.getWhiskiesForTasting(tastingId);
-    const participants = await storage.getTastingParticipants(tastingId);
+    const [whiskies, participantsRaw, ratings] = await Promise.all([
+      storage.getWhiskiesForTasting(tastingId),
+      storage.getTastingParticipants(tastingId),
+      storage.getRatingsForTasting(tastingId),
+    ]);
+    const participants = participantsRaw
+      .map((row) => row.participant)
+      .filter((p): p is NonNullable<typeof p> => !!p)
+      .map((p) => ({ id: p.id, displayName: (p as { displayName?: string | null }).displayName ?? null, name: p.name ?? null }));
     const initialBlocks = buildInitialTastingStoryBlocks({
       tasting,
       whiskies,
-      participantCount: participants.length,
+      participantCount: participantsRaw.length,
+      participants,
+      ratings,
     });
     const reparsed = tastingStoryBlocksSchema.safeParse(initialBlocks);
     if (!reparsed.success) {
@@ -25760,8 +25769,17 @@ ${cleaned.slice(0, 60000)}`;
       const auth = await requireAuth(req);
       const isAdmin = auth.authenticated && auth.participant.role === "admin";
       const isHost = auth.authenticated && tasting.hostId === auth.participant.id;
-      if (!tasting.storyEnabled && !isAdmin && !isHost) {
-        return res.status(403).json({ message: "Story noch nicht freigegeben" });
+      if (!isAdmin && !isHost) {
+        if (!tasting.storyEnabled) {
+          return res.status(403).json({ message: "Story noch nicht freigegeben" });
+        }
+        if (!auth.authenticated) {
+          return res.status(401).json({ message: "Anmeldung erforderlich" });
+        }
+        const isMember = await storage.isParticipantInTasting(tastingId, auth.participant.id);
+        if (!isMember) {
+          return res.status(403).json({ message: "Zugriff nur fuer eingeladene Teilnehmer" });
+        }
       }
       const parsed = tastingStoryBlocksSchema.safeParse(tasting.storyBlocks);
       const blocks = parsed.success ? parsed.data : [];

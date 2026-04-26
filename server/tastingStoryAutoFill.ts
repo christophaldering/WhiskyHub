@@ -1,4 +1,4 @@
-import type { Tasting, Whisky } from "@shared/schema";
+import type { Rating, Tasting, Whisky } from "@shared/schema";
 
 type StoryBlock = {
   id: string;
@@ -6,6 +6,8 @@ type StoryBlock = {
   payload: Record<string, unknown>;
   hidden?: boolean;
 };
+
+type ParticipantLite = { id: string; displayName?: string | null; name?: string | null };
 
 function blockId(): string {
   return "blk_" + Math.random().toString(36).slice(2, 11);
@@ -63,12 +65,47 @@ function whiskyBodyHtml(w: Whisky): string {
   return lines.join("");
 }
 
+function participantLabel(p: ParticipantLite): string {
+  const name = (p.displayName ?? p.name ?? "").trim();
+  return name.length > 0 ? name : "Gast";
+}
+
+function whiskyLabel(w: Whisky, idx: number): string {
+  if (w.name && w.name.trim().length > 0) return w.name;
+  return `Whisky ${idx + 1}`;
+}
+
+function averageScore(values: number[]): number | null {
+  if (values.length === 0) return null;
+  const sum = values.reduce((a, b) => a + b, 0);
+  return sum / values.length;
+}
+
+function rankWhiskies(whiskies: Whisky[], ratings: Rating[]): Array<{ whisky: Whisky; index: number; avg: number | null; voters: number }> {
+  return whiskies.map((w, idx) => {
+    const wr = ratings.filter((r) => r.whiskyId === w.id);
+    const overallScores = wr
+      .map((r) => (typeof r.overall === "number" ? r.overall : null))
+      .filter((v): v is number => v !== null);
+    return { whisky: w, index: idx, avg: averageScore(overallScores), voters: wr.length };
+  }).sort((a, b) => {
+    const av = a.avg ?? -1;
+    const bv = b.avg ?? -1;
+    if (bv !== av) return bv - av;
+    return a.index - b.index;
+  });
+}
+
 export function buildInitialTastingStoryBlocks(args: {
   tasting: Tasting;
   whiskies: Whisky[];
   participantCount: number;
+  participants?: ParticipantLite[];
+  ratings?: Rating[];
 }): StoryBlock[] {
   const { tasting, whiskies, participantCount } = args;
+  const participants = args.participants ?? [];
+  const ratings = args.ratings ?? [];
   const blocks: StoryBlock[] = [];
 
   const dateLabel = tastingDateLabel(tasting);
@@ -157,6 +194,68 @@ export function buildInitialTastingStoryBlocks(args: {
       type: "divider",
       payload: { variant: "stars" },
     });
+  }
+
+  if (participants.length > 0) {
+    const participantItems = participants.slice(0, 30).map((p) => ({
+      value: participantLabel(p).slice(0, 40),
+      label: "",
+      hint: "",
+    }));
+    blocks.push({
+      id: blockId(),
+      type: "stats-grid",
+      payload: {
+        eyebrow: "Im Glas",
+        heading: "Wer mitverkostet hat",
+        items: participantItems,
+        columns: participantItems.length >= 4 ? "4" : "3",
+      },
+    });
+  }
+
+  const ranking = whiskies.length > 0 ? rankWhiskies(whiskies, ratings) : [];
+  const ranked = ranking.filter((r) => r.avg !== null);
+  if (ranked.length > 0) {
+    const rows = ranked.map((entry, position) => {
+      const w = entry.whisky;
+      const idx = entry.index;
+      const scoreLabel = entry.avg !== null ? `${entry.avg.toFixed(1)} Punkte` : "Keine Bewertung";
+      const distillery = w.distillery ? ` <em>${escapeHtml(w.distillery)}</em>` : "";
+      return `<li><strong>${position + 1}. ${escapeHtml(whiskyLabel(w, idx))}</strong>${distillery} — ${escapeHtml(scoreLabel)} (${entry.voters} ${entry.voters === 1 ? "Stimme" : "Stimmen"})</li>`;
+    }).join("");
+    blocks.push({
+      id: blockId(),
+      type: "text-section",
+      payload: {
+        eyebrow: "Ranking",
+        heading: "Wie ihr gewertet habt",
+        body: `<ol>${rows}</ol>`,
+        alignment: "left",
+        variant: "default",
+      },
+    });
+
+    const winner = ranked[0];
+    if (winner) {
+      const winnerScore = winner.avg !== null ? winner.avg.toFixed(1) : "—";
+      const winnerDescriptor = whiskyDescriptor(winner.whisky);
+      const winnerBody: string[] = [
+        `<p><strong>${escapeHtml(whiskyLabel(winner.whisky, winner.index))}</strong>${winnerDescriptor ? ` — <em>${escapeHtml(winnerDescriptor)}</em>` : ""}</p>`,
+        `<p>Schnitt: ${escapeHtml(winnerScore)} Punkte aus ${winner.voters} ${winner.voters === 1 ? "Bewertung" : "Bewertungen"}.</p>`,
+      ];
+      blocks.push({
+        id: blockId(),
+        type: "text-section",
+        payload: {
+          eyebrow: "Sieger",
+          heading: "Dram des Abends",
+          body: winnerBody.join(""),
+          alignment: "center",
+          variant: "act-intro",
+        },
+      });
+    }
   }
 
   blocks.push({

@@ -22,6 +22,15 @@ export type TastingStoryResponse = {
   canEdit: boolean;
 };
 
+export class TastingStoryApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "TastingStoryApiError";
+    this.status = status;
+  }
+}
+
 async function readJson<T>(res: Response, fallback: string): Promise<T> {
   if (!res.ok) {
     let msg = fallback;
@@ -29,9 +38,9 @@ async function readJson<T>(res: Response, fallback: string): Promise<T> {
       const data = await res.json();
       if (data && typeof data.message === "string") msg = data.message;
     } catch {
-      // ignore
+      void 0;
     }
-    throw new Error(msg);
+    throw new TastingStoryApiError(res.status, msg);
   }
   return (await res.json()) as T;
 }
