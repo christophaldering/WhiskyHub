@@ -9023,6 +9023,7 @@ const resources = {
           legendLow: "low",
           legendHigh: "high",
           empty: "Not enough data for the heatmap.",
+          continued: "continued",
         },
       },
       liveUi: {
@@ -18413,6 +18414,7 @@ const resources = {
           legendLow: "niedrig",
           legendHigh: "hoch",
           empty: "Nicht genügend Daten für die Heatmap.",
+          continued: "Fortsetzung",
         },
       },
       liveUi: {

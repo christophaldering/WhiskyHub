@@ -165,6 +165,26 @@ function truncate(s: string, max: number): string {
   return s.length > max ? s.slice(0, max - 1) + "\u2026" : s;
 }
 
+function toUserScale(v: number | null | undefined, scaleMax: number): number | null {
+  if (v == null) return null;
+  if (scaleMax !== 100 && v > scaleMax) return Math.round((v / 100) * scaleMax * 10) / 10;
+  return v;
+}
+
+function detectAnonymized(tasting: any, includedParticipants: any[]): boolean {
+  if (tasting?.reflectionVisibility === "anonymous") return true;
+  if (tasting?.guestMode === "ultra") return true;
+  if (includedParticipants.length === 0) return false;
+  let anyNamed = false;
+  for (const tp of includedParticipants) {
+    const raw = tp.participant?.name ?? tp.name ?? "";
+    if (stripGuestSuffix(raw).trim()) {
+      anyNamed = true;
+      break;
+    }
+  }
+  return !anyNamed;
+}
 
 export function computeFullStats(
   tasting: any,
@@ -179,18 +199,29 @@ export function computeFullStats(
     participants.filter((p: any) => p.excludedFromResults).map((p: any) => p.participantId || p.id),
   );
   const includedParticipants = participants.filter((p: any) => !excludedPids.has(p.participantId || p.id));
-  const ratingsScaled = allRatings.filter((r: any) => !excludedPids.has(r.participantId));
+  const filteredRatings = allRatings.filter((r: any) => !excludedPids.has(r.participantId));
+
+  const ratingsScaled = filteredRatings.map((r: any) => ({
+    ...r,
+    nose: toUserScale(r.nose, scaleMax),
+    taste: toUserScale(r.taste, scaleMax),
+    finish: toUserScale(r.finish, scaleMax),
+    overall: toUserScale(r.overall, scaleMax),
+  }));
 
   const whiskyById = new Map<string, any>();
   for (const w of whiskies) whiskyById.set(w.id, w);
 
-  const participantNameById = new Map<string, string>();
+  const isAnonymized = detectAnonymized(tasting, includedParticipants);
+
+  const participantDisplayById = new Map<string, string>();
   for (let i = 0; i < includedParticipants.length; i++) {
     const tp = includedParticipants[i];
     const pid = tp.participantId || tp.id;
     const rawName = tp.participant?.name ?? tp.name ?? "";
     const cleaned = stripGuestSuffix(rawName).trim();
-    participantNameById.set(pid, cleaned);
+    const display = isAnonymized || !cleaned ? `P${i + 1}` : cleaned;
+    participantDisplayById.set(pid, display);
   }
 
   const whiskyRows: WhiskyStatsRow[] = whiskies.map((w: any) => {
@@ -249,7 +280,7 @@ export function computeFullStats(
   for (const r of ratingsScaled) {
     if (r.overall == null || r.overall <= 0) continue;
     const wName = whiskyById.get(r.whiskyId)?.name || "";
-    const pName = participantNameById.get(r.participantId) || "";
+    const pName = participantDisplayById.get(r.participantId) || "";
     if (!highest || r.overall > highest.value) {
       highest = { value: r.overall, whiskyName: wName, participantName: pName };
     }
@@ -322,8 +353,7 @@ export function computeFullStats(
 
   const participantRows: ParticipantStatsRow[] = includedParticipants.map((tp: any, idx: number) => {
     const pid: string = tp.participantId || tp.id;
-    const rawName = participantNameById.get(pid) || "";
-    const displayName = rawName || `P${idx + 1}`;
+    const displayName = participantDisplayById.get(pid) || `P${idx + 1}`;
     const myRatings = ratingsScaled.filter((r: any) => r.participantId === pid);
     const myVals = myRatings.map((r: any) => r.overall).filter((v: number | null): v is number => v != null && v > 0);
     const myAvg = mean(myVals);
@@ -986,7 +1016,7 @@ function renderHeatmapBlock(
         lpHelpers.drawPageBg();
         lpHelpers.drawHeader();
         cy = 18;
-        cy = drawSectionTitle(doc, t("resultsUi.section.heatmap") + titleSuffix + " (cont.)", cy, lw);
+        cy = drawSectionTitle(doc, `${t("resultsUi.section.heatmap")}${titleSuffix} (${t("resultsUi.heatmap.continued")})`, cy, lw);
         cy = drawColHeaders(cy);
       }
       doc.setFont("helvetica", "normal");
