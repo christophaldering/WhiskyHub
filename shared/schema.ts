@@ -473,6 +473,32 @@ export const insertRatingSchema = createInsertSchema(ratings).omit({ id: true, c
 export type InsertRating = z.infer<typeof insertRatingSchema>;
 export type Rating = typeof ratings.$inferSelect;
 
+// --- Rating Audit Log ---
+// Records who created/updated a rating, when, and what the prior values were.
+// Currently written by the host backfill endpoint; reserved actions allow
+// future expansion to participant-side create/update events.
+export const ratingAudit = pgTable("rating_audit", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ratingId: varchar("rating_id"),
+  tastingId: varchar("tasting_id").notNull(),
+  participantId: varchar("participant_id").notNull(),
+  whiskyId: varchar("whisky_id").notNull(),
+  actorParticipantId: varchar("actor_participant_id").notNull(),
+  action: text("action").notNull(),
+  source: text("source"),
+  oldValue: jsonb("old_value"),
+  newValue: jsonb("new_value"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  tastingIdx: index("idx_rating_audit_tasting").on(t.tastingId, t.createdAt),
+  ratingIdx: index("idx_rating_audit_rating").on(t.ratingId),
+  participantIdx: index("idx_rating_audit_participant").on(t.tastingId, t.participantId),
+}));
+
+export const insertRatingAuditSchema = createInsertSchema(ratingAudit).omit({ id: true, createdAt: true });
+export type InsertRatingAudit = z.infer<typeof insertRatingAuditSchema>;
+export type RatingAudit = typeof ratingAudit.$inferSelect;
+
 // --- Journal Entries (private tasting log) ---
 export const journalEntries = pgTable("journal_entries", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

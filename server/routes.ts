@@ -6209,13 +6209,46 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
           normalizedTaste: normalizeDim(r.taste),
           normalizedFinish: normalizeDim(r.finish),
         };
-        const result = await storage.upsertRating(data);
+        const { rating: result } = await storage.upsertRatingWithAudit(data, {
+          tastingId: tasting.id,
+          participantId: body.participantId,
+          whiskyId: r.whiskyId,
+          actorParticipantId: auth.participant.id,
+          action: "host_backfilled",
+          source: "host",
+        });
         saved.push(result);
         if (process.env.LABS_DEBUG) console.log(`[LABS] Host backfill: host=${auth.participant.id} participant=${body.participantId} whisky=${r.whiskyId} overall=${r.overall}`);
       }
 
       storage.updateParticipantIndices(body.participantId).catch(() => {});
       res.json({ saved, skipped });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  // GET /api/tastings/:id/rating-audit (admin-only)
+  // Optional query: participantId, whiskyId, limit (1..1000, default 200).
+  app.get("/api/tastings/:id/rating-audit", async (req, res) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+
+      if (auth.participant.role !== "admin") {
+        return res.status(403).json({ message: "Only an admin can view the rating audit log" });
+      }
+
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+
+      const participantId = typeof req.query.participantId === "string" ? req.query.participantId : undefined;
+      const whiskyId = typeof req.query.whiskyId === "string" ? req.query.whiskyId : undefined;
+      const limitRaw = typeof req.query.limit === "string" ? parseInt(req.query.limit, 10) : NaN;
+      const limit = Number.isFinite(limitRaw) ? limitRaw : 200;
+
+      const entries = await storage.listRatingAuditForTasting(tasting.id, { participantId, whiskyId, limit });
+      res.json({ entries });
     } catch (e: any) {
       res.status(400).json({ message: e.message });
     }

@@ -5,7 +5,7 @@ import { canonicalizeDistilleryName } from "@shared/distillery-normalizer";
 import { clampNormalized } from "@shared/score-utils";
 import { getParticipantOverallScores, computeStabilityScore } from "./participant-scores";
 import {
-  participants, tastings, tastingParticipants, sharingParticipants, whiskies, whiskyHandoutLibrary, whiskyHandouts, tastingHandouts, distilleryHandouts, pdfSplitSessions, ratings,
+  participants, tastings, tastingParticipants, sharingParticipants, whiskies, whiskyHandoutLibrary, whiskyHandouts, tastingHandouts, distilleryHandouts, pdfSplitSessions, ratings, ratingAudit,
   profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, whiskyGroups, whiskyGroupMembers, journalEntries, benchmarkEntries, wishlistEntries,
   newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, tastingPhotos, tastingEventPhotos, tastingStoryVersions, storyVersions, storyTemplates, userFeedback,
   type InsertParticipant, type Participant,
@@ -19,6 +19,7 @@ import {
   type InsertDistilleryHandout, type DistilleryHandout,
   type PdfSplitSession, type PdfSplitPage,
   type InsertRating, type Rating,
+  type InsertRatingAudit, type RatingAudit,
   type InsertProfile, type Profile,
   type InsertSessionInvite, type SessionInvite,
   type InsertDiscussionEntry, type DiscussionEntry,
@@ -455,6 +456,11 @@ export interface IStorage {
   getRatingByParticipantAndWhisky(participantId: string, whiskyId: string): Promise<Rating | undefined>;
   upsertRating(data: InsertRating): Promise<Rating>;
   deleteRatingsByTasting(tastingId: string): Promise<void>;
+
+  // Rating Audit
+  createRatingAudit(data: InsertRatingAudit): Promise<RatingAudit>;
+  listRatingAuditForTasting(tastingId: string, opts?: { limit?: number; participantId?: string; whiskyId?: string }): Promise<RatingAudit[]>;
+  upsertRatingWithAudit(data: InsertRating, audit: Omit<InsertRatingAudit, "ratingId" | "oldValue" | "newValue">): Promise<{ rating: Rating; audit: RatingAudit }>;
 
   // Profiles
   getProfile(participantId: string): Promise<Profile | undefined>;
@@ -1036,6 +1042,66 @@ export class DatabaseStorage implements IStorage {
 
   async deleteRatingsByTasting(tastingId: string): Promise<void> {
     await db.delete(ratings).where(eq(ratings.tastingId, tastingId));
+  }
+
+  async createRatingAudit(data: InsertRatingAudit): Promise<RatingAudit> {
+    const [result] = await db.insert(ratingAudit).values(data).returning();
+    return result;
+  }
+
+  async listRatingAuditForTasting(tastingId: string, opts: { limit?: number; participantId?: string; whiskyId?: string } = {}): Promise<RatingAudit[]> {
+    const conds: any[] = [eq(ratingAudit.tastingId, tastingId)];
+    if (opts.participantId) conds.push(eq(ratingAudit.participantId, opts.participantId));
+    if (opts.whiskyId) conds.push(eq(ratingAudit.whiskyId, opts.whiskyId));
+    const limit = Math.min(Math.max(opts.limit ?? 200, 1), 1000);
+    return db
+      .select()
+      .from(ratingAudit)
+      .where(conds.length === 1 ? conds[0] : and(...conds))
+      .orderBy(desc(ratingAudit.createdAt))
+      .limit(limit);
+  }
+
+  // Atomically upsert a rating and write its audit entry in one transaction.
+  async upsertRatingWithAudit(
+    data: InsertRating,
+    audit: Omit<InsertRatingAudit, "ratingId" | "oldValue" | "newValue">,
+  ): Promise<{ rating: Rating; audit: RatingAudit }> {
+    const snapshot = (r: Rating | undefined | null) => r == null ? null : {
+      nose: r.nose ?? null,
+      taste: r.taste ?? null,
+      finish: r.finish ?? null,
+      overall: r.overall ?? null,
+      notes: r.notes ?? "",
+      source: r.source ?? null,
+    };
+    const result = await db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select()
+        .from(ratings)
+        .where(and(eq(ratings.participantId, data.participantId), eq(ratings.whiskyId, data.whiskyId)));
+      let saved: Rating;
+      if (existing) {
+        const [updated] = await tx
+          .update(ratings)
+          .set({ ...data, updatedAt: new Date() })
+          .where(eq(ratings.id, existing.id))
+          .returning();
+        saved = updated;
+      } else {
+        const [inserted] = await tx.insert(ratings).values(data).returning();
+        saved = inserted;
+      }
+      const [auditRow] = await tx.insert(ratingAudit).values({
+        ...audit,
+        ratingId: saved.id,
+        oldValue: snapshot(existing),
+        newValue: snapshot(saved),
+      }).returning();
+      return { rating: saved, audit: auditRow };
+    });
+    invalidateCommunityRatingsCache();
+    return result;
   }
 
   async updateTastingReflection(id: string, reflection: string): Promise<Tasting | undefined> {
