@@ -152,7 +152,7 @@ async function exportGroupReportPdf(tasting: any, report: any, whiskies: any[], 
     doc.text("Individuelle Kommentare", mx, y); y += 10;
     for (const pid of Object.keys(indReports)) {
       const pr = indReports[pid];
-      const pName = participants.find((p: any) => p.id === pid)?.name || pid;
+      const pName = participants.find((p: any) => (p.participantId ?? p.participant?.id ?? p.id) === pid)?.name || pid;
       y = checkY(y, 20);
       doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.setTextColor(...ACCENT);
       doc.text(pName, mx, y); y += 6;
@@ -312,7 +312,7 @@ export default function LabsGroupReport({ params }: LabsGroupReportProps) {
     // the caller passes `null` meaning "all missing").
     const resolvedIds: string[] = participantIds && participantIds.length > 0
       ? participantIds
-      : activeParticipants.filter((p: any) => !indReports[p.id]).map((p: any) => p.id);
+      : activeParticipants.filter((p: any) => !indReports[p.participantId ?? p.participant?.id ?? p.id]).map((p: any) => p.participantId ?? p.participant?.id ?? p.id);
 
     if (resolvedIds.length === 0) return;
 
@@ -328,7 +328,7 @@ export default function LabsGroupReport({ params }: LabsGroupReportProps) {
     // Issue one request per participant so the user sees true X/Y progress instead of
     // a single opaque spinner for the whole batch.
     for (const targetId of resolvedIds) {
-      const targetName = activeParticipants.find((p: any) => p.id === targetId)?.name ?? null;
+      const targetName = activeParticipants.find((p: any) => (p.participantId ?? p.participant?.id ?? p.id) === targetId)?.name ?? null;
       setGenProgress({ done: processed, total: resolvedIds.length, currentName: targetName });
       if (!isSingle) setGeneratingPid(targetId);
       try {
@@ -418,12 +418,12 @@ export default function LabsGroupReport({ params }: LabsGroupReportProps) {
 
   const indReports = report?.individualReports || {};
   const selectedReport = selectedParticipant ? indReports[selectedParticipant] : null;
-  const selectedParticipantData = activeParticipants.find((p: any) => p.id === selectedParticipant);
+  const selectedParticipantData = activeParticipants.find((p: any) => (p.participantId ?? p.participant?.id ?? p.id) === selectedParticipant);
 
-  const generatedCount = activeParticipants.filter((p: any) => indReports[p.id]).length;
+  const generatedCount = activeParticipants.filter((p: any) => indReports[p.participantId ?? p.participant?.id ?? p.id]).length;
   const totalActive = activeParticipants.length;
   const missingCount = totalActive - generatedCount;
-  const missingParticipantIds = activeParticipants.filter((p: any) => !indReports[p.id]).map((p: any) => p.id);
+  const missingParticipantIds = activeParticipants.filter((p: any) => !indReports[p.participantId ?? p.participant?.id ?? p.id]).map((p: any) => p.participantId ?? p.participant?.id ?? p.id);
 
   const pairingsSorted = useMemo(() => {
     const pairs = (report?.correlationData?.pairings || []) as Array<{ aId: string; aName: string; bId: string; bName: string; score: number }>;
@@ -849,15 +849,16 @@ export default function LabsGroupReport({ params }: LabsGroupReportProps) {
 
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
                   {activeParticipants.map((p: any) => {
-                    const has = !!indReports[p.id];
-                    const isPidGenerating = generatingPid === p.id;
-                    const isSelected = selectedParticipant === p.id;
+                    const realPid: string = p.participantId ?? p.participant?.id ?? p.id;
+                    const has = !!indReports[realPid];
+                    const isPidGenerating = generatingPid === realPid;
+                    const isSelected = selectedParticipant === realPid;
                     return (
-                      <div key={p.id} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      <div key={realPid} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                         <button
-                          onClick={() => has ? setSelectedParticipant(isSelected ? null : p.id) : generateIndividualReports([p.id])}
+                          onClick={() => has ? setSelectedParticipant(isSelected ? null : realPid) : generateIndividualReports([realPid])}
                           disabled={isPidGenerating || generatingMissing || (!has && (generatingMissing || generatingPid !== null))}
-                          data-testid={`button-select-participant-${p.id}`}
+                          data-testid={`button-select-participant-${realPid}`}
                           style={{
                             display: "inline-flex", alignItems: "center", gap: 6,
                             padding: "6px 12px", borderRadius: 20, border: "1px solid",
