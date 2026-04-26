@@ -4,6 +4,8 @@ import { downloadBlob } from "@/lib/download";
 import { formatScore, stripGuestSuffix } from "@/lib/utils";
 import { pidHeaders } from "@/lib/api";
 import { exportStoryPdf } from "@/lib/pdf-story";
+import { exportTastingStoryBlocksPdfFor } from "@/lib/pdf-story-blocks";
+import { getPublicTastingStory, TastingStoryApiError } from "@/lib/tastingStoryApi";
 import {
   type RGB,
   mean,
@@ -1220,6 +1222,17 @@ export async function labsExportStoryPdfForTasting(
   tastingId: string,
   t?: (key: string, opts?: any) => string,
 ): Promise<void> {
+  try {
+    const blockStory = await getPublicTastingStory(tastingId);
+    if (blockStory?.document?.blocks && blockStory.document.blocks.length > 0) {
+      await exportTastingStoryBlocksPdfFor(tastingId, blockStory.tasting?.title ?? undefined);
+      return;
+    }
+  } catch (err) {
+    if (!(err instanceof TastingStoryApiError && err.status === 404)) {
+      console.warn("[labsExportStoryPdfForTasting] block story probe failed:", err);
+    }
+  }
   const [storyRes, photosRes] = await Promise.all([
     fetch(`/api/tastings/${tastingId}/story`, { headers: pidHeaders() }),
     fetch(`/api/tastings/${tastingId}/event-photos`, { headers: pidHeaders() }),

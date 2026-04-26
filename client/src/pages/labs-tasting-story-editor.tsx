@@ -291,6 +291,9 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
           ) : null}
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {currentParticipant?.role === "admin" ? (
+            <AdminMigrationPanel tastingId={id} onChanged={() => qc.invalidateQueries({ queryKey: ["/api/tasting-stories", id] })} />
+          ) : null}
           <a
             href={`/tasting-story/${id}`}
             target="_blank"
@@ -657,3 +660,164 @@ const primaryButton: React.CSSProperties = {
   borderRadius: 3,
   fontWeight: 600,
 };
+
+type AdminMigrationPanelProps = {
+  tastingId: string;
+  onChanged: () => void;
+};
+
+function AdminMigrationPanel({ tastingId, onChanged }: AdminMigrationPanelProps) {
+  const [busy, setBusy] = useState<null | "blocks" | "versions" | "unmigrate">(null);
+  const [force, setForce] = useState(false);
+  const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+
+  async function call(kind: "blocks" | "versions" | "unmigrate") {
+    const endpoint =
+      kind === "blocks"
+        ? `/api/admin/tasting-stories/${encodeURIComponent(tastingId)}/migrate-blocks`
+        : kind === "versions"
+        ? `/api/admin/tasting-stories/${encodeURIComponent(tastingId)}/migrate-versions`
+        : `/api/admin/tasting-stories/${encodeURIComponent(tastingId)}/unmigrate-blocks`;
+    setBusy(kind);
+    setStatusMsg(null);
+    try {
+      const body = kind === "blocks" ? JSON.stringify({ force }) : "{}";
+      const res = await fetch(endpoint, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body,
+      });
+      if (!res.ok) {
+        let msg = `Fehler ${res.status}`;
+        try {
+          const j = await res.json();
+          if (j?.message) msg = j.message;
+        } catch {
+          void 0;
+        }
+        setStatusMsg(msg);
+        return;
+      }
+      const j = await res.json();
+      const summary =
+        kind === "blocks"
+          ? `Status: ${j?.result?.status ?? "?"} (${j?.result?.blockCount ?? 0} Bloecke)`
+          : kind === "versions"
+          ? `Importiert: ${j?.result?.imported ?? 0}, uebersprungen: ${(j?.result?.skippedExisting ?? 0) + (j?.result?.skippedInvalid ?? 0)}`
+          : `Zurueckgesetzt (${j?.result?.previousCount ?? 0} Bloecke entfernt)`;
+      setStatusMsg(summary);
+      onChanged();
+    } catch (e: unknown) {
+      setStatusMsg(e instanceof Error ? e.message : "Unbekannter Fehler");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div style={{ position: "relative" }} data-testid="admin-migration-panel">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        style={ghostButton}
+        data-testid="button-admin-migration-toggle"
+      >
+        Story-Migration
+      </button>
+      {open ? (
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 6px)",
+            right: 0,
+            background: "#15110C",
+            border: `1px solid ${ACCENT_DIM}`,
+            padding: 12,
+            borderRadius: 4,
+            minWidth: 280,
+            zIndex: 50,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+          }}
+          data-testid="admin-migration-panel-content"
+        >
+          <div
+            style={{
+              fontFamily: "'Inter', sans-serif",
+              fontSize: 10,
+              letterSpacing: ".2em",
+              textTransform: "uppercase",
+              color: ACCENT,
+              marginBottom: 8,
+            }}
+          >
+            Migrations-Werkzeuge
+          </div>
+          <label
+            style={{
+              display: "flex",
+              gap: 6,
+              alignItems: "center",
+              fontFamily: "'Inter', sans-serif",
+              fontSize: 11,
+              color: "#F5EDE0",
+              marginBottom: 8,
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={force}
+              onChange={(e) => setForce(e.target.checked)}
+              data-testid="checkbox-migration-force"
+            />
+            Force (bestehende Bloecke ueberschreiben)
+          </label>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <button
+              type="button"
+              disabled={busy !== null}
+              onClick={() => call("blocks")}
+              style={ghostButton}
+              data-testid="button-migrate-blocks"
+            >
+              {busy === "blocks" ? "Migriere..." : "Slide-Cache -> Bloecke"}
+            </button>
+            <button
+              type="button"
+              disabled={busy !== null}
+              onClick={() => call("versions")}
+              style={ghostButton}
+              data-testid="button-migrate-versions"
+            >
+              {busy === "versions" ? "Migriere..." : "Alte Versionen importieren"}
+            </button>
+            <button
+              type="button"
+              disabled={busy !== null}
+              onClick={() => call("unmigrate")}
+              style={ghostButton}
+              data-testid="button-unmigrate-blocks"
+            >
+              {busy === "unmigrate" ? "Setze zurueck..." : "Bloecke zuruecksetzen"}
+            </button>
+          </div>
+          {statusMsg ? (
+            <div
+              style={{
+                marginTop: 8,
+                fontFamily: "'Inter', sans-serif",
+                fontSize: 11,
+                color: "#A89A85",
+                wordBreak: "break-word",
+              }}
+              data-testid="text-migration-status"
+            >
+              {statusMsg}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}

@@ -1077,7 +1077,30 @@ export class DatabaseStorage implements IStorage {
 
   async updateTasting(id: string, data: Partial<Record<string, any>>): Promise<Tasting | undefined> {
     if (Object.keys(data).length === 0) return this.getTasting(id);
-    const [result] = await db.update(tastings).set(data).where(eq(tastings.id, id)).returning();
+    let patch = data;
+    const blocksProvided = Object.prototype.hasOwnProperty.call(data, "storyBlocks");
+    if (blocksProvided && !Object.prototype.hasOwnProperty.call(data, "storyPdfObjectKey")) {
+      try {
+        const current = await this.getTasting(id);
+        const existingKey = current?.storyPdfObjectKey ?? null;
+        if (existingKey) {
+          try {
+            const { objectStorageClient } = await import("./replit_integrations/object_storage/objectStorage");
+            const parts = existingKey.split("/").filter((p) => p.length > 0);
+            if (parts.length < 2) throw new Error(`Invalid storage path: ${existingKey}`);
+            const bucketName = parts[0];
+            const objectName = parts.slice(1).join("/");
+            await objectStorageClient.bucket(bucketName).file(objectName).delete({ ignoreNotFound: true });
+          } catch (delErr) {
+            console.warn("[updateTasting] story pdf delete warning:", delErr instanceof Error ? delErr.message : delErr);
+          }
+          patch = { ...data, storyPdfObjectKey: null };
+        }
+      } catch (lookupErr) {
+        console.warn("[updateTasting] cache invalidate lookup warning:", lookupErr instanceof Error ? lookupErr.message : lookupErr);
+      }
+    }
+    const [result] = await db.update(tastings).set(patch).where(eq(tastings.id, id)).returning();
     return result;
   }
 

@@ -16,6 +16,7 @@ export function StoryRenderer({ document, mode = "public", className }: Props) {
   return (
     <div
       data-testid="story-renderer"
+      data-mode={mode}
       className={className}
       style={{
         background: theme.colors.bg,
@@ -106,42 +107,86 @@ function PrintStyles() {
     overflow: visible !important;
     min-height: auto !important;
   }
+  [data-testid="story-renderer"] * {
+    color: #1A1A1A !important;
+    text-shadow: none !important;
+    filter: none !important;
+  }
+  [data-testid="story-renderer"] [style*="background"] {
+    background: transparent !important;
+    background-image: none !important;
+  }
   .storybuilder-block {
     page-break-inside: avoid;
     break-inside: avoid;
-    margin-bottom: 8mm;
+    margin-bottom: 6mm;
+  }
+  [data-testid="block-hero-cover"],
+  [data-testid="block-whisky-card-grid"],
+  [data-testid="block-taster-grid"],
+  [data-testid="block-ranking-list"],
+  [data-testid="block-blind-results"],
+  [data-testid="block-winner-hero"],
+  [data-testid="block-finale-card"] {
+    page-break-before: always;
+    break-before: page;
+    min-height: auto !important;
+    padding: 10mm 0 !important;
   }
   [data-testid="block-hero-cover"] {
-    min-height: auto !important;
-    padding: 8mm 0 !important;
-    page-break-after: auto;
+    page-break-before: avoid;
   }
   [data-testid="block-hero-cover"] [aria-hidden="true"],
   [data-testid="block-hero-cover"] > div[aria-hidden] {
     display: none !important;
   }
-  [data-testid="block-hero-cover"] h1 {
-    color: #111111 !important;
-    font-size: 28pt !important;
+  [data-testid="block-hero-cover"] h1,
+  [data-testid="block-winner-hero"] h1,
+  [data-testid^="block-"] h1 {
+    color: #1A1A1A !important;
+    font-size: 26pt !important;
     line-height: 1.1 !important;
+  }
+  [data-testid^="block-"] h2 {
+    color: #1A1A1A !important;
+    font-size: 18pt !important;
+  }
+  [data-testid="text-act-eyebrow"],
+  [data-testid^="block-"] [style*="text-transform: uppercase"] {
+    color: #8A6A1F !important;
+  }
+  [data-testid^="block-"] [style*="border"] {
+    border-color: #C9A961 !important;
   }
   [data-testid^="block-"] {
     box-shadow: none !important;
+  }
+  [data-testid="img-winner-bottle"],
+  [data-testid^="img-whisky-"],
+  [data-testid^="img-taster-"] {
+    max-height: 80mm !important;
+    filter: none !important;
   }
   img {
     max-width: 100% !important;
     page-break-inside: avoid;
   }
-  a, a:visited { color: #111111 !important; text-decoration: underline; }
+  a, a:visited { color: #1A1A1A !important; text-decoration: underline; }
   [data-testid="grain-overlay"] { display: none !important; }
   *, *::before, *::after {
     animation: none !important;
     transition: none !important;
   }
   [data-testid="story-renderer"] [style*="position: fixed"],
-  [data-testid="story-renderer"] [style*="position:fixed"] {
+  [data-testid="story-renderer"] [style*="position:fixed"],
+  [data-testid="story-renderer"] [style*="position: absolute"],
+  [data-testid="story-renderer"] [style*="position:absolute"] {
     position: static !important;
   }
+}
+[data-testid="story-renderer"][data-mode="print"] {
+  background: #ffffff !important;
+  color: #1A1A1A !important;
 }
 `,
       }}

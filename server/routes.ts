@@ -25968,5 +25968,57 @@ ${cleaned.slice(0, 60000)}`;
     }
   });
 
+  app.post("/api/admin/tasting-stories/:tastingId/migrate-blocks", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin only" });
+      const tastingId = sanitizeTastingId(req.params.tastingId);
+      if (!tastingId) return res.status(400).json({ message: "Invalid tasting id" });
+      const force = !!(req.body && typeof req.body === "object" && (req.body as { force?: unknown }).force);
+      const { migrateOne } = await import("./migrations/migrateTastingStoryToBlocks");
+      const result = await migrateOne(tastingId, { force });
+      return res.json({ ok: true, result });
+    } catch (e: unknown) {
+      console.error("[admin/migrate-blocks] error:", e);
+      const msg = e instanceof Error ? e.message : "Migration failed";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.post("/api/admin/tasting-stories/:tastingId/migrate-versions", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin only" });
+      const tastingId = sanitizeTastingId(req.params.tastingId);
+      if (!tastingId) return res.status(400).json({ message: "Invalid tasting id" });
+      const { migrateVersions } = await import("./migrations/migrateTastingStoryToBlocks");
+      const result = await migrateVersions(tastingId);
+      return res.json({ ok: true, result });
+    } catch (e: unknown) {
+      console.error("[admin/migrate-versions] error:", e);
+      const msg = e instanceof Error ? e.message : "Migration failed";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.post("/api/admin/tasting-stories/:tastingId/unmigrate-blocks", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin only" });
+      const tastingId = sanitizeTastingId(req.params.tastingId);
+      if (!tastingId) return res.status(400).json({ message: "Invalid tasting id" });
+      const { unmigrateOne } = await import("./migrations/migrateTastingStoryToBlocks");
+      const result = await unmigrateOne(tastingId);
+      return res.json({ ok: true, result });
+    } catch (e: unknown) {
+      console.error("[admin/unmigrate-blocks] error:", e);
+      const msg = e instanceof Error ? e.message : "Unmigrate failed";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
   return httpServer;
 }
