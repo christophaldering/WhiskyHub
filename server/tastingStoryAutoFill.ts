@@ -11,6 +11,18 @@ type StoryBlock = {
 
 type ParticipantLite = { id: string; displayName?: string | null; name?: string | null };
 
+export type StoryWizardTone = "festive" | "casual" | "analytical" | "poetic";
+
+export type StoryWizardOptions = {
+  tone?: StoryWizardTone | null;
+  headlineOverride?: string | null;
+  subtitleOverride?: string | null;
+  heroImageUrl?: string | null;
+  galleryImageUrls?: string[];
+  spotlightParticipantIds?: string[];
+  highlightContext?: string | null;
+};
+
 function blockId(): string {
   return "blk_" + Math.random().toString(36).slice(2, 11);
 }
@@ -40,28 +52,51 @@ function tastingDateLabel(tasting: Tasting): string {
   return "";
 }
 
+function trimString(value: string | null | undefined): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function ensureGalleryItems(urls: string[] | undefined): Array<{ url: string; alt: string; caption: string }> {
+  if (!urls || urls.length === 0) return [];
+  const seen = new Set<string>();
+  const out: Array<{ url: string; alt: string; caption: string }> = [];
+  for (const raw of urls) {
+    const url = trimString(raw);
+    if (!url) continue;
+    if (seen.has(url)) continue;
+    seen.add(url);
+    out.push({ url, alt: "", caption: "" });
+  }
+  return out;
+}
+
 export function buildInitialTastingStoryBlocks(args: {
   tasting: Tasting;
   whiskies: Whisky[];
   participantCount: number;
   participants?: ParticipantLite[];
   ratings?: Rating[];
+  wizard?: StoryWizardOptions;
 }): StoryBlock[] {
-  const { tasting, whiskies, participantCount } = args;
+  const { tasting, whiskies, participantCount, wizard } = args;
   const blocks: StoryBlock[] = [];
 
   const dateLabel = tastingDateLabel(tasting);
   const heroMeta = [dateLabel, tasting.location ?? ""].filter((p) => p && p.length > 0).join(" \u00b7 ");
+
+  const heroTitle = trimString(wizard?.headlineOverride) || tasting.title || "Verkostung";
+  const heroSubtitle = trimString(wizard?.subtitleOverride) || tasting.location || "";
+  const heroImage = trimString(wizard?.heroImageUrl) || tasting.coverImageUrl || "";
 
   blocks.push({
     id: blockId(),
     type: "hero-cover",
     payload: {
       eyebrow: "Tasting",
-      title: tasting.title || "Verkostung",
-      subtitle: tasting.location || "",
+      title: heroTitle,
+      subtitle: heroSubtitle,
       meta: heroMeta,
-      imageUrl: tasting.coverImageUrl || "",
+      imageUrl: heroImage,
       alignment: "center",
       ctaLabel: "",
       ctaHref: "",
@@ -115,6 +150,39 @@ export function buildInitialTastingStoryBlocks(args: {
   }
 
   if (participantCount > 0) {
+    const rawSpotlightIds = (wizard?.spotlightParticipantIds ?? []).filter(
+      (id) => typeof id === "string" && id.trim().length > 0,
+    );
+    const knownIds = new Set((args.participants ?? []).map((p) => p.id));
+    const spotlightIds = knownIds.size > 0
+      ? rawSpotlightIds.filter((id) => knownIds.has(id))
+      : rawSpotlightIds;
+    const overrides: Record<string, { funFact: string }> = {};
+    for (const id of spotlightIds) overrides[id] = { funFact: "" };
+
+    if (spotlightIds.length > 0) {
+      const spotlightNames = spotlightIds
+        .map((id) => {
+          const p = (args.participants ?? []).find((x) => x.id === id);
+          return trimString(p?.displayName ?? p?.name ?? "");
+        })
+        .filter((name) => name.length > 0);
+      const namesLabel = spotlightNames.length > 0
+        ? spotlightNames.map((n) => escapeHtml(n)).join(spotlightNames.length === 2 ? " &amp; " : ", ")
+        : "Unsere ausgew\u00e4hlten G\u00e4ste";
+      blocks.push({
+        id: blockId(),
+        type: "text-section",
+        payload: {
+          eyebrow: "Im Rampenlicht",
+          heading: namesLabel,
+          body: `<p>Heute Abend besonders im Fokus: ${namesLabel}.</p>`,
+          alignment: "left",
+          variant: "act-intro",
+        },
+      });
+    }
+
     blocks.push({
       id: blockId(),
       type: "taster-grid",
@@ -123,7 +191,7 @@ export function buildInitialTastingStoryBlocks(args: {
         heading: "Die Verkoster",
         columns: participantCount >= 4 ? "4" : "3",
         includeParticipantIds: null,
-        overrides: {},
+        overrides,
       },
     });
   }
@@ -172,13 +240,27 @@ export function buildInitialTastingStoryBlocks(args: {
     });
   }
 
+  const galleryItems = ensureGalleryItems(wizard?.galleryImageUrls);
+  if (galleryItems.length > 0) {
+    blocks.push({
+      id: blockId(),
+      type: "image-gallery",
+      payload: {
+        items: galleryItems,
+        columns: galleryItems.length >= 4 ? "4" : galleryItems.length >= 2 ? "3" : "2",
+        rounded: false,
+      },
+    });
+  }
+
+  const finaleClosing = trimString(wizard?.highlightContext);
   blocks.push({
     id: blockId(),
     type: "finale-card",
     payload: {
       eyebrow: "Finale",
       heading: "Auf den n\u00e4chsten Dram.",
-      closingLine: "",
+      closingLine: finaleClosing,
       signatureLine: "",
       hostPhotoUrl: "",
     },

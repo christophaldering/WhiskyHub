@@ -324,6 +324,13 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
           {currentParticipant?.role === "admin" ? (
             <AdminMigrationPanel tastingId={id} onChanged={() => qc.invalidateQueries({ queryKey: ["/api/tasting-stories", id] })} />
           ) : null}
+          <Link
+            href={`/labs/tastings/${id}/story-wizard`}
+            data-testid="link-restart-wizard"
+            style={{ ...secondaryButton, textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+          >
+            Wizard erneut starten
+          </Link>
           <a
             href={`/tasting-story/${id}`}
             target="_blank"

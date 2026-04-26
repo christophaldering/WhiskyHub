@@ -87,3 +87,81 @@ export async function snapshotTastingStory(
   });
   return readJson(res, "Snapshot fehlgeschlagen");
 }
+
+export type WizardTone = "festive" | "casual" | "analytical" | "poetic";
+
+export type WizardGenerateInput = {
+  tone?: WizardTone | null;
+  headlineOverride?: string | null;
+  subtitleOverride?: string | null;
+  heroImageUrl?: string | null;
+  galleryImageUrls?: string[];
+  spotlightParticipantIds?: string[];
+  highlightContext?: string | null;
+  overwriteExisting?: boolean;
+};
+
+export type WizardStep = {
+  key: string;
+  label: string;
+  status: "pending" | "running" | "done" | "skipped" | "error";
+};
+
+export type WizardStartResponse = {
+  jobId: string;
+  steps: WizardStep[];
+};
+
+export type WizardProgressResponse = {
+  jobId: string;
+  status: "running" | "done" | "error";
+  currentStepKey: string | null;
+  completedSteps: number;
+  totalSteps: number;
+  steps: WizardStep[];
+  error: string | null;
+  blocks: StoryBlock[] | null;
+};
+
+export async function startTastingStoryWizard(
+  tastingId: string,
+  input: WizardGenerateInput,
+): Promise<WizardStartResponse> {
+  const res = await fetch(`/api/tasting-stories/${encodeURIComponent(tastingId)}/wizard-generate`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json", ...pidHeaders() },
+    body: JSON.stringify(input),
+  });
+  return readJson<WizardStartResponse>(res, "Wizard konnte nicht gestartet werden");
+}
+
+export async function pollTastingStoryWizard(
+  tastingId: string,
+  jobId: string,
+): Promise<WizardProgressResponse> {
+  const url = `/api/tasting-stories/${encodeURIComponent(tastingId)}/wizard-progress?jobId=${encodeURIComponent(jobId)}`;
+  const res = await fetch(url, {
+    credentials: "include",
+    headers: pidHeaders(),
+  });
+  return readJson<WizardProgressResponse>(res, "Status konnte nicht geladen werden");
+}
+
+export type WizardHeadlineSuggestion = {
+  headline: string;
+  subtitle: string;
+};
+
+export async function suggestTastingStoryHeadline(
+  tastingId: string,
+  tone: WizardTone | null,
+): Promise<WizardHeadlineSuggestion> {
+  const res = await fetch(`/api/tasting-stories/${encodeURIComponent(tastingId)}/wizard-suggest-headline`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json", ...pidHeaders() },
+    body: JSON.stringify({ tone }),
+  });
+  return readJson<WizardHeadlineSuggestion>(res, "Vorschlag fehlgeschlagen");
+}

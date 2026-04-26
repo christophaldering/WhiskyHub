@@ -26082,6 +26082,331 @@ ${cleaned.slice(0, 60000)}`;
     }
   });
 
+  // ===== Tasting Story Wizard (guided entry into the block editor) =====
+  const wizardToneEnum = z.enum(["festive", "casual", "analytical", "poetic"]);
+  const wizardGenerateSchema = z.object({
+    tone: wizardToneEnum.nullable().optional(),
+    headlineOverride: z.string().max(280).nullable().optional(),
+    subtitleOverride: z.string().max(280).nullable().optional(),
+    heroImageUrl: z.string().max(2000).nullable().optional(),
+    galleryImageUrls: z.array(z.string().max(2000)).max(20).optional(),
+    spotlightParticipantIds: z.array(z.string().max(128)).max(5).optional(),
+    highlightContext: z.string().max(2000).nullable().optional(),
+    overwriteExisting: z.boolean().optional(),
+  });
+
+  app.post("/api/tasting-stories/:tastingId/wizard-generate", async (req: Request, res: Response) => {
+    try {
+      const tastingId = sanitizeTastingId(req.params.tastingId);
+      if (!tastingId) return res.status(400).json({ message: "tastingId fehlt" });
+      const access = await checkTastingStoryAccess(req, tastingId);
+      if (!access.ok) return res.status(access.status).json({ message: access.message });
+      const parsed = wizardGenerateSchema.safeParse(req.body ?? {});
+      if (!parsed.success) return res.status(422).json({ message: "Ungueltiger Request-Body" });
+      const rate = checkStoryAiRate(`wizard:${access.participant.id}`);
+      if (!rate.allowed) {
+        return res.status(429).json({ message: `Zu viele Anfragen. Versuche es in ${rate.retryAfterSeconds ?? 30} Sekunden erneut.` });
+      }
+      const tasting = await storage.getTasting(tastingId);
+      if (!tasting) return res.status(404).json({ message: "Verkostung nicht gefunden" });
+
+      const wizard = parsed.data;
+
+      // Enforce overwrite intent: any non-empty existing story requires explicit overwriteExisting=true
+      const existingParsed = tastingStoryBlocksSchema.safeParse(tasting.storyBlocks);
+      const hasExistingBlocks = existingParsed.success && existingParsed.data.length > 0;
+      if (hasExistingBlocks && !wizard.overwriteExisting) {
+        return res.status(409).json({
+          message: "Es existiert bereits eine Story. Setze overwriteExisting=true, um sie zu ersetzen.",
+          code: "EXISTING_STORY",
+        });
+      }
+      const [whiskies, participantsRaw, ratings] = await Promise.all([
+        storage.getWhiskiesForTasting(tastingId),
+        storage.getTastingParticipants(tastingId),
+        storage.getRatingsForTasting(tastingId),
+      ]);
+      const participants = participantsRaw
+        .map((row) => row.participant)
+        .filter((p): p is NonNullable<typeof p> => !!p)
+        .map((p) => ({ id: p.id, displayName: (p as { displayName?: string | null }).displayName ?? null, name: p.name ?? null }));
+
+      const { buildInitialTastingStoryBlocks } = await import("./tastingStoryAutoFill");
+      const initialBlocks = buildInitialTastingStoryBlocks({
+        tasting,
+        whiskies,
+        participantCount: participantsRaw.length,
+        participants,
+        ratings,
+        wizard: {
+          tone: wizard.tone ?? null,
+          headlineOverride: wizard.headlineOverride ?? null,
+          subtitleOverride: wizard.subtitleOverride ?? null,
+          heroImageUrl: wizard.heroImageUrl ?? null,
+          galleryImageUrls: wizard.galleryImageUrls ?? [],
+          spotlightParticipantIds: wizard.spotlightParticipantIds ?? [],
+          highlightContext: wizard.highlightContext ?? null,
+        },
+      });
+      const reparsed = tastingStoryBlocksSchema.safeParse(initialBlocks);
+      if (!reparsed.success) {
+        return res.status(500).json({ message: "Story-Struktur konnte nicht gebaut werden" });
+      }
+
+      const { isRegeneratable } = await import("./tastingStoryRegen");
+      const aiTargets = reparsed.data.filter((b) => isRegeneratable(b.type));
+
+      const stepLabels: Record<string, string> = {
+        "winner-hero": "KI schreibt den Sieger-Text…",
+        "finale-card": "KI komponiert das Finale…",
+        "taster-grid": "KI portraitiert die Verkoster…",
+        "ranking-list": "KI verfasst die Ranking-Notizen…",
+        "blind-results": "KI erzaehlt die Blindverkostung…",
+        "whisky-card-grid": "KI schreibt die Whisky-Steckbriefe…",
+      };
+
+      const { createWizardJob, startStep, completeStep, finishJob } = await import("./tastingStoryWizardJobs");
+      const initialSteps = [
+        { key: "structure", label: "Struktur baut auf…" },
+        ...aiTargets.map((b) => ({ key: `ai:${b.id}`, label: stepLabels[b.type] ?? "KI verfeinert…" })),
+        { key: "save", label: "Story sichern…" },
+      ];
+      const job = createWizardJob({
+        tastingId,
+        participantId: access.participant.id,
+        initialSteps,
+      });
+
+      // Snapshot the previous story (if any) before any write so users can roll back
+      // even when the existing story was hand-edited and never auto-versioned.
+      if (hasExistingBlocks && existingParsed.success) {
+        try {
+          await storage.saveStoryVersion({
+            sourceType: "tasting",
+            sourceId: tastingId,
+            blocksJson: existingParsed.data,
+            isAuto: false,
+            name: "Vor Wizard-Lauf",
+            createdById: access.participant.id,
+          });
+        } catch (snapErr) {
+          console.warn("[tasting-stories/wizard] pre-overwrite snapshot warning:", snapErr);
+        }
+      }
+
+      // Run generation in background. We stage blocks in memory and only persist
+      // once at the end so a partial failure does not leave the live story in a
+      // half-regenerated state.
+      (async () => {
+        try {
+          startStep(job.jobId, "structure");
+          completeStep(job.jobId, "structure", "done");
+
+          let aiClient: Awaited<ReturnType<typeof getAIClient>> | null = null;
+          try {
+            aiClient = await getAIClient(access.participant.id, "storybuilder");
+          } catch (aiErr) {
+            console.warn("[tasting-stories/wizard] ai client error:", aiErr);
+          }
+
+          let workingBlocks = reparsed.data.slice();
+
+          if (aiClient && aiClient.client && aiTargets.length > 0) {
+            const { aggregateTastingStoryData } = await import("./tastingStoryAggregate");
+            const data = await aggregateTastingStoryData(tastingId);
+            const { regenerateBlockWithAi } = await import("./tastingStoryRegen");
+            if (data) {
+              const regenOptions = {
+                tone: wizard.tone ?? null,
+                highlightContext: wizard.highlightContext ?? null,
+                spotlightParticipantIds: wizard.spotlightParticipantIds ?? [],
+              };
+              for (const target of aiTargets) {
+                const stepKey = `ai:${target.id}`;
+                startStep(job.jobId, stepKey);
+                try {
+                  const newPayload = await regenerateBlockWithAi(
+                    target.type as Parameters<typeof regenerateBlockWithAi>[0],
+                    target.payload,
+                    data,
+                    aiClient.client!,
+                    regenOptions,
+                  );
+                  if (newPayload) {
+                    workingBlocks = workingBlocks.map((b) => (b.id === target.id ? { ...b, payload: newPayload } : b));
+                    completeStep(job.jobId, stepKey, "done");
+                  } else {
+                    completeStep(job.jobId, stepKey, "skipped");
+                  }
+                } catch (err) {
+                  console.warn("[tasting-stories/wizard] block regen error:", target.id, err);
+                  completeStep(job.jobId, stepKey, "skipped");
+                }
+              }
+            } else {
+              for (const target of aiTargets) completeStep(job.jobId, `ai:${target.id}`, "skipped");
+            }
+          } else {
+            for (const target of aiTargets) completeStep(job.jobId, `ai:${target.id}`, "skipped");
+          }
+
+          startStep(job.jobId, "save");
+          await storage.updateTasting(tastingId, { storyBlocks: workingBlocks });
+          try {
+            await storage.upsertAutoStoryVersion({
+              sourceType: "tasting",
+              sourceId: tastingId,
+              blocksJson: workingBlocks,
+              isAuto: true,
+              name: "Wizard-Entwurf",
+              createdById: access.participant.id,
+            }, { cooldownMs: 0, keepN: 20 });
+          } catch (versionErr) {
+            console.warn("[tasting-stories/wizard] version save warning:", versionErr);
+          }
+          completeStep(job.jobId, "save", "done");
+
+          finishJob(job.jobId, { status: "done", blocks: workingBlocks });
+        } catch (err) {
+          console.error("[tasting-stories/wizard] job error:", err);
+          finishJob(job.jobId, {
+            status: "error",
+            error: err instanceof Error ? err.message : "Generierung fehlgeschlagen",
+          });
+        }
+      })().catch((err) => {
+        console.error("[tasting-stories/wizard] outer error:", err);
+      });
+
+      return res.json({
+        jobId: job.jobId,
+        steps: job.steps.map((s) => ({ key: s.key, label: s.label, status: s.status })),
+      });
+    } catch (e: unknown) {
+      console.error("[tasting-stories/wizard-generate] error:", e);
+      const msg = e instanceof Error ? e.message : "Wizard-Generierung fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.get("/api/tasting-stories/:tastingId/wizard-progress", async (req: Request, res: Response) => {
+    try {
+      const tastingId = sanitizeTastingId(req.params.tastingId);
+      if (!tastingId) return res.status(400).json({ message: "tastingId fehlt" });
+      const access = await checkTastingStoryAccess(req, tastingId);
+      if (!access.ok) return res.status(access.status).json({ message: access.message });
+      const jobId = typeof req.query.jobId === "string" ? req.query.jobId : "";
+      if (!jobId) return res.status(400).json({ message: "jobId fehlt" });
+      const { getWizardJob } = await import("./tastingStoryWizardJobs");
+      const job = getWizardJob(jobId);
+      if (!job) return res.status(404).json({ message: "Job nicht gefunden" });
+      if (job.tastingId !== tastingId || job.participantId !== access.participant.id) {
+        return res.status(403).json({ message: "Job gehoert nicht zu diesem Nutzer" });
+      }
+      const completed = job.steps.filter((s) => s.status === "done" || s.status === "skipped" || s.status === "error").length;
+      return res.json({
+        jobId: job.jobId,
+        status: job.status,
+        currentStepKey: job.currentStepKey,
+        completedSteps: completed,
+        totalSteps: job.steps.length,
+        steps: job.steps.map((s) => ({ key: s.key, label: s.label, status: s.status })),
+        error: job.error,
+        blocks: job.status === "done" ? job.blocks : null,
+      });
+    } catch (e: unknown) {
+      console.error("[tasting-stories/wizard-progress] error:", e);
+      const msg = e instanceof Error ? e.message : "Status konnte nicht geladen werden";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  // KI-Vorschlag fuer Headline + Untertitel im Wizard
+  const wizardSuggestSchema = z.object({
+    tone: wizardToneEnum.nullable().optional(),
+  });
+  app.post("/api/tasting-stories/:tastingId/wizard-suggest-headline", async (req: Request, res: Response) => {
+    try {
+      const tastingId = sanitizeTastingId(req.params.tastingId);
+      if (!tastingId) return res.status(400).json({ message: "tastingId fehlt" });
+      const access = await checkTastingStoryAccess(req, tastingId);
+      if (!access.ok) return res.status(access.status).json({ message: access.message });
+      const parsed = wizardSuggestSchema.safeParse(req.body ?? {});
+      if (!parsed.success) return res.status(422).json({ message: "Ungueltiger Request-Body" });
+      const rate = checkStoryAiRate(`wizard-suggest:${access.participant.id}`);
+      if (!rate.allowed) {
+        return res.status(429).json({ message: `Zu viele Anfragen. Versuche es in ${rate.retryAfterSeconds ?? 30} Sekunden erneut.` });
+      }
+      const { client, error: aiError } = await getAIClient(access.participant.id, "ai_narrative");
+      if (aiError || !client) {
+        return res.status(503).json({ message: aiError ?? "KI-Dienst nicht verfuegbar" });
+      }
+      const { aggregateTastingStoryData } = await import("./tastingStoryAggregate");
+      const data = await aggregateTastingStoryData(tastingId);
+      if (!data) return res.status(404).json({ message: "Tasting nicht gefunden" });
+
+      const tone = parsed.data.tone ?? null;
+      const toneHints: Record<string, string> = {
+        festive: "festlich, feierlich, mit Schwung",
+        casual: "locker, freundschaftlich, nahbar",
+        analytical: "analytisch, praezise, sachlich",
+        poetic: "poetisch, atmosphaerisch, bildhaft",
+      };
+      const toneLine = tone && toneHints[tone] ? `Tonalitaet: ${toneHints[tone]}.` : "Tonalitaet: warm und einladend.";
+      const winnerLine = data.winner
+        ? `Sieger: ${data.winner.whisky.label}${data.winner.score != null ? ` (Score ${data.winner.score.toFixed(2)})` : ""}.`
+        : "Kein klarer Sieger.";
+      const whiskyLine = data.whiskies.length > 0
+        ? `Whiskys: ${data.whiskies.slice(0, 6).map((w) => w.label).join(", ")}.`
+        : "";
+      const locationLine = data.meta.location ? `Ort: ${data.meta.location}.` : "";
+
+      const prompt = [
+        `Du verfasst Vorschlaege fuer Titel und Untertitel einer Whisky-Tasting-Story.`,
+        toneLine,
+        `Tasting-Titel (Eingabe): ${data.meta.title ?? "ohne Titel"}.`,
+        locationLine,
+        `Teilnehmer: ${data.participants.length}.`,
+        whiskyLine,
+        winnerLine,
+        ``,
+        `Antworte NUR als kompaktes JSON: {"headline": "…", "subtitle": "…"}.`,
+        `Headline: max. 60 Zeichen, eingaengig, ohne Anfuehrungszeichen.`,
+        `Subtitle: max. 90 Zeichen, ergaenzend zur Headline, ohne Anfuehrungszeichen.`,
+        `Keine Erlaeuterungen, kein Markdown, nur JSON.`,
+      ].filter(Boolean).join("\n");
+
+      const completion = await client.chat.completions.create({
+        model: "gpt-4o-mini",
+        temperature: 0.8,
+        max_tokens: 200,
+        messages: [
+          { role: "system", content: "Du bist ein praeziser, erfahrener Storywriter fuer Whisky-Tastings. Antworte ausschliesslich auf Deutsch." },
+          { role: "user", content: prompt },
+        ],
+        response_format: { type: "json_object" },
+      });
+      const raw = completion.choices?.[0]?.message?.content?.trim() ?? "{}";
+      let headline = "";
+      let subtitle = "";
+      try {
+        const obj = JSON.parse(raw) as { headline?: unknown; subtitle?: unknown };
+        if (typeof obj.headline === "string") headline = obj.headline.trim().slice(0, 200);
+        if (typeof obj.subtitle === "string") subtitle = obj.subtitle.trim().slice(0, 200);
+      } catch {
+        // ignore parse errors
+      }
+      if (!headline && !subtitle) {
+        return res.status(502).json({ message: "KI lieferte keinen verwertbaren Vorschlag" });
+      }
+      return res.json({ headline, subtitle });
+    } catch (e: unknown) {
+      console.error("[tasting-stories/wizard-suggest-headline] error:", e);
+      const msg = e instanceof Error ? e.message : "Vorschlag fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
   // Serve the cinematic tasting story standalone page (block-renderer first, legacy template fallback)
   app.get("/tasting-story/:id", async (req: Request, res: Response) => {
     const safeId = req.params.id.replace(/[^a-zA-Z0-9_-]/g, "");

@@ -67,6 +67,7 @@ const LabsJoin = lazy(() => import("@/labs/pages/LabsJoin"));
 const LabsTastings = lazy(() => import("@/labs/pages/LabsTastings"));
 const LabsTastingDetail = lazy(() => import("@/labs/pages/LabsTastingDetail"));
 const LabsTastingStoryEditor = lazy(() => import("@/pages/labs-tasting-story-editor"));
+const LabsTastingStoryWizard = lazy(() => import("@/pages/labs-tasting-story-wizard"));
 const LabsTastingStoryView = lazy(() => import("@/pages/labs-tasting-story-view"));
 const LabsLive = lazy(() => import("@/labs/pages/LabsLive"));
 const LabsHost = lazy(() => import("@/labs/pages/LabsHost"));
@@ -700,6 +701,9 @@ function Router() {
               <Route path="/labs/tastings/:id/recap" component={LabsTastingRecap} />
               <Route path="/labs/tastings/:id/story-editor">
                 {({ id }: { id: string }) => <LabsTastingStoryEditor id={id} />}
+              </Route>
+              <Route path="/labs/tastings/:id/story-wizard">
+                {({ id }: { id: string }) => <LabsTastingStoryWizard id={id} />}
               </Route>
               <Route path="/labs/tastings/:id" component={LabsTastingDetail} />
               <Route path="/labs/tastings" component={LabsTastings} />

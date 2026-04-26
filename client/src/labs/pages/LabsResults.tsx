@@ -1021,7 +1021,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
             desc: hasBlockStory
               ? t("resultsUi.actionStoryEditorDesc", "Block-Editor für Aufbau, Texte und Bilder")
               : t("resultsUi.actionStoryEditorDescEmpty", "Neue Block-Story anlegen oder migrieren"),
-            onClick: () => navigate(`/labs/tastings/${tastingId}/story-editor`),
+            onClick: () => navigate(`/labs/tastings/${tastingId}/story-wizard`),
             testId: "labs-results-edit-story",
           });
         }

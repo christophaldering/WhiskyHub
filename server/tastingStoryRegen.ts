@@ -18,6 +18,14 @@ export const REGENERATABLE_BLOCK_TYPES: RegeneratableBlockType[] = [
   "whisky-card-grid",
 ];
 
+export type RegenTone = "festive" | "casual" | "analytical" | "poetic";
+
+export type RegenOptions = {
+  tone?: RegenTone | null;
+  highlightContext?: string | null;
+  spotlightParticipantIds?: string[];
+};
+
 export function isRegeneratable(type: string): type is RegeneratableBlockType {
   return (REGENERATABLE_BLOCK_TYPES as string[]).includes(type);
 }
@@ -34,6 +42,38 @@ function trimSentence(value: string, max = 280): string {
   const cleaned = value.replace(/\s+/g, " ").trim();
   if (cleaned.length <= max) return cleaned;
   return `${cleaned.slice(0, max - 1).trimEnd()}…`;
+}
+
+function toneInstruction(tone: RegenTone | null | undefined): string {
+  switch (tone) {
+    case "festive":
+      return "Tonalitaet: festlich, feierlich, warm und einladend, leicht poetisch.";
+    case "casual":
+      return "Tonalitaet: locker, freundschaftlich, warm und nahbar, ohne Pathos.";
+    case "analytical":
+      return "Tonalitaet: praezise, sachlich, sensorisch genau, nuechtern aber respektvoll.";
+    case "poetic":
+      return "Tonalitaet: poetisch, sinnlich, bildhaft, atmosphaerisch.";
+    default:
+      return "";
+  }
+}
+
+function buildSystem(base: string, options: RegenOptions | undefined): string {
+  const parts = [base];
+  const t = toneInstruction(options?.tone ?? null);
+  if (t) parts.push(t);
+  return parts.join(" ");
+}
+
+function buildUserExtras(options: RegenOptions | undefined, spotlightNames?: string[]): string {
+  const extras: string[] = [];
+  const ctx = (options?.highlightContext ?? "").trim();
+  if (ctx) extras.push(`Kontext vom Host: ${ctx.slice(0, 400)}`);
+  if (spotlightNames && spotlightNames.length > 0) {
+    extras.push(`Im Rampenlicht heute: ${spotlightNames.join(", ")} (deren Texte besonders warm und persoenlich machen).`);
+  }
+  return extras.length > 0 ? `\n${extras.join("\n")}` : "";
 }
 
 async function callOpenAi(openai: OpenAI, system: string, user: string, jsonMode: boolean): Promise<string> {
@@ -61,23 +101,29 @@ function parseJsonObject(raw: string): Record<string, unknown> | null {
   }
 }
 
-async function regenerateWinnerHero(payload: Record<string, unknown>, data: AggregatedTastingStoryData, openai: OpenAI): Promise<Record<string, unknown> | null> {
+async function regenerateWinnerHero(payload: Record<string, unknown>, data: AggregatedTastingStoryData, openai: OpenAI, options?: RegenOptions): Promise<Record<string, unknown> | null> {
   const winner = data.winner;
   if (!winner || winner.avgScore === null) return null;
-  const system = "Du bist ein deutschsprachiger Whisky-Redakteur im Stil des Magazins der Brennerei. Schreibe einen einzigen, kraftvollen, atmosphaerischen Schlusssatz fuer den Sieger des Abends. Maximal 28 Woerter, keine Anfuehrungszeichen, kein Code, nur den Satz.";
+  const system = buildSystem(
+    "Du bist ein deutschsprachiger Whisky-Redakteur im Stil des Magazins der Brennerei. Schreibe einen einzigen, kraftvollen, atmosphaerischen Schlusssatz fuer den Sieger des Abends. Maximal 28 Woerter, keine Anfuehrungszeichen, kein Code, nur den Satz.",
+    options,
+  );
   const userParts = [
     `Sieger: ${winner.name}`,
     winner.distillery ? `Destillerie: ${winner.distillery}` : null,
     `Punkte: ${winner.avgScore.toFixed(1)} aus ${winner.voters} Bewertungen`,
     `Tasting-Titel: ${data.meta.title}`,
   ].filter(Boolean).join("\n");
-  const raw = await callOpenAi(openai, system, userParts, false);
+  const raw = await callOpenAi(openai, system, userParts + buildUserExtras(options), false);
   if (!raw) return null;
   return { ...payload, closingLine: trimSentence(raw, 240) };
 }
 
-async function regenerateFinaleCard(payload: Record<string, unknown>, data: AggregatedTastingStoryData, openai: OpenAI): Promise<Record<string, unknown> | null> {
-  const system = "Du bist ein deutschsprachiger Whisky-Redakteur. Schreibe einen einzigen waermenden Verabschiedungssatz fuer den Abschluss eines Tasting-Abends. Maximal 26 Woerter, keine Anfuehrungszeichen, nur den Satz.";
+async function regenerateFinaleCard(payload: Record<string, unknown>, data: AggregatedTastingStoryData, openai: OpenAI, options?: RegenOptions): Promise<Record<string, unknown> | null> {
+  const system = buildSystem(
+    "Du bist ein deutschsprachiger Whisky-Redakteur. Schreibe einen einzigen waermenden Verabschiedungssatz fuer den Abschluss eines Tasting-Abends. Maximal 26 Woerter, keine Anfuehrungszeichen, nur den Satz.",
+    options,
+  );
   const top = data.ranking.slice(0, 3).map((r) => `${r.position}. ${r.name}`).join(", ");
   const userParts = [
     `Tasting: ${data.meta.title}`,
@@ -85,20 +131,27 @@ async function regenerateFinaleCard(payload: Record<string, unknown>, data: Aggr
     `Whiskys: ${data.whiskies.length}, Verkoster: ${data.participants.length}`,
     top ? `Top: ${top}` : null,
   ].filter(Boolean).join("\n");
-  const raw = await callOpenAi(openai, system, userParts, false);
+  const raw = await callOpenAi(openai, system, userParts + buildUserExtras(options), false);
   if (!raw) return null;
   return { ...payload, closingLine: trimSentence(raw, 240) };
 }
 
-async function regenerateTasterGrid(payload: Record<string, unknown>, data: AggregatedTastingStoryData, openai: OpenAI): Promise<Record<string, unknown> | null> {
+async function regenerateTasterGrid(payload: Record<string, unknown>, data: AggregatedTastingStoryData, openai: OpenAI, options?: RegenOptions): Promise<Record<string, unknown> | null> {
   if (data.participants.length === 0) return null;
-  const system = "Du bist ein deutschsprachiger Whisky-Redakteur. Erzeuge fuer jeden uebergebenen Verkoster einen warmherzigen, praezisen Fun-Fakt (max 18 Woerter, keine Anfuehrungszeichen). Antworte ausschliesslich mit einem JSON-Objekt der Form {\"funFacts\": {\"<id>\": \"<text>\"}}.";
+  const system = buildSystem(
+    "Du bist ein deutschsprachiger Whisky-Redakteur. Erzeuge fuer jeden uebergebenen Verkoster einen warmherzigen, praezisen Fun-Fakt (max 18 Woerter, keine Anfuehrungszeichen). Antworte ausschliesslich mit einem JSON-Objekt der Form {\"funFacts\": {\"<id>\": \"<text>\"}}.",
+    options,
+  );
   const profileLines = data.participants.map((p) => {
     const top = p.topPickWhiskyId ? data.whiskies.find((w) => w.id === p.topPickWhiskyId) : null;
     const avg = p.avgGiven !== null ? `${p.avgGiven.toFixed(1)} im Schnitt` : "noch keine Wertung";
     return `${p.id}|${p.name}|${p.isHost ? "Host" : "Gast"}|${p.ratingCount} Bewertungen|${avg}|Top-Pick: ${top?.name ?? "n/a"}`;
   }).join("\n");
-  const user = `Tasting: ${data.meta.title}\nVerkoster (id|name|rolle|count|avg|topPick):\n${profileLines}`;
+  const spotlightIds = options?.spotlightParticipantIds ?? [];
+  const spotlightNames = spotlightIds
+    .map((id) => data.participants.find((p) => p.id === id)?.name)
+    .filter((n): n is string => typeof n === "string" && n.length > 0);
+  const user = `Tasting: ${data.meta.title}\nVerkoster (id|name|rolle|count|avg|topPick):\n${profileLines}` + buildUserExtras(options, spotlightNames);
   const raw = await callOpenAi(openai, system, user, true);
   const parsed = parseJsonObject(raw);
   const funFacts = parsed && isPlainRecord(parsed.funFacts) ? parsed.funFacts : null;
@@ -113,15 +166,18 @@ async function regenerateTasterGrid(payload: Record<string, unknown>, data: Aggr
   return { ...payload, overrides: nextOverrides };
 }
 
-async function regenerateRankingList(payload: Record<string, unknown>, data: AggregatedTastingStoryData, openai: OpenAI): Promise<Record<string, unknown> | null> {
+async function regenerateRankingList(payload: Record<string, unknown>, data: AggregatedTastingStoryData, openai: OpenAI, options?: RegenOptions): Promise<Record<string, unknown> | null> {
   if (data.ranking.length === 0) return null;
-  const system = "Du bist ein deutschsprachiger Whisky-Redakteur. Schreibe fuer jeden Whisky im Ranking eine sinnliche Kurzkritik (max 22 Woerter). Antworte ausschliesslich mit einem JSON-Objekt der Form {\"commentary\": {\"<whiskyId>\": \"<text>\"}}.";
+  const system = buildSystem(
+    "Du bist ein deutschsprachiger Whisky-Redakteur. Schreibe fuer jeden Whisky im Ranking eine sinnliche Kurzkritik (max 22 Woerter). Antworte ausschliesslich mit einem JSON-Objekt der Form {\"commentary\": {\"<whiskyId>\": \"<text>\"}}.",
+    options,
+  );
   const lines = data.ranking.map((r) => {
     const w = data.whiskies.find((x) => x.id === r.whiskyId);
     const desc = w ? [w.distillery, w.region, w.age ? `${w.age}J` : null, w.caskType].filter(Boolean).join(" / ") : "";
     return `${r.whiskyId}|#${r.position}|${r.name}|${r.avgScore !== null ? r.avgScore.toFixed(1) : "—"} Pkt|${desc}`;
   }).join("\n");
-  const user = `Tasting: ${data.meta.title}\nRanking (whiskyId|platz|name|punkte|profil):\n${lines}`;
+  const user = `Tasting: ${data.meta.title}\nRanking (whiskyId|platz|name|punkte|profil):\n${lines}` + buildUserExtras(options);
   const raw = await callOpenAi(openai, system, user, true);
   const parsed = parseJsonObject(raw);
   const commentary = parsed && isPlainRecord(parsed.commentary) ? parsed.commentary : null;
@@ -136,9 +192,12 @@ async function regenerateRankingList(payload: Record<string, unknown>, data: Agg
   return { ...payload, overrides: nextOverrides };
 }
 
-async function regenerateWhiskyCardGrid(payload: Record<string, unknown>, data: AggregatedTastingStoryData, openai: OpenAI): Promise<Record<string, unknown> | null> {
+async function regenerateWhiskyCardGrid(payload: Record<string, unknown>, data: AggregatedTastingStoryData, openai: OpenAI, options?: RegenOptions): Promise<Record<string, unknown> | null> {
   if (data.whiskies.length === 0) return null;
-  const system = "Du bist ein deutschsprachiger Whisky-Redakteur. Schreibe pro Whisky einen kurzen, sinnlichen Steckbrief-Satz fuer das Tasting-Programm (max 22 Woerter, keine Anfuehrungszeichen, kein Werbe-Tonfall). Antworte ausschliesslich mit einem JSON-Objekt der Form {\"handout\": {\"<whiskyId>\": \"<text>\"}}.";
+  const system = buildSystem(
+    "Du bist ein deutschsprachiger Whisky-Redakteur. Schreibe pro Whisky einen kurzen, sinnlichen Steckbrief-Satz fuer das Tasting-Programm (max 22 Woerter, keine Anfuehrungszeichen, kein Werbe-Tonfall). Antworte ausschliesslich mit einem JSON-Objekt der Form {\"handout\": {\"<whiskyId>\": \"<text>\"}}.",
+    options,
+  );
   const lines = data.whiskies.map((w) => {
     const desc = [w.distillery, w.region, w.age ? `${w.age}J` : null, w.caskType, w.abv ? `${w.abv}%` : null]
       .filter(Boolean)
@@ -146,7 +205,7 @@ async function regenerateWhiskyCardGrid(payload: Record<string, unknown>, data: 
     const note = w.handoutExcerpt ?? w.hostSummary ?? w.notes ?? "";
     return `${w.id}|${w.name}|${desc}|${note.slice(0, 200)}`;
   }).join("\n");
-  const user = `Tasting: ${data.meta.title}\nWhiskys (id|name|profil|notiz):\n${lines}`;
+  const user = `Tasting: ${data.meta.title}\nWhiskys (id|name|profil|notiz):\n${lines}` + buildUserExtras(options);
   const raw = await callOpenAi(openai, system, user, true);
   const parsed = parseJsonObject(raw);
   const handout = parsed && isPlainRecord(parsed.handout) ? parsed.handout : null;
@@ -164,15 +223,18 @@ async function regenerateWhiskyCardGrid(payload: Record<string, unknown>, data: 
   return { ...payload, overrides: nextOverrides };
 }
 
-async function regenerateBlindResults(payload: Record<string, unknown>, data: AggregatedTastingStoryData, openai: OpenAI): Promise<Record<string, unknown> | null> {
+async function regenerateBlindResults(payload: Record<string, unknown>, data: AggregatedTastingStoryData, openai: OpenAI, options?: RegenOptions): Promise<Record<string, unknown> | null> {
   const blind = data.blindResults;
   if (!blind || blind.length === 0) return null;
-  const system = "Du bist ein deutschsprachiger Whisky-Redakteur. Schreibe pro Whisky eine kurze Erzaehlung zur Blindverkostung (max 24 Woerter): wer war nah, wer war weit, was sagt das aus. Antworte ausschliesslich mit einem JSON-Objekt der Form {\"narration\": {\"<whiskyId>\": \"<text>\"}}.";
+  const system = buildSystem(
+    "Du bist ein deutschsprachiger Whisky-Redakteur. Schreibe pro Whisky eine kurze Erzaehlung zur Blindverkostung (max 24 Woerter): wer war nah, wer war weit, was sagt das aus. Antworte ausschliesslich mit einem JSON-Objekt der Form {\"narration\": {\"<whiskyId>\": \"<text>\"}}.",
+    options,
+  );
   const lines = blind.map((b) => {
     const guesses = b.guesses.map((g) => `${g.participantName}:${g.guessAbv ?? "?"}`).join(", ");
     return `${b.whiskyId}|${b.whiskyName}|tatsaechlich ${b.actualAbv ?? "?"}%|${guesses}`;
   }).join("\n");
-  const user = `Tasting: ${data.meta.title}\nBlind-Tipps (id|name|tatsaechlich|tipps):\n${lines}`;
+  const user = `Tasting: ${data.meta.title}\nBlind-Tipps (id|name|tatsaechlich|tipps):\n${lines}` + buildUserExtras(options);
   const raw = await callOpenAi(openai, system, user, true);
   const parsed = parseJsonObject(raw);
   const narration = parsed && isPlainRecord(parsed.narration) ? parsed.narration : null;
@@ -192,14 +254,15 @@ export async function regenerateBlockWithAi(
   currentPayload: Record<string, unknown>,
   data: AggregatedTastingStoryData,
   openai: OpenAI,
+  options?: RegenOptions,
 ): Promise<Record<string, unknown> | null> {
   switch (blockType) {
-    case "winner-hero": return regenerateWinnerHero(currentPayload, data, openai);
-    case "finale-card": return regenerateFinaleCard(currentPayload, data, openai);
-    case "taster-grid": return regenerateTasterGrid(currentPayload, data, openai);
-    case "ranking-list": return regenerateRankingList(currentPayload, data, openai);
-    case "blind-results": return regenerateBlindResults(currentPayload, data, openai);
-    case "whisky-card-grid": return regenerateWhiskyCardGrid(currentPayload, data, openai);
+    case "winner-hero": return regenerateWinnerHero(currentPayload, data, openai, options);
+    case "finale-card": return regenerateFinaleCard(currentPayload, data, openai, options);
+    case "taster-grid": return regenerateTasterGrid(currentPayload, data, openai, options);
+    case "ranking-list": return regenerateRankingList(currentPayload, data, openai, options);
+    case "blind-results": return regenerateBlindResults(currentPayload, data, openai, options);
+    case "whisky-card-grid": return regenerateWhiskyCardGrid(currentPayload, data, openai, options);
     default: return null;
   }
 }
