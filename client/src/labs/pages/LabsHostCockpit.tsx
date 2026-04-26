@@ -221,6 +221,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   const [localRevealStep, setLocalRevealStep] = useState<number | null>(null);
   const [localGuidedIdx, setLocalGuidedIdx] = useState<number | null>(null);
   const [hostViewIdx, setHostViewIdx] = useState<number | null>(null);
+  const [detailParticipantId, setDetailParticipantId] = useState<string | null>(null);
 
   const [hostScores, setHostScores] = useState<Record<string, Record<DimKey, number>>>({});
   const [hostChips, setHostChips] = useState<Record<string, Record<DimKey, string[]>>>({});
@@ -957,6 +958,72 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
           gap: 10px;
           padding: 8px 12px;
           border-radius: 10px;
+          border: 1px solid transparent;
+          transition: background 0.15s, border-color 0.15s;
+        }
+        .cockpit-participant-row[data-clickable="true"] {
+          cursor: pointer;
+        }
+        .cockpit-participant-row[data-clickable="true"]:hover {
+          background: var(--labs-surface-elevated);
+          border-color: var(--labs-border);
+        }
+        .cockpit-participant-row[data-clickable="true"]:focus-visible {
+          outline: none;
+          background: var(--labs-surface-elevated);
+          border-color: var(--labs-accent);
+        }
+        .cockpit-detail-overlay {
+          background: var(--labs-surface);
+          border: 1px solid var(--labs-border);
+          border-radius: 16px;
+          width: 100%;
+          max-width: 520px;
+          max-height: 85vh;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+        .cockpit-detail-header {
+          padding: 16px 18px;
+          border-bottom: 1px solid var(--labs-border);
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+          background: color-mix(in srgb, var(--labs-surface-elevated) 50%, var(--labs-surface));
+        }
+        .cockpit-detail-body {
+          padding: 14px 18px 18px;
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .cockpit-detail-dram-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 9px 10px;
+          border-radius: 10px;
+          border: 1px solid var(--labs-border-subtle, var(--labs-border));
+          background: var(--labs-surface);
+          transition: background 0.15s;
+        }
+        .cockpit-detail-dram-row[data-missing="true"] {
+          background: color-mix(in srgb, var(--labs-accent) 8%, var(--labs-surface));
+          border-color: color-mix(in srgb, var(--labs-accent) 35%, var(--labs-border));
+        }
+        .cockpit-detail-dram-badge {
+          width: 28px;
+          height: 28px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          font-weight: 700;
+          flex-shrink: 0;
         }
         .cockpit-participant-avatar {
           width: 28px;
@@ -1292,6 +1359,200 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
         )}
 
       </div>
+
+      {(() => {
+        const open = !!detailParticipantId;
+        const participant = open
+          ? (participants as any[]).find((p: any) => pId(p) === detailParticipantId)
+          : null;
+        const closeDetail = () => setDetailParticipantId(null);
+        if (!open || !participant) {
+          return null;
+        }
+        const ratedByWhisky = new Map<string, any>();
+        for (const r of ratings as any[]) {
+          if (r.participantId === detailParticipantId) {
+            const existing = ratedByWhisky.get(r.whiskyId);
+            if (!existing || (r.updatedAt && existing.updatedAt && r.updatedAt > existing.updatedAt)) {
+              ratedByWhisky.set(r.whiskyId, r);
+            }
+          }
+        }
+        const totalDrams = whiskies.length;
+        const ratedCount = ratedByWhisky.size;
+        const missingCount = Math.max(0, totalDrams - ratedCount);
+        let statusLabel = t("cockpit.detail.statusNotStarted", "Noch nicht begonnen");
+        let statusColor = "var(--labs-text-muted)";
+        let statusBg = "var(--labs-surface-elevated)";
+        if (totalDrams > 0 && ratedCount >= totalDrams) {
+          statusLabel = t("cockpit.detail.statusCompleted", "Abgeschlossen");
+          statusColor = "var(--labs-success)";
+          statusBg = "var(--labs-success-muted)";
+        } else if (ratedCount > 0) {
+          statusLabel = t("cockpit.detail.statusInProgress", "In Bearbeitung");
+          statusColor = "var(--labs-accent)";
+          statusBg = "var(--labs-accent-muted)";
+        }
+        const isExcluded = !!participant.excludedFromResults;
+        const highlightMissing = ratedCount > 0 && ratedCount < totalDrams;
+
+        return (
+          <ModalPortal open={open} onClose={closeDetail} testId="cockpit-participant-detail">
+            <div className="cockpit-detail-overlay" data-testid="cockpit-participant-detail-card">
+              <div className="cockpit-detail-header">
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <Users style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
+                    <h2
+                      className="labs-serif"
+                      style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                      data-testid="cockpit-detail-name"
+                    >
+                      {pName(participant)}
+                    </h2>
+                    {isExcluded && (
+                      <span
+                        title={t("manageTasters.excludedBadge", "Ausgeschlossen")}
+                        style={{ flexShrink: 0, color: "var(--labs-text-muted)", display: "inline-flex" }}
+                      >
+                        <EyeOff style={{ width: 12, height: 12 }} />
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <span
+                      data-testid="cockpit-detail-status"
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 4,
+                        fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase",
+                        padding: "3px 8px", borderRadius: 999,
+                        background: statusBg, color: statusColor,
+                      }}
+                    >
+                      {statusLabel}
+                    </span>
+                    <span
+                      style={{ fontSize: 12, color: "var(--labs-text-muted)", fontVariantNumeric: "tabular-nums" }}
+                      data-testid="cockpit-detail-progress"
+                    >
+                      {ratedCount}/{totalDrams} {t("ui.rated", "bewertet")}
+                      {missingCount > 0 && (
+                        <>
+                          {" · "}
+                          <span style={{ color: highlightMissing ? "var(--labs-accent)" : undefined, fontWeight: highlightMissing ? 700 : undefined }} data-testid="cockpit-detail-missing-count">
+                            {t("cockpit.detail.missingCount", "{{count}} offen", { count: missingCount })}
+                          </span>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={closeDetail}
+                  data-testid="cockpit-detail-close"
+                  aria-label={t("ui.close", "Schließen")}
+                  style={{
+                    flexShrink: 0,
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "var(--labs-text-muted)",
+                    padding: 4,
+                  }}
+                >
+                  <X style={{ width: 18, height: 18 }} />
+                </button>
+              </div>
+              <div className="cockpit-detail-body" data-testid="cockpit-detail-list">
+                {totalDrams === 0 ? (
+                  <div style={{ padding: "20px 0", textAlign: "center", color: "var(--labs-text-muted)", fontSize: 13 }}>
+                    {t("cockpit.detail.noDrams", "Keine Whiskys im Lineup.")}
+                  </div>
+                ) : (
+                  whiskies.map((w: any, idx: number) => {
+                    const rating = ratedByWhisky.get(w.id);
+                    const rated = !!rating;
+                    const overall = rating?.overall;
+                    const showOverall = rated && overall != null;
+                    const missing = !rated;
+                    const showAsBlind = isBlind && !rated;
+                    return (
+                      <div
+                        key={w.id}
+                        className="cockpit-detail-dram-row"
+                        data-missing={missing && highlightMissing}
+                        data-rated={rated}
+                        data-testid={`cockpit-detail-dram-${idx}`}
+                      >
+                        <div
+                          className="cockpit-detail-dram-badge"
+                          style={{
+                            background: rated ? "var(--labs-success-muted)" : missing && highlightMissing ? "color-mix(in srgb, var(--labs-accent) 18%, var(--labs-surface))" : "var(--labs-surface-elevated)",
+                            color: rated ? "var(--labs-success)" : missing && highlightMissing ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                          }}
+                        >
+                          {rated ? <CheckCircle2 style={{ width: 14, height: 14 }} /> : (showAsBlind ? blindLabel(idx) : idx + 1)}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 600,
+                              color: "var(--labs-text)",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {showAsBlind
+                              ? `${t("cockpitUi.fieldName", "Whisky")} ${blindLabel(idx)}`
+                              : (w.name || `Whisky ${idx + 1}`)}
+                          </div>
+                          {!showAsBlind && (w.distillery || w.age || w.abv) && (
+                            <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ")}
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
+                          {rated ? (
+                            <>
+                              {showOverall && (
+                                <span
+                                  style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}
+                                  data-testid={`cockpit-detail-score-${idx}`}
+                                >
+                                  {formatScore(overall)}
+                                </span>
+                              )}
+                              <span style={{ fontSize: 10, color: "var(--labs-success)", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                                {t("cockpit.detail.dramRated", "bewertet")}
+                              </span>
+                            </>
+                          ) : (
+                            <span
+                              style={{
+                                fontSize: 10,
+                                color: highlightMissing ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                                fontWeight: 700,
+                                letterSpacing: "0.04em",
+                                textTransform: "uppercase",
+                              }}
+                              data-testid={`cockpit-detail-open-${idx}`}
+                            >
+                              {t("cockpit.detail.dramOpen", "offen")}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </ModalPortal>
+        );
+      })()}
     </div>
   );
 
@@ -2218,9 +2479,32 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                       ).size;
 
                       const isExcluded = !!p.excludedFromResults;
+                      const totalDrams = whiskies.length;
+                      const isInProgress = totalDrams > 0 && totalWhiskiesRated > 0 && totalWhiskiesRated < totalDrams;
+                      const isComplete = totalDrams > 0 && totalWhiskiesRated >= totalDrams;
+                      const countColor = isInProgress
+                        ? "var(--labs-accent)"
+                        : isComplete
+                        ? "var(--labs-success)"
+                        : "var(--labs-text-muted)";
                       return (
-                        <div key={participantId} className="cockpit-participant-row" data-testid={`cockpit-participant-${participantId}`}
-                          style={{ opacity: isExcluded ? 0.5 : 1 }}>
+                        <div
+                          key={participantId}
+                          className="cockpit-participant-row"
+                          data-testid={`cockpit-participant-${participantId}`}
+                          data-clickable={true}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setDetailParticipantId(participantId)}
+                          onKeyDown={e => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setDetailParticipantId(participantId);
+                            }
+                          }}
+                          aria-label={t("cockpit.detail.openLabel", "Details öffnen für {{name}}", { name: pName(p) })}
+                          style={{ opacity: isExcluded ? 0.5 : 1 }}
+                        >
                           <div className="cockpit-participant-avatar" style={{
                             background: source === "digital" ? "var(--labs-success-muted)" : source === "paper" ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated)",
                           }}>
@@ -2236,7 +2520,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                               <EyeOff style={{ width: 12, height: 12 }} />
                             </span>
                           )}
-                          <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+                          <span style={{ fontSize: 11, color: countColor, fontWeight: isInProgress ? 700 : 500, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
                             {totalWhiskiesRated}/{whiskies.length}
                           </span>
                         </div>

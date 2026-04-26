@@ -842,6 +842,16 @@ const resources = {
         scoresAfterReveal: "Group scores visible after full reveal",
         allRevealed: "All info revealed",
         revealStart: "Start Reveal",
+        detail: {
+          openLabel: "Open details for {{name}}",
+          statusNotStarted: "Not started",
+          statusInProgress: "In progress",
+          statusCompleted: "Completed",
+          missingCount: "{{count}} open",
+          dramRated: "rated",
+          dramOpen: "open",
+          noDrams: "No whiskies in the lineup.",
+        },
       },
       palateLetter: {},
       landing: {
