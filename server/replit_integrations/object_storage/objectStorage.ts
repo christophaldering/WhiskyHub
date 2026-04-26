@@ -1,6 +1,7 @@
 import { Storage, File } from "@google-cloud/storage";
 import { Response } from "express";
 import { randomUUID } from "crypto";
+import sharp from "sharp";
 import {
   ObjectAclPolicy,
   ObjectPermission,
@@ -94,35 +95,57 @@ export class ObjectStorageService {
     return null;
   }
 
-  // Downloads an object to the response.
-  async downloadObject(file: File, res: Response, cacheTtlSec: number = 31536000) {
+  // Downloads an object to the response. When `width` is provided and the
+  // underlying object is an image, the image is resized on the fly to the
+  // requested width (preserving aspect ratio) and served as WebP. This powers
+  // the responsive `srcset` from the client without needing variant uploads.
+  async downloadObject(
+    file: File,
+    res: Response,
+    cacheTtlSec: number = 31536000,
+    width?: number,
+  ) {
     try {
-      // Get file metadata
       const [metadata] = await file.getMetadata();
-      // Get the ACL policy for the object.
       const aclPolicy = await getObjectAclPolicy(file);
       const isPublic = aclPolicy?.visibility === "public";
-      // Set appropriate headers. Object IDs are immutable per upload, so we
-      // serve with a long cache and the immutable directive for public files.
       const cacheControl = isPublic
         ? `public, max-age=${cacheTtlSec}, immutable`
         : `private, max-age=${cacheTtlSec}`;
+
+      const contentType = metadata.contentType || "application/octet-stream";
+      const isImage = contentType.startsWith("image/") && contentType !== "image/svg+xml";
+
+      if (width && isImage) {
+        const [buffer] = await file.download();
+        const resized = await sharp(buffer, { failOn: "none" })
+          .rotate()
+          .resize({ width, withoutEnlargement: true })
+          .webp({ quality: 78 })
+          .toBuffer();
+        res.set({
+          "Content-Type": "image/webp",
+          "Content-Length": String(resized.length),
+          "Cache-Control": cacheControl,
+          Vary: "Accept",
+        });
+        res.end(resized);
+        return;
+      }
+
       res.set({
-        "Content-Type": metadata.contentType || "application/octet-stream",
+        "Content-Type": contentType,
         "Content-Length": metadata.size,
         "Cache-Control": cacheControl,
       });
 
-      // Stream the file to the response
       const stream = file.createReadStream();
-
       stream.on("error", (err) => {
         console.error("Stream error:", err);
         if (!res.headersSent) {
           res.status(500).json({ error: "Error streaming file" });
         }
       });
-
       stream.pipe(res);
     } catch (error) {
       console.error("Error downloading file:", error);

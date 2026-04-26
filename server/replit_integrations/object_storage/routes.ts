@@ -70,10 +70,20 @@ export function registerObjectStorageRoutes(app: Express): void {
    * This serves files from object storage. For public files, no auth needed.
    * For protected files, add authentication middleware and ACL checks.
    */
+  const ALLOWED_WIDTHS = new Set([320, 480, 640, 800, 960, 1280, 1600]);
+
+  function parseWidth(raw: unknown): number | undefined {
+    if (typeof raw !== "string") return undefined;
+    const n = parseInt(raw, 10);
+    if (!Number.isFinite(n)) return undefined;
+    return ALLOWED_WIDTHS.has(n) ? n : undefined;
+  }
+
   app.get(/^\/objects\/(.+)/, async (req, res) => {
     try {
       const objectFile = await objectStorageService.getObjectEntityFile(req.path);
-      await objectStorageService.downloadObject(objectFile, res);
+      const width = parseWidth(req.query.w);
+      await objectStorageService.downloadObject(objectFile, res, undefined, width);
     } catch (error) {
       console.error("Error serving object:", error);
       if (error instanceof ObjectNotFoundError) {
@@ -87,7 +97,8 @@ export function registerObjectStorageRoutes(app: Express): void {
     try {
       const objectPath = "/" + req.path.replace(/^\/api\/uploads\/serve\/*/, "");
       const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
-      await objectStorageService.downloadObject(objectFile, res);
+      const width = parseWidth(req.query.w);
+      await objectStorageService.downloadObject(objectFile, res, undefined, width);
     } catch (error) {
       if (error instanceof ObjectNotFoundError) {
         return res.status(404).json({ error: "Object not found" });
