@@ -18,7 +18,7 @@ export default function LabsTastingStoryViewPage({ id }: Props) {
     retry: false,
   });
 
-  const { data: storyData } = useQuery<TastingStoryDataResponse>({
+  const { data: storyData, isError: storyDataError } = useQuery<TastingStoryDataResponse>({
     queryKey: ["/api/public/tasting-stories", id, "data"],
     queryFn: () => getPublicTastingStoryData(id),
     enabled: !!id && !!data,
@@ -96,6 +96,24 @@ export default function LabsTastingStoryViewPage({ id }: Props) {
 
   return (
     <div data-testid="page-labs-tasting-story-view" style={{ background: "#0B0906", minHeight: "100vh" }}>
+      {storyDataError ? (
+        <div
+          data-testid="banner-tasting-data-unavailable"
+          style={{
+            background: "rgba(217,167,87,0.1)",
+            color: "#D9A757",
+            padding: "8px 24px",
+            fontFamily: "'Inter', sans-serif",
+            fontSize: 12,
+            letterSpacing: ".15em",
+            textTransform: "uppercase",
+            textAlign: "center",
+            borderBottom: "1px solid rgba(217,167,87,0.3)",
+          }}
+        >
+          Live-Daten fuer einzelne Bloecke konnten nicht geladen werden.
+        </div>
+      ) : null}
       <TastingStoryDataProvider data={storyData ?? null}>
         <StoryRenderer document={document_} mode="public" />
       </TastingStoryDataProvider>
