@@ -929,6 +929,15 @@ export const ratingApi = {
   getMyRating: (participantId: string, whiskyId: string) =>
     fetchJSON(`/ratings/${participantId}/${whiskyId}`).catch(() => null),
   upsert: (data: any) => fetchJSON("/ratings", { method: "POST", body: JSON.stringify(data) }),
+  hostBackfill: (
+    tastingId: string,
+    participantId: string,
+    ratings: Array<{ whiskyId: string; nose?: number | null; taste?: number | null; finish?: number | null; overall?: number | null; notes?: string }>,
+  ) =>
+    fetchJSON(`/tastings/${tastingId}/host-ratings`, {
+      method: "POST",
+      body: JSON.stringify({ participantId, ratings }),
+    }),
 };
 
 // ===== Labs Explore =====

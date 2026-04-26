@@ -222,6 +222,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
   const [localGuidedIdx, setLocalGuidedIdx] = useState<number | null>(null);
   const [hostViewIdx, setHostViewIdx] = useState<number | null>(null);
   const [detailParticipantId, setDetailParticipantId] = useState<string | null>(null);
+  const [backfillForm, setBackfillForm] = useState<{ whiskyId: string; nose: number; taste: number; finish: number; overall: number; notes: string } | null>(null);
+  const [confirmMarkComplete, setConfirmMarkComplete] = useState(false);
 
   const [hostScores, setHostScores] = useState<Record<string, Record<DimKey, number>>>({});
   const [hostChips, setHostChips] = useState<Record<string, Record<DimKey, string[]>>>({});
@@ -326,6 +328,19 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
     mutationFn: (p: { whiskyIndex: number; revealStep?: number }) =>
       guidedApi.goTo(tastingId, pid, p.whiskyIndex, p.revealStep),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] }),
+  });
+
+  const hostBackfillMut = useMutation({
+    mutationFn: (vars: { participantId: string; ratings: Array<{ whiskyId: string; nose?: number | null; taste?: number | null; finish?: number | null; overall?: number | null; notes?: string }> }) =>
+      ratingApi.hostBackfill(tastingId, vars.participantId, vars.ratings),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasting-ratings", tastingId] });
+      queryClient.invalidateQueries({ queryKey: ["tasting-participants", tastingId] });
+      invalidateTastingAggregates(queryClient, tastingId);
+    },
+    onError: (err: Error) => {
+      toast({ title: t("cockpit.detail.backfillError", "Bewertung konnte nicht gespeichert werden"), description: err.message, variant: "destructive" });
+    },
   });
 
   const ratingUpsertMut = useMutation({
@@ -1365,7 +1380,11 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
         const participant = open
           ? (participants as any[]).find((p: any) => pId(p) === detailParticipantId)
           : null;
-        const closeDetail = () => setDetailParticipantId(null);
+        const closeDetail = () => {
+          setDetailParticipantId(null);
+          setBackfillForm(null);
+          setConfirmMarkComplete(false);
+        };
         if (!open || !participant) {
           return null;
         }
@@ -1463,6 +1482,140 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                   <X style={{ width: 18, height: 18 }} />
                 </button>
               </div>
+              {missingCount > 0 && (
+                <div style={{ padding: "10px 16px 0", borderTop: "1px solid var(--labs-border)" }}>
+                  {!confirmMarkComplete ? (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmMarkComplete(true)}
+                      data-testid="cockpit-detail-mark-complete"
+                      disabled={hostBackfillMut.isPending}
+                      style={{
+                        width: "100%",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 6,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        padding: "8px 12px",
+                        borderRadius: 8,
+                        border: "1px solid var(--labs-border)",
+                        background: "var(--labs-surface-elevated)",
+                        color: "var(--labs-text)",
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                      }}
+                    >
+                      <CheckCircle2 style={{ width: 13, height: 13 }} />
+                      {t("cockpit.detail.markComplete", "Als abgeschlossen markieren")}
+                    </button>
+                  ) : (
+                    <div
+                      data-testid="cockpit-detail-mark-complete-confirm"
+                      style={{
+                        padding: 12,
+                        borderRadius: 8,
+                        background: "var(--labs-surface-elevated)",
+                        border: "1px solid var(--labs-border)",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 10,
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                        <AlertTriangle style={{ width: 14, height: 14, color: "var(--labs-accent)", flexShrink: 0, marginTop: 2 }} />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--labs-text)", marginBottom: 4 }}>
+                            {t("cockpit.detail.markCompleteTitle", "Teilnehmer als abgeschlossen markieren?")}
+                          </div>
+                          <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.5 }}>
+                            {t("cockpit.detail.markCompleteDesc", "{{count}} fehlende Bewertung(en) werden mit einem neutralen Standardwert ({{score}}) gefüllt und als vom Host eingetragen markiert. Die Gruppenstatistik wird diese neutralen Einträge mit einbeziehen — sie verringern die Varianz und ziehen den Mittelwert in Richtung {{score}}.", { count: missingCount, score: scaleDefault })}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmMarkComplete(false)}
+                          disabled={hostBackfillMut.isPending}
+                          data-testid="cockpit-detail-mark-complete-cancel"
+                          style={{
+                            flex: 1,
+                            padding: "7px 10px",
+                            borderRadius: 6,
+                            border: "1px solid var(--labs-border)",
+                            background: "transparent",
+                            color: "var(--labs-text-muted)",
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            fontFamily: "inherit",
+                          }}
+                        >
+                          {t("cockpit.detail.markCompleteCancel", "Abbrechen")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const missing = whiskies.filter((w: any) => !ratedByWhisky.has(w.id));
+                            if (!missing.length) {
+                              setConfirmMarkComplete(false);
+                              return;
+                            }
+                            const payload = missing.map((w: any) => ({
+                              whiskyId: w.id,
+                              nose: scaleDefault,
+                              taste: scaleDefault,
+                              finish: scaleDefault,
+                              overall: scaleDefault,
+                              notes: "",
+                            }));
+                            hostBackfillMut.mutate(
+                              { participantId: detailParticipantId!, ratings: payload },
+                              {
+                                onSuccess: (res: any) => {
+                                  setConfirmMarkComplete(false);
+                                  const skipped = Array.isArray(res?.skipped) ? res.skipped.length : 0;
+                                  toast({
+                                    title: t("cockpit.detail.markCompleteSuccess", "Teilnehmer als abgeschlossen markiert"),
+                                    description: skipped > 0
+                                      ? t("cockpit.detail.markCompleteSkipped", "{{count}} gesperrte Bewertung(en) wurden übersprungen", { count: skipped })
+                                      : undefined,
+                                  });
+                                },
+                              },
+                            );
+                          }}
+                          disabled={hostBackfillMut.isPending}
+                          data-testid="cockpit-detail-mark-complete-confirm-btn"
+                          style={{
+                            flex: 1,
+                            padding: "7px 10px",
+                            borderRadius: 6,
+                            border: "1px solid var(--labs-accent)",
+                            background: "var(--labs-accent)",
+                            color: "var(--labs-bg)",
+                            fontSize: 12,
+                            fontWeight: 700,
+                            cursor: hostBackfillMut.isPending ? "wait" : "pointer",
+                            fontFamily: "inherit",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 5,
+                          }}
+                        >
+                          {hostBackfillMut.isPending
+                            ? <Loader2 style={{ width: 12, height: 12, animation: "spin 1s linear infinite" }} />
+                            : <CheckCircle2 style={{ width: 12, height: 12 }} />}
+                          {t("cockpit.detail.markCompleteConfirm", "Ja, abschließen")}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="cockpit-detail-body" data-testid="cockpit-detail-list">
                 {totalDrams === 0 ? (
                   <div style={{ padding: "20px 0", textAlign: "center", color: "var(--labs-text-muted)", fontSize: 13 }}>
@@ -1476,74 +1629,280 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                     const showOverall = rated && overall != null;
                     const missing = !rated;
                     const showAsBlind = isBlind && !rated;
+                    const isHostEntered = rated && rating?.source === "host";
+                    const isFormOpen = backfillForm?.whiskyId === w.id;
+                    const dramLocked = isDramLocked(w.id);
                     return (
-                      <div
-                        key={w.id}
-                        className="cockpit-detail-dram-row"
-                        data-missing={missing && highlightMissing}
-                        data-rated={rated}
-                        data-testid={`cockpit-detail-dram-${idx}`}
-                      >
+                      <div key={w.id} style={{ display: "flex", flexDirection: "column" }}>
                         <div
-                          className="cockpit-detail-dram-badge"
-                          style={{
-                            background: rated ? "var(--labs-success-muted)" : missing && highlightMissing ? "color-mix(in srgb, var(--labs-accent) 18%, var(--labs-surface))" : "var(--labs-surface-elevated)",
-                            color: rated ? "var(--labs-success)" : missing && highlightMissing ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                          }}
+                          className="cockpit-detail-dram-row"
+                          data-missing={missing && highlightMissing}
+                          data-rated={rated}
+                          data-host-entered={isHostEntered ? "true" : undefined}
+                          data-testid={`cockpit-detail-dram-${idx}`}
                         >
-                          {rated ? <CheckCircle2 style={{ width: 14, height: 14 }} /> : (showAsBlind ? blindLabel(idx) : idx + 1)}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
                           <div
+                            className="cockpit-detail-dram-badge"
                             style={{
-                              fontSize: 13,
-                              fontWeight: 600,
-                              color: "var(--labs-text)",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
+                              background: rated ? "var(--labs-success-muted)" : missing && highlightMissing ? "color-mix(in srgb, var(--labs-accent) 18%, var(--labs-surface))" : "var(--labs-surface-elevated)",
+                              color: rated ? "var(--labs-success)" : missing && highlightMissing ? "var(--labs-accent)" : "var(--labs-text-muted)",
                             }}
                           >
-                            {showAsBlind
-                              ? `${t("cockpitUi.fieldName", "Whisky")} ${blindLabel(idx)}`
-                              : (w.name || `Whisky ${idx + 1}`)}
+                            {rated ? <CheckCircle2 style={{ width: 14, height: 14 }} /> : (showAsBlind ? blindLabel(idx) : idx + 1)}
                           </div>
-                          {!showAsBlind && (w.distillery || w.age || w.abv) && (
-                            <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ")}
-                            </div>
-                          )}
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
-                          {rated ? (
-                            <>
-                              {showOverall && (
-                                <span
-                                  style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}
-                                  data-testid={`cockpit-detail-score-${idx}`}
-                                >
-                                  {formatScore(overall)}
-                                </span>
-                              )}
-                              <span style={{ fontSize: 10, color: "var(--labs-success)", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-                                {t("cockpit.detail.dramRated", "bewertet")}
-                              </span>
-                            </>
-                          ) : (
-                            <span
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div
                               style={{
-                                fontSize: 10,
-                                color: highlightMissing ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                                fontWeight: 700,
-                                letterSpacing: "0.04em",
-                                textTransform: "uppercase",
+                                fontSize: 13,
+                                fontWeight: 600,
+                                color: "var(--labs-text)",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
                               }}
-                              data-testid={`cockpit-detail-open-${idx}`}
                             >
-                              {t("cockpit.detail.dramOpen", "offen")}
-                            </span>
-                          )}
+                              {showAsBlind
+                                ? `${t("cockpitUi.fieldName", "Whisky")} ${blindLabel(idx)}`
+                                : (w.name || `Whisky ${idx + 1}`)}
+                            </div>
+                            {!showAsBlind && (w.distillery || w.age || w.abv) && (
+                              <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ")}
+                              </div>
+                            )}
+                            {isHostEntered && (
+                              <div
+                                data-testid={`cockpit-detail-host-badge-${idx}`}
+                                title={t("cockpit.detail.hostBadge", "Vom Host eingetragen")}
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                  fontSize: 9,
+                                  fontWeight: 700,
+                                  letterSpacing: "0.05em",
+                                  textTransform: "uppercase",
+                                  marginTop: 4,
+                                  padding: "2px 6px",
+                                  borderRadius: 999,
+                                  background: "color-mix(in srgb, var(--labs-accent) 14%, transparent)",
+                                  color: "var(--labs-accent)",
+                                  border: "1px solid color-mix(in srgb, var(--labs-accent) 35%, transparent)",
+                                }}
+                              >
+                                <Sliders style={{ width: 9, height: 9 }} />
+                                {t("cockpit.detail.hostBadgeShort", "vom Host")}
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
+                            {rated ? (
+                              <>
+                                {showOverall && (
+                                  <span
+                                    style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}
+                                    data-testid={`cockpit-detail-score-${idx}`}
+                                  >
+                                    {formatScore(overall)}
+                                  </span>
+                                )}
+                                <span style={{ fontSize: 10, color: "var(--labs-success)", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                                  {t("cockpit.detail.dramRated", "bewertet")}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <span
+                                  style={{
+                                    fontSize: 10,
+                                    color: highlightMissing ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                                    fontWeight: 700,
+                                    letterSpacing: "0.04em",
+                                    textTransform: "uppercase",
+                                  }}
+                                  data-testid={`cockpit-detail-open-${idx}`}
+                                >
+                                  {t("cockpit.detail.dramOpen", "offen")}
+                                </span>
+                                {!isFormOpen && !dramLocked && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setBackfillForm({
+                                      whiskyId: w.id,
+                                      nose: scaleDefault,
+                                      taste: scaleDefault,
+                                      finish: scaleDefault,
+                                      overall: scaleDefault,
+                                      notes: "",
+                                    })}
+                                    data-testid={`cockpit-detail-backfill-open-${idx}`}
+                                    style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: 4,
+                                      fontSize: 10,
+                                      fontWeight: 600,
+                                      padding: "3px 7px",
+                                      borderRadius: 6,
+                                      border: "1px solid var(--labs-accent)",
+                                      background: "transparent",
+                                      color: "var(--labs-accent)",
+                                      cursor: "pointer",
+                                      fontFamily: "inherit",
+                                      marginTop: 2,
+                                    }}
+                                  >
+                                    {t("cockpit.detail.backfillRating", "Bewertung nachtragen")}
+                                  </button>
+                                )}
+                                {dramLocked && (
+                                  <span style={{ fontSize: 10, color: "var(--labs-text-muted)", fontWeight: 600 }}>
+                                    <Lock style={{ width: 9, height: 9, display: "inline", marginRight: 3, verticalAlign: "-1px" }} />
+                                    {t("cockpitUi.locked", "Gesperrt")}
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </div>
                         </div>
+                        {isFormOpen && backfillForm && (
+                          <div
+                            data-testid={`cockpit-detail-backfill-form-${idx}`}
+                            style={{
+                              margin: "4px 0 12px",
+                              padding: 12,
+                              borderRadius: 8,
+                              background: "var(--labs-surface-elevated)",
+                              border: "1px solid var(--labs-border)",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 10,
+                            }}
+                          >
+                            <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.5 }}>
+                              {t("cockpit.detail.backfillSubtitle", "Bewertung im Namen von {{name}} eintragen. Wird als vom Host eingetragen markiert.", { name: pName(participant) })}
+                            </div>
+                            {([
+                              ["nose", t("cockpit.detail.backfillNose", "Nase")],
+                              ["taste", t("cockpit.detail.backfillTaste", "Geschmack")],
+                              ["finish", t("cockpit.detail.backfillFinish", "Finish")],
+                              ["overall", t("cockpit.detail.backfillOverall", "Gesamt")],
+                            ] as const).map(([key, label]) => (
+                              <div key={key} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, fontWeight: 600 }}>
+                                  <span style={{ color: "var(--labs-text)" }}>{label}</span>
+                                  <span style={{ color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }} data-testid={`cockpit-detail-backfill-${key}-value`}>
+                                    {formatScore(backfillForm[key])}
+                                    <span style={{ color: "var(--labs-text-muted)", fontWeight: 500 }}>{` / ${ratingScale}`}</span>
+                                  </span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min={0}
+                                  max={ratingScale}
+                                  step={cockpitScale.step}
+                                  value={backfillForm[key]}
+                                  onChange={e => {
+                                    const val = parseFloat(e.target.value);
+                                    setBackfillForm(prev => prev ? { ...prev, [key]: val } : prev);
+                                  }}
+                                  data-testid={`cockpit-detail-backfill-${key}`}
+                                  style={{ width: "100%", accentColor: "var(--labs-accent)" }}
+                                />
+                              </div>
+                            ))}
+                            <textarea
+                              value={backfillForm.notes}
+                              onChange={e => setBackfillForm(prev => prev ? { ...prev, notes: e.target.value } : prev)}
+                              placeholder={t("cockpit.detail.backfillNotes", "Notiz (optional)")}
+                              rows={2}
+                              data-testid="cockpit-detail-backfill-notes"
+                              style={{
+                                width: "100%",
+                                resize: "vertical",
+                                padding: "6px 8px",
+                                borderRadius: 6,
+                                border: "1px solid var(--labs-border)",
+                                background: "var(--labs-surface)",
+                                color: "var(--labs-text)",
+                                fontFamily: "inherit",
+                                fontSize: 12,
+                              }}
+                            />
+                            <div style={{ display: "flex", gap: 8 }}>
+                              <button
+                                type="button"
+                                onClick={() => setBackfillForm(null)}
+                                disabled={hostBackfillMut.isPending}
+                                data-testid="cockpit-detail-backfill-cancel"
+                                style={{
+                                  flex: 1,
+                                  padding: "7px 10px",
+                                  borderRadius: 6,
+                                  border: "1px solid var(--labs-border)",
+                                  background: "transparent",
+                                  color: "var(--labs-text-muted)",
+                                  fontSize: 12,
+                                  fontWeight: 600,
+                                  cursor: "pointer",
+                                  fontFamily: "inherit",
+                                }}
+                              >
+                                {t("cockpit.detail.backfillCancel", "Abbrechen")}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!backfillForm) return;
+                                  hostBackfillMut.mutate(
+                                    {
+                                      participantId: detailParticipantId!,
+                                      ratings: [{
+                                        whiskyId: backfillForm.whiskyId,
+                                        nose: backfillForm.nose,
+                                        taste: backfillForm.taste,
+                                        finish: backfillForm.finish,
+                                        overall: backfillForm.overall,
+                                        notes: backfillForm.notes.trim(),
+                                      }],
+                                    },
+                                    {
+                                      onSuccess: () => {
+                                        toast({ title: t("cockpit.detail.backfillSuccess", "Bewertung gespeichert") });
+                                        setBackfillForm(null);
+                                      },
+                                    },
+                                  );
+                                }}
+                                disabled={hostBackfillMut.isPending}
+                                data-testid="cockpit-detail-backfill-save"
+                                style={{
+                                  flex: 1,
+                                  padding: "7px 10px",
+                                  borderRadius: 6,
+                                  border: "1px solid var(--labs-accent)",
+                                  background: "var(--labs-accent)",
+                                  color: "var(--labs-bg)",
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                  cursor: hostBackfillMut.isPending ? "wait" : "pointer",
+                                  fontFamily: "inherit",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  gap: 5,
+                                }}
+                              >
+                                {hostBackfillMut.isPending
+                                  ? <Loader2 style={{ width: 12, height: 12, animation: "spin 1s linear infinite" }} />
+                                  : <CheckCircle2 style={{ width: 12, height: 12 }} />}
+                                {hostBackfillMut.isPending
+                                  ? t("cockpit.detail.backfillSaving", "Speichern…")
+                                  : t("cockpit.detail.backfillSave", "Bewertung speichern")}
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })

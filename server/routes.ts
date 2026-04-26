@@ -6126,6 +6126,101 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
     }
   });
 
+  // Host backfill: post ratings on behalf of participants who didn't finish.
+  // Permitted for the tasting host or admins. Works regardless of tasting
+  // status (so a host can clean up after a closed tasting). Locked drams are
+  // skipped. All persisted ratings are tagged with source="host".
+  app.post("/api/tastings/:id/host-ratings", async (req, res) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+
+      if (auth.participant.role !== "admin" && tasting.hostId !== auth.participant.id) {
+        return res.status(403).json({ message: "Only the host or an admin can backfill ratings for this tasting" });
+      }
+
+      const bodySchema = z.object({
+        participantId: z.string().min(1),
+        ratings: z.array(z.object({
+          whiskyId: z.string().min(1),
+          nose: z.number().nullable().optional(),
+          taste: z.number().nullable().optional(),
+          finish: z.number().nullable().optional(),
+          overall: z.number().nullable().optional(),
+          notes: z.string().optional(),
+        })).min(1),
+      });
+      const body = bodySchema.parse(req.body);
+
+      const inTasting = await storage.isParticipantInTasting(tasting.id, body.participantId);
+      if (!inTasting) {
+        return res.status(400).json({ message: "Participant is not part of this tasting" });
+      }
+
+      let lockedSet = new Set<string>();
+      if ((tasting as any).lockedDrams) {
+        try {
+          const locked: string[] = JSON.parse((tasting as any).lockedDrams);
+          if (Array.isArray(locked)) lockedSet = new Set(locked);
+        } catch {}
+      }
+
+      const tastingWhiskies = await storage.getWhiskiesForTasting(tasting.id);
+      const validWhiskyIds = new Set(tastingWhiskies.map(w => w.id));
+
+      const maxScale = tasting.ratingScale || 100;
+      const clampScale = (v: number | null | undefined): number | null => {
+        if (v == null) return null;
+        return Math.max(0, Math.min(v, maxScale));
+      };
+      const normalizeDim = (v: number | null | undefined): number | null => {
+        if (v == null) return null;
+        const clamped = Math.max(0, Math.min(v, maxScale));
+        const norm = maxScale === 100 ? clamped : Math.round((clamped / maxScale) * 1000) / 10;
+        return clampNormalized(norm);
+      };
+
+      const saved: any[] = [];
+      const skipped: { whiskyId: string; reason: string }[] = [];
+      for (const r of body.ratings) {
+        if (!validWhiskyIds.has(r.whiskyId)) {
+          skipped.push({ whiskyId: r.whiskyId, reason: "not_in_tasting" });
+          continue;
+        }
+        if (lockedSet.has(r.whiskyId)) {
+          skipped.push({ whiskyId: r.whiskyId, reason: "locked" });
+          continue;
+        }
+        const data: any = {
+          tastingId: tasting.id,
+          participantId: body.participantId,
+          whiskyId: r.whiskyId,
+          nose: clampScale(r.nose),
+          taste: clampScale(r.taste),
+          finish: clampScale(r.finish),
+          overall: clampScale(r.overall),
+          notes: r.notes ?? "",
+          source: "host",
+          normalizedScore: normalizeDim(r.overall),
+          normalizedNose: normalizeDim(r.nose),
+          normalizedTaste: normalizeDim(r.taste),
+          normalizedFinish: normalizeDim(r.finish),
+        };
+        const result = await storage.upsertRating(data);
+        saved.push(result);
+        if (process.env.LABS_DEBUG) console.log(`[LABS] Host backfill: host=${auth.participant.id} participant=${body.participantId} whisky=${r.whiskyId} overall=${r.overall}`);
+      }
+
+      storage.updateParticipantIndices(body.participantId).catch(() => {});
+      res.json({ saved, skipped });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   // ===== ANALYTICS (for Reveal/Insight Mode) =====
 
   app.get("/api/tastings/:id/analytics", async (req, res) => {
