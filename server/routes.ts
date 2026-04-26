@@ -17,6 +17,7 @@ import { clampNormalized } from "@shared/score-utils";
 import { isSmtpConfigured, sendEmail, sendEmailWithPdfAttachment, buildInviteEmail, buildVerificationEmail, buildThankYouEmail, buildAdminLoginNotification, buildFriendInviteEmail, buildCommunityInviteEmail, buildMagicLinkEmail } from "./email";
 import { extractPagesText } from "./pdf-utils";
 import { registerObjectStorageRoutes, ObjectStorageService, objectStorageClient } from "./replit_integrations/object_storage";
+import { buildHomeSeedBlocks } from "./cms-home-blocks";
 import { registerFunnelRoutes } from "./funnel-routes";
 import { recordEvents as recordFunnelEvents } from "./funnel-store";
 import { addConnection, broadcastToTasting } from "./sse";
@@ -25497,104 +25498,6 @@ ${cleaned.slice(0, 60000)}`;
       return res.status(500).json({ message: msg });
     }
   });
-
-  const buildHomeSeedBlocks = (): unknown[] => {
-    const id = () => "blk_" + Math.random().toString(36).slice(2, 11);
-    return [
-      {
-        id: id(),
-        type: "hero-cover",
-        payload: {
-          eyebrow: "CaskSense Labs",
-          title: "Whisky verstehen.",
-          subtitle: "Sessions, Profile, Stories — die Plattform für ernsthafte Verkoster.",
-          meta: "Seit 2024 · Edinburgh & Berlin",
-          imageUrl: "",
-          alignment: "center",
-          ctaLabel: "Jetzt starten",
-          ctaHref: "/labs/tastings",
-          ctaVariant: "primary",
-          ctaSecondaryLabel: "Wie es funktioniert",
-          ctaSecondaryHref: "/intro",
-        },
-      },
-      {
-        id: id(),
-        type: "feature-cards",
-        payload: {
-          eyebrow: "Was CaskSense kann",
-          heading: "Vom ersten Schluck bis zur Story",
-          lead: "Vier Bausteine, die jede Verkostung in Substanz verwandeln.",
-          columns: "4",
-          items: [
-            { icon: "wine", title: "Geführte Sessions", description: "Hosts steuern Akt für Akt — synchron, lebendig, präzise.", ctaLabel: "", ctaHref: "" },
-            { icon: "users", title: "Verkoster-Profile", description: "Geschmack, Stabilität, Vorlieben — datengestützt sichtbar.", ctaLabel: "", ctaHref: "" },
-            { icon: "sparkles", title: "Story-Builder", description: "Aus jeder Session entsteht eine redaktionelle Story.", ctaLabel: "", ctaHref: "" },
-            { icon: "split", title: "Vergleich & Benchmarks", description: "Eigene Eindrücke gegen Community-Konsens stellen.", ctaLabel: "", ctaHref: "" },
-          ],
-        },
-      },
-      {
-        id: id(),
-        type: "live-stats",
-        payload: {
-          eyebrow: "Live aus dem Labor",
-          heading: "Was gerade passiert",
-          lead: "",
-          columns: "3",
-          items: [
-            { statKey: "registeredUsers", label: "Verkoster", hint: "" },
-            { statKey: "totalTastings", label: "Sessions", hint: "" },
-            { statKey: "whiskiesTasted", label: "Whiskys verkostet", hint: "" },
-          ],
-        },
-      },
-      {
-        id: id(),
-        type: "benchmark-block",
-        payload: {
-          eyebrow: "Benchmark",
-          heading: "Wie du im Vergleich stehst",
-          lead: "Eigene Wahrnehmung gegen den Community-Konsens — transparent, fair, ohne Wertung.",
-          referenceLabel: "Community",
-          yourLabel: "Du",
-          items: [
-            { label: "Süße", value: 62, reference: 58, unit: "/100", hint: "" },
-            { label: "Rauch", value: 41, reference: 49, unit: "/100", hint: "" },
-            { label: "Eiche", value: 73, reference: 65, unit: "/100", hint: "" },
-            { label: "Frucht", value: 55, reference: 60, unit: "/100", hint: "" },
-          ],
-        },
-      },
-      {
-        id: id(),
-        type: "cta-button",
-        payload: {
-          text: "Konto erstellen",
-          href: "/register",
-          variant: "primary",
-          alignment: "center",
-          newTab: false,
-          helper: "Kostenlos. Keine Kreditkarte nötig.",
-        },
-      },
-      {
-        id: id(),
-        type: "divider",
-        payload: { width: "wide" },
-      },
-      {
-        id: id(),
-        type: "text-section",
-        payload: {
-          eyebrow: "CaskSense Labs",
-          heading: "Edinburgh · Berlin",
-          body: "<p>Eine unabhängige Plattform für ernsthafte Whisky-Verkostung.</p><p>Kontakt: hello@casksense.io · Datenschutz · Impressum</p>",
-          alignment: "center",
-        },
-      },
-    ];
-  };
 
   app.post("/api/admin/cms/seed-home", async (req: Request, res: Response) => {
     try {

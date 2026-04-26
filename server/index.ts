@@ -843,6 +843,8 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       .catch((e) => log(`Distillery seed error: ${(e as Error).message}`, "seed"))
       .then(() => seedBottlers())
       .catch((e) => log(`Bottler seed error: ${(e as Error).message}`, "seed"))
+      .then(() => import("./seed-cms-home").then(m => m.seedCmsHomePage(log)))
+      .catch((e) => log(`CMS home seed error: ${(e as Error).message}`, "seed"))
       .finally(() =>
         backfillNormalizedScores().catch((e) =>
           log(`Backfill error: ${(e as Error).message}`, "seed"),
