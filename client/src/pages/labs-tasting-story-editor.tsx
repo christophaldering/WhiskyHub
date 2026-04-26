@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
 import { StoryEditor } from "@/storybuilder/editor/StoryEditor";
 import type { StoryBlock, StoryDocument } from "@/storybuilder/core/types";
+import type { StoryPersistenceAdapter } from "@/storybuilder/core/adapter";
+import { getStoryVersion, listStoryVersions, restoreStoryVersion } from "@/storybuilder/api";
 import {
   getTastingStory,
   saveTastingStory,
@@ -122,6 +124,28 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
     await saveTastingStory(id, next.blocks);
     qc.invalidateQueries({ queryKey: ["/api/tasting-stories", id] });
     setActionError(null);
+  };
+
+  const tastingAdapter: StoryPersistenceAdapter = {
+    sourceType: "tasting",
+    sourceId: id,
+    consumerScope: "tasting",
+    isAdmin: currentParticipant?.role === "admin",
+    saveDraft: async (blocks) => {
+      await saveTastingStory(id, blocks);
+      qc.invalidateQueries({ queryKey: ["/api/tasting-stories", id] });
+    },
+    createSnapshot: async (blocks, name) => {
+      await saveTastingStory(id, blocks);
+      await snapshotTastingStory(id, blocks, name);
+      qc.invalidateQueries({ queryKey: ["/api/tasting-stories", id] });
+    },
+    listVersions: (filter) => listStoryVersions("tasting", id, filter),
+    getVersion: (versionId) => getStoryVersion("tasting", id, versionId),
+    restoreVersion: async (versionId) => {
+      const result = await restoreStoryVersion("tasting", id, versionId);
+      return { blocks: result.blocksJson };
+    },
   };
 
   const handleManualSnapshot = async (next: StoryDocument, name?: string): Promise<void> => {
@@ -328,7 +352,7 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
             onManualSnapshot={handleManualSnapshot}
             sourceContext={{ sourceType: "tasting", sourceId: id }}
             isAdmin={currentParticipant?.role === "admin"}
-            paletteCategories={["generic", "tasting"]}
+            adapter={tastingAdapter}
             onRegenerateBlock={handleRegenerateBlock}
             onRegenerateStory={handleRegenerateStory}
           />

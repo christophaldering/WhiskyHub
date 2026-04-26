@@ -5,6 +5,8 @@ import { useAppStore } from "@/lib/store";
 import { getSession } from "@/lib/session";
 import { StoryEditor } from "@/storybuilder/editor/StoryEditor";
 import type { StoryDocument, StoryBlock } from "@/storybuilder/core/types";
+import type { StoryPersistenceAdapter } from "@/storybuilder/core/adapter";
+import { getStoryVersion, listStoryVersions, restoreStoryVersion } from "@/storybuilder/api";
 import { listThemes } from "@/storybuilder/themes";
 import { getCmsPage, updateCmsPage, publishCmsPage, type CmsPageFull, type CmsPageStatus } from "@/lib/cms-api";
 import { pidHeaders } from "@/lib/api";
@@ -152,10 +154,43 @@ export default function AdminCmsEditorPage({ id }: Props) {
         const dataMsg = await res.json();
         if (dataMsg && typeof dataMsg.message === "string") msg = dataMsg.message;
       } catch {
-        // ignore
+        msg = "Snapshot fehlgeschlagen";
       }
       throw new Error(msg);
     }
+  };
+
+  const cmsAdapter: StoryPersistenceAdapter = {
+    sourceType: "page",
+    sourceId: id,
+    consumerScope: "cms",
+    isAdmin: true,
+    saveDraft: async (blocks) => {
+      await handleEditorSave({
+        schemaVersion: 1,
+        theme: data.theme,
+        blocks,
+        metadata: { createdAt: data.createdAt, updatedAt: new Date().toISOString(), title: data.title },
+      });
+    },
+    createSnapshot: async (blocks, name) => {
+      await handleManualSnapshot({
+        schemaVersion: 1,
+        theme: data.theme,
+        blocks,
+        metadata: { createdAt: data.createdAt, updatedAt: new Date().toISOString(), title: data.title },
+      }, name);
+    },
+    listVersions: (filter) => listStoryVersions("page", id, filter),
+    getVersion: (versionId) => getStoryVersion("page", id, versionId),
+    restoreVersion: async (versionId) => {
+      const result = await restoreStoryVersion("page", id, versionId);
+      return { blocks: result.blocksJson };
+    },
+    publish: async () => {
+      await publishCmsPage(id);
+      qc.invalidateQueries({ queryKey: ["/api/admin/cms/pages"] });
+    },
   };
 
   const titleChanged = title !== data.title;
@@ -273,7 +308,7 @@ export default function AdminCmsEditorPage({ id }: Props) {
           onManualSnapshot={handleManualSnapshot}
           sourceContext={{ sourceType: "page", sourceId: id }}
           isAdmin
-          paletteCategories={["generic", "landing"]}
+          adapter={cmsAdapter}
         />
       </div>
     </div>

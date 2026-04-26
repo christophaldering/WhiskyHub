@@ -24913,6 +24913,29 @@ ${cleaned.slice(0, 60000)}`;
 
   const sanitizeStorybuilderId = (raw: string): string => raw.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 128);
 
+  type StorybuilderVersionAccess =
+    | { ok: true; participantId: string; isAdmin: boolean }
+    | { ok: false; status: number; message: string };
+
+  async function checkStorybuilderVersionAccess(
+    req: Request,
+    sourceType: string,
+    sourceId: string,
+  ): Promise<StorybuilderVersionAccess> {
+    const auth = await requireAuth(req);
+    if (!auth.authenticated) return { ok: false, status: auth.status, message: auth.message };
+    if (auth.participant.role === "admin") {
+      return { ok: true, participantId: auth.participant.id, isAdmin: true };
+    }
+    if (sourceType === "tasting") {
+      const tasting = await storage.getTasting(sourceId);
+      if (tasting && tasting.hostId === auth.participant.id) {
+        return { ok: true, participantId: auth.participant.id, isAdmin: false };
+      }
+    }
+    return { ok: false, status: 403, message: "Zugriff verweigert" };
+  }
+
   const storyBlockSchema = z.object({
     id: z.string().min(1).max(128),
     type: z.string().min(1).max(64),
@@ -24972,20 +24995,26 @@ ${cleaned.slice(0, 60000)}`;
       if (!parsed.success) {
         return res.status(400).json({ message: "Ungültiger Request-Body", errors: parsed.error.flatten() });
       }
-      const saved = await storage.saveStoryVersion({
-        sourceType,
-        sourceId,
-        blocksJson: parsed.data.blocksJson,
-        isAuto: parsed.data.isAuto,
-        name: parsed.data.name ?? null,
-        createdById: auth.participant.id,
-      });
+      let saved;
       if (parsed.data.isAuto) {
-        try {
-          await storage.pruneOldAutoStoryVersions(sourceType, sourceId, 20);
-        } catch (pruneErr: unknown) {
-          console.warn("[storybuilder/prune] failed:", pruneErr);
-        }
+        const upserted = await storage.upsertAutoStoryVersion({
+          sourceType,
+          sourceId,
+          blocksJson: parsed.data.blocksJson,
+          isAuto: true,
+          name: parsed.data.name ?? null,
+          createdById: auth.participant.id,
+        }, { cooldownMs: 5 * 60 * 1000, keepN: 20 });
+        saved = upserted.row;
+      } else {
+        saved = await storage.saveStoryVersion({
+          sourceType,
+          sourceId,
+          blocksJson: parsed.data.blocksJson,
+          isAuto: false,
+          name: parsed.data.name ?? null,
+          createdById: auth.participant.id,
+        });
       }
       return res.json({ id: saved.id, createdAt: saved.createdAt, isAuto: saved.isAuto });
     } catch (e: unknown) {
@@ -24997,15 +25026,14 @@ ${cleaned.slice(0, 60000)}`;
 
   app.get("/api/admin/storybuilder/:sourceType/:sourceId/versions", async (req: Request, res: Response) => {
     try {
-      const auth = await requireAuth(req);
-      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
-      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
       const sourceType = req.params.sourceType;
       if (!STORYBUILDER_SOURCE_TYPES.has(sourceType)) {
         return res.status(400).json({ message: "Unbekannter sourceType" });
       }
       const sourceId = sanitizeStorybuilderId(req.params.sourceId);
       if (!sourceId) return res.status(400).json({ message: "sourceId fehlt" });
+      const access = await checkStorybuilderVersionAccess(req, sourceType, sourceId);
+      if (!access.ok) return res.status(access.status).json({ message: access.message });
       const filter = String(req.query.filter || "all");
       const isAuto = filter === "auto" ? true : filter === "manual" ? false : undefined;
       const rows = await storage.listStoryVersions(sourceType, sourceId, { limit: 100, isAuto });
@@ -25028,15 +25056,14 @@ ${cleaned.slice(0, 60000)}`;
 
   app.get("/api/admin/storybuilder/:sourceType/:sourceId/versions/:versionId", async (req: Request, res: Response) => {
     try {
-      const auth = await requireAuth(req);
-      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
-      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
       const sourceType = req.params.sourceType;
       if (!STORYBUILDER_SOURCE_TYPES.has(sourceType)) {
         return res.status(400).json({ message: "Unbekannter sourceType" });
       }
       const sourceId = sanitizeStorybuilderId(req.params.sourceId);
       if (!sourceId) return res.status(400).json({ message: "sourceId fehlt" });
+      const access = await checkStorybuilderVersionAccess(req, sourceType, sourceId);
+      if (!access.ok) return res.status(access.status).json({ message: access.message });
       const versionId = sanitizeStorybuilderId(req.params.versionId);
       if (!versionId) return res.status(400).json({ message: "versionId fehlt" });
       const row = await storage.getStoryVersion(versionId);
@@ -25059,15 +25086,14 @@ ${cleaned.slice(0, 60000)}`;
 
   app.post("/api/admin/storybuilder/:sourceType/:sourceId/versions/:versionId/restore", async (req: Request, res: Response) => {
     try {
-      const auth = await requireAuth(req);
-      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
-      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
       const sourceType = req.params.sourceType;
       if (!STORYBUILDER_SOURCE_TYPES.has(sourceType)) {
         return res.status(400).json({ message: "Unbekannter sourceType" });
       }
       const sourceId = sanitizeStorybuilderId(req.params.sourceId);
       if (!sourceId) return res.status(400).json({ message: "sourceId fehlt" });
+      const access = await checkStorybuilderVersionAccess(req, sourceType, sourceId);
+      if (!access.ok) return res.status(access.status).json({ message: access.message });
       const versionId = sanitizeStorybuilderId(req.params.versionId);
       if (!versionId) return res.status(400).json({ message: "versionId fehlt" });
       const old = await storage.getStoryVersion(versionId);
@@ -25085,7 +25111,7 @@ ${cleaned.slice(0, 60000)}`;
         blocksJson: blocksParsed.data,
         isAuto: false,
         name: restoredName.slice(0, 200),
-        createdById: auth.participant.id,
+        createdById: access.participantId,
       });
       return res.json({ id: saved.id, createdAt: saved.createdAt, isAuto: saved.isAuto, blocksJson: blocksParsed.data });
     } catch (e: unknown) {
@@ -25729,15 +25755,14 @@ ${cleaned.slice(0, 60000)}`;
       }
       await storage.updateTasting(tastingId, { storyBlocks: body.data.blocks });
       try {
-        await storage.saveStoryVersion({
+        await storage.upsertAutoStoryVersion({
           sourceType: "tasting",
           sourceId: tastingId,
           blocksJson: body.data.blocks,
           isAuto: true,
           name: null,
           createdById: access.participant.id,
-        });
-        await storage.pruneOldAutoStoryVersions("tasting", tastingId, 20);
+        }, { cooldownMs: 5 * 60 * 1000, keepN: 20 });
       } catch (versionErr) {
         console.warn("[tasting-stories/put] version save warning:", versionErr);
       }

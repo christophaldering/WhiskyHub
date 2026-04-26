@@ -1,6 +1,8 @@
 import type { z } from "zod";
 import type { BlockDefinition, BlockType, RendererMode, StoryBlock, StoryTheme } from "../core/types";
 import { createBlockId } from "../core/types";
+import type { BlockScope, ConsumerScope } from "../core/adapter";
+import { blockScopeMatchesConsumer } from "../core/adapter";
 import { heroCoverBlock } from "./hero-cover";
 import { textSectionBlock } from "./text-section";
 import { fullWidthImageBlock } from "./full-width-image";
@@ -26,11 +28,18 @@ type RegisteredBlock = {
   label: string;
   description: string;
   category: BlockDefinition["category"];
+  scope: BlockScope;
   defaultPayload: () => unknown;
   payloadSchema: z.ZodType<unknown>;
   Renderer: React.ComponentType<{ block: StoryBlock; payload: unknown; theme: StoryTheme; mode: RendererMode }>;
   EditorPanel?: React.ComponentType<{ payload: unknown; onChange: (payload: unknown) => void }>;
 };
+
+function categoryToScope(category: BlockDefinition["category"]): BlockScope {
+  if (category === "tasting") return "tasting";
+  if (category === "landing") return "cms";
+  return "all";
+}
 
 const registry = new Map<BlockType, RegisteredBlock>();
 
@@ -40,6 +49,7 @@ function register<T>(def: BlockDefinition<T>): void {
     label: def.label,
     description: def.description,
     category: def.category,
+    scope: categoryToScope(def.category),
     defaultPayload: def.defaultPayload,
     payloadSchema: def.payloadSchema as unknown as z.ZodType<unknown>,
     Renderer: def.Renderer as unknown as RegisteredBlock["Renderer"],
@@ -76,6 +86,14 @@ export function listBlockDefinitions(category?: BlockDefinition["category"]): Re
   const all = Array.from(registry.values());
   if (!category) return all;
   return all.filter((b) => b.category === category);
+}
+
+export function listBlocksForConsumerScope(consumer: ConsumerScope): RegisteredBlock[] {
+  return Array.from(registry.values()).filter((b) => blockScopeMatchesConsumer(b.scope, consumer));
+}
+
+export function listBlocksByScope(scope: BlockScope): RegisteredBlock[] {
+  return Array.from(registry.values()).filter((b) => b.scope === scope);
 }
 
 export function createBlock(type: BlockType): StoryBlock | null {

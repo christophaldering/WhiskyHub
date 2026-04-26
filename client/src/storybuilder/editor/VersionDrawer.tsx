@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import type { StoryBlock, StoryDocument } from "../core/types";
 import { StoryRenderer } from "../renderer/StoryRenderer";
 import { getStoryVersion, listStoryVersions, restoreStoryVersion, type StoryVersionMeta } from "../api";
+import { VersionDiffDialog } from "./VersionDiffDialog";
+import type { StoryPersistenceAdapter } from "../core/adapter";
 
 type Filter = "all" | "auto" | "manual";
 
@@ -12,9 +14,11 @@ type Props = {
   sourceId: string;
   currentTheme: string;
   onRestored: (blocks: StoryBlock[]) => void;
+  currentBlocks?: StoryBlock[];
+  adapter?: StoryPersistenceAdapter;
 };
 
-export function VersionDrawer({ open, onClose, sourceType, sourceId, currentTheme, onRestored }: Props) {
+export function VersionDrawer({ open, onClose, sourceType, sourceId, currentTheme, onRestored, currentBlocks, adapter }: Props) {
   const [filter, setFilter] = useState<Filter>("all");
   const [versions, setVersions] = useState<StoryVersionMeta[]>([]);
   const [loading, setLoading] = useState(false);
@@ -23,13 +27,18 @@ export function VersionDrawer({ open, onClose, sourceType, sourceId, currentThem
   const [previewDoc, setPreviewDoc] = useState<StoryDocument | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const [diffOpen, setDiffOpen] = useState(false);
+  const [diffBlocks, setDiffBlocks] = useState<StoryBlock[] | null>(null);
+  const [diffMeta, setDiffMeta] = useState<{ id: string; createdAt: string } | null>(null);
+  const [diffLoading, setDiffLoading] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
-    listStoryVersions(sourceType, sourceId, filter)
+    const loader = adapter ? adapter.listVersions(filter) : listStoryVersions(sourceType, sourceId, filter);
+    loader
       .then((rows) => {
         if (!cancelled) setVersions(rows);
       })
@@ -42,7 +51,7 @@ export function VersionDrawer({ open, onClose, sourceType, sourceId, currentThem
     return () => {
       cancelled = true;
     };
-  }, [open, filter, sourceType, sourceId]);
+  }, [open, filter, sourceType, sourceId, adapter]);
 
   useEffect(() => {
     if (!open) {
@@ -56,7 +65,9 @@ export function VersionDrawer({ open, onClose, sourceType, sourceId, currentThem
     setPreviewLoading(true);
     setError(null);
     try {
-      const v = await getStoryVersion(sourceType, sourceId, versionId);
+      const v = adapter
+        ? await adapter.getVersion(versionId)
+        : await getStoryVersion(sourceType, sourceId, versionId);
       const now = new Date().toISOString();
       setPreviewDoc({
         schemaVersion: 1,
@@ -77,13 +88,37 @@ export function VersionDrawer({ open, onClose, sourceType, sourceId, currentThem
     setRestoring(true);
     setError(null);
     try {
-      const result = await restoreStoryVersion(sourceType, sourceId, versionId);
-      onRestored(result.blocksJson);
+      if (adapter) {
+        const result = await adapter.restoreVersion(versionId);
+        onRestored(result.blocks);
+      } else {
+        const result = await restoreStoryVersion(sourceType, sourceId, versionId);
+        onRestored(result.blocksJson);
+      }
       onClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Wiederherstellen fehlgeschlagen");
     } finally {
       setRestoring(false);
+    }
+  };
+
+  const handleCompare = async (versionId: string) => {
+    if (!currentBlocks) return;
+    const v = versions.find((x) => x.id === versionId);
+    setDiffLoading(true);
+    setError(null);
+    try {
+      const full = adapter
+        ? await adapter.getVersion(versionId)
+        : await getStoryVersion(sourceType, sourceId, versionId);
+      setDiffBlocks(full.blocksJson);
+      setDiffMeta({ id: versionId, createdAt: v?.createdAt ?? full.createdAt });
+      setDiffOpen(true);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Vergleich konnte nicht geladen werden");
+    } finally {
+      setDiffLoading(false);
     }
   };
 
@@ -229,15 +264,28 @@ export function VersionDrawer({ open, onClose, sourceType, sourceId, currentThem
               {previewId ? "Vorschau" : "Wähle eine Version"}
             </span>
             {previewId ? (
-              <button
-                type="button"
-                onClick={() => handleRestore(previewId)}
-                disabled={restoring || previewLoading}
-                data-testid="button-restore-version"
-                style={primaryBtn}
-              >
-                {restoring ? "Wiederherstelle…" : "Wiederherstellen"}
-              </button>
+              <div style={{ display: "flex", gap: 8 }}>
+                {currentBlocks ? (
+                  <button
+                    type="button"
+                    onClick={() => handleCompare(previewId)}
+                    disabled={diffLoading || previewLoading}
+                    data-testid="button-compare-version"
+                    style={secondaryBtn}
+                  >
+                    {diffLoading ? "Lade Vergleich…" : "Vergleichen"}
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => handleRestore(previewId)}
+                  disabled={restoring || previewLoading}
+                  data-testid="button-restore-version"
+                  style={primaryBtn}
+                >
+                  {restoring ? "Wiederherstelle…" : "Wiederherstellen"}
+                </button>
+              </div>
             ) : null}
           </div>
           <div style={{ flex: 1, overflowY: "auto", background: "#0B0906" }}>
@@ -255,6 +303,16 @@ export function VersionDrawer({ open, onClose, sourceType, sourceId, currentThem
           </div>
         </div>
       </div>
+      {diffOpen && diffBlocks && currentBlocks ? (
+        <VersionDiffDialog
+          open={diffOpen}
+          onClose={() => setDiffOpen(false)}
+          oldBlocks={diffBlocks}
+          newBlocks={currentBlocks}
+          oldLabel={diffMeta ? new Date(diffMeta.createdAt).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Version"}
+          newLabel="Aktueller Stand"
+        />
+      ) : null}
     </div>
   );
 }
@@ -266,6 +324,20 @@ const miniBtn: React.CSSProperties = {
   padding: "3px 8px",
   fontSize: 11,
   color: "#A89A85",
+  cursor: "pointer",
+  fontFamily: "'Inter', system-ui, sans-serif",
+};
+
+const secondaryBtn: React.CSSProperties = {
+  background: "transparent",
+  color: "#C9A961",
+  border: "1px solid rgba(201,169,97,0.5)",
+  borderRadius: 3,
+  padding: "8px 14px",
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: ".2em",
+  textTransform: "uppercase",
   cursor: "pointer",
   fontFamily: "'Inter', system-ui, sans-serif",
 };

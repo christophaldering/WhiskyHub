@@ -695,6 +695,10 @@ export interface IStorage {
   listStoryVersions(sourceType: string, sourceId: string, opts?: { limit?: number; isAuto?: boolean }): Promise<StoryVersion[]>;
   getStoryVersion(id: string): Promise<StoryVersion | undefined>;
   pruneOldAutoStoryVersions(sourceType: string, sourceId: string, keep: number): Promise<number>;
+  upsertAutoStoryVersion(
+    data: InsertStoryVersion,
+    opts?: { cooldownMs?: number; keepN?: number },
+  ): Promise<{ row: StoryVersion; mode: "insert" | "update" }>;
   // Storybuilder Templates (Phase 3)
   listStoryTemplates(opts?: { ownerId?: string | null; scope?: "user" | "global" }): Promise<StoryTemplate[]>;
   getStoryTemplate(id: string): Promise<StoryTemplate | undefined>;
@@ -3713,6 +3717,42 @@ export class DatabaseStorage implements IStorage {
     if (toRemove.length === 0) return 0;
     await db.delete(storyVersions).where(inArray(storyVersions.id, toRemove));
     return toRemove.length;
+  }
+
+  async upsertAutoStoryVersion(
+    data: InsertStoryVersion,
+    opts?: { cooldownMs?: number; keepN?: number },
+  ): Promise<{ row: StoryVersion; mode: "insert" | "update" }> {
+    const cooldownMs = Math.max(0, opts?.cooldownMs ?? 300000);
+    const keepN = Math.max(1, opts?.keepN ?? 20);
+    const [latestAuto] = await db
+      .select()
+      .from(storyVersions)
+      .where(and(
+        eq(storyVersions.sourceType, data.sourceType),
+        eq(storyVersions.sourceId, data.sourceId),
+        eq(storyVersions.isAuto, true),
+      ))
+      .orderBy(desc(storyVersions.createdAt))
+      .limit(1);
+    if (latestAuto) {
+      const ageMs = Date.now() - new Date(latestAuto.createdAt).getTime();
+      if (ageMs < cooldownMs) {
+        const [updated] = await db
+          .update(storyVersions)
+          .set({ blocksJson: data.blocksJson, createdById: data.createdById ?? latestAuto.createdById })
+          .where(eq(storyVersions.id, latestAuto.id))
+          .returning();
+        return { row: updated, mode: "update" };
+      }
+    }
+    const [inserted] = await db.insert(storyVersions).values({ ...data, isAuto: true }).returning();
+    try {
+      await this.pruneOldAutoStoryVersions(data.sourceType, data.sourceId, keepN);
+    } catch (pruneErr: unknown) {
+      console.warn("[storyVersions/prune] failed:", pruneErr);
+    }
+    return { row: inserted, mode: "insert" };
   }
 
   async listStoryTemplates(opts?: { ownerId?: string | null; scope?: "user" | "global" }): Promise<StoryTemplate[]> {

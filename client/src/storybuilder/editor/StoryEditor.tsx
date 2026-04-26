@@ -18,7 +18,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { BlockType, RendererMode, StoryBlock, StoryDocument } from "../core/types";
-import { createBlock, getBlockDefinition, listBlockDefinitions, validatePayload } from "../blocks";
+import { createBlock, getBlockDefinition, listBlockDefinitions, listBlocksForConsumerScope, validatePayload } from "../blocks";
+import type { StoryPersistenceAdapter } from "../core/adapter";
 import { getTheme } from "../themes";
 import { StoryRenderer } from "../renderer/StoryRenderer";
 import { VersionDrawer } from "./VersionDrawer";
@@ -43,6 +44,7 @@ type Props = {
   sourceContext?: StoryEditorSourceContext;
   isAdmin?: boolean;
   paletteCategories?: Array<"generic" | "tasting" | "landing">;
+  adapter?: StoryPersistenceAdapter;
   onRegenerateBlock?: (
     blockId: string,
     blockType: string,
@@ -76,7 +78,7 @@ function redoHistory(state: HistoryState): HistoryState {
   return { past: [...state.past, state.present].slice(-HISTORY_LIMIT), present: next, future: rest };
 }
 
-export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapshot, sourceContext, isAdmin, paletteCategories, onRegenerateBlock, onRegenerateStory }: Props) {
+export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapshot, sourceContext, isAdmin, paletteCategories, adapter, onRegenerateBlock, onRegenerateStory }: Props) {
   const [history, setHistory] = useState<HistoryState>({ past: [], present: initialDocument, future: [] });
   const doc = history.present;
 
@@ -118,6 +120,9 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
   const theme = getTheme(doc.theme);
   const selectedBlock = useMemo(() => doc.blocks.find((b) => b.id === selectedId) ?? null, [doc.blocks, selectedId]);
   const palette = useMemo(() => {
+    if (adapter) {
+      return listBlocksForConsumerScope(adapter.consumerScope);
+    }
     const categories: Array<"generic" | "tasting" | "landing"> =
       paletteCategories && paletteCategories.length > 0 ? paletteCategories : ["generic"];
     const seen = new Set<string>();
@@ -130,7 +135,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
       }
     }
     return result;
-  }, [paletteCategories]);
+  }, [paletteCategories, adapter]);
 
   const update = useCallback(
     (next: StoryDocument) => {
@@ -776,6 +781,8 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
           sourceId={sourceContext.sourceId}
           currentTheme={doc.theme}
           onRestored={handleVersionRestored}
+          currentBlocks={doc.blocks}
+          adapter={adapter}
         />
       ) : null}
       {sourceContext && templateMode ? (
