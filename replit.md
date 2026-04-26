@@ -1,5 +1,14 @@
 # CaskSense - Whisky Tasting Application
 
+## Checkpoint: "Live-Präsentation Story-Look" (26.04.2026)
+Task #1041: Die Live-Präsentation (Labs → „Präsentieren", `client/src/labs/pages/LabsResultsPresent.tsx`) übernimmt jetzt die elegante CaskSense-Story-Optik (Playfair Display, Cream `#f0ebe3`, Gold `#c8a97e`).
+- **Design-Tokens** als `STORY`-Konstante im Modul: cream/creamSecondary/creamMuted für Text-Hierarchie, gold/goldDark/goldBorder/goldTint für Akzente, plus `bodyFont` und Letter-Spacing-Defaults.
+- **Atmosphären-Layer**: Wiederverwendbarer `<StoryGlowBackdrop>` (radialer goldener Glow) auf jeder Slide für die ruhige Story-Ambiance.
+- **Cover-Backdrop-Lesbarkeit**: Cover-Bild auf Title-Slide jetzt `backdropOpacity 0.22` + dunklem Scrim 0.55 + radialer Vignette → cream/gold-Text bleibt überall WCAG-AA-tauglich.
+- **Slide-Komponenten**: `CinematicTitleSlide`, `LineupSlide`, `TastersSlide`, `FunStatsSlide`, `TransitionSlide`, `WhiskySlide`, `WinnerRevealSlide`, `PodiumSlide`, `OutroSlide` — alle nutzen `labs-serif` (Playfair) für Display-Typo, Gold für Caps-Eyebrows/Zahlen-Highlights, cream/creamSecondary für Body. Glow-Pulse beim Sieger jetzt golden statt gelb.
+- **Chrome**: Top-Bar (LIVE-Indikator, Akt-Label, Slide-Counter, Exit/Fullscreen) + Prev/Next-Pfeile + Dots in goldenem Tint mit Cream-Text statt grauem White-Alpha.
+- **Out of Scope blieb**: Slide-Reihenfolge/-Inhalte, Sync-Logik, Host-Cockpit, Story-Landing-Page selbst, Teilnehmer-View `LabsLive.tsx`.
+
 ## Checkpoint: "Story-Editor geklärt" (26.04.2026)
 Task #1039: Klare Definition zu Funktion, Zugriff und Zweck des Story-Editors (CMS Story-Builder). Volle Doku in `docs/STORY_EDITOR.md`.
 - **Was er ist**: Block-basiertes CMS unter `/admin/cms` (Dashboard), `/admin/cms/:id` (Editor), `/admin/cms/:id/preview` (Vorschau). Baut auf der Storybuilder-Bibliothek auf. **Hinweis**: Die in älteren Notizen genannten Pfade `/admin/cms-editor/:slug` und `/admin/cms-preview/:slug` existieren nicht — die echten Routen verwenden die UUID `:id`.

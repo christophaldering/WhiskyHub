@@ -23,6 +23,40 @@ interface LabsResultsPresentProps {
 const MEDAL_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32"];
 const MEDAL_LABELS_KEYS = ["resultsUi.gold", "resultsUi.silver", "resultsUi.bronze"];
 
+// Story-look design tokens — mirrored from the CaskSense Story landing page
+// (client/src/pages/guided-presentation.tsx + landing-v2.tsx) so the live
+// presentation feels like a continuation of that visual world.
+const STORY = {
+  bg: "#1a1714",            // warm dark backdrop
+  cream: "#f0ebe3",         // primary text (display + body)
+  creamSecondary: "#cbbba3",// secondary text — body lines, captions
+  creamMuted: "#9d8e7c",    // tertiary / disclaimer-grade text
+  gold: "#c8a97e",          // primary accent
+  goldDark: "#a8834a",
+  goldBorder: "rgba(200,169,126,0.22)",
+  goldBorderStrong: "rgba(200,169,126,0.4)",
+  goldGlowSoft: "rgba(200,169,126,0.10)",
+  goldTint: "rgba(200,169,126,0.06)",
+  goldTintStrong: "rgba(200,169,126,0.10)",
+  bodyFont: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+  capsLetterSpacing: "0.1em",
+  displayLetterSpacing: "-0.02em",
+};
+
+// A reusable radial gold glow background used on Title / Winner slides
+// to evoke the same warm atmosphere as the story landing page.
+function StoryGlowBackdrop({ intensity = 1 }: { intensity?: number }) {
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none",
+        background: `radial-gradient(ellipse 70% 55% at 50% 45%, rgba(200,169,126,${0.10 * intensity}) 0%, transparent 70%)`,
+      }}
+    />
+  );
+}
+
 const slideVariants = {
   enter: (direction: number) => ({
     x: direction > 0 ? 200 : -200,
@@ -69,17 +103,17 @@ function DimBar({ label, value, maxScore, delay }: { label: string; value: numbe
   const pct = value != null ? Math.min((value / maxScore) * 100, 100) : 0;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 10 }}>
-      <span style={{ width: 56, fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.75)", textAlign: "right", letterSpacing: "0.02em" }}>{label}</span>
-      <div style={{ flex: 1, height: 6, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+      <span style={{ width: 56, fontSize: 12, fontWeight: 600, color: STORY.gold, textAlign: "right", letterSpacing: STORY.capsLetterSpacing, textTransform: "uppercase", fontFamily: STORY.bodyFont }}>{label}</span>
+      <div style={{ flex: 1, height: 6, borderRadius: 3, background: "rgba(255,255,255,0.05)", overflow: "hidden", border: `1px solid ${STORY.goldBorder}` }}>
         <div style={{
           height: "100%",
           width: animated ? `${pct}%` : "0%",
-          background: "linear-gradient(90deg, var(--labs-accent), #e8c878)",
+          background: `linear-gradient(90deg, ${STORY.gold}, #e8c878)`,
           borderRadius: 3,
           transition: "width 1000ms cubic-bezier(0.25, 0.46, 0.45, 0.94)",
         }} />
       </div>
-      <span style={{ width: 38, fontSize: 14, fontWeight: 700, color: "var(--labs-text)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+      <span style={{ width: 38, fontSize: 14, fontWeight: 700, color: STORY.cream, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
         {value != null ? formatScore(value) : "—"}
       </span>
     </div>
@@ -89,10 +123,10 @@ function DimBar({ label, value, maxScore, delay }: { label: string; value: numbe
 function GlassCard({ children, accent, style }: { children: React.ReactNode; accent?: boolean; style?: React.CSSProperties }) {
   return (
     <div style={{
-      background: accent ? "rgba(212,162,86,0.08)" : "rgba(255,255,255,0.08)",
-      border: accent ? "1px solid rgba(212,162,86,0.25)" : "1px solid rgba(255,255,255,0.1)",
+      background: accent ? STORY.goldTintStrong : STORY.goldTint,
+      border: `1px solid ${accent ? STORY.goldBorderStrong : STORY.goldBorder}`,
       borderRadius: 20,
-      backdropFilter: "blur(12px)",
+      backdropFilter: "blur(8px)",
       ...style,
     }}>
       {children}
@@ -102,9 +136,9 @@ function GlassCard({ children, accent, style }: { children: React.ReactNode; acc
 
 function SectionLabel({ children, icon }: { children: React.ReactNode; icon?: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-      {icon && <span style={{ color: "var(--labs-accent)", display: "flex" }}>{icon}</span>}
-      <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.75)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{children}</span>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, justifyContent: "center" }}>
+      {icon && <span style={{ color: STORY.gold, display: "flex" }}>{icon}</span>}
+      <span style={{ fontSize: 11, fontWeight: 600, color: STORY.gold, letterSpacing: STORY.capsLetterSpacing, textTransform: "uppercase", fontFamily: STORY.bodyFont }}>{children}</span>
     </div>
   );
 }
@@ -118,26 +152,33 @@ function CinematicTitleSlide({ tasting, whiskyCount, participantCount, totalRati
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", padding: "40px 24px", position: "relative", overflow: "hidden" }}>
       {hasCover && (
         <>
-          <CoverImage16x9 src={tasting.coverImageUrl} asBackdrop backdropOpacity={0.35} testId="present-title-cover-bg" />
-          <div style={{ position: "absolute", inset: 0, zIndex: 1, background: "rgba(0,0,0,0.45)" }} />
+          {/* Cover backdrop, dimmed, with a layered vignette + dark scrim so cream
+              text and gold accents stay above WCAG-AA contrast on any cover image. */}
+          <CoverImage16x9 src={tasting.coverImageUrl} asBackdrop backdropOpacity={0.22} testId="present-title-cover-bg" />
+          <div style={{ position: "absolute", inset: 0, zIndex: 1, background: "rgba(0,0,0,0.55)" }} />
+          <div style={{
+            position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",
+            background: "radial-gradient(ellipse 80% 60% at 50% 50%, transparent 35%, rgba(0,0,0,0.55) 100%)",
+          }} />
         </>
       )}
+      <StoryGlowBackdrop intensity={1.2} />
       <div style={{ position: "relative", zIndex: 2 }}>
         <motion.div initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1, type: "spring", stiffness: 200 }}>
           <div style={{
             width: 72, height: 72, borderRadius: 20, margin: "0 auto 28px",
-            background: "linear-gradient(135deg, rgba(212,162,86,0.15), rgba(212,162,86,0.05))",
-            border: "1px solid rgba(212,162,86,0.25)",
+            background: `linear-gradient(135deg, ${STORY.goldTintStrong}, ${STORY.goldTint})`,
+            border: `1px solid ${STORY.goldBorderStrong}`,
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
-            <Wine style={{ width: 32, height: 32, color: "var(--labs-accent)" }} />
+            <Wine style={{ width: 32, height: 32, color: STORY.gold }} />
           </div>
         </motion.div>
 
         <motion.h1
           initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.7 }}
           className="labs-serif"
-          style={{ fontSize: "clamp(30px, 5vw, 60px)", fontWeight: 700, color: "var(--labs-text)", marginBottom: 12, lineHeight: 1.05, maxWidth: 900 }}
+          style={{ fontSize: "clamp(30px, 5vw, 60px)", fontWeight: 500, color: STORY.cream, marginBottom: 12, lineHeight: 1.05, maxWidth: 900, letterSpacing: STORY.displayLetterSpacing }}
           data-testid="present-title"
         >
           {tasting.title || t("m2.results.tastingResults")}
@@ -148,13 +189,13 @@ function CinematicTitleSlide({ tasting, whiskyCount, participantCount, totalRati
           style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, marginBottom: 40, flexWrap: "wrap" }}
         >
           {tasting.date && (
-            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 15, color: "rgba(255,255,255,0.75)" }}>
-              <Calendar style={{ width: 14, height: 14 }} /> {tasting.date}
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 15, color: STORY.creamSecondary, fontFamily: STORY.bodyFont }}>
+              <Calendar style={{ width: 14, height: 14, color: STORY.gold }} /> {tasting.date}
             </span>
           )}
           {tasting.location && (
-            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 15, color: "rgba(255,255,255,0.75)" }}>
-              <MapPin style={{ width: 14, height: 14 }} /> {tasting.location}
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 15, color: STORY.creamSecondary, fontFamily: STORY.bodyFont }}>
+              <MapPin style={{ width: 14, height: 14, color: STORY.gold }} /> {tasting.location}
             </span>
           )}
         </motion.div>
@@ -168,12 +209,12 @@ function CinematicTitleSlide({ tasting, whiskyCount, participantCount, totalRati
             { icon: <Users style={{ width: 18, height: 18 }} />, value: participantCount, label: t("resultsUi.tasters") },
             { icon: <Star style={{ width: 18, height: 18 }} />, value: totalRatings, label: t("resultsUi.ratings") },
           ].map((s, i) => (
-            <GlassCard key={i} style={{ padding: "16px 28px", textAlign: "center" }}>
-              <div style={{ color: "var(--labs-accent)", marginBottom: 6, display: "flex", justifyContent: "center" }}>{s.icon}</div>
-              <div style={{ fontSize: 32, fontWeight: 700, color: "var(--labs-text)", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>
+            <GlassCard key={i} accent style={{ padding: "16px 28px", textAlign: "center" }}>
+              <div style={{ color: STORY.gold, marginBottom: 6, display: "flex", justifyContent: "center" }}>{s.icon}</div>
+              <div className="labs-serif" style={{ fontSize: 32, fontWeight: 500, color: STORY.cream, fontVariantNumeric: "tabular-nums", lineHeight: 1, letterSpacing: STORY.displayLetterSpacing }}>
                 <AnimatedCounter value={s.value} delay={700 + i * 200} />
               </div>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>{s.label}</div>
+              <div style={{ fontSize: 11, color: STORY.gold, marginTop: 6, textTransform: "uppercase", letterSpacing: STORY.capsLetterSpacing, fontWeight: 600, fontFamily: STORY.bodyFont }}>{s.label}</div>
             </GlassCard>
           ))}
         </motion.div>
@@ -185,15 +226,16 @@ function CinematicTitleSlide({ tasting, whiskyCount, participantCount, totalRati
 function LineupSlide({ whiskies, blindMode }: { whiskies: any[]; blindMode: boolean }) {
   const { t } = useTranslation();
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "40px 24px" }}>
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "40px 24px", position: "relative" }}>
+      <StoryGlowBackdrop intensity={0.6} />
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
         <SectionLabel icon={<Wine style={{ width: 14, height: 14 }} />}>{t("m2.results.tonightsLineup")}</SectionLabel>
-        <h2 className="labs-serif" style={{ fontSize: "clamp(24px, 4vw, 42px)", fontWeight: 700, color: "var(--labs-text)", margin: "4px 0 32px", textAlign: "center" }}>
+        <h2 className="labs-serif" style={{ fontSize: "clamp(24px, 4vw, 42px)", fontWeight: 500, color: STORY.cream, margin: "4px 0 32px", textAlign: "center", letterSpacing: STORY.displayLetterSpacing }}>
           {whiskies.length} {whiskies.length === 1 ? t("m2.results.whiskyTasted") : t("m2.results.whiskiesTasted")}
         </h2>
       </motion.div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 16, justifyContent: "center", maxWidth: 900 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 16, justifyContent: "center", maxWidth: 900, position: "relative", zIndex: 1 }}>
         {whiskies.map((w: any, i: number) => (
           <motion.div
             key={w.id}
@@ -205,11 +247,11 @@ function LineupSlide({ whiskies, blindMode }: { whiskies: any[]; blindMode: bool
               <div style={{ marginBottom: 8, display: "flex", justifyContent: "center" }}>
                 <WhiskyImage imageUrl={w.imageUrl} name={w.name || "?"} size={60} height={70} whiskyId={w.id} />
               </div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <div className="labs-serif" style={{ fontSize: 13, fontWeight: 500, color: STORY.cream, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {blindMode ? `Dram ${String.fromCharCode(65 + i)}` : (w.name || `#${i + 1}`)}
               </div>
               {!blindMode && w.distillery && (
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{w.distillery}</div>
+                <div style={{ fontSize: 11, color: STORY.creamSecondary, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontFamily: STORY.bodyFont }}>{w.distillery}</div>
               )}
             </GlassCard>
           </motion.div>
@@ -223,15 +265,16 @@ function TastersSlide({ participants, totalRatings, whiskyCount }: { participant
   const { t } = useTranslation();
   const names = participants.map((p: any) => stripGuestSuffix(p.participant?.name || p.participant?.email || p.name || p.email || "Anonymous"));
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "40px 24px" }}>
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "40px 24px", position: "relative" }}>
+      <StoryGlowBackdrop intensity={0.5} />
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
         <SectionLabel icon={<Users style={{ width: 14, height: 14 }} />}>{t("m2.results.theTasters")}</SectionLabel>
-        <h2 className="labs-serif" style={{ fontSize: "clamp(24px, 4vw, 42px)", fontWeight: 700, color: "var(--labs-text)", margin: "4px 0 32px", textAlign: "center" }}>
+        <h2 className="labs-serif" style={{ fontSize: "clamp(24px, 4vw, 42px)", fontWeight: 500, color: STORY.cream, margin: "4px 0 32px", textAlign: "center", letterSpacing: STORY.displayLetterSpacing }}>
           {names.length} {t("m2.results.palatesOneMission")}
         </h2>
       </motion.div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", maxWidth: 700, marginBottom: 36 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", maxWidth: 700, marginBottom: 36, position: "relative", zIndex: 1 }}>
         {names.map((name, i) => (
           <motion.div
             key={i}
@@ -242,12 +285,12 @@ function TastersSlide({ participants, totalRatings, whiskyCount }: { participant
             <GlassCard accent style={{ padding: "8px 20px", display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{
                 width: 26, height: 26, borderRadius: 13, display: "flex", alignItems: "center", justifyContent: "center",
-                background: "linear-gradient(135deg, var(--labs-accent), #e8c878)",
-                color: "var(--labs-bg)", fontSize: 11, fontWeight: 700,
+                background: `linear-gradient(135deg, ${STORY.gold}, #e8c878)`,
+                color: STORY.bg, fontSize: 11, fontWeight: 700,
               }}>
                 {name.charAt(0).toUpperCase()}
               </div>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>{name}</span>
+              <span style={{ fontSize: 13, fontWeight: 500, color: STORY.cream, fontFamily: STORY.bodyFont }}>{name}</span>
             </GlassCard>
           </motion.div>
         ))}
@@ -255,22 +298,18 @@ function TastersSlide({ participants, totalRatings, whiskyCount }: { participant
 
       <motion.div
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 + names.length * 0.02 }}
-        style={{ display: "flex", gap: 32, justifyContent: "center", flexWrap: "wrap" }}
+        style={{ display: "flex", gap: 32, justifyContent: "center", flexWrap: "wrap", position: "relative", zIndex: 1 }}
       >
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>{totalRatings}</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("m2.results.ratingsGiven")}</div>
-        </div>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>{whiskyCount}</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("m2.results.whiskiesExplored")}</div>
-        </div>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 28, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>
-            {names.length > 0 ? formatScore(Math.round(totalRatings / names.length * 10) / 10) : 0}
+        {[
+          { value: totalRatings, label: t("m2.results.ratingsGiven") },
+          { value: whiskyCount, label: t("m2.results.whiskiesExplored") },
+          { value: names.length > 0 ? formatScore(Math.round(totalRatings / names.length * 10) / 10) : 0, label: t("m2.results.avgPerTaster") },
+        ].map((s, i) => (
+          <div key={i} style={{ textAlign: "center" }}>
+            <div className="labs-serif" style={{ fontSize: 32, fontWeight: 500, color: STORY.gold, fontVariantNumeric: "tabular-nums", letterSpacing: STORY.displayLetterSpacing }}>{s.value}</div>
+            <div style={{ fontSize: 11, color: STORY.creamSecondary, textTransform: "uppercase", letterSpacing: STORY.capsLetterSpacing, marginTop: 4, fontFamily: STORY.bodyFont, fontWeight: 600 }}>{s.label}</div>
           </div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("m2.results.avgPerTaster")}</div>
-        </div>
+        ))}
       </motion.div>
     </div>
   );
@@ -279,15 +318,16 @@ function TastersSlide({ participants, totalRatings, whiskyCount }: { participant
 function FunStatsSlide({ stats }: { stats: Array<{ icon: React.ReactNode; label: string; value: string; sub?: string }> }) {
   const { t } = useTranslation();
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "40px 24px" }}>
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "40px 24px", position: "relative" }}>
+      <StoryGlowBackdrop intensity={0.5} />
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
         <SectionLabel icon={<Sparkles style={{ width: 14, height: 14 }} />}>{t("m2.results.highlights")}</SectionLabel>
-        <h2 className="labs-serif" style={{ fontSize: "clamp(24px, 4vw, 42px)", fontWeight: 700, color: "var(--labs-text)", margin: "4px 0 36px", textAlign: "center" }}>
+        <h2 className="labs-serif" style={{ fontSize: "clamp(24px, 4vw, 42px)", fontWeight: 500, color: STORY.cream, margin: "4px 0 36px", textAlign: "center", letterSpacing: STORY.displayLetterSpacing }}>
           {t("m2.results.byTheNumbers")}
         </h2>
       </motion.div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, maxWidth: 700, width: "100%" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, maxWidth: 700, width: "100%", position: "relative", zIndex: 1 }}>
         {stats.map((stat, i) => (
           <motion.div
             key={i}
@@ -297,11 +337,11 @@ function FunStatsSlide({ stats }: { stats: Array<{ icon: React.ReactNode; label:
           >
             <GlassCard accent style={{ padding: "20px 24px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                <span style={{ color: "var(--labs-accent)", display: "flex" }}>{stat.icon}</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.75)", letterSpacing: "0.06em", textTransform: "uppercase" }}>{stat.label}</span>
+                <span style={{ color: STORY.gold, display: "flex" }}>{stat.icon}</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: STORY.gold, letterSpacing: STORY.capsLetterSpacing, textTransform: "uppercase", fontFamily: STORY.bodyFont }}>{stat.label}</span>
               </div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-text)", lineHeight: 1.2 }}>{stat.value}</div>
-              {stat.sub && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 4 }}>{stat.sub}</div>}
+              <div className="labs-serif" style={{ fontSize: 20, fontWeight: 500, color: STORY.cream, lineHeight: 1.2, letterSpacing: STORY.displayLetterSpacing }}>{stat.value}</div>
+              {stat.sub && <div style={{ fontSize: 12, color: STORY.creamSecondary, marginTop: 6, fontFamily: STORY.bodyFont }}>{stat.sub}</div>}
             </GlassCard>
           </motion.div>
         ))}
@@ -312,30 +352,33 @@ function FunStatsSlide({ stats }: { stats: Array<{ icon: React.ReactNode; label:
 
 function TransitionSlide({ title, subtitle, icon }: { title: string; subtitle?: string; icon: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", padding: "40px 24px" }}>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.7 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.1, type: "spring", stiffness: 150 }}
-        style={{ marginBottom: 24, color: "var(--labs-accent)" }}
-      >
-        {icon}
-      </motion.div>
-      <motion.h2
-        initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.6 }}
-        className="labs-serif"
-        style={{ fontSize: "clamp(28px, 5vw, 56px)", fontWeight: 700, color: "var(--labs-text)", lineHeight: 1.05, maxWidth: 700 }}
-      >
-        {title}
-      </motion.h2>
-      {subtitle && (
-        <motion.p
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
-          style={{ fontSize: "clamp(14px, 2vw, 20px)", color: "rgba(255,255,255,0.75)", marginTop: 12, maxWidth: 500 }}
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", padding: "40px 24px", position: "relative" }}>
+      <StoryGlowBackdrop intensity={0.7} />
+      <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.7 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1, type: "spring", stiffness: 150 }}
+          style={{ marginBottom: 24, color: STORY.gold }}
         >
-          {subtitle}
-        </motion.p>
-      )}
+          {icon}
+        </motion.div>
+        <motion.h2
+          initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.6 }}
+          className="labs-serif"
+          style={{ fontSize: "clamp(28px, 5vw, 56px)", fontWeight: 500, color: STORY.cream, lineHeight: 1.05, maxWidth: 700, letterSpacing: STORY.displayLetterSpacing }}
+        >
+          {title}
+        </motion.h2>
+        {subtitle && (
+          <motion.p
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
+            style={{ fontSize: "clamp(14px, 2vw, 20px)", color: STORY.creamSecondary, marginTop: 12, maxWidth: 500, fontFamily: STORY.bodyFont, lineHeight: 1.6 }}
+          >
+            {subtitle}
+          </motion.p>
+        )}
+      </div>
     </div>
   );
 }
@@ -352,8 +395,9 @@ function WhiskySlide({ whisky, rank, totalWhiskies, maxScore }: {
   const details = [whisky.region, whisky.country, whisky.age ? `${whisky.age}y` : null, whisky.abv ? `${whisky.abv}%` : null, whisky.category, whisky.caskType].filter(Boolean);
 
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", padding: "32px 24px" }}>
-      <div style={{ display: "flex", gap: "clamp(24px, 4vw, 60px)", alignItems: "center", maxWidth: 900, width: "100%", flexWrap: "wrap", justifyContent: "center" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", padding: "32px 24px", position: "relative" }}>
+      <StoryGlowBackdrop intensity={0.5} />
+      <div style={{ display: "flex", gap: "clamp(24px, 4vw, 60px)", alignItems: "center", maxWidth: 900, width: "100%", flexWrap: "wrap", justifyContent: "center", position: "relative", zIndex: 1 }}>
         <motion.div
           initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
           style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}
@@ -385,32 +429,32 @@ function WhiskySlide({ whisky, rank, totalWhiskies, maxScore }: {
           initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}
           style={{ flex: 1, minWidth: 0 }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.75)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: STORY.gold, letterSpacing: STORY.capsLetterSpacing, textTransform: "uppercase", fontFamily: STORY.bodyFont }}>
               #{rank} {t("ui.of")} {totalWhiskies}
             </span>
             {isConsensus && (
-              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-success)", background: "var(--labs-success-muted)", padding: "2px 8px", borderRadius: 6, display: "flex", alignItems: "center", gap: 3 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-success)", background: "var(--labs-success-muted)", padding: "2px 8px", borderRadius: 6, display: "flex", alignItems: "center", gap: 3, fontFamily: STORY.bodyFont }}>
                 <Target style={{ width: 10, height: 10 }} /> {t("resultsUi.consensus")}
               </span>
             )}
             {isDebated && (
-              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-danger)", background: "rgba(239,68,68,0.1)", padding: "2px 8px", borderRadius: 6, display: "flex", alignItems: "center", gap: 3 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-danger)", background: "rgba(239,68,68,0.1)", padding: "2px 8px", borderRadius: 6, display: "flex", alignItems: "center", gap: 3, fontFamily: STORY.bodyFont }}>
                 <MessageCircle style={{ width: 10, height: 10 }} /> {t("resultsUi.debated")}
               </span>
             )}
           </div>
 
-          <h2 className="labs-serif" style={{ fontSize: "clamp(22px, 3.5vw, 38px)", fontWeight: 700, color: "var(--labs-text)", lineHeight: 1.1, marginBottom: 4 }} data-testid={`present-whisky-name-${rank}`}>
+          <h2 className="labs-serif" style={{ fontSize: "clamp(22px, 3.5vw, 38px)", fontWeight: 500, color: STORY.cream, lineHeight: 1.1, marginBottom: 4, letterSpacing: STORY.displayLetterSpacing }} data-testid={`present-whisky-name-${rank}`}>
             {whisky.name || "Unknown"}
           </h2>
 
           {whisky.distillery && (
-            <p style={{ fontSize: 15, color: "rgba(255,255,255,0.75)", marginBottom: 4 }}>{whisky.distillery}</p>
+            <p style={{ fontSize: 15, color: STORY.creamSecondary, marginBottom: 4, fontFamily: STORY.bodyFont }}>{whisky.distillery}</p>
           )}
 
           {details.length > 0 && (
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", marginBottom: 16 }}>
+            <p style={{ fontSize: 12, color: STORY.creamMuted, marginBottom: 16, fontFamily: STORY.bodyFont, letterSpacing: "0.02em" }}>
               {details.join(" · ")}
             </p>
           )}
@@ -418,11 +462,11 @@ function WhiskySlide({ whisky, rank, totalWhiskies, maxScore }: {
           {(whisky.hostNotes || whisky.hostSummary) && (
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
-              style={{ padding: "10px 14px", borderRadius: 12, background: "rgba(212,162,86,0.08)", border: "1px solid rgba(212,162,86,0.2)", marginBottom: 16 }}
+              style={{ padding: "12px 16px", borderRadius: 12, background: STORY.goldTint, border: `1px solid ${STORY.goldBorder}`, marginBottom: 16 }}
             >
               <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-                <Quote style={{ width: 14, height: 14, color: "var(--labs-accent)", flexShrink: 0, marginTop: 2 }} />
-                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", lineHeight: 1.5, fontStyle: "italic", margin: 0 }}>
+                <Quote style={{ width: 14, height: 14, color: STORY.gold, flexShrink: 0, marginTop: 2 }} />
+                <p className="labs-serif" style={{ fontSize: 13, color: STORY.cream, lineHeight: 1.55, fontStyle: "italic", margin: 0, fontWeight: 400 }}>
                   {(whisky.hostSummary || whisky.hostNotes || "").slice(0, 200)}
                   {((whisky.hostSummary || whisky.hostNotes || "").length > 200) ? "…" : ""}
                 </p>
@@ -441,8 +485,8 @@ function WhiskySlide({ whisky, rank, totalWhiskies, maxScore }: {
             </div>
           </div>
 
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", display: "flex", alignItems: "center", gap: 4 }}>
-            <Users style={{ width: 11, height: 11 }} /> {whisky.ratingCount} {whisky.ratingCount === 1 ? t("resultsUi.rating") : t("resultsUi.ratings")}
+          <div style={{ fontSize: 12, color: STORY.creamSecondary, display: "flex", alignItems: "center", gap: 4, fontFamily: STORY.bodyFont }}>
+            <Users style={{ width: 11, height: 11, color: STORY.gold }} /> {whisky.ratingCount} {whisky.ratingCount === 1 ? t("resultsUi.rating") : t("resultsUi.ratings")}
           </div>
         </motion.div>
       </div>
@@ -460,70 +504,74 @@ function WinnerRevealSlide({ whisky, maxScore }: { whisky: any; maxScore: number
           100% { background-position: 200% center; }
         }
         @keyframes glow-pulse {
-          0%, 100% { box-shadow: 0 0 40px rgba(255,215,0,0.15); }
-          50% { box-shadow: 0 0 80px rgba(255,215,0,0.3); }
+          0%, 100% { box-shadow: 0 0 50px rgba(200,169,126,0.18); }
+          50% { box-shadow: 0 0 90px rgba(200,169,126,0.35); }
         }
-        .winner-ring { animation: glow-pulse 3s ease-in-out infinite; }
-        .winner-title {
-          background: linear-gradient(90deg, var(--labs-accent), #e8c878, var(--labs-accent));
+        .winner-ring { animation: glow-pulse 3.4s ease-in-out infinite; }
+        .winner-title-story {
+          background: linear-gradient(90deg, ${STORY.gold}, #e8c878, ${STORY.gold});
           background-size: 200% auto;
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
-          animation: shimmer 3s linear infinite;
+          animation: shimmer 4s linear infinite;
         }
       `}</style>
 
-      <motion.div
-        initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.1, type: "spring", stiffness: 120 }}
-        style={{ marginBottom: 8 }}
-      >
-        <div style={{
-          width: 52, height: 52, borderRadius: 26, display: "flex", alignItems: "center", justifyContent: "center",
-          background: MEDAL_COLORS[0], color: "#78350f", fontSize: 20, fontWeight: 800,
-          boxShadow: `0 0 30px ${MEDAL_COLORS[0]}66`,
-        }}>
-          <Trophy style={{ width: 24, height: 24 }} />
-        </div>
-      </motion.div>
+      <StoryGlowBackdrop intensity={1.4} />
 
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
-        <SectionLabel>{t("m2.results.tonightsWinner")}</SectionLabel>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.6 }}
-        style={{ marginBottom: 16 }}
-      >
-        <WhiskyImage imageUrl={whisky.imageUrl} name={whisky.name || "?"} size={150} height={180} whiskyId={whisky.id} />
-      </motion.div>
-
-      <motion.h2
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7, duration: 0.5 }}
-        className="labs-serif winner-title"
-        style={{ fontSize: "clamp(28px, 5vw, 52px)", fontWeight: 700, textAlign: "center", marginBottom: 8, lineHeight: 1.1 }}
-      >
-        {whisky.name || "Unknown"}
-      </motion.h2>
-
-      {whisky.distillery && (
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }}
-          style={{ fontSize: 16, color: "rgba(255,255,255,0.75)", marginBottom: 20 }}
+      <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1, type: "spring", stiffness: 120 }}
+          style={{ marginBottom: 8 }}
         >
-          {whisky.distillery}
-        </motion.p>
-      )}
+          <div style={{
+            width: 52, height: 52, borderRadius: 26, display: "flex", alignItems: "center", justifyContent: "center",
+            background: MEDAL_COLORS[0], color: "#78350f", fontSize: 20, fontWeight: 800,
+            boxShadow: `0 0 30px ${MEDAL_COLORS[0]}66`,
+          }}>
+            <Trophy style={{ width: 24, height: 24 }} />
+          </div>
+        </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 1.1, type: "spring", stiffness: 150 }}
-        className="winner-ring"
-        style={{ borderRadius: "50%" }}
-      >
-        <LabsScoreRing score={whisky.avgOverall ?? 0} maxScore={maxScore} size={130} strokeWidth={8} showValue />
-      </motion.div>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
+          <SectionLabel>{t("m2.results.tonightsWinner")}</SectionLabel>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.6 }}
+          style={{ marginBottom: 16 }}
+        >
+          <WhiskyImage imageUrl={whisky.imageUrl} name={whisky.name || "?"} size={150} height={180} whiskyId={whisky.id} />
+        </motion.div>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7, duration: 0.5 }}
+          className="labs-serif winner-title-story"
+          style={{ fontSize: "clamp(28px, 5vw, 52px)", fontWeight: 500, textAlign: "center", marginBottom: 8, lineHeight: 1.1, letterSpacing: STORY.displayLetterSpacing }}
+        >
+          {whisky.name || "Unknown"}
+        </motion.h2>
+
+        {whisky.distillery && (
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }}
+            style={{ fontSize: 16, color: STORY.creamSecondary, marginBottom: 20, fontFamily: STORY.bodyFont }}
+          >
+            {whisky.distillery}
+          </motion.p>
+        )}
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 1.1, type: "spring", stiffness: 150 }}
+          className="winner-ring"
+          style={{ borderRadius: "50%" }}
+        >
+          <LabsScoreRing score={whisky.avgOverall ?? 0} maxScore={maxScore} size={130} strokeWidth={8} showValue />
+        </motion.div>
+      </div>
     </div>
   );
 }
@@ -535,17 +583,18 @@ function PodiumSlide({ top3, maxScore }: { top3: any[]; maxScore: number }) {
   const displayOrder = top3.length >= 3 ? [1, 0, 2] : top3.map((_, i) => i);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "32px 24px" }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "32px 24px", position: "relative" }}>
+      <StoryGlowBackdrop intensity={0.9} />
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-        style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 36 }}
+        style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, marginBottom: 36, position: "relative", zIndex: 1 }}
       >
-        <Trophy style={{ width: 28, height: 28, color: "var(--labs-accent)" }} />
-        <h2 className="labs-serif" style={{ fontSize: "clamp(26px, 4vw, 44px)", fontWeight: 700, color: "var(--labs-text)", margin: 0 }}>
-          The Podium
+        <SectionLabel icon={<Trophy style={{ width: 14, height: 14 }} />}>The Podium</SectionLabel>
+        <h2 className="labs-serif" style={{ fontSize: "clamp(26px, 4vw, 44px)", fontWeight: 500, color: STORY.cream, margin: 0, letterSpacing: STORY.displayLetterSpacing }}>
+          Top Three
         </h2>
       </motion.div>
 
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: "clamp(12px, 3vw, 32px)", maxWidth: 750, width: "100%" }}>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: "clamp(12px, 3vw, 32px)", maxWidth: 750, width: "100%", position: "relative", zIndex: 1 }}>
         {podiumOrder.map((w, i) => {
           const actualRank = displayOrder[i];
           const h = podiumHeights[i] || 140;
@@ -560,13 +609,14 @@ function PodiumSlide({ top3, maxScore }: { top3: any[]; maxScore: number }) {
             >
               <WhiskyImage imageUrl={w.imageUrl} name={w.name || "?"} size={actualRank === 0 ? 90 : 70} height={actualRank === 0 ? 100 : 80} whiskyId={w.id} />
               <p className="labs-serif" style={{
-                fontSize: actualRank === 0 ? 16 : 14, fontWeight: 700, color: "var(--labs-text)",
+                fontSize: actualRank === 0 ? 17 : 14, fontWeight: 500, color: STORY.cream,
                 textAlign: "center", marginTop: 10, marginBottom: 4,
                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%",
+                letterSpacing: STORY.displayLetterSpacing,
               }}>
                 {w.name || "Unknown"}
               </p>
-              <span style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-accent)", marginBottom: 10, fontVariantNumeric: "tabular-nums" }}>
+              <span className="labs-serif" style={{ fontSize: 22, fontWeight: 500, color: STORY.gold, marginBottom: 10, fontVariantNumeric: "tabular-nums", letterSpacing: STORY.displayLetterSpacing }}>
                 {w.avgOverall != null ? formatScore(w.avgOverall) : "—"}
               </span>
               <div style={{
@@ -586,7 +636,7 @@ function PodiumSlide({ top3, maxScore }: { top3: any[]; maxScore: number }) {
                 }}>
                   {actualRank + 1}
                 </span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.75)", marginTop: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: STORY.gold, marginTop: 10, textTransform: "uppercase", letterSpacing: STORY.capsLetterSpacing, fontFamily: STORY.bodyFont }}>
                   {t(MEDAL_LABELS_KEYS[actualRank])}
                 </span>
               </div>
@@ -621,75 +671,80 @@ function OutroSlide({ tasting, tastingId }: { tasting: any; tastingId: string })
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", padding: "40px 24px" }}>
-      <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1, type: "spring" }}>
-        <div style={{
-          width: 80, height: 80, borderRadius: 24, margin: "0 auto 28px",
-          background: "linear-gradient(135deg, rgba(212,162,86,0.12), rgba(212,162,86,0.04))",
-          border: "1px solid rgba(212,162,86,0.2)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <Wine style={{ width: 36, height: 36, color: "var(--labs-accent)" }} />
-        </div>
-      </motion.div>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", padding: "40px 24px", position: "relative" }}>
+      <StoryGlowBackdrop intensity={1.0} />
+      <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1, type: "spring" }}>
+          <div style={{
+            width: 80, height: 80, borderRadius: 24, margin: "0 auto 28px",
+            background: `linear-gradient(135deg, ${STORY.goldTintStrong}, ${STORY.goldTint})`,
+            border: `1px solid ${STORY.goldBorderStrong}`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Wine style={{ width: 36, height: 36, color: STORY.gold }} />
+          </div>
+        </motion.div>
 
-      <motion.h2
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-        className="labs-serif"
-        style={{ fontSize: "clamp(30px, 5vw, 56px)", fontWeight: 700, color: "var(--labs-text)", marginBottom: 12 }}
-      >
-        Slàinte Mhath!
-      </motion.h2>
-
-      <motion.p
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-        style={{ fontSize: "clamp(14px, 2vw, 18px)", color: "rgba(255,255,255,0.75)", maxWidth: 450, lineHeight: 1.6, marginBottom: 36 }}
-      >
-        Thank you for sharing this tasting journey with us.
-      </motion.p>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
-        style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}
-      >
-        <button
-          onClick={() => handleDownload("csv")}
-          disabled={!!downloading}
-          style={{
-            display: "flex", alignItems: "center", gap: 8,
-            padding: "10px 24px", borderRadius: 12,
-            background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
-            color: "var(--labs-text)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-            opacity: downloading === "csv" ? 0.6 : 1,
-          }}
-          data-testid="present-download-csv"
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+          className="labs-serif"
+          style={{ fontSize: "clamp(30px, 5vw, 56px)", fontWeight: 500, color: STORY.cream, marginBottom: 12, letterSpacing: STORY.displayLetterSpacing }}
         >
-          {downloading === "csv" ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <Download style={{ width: 14, height: 14 }} />}
-          Download CSV
-        </button>
-        <button
-          onClick={() => handleDownload("xlsx")}
-          disabled={!!downloading}
-          style={{
-            display: "flex", alignItems: "center", gap: 8,
-            padding: "10px 24px", borderRadius: 12,
-            background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
-            color: "var(--labs-text)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-            opacity: downloading === "xlsx" ? 0.6 : 1,
-          }}
-          data-testid="present-download-xlsx"
-        >
-          {downloading === "xlsx" ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <Download style={{ width: 14, height: 14 }} />}
-          Download Excel
-        </button>
-      </motion.div>
+          Slàinte Mhath!
+        </motion.h2>
 
-      <motion.p
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
-        style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", marginTop: 32 }}
-      >
-        {tasting.title} · CaskSense Labs
-      </motion.p>
+        <motion.p
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+          style={{ fontSize: "clamp(14px, 2vw, 18px)", color: STORY.creamSecondary, maxWidth: 450, lineHeight: 1.6, marginBottom: 36, fontFamily: STORY.bodyFont }}
+        >
+          Thank you for sharing this tasting journey with us.
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
+          style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}
+        >
+          <button
+            onClick={() => handleDownload("csv")}
+            disabled={!!downloading}
+            style={{
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "10px 24px", borderRadius: 12,
+              background: STORY.goldTint, border: `1px solid ${STORY.goldBorder}`,
+              color: STORY.cream, fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: STORY.bodyFont,
+              opacity: downloading === "csv" ? 0.6 : 1,
+              letterSpacing: "0.02em",
+            }}
+            data-testid="present-download-csv"
+          >
+            {downloading === "csv" ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite", color: STORY.gold }} /> : <Download style={{ width: 14, height: 14, color: STORY.gold }} />}
+            Download CSV
+          </button>
+          <button
+            onClick={() => handleDownload("xlsx")}
+            disabled={!!downloading}
+            style={{
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "10px 24px", borderRadius: 12,
+              background: STORY.goldTint, border: `1px solid ${STORY.goldBorder}`,
+              color: STORY.cream, fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: STORY.bodyFont,
+              opacity: downloading === "xlsx" ? 0.6 : 1,
+              letterSpacing: "0.02em",
+            }}
+            data-testid="present-download-xlsx"
+          >
+            {downloading === "xlsx" ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite", color: STORY.gold }} /> : <Download style={{ width: 14, height: 14, color: STORY.gold }} />}
+            Download Excel
+          </button>
+        </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
+          style={{ fontSize: 11, color: STORY.gold, marginTop: 32, textTransform: "uppercase", letterSpacing: STORY.capsLetterSpacing, fontWeight: 600, fontFamily: STORY.bodyFont }}
+        >
+          {tasting.title} · CaskSense Labs
+        </motion.p>
+      </div>
     </div>
   );
 }
@@ -1019,8 +1074,8 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
             style={{
               display: "flex", alignItems: "center", gap: 6,
               padding: "6px 12px", borderRadius: 8,
-              background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)",
-              color: "rgba(255,255,255,0.75)", fontSize: 13, cursor: "pointer", fontFamily: "inherit",
+              background: STORY.goldTint, border: `1px solid ${STORY.goldBorder}`,
+              color: STORY.creamSecondary, fontSize: 13, cursor: "pointer", fontFamily: STORY.bodyFont,
               backdropFilter: "blur(8px)",
             }}
             data-testid="present-exit-btn"
@@ -1031,28 +1086,28 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
           <span style={{
             display: "flex", alignItems: "center", gap: 6,
             padding: "5px 12px", borderRadius: 8,
-            background: "rgba(212, 162, 86, 0.1)", border: "1px solid rgba(212, 162, 86, 0.2)",
-            fontSize: 12, fontWeight: 700, color: "var(--labs-accent)",
-            backdropFilter: "blur(8px)", letterSpacing: "0.04em",
+            background: STORY.goldTintStrong, border: `1px solid ${STORY.goldBorderStrong}`,
+            fontSize: 11, fontWeight: 600, color: STORY.gold,
+            backdropFilter: "blur(8px)", letterSpacing: STORY.capsLetterSpacing, textTransform: "uppercase", fontFamily: STORY.bodyFont,
           }} data-testid="present-live-indicator">
-            <span style={{ width: 7, height: 7, borderRadius: 4, background: "var(--labs-accent)", animation: "pulse 2s infinite" }} />
+            <span style={{ width: 7, height: 7, borderRadius: 4, background: STORY.gold, animation: "pulse 2s infinite" }} />
             {t("resultsUi.live")}
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, pointerEvents: "auto" }}>
           <span style={{
-            fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.75)",
+            fontSize: 11, fontWeight: 600, color: STORY.gold,
             padding: "4px 10px", borderRadius: 6,
-            background: "rgba(255,255,255,0.08)", backdropFilter: "blur(8px)",
-            letterSpacing: "0.06em", textTransform: "uppercase",
+            background: STORY.goldTint, border: `1px solid ${STORY.goldBorder}`, backdropFilter: "blur(8px)",
+            letterSpacing: STORY.capsLetterSpacing, textTransform: "uppercase", fontFamily: STORY.bodyFont,
           }}>
             {actLabel}
           </span>
           <span style={{
-            fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.75)",
+            fontSize: 12, fontWeight: 600, color: STORY.creamSecondary,
             padding: "4px 12px", borderRadius: 8,
-            background: "rgba(255,255,255,0.08)", backdropFilter: "blur(8px)",
-            fontVariantNumeric: "tabular-nums",
+            background: STORY.goldTint, border: `1px solid ${STORY.goldBorder}`, backdropFilter: "blur(8px)",
+            fontVariantNumeric: "tabular-nums", fontFamily: STORY.bodyFont,
           }} data-testid="present-slide-indicator">
             {currentSlide + 1} / {totalSlides}
           </span>
@@ -1061,8 +1116,8 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
             style={{
               display: "flex", alignItems: "center", justifyContent: "center",
               width: 32, height: 32, borderRadius: 8,
-              background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)",
-              color: "rgba(255,255,255,0.75)", cursor: "pointer", backdropFilter: "blur(8px)",
+              background: STORY.goldTint, border: `1px solid ${STORY.goldBorder}`,
+              color: STORY.creamSecondary, cursor: "pointer", backdropFilter: "blur(8px)",
             }}
             data-testid="present-fullscreen-btn"
           >
@@ -1109,9 +1164,9 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
           style={{
             width: 44, height: 44, borderRadius: 22,
             display: "flex", alignItems: "center", justifyContent: "center",
-            background: currentSlide === 0 ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            color: currentSlide === 0 ? "rgba(255,255,255,0.12)" : "var(--labs-text)",
+            background: currentSlide === 0 ? "rgba(200,169,126,0.03)" : STORY.goldTint,
+            border: `1px solid ${STORY.goldBorder}`,
+            color: currentSlide === 0 ? "rgba(200,169,126,0.25)" : STORY.cream,
             cursor: currentSlide === 0 ? "default" : "pointer",
             transition: "all 0.15s",
           }}
@@ -1136,7 +1191,7 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
                   height: isActive ? 6 : (totalSlides > 15 && !isNear ? 4 : 6),
                   borderRadius: 3,
                   border: "none",
-                  background: isActive ? "var(--labs-accent)" : `rgba(255,255,255,${isNear ? 0.28 : 0.15})`,
+                  background: isActive ? STORY.gold : `rgba(200,169,126,${isNear ? 0.35 : 0.18})`,
                   cursor: "pointer",
                   transition: "all 0.25s ease",
                   padding: 0,
@@ -1155,9 +1210,9 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
           style={{
             width: 44, height: 44, borderRadius: 22,
             display: "flex", alignItems: "center", justifyContent: "center",
-            background: currentSlide === totalSlides - 1 ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            color: currentSlide === totalSlides - 1 ? "rgba(255,255,255,0.12)" : "var(--labs-text)",
+            background: currentSlide === totalSlides - 1 ? "rgba(200,169,126,0.03)" : STORY.goldTint,
+            border: `1px solid ${STORY.goldBorder}`,
+            color: currentSlide === totalSlides - 1 ? "rgba(200,169,126,0.25)" : STORY.cream,
             cursor: currentSlide === totalSlides - 1 ? "default" : "pointer",
             transition: "all 0.15s",
           }}
