@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { StoryRenderer } from "@/storybuilder/renderer/StoryRenderer";
 import type { StoryDocument } from "@/storybuilder/core/types";
 import { getPublicTastingStory, type TastingStoryResponse } from "@/lib/tastingStoryApi";
+import { getPublicTastingStoryData, type TastingStoryDataResponse } from "@/lib/tastingStoryDataApi";
+import { TastingStoryDataProvider } from "@/storybuilder/data/TastingStoryDataContext";
 
 type Props = { id: string };
 
@@ -13,6 +15,13 @@ export default function LabsTastingStoryViewPage({ id }: Props) {
     queryKey: ["/api/public/tasting-stories", id],
     queryFn: () => getPublicTastingStory(id),
     enabled: !!id,
+    retry: false,
+  });
+
+  const { data: storyData } = useQuery<TastingStoryDataResponse>({
+    queryKey: ["/api/public/tasting-stories", id, "data"],
+    queryFn: () => getPublicTastingStoryData(id),
+    enabled: !!id && !!data,
     retry: false,
   });
 
@@ -87,7 +96,9 @@ export default function LabsTastingStoryViewPage({ id }: Props) {
 
   return (
     <div data-testid="page-labs-tasting-story-view" style={{ background: "#0B0906", minHeight: "100vh" }}>
-      <StoryRenderer document={document_} mode="public" />
+      <TastingStoryDataProvider data={storyData ?? null}>
+        <StoryRenderer document={document_} mode="public" />
+      </TastingStoryDataProvider>
     </div>
   );
 }

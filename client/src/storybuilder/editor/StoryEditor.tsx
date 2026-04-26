@@ -43,6 +43,12 @@ type Props = {
   sourceContext?: StoryEditorSourceContext;
   isAdmin?: boolean;
   paletteCategories?: Array<"generic" | "tasting" | "landing">;
+  onRegenerateBlock?: (
+    blockId: string,
+    blockType: string,
+    currentBlocks: StoryBlock[],
+  ) => Promise<Record<string, unknown> | null>;
+  onRegenerateStory?: (currentBlocks: StoryBlock[]) => Promise<StoryBlock[] | null>;
 };
 
 type HistoryState = {
@@ -70,7 +76,7 @@ function redoHistory(state: HistoryState): HistoryState {
   return { past: [...state.past, state.present].slice(-HISTORY_LIMIT), present: next, future: rest };
 }
 
-export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapshot, sourceContext, isAdmin, paletteCategories }: Props) {
+export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapshot, sourceContext, isAdmin, paletteCategories, onRegenerateBlock, onRegenerateStory }: Props) {
   const [history, setHistory] = useState<HistoryState>({ past: [], present: initialDocument, future: [] });
   const doc = history.present;
 
@@ -340,6 +346,46 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
     [doc, update],
   );
 
+  const toggleLocked = useCallback(
+    (id: string) => {
+      const blocks = doc.blocks.map((b) => (b.id === id ? { ...b, locked: !b.locked } : b));
+      update({ ...doc, blocks });
+    },
+    [doc, update],
+  );
+
+  const [storyRegenBusy, setStoryRegenBusy] = useState(false);
+  const [storyRegenInfo, setStoryRegenInfo] = useState<string | null>(null);
+
+  const handleStoryRegenerate = useCallback(async () => {
+    if (!onRegenerateStory || storyRegenBusy) return;
+    const lockedCount = doc.blocks.filter((b) => b.locked).length;
+    const lockedNote = lockedCount > 0 ? `\n\nGesperrte Bloecke (${lockedCount}) werden uebersprungen.` : "";
+    if (!window.confirm(`Alle KI-Texte in dieser Story neu generieren?${lockedNote}`)) return;
+    setStoryRegenBusy(true);
+    setStoryRegenInfo(null);
+    try {
+      const result = await onRegenerateStory(doc.blocks);
+      if (result) {
+        const next: StoryDocument = {
+          ...doc,
+          blocks: result,
+          metadata: { ...doc.metadata, updatedAt: new Date().toISOString() },
+        };
+        setHistory((h) => pushHistory(h, next));
+        onChange?.(next);
+        setStoryRegenInfo("Story neu generiert");
+      } else {
+        setStoryRegenInfo("Keine Aenderungen");
+      }
+    } catch (err: unknown) {
+      setStoryRegenInfo(err instanceof Error ? err.message : "Regenerierung fehlgeschlagen");
+    } finally {
+      setStoryRegenBusy(false);
+      setTimeout(() => setStoryRegenInfo(null), 3500);
+    }
+  }, [doc, onChange, onRegenerateStory, storyRegenBusy]);
+
   const duplicateBlock = useCallback(
     (id: string) => {
       const idx = doc.blocks.findIndex((b) => b.id === id);
@@ -516,6 +562,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
                   onMoveDown={() => moveBlock(block.id, 1)}
                   onDuplicate={() => duplicateBlock(block.id)}
                   onToggleHidden={() => toggleHidden(block.id)}
+                  onToggleLocked={() => toggleLocked(block.id)}
                   onDelete={() => deleteBlock(block.id)}
                 />
               ))}
@@ -588,6 +635,26 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
             </div>
             {onSave ? (
               <SaveBadge status={saveStatus} lastSavedAt={lastSavedAt} error={saveError} onRetry={triggerSaveNow} />
+            ) : null}
+            {onRegenerateStory ? (
+              <button
+                type="button"
+                onClick={handleStoryRegenerate}
+                disabled={storyRegenBusy}
+                style={storyRegenBusy ? { ...toolbarBtnStyle, opacity: 0.5, cursor: "wait" } : toolbarBtnStyle}
+                data-testid="button-regenerate-story"
+                title="Alle KI-Texte der Story neu generieren"
+              >
+                {storyRegenBusy ? "Generiere…" : "KI-Story neu"}
+              </button>
+            ) : null}
+            {storyRegenInfo ? (
+              <span
+                data-testid="story-regen-info"
+                style={{ fontSize: 11, color: "#7BB077", letterSpacing: ".05em" }}
+              >
+                {storyRegenInfo}
+              </span>
             ) : null}
             {snapshotInfo ? (
               <span
@@ -686,7 +753,15 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
           Eigenschaften
         </h3>
         {selectedBlock ? (
-          <SelectedBlockEditor block={selectedBlock} onChange={(payload) => updateBlockPayload(selectedBlock.id, payload)} />
+          <SelectedBlockEditor
+            block={selectedBlock}
+            onChange={(payload) => updateBlockPayload(selectedBlock.id, payload)}
+            onRegenerateBlock={
+              onRegenerateBlock
+                ? (blockId, blockType) => onRegenerateBlock(blockId, blockType, doc.blocks)
+                : undefined
+            }
+          />
         ) : (
           <div style={{ fontSize: 12, color: theme.colors.inkFaint, padding: 12, textAlign: "center" }}>
             Wähle links einen Block aus.
@@ -726,6 +801,7 @@ function SortableBlockItem({
   onMoveDown,
   onDuplicate,
   onToggleHidden,
+  onToggleLocked,
   onDelete,
 }: {
   block: StoryBlock;
@@ -736,6 +812,7 @@ function SortableBlockItem({
   onMoveDown: () => void;
   onDuplicate: () => void;
   onToggleHidden: () => void;
+  onToggleLocked: () => void;
   onDelete: () => void;
 }) {
   const def = getBlockDefinition(block.type);
@@ -843,6 +920,20 @@ function SortableBlockItem({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
+            onToggleLocked();
+          }}
+          style={block.locked ? { ...miniButtonStyle, color: "#C9A961", borderColor: "#C9A961" } : miniButtonStyle}
+          data-testid={`button-toggle-locked-${block.id}`}
+          aria-label={block.locked ? `Block ${index + 1} entsperren` : `Block ${index + 1} sperren`}
+          aria-pressed={block.locked}
+          title={block.locked ? "Entsperren (Story-Regen erlaubt)" : "Sperren (vor Story-Regen schuetzen)"}
+        >
+          {block.locked ? "\u{1F512}" : "\u{1F513}"}
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
             if (confirm("Diesen Block wirklich löschen?")) onDelete();
           }}
           style={{ ...miniButtonStyle, color: "#d97757" }}
@@ -930,8 +1021,23 @@ function SaveBadge({
   );
 }
 
-function SelectedBlockEditor({ block, onChange }: { block: StoryBlock; onChange: (payload: Record<string, unknown>) => void }) {
+const TASTING_REGEN_TYPES = new Set(["winner-hero", "finale-card", "taster-grid", "ranking-list", "blind-results"]);
+
+function SelectedBlockEditor({
+  block,
+  onChange,
+  onRegenerateBlock,
+}: {
+  block: StoryBlock;
+  onChange: (payload: Record<string, unknown>) => void;
+  onRegenerateBlock?: (
+    blockId: string,
+    blockType: string,
+  ) => Promise<Record<string, unknown> | null>;
+}) {
   const def = getBlockDefinition(block.type);
+  const [regenBusy, setRegenBusy] = useState(false);
+  const [regenInfo, setRegenInfo] = useState<string | null>(null);
   if (!def) {
     return <div style={{ fontSize: 12, color: "#d97757" }}>Unbekannter Block-Typ: {block.type}</div>;
   }
@@ -941,6 +1047,26 @@ function SelectedBlockEditor({ block, onChange }: { block: StoryBlock; onChange:
   const Panel = def.EditorPanel;
   const validation = validatePayload(block.type, block.payload);
   const aiFields = collectAiFields(block.type, validation.payload);
+  const canRegen = !!onRegenerateBlock && TASTING_REGEN_TYPES.has(block.type);
+  const handleRegen = async () => {
+    if (!onRegenerateBlock || regenBusy) return;
+    setRegenBusy(true);
+    setRegenInfo(null);
+    try {
+      const next = await onRegenerateBlock(block.id, block.type);
+      if (next) {
+        onChange(next);
+        setRegenInfo("Neu generiert");
+      } else {
+        setRegenInfo("Kein Ergebnis");
+      }
+    } catch (err: unknown) {
+      setRegenInfo(err instanceof Error ? err.message : "Fehler bei Regenerierung");
+    } finally {
+      setRegenBusy(false);
+      setTimeout(() => setRegenInfo(null), 3000);
+    }
+  };
   return (
     <div>
       <div style={{ fontSize: 14, color: "#F5EDE0", marginBottom: 4 }}>{def.label}</div>
@@ -958,6 +1084,34 @@ function SelectedBlockEditor({ block, onChange }: { block: StoryBlock; onChange:
           }}
         >
           Daten ungültig — Standardwerte geladen.
+        </div>
+      ) : null}
+      {canRegen ? (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 8,
+            background: "rgba(201,169,97,0.06)",
+            border: "1px solid rgba(201,169,97,0.2)",
+            borderRadius: 4,
+            padding: "8px 10px",
+            marginBottom: 12,
+          }}
+        >
+          <div style={{ fontSize: 11, color: "#A89A85", letterSpacing: ".05em" }}>
+            {regenInfo ?? "KI-Vorschlaege fuer diesen Block aktualisieren"}
+          </div>
+          <button
+            type="button"
+            onClick={handleRegen}
+            disabled={regenBusy}
+            style={regenBusy ? { ...primaryButtonStyle, opacity: 0.5, cursor: "wait" } : primaryButtonStyle}
+            data-testid={`button-regenerate-block-${block.id}`}
+          >
+            {regenBusy ? "Generiere…" : "Neu generieren"}
+          </button>
         </div>
       ) : null}
       {aiFields.length > 0 ? (

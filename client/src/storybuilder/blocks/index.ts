@@ -14,6 +14,12 @@ import { videoEmbedBlock } from "./video-embed";
 import { featureCardsBlock } from "./feature-cards";
 import { benchmarkBlock } from "./benchmark-block";
 import { liveStatsBlock } from "./live-stats";
+import { whiskyCardGridBlock } from "./whisky-card-grid";
+import { tasterGridBlock } from "./taster-grid";
+import { rankingListBlock } from "./ranking-list";
+import { blindResultsBlock } from "./blind-results";
+import { winnerHeroBlock } from "./winner-hero";
+import { finaleCardBlock } from "./finale-card";
 
 type RegisteredBlock = {
   type: BlockType;
@@ -55,6 +61,12 @@ register(videoEmbedBlock);
 register(featureCardsBlock);
 register(benchmarkBlock);
 register(liveStatsBlock);
+register(whiskyCardGridBlock);
+register(tasterGridBlock);
+register(rankingListBlock);
+register(blindResultsBlock);
+register(winnerHeroBlock);
+register(finaleCardBlock);
 
 export function getBlockDefinition(type: BlockType): RegisteredBlock | undefined {
   return registry.get(type);

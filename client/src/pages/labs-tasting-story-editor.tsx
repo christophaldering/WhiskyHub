@@ -3,13 +3,19 @@ import { Link, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
 import { StoryEditor } from "@/storybuilder/editor/StoryEditor";
-import type { StoryDocument } from "@/storybuilder/core/types";
+import type { StoryBlock, StoryDocument } from "@/storybuilder/core/types";
 import {
   getTastingStory,
   saveTastingStory,
   snapshotTastingStory,
   type TastingStoryResponse,
 } from "@/lib/tastingStoryApi";
+import {
+  getTastingStoryData,
+  regenerateTastingStoryBlocks,
+  type TastingStoryDataResponse,
+} from "@/lib/tastingStoryDataApi";
+import { TastingStoryDataProvider } from "@/storybuilder/data/TastingStoryDataContext";
 import { ShieldAlert } from "lucide-react";
 
 const ACCENT = "#C9A961";
@@ -27,6 +33,12 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
     queryKey: ["/api/tasting-stories", id],
     queryFn: () => getTastingStory(id),
     enabled: !!id && !!currentParticipant?.id,
+  });
+
+  const { data: storyData } = useQuery<TastingStoryDataResponse>({
+    queryKey: ["/api/tasting-stories", id, "data"],
+    queryFn: () => getTastingStoryData(id),
+    enabled: !!id && !!currentParticipant?.id && !!data?.canEdit,
   });
 
   const initialDoc: StoryDocument | null = useMemo(() => {
@@ -108,6 +120,51 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
     await saveTastingStory(id, next.blocks);
     await snapshotTastingStory(id, next.blocks, name);
     qc.invalidateQueries({ queryKey: ["/api/tasting-stories", id] });
+  };
+
+  const handleRegenerateBlock = async (
+    blockId: string,
+    _blockType: string,
+    currentBlocks: StoryBlock[],
+  ): Promise<Record<string, unknown> | null> => {
+    const payload = currentBlocks.map((b) => ({
+      id: b.id,
+      type: b.type,
+      payload: b.payload,
+      hidden: b.hidden,
+      locked: b.locked,
+      editedByHost: b.editedByHost,
+    }));
+    const result = await regenerateTastingStoryBlocks(id, payload, "single", blockId);
+    const updated = result.blocks.find((b) => b.id === blockId);
+    if (!updated) return null;
+    return updated.payload;
+  };
+
+  const handleRegenerateStory = async (currentBlocks: StoryBlock[]): Promise<StoryBlock[] | null> => {
+    const payload = currentBlocks.map((b) => ({
+      id: b.id,
+      type: b.type,
+      payload: b.payload,
+      hidden: b.hidden,
+      locked: b.locked,
+      editedByHost: b.editedByHost,
+    }));
+    const result = await regenerateTastingStoryBlocks(id, payload, "all");
+    const sanitized: StoryBlock[] = [];
+    for (const b of result.blocks) {
+      const original = currentBlocks.find((c) => c.id === b.id);
+      if (!original) continue;
+      sanitized.push({
+        id: b.id,
+        type: original.type,
+        payload: b.payload,
+        hidden: b.hidden,
+        locked: b.locked,
+        editedByHost: b.editedByHost,
+      });
+    }
+    return sanitized;
   };
 
   const meta = data.tasting;
@@ -217,14 +274,18 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
         </div>
       ) : null}
       <div style={{ flex: 1, minHeight: 0 }}>
-        <StoryEditor
-          initialDocument={initialDoc}
-          onSave={handleEditorSave}
-          onManualSnapshot={handleManualSnapshot}
-          sourceContext={{ sourceType: "tasting", sourceId: id }}
-          isAdmin={currentParticipant?.role === "admin"}
-          paletteCategories={["generic", "tasting"]}
-        />
+        <TastingStoryDataProvider data={storyData ?? null}>
+          <StoryEditor
+            initialDocument={initialDoc}
+            onSave={handleEditorSave}
+            onManualSnapshot={handleManualSnapshot}
+            sourceContext={{ sourceType: "tasting", sourceId: id }}
+            isAdmin={currentParticipant?.role === "admin"}
+            paletteCategories={["generic", "tasting"]}
+            onRegenerateBlock={handleRegenerateBlock}
+            onRegenerateStory={handleRegenerateStory}
+          />
+        </TastingStoryDataProvider>
       </div>
     </div>
   );

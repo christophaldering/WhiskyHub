@@ -24918,6 +24918,8 @@ ${cleaned.slice(0, 60000)}`;
     type: z.string().min(1).max(64),
     payload: z.record(z.unknown()),
     hidden: z.boolean().optional(),
+    locked: z.boolean().optional(),
+    editedByHost: z.boolean().optional(),
   });
   const storyBlocksJsonSchema = z.array(storyBlockSchema).max(500);
 
@@ -25599,6 +25601,8 @@ ${cleaned.slice(0, 60000)}`;
       type: z.string().min(1).max(64),
       payload: z.record(z.unknown()),
       hidden: z.boolean().optional(),
+      locked: z.boolean().optional(),
+      editedByHost: z.boolean().optional(),
     }),
   ).max(500);
 
@@ -25810,6 +25814,114 @@ ${cleaned.slice(0, 60000)}`;
     } catch (e: unknown) {
       console.error("[tasting-stories/public] error:", e);
       const msg = e instanceof Error ? e.message : "Laden fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.get("/api/tasting-stories/:tastingId/data", async (req: Request, res: Response) => {
+    try {
+      const tastingId = sanitizeTastingId(req.params.tastingId);
+      if (!tastingId) return res.status(400).json({ message: "tastingId fehlt" });
+      const access = await checkTastingStoryAccess(req, tastingId);
+      if (!access.ok) return res.status(access.status).json({ message: access.message });
+      const { aggregateTastingStoryData } = await import("./tastingStoryAggregate");
+      const data = await aggregateTastingStoryData(tastingId);
+      if (!data) return res.status(404).json({ message: "Verkostung nicht gefunden" });
+      return res.json(data);
+    } catch (e: unknown) {
+      console.error("[tasting-stories/data] error:", e);
+      const msg = e instanceof Error ? e.message : "Daten konnten nicht geladen werden";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.get("/api/public/tasting-stories/:tastingId/data", async (req: Request, res: Response) => {
+    try {
+      const tastingId = sanitizeTastingId(req.params.tastingId);
+      if (!tastingId) return res.status(400).json({ message: "tastingId fehlt" });
+      const tasting = await storage.getTasting(tastingId);
+      if (!tasting) return res.status(404).json({ message: "Verkostung nicht gefunden" });
+      const auth = await requireAuth(req);
+      const isAdmin = auth.authenticated && auth.participant.role === "admin";
+      const isHost = auth.authenticated && tasting.hostId === auth.participant.id;
+      if (!isAdmin && !isHost) {
+        if (!tasting.storyEnabled) return res.status(403).json({ message: "Story noch nicht freigegeben" });
+        if (!auth.authenticated) return res.status(401).json({ message: "Anmeldung erforderlich" });
+        const isMember = await storage.isParticipantInTasting(tastingId, auth.participant.id);
+        if (!isMember) return res.status(403).json({ message: "Zugriff nur fuer eingeladene Teilnehmer" });
+      }
+      const { aggregateTastingStoryData } = await import("./tastingStoryAggregate");
+      const data = await aggregateTastingStoryData(tastingId);
+      if (!data) return res.status(404).json({ message: "Verkostung nicht gefunden" });
+      return res.json(data);
+    } catch (e: unknown) {
+      console.error("[tasting-stories/public/data] error:", e);
+      const msg = e instanceof Error ? e.message : "Daten konnten nicht geladen werden";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.post("/api/tasting-stories/:tastingId/regenerate-blocks", async (req: Request, res: Response) => {
+    try {
+      const tastingId = sanitizeTastingId(req.params.tastingId);
+      if (!tastingId) return res.status(400).json({ message: "tastingId fehlt" });
+      const access = await checkTastingStoryAccess(req, tastingId);
+      if (!access.ok) return res.status(access.status).json({ message: access.message });
+      const bodySchema = z.object({
+        blocks: tastingStoryBlocksSchema,
+        scope: z.enum(["all", "single"]),
+        blockId: z.string().min(1).max(128).optional(),
+      });
+      const parsed = bodySchema.safeParse(req.body);
+      if (!parsed.success) return res.status(422).json({ message: "Ungueltiger Request-Body" });
+      const rate = checkStoryAiRate(`regen:${access.participant.id}`);
+      if (!rate.allowed) {
+        return res.status(429).json({ message: `Zu viele Anfragen. Versuche es in ${rate.retryAfterSeconds ?? 30} Sekunden erneut.` });
+      }
+      const { aggregateTastingStoryData } = await import("./tastingStoryAggregate");
+      const data = await aggregateTastingStoryData(tastingId);
+      if (!data) return res.status(404).json({ message: "Verkostung nicht gefunden" });
+      const aiResult = await getAIClient(access.participant.id, "storybuilder");
+      if (!aiResult.client) {
+        if (aiResult.error === "AI_LIMIT_EXCEEDED") return res.status(429).json({ message: "KI-Kontingent erreicht.", quotaInfo: aiResult.quotaInfo });
+        if (aiResult.error === "AI_DISABLED") return res.status(503).json({ message: "KI-Funktionen sind aktuell deaktiviert." });
+        return res.status(503).json({ message: "Kein KI-Anbieter verfuegbar." });
+      }
+      const { regenerateBlockWithAi, isRegeneratable } = await import("./tastingStoryRegen");
+      const blocks = parsed.data.blocks;
+      const regenerated: string[] = [];
+      const skipped: string[] = [];
+      const updatedBlocks = await Promise.all(
+        blocks.map(async (block) => {
+          if (parsed.data.scope === "single") {
+            if (block.id !== parsed.data.blockId) return block;
+          } else if (block.locked) {
+            skipped.push(block.id);
+            return block;
+          }
+          if (!isRegeneratable(block.type)) {
+            skipped.push(block.id);
+            return block;
+          }
+          try {
+            const newPayload = await regenerateBlockWithAi(block.type, block.payload, data, aiResult.client!);
+            if (!newPayload) {
+              skipped.push(block.id);
+              return block;
+            }
+            regenerated.push(block.id);
+            return { ...block, payload: newPayload };
+          } catch (err) {
+            console.warn("[tasting-stories/regenerate] block error:", block.id, err);
+            skipped.push(block.id);
+            return block;
+          }
+        }),
+      );
+      return res.json({ blocks: updatedBlocks, regenerated, skipped });
+    } catch (e: unknown) {
+      console.error("[tasting-stories/regenerate] error:", e);
+      const msg = e instanceof Error ? e.message : "Regenerierung fehlgeschlagen";
       return res.status(500).json({ message: msg });
     }
   });
