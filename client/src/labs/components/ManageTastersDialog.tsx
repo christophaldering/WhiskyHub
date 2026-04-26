@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
@@ -146,6 +146,22 @@ export default function ManageTastersDialog({
   const [mergeTargetId, setMergeTargetId] = useState<string>("");
   const [pendingMergeId, setPendingMergeId] = useState<string | null>(null);
   const [pendingToggleId, setPendingToggleId] = useState<string | null>(null);
+  const [isCompact, setIsCompact] = useState<boolean>(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return false;
+    return window.matchMedia("(max-width: 600px)").matches;
+  });
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(max-width: 600px)");
+    const handler = (e: MediaQueryListEvent) => setIsCompact(e.matches);
+    setIsCompact(mq.matches);
+    if (mq.addEventListener) mq.addEventListener("change", handler);
+    else mq.addListener(handler);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", handler);
+      else mq.removeListener(handler);
+    };
+  }, []);
 
   const invalidateAll = () => invalidateTastingAggregates(queryClient, tastingId, extraQueryKeys);
 
@@ -253,7 +269,7 @@ export default function ManageTastersDialog({
         style={{
           background: "var(--labs-surface)",
           borderRadius: 16,
-          padding: "24px 22px",
+          padding: isCompact ? "18px 14px" : "24px 22px",
           maxWidth: 560,
           width: "100%",
           display: "flex",
@@ -361,33 +377,41 @@ export default function ManageTastersDialog({
               <div
                 key={id || pName(p)}
                 style={{
-                  border: `1px solid ${isDuplicate ? "rgba(230, 126, 34, 0.35)" : "var(--labs-border)"}`,
+                  border: `1px solid ${isDuplicate ? "rgba(230, 126, 34, 0.45)" : "var(--labs-border)"}`,
                   borderRadius: 10,
-                  background: isExcluded ? "rgba(255,255,255,0.02)" : "var(--labs-surface-elevated, rgba(255,255,255,0.02))",
-                  opacity: isExcluded ? 0.7 : 1,
+                  background: "var(--labs-surface-elevated, var(--labs-surface))",
+                  opacity: isExcluded ? 0.75 : 1,
                   overflow: "hidden",
                 }}
                 data-testid={`manage-taster-row-${id}`}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: isCompact ? "flex-start" : "center",
+                    gap: isCompact ? 8 : 10,
+                    padding: "12px 12px",
+                    flexWrap: isCompact ? "wrap" : "nowrap",
+                  }}
+                >
                   <div
                     style={{
-                      width: 30,
-                      height: 30,
-                      borderRadius: 15,
+                      width: 32,
+                      height: 32,
+                      borderRadius: 16,
                       background: "var(--labs-accent-muted)",
                       color: "var(--labs-accent)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontSize: 12,
+                      fontSize: 13,
                       fontWeight: 700,
                       flexShrink: 0,
                     }}
                   >
                     {pName(p).charAt(0).toUpperCase() || "?"}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ flex: 1, minWidth: 0, width: isCompact ? "auto" : undefined }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                       <span
                         style={{
@@ -466,14 +490,26 @@ export default function ManageTastersDialog({
                       )}
                     </div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      flexShrink: 0,
+                      flexWrap: "wrap",
+                      width: isCompact ? "100%" : "auto",
+                      justifyContent: isCompact ? "flex-end" : "flex-start",
+                      marginTop: isCompact ? 4 : 0,
+                    }}
+                  >
                     {!isHost && otherTargets.length > 0 && (
                       <button
                         onClick={() => (isMerging ? setMergeSourceId(null) : handleStartMerge(id))}
                         title={t("manageTasters.mergeAction", "Mit anderem Taster zusammenlegen")}
                         data-testid={`manage-taster-merge-${id}`}
                         style={{
-                          padding: "5px 8px",
+                          padding: isCompact ? "8px 10px" : "5px 8px",
+                          minHeight: isCompact ? 36 : undefined,
                           borderRadius: 8,
                           border: "1px solid var(--labs-border)",
                           background: isMerging ? "rgba(212,162,86,0.16)" : "transparent",
@@ -482,7 +518,7 @@ export default function ManageTastersDialog({
                           display: "inline-flex",
                           alignItems: "center",
                           gap: 4,
-                          fontSize: 11,
+                          fontSize: isCompact ? 12 : 11,
                           fontWeight: 600,
                         }}
                       >
@@ -501,7 +537,8 @@ export default function ManageTastersDialog({
                         }
                         data-testid={`manage-taster-toggle-${id}`}
                         style={{
-                          padding: "5px 8px",
+                          padding: isCompact ? "8px 10px" : "5px 8px",
+                          minHeight: isCompact ? 36 : undefined,
                           borderRadius: 8,
                           border: "1px solid var(--labs-border)",
                           background: "transparent",
@@ -510,7 +547,7 @@ export default function ManageTastersDialog({
                           display: "inline-flex",
                           alignItems: "center",
                           gap: 4,
-                          fontSize: 11,
+                          fontSize: isCompact ? 12 : 11,
                           fontWeight: 600,
                         }}
                       >
