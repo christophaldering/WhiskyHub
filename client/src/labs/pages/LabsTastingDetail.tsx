@@ -694,6 +694,16 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
             {isHost && (
               <button
                 className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+                onClick={() => navigate(`/labs/tastings/${tastingId}/story-editor`)}
+                data-testid="labs-detail-edit-story"
+              >
+                <Pencil className="w-4 h-4" />
+                {t("tastingDetail.editStory", "Story bearbeiten")}
+              </button>
+            )}
+            {isHost && (
+              <button
+                className="labs-btn-secondary w-full flex items-center justify-center gap-2"
                 onClick={() => navigate(`/labs/results/${tastingId}/present`)}
                 data-testid="labs-detail-view-presentation"
               >

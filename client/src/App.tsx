@@ -66,6 +66,8 @@ const LabsHome = lazy(() => import("@/labs/pages/LabsHome"));
 const LabsJoin = lazy(() => import("@/labs/pages/LabsJoin"));
 const LabsTastings = lazy(() => import("@/labs/pages/LabsTastings"));
 const LabsTastingDetail = lazy(() => import("@/labs/pages/LabsTastingDetail"));
+const LabsTastingStoryEditor = lazy(() => import("@/pages/labs-tasting-story-editor"));
+const LabsTastingStoryView = lazy(() => import("@/pages/labs-tasting-story-view"));
 const LabsLive = lazy(() => import("@/labs/pages/LabsLive"));
 const LabsHost = lazy(() => import("@/labs/pages/LabsHost"));
 const LabsResults = lazy(() => import("@/labs/pages/LabsResults"));
@@ -512,6 +514,9 @@ function Router() {
         <Route path="/naked/:code" component={NakedTasting} />
         <Route path="/tasting-room-simple/:id" component={TastingRoomSimple} />
         <Route path="/tasting-results/:id" component={TastingResultsPage} />
+        <Route path="/tasting-story/:id">
+          {({ id }: { id: string }) => <LabsTastingStoryView id={id} />}
+        </Route>
 
         {/* ── Utility / Internal ── */}
         <Route path="/internal/landing-glasses" component={InternalLandingGlasses} />
@@ -693,6 +698,9 @@ function Router() {
               <Route path="/labs/host">{() => <RedirectWithQuery to="/labs/tastings" query="tab=host" />}</Route>
               <Route path="/labs/tastings/:id/scan" component={LabsPaperScan} />
               <Route path="/labs/tastings/:id/recap" component={LabsTastingRecap} />
+              <Route path="/labs/tastings/:id/story-editor">
+                {({ id }: { id: string }) => <LabsTastingStoryEditor id={id} />}
+              </Route>
               <Route path="/labs/tastings/:id" component={LabsTastingDetail} />
               <Route path="/labs/tastings" component={LabsTastings} />
               <Route path="/labs/live/:id" component={LabsLive} />
