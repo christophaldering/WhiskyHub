@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
   PointerSensor,
+  TouchSensor,
   KeyboardSensor,
   useSensor,
   useSensors,
@@ -83,6 +84,24 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
   const [templateMode, setTemplateMode] = useState<"save" | "insert" | null>(null);
   const [snapshotBusy, setSnapshotBusy] = useState(false);
   const [snapshotInfo, setSnapshotInfo] = useState<string | null>(null);
+  const [isCompact, setIsCompact] = useState<boolean>(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return false;
+    return window.matchMedia("(max-width: 1023px)").matches;
+  });
+  const [mobilePanel, setMobilePanel] = useState<"blocks" | "properties" | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const handler = (e: MediaQueryListEvent) => setIsCompact(e.matches);
+    setIsCompact(mq.matches);
+    if (mq.addEventListener) mq.addEventListener("change", handler);
+    else mq.addListener(handler);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", handler);
+      else mq.removeListener(handler);
+    };
+  }, []);
 
   const lastSavedJsonRef = useRef<string>(JSON.stringify(initialDocument.blocks));
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -341,6 +360,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
@@ -360,25 +380,82 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
   const canUndo = history.past.length > 0;
   const canRedo = history.future.length > 0;
 
+  const blocksAsideStyle: React.CSSProperties = isCompact
+    ? {
+        position: "fixed",
+        top: 0,
+        left: 0,
+        bottom: 0,
+        width: "min(85vw, 320px)",
+        background: "#0B0906",
+        borderRight: "1px solid rgba(201,169,97,0.25)",
+        boxShadow: "0 0 40px rgba(0,0,0,0.6)",
+        padding: "16px 12px",
+        overflowY: "auto",
+        zIndex: 30,
+        transform: mobilePanel === "blocks" ? "translateX(0)" : "translateX(-100%)",
+        transition: "transform .2s",
+      }
+    : {
+        borderRight: "1px solid rgba(201,169,97,0.15)",
+        padding: "16px 12px",
+        overflowY: "auto",
+      };
+
+  const propertiesAsideStyle: React.CSSProperties = isCompact
+    ? {
+        position: "fixed",
+        top: 0,
+        right: 0,
+        bottom: 0,
+        width: "min(90vw, 360px)",
+        background: "#0B0906",
+        borderLeft: "1px solid rgba(201,169,97,0.25)",
+        boxShadow: "0 0 40px rgba(0,0,0,0.6)",
+        padding: "16px 16px",
+        overflowY: "auto",
+        zIndex: 30,
+        transform: mobilePanel === "properties" ? "translateX(0)" : "translateX(100%)",
+        transition: "transform .2s",
+      }
+    : {
+        borderLeft: "1px solid rgba(201,169,97,0.15)",
+        padding: "16px 16px",
+        overflowY: "auto",
+      };
+
   return (
     <div
       data-testid="story-editor"
+      data-layout={isCompact ? "compact" : "wide"}
       style={{
         display: "grid",
-        gridTemplateColumns: "260px 1fr 320px",
+        gridTemplateColumns: isCompact ? "1fr" : "260px 1fr 320px",
         height: "100vh",
         background: "#0B0906",
         color: "#F5EDE0",
         fontFamily: "'Inter', system-ui, sans-serif",
+        position: "relative",
       }}
     >
+      {isCompact && mobilePanel ? (
+        <div
+          data-testid="mobile-panel-backdrop"
+          onClick={() => setMobilePanel(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            zIndex: 25,
+          }}
+        />
+      ) : null}
       <aside
         data-testid="editor-sidebar-blocks"
-        style={{
-          borderRight: "1px solid rgba(201,169,97,0.15)",
-          padding: "16px 12px",
-          overflowY: "auto",
-        }}
+        aria-label="Blöcke"
+        aria-hidden={isCompact && mobilePanel !== "blocks" ? true : undefined}
+        {...(isCompact && mobilePanel !== "blocks" ? { inert: "" as unknown as boolean } : {})}
+        style={blocksAsideStyle}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <h3 style={{ margin: 0, fontSize: 11, letterSpacing: ".25em", textTransform: "uppercase", color: theme.colors.amber }}>Blöcke</h3>
@@ -469,7 +546,19 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
             gap: 12,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            {isCompact ? (
+              <button
+                type="button"
+                onClick={() => setMobilePanel(mobilePanel === "blocks" ? null : "blocks")}
+                style={toolbarBtnStyle}
+                aria-label="Blockliste öffnen"
+                aria-expanded={mobilePanel === "blocks"}
+                data-testid="button-toggle-mobile-blocks"
+              >
+                Blöcke
+              </button>
+            ) : null}
             <div style={{ fontSize: 11, letterSpacing: ".2em", textTransform: "uppercase", color: theme.colors.inkDim }}>
               Vorschau · {doc.blocks.length} Block(s)
             </div>
@@ -480,6 +569,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
                 disabled={!canUndo}
                 style={canUndo ? historyButtonStyle : { ...historyButtonStyle, opacity: 0.3, cursor: "not-allowed" }}
                 title="Rückgängig (Cmd/Ctrl+Z)"
+                aria-label="Rückgängig"
                 data-testid="button-undo"
               >
                 ↶
@@ -490,6 +580,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
                 disabled={!canRedo}
                 style={canRedo ? historyButtonStyle : { ...historyButtonStyle, opacity: 0.3, cursor: "not-allowed" }}
                 title="Wiederherstellen (Cmd/Ctrl+Shift+Z)"
+                aria-label="Wiederherstellen"
                 data-testid="button-redo"
               >
                 ↷
@@ -508,6 +599,18 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
             ) : null}
           </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {isCompact ? (
+              <button
+                type="button"
+                onClick={() => setMobilePanel(mobilePanel === "properties" ? null : "properties")}
+                style={toolbarBtnStyle}
+                aria-label="Eigenschaften öffnen"
+                aria-expanded={mobilePanel === "properties"}
+                data-testid="button-toggle-mobile-properties"
+              >
+                Eigenschaften
+              </button>
+            ) : null}
             {sourceContext ? (
               <>
                 <button
@@ -574,11 +677,10 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
 
       <aside
         data-testid="editor-sidebar-properties"
-        style={{
-          borderLeft: "1px solid rgba(201,169,97,0.15)",
-          padding: "16px 16px",
-          overflowY: "auto",
-        }}
+        aria-label="Eigenschaften"
+        aria-hidden={isCompact && mobilePanel !== "properties" ? true : undefined}
+        {...(isCompact && mobilePanel !== "properties" ? { inert: "" as unknown as boolean } : {})}
+        style={propertiesAsideStyle}
       >
         <h3 style={{ margin: 0, marginBottom: 12, fontSize: 11, letterSpacing: ".25em", textTransform: "uppercase", color: theme.colors.amber }}>
           Eigenschaften
@@ -658,22 +760,27 @@ function SortableBlockItem({
       data-testid={`block-item-${block.id}`}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 4 }}>
-        <span
+        <button
+          type="button"
           {...attributes}
           {...listeners}
           onClick={(e) => e.stopPropagation()}
+          aria-label={`Block ${index + 1} ${def?.label ?? block.type} ziehen, um zu sortieren`}
           title="Ziehen zum Sortieren"
           data-testid={`drag-handle-${block.id}`}
           style={{
             cursor: "grab",
+            background: "transparent",
+            border: "none",
             color: "#A89A85",
             fontSize: 14,
             padding: "0 6px 0 0",
             userSelect: "none",
+            touchAction: "none",
           }}
         >
           ⋮⋮
-        </span>
+        </button>
         <div style={{ fontSize: 12, color: "#F5EDE0", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {index + 1}. {def?.label ?? block.type}
         </div>
@@ -687,6 +794,7 @@ function SortableBlockItem({
           }}
           style={miniButtonStyle}
           data-testid={`button-move-up-${block.id}`}
+          aria-label={`Block ${index + 1} nach oben verschieben`}
           title="Nach oben"
         >
           ↑
@@ -699,6 +807,7 @@ function SortableBlockItem({
           }}
           style={miniButtonStyle}
           data-testid={`button-move-down-${block.id}`}
+          aria-label={`Block ${index + 1} nach unten verschieben`}
           title="Nach unten"
         >
           ↓
@@ -711,6 +820,7 @@ function SortableBlockItem({
           }}
           style={miniButtonStyle}
           data-testid={`button-duplicate-${block.id}`}
+          aria-label={`Block ${index + 1} duplizieren`}
           title="Duplizieren"
         >
           ⎘
@@ -723,6 +833,8 @@ function SortableBlockItem({
           }}
           style={miniButtonStyle}
           data-testid={`button-toggle-hidden-${block.id}`}
+          aria-label={block.hidden ? `Block ${index + 1} einblenden` : `Block ${index + 1} ausblenden`}
+          aria-pressed={block.hidden}
           title={block.hidden ? "Einblenden" : "Ausblenden"}
         >
           {block.hidden ? "○" : "●"}
@@ -735,6 +847,7 @@ function SortableBlockItem({
           }}
           style={{ ...miniButtonStyle, color: "#d97757" }}
           data-testid={`button-delete-${block.id}`}
+          aria-label={`Block ${index + 1} löschen`}
           title="Löschen"
         >
           ✕

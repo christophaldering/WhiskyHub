@@ -25621,6 +25621,26 @@ ${cleaned.slice(0, 60000)}`;
     }
   });
 
+  app.post("/api/cms/upload", memUpload.single("file"), async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const file = (req as Request & { file?: Express.Multer.File }).file;
+      if (!file) return res.status(400).json({ message: "Keine Datei übergeben" });
+      const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      if (!allowed.includes(file.mimetype)) {
+        return res.status(415).json({ message: "Nur JPG, PNG, WebP oder GIF erlaubt" });
+      }
+      const url = await uploadBufferToObjectStorage(objectStorage, file.buffer, file.mimetype);
+      return res.json({ url });
+    } catch (e: unknown) {
+      console.error("[cms/upload] error:", e);
+      const msg = e instanceof Error ? e.message : "Upload fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
   // Public CMS endpoints
   app.get("/api/cms/pages/:slug", async (req: Request, res: Response) => {
     try {

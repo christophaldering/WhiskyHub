@@ -31,7 +31,6 @@ window.addEventListener("unhandledrejection", (event) => {
   }
 });
 
-import LandingNew from "@/pages/landing-new";
 import FunnelLivePage from "@/pages/admin/funnel-live";
 import PublicLanding from "@/pages/public-landing";
 import FeatureOverview from "@/pages/feature-overview";
@@ -513,7 +512,6 @@ function Router() {
       <Switch>
         {/* ── Public / Marketing ── */}
         <Route path="/" component={LandingCms} />
-        <Route path="/landing-static" component={LandingNew} />
         <Route path="/landing-old" component={PublicLanding} />
         <Route path="/presentation" component={GuidedPresentation} />
         <Route path="/landing-v2" component={LandingV2} />

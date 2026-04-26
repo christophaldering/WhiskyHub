@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { BlockDefinition, BlockEditorPanelProps, BlockRendererProps } from "../core/types";
 import { safeUrl } from "../editor/RichTextEditor";
+import { ImageUploadField } from "../editor/ImageUploadField";
 
 const itemSchema = z.object({
   url: z.string().default(""),
@@ -63,6 +64,7 @@ function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
               src={item.url}
               alt={item.alt ?? ""}
               loading="lazy"
+              decoding="async"
               style={{
                 width: "100%",
                 aspectRatio: "1 / 1",
@@ -157,6 +159,7 @@ function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
                   onClick={() => moveItem(idx, -1)}
                   style={miniButtonStyle}
                   data-testid={`button-gallery-up-${idx}`}
+                  aria-label={`Bild ${idx + 1} nach oben verschieben`}
                   title="Nach oben"
                 >
                   ↑
@@ -166,6 +169,7 @@ function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
                   onClick={() => moveItem(idx, 1)}
                   style={miniButtonStyle}
                   data-testid={`button-gallery-down-${idx}`}
+                  aria-label={`Bild ${idx + 1} nach unten verschieben`}
                   title="Nach unten"
                 >
                   ↓
@@ -175,26 +179,26 @@ function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
                   onClick={() => removeItem(idx)}
                   style={{ ...miniButtonStyle, color: "#d97757" }}
                   data-testid={`button-gallery-remove-${idx}`}
+                  aria-label={`Bild ${idx + 1} entfernen`}
                   title="Entfernen"
                 >
                   ✕
                 </button>
               </div>
             </div>
-            <input
-              type="text"
+            <ImageUploadField
               value={item.url}
-              onChange={(e) => updateItem(idx, { url: e.target.value })}
-              placeholder="Bild-URL"
-              style={inputStyle}
-              data-testid={`input-gallery-url-${idx}`}
+              onChange={(url) => updateItem(idx, { url })}
+              testId={`gallery-${idx}`}
             />
             <input
               type="text"
               value={item.alt ?? ""}
               onChange={(e) => updateItem(idx, { alt: e.target.value })}
-              placeholder="Alt-Text"
+              placeholder="Alt-Text (Pflicht für Barrierefreiheit)"
               style={inputStyle}
+              aria-required="true"
+              aria-invalid={item.url.length > 0 && (item.alt ?? "").trim().length === 0 ? true : undefined}
               data-testid={`input-gallery-alt-${idx}`}
             />
             <input

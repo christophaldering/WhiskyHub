@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { BlockDefinition, BlockEditorPanelProps, BlockRendererProps } from "../core/types";
 import { safeUrl } from "../editor/RichTextEditor";
+import { ImageUploadField } from "../editor/ImageUploadField";
 
 const payloadSchema = z.object({
   imageUrl: z.string().default(""),
@@ -44,6 +45,8 @@ function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
         <img
           src={safeSrc}
           alt={payload.alt}
+          loading="lazy"
+          decoding="async"
           style={{
             width: "100%",
             display: "block",
@@ -76,26 +79,28 @@ function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
   const set = <K extends keyof Payload>(key: K, value: Payload[K]) => onChange({ ...payload, [key]: value });
   return (
     <div style={{ display: "grid", gap: 12 }}>
+      <ImageUploadField
+        value={payload.imageUrl}
+        onChange={(url) => set("imageUrl", url)}
+        label="Bild"
+        testId="full-width-image"
+      />
       <label style={labelStyle}>
-        <span>Bild-URL</span>
-        <input
-          type="text"
-          value={payload.imageUrl}
-          onChange={(e) => set("imageUrl", e.target.value)}
-          placeholder="/objects/... oder https://..."
-          style={inputStyle}
-          data-testid="input-image-url"
-        />
-      </label>
-      <label style={labelStyle}>
-        <span>Alt-Text (Barrierefreiheit)</span>
+        <span>Alt-Text (Barrierefreiheit, Pflicht)</span>
         <input
           type="text"
           value={payload.alt}
           onChange={(e) => set("alt", e.target.value)}
           style={inputStyle}
+          aria-required="true"
+          aria-invalid={payload.imageUrl.length > 0 && payload.alt.trim().length === 0 ? true : undefined}
           data-testid="input-image-alt"
         />
+        {payload.imageUrl.length > 0 && payload.alt.trim().length === 0 ? (
+          <span style={altWarnStyle} data-testid="warn-image-alt">
+            Bitte Alt-Text ergänzen, sonst ist das Bild für Screenreader unsichtbar.
+          </span>
+        ) : null}
       </label>
       <label style={labelStyle}>
         <span>Bildunterschrift</span>
@@ -133,6 +138,12 @@ const labelStyle: React.CSSProperties = {
   fontFamily: "'Inter', system-ui, sans-serif",
   fontSize: 12,
   color: "#A89A85",
+};
+
+const altWarnStyle: React.CSSProperties = {
+  fontSize: 11,
+  color: "#d97757",
+  fontFamily: "'Inter', system-ui, sans-serif",
 };
 
 const inputStyle: React.CSSProperties = {

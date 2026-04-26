@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { BlockDefinition, BlockEditorPanelProps, BlockRendererProps } from "../core/types";
 import { safeUrl } from "../editor/RichTextEditor";
+import { ImageUploadField } from "../editor/ImageUploadField";
 
 const payloadSchema = z.object({
   eyebrow: z.string().optional().default(""),
@@ -228,17 +229,12 @@ function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
           data-testid="input-hero-meta"
         />
       </label>
-      <label style={labelStyle}>
-        <span>Hintergrundbild-URL</span>
-        <input
-          type="text"
-          value={payload.imageUrl ?? ""}
-          onChange={(e) => set("imageUrl", e.target.value)}
-          placeholder="/objects/... oder https://..."
-          style={inputStyle}
-          data-testid="input-hero-image"
-        />
-      </label>
+      <ImageUploadField
+        value={payload.imageUrl ?? ""}
+        onChange={(url) => set("imageUrl", url)}
+        label="Hintergrundbild"
+        testId="hero-image"
+      />
       <label style={labelStyle}>
         <span>Ausrichtung</span>
         <select
