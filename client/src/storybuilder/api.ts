@@ -67,15 +67,19 @@ export async function getStoryVersion(
     isAuto: boolean;
     name: string | null;
     createdAt: string;
+    createdById?: string | null;
+    blockCount?: number;
     blocksJson: unknown;
   }>(res, "Version konnte nicht geladen werden");
+  const blocks = Array.isArray(data.blocksJson) ? (data.blocksJson as StoryBlock[]) : [];
   return {
     id: data.id,
     isAuto: data.isAuto,
     name: data.name,
     createdAt: data.createdAt,
-    createdById: null,
-    blocksJson: Array.isArray(data.blocksJson) ? (data.blocksJson as StoryBlock[]) : [],
+    createdById: data.createdById ?? null,
+    blockCount: typeof data.blockCount === "number" ? data.blockCount : blocks.length,
+    blocksJson: blocks,
   };
 }
 
