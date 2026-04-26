@@ -130,8 +130,22 @@ export async function aggregateTastingStoryData(tastingId: string): Promise<Aggr
     storage.getTastingEventPhotos(tastingId),
   ]);
 
+  const excludedParticipantIds = new Set<string>(
+    participantsRaw
+      .filter((row) => row.excludedFromResults === true)
+      .map((row) => row.participantId),
+  );
+
+  const includedParticipantsRaw = participantsRaw.filter(
+    (row) => !excludedParticipantIds.has(row.participantId),
+  );
+
+  const includedRatings = ratings.filter(
+    (r) => !r.participantId || !excludedParticipantIds.has(r.participantId),
+  );
+
   const ratingsByWhisky = new Map<string, Rating[]>();
-  for (const r of ratings) {
+  for (const r of includedRatings) {
     if (!r.whiskyId) continue;
     const list = ratingsByWhisky.get(r.whiskyId) ?? [];
     list.push(r);
@@ -139,7 +153,7 @@ export async function aggregateTastingStoryData(tastingId: string): Promise<Aggr
   }
 
   const ratingsByParticipant = new Map<string, Rating[]>();
-  for (const r of ratings) {
+  for (const r of includedRatings) {
     if (!r.participantId) continue;
     const list = ratingsByParticipant.get(r.participantId) ?? [];
     list.push(r);
@@ -194,7 +208,7 @@ export async function aggregateTastingStoryData(tastingId: string): Promise<Aggr
   const winner: AggregatedRankingEntry | null =
     ranking.length > 0 && ranking[0].avgScore !== null ? ranking[0] : null;
 
-  const aggParticipants: AggregatedParticipant[] = participantsRaw.map((row) => {
+  const aggParticipants: AggregatedParticipant[] = includedParticipantsRaw.map((row) => {
     const p = row.participant;
     const safe = p ?? ({ id: row.participantId, name: "Gast" } as Pick<Participant, "id" | "name"> & { displayName?: string | null });
     const display = participantDisplay(safe);
