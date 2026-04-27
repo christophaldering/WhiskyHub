@@ -4,6 +4,7 @@ import { Download, Loader2, ExternalLink } from "lucide-react";
 import {
   DEFAULT_TASTING_KINDS,
   selectDescriptors,
+  buildSourceHref,
   type DownloadKind,
   type DownloadDescriptor,
   type DownloadContext,
@@ -99,40 +100,68 @@ export default function TastingDownloadGrid({
             const title = renderTitle(item);
             const desc = renderDesc(item);
             const badge = renderBadge(item);
+            const itemSourceHref = buildSourceHref(item.contentType, tastingId);
             return (
-              <button
+              <div
                 key={item.kind}
-                onClick={() => runDescriptor(item)}
-                disabled={isBusy}
-                title={`${title} · ${desc}`}
-                aria-label={`${title}: ${desc}`}
-                data-testid={`${prefix}-${item.kind}`}
                 style={{
-                  display: "flex", alignItems: "flex-start", gap: 8,
-                  padding: "8px 12px", borderRadius: 8,
+                  display: "flex", alignItems: "stretch", gap: 0,
+                  borderRadius: 8,
                   border: "1px solid var(--labs-border)",
-                  background: "transparent",
-                  color: isBusy ? "var(--labs-text-muted)" : "var(--labs-text)",
-                  cursor: isBusy ? "not-allowed" : "pointer",
-                  opacity: isBusy ? 0.6 : 1,
-                  fontFamily: "inherit",
-                  textAlign: "left",
+                  overflow: "hidden",
                 }}
               >
-                {isBusy
-                  ? <Loader2 className="w-4 h-4 mt-0.5" style={{ animation: "spin 1s linear infinite", flexShrink: 0 }} />
-                  : <Icon className="w-4 h-4 mt-0.5" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
-                }
-                <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 13, fontWeight: 600 }}>{title}</span>
-                    <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{badge}</span>
+                <button
+                  onClick={() => runDescriptor(item)}
+                  disabled={isBusy}
+                  title={`${title} · ${desc}`}
+                  aria-label={`${title}: ${desc}`}
+                  data-testid={`${prefix}-${item.kind}`}
+                  style={{
+                    display: "flex", alignItems: "flex-start", gap: 8,
+                    padding: "8px 12px",
+                    background: "transparent",
+                    border: "none",
+                    color: isBusy ? "var(--labs-text-muted)" : "var(--labs-text)",
+                    cursor: isBusy ? "not-allowed" : "pointer",
+                    opacity: isBusy ? 0.6 : 1,
+                    fontFamily: "inherit",
+                    textAlign: "left",
+                    flex: 1,
+                    minWidth: 0,
+                  }}
+                >
+                  {isBusy
+                    ? <Loader2 className="w-4 h-4 mt-0.5" style={{ animation: "spin 1s linear infinite", flexShrink: 0 }} />
+                    : <Icon className="w-4 h-4 mt-0.5" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
+                  }
+                  <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 13, fontWeight: 600 }}>{title}</span>
+                      <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{badge}</span>
+                    </span>
+                    <span style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.3 }}>
+                      {desc}
+                    </span>
                   </span>
-                  <span style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.3 }}>
-                    {desc}
-                  </span>
-                </span>
-              </button>
+                </button>
+                <a
+                  href={itemSourceHref}
+                  title={t("downloads.openSource", "Quelle öffnen")}
+                  aria-label={t("downloads.openSource", "Quelle öffnen")}
+                  data-testid={`${prefix}-${item.kind}-source`}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    padding: "0 10px",
+                    borderLeft: "1px solid var(--labs-border)",
+                    background: "transparent",
+                    color: "var(--labs-accent)",
+                    textDecoration: "none",
+                  }}
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              </div>
             );
           })}
           {sourceHref && (
@@ -187,6 +216,7 @@ export default function TastingDownloadGrid({
           const title = renderTitle(item);
           const desc = renderDesc(item);
           const badge = renderBadge(item);
+          const itemSourceHref = buildSourceHref(item.contentType, tastingId);
           return (
             <div
               key={item.kind}
@@ -233,70 +263,49 @@ export default function TastingDownloadGrid({
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => runDescriptor(item)}
-                disabled={isBusy}
-                className="labs-btn-secondary"
-                data-testid={`${prefix}-action-${item.kind}`}
-                style={{
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                  fontSize: 13, fontWeight: 500,
-                  cursor: isBusy ? "not-allowed" : "pointer",
-                  opacity: isBusy ? 0.6 : 1,
-                }}
-              >
-                {isBusy
-                  ? <Loader2 className="w-4 h-4" style={{ animation: "spin 1s linear infinite" }} />
-                  : <Download className="w-4 h-4" />
-                }
-                {isBusy
-                  ? t("resultsUi.downloadInProgress", "Wird vorbereitet…")
-                  : t("resultsUi.downloadButton", "Herunterladen")}
-              </button>
+              <div style={{ display: "flex", alignItems: "stretch", gap: 8 }}>
+                <button
+                  onClick={() => runDescriptor(item)}
+                  disabled={isBusy}
+                  className="labs-btn-secondary"
+                  data-testid={`${prefix}-action-${item.kind}`}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    fontSize: 13, fontWeight: 500,
+                    cursor: isBusy ? "not-allowed" : "pointer",
+                    opacity: isBusy ? 0.6 : 1,
+                    flex: 1,
+                  }}
+                >
+                  {isBusy
+                    ? <Loader2 className="w-4 h-4" style={{ animation: "spin 1s linear infinite" }} />
+                    : <Download className="w-4 h-4" />
+                  }
+                  {isBusy
+                    ? t("resultsUi.downloadInProgress", "Wird vorbereitet…")
+                    : t("resultsUi.downloadButton", "Herunterladen")}
+                </button>
+                <a
+                  href={itemSourceHref}
+                  title={t("downloads.openSource", "Quelle öffnen")}
+                  aria-label={t("downloads.openSource", "Quelle öffnen")}
+                  data-testid={`${prefix}-card-${item.kind}-source`}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    padding: "0 10px",
+                    borderRadius: 6,
+                    border: "1px solid var(--labs-border)",
+                    color: "var(--labs-accent)",
+                    textDecoration: "none",
+                    fontSize: 12,
+                  }}
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              </div>
             </div>
           );
         })}
-        {sourceHref && (
-          <a
-            href={sourceHref}
-            data-testid={`${prefix}-card-source-link`}
-            className="labs-card"
-            style={{
-              padding: 16,
-              display: "flex", flexDirection: "column", gap: 10,
-              textDecoration: "none",
-              border: "1px dashed var(--labs-border)",
-              background: "transparent",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-              <div
-                style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: "var(--labs-accent-muted)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <ExternalLink className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <h3 style={{
-                  fontSize: 14, fontWeight: 600, color: "var(--labs-text)",
-                  margin: 0, lineHeight: 1.3,
-                }}>
-                  {sourceLabel ?? t("downloads.openSource", "Quelle öffnen")}
-                </h3>
-                <p style={{
-                  fontSize: 12, color: "var(--labs-text-muted)",
-                  margin: "4px 0 0", lineHeight: 1.4,
-                }}>
-                  {t("downloads.openSourceDesc", "Direkt zur Ergebnis-Ansicht des Tastings")}
-                </p>
-              </div>
-            </div>
-          </a>
-        )}
       </div>
       {error && (
         <p style={{ fontSize: 12, color: "var(--labs-danger)", marginTop: 10 }} data-testid={`${prefix}-error`}>
