@@ -1611,6 +1611,30 @@ export default function LabsResults({ params }: LabsResultsProps) {
         </div>
       )}
 
+      {sorted.length > 0 && (
+        <div className="mt-6 mb-8 labs-fade-in" data-testid="results-downloads-block">
+          <h2 style={{
+            fontSize: 15, fontWeight: 700, color: "var(--labs-text)",
+            margin: "0 0 4px",
+          }}>
+            {t("resultsUi.downloadsBlockTitle", "Daten & Dokumente herunterladen")}
+          </h2>
+          <p style={{
+            fontSize: 12, color: "var(--labs-text-muted)",
+            margin: "0 0 12px",
+          }}>
+            {t("resultsUi.downloadsBlockDesc", "Wähle das passende Format für deinen Anwendungsfall")}
+          </p>
+          <TastingDownloadGrid
+            tastingId={tastingId}
+            storyAvailable={getStoryPdfAvailable(tasting, isHost)}
+            inlineData={{ tasting, whiskyResults }}
+            variant="cards"
+            testIdPrefix="results-download"
+          />
+        </div>
+      )}
+
       {isHost && (() => {
         const aiAvailable = ["archived", "completed", "closed", "reveal"].includes(tasting.status as string);
         const isAdmin = currentParticipant?.role === "admin";
@@ -1851,30 +1875,6 @@ export default function LabsResults({ params }: LabsResultsProps) {
           </div>
         );
       })()}
-
-      {sorted.length > 0 && (
-        <div className="mt-6 mb-8 labs-fade-in" data-testid="results-downloads-block">
-          <h2 style={{
-            fontSize: 15, fontWeight: 700, color: "var(--labs-text)",
-            margin: "0 0 4px",
-          }}>
-            {t("resultsUi.downloadsBlockTitle", "Daten & Dokumente herunterladen")}
-          </h2>
-          <p style={{
-            fontSize: 12, color: "var(--labs-text-muted)",
-            margin: "0 0 12px",
-          }}>
-            {t("resultsUi.downloadsBlockDesc", "Wähle das passende Format für deinen Anwendungsfall")}
-          </p>
-          <TastingDownloadGrid
-            tastingId={tastingId}
-            storyAvailable={getStoryPdfAvailable(tasting, isHost)}
-            inlineData={{ tasting, whiskyResults }}
-            variant="cards"
-            testIdPrefix="results-download"
-          />
-        </div>
-      )}
 
       <div className="flex justify-center gap-3 pb-8">
         <button
