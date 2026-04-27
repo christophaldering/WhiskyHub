@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
+import { InfoHint } from "@/components/InfoHint";
 import { StoryEditor } from "@/storybuilder/editor/StoryEditor";
 import type { StoryBlock, StoryDocument } from "@/storybuilder/core/types";
 import type { StoryPersistenceAdapter } from "@/storybuilder/core/adapter";
@@ -29,6 +31,7 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
   const { currentParticipant } = useAppStore();
   const qc = useQueryClient();
   const [, navigate] = useLocation();
+  const { t } = useTranslation();
   const [actionError, setActionError] = useState<string | null>(null);
   const [pendingRegen, setPendingRegen] = useState<{
     original: StoryBlock[];
@@ -320,26 +323,50 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
             </span>
           ) : null}
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           {currentParticipant?.role === "admin" ? (
-            <AdminMigrationPanel tastingId={id} onChanged={() => qc.invalidateQueries({ queryKey: ["/api/tasting-stories", id] })} />
+            <div style={{ display: "inline-flex", alignItems: "center" }}>
+              <AdminMigrationPanel tastingId={id} onChanged={() => qc.invalidateQueries({ queryKey: ["/api/tasting-stories", id] })} />
+              <InfoHint
+                text={t("storyEditor.tooltips.storyMigration")}
+                testId="info-hint-story-migration"
+                side="bottom"
+                align="end"
+              />
+            </div>
           ) : null}
-          <Link
-            href={`/labs/tastings/${id}/story-wizard`}
-            data-testid="link-restart-wizard"
-            style={{ ...secondaryButton, textDecoration: "none", display: "inline-flex", alignItems: "center" }}
-          >
-            Wizard erneut starten
-          </Link>
-          <a
-            href={`/tasting-story/${id}`}
-            target="_blank"
-            rel="noreferrer"
-            style={{ ...secondaryButton, textDecoration: "none", display: "inline-flex", alignItems: "center" }}
-            data-testid="link-view-public-story"
-          >
-            Öffentliche Story ↗
-          </a>
+          <div style={{ display: "inline-flex", alignItems: "center" }}>
+            <Link
+              href={`/labs/tastings/${id}/story-wizard`}
+              data-testid="link-restart-wizard"
+              style={{ ...secondaryButton, textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+            >
+              Wizard erneut starten
+            </Link>
+            <InfoHint
+              text={t("storyEditor.tooltips.restartWizard")}
+              testId="info-hint-restart-wizard"
+              side="bottom"
+              align="end"
+            />
+          </div>
+          <div style={{ display: "inline-flex", alignItems: "center" }}>
+            <a
+              href={`/tasting-story/${id}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{ ...secondaryButton, textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+              data-testid="link-view-public-story"
+            >
+              Öffentliche Story ↗
+            </a>
+            <InfoHint
+              text={t("storyEditor.tooltips.publicStory")}
+              testId="info-hint-public-story"
+              side="bottom"
+              align="end"
+            />
+          </div>
         </div>
       </header>
       {actionError ? (

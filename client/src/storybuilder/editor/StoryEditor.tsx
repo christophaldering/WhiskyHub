@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { InfoHint } from "@/components/InfoHint";
 import {
   DndContext,
   PointerSensor,
@@ -79,6 +81,7 @@ function redoHistory(state: HistoryState): HistoryState {
 }
 
 export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapshot, sourceContext, isAdmin, paletteCategories, adapter, onRegenerateBlock, onRegenerateStory }: Props) {
+  const { t } = useTranslation();
   const [history, setHistory] = useState<HistoryState>({ past: [], present: initialDocument, future: [] });
   const doc = history.present;
 
@@ -517,7 +520,21 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
         style={blocksAsideStyle}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <h3 style={{ margin: 0, fontSize: 11, letterSpacing: ".25em", textTransform: "uppercase", color: theme.colors.amber }}>Blöcke</h3>
+          <div style={{ display: "inline-flex", alignItems: "center" }}>
+            <h3 style={{ margin: 0, fontSize: 11, letterSpacing: ".25em", textTransform: "uppercase", color: theme.colors.amber }}>Blöcke</h3>
+            <InfoHint
+              text={t("storyEditor.tooltips.blocks")}
+              testId="info-hint-blocks"
+              side="bottom"
+              align="start"
+            />
+            <InfoHint
+              text={t("storyEditor.tooltips.moveArrows")}
+              testId="info-hint-move-arrows"
+              side="bottom"
+              align="start"
+            />
+          </div>
           <button
             type="button"
             onClick={() => setShowPalette((s) => !s)}
@@ -620,8 +637,16 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
                 Blöcke
               </button>
             ) : null}
-            <div style={{ fontSize: 11, letterSpacing: ".2em", textTransform: "uppercase", color: theme.colors.inkDim }}>
-              Vorschau · {doc.blocks.length} Block(s)
+            <div style={{ display: "inline-flex", alignItems: "center" }}>
+              <div style={{ fontSize: 11, letterSpacing: ".2em", textTransform: "uppercase", color: theme.colors.inkDim }}>
+                Vorschau · {doc.blocks.length} Block(s)
+              </div>
+              <InfoHint
+                text={t("storyEditor.tooltips.blockCount")}
+                testId="info-hint-block-count"
+                side="bottom"
+                align="start"
+              />
             </div>
             <div style={{ display: "flex", gap: 4 }}>
               <button
@@ -648,19 +673,35 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
               </button>
             </div>
             {saveImpl ? (
-              <SaveBadge status={saveStatus} lastSavedAt={lastSavedAt} error={saveError} onRetry={triggerSaveNow} />
+              <div style={{ display: "inline-flex", alignItems: "center" }}>
+                <SaveBadge status={saveStatus} lastSavedAt={lastSavedAt} error={saveError} onRetry={triggerSaveNow} />
+                <InfoHint
+                  text={t("storyEditor.tooltips.autoSave")}
+                  testId="info-hint-auto-save"
+                  side="bottom"
+                  align="start"
+                />
+              </div>
             ) : null}
             {onRegenerateStory ? (
-              <button
-                type="button"
-                onClick={handleStoryRegenerate}
-                disabled={storyRegenBusy}
-                style={storyRegenBusy ? { ...toolbarBtnStyle, opacity: 0.5, cursor: "wait" } : toolbarBtnStyle}
-                data-testid="button-regenerate-story"
-                title="Alle KI-Texte der Story neu generieren"
-              >
-                {storyRegenBusy ? "Generiere…" : "KI-Story neu"}
-              </button>
+              <div style={{ display: "inline-flex", alignItems: "center" }}>
+                <button
+                  type="button"
+                  onClick={handleStoryRegenerate}
+                  disabled={storyRegenBusy}
+                  style={storyRegenBusy ? { ...toolbarBtnStyle, opacity: 0.5, cursor: "wait" } : toolbarBtnStyle}
+                  data-testid="button-regenerate-story"
+                  title="Alle KI-Texte der Story neu generieren"
+                >
+                  {storyRegenBusy ? "Generiere…" : "KI-Story neu"}
+                </button>
+                <InfoHint
+                  text={t("storyEditor.tooltips.aiStoryRegenerate")}
+                  testId="info-hint-ai-story-regen"
+                  side="bottom"
+                  align="start"
+                />
+              </div>
             ) : null}
             {storyRegenInfo ? (
               <span
@@ -695,63 +736,103 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
             ) : null}
             {sourceContext ? (
               <>
-                <button
-                  type="button"
-                  onClick={() => setShowVersions(true)}
-                  style={toolbarBtnStyle}
-                  data-testid="button-open-versions"
-                  title="Versionsverlauf öffnen"
-                >
-                  Verlauf
-                </button>
-                {snapshotImpl ? (
+                <div style={{ display: "inline-flex", alignItems: "center" }}>
                   <button
                     type="button"
-                    onClick={triggerManualSnapshot}
-                    disabled={snapshotBusy}
+                    onClick={() => setShowVersions(true)}
                     style={toolbarBtnStyle}
-                    data-testid="button-manual-snapshot"
-                    title="Aktuelle Version dauerhaft sichern"
+                    data-testid="button-open-versions"
+                    title="Versionsverlauf öffnen"
                   >
-                    {snapshotBusy ? "Sichere…" : "Snapshot"}
+                    Verlauf
                   </button>
+                  <InfoHint
+                    text={t("storyEditor.tooltips.versionHistory")}
+                    testId="info-hint-version-history"
+                    side="bottom"
+                    align="end"
+                  />
+                </div>
+                {snapshotImpl ? (
+                  <div style={{ display: "inline-flex", alignItems: "center" }}>
+                    <button
+                      type="button"
+                      onClick={triggerManualSnapshot}
+                      disabled={snapshotBusy}
+                      style={toolbarBtnStyle}
+                      data-testid="button-manual-snapshot"
+                      title="Aktuelle Version dauerhaft sichern"
+                    >
+                      {snapshotBusy ? "Sichere…" : "Snapshot"}
+                    </button>
+                    <InfoHint
+                      text={t("storyEditor.tooltips.snapshot")}
+                      testId="info-hint-snapshot"
+                      side="bottom"
+                      align="end"
+                    />
+                  </div>
                 ) : null}
-                <button
-                  type="button"
-                  onClick={() => setTemplateMode("save")}
-                  style={toolbarBtnStyle}
-                  data-testid="button-save-as-template"
-                  title="Aktuelle Story als Vorlage speichern"
-                >
-                  Als Vorlage
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTemplateMode("insert")}
-                  style={toolbarBtnStyle}
-                  data-testid="button-insert-template"
-                  title="Vorlage einfügen"
-                >
-                  Vorlage einfügen
-                </button>
+                <div style={{ display: "inline-flex", alignItems: "center" }}>
+                  <button
+                    type="button"
+                    onClick={() => setTemplateMode("save")}
+                    style={toolbarBtnStyle}
+                    data-testid="button-save-as-template"
+                    title="Aktuelle Story als Vorlage speichern"
+                  >
+                    Als Vorlage
+                  </button>
+                  <InfoHint
+                    text={t("storyEditor.tooltips.saveAsTemplate")}
+                    testId="info-hint-save-as-template"
+                    side="bottom"
+                    align="end"
+                  />
+                </div>
+                <div style={{ display: "inline-flex", alignItems: "center" }}>
+                  <button
+                    type="button"
+                    onClick={() => setTemplateMode("insert")}
+                    style={toolbarBtnStyle}
+                    data-testid="button-insert-template"
+                    title="Vorlage einfügen"
+                  >
+                    Vorlage einfügen
+                  </button>
+                  <InfoHint
+                    text={t("storyEditor.tooltips.insertTemplate")}
+                    testId="info-hint-insert-template"
+                    side="bottom"
+                    align="end"
+                  />
+                </div>
               </>
             ) : null}
-            <button
-              type="button"
-              onClick={() => setMode("editor-preview")}
-              style={mode === "editor-preview" ? activeTabStyle : tabStyle}
-              data-testid="button-mode-edit"
-            >
-              Editor
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("public")}
-              style={mode === "public" ? activeTabStyle : tabStyle}
-              data-testid="button-mode-public"
-            >
-              Öffentlich
-            </button>
+            <div style={{ display: "inline-flex", alignItems: "center" }}>
+              <button
+                type="button"
+                onClick={() => setMode("editor-preview")}
+                style={mode === "editor-preview" ? activeTabStyle : tabStyle}
+                data-testid="button-mode-edit"
+              >
+                Editor
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("public")}
+                style={mode === "public" ? activeTabStyle : tabStyle}
+                data-testid="button-mode-public"
+              >
+                Öffentlich
+              </button>
+              <InfoHint
+                text={t("storyEditor.tooltips.modeToggle")}
+                testId="info-hint-mode-toggle"
+                side="bottom"
+                align="end"
+              />
+            </div>
           </div>
         </div>
         <StoryRenderer document={doc} mode={mode} />
@@ -767,9 +848,17 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
         {...(isCompact && mobilePanel !== "properties" ? { inert: "" as unknown as boolean } : {})}
         style={propertiesAsideStyle}
       >
-        <h3 style={{ margin: 0, marginBottom: 12, fontSize: 11, letterSpacing: ".25em", textTransform: "uppercase", color: theme.colors.amber }}>
-          Eigenschaften
-        </h3>
+        <div style={{ display: "inline-flex", alignItems: "center", marginBottom: 12 }}>
+          <h3 style={{ margin: 0, fontSize: 11, letterSpacing: ".25em", textTransform: "uppercase", color: theme.colors.amber }}>
+            Eigenschaften
+          </h3>
+          <InfoHint
+            text={t("storyEditor.tooltips.properties")}
+            testId="info-hint-properties"
+            side="bottom"
+            align="start"
+          />
+        </div>
         {selectedBlock ? (
           <SelectedBlockEditor
             block={selectedBlock}
