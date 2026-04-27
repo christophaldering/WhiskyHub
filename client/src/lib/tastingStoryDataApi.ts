@@ -221,11 +221,19 @@ export async function deleteTastingStoryImagePoolEntry(tastingId: string, imageI
 
 export type ImagePoolDescribeFields = "name" | "caption" | "altText" | "moodDescription";
 
+export type ImagePoolAiDescribeResult = {
+  item: TastingStoryImageItem;
+  applied: Partial<Record<ImagePoolDescribeFields, string>>;
+  suggestedParticipantIds: string[];
+  suggestedWhiskyIds: string[];
+  dryRun?: boolean;
+};
+
 export async function aiDescribeTastingStoryImage(
   tastingId: string,
   imageId: string,
-  options?: { fields?: ImagePoolDescribeFields[]; language?: "de" | "en" },
-): Promise<TastingStoryImageItem> {
+  options?: { fields?: ImagePoolDescribeFields[]; language?: "de" | "en"; dryRun?: boolean },
+): Promise<ImagePoolAiDescribeResult> {
   const res = await fetch(
     `/api/tasting-stories/${encodeURIComponent(tastingId)}/image-pool/${encodeURIComponent(imageId)}/ai-describe`,
     {
@@ -235,25 +243,50 @@ export async function aiDescribeTastingStoryImage(
       body: JSON.stringify(options ?? {}),
     },
   );
-  const data = await readJson<{ item: TastingStoryImageItem }>(res, "KI-Beschreibung fehlgeschlagen");
-  return data.item;
+  return readJson<ImagePoolAiDescribeResult>(res, "KI-Beschreibung fehlgeschlagen");
 }
+
+export type ImagePoolBatchPreview = {
+  id: string;
+  current: {
+    name: string | null;
+    caption: string | null;
+    altText: string | null;
+    moodDescription: string | null;
+    url: string;
+    participantIds: string[];
+    whiskyIds: string[];
+  };
+  suggested: Partial<Record<ImagePoolDescribeFields, string>>;
+  suggestedParticipantIds: string[];
+  suggestedWhiskyIds: string[];
+};
 
 export async function aiDescribeTastingStoryImagesBatch(
   tastingId: string,
   imageIds: string[],
-  options?: { fields?: ImagePoolDescribeFields[]; language?: "de" | "en"; onlyMissing?: boolean },
-): Promise<{ items: TastingStoryImageItem[]; failedIds: string[]; skippedIds: string[] }> {
+  options?: { fields?: ImagePoolDescribeFields[]; language?: "de" | "en"; onlyMissing?: boolean; dryRun?: boolean },
+): Promise<{
+  items: TastingStoryImageItem[];
+  failedIds: string[];
+  skippedIds: string[];
+  previews?: ImagePoolBatchPreview[];
+  dryRun?: boolean;
+}> {
   const res = await fetch(`/api/tasting-stories/${encodeURIComponent(tastingId)}/image-pool/ai-describe-batch`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json", ...pidHeaders() },
     body: JSON.stringify({ imageIds, ...(options ?? {}) }),
   });
-  return readJson<{ items: TastingStoryImageItem[]; failedIds: string[]; skippedIds: string[] }>(
-    res,
-    "Batch-Beschreibung fehlgeschlagen",
-  );
+  const data = await readJson<{
+    items?: TastingStoryImageItem[];
+    failedIds: string[];
+    skippedIds: string[];
+    previews?: ImagePoolBatchPreview[];
+    dryRun?: boolean;
+  }>(res, "Batch-Beschreibung fehlgeschlagen");
+  return { items: data.items ?? [], failedIds: data.failedIds, skippedIds: data.skippedIds, previews: data.previews, dryRun: data.dryRun };
 }
 
 export type ImagePoolBackfillItem = {

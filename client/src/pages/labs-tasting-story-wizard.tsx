@@ -14,9 +14,10 @@ import {
   type WizardStep,
   type WizardTone,
 } from "@/lib/tastingStoryApi";
-import { getTastingStoryData, type TastingStoryDataResponse } from "@/lib/tastingStoryDataApi";
+import { getTastingStoryData, createTastingStoryImagePoolEntry, type TastingStoryDataResponse, type TastingStoryImageItem } from "@/lib/tastingStoryDataApi";
 import { TastingStoryDataProvider } from "@/storybuilder/data/TastingStoryDataContext";
 import { StoryRenderer } from "@/storybuilder/renderer/StoryRenderer";
+import { StoryImagePool } from "@/storybuilder/editor/StoryImagePool";
 import type { StoryBlock, StoryDocument } from "@/storybuilder/core/types";
 
 const ACCENT = "#C9A961";
@@ -644,7 +645,7 @@ function QuestionsStage({
       <div style={questionCardStyle}>
         {step === 0 ? <ToneStep state={state} setState={setState} /> : null}
         {step === 1 ? <HeadlineStep state={state} setState={setState} tastingId={id} /> : null}
-        {step === 2 ? <PhotosStep state={state} setState={setState} photoOptions={photoOptions} /> : null}
+        {step === 2 ? <PhotosStep state={state} setState={setState} photoOptions={photoOptions} tastingId={id} /> : null}
         {step === 3 ? <HighlightStep state={state} setState={setState} /> : null}
         {step === 4 ? <BriefingStep state={state} setState={setState} /> : null}
         {step === 5 ? <SpotlightStep state={state} setState={setState} participants={participants} /> : null}
@@ -819,14 +820,17 @@ function PhotosStep({
   state,
   setState,
   photoOptions,
+  tastingId,
 }: {
   state: WizardState;
   setState: (u: (p: WizardState) => WizardState) => void;
   photoOptions: Array<{ url: string; label: string }>;
+  tastingId: string;
 }) {
   const [uploadBusy, setUploadBusy] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [newCategoryDraft, setNewCategoryDraft] = useState("");
+  const [poolOpen, setPoolOpen] = useState(false);
 
   const ensurePhoto = (mapping: Record<string, string[]>, url: string): Record<string, string[]> => {
     if (mapping[url]) return mapping;
@@ -848,12 +852,28 @@ function PhotosStep({
       if (!data.url) throw new Error("Antwort ohne URL");
       const newUrl = data.url;
       setState((p) => ({ ...p, imageCategories: ensurePhoto(p.imageCategories, newUrl) }));
+      try {
+        await createTastingStoryImagePoolEntry(tastingId, {
+          url: newUrl,
+          name: file.name.replace(/\.[^/.]+$/, "").slice(0, 200),
+        });
+      } catch (poolErr) {
+        console.warn("[wizard/photo] pool entry create failed", poolErr);
+      }
     } catch (e) {
       setUploadError(e instanceof Error ? e.message : "Upload fehlgeschlagen");
     } finally {
       setUploadBusy(false);
     }
   };
+
+  const handlePoolPick = useCallback(
+    (item: TastingStoryImageItem) => {
+      const url = item.url;
+      setState((p) => ({ ...p, imageCategories: ensurePhoto(p.imageCategories, url) }));
+    },
+    [setState],
+  );
 
   const toggleCategory = (url: string, category: string) => {
     setState((p) => {
@@ -959,6 +979,28 @@ function PhotosStep({
           accept="image/*"
           captureCamera
         />
+        <div style={{ marginTop: 8 }}>
+          <button
+            type="button"
+            onClick={() => setPoolOpen(true)}
+            style={{
+              background: "transparent",
+              color: ACCENT,
+              border: `1px solid ${ACCENT_DIM}`,
+              borderRadius: 4,
+              padding: "8px 14px",
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: ".1em",
+              textTransform: "uppercase",
+              cursor: "pointer",
+              fontFamily: "'Inter', system-ui, sans-serif",
+            }}
+            data-testid="button-wizard-photo-from-pool"
+          >
+            Aus Bild-Pool wählen
+          </button>
+        </div>
       </div>
 
       {uploadError ? (
@@ -966,6 +1008,18 @@ function PhotosStep({
           {uploadError}
         </div>
       ) : null}
+
+      <StoryImagePool
+        tastingId={tastingId}
+        mode="pick"
+        open={poolOpen}
+        onClose={() => setPoolOpen(false)}
+        onPick={(item) => {
+          handlePoolPick(item);
+          setPoolOpen(false);
+        }}
+        testIdPrefix="wizard-image-pool"
+      />
 
       <div style={{ marginTop: 22 }}>
         <div style={subSectionTitle}>Eigene Kategorien</div>

@@ -26557,12 +26557,12 @@ ${cleaned.slice(0, 60000)}`;
       if (!access.ok) return res.status(access.status).json({ message: access.message });
       const file = (req as Request & { file?: Express.Multer.File }).file;
       if (!file) return res.status(400).json({ message: "Keine Datei übergeben" });
-      const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      const allowed = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
       if (!allowed.includes(file.mimetype)) {
-        return res.status(415).json({ message: "Nur JPG, PNG, WebP oder GIF erlaubt" });
+        return res.status(415).json({ message: "Nur JPG, PNG, WebP oder HEIC erlaubt" });
       }
-      if (file.buffer.length > 10 * 1024 * 1024) {
-        return res.status(413).json({ message: "Datei zu groß (max 10 MB)" });
+      if (file.buffer.length > 20 * 1024 * 1024) {
+        return res.status(413).json({ message: "Datei zu groß (max 20 MB)" });
       }
       const url = await uploadBufferToObjectStorage(objectStorage, file.buffer, file.mimetype);
       return res.json({ url });
@@ -26688,33 +26688,41 @@ ${cleaned.slice(0, 60000)}`;
   const aiDescribeSchema = z.object({
     fields: z.array(z.enum(["name", "caption", "altText", "moodDescription"])).min(1).max(4).optional(),
     language: z.enum(["de", "en"]).optional(),
+    dryRun: z.boolean().optional(),
   });
 
-  const buildImagePoolPrompt = (lang: "de" | "en", img: TastingStoryImage): { system: string; user: string } => {
+  const buildImagePoolPrompt = (
+    lang: "de" | "en",
+    img: TastingStoryImage,
+    rosterParticipants: Array<{ id: string; name: string }>,
+    rosterWhiskies: Array<{ id: string; label: string }>,
+  ): { system: string; user: string } => {
+    const rosterP = rosterParticipants.length > 0
+      ? rosterParticipants.map((p) => `${p.id} = ${p.name}`).join("; ")
+      : "(keine)";
+    const rosterW = rosterWhiskies.length > 0
+      ? rosterWhiskies.map((w) => `${w.id} = ${w.label}`).join("; ")
+      : "(keine)";
     if (lang === "en") {
       return {
         system:
-          "You are a whisky-event editor describing a single photo from a tasting evening. Reply with a JSON object {\"name\":\"<short title>\",\"caption\":\"<one short sentence>\",\"altText\":\"<short accessible alt-text>\",\"moodDescription\":\"<2-3 sentences atmospheric description>\"}. Plain text only, no quotes inside fields.",
-        user: `Image URL: ${img.url}\nExisting categories: ${img.categories.join(", ") || "none"}\nExisting name: ${img.name ?? "(none)"}`,
+          "You are a whisky-event editor describing a single photo from a tasting evening. Reply with a JSON object {\"name\":\"<short title>\",\"caption\":\"<one short sentence>\",\"altText\":\"<short accessible alt-text>\",\"moodDescription\":\"<2-3 sentences atmospheric description>\",\"suggestedParticipantIds\":[<ids>],\"suggestedWhiskyIds\":[<ids>]}. Suggest IDs only from the provided rosters when clearly visible. Plain text only.",
+        user: `Image URL: ${img.url}\nExisting categories: ${img.categories.join(", ") || "none"}\nExisting name: ${img.name ?? "(none)"}\nParticipant roster: ${rosterP}\nWhisky roster: ${rosterW}\nAlready linked participantIds: ${img.participantIds.join(", ") || "none"}\nAlready linked whiskyIds: ${img.whiskyIds.join(", ") || "none"}`,
       };
     }
     return {
       system:
-        "Du bist ein Redakteur für Whisky-Events und beschreibst ein einzelnes Foto eines Tasting-Abends. Antworte ausschliesslich mit einem JSON-Objekt {\"name\":\"<kurzer Titel>\",\"caption\":\"<ein kurzer Satz>\",\"altText\":\"<kurzer barrierefreier Alt-Text>\",\"moodDescription\":\"<2-3 Sätze atmosphärische Beschreibung>\"}. Reiner Text, keine Anführungszeichen in den Feldern.",
-      user: `Bild-URL: ${img.url}\nVorhandene Kategorien: ${img.categories.join(", ") || "keine"}\nVorhandener Name: ${img.name ?? "(keiner)"}`,
+        "Du bist ein Redakteur für Whisky-Events und beschreibst ein einzelnes Foto eines Tasting-Abends. Antworte ausschliesslich mit einem JSON-Objekt {\"name\":\"<kurzer Titel>\",\"caption\":\"<ein kurzer Satz>\",\"altText\":\"<kurzer barrierefreier Alt-Text>\",\"moodDescription\":\"<2-3 Sätze atmosphärische Beschreibung>\",\"suggestedParticipantIds\":[<ids>],\"suggestedWhiskyIds\":[<ids>]}. Schlage IDs nur aus den vorgegebenen Rostern vor, wenn klar erkennbar. Reiner Text.",
+      user: `Bild-URL: ${img.url}\nVorhandene Kategorien: ${img.categories.join(", ") || "keine"}\nVorhandener Name: ${img.name ?? "(keiner)"}\nTeilnehmer-Roster: ${rosterP}\nWhisky-Roster: ${rosterW}\nBereits verknüpfte participantIds: ${img.participantIds.join(", ") || "keine"}\nBereits verknüpfte whiskyIds: ${img.whiskyIds.join(", ") || "keine"}`,
     };
   };
 
-  const tryParsePoolJson = (raw: string): Record<string, string> => {
+  const tryParsePoolJson = (raw: string): Record<string, unknown> => {
     try {
       const stripped = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
       const parsed = JSON.parse(stripped) as unknown;
       if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        const out: Record<string, string> = {};
-        for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
-          if (typeof v === "string") out[k] = v.trim();
-        }
-        return out;
+        return parsed as Record<string, unknown>;
       }
     } catch {
       void 0;
@@ -26722,17 +26730,25 @@ ${cleaned.slice(0, 60000)}`;
     return {};
   };
 
+  type ImageDescribeResult = {
+    fields: Partial<Pick<InsertTastingStoryImage, "name" | "caption" | "altText" | "moodDescription">>;
+    suggestedParticipantIds: string[];
+    suggestedWhiskyIds: string[];
+  };
+
   const describeImageOnce = async (
     openaiClient: OpenAI,
     img: TastingStoryImage,
     fields: Array<"name" | "caption" | "altText" | "moodDescription">,
     language: "de" | "en",
-  ): Promise<Partial<Pick<InsertTastingStoryImage, "name" | "caption" | "altText" | "moodDescription">>> => {
-    const { system, user } = buildImagePoolPrompt(language, img);
+    rosterParticipants: Array<{ id: string; name: string }>,
+    rosterWhiskies: Array<{ id: string; label: string }>,
+  ): Promise<ImageDescribeResult> => {
+    const { system, user } = buildImagePoolPrompt(language, img, rosterParticipants, rosterWhiskies);
     const completion = await openaiClient.chat.completions.create({
       model: "gpt-4o-mini",
       response_format: { type: "json_object" },
-      max_tokens: 600,
+      max_tokens: 700,
       temperature: 0.6,
       messages: [
         { role: "system", content: system },
@@ -26747,14 +26763,45 @@ ${cleaned.slice(0, 60000)}`;
     });
     const raw = completion.choices[0]?.message?.content?.trim() ?? "";
     const parsed = tryParsePoolJson(raw);
-    const result: Partial<Pick<InsertTastingStoryImage, "name" | "caption" | "altText" | "moodDescription">> = {};
-    if (fields.includes("name") && typeof parsed.name === "string" && parsed.name.length > 0) result.name = parsed.name.slice(0, 200);
-    if (fields.includes("caption") && typeof parsed.caption === "string" && parsed.caption.length > 0) result.caption = parsed.caption.slice(0, 800);
-    if (fields.includes("altText") && typeof parsed.altText === "string" && parsed.altText.length > 0) result.altText = parsed.altText.slice(0, 400);
-    if (fields.includes("moodDescription") && typeof parsed.moodDescription === "string" && parsed.moodDescription.length > 0) {
-      result.moodDescription = parsed.moodDescription.slice(0, 2000);
+    const fieldsOut: Partial<Pick<InsertTastingStoryImage, "name" | "caption" | "altText" | "moodDescription">> = {};
+    if (fields.includes("name") && typeof parsed.name === "string" && parsed.name.trim().length > 0) fieldsOut.name = (parsed.name as string).trim().slice(0, 200);
+    if (fields.includes("caption") && typeof parsed.caption === "string" && parsed.caption.trim().length > 0) fieldsOut.caption = (parsed.caption as string).trim().slice(0, 800);
+    if (fields.includes("altText") && typeof parsed.altText === "string" && parsed.altText.trim().length > 0) fieldsOut.altText = (parsed.altText as string).trim().slice(0, 400);
+    if (fields.includes("moodDescription") && typeof parsed.moodDescription === "string" && parsed.moodDescription.trim().length > 0) {
+      fieldsOut.moodDescription = (parsed.moodDescription as string).trim().slice(0, 2000);
     }
-    return result;
+    const validPids = new Set(rosterParticipants.map((p) => p.id));
+    const validWids = new Set(rosterWhiskies.map((w) => w.id));
+    const rawPids = Array.isArray(parsed.suggestedParticipantIds) ? parsed.suggestedParticipantIds : [];
+    const rawWids = Array.isArray(parsed.suggestedWhiskyIds) ? parsed.suggestedWhiskyIds : [];
+    const suggestedParticipantIds = rawPids.filter((v): v is string => typeof v === "string" && validPids.has(v) && !img.participantIds.includes(v));
+    const suggestedWhiskyIds = rawWids.filter((v): v is string => typeof v === "string" && validWids.has(v) && !img.whiskyIds.includes(v));
+    return { fields: fieldsOut, suggestedParticipantIds, suggestedWhiskyIds };
+  };
+
+  const buildPoolRosters = async (tastingId: string): Promise<{
+    participants: Array<{ id: string; name: string }>;
+    whiskies: Array<{ id: string; label: string }>;
+  }> => {
+    try {
+      const [parts, whiskies] = await Promise.all([
+        storage.getTastingParticipants(tastingId),
+        storage.getWhiskiesForTasting(tastingId),
+      ]);
+      return {
+        participants: (parts ?? []).map((p) => ({
+          id: p.participant.id,
+          name: (p.participant.name ?? p.participant.email ?? p.participant.id).toString(),
+        })),
+        whiskies: (whiskies ?? []).map((w) => ({
+          id: w.id,
+          label: [w.name, w.distillery].filter(Boolean).join(" — ") || w.id,
+        })),
+      };
+    } catch (err) {
+      console.warn("[image-pool] roster build failed", err);
+      return { participants: [], whiskies: [] };
+    }
   };
 
   app.post("/api/tasting-stories/:tastingId/image-pool/:imageId/ai-describe", async (req: Request, res: Response) => {
@@ -26771,6 +26818,7 @@ ${cleaned.slice(0, 60000)}`;
       if (!parsed.success) return res.status(422).json({ message: "Ungültiger Request-Body" });
       const fields = parsed.data.fields ?? ["name", "caption", "altText", "moodDescription"];
       const language = parsed.data.language ?? "de";
+      const dryRun = parsed.data.dryRun === true;
       const rate = checkStoryAiRate(`image-pool:${access.participant.id}`);
       if (!rate.allowed) {
         return res.status(429).json({ message: `Zu viele Anfragen. Versuche es in ${rate.retryAfterSeconds ?? 30} Sekunden erneut.` });
@@ -26781,12 +26829,27 @@ ${cleaned.slice(0, 60000)}`;
         if (aiResult.error === "AI_DISABLED") return res.status(503).json({ message: "KI-Funktionen sind aktuell deaktiviert." });
         return res.status(503).json({ message: "Kein KI-Anbieter verfügbar." });
       }
-      const description = await describeImageOnce(aiResult.client, img, fields, language);
-      if (Object.keys(description).length === 0) {
+      const rosters = await buildPoolRosters(tastingId);
+      const description = await describeImageOnce(aiResult.client, img, fields, language, rosters.participants, rosters.whiskies);
+      if (Object.keys(description.fields).length === 0 && description.suggestedParticipantIds.length === 0 && description.suggestedWhiskyIds.length === 0) {
         return res.status(502).json({ message: "KI lieferte keine verwertbare Beschreibung" });
       }
-      const updated = await storage.updateTastingStoryImage(imageId, description);
-      return res.json({ item: updated ?? img, applied: description });
+      if (dryRun) {
+        return res.json({
+          item: img,
+          applied: description.fields,
+          suggestedParticipantIds: description.suggestedParticipantIds,
+          suggestedWhiskyIds: description.suggestedWhiskyIds,
+          dryRun: true,
+        });
+      }
+      const updated = await storage.updateTastingStoryImage(imageId, description.fields);
+      return res.json({
+        item: updated ?? img,
+        applied: description.fields,
+        suggestedParticipantIds: description.suggestedParticipantIds,
+        suggestedWhiskyIds: description.suggestedWhiskyIds,
+      });
     } catch (e: unknown) {
       console.error("[tasting-stories/image-pool/ai-describe] error:", e);
       const msg = e instanceof Error ? e.message : "KI-Beschreibung fehlgeschlagen";
@@ -26799,6 +26862,7 @@ ${cleaned.slice(0, 60000)}`;
     fields: z.array(z.enum(["name", "caption", "altText", "moodDescription"])).min(1).max(4).optional(),
     language: z.enum(["de", "en"]).optional(),
     onlyMissing: z.boolean().optional(),
+    dryRun: z.boolean().optional(),
   });
 
   app.post("/api/tasting-stories/:tastingId/image-pool/ai-describe-batch", async (req: Request, res: Response) => {
@@ -26812,6 +26876,7 @@ ${cleaned.slice(0, 60000)}`;
       const fields = parsed.data.fields ?? ["name", "caption", "altText", "moodDescription"];
       const language = parsed.data.language ?? "de";
       const onlyMissing = parsed.data.onlyMissing !== false;
+      const dryRun = parsed.data.dryRun === true;
       const rate = checkStoryAiRate(`image-pool-batch:${access.participant.id}`);
       if (!rate.allowed) {
         return res.status(429).json({ message: `Zu viele Anfragen. Versuche es in ${rate.retryAfterSeconds ?? 30} Sekunden erneut.` });
@@ -26822,7 +26887,16 @@ ${cleaned.slice(0, 60000)}`;
         if (aiResult.error === "AI_DISABLED") return res.status(503).json({ message: "KI-Funktionen sind aktuell deaktiviert." });
         return res.status(503).json({ message: "Kein KI-Anbieter verfügbar." });
       }
+      const rosters = await buildPoolRosters(tastingId);
+      type PreviewItem = {
+        id: string;
+        current: Pick<TastingStoryImage, "name" | "caption" | "altText" | "moodDescription" | "url" | "participantIds" | "whiskyIds">;
+        suggested: Partial<Pick<InsertTastingStoryImage, "name" | "caption" | "altText" | "moodDescription">>;
+        suggestedParticipantIds: string[];
+        suggestedWhiskyIds: string[];
+      };
       const updatedItems: TastingStoryImage[] = [];
+      const previews: PreviewItem[] = [];
       const failedIds: string[] = [];
       const skippedIds: string[] = [];
       for (const id of parsed.data.imageIds) {
@@ -26831,26 +26905,42 @@ ${cleaned.slice(0, 60000)}`;
           skippedIds.push(id);
           continue;
         }
-        if (onlyMissing) {
-          const allFilled = fields.every((f) => {
-            const v = img[f];
-            return typeof v === "string" && v.trim().length > 0;
-          });
-          if (allFilled) {
-            skippedIds.push(id);
-            continue;
-          }
+        const allFieldsFilled = fields.every((f) => {
+          const v = img[f];
+          return typeof v === "string" && v.trim().length > 0;
+        });
+        if (onlyMissing && allFieldsFilled && !dryRun) {
+          skippedIds.push(id);
+          continue;
         }
         try {
-          const description = await describeImageOnce(aiResult.client, img, fields, language);
-          if (Object.keys(description).length === 0) {
+          const description = await describeImageOnce(aiResult.client, img, fields, language, rosters.participants, rosters.whiskies);
+          if (Object.keys(description.fields).length === 0 && description.suggestedParticipantIds.length === 0 && description.suggestedWhiskyIds.length === 0) {
             failedIds.push(id);
+            continue;
+          }
+          if (dryRun) {
+            previews.push({
+              id,
+              current: {
+                name: img.name,
+                caption: img.caption,
+                altText: img.altText,
+                moodDescription: img.moodDescription,
+                url: img.url,
+                participantIds: img.participantIds,
+                whiskyIds: img.whiskyIds,
+              },
+              suggested: description.fields,
+              suggestedParticipantIds: description.suggestedParticipantIds,
+              suggestedWhiskyIds: description.suggestedWhiskyIds,
+            });
             continue;
           }
           const patch: Partial<Pick<InsertTastingStoryImage, "name" | "caption" | "altText" | "moodDescription">> = {};
           for (const f of fields) {
             const cur = img[f];
-            const fresh = description[f];
+            const fresh = description.fields[f];
             if (typeof fresh === "string" && fresh.length > 0 && (!onlyMissing || !(typeof cur === "string" && cur.trim().length > 0))) {
               patch[f] = fresh;
             }
@@ -26866,6 +26956,9 @@ ${cleaned.slice(0, 60000)}`;
           console.warn("[tasting-stories/image-pool/ai-describe-batch] item error:", id, err);
           failedIds.push(id);
         }
+      }
+      if (dryRun) {
+        return res.json({ previews, failedIds, skippedIds, dryRun: true });
       }
       return res.json({ items: updatedItems, failedIds, skippedIds });
     } catch (e: unknown) {

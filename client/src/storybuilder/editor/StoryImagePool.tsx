@@ -60,6 +60,21 @@ export function StoryImagePool({
   const [filterText, setFilterText] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<Array<{ name: string; status: "uploading" | "done" | "error"; message?: string }>>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [aiPreview, setAiPreview] = useState<{
+    items: Array<{
+      id: string;
+      url: string;
+      currentName: string | null;
+      currentCaption: string | null;
+      currentAltText: string | null;
+      currentMoodDescription: string | null;
+      suggested: { name?: string | null; caption?: string | null; altText?: string | null; moodDescription?: string | null; suggestedParticipantIds?: string[]; suggestedWhiskyIds?: string[] };
+      apply: { name: boolean; caption: boolean; altText: boolean; moodDescription: boolean; participants: boolean; whiskies: boolean };
+    }>;
+    failedIds: string[];
+  } | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -89,16 +104,24 @@ export function StoryImagePool({
   }, [open, onClose]);
 
   const uploadFile = useCallback(
-    async (file: File) => {
-      setBusy(true);
-      setError(null);
+    async (file: File, slotIndex: number) => {
       try {
+        if (file.size > 20 * 1024 * 1024) {
+          throw new Error("Datei zu groß (max 20 MB)");
+        }
         const fd = new FormData();
         fd.append("file", file);
         const resp = await fetch(`/api/tasting-stories/${tastingId}/image-pool/upload`, { method: "POST", body: fd, credentials: "include" });
         if (!resp.ok) {
           const txt = await resp.text().catch(() => "");
-          throw new Error(txt || "Upload fehlgeschlagen");
+          let parsed = "";
+          try {
+            const j = txt ? JSON.parse(txt) : null;
+            if (j && typeof j.message === "string") parsed = j.message;
+          } catch {
+            parsed = txt;
+          }
+          throw new Error(parsed || "Upload fehlgeschlagen");
         }
         const data = (await resp.json()) as { url?: string };
         if (!data.url) throw new Error("Antwort ohne URL");
@@ -111,25 +134,68 @@ export function StoryImagePool({
           return [...prev, created];
         });
         setSelectedId(created.id);
+        setUploadProgress((prev) => prev.map((p, i) => (i === slotIndex ? { ...p, status: "done" } : p)));
       } catch (e: unknown) {
-        setError(e instanceof Error ? e.message : "Upload fehlgeschlagen");
-      } finally {
-        setBusy(false);
+        const msg = e instanceof Error ? e.message : "Upload fehlgeschlagen";
+        setUploadProgress((prev) => prev.map((p, i) => (i === slotIndex ? { ...p, status: "error", message: msg } : p)));
       }
     },
     [tastingId],
   );
 
   const onPickFiles = useCallback(
-    async (files: FileList | null) => {
+    async (files: FileList | File[] | null) => {
       if (!files) return;
+      const arr: File[] = [];
       for (let i = 0; i < files.length; i++) {
         const f = files[i];
-        if (f) await uploadFile(f);
+        if (f) arr.push(f);
       }
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (arr.length === 0) return;
+      setBusy(true);
+      setError(null);
+      const baseIndex = uploadProgress.length;
+      setUploadProgress((prev) => [
+        ...prev,
+        ...arr.map((f) => ({ name: f.name, status: "uploading" as const })),
+      ]);
+      try {
+        await Promise.all(arr.map((f, i) => uploadFile(f, baseIndex + i)));
+      } finally {
+        setBusy(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
     },
-    [uploadFile],
+    [uploadFile, uploadProgress.length],
+  );
+
+  const dismissUploadProgress = useCallback(() => {
+    setUploadProgress([]);
+  }, []);
+
+  const onDragOverDropZone = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer && Array.from(e.dataTransfer.types).includes("Files")) {
+      setIsDragOver(true);
+    }
+  }, []);
+  const onDragLeaveDropZone = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  }, []);
+  const onDropFiles = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragOver(false);
+      const dt = e.dataTransfer;
+      if (!dt) return;
+      const files = dt.files;
+      if (files && files.length > 0) void onPickFiles(files);
+    },
+    [onPickFiles],
   );
 
   const filtered = useMemo(() => {
@@ -188,8 +254,20 @@ export function StoryImagePool({
       setBusy(true);
       setError(null);
       try {
-        const updated = await aiDescribeTastingStoryImage(tastingId, imageId, { fields, language });
-        setItems((prev) => prev.map((it) => (it.id === imageId ? updated : it)));
+        const result = await aiDescribeTastingStoryImage(tastingId, imageId, { fields, language });
+        setItems((prev) => prev.map((it) => (it.id === imageId ? result.item : it)));
+        if (result.suggestedParticipantIds.length > 0 || result.suggestedWhiskyIds.length > 0) {
+          const merged = {
+            ...result.item,
+            participantIds: Array.from(new Set([...result.item.participantIds, ...result.suggestedParticipantIds])),
+            whiskyIds: Array.from(new Set([...result.item.whiskyIds, ...result.suggestedWhiskyIds])),
+          };
+          const updated = await updateTastingStoryImagePoolEntry(tastingId, imageId, {
+            participantIds: merged.participantIds,
+            whiskyIds: merged.whiskyIds,
+          });
+          setItems((prev) => prev.map((it) => (it.id === imageId ? updated : it)));
+        }
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : "KI-Beschreibung fehlgeschlagen");
       } finally {
@@ -201,23 +279,122 @@ export function StoryImagePool({
 
   const aiDescribeAll = useCallback(async () => {
     if (filtered.length === 0) return;
-    if (!window.confirm(`KI-Beschreibung für ${filtered.length} Bild(er) starten? (nur fehlende Felder)`)) return;
     setBatchBusy(true);
     setError(null);
     try {
       const ids = filtered.map((it) => it.id);
-      const result = await aiDescribeTastingStoryImagesBatch(tastingId, ids, { language, onlyMissing: true });
-      const map = new Map(result.items.map((it) => [it.id, it] as const));
-      setItems((prev) => prev.map((it) => map.get(it.id) ?? it));
-      if (result.failedIds.length > 0) {
-        setError(`Bei ${result.failedIds.length} Bild(ern) fehlgeschlagen.`);
+      const result = await aiDescribeTastingStoryImagesBatch(tastingId, ids, { language, onlyMissing: false, dryRun: true });
+      const previews = result.previews ?? [];
+      if (previews.length === 0) {
+        setError(`Keine KI-Vorschläge erhalten. (Fehlgeschlagen: ${result.failedIds.length})`);
+        return;
       }
+      const itemsById = new Map(items.map((it) => [it.id, it] as const));
+      setAiPreview({
+        items: previews.map((p) => {
+          const cur = itemsById.get(p.id);
+          return {
+            id: p.id,
+            url: p.current.url,
+            currentName: cur?.name ?? p.current.name,
+            currentCaption: cur?.caption ?? p.current.caption,
+            currentAltText: cur?.altText ?? p.current.altText,
+            currentMoodDescription: cur?.moodDescription ?? p.current.moodDescription,
+            suggested: {
+              name: p.suggested.name ?? null,
+              caption: p.suggested.caption ?? null,
+              altText: p.suggested.altText ?? null,
+              moodDescription: p.suggested.moodDescription ?? null,
+              suggestedParticipantIds: p.suggestedParticipantIds,
+              suggestedWhiskyIds: p.suggestedWhiskyIds,
+            },
+            apply: {
+              name: typeof p.suggested.name === "string" && p.suggested.name.length > 0,
+              caption: typeof p.suggested.caption === "string" && p.suggested.caption.length > 0,
+              altText: typeof p.suggested.altText === "string" && p.suggested.altText.length > 0,
+              moodDescription: typeof p.suggested.moodDescription === "string" && p.suggested.moodDescription.length > 0,
+              participants: p.suggestedParticipantIds.length > 0,
+              whiskies: p.suggestedWhiskyIds.length > 0,
+            },
+          };
+        }),
+        failedIds: result.failedIds,
+      });
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Batch-Beschreibung fehlgeschlagen");
     } finally {
       setBatchBusy(false);
     }
-  }, [tastingId, filtered, language]);
+  }, [tastingId, filtered, language, items]);
+
+  const togglePreviewApply = useCallback(
+    (imageId: string, key: "name" | "caption" | "altText" | "moodDescription" | "participants" | "whiskies") => {
+      setAiPreview((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          items: prev.items.map((it) =>
+            it.id === imageId ? { ...it, apply: { ...it.apply, [key]: !it.apply[key] } } : it,
+          ),
+        };
+      });
+    },
+    [],
+  );
+
+  const applyAiPreview = useCallback(async () => {
+    if (!aiPreview) return;
+    setBatchBusy(true);
+    setError(null);
+    try {
+      const itemsById = new Map(items.map((it) => [it.id, it] as const));
+      const updates: TastingStoryImageItem[] = [];
+      for (const entry of aiPreview.items) {
+        const current = itemsById.get(entry.id);
+        if (!current) continue;
+        const patch: ImagePoolMetadataPatch = {};
+        let changed = false;
+        if (entry.apply.name && typeof entry.suggested.name === "string" && entry.suggested.name.length > 0) {
+          patch.name = entry.suggested.name;
+          changed = true;
+        }
+        if (entry.apply.caption && typeof entry.suggested.caption === "string" && entry.suggested.caption.length > 0) {
+          patch.caption = entry.suggested.caption;
+          changed = true;
+        }
+        if (entry.apply.altText && typeof entry.suggested.altText === "string" && entry.suggested.altText.length > 0) {
+          patch.altText = entry.suggested.altText;
+          changed = true;
+        }
+        if (entry.apply.moodDescription && typeof entry.suggested.moodDescription === "string" && entry.suggested.moodDescription.length > 0) {
+          patch.moodDescription = entry.suggested.moodDescription;
+          changed = true;
+        }
+        if (entry.apply.participants && entry.suggested.suggestedParticipantIds && entry.suggested.suggestedParticipantIds.length > 0) {
+          patch.participantIds = Array.from(new Set([...current.participantIds, ...entry.suggested.suggestedParticipantIds]));
+          changed = true;
+        }
+        if (entry.apply.whiskies && entry.suggested.suggestedWhiskyIds && entry.suggested.suggestedWhiskyIds.length > 0) {
+          patch.whiskyIds = Array.from(new Set([...current.whiskyIds, ...entry.suggested.suggestedWhiskyIds]));
+          changed = true;
+        }
+        if (!changed) continue;
+        try {
+          const updated = await updateTastingStoryImagePoolEntry(tastingId, entry.id, patch);
+          updates.push(updated);
+        } catch (err) {
+          console.warn("[image-pool/preview-apply] failed for", entry.id, err);
+        }
+      }
+      if (updates.length > 0) {
+        const map = new Map(updates.map((it) => [it.id, it] as const));
+        setItems((prev) => prev.map((it) => map.get(it.id) ?? it));
+      }
+      setAiPreview(null);
+    } finally {
+      setBatchBusy(false);
+    }
+  }, [aiPreview, items, tastingId]);
 
   if (!open) return null;
 
@@ -255,7 +432,7 @@ export function StoryImagePool({
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
               multiple
               onChange={(e) => void onPickFiles(e.target.files)}
               style={{ display: "none" }}
@@ -401,6 +578,131 @@ export function StoryImagePool({
           </aside>
         </div>
       </div>
+      {aiPreview ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="KI-Vorschau"
+          data-testid={`dialog-${testIdPrefix}-ai-preview`}
+          style={{ ...overlayStyle, zIndex: 90 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setAiPreview(null);
+          }}
+        >
+          <div style={{ ...modalStyle, width: "min(1000px, 100%)" }}>
+            <header style={headerStyle}>
+              <div>
+                <div style={{ fontSize: 11, letterSpacing: ".25em", textTransform: "uppercase", color: "#C9A961" }}>
+                  KI-Vorschläge
+                </div>
+                <div style={{ fontSize: 16, color: "#F5EDE0", marginTop: 4 }}>
+                  {aiPreview.items.length} Bild(er) · prüfen und übernehmen
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setAiPreview(null)}
+                  style={ghostBtn}
+                  data-testid={`button-${testIdPrefix}-ai-preview-cancel`}
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void applyAiPreview()}
+                  style={primaryBtn}
+                  disabled={batchBusy}
+                  data-testid={`button-${testIdPrefix}-ai-preview-apply`}
+                >
+                  {batchBusy ? "Übernehme…" : "Ausgewählte übernehmen"}
+                </button>
+              </div>
+            </header>
+            <div style={{ padding: 12, overflowY: "auto", display: "grid", gap: 12 }}>
+              {aiPreview.failedIds.length > 0 ? (
+                <div style={errorStyle} role="alert">
+                  Fehlgeschlagen: {aiPreview.failedIds.length}
+                </div>
+              ) : null}
+              {aiPreview.items.map((entry) => {
+                const renderRow = (
+                  fieldKey: "name" | "caption" | "altText" | "moodDescription",
+                  label: string,
+                  current: string | null,
+                  suggested: string | null | undefined,
+                ) => {
+                  if (!suggested) return null;
+                  return (
+                    <div style={{ display: "grid", gap: 4, padding: 8, border: "1px solid rgba(201,169,97,0.18)", borderRadius: 4 }}>
+                      <label style={{ display: "flex", gap: 6, alignItems: "center", color: "#C9A961", fontSize: 12, letterSpacing: ".15em", textTransform: "uppercase" }}>
+                        <input
+                          type="checkbox"
+                          checked={entry.apply[fieldKey]}
+                          onChange={() => togglePreviewApply(entry.id, fieldKey)}
+                          data-testid={`checkbox-${testIdPrefix}-ai-preview-${entry.id}-${fieldKey}`}
+                        />
+                        {label}
+                      </label>
+                      <div style={{ fontSize: 12, color: "#A89A85" }}>Aktuell: {current && current.length > 0 ? current : "(leer)"}</div>
+                      <div style={{ fontSize: 13, color: "#F5EDE0" }}>Vorschlag: {suggested}</div>
+                    </div>
+                  );
+                };
+                const renderLinks = (
+                  key: "participants" | "whiskies",
+                  label: string,
+                  ids: string[] | undefined,
+                  resolveLabel: (id: string) => string,
+                ) => {
+                  if (!ids || ids.length === 0) return null;
+                  return (
+                    <div style={{ display: "grid", gap: 4, padding: 8, border: "1px solid rgba(201,169,97,0.18)", borderRadius: 4 }}>
+                      <label style={{ display: "flex", gap: 6, alignItems: "center", color: "#C9A961", fontSize: 12, letterSpacing: ".15em", textTransform: "uppercase" }}>
+                        <input
+                          type="checkbox"
+                          checked={entry.apply[key]}
+                          onChange={() => togglePreviewApply(entry.id, key)}
+                          data-testid={`checkbox-${testIdPrefix}-ai-preview-${entry.id}-${key}`}
+                        />
+                        {label}
+                      </label>
+                      <div style={{ fontSize: 13, color: "#F5EDE0" }}>{ids.map((id) => resolveLabel(id)).join(", ")}</div>
+                    </div>
+                  );
+                };
+                return (
+                  <div
+                    key={entry.id}
+                    style={{ display: "grid", gridTemplateColumns: "180px 1fr", gap: 12, padding: 10, border: "1px solid rgba(201,169,97,0.25)", borderRadius: 6, background: "rgba(201,169,97,0.04)" }}
+                    data-testid={`row-${testIdPrefix}-ai-preview-${entry.id}`}
+                  >
+                    <img
+                      src={entry.url}
+                      alt={entry.currentAltText ?? entry.currentName ?? ""}
+                      style={{ width: "100%", height: 140, objectFit: "cover", borderRadius: 4 }}
+                    />
+                    <div style={{ display: "grid", gap: 8 }}>
+                      {renderRow("name", "Name", entry.currentName, entry.suggested.name ?? null)}
+                      {renderRow("caption", "Caption", entry.currentCaption, entry.suggested.caption ?? null)}
+                      {renderRow("altText", "Alt-Text", entry.currentAltText, entry.suggested.altText ?? null)}
+                      {renderRow("moodDescription", "Stimmung", entry.currentMoodDescription, entry.suggested.moodDescription ?? null)}
+                      {renderLinks("participants", "Teilnehmer-Vorschlag", entry.suggested.suggestedParticipantIds, (id) => {
+                        const p = participants.find((x) => x.id === id);
+                        return p ? (p.displayName || p.name || id) : id;
+                      })}
+                      {renderLinks("whiskies", "Whisky-Vorschlag", entry.suggested.suggestedWhiskyIds, (id) => {
+                        const w = whiskies.find((x) => x.id === id);
+                        return w ? ([w.distillery, w.name].filter(Boolean).join(" – ") || id) : id;
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

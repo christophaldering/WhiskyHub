@@ -38,7 +38,7 @@ import {
 } from "./AiInstructionInput";
 import { StoryImagePool } from "./StoryImagePool";
 import { ImagePoolPickerProvider, type OpenPickerOptions } from "./imagePoolPickerContext";
-import { backfillTastingStoryImagePool, type ImagePoolBackfillItem, type TastingStoryImageItem } from "../../lib/tastingStoryDataApi";
+import { backfillTastingStoryImagePool, listTastingStoryImagePool, type ImagePoolBackfillItem, type TastingStoryImageItem } from "../../lib/tastingStoryDataApi";
 import { useTastingStoryData } from "../data/TastingStoryDataContext";
 
 const HISTORY_LIMIT = 50;
@@ -176,6 +176,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
   });
   const imagePoolPickResolverRef = useRef<((item: TastingStoryImageItem) => void) | null>(null);
   const imagePoolBackfilledRef = useRef<boolean>(false);
+  const [poolItems, setPoolItems] = useState<TastingStoryImageItem[]>([]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.matchMedia) return;
@@ -272,7 +273,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
             pushUrl(it.url, {
               categories: ["Galerie"],
               caption: typeof it.caption === "string" ? it.caption : null,
-              altText: typeof it.altText === "string" ? it.altText : null,
+              altText: typeof it.alt === "string" ? it.alt : null,
             });
           }
         }
@@ -286,9 +287,22 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
     });
   }, []);
 
+  const refreshPoolItems = useCallback(async () => {
+    if (!tastingIdForPool) return;
+    try {
+      const list = await listTastingStoryImagePool(tastingIdForPool);
+      setPoolItems(list);
+    } catch (err) {
+      console.warn("[image-pool] list failed", err);
+    }
+  }, [tastingIdForPool]);
+
   const ensureImagePoolBackfill = useCallback(async () => {
     if (!tastingIdForPool) return;
-    if (imagePoolBackfilledRef.current) return;
+    if (imagePoolBackfilledRef.current) {
+      void refreshPoolItems();
+      return;
+    }
     imagePoolBackfilledRef.current = true;
     try {
       const items = collectBackfillItems(doc.blocks);
@@ -297,8 +311,15 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
       }
     } catch (err) {
       console.warn("[image-pool] backfill failed", err);
+    } finally {
+      void refreshPoolItems();
     }
-  }, [tastingIdForPool, doc.blocks, collectBackfillItems]);
+  }, [tastingIdForPool, doc.blocks, collectBackfillItems, refreshPoolItems]);
+
+  useEffect(() => {
+    if (!tastingIdForPool) return;
+    void refreshPoolItems();
+  }, [tastingIdForPool, refreshPoolItems]);
 
   const openImagePool = useCallback(async () => {
     if (!tastingIdForPool) return;
@@ -328,8 +349,10 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
     () => ({
       available: !!tastingIdForPool,
       openPicker: openImagePoolPicker,
+      poolItems,
+      refreshPool: () => { void refreshPoolItems(); },
     }),
-    [tastingIdForPool, openImagePoolPicker],
+    [tastingIdForPool, openImagePoolPicker, poolItems, refreshPoolItems],
   );
 
   useEffect(() => {

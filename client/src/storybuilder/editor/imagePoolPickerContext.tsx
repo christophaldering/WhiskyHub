@@ -9,11 +9,15 @@ export type OpenPickerOptions = {
 export type ImagePoolPickerContextValue = {
   available: boolean;
   openPicker: (onPick: (item: TastingStoryImageItem) => void, options?: OpenPickerOptions) => void;
+  poolItems: TastingStoryImageItem[];
+  refreshPool: () => void;
 };
 
 const noopValue: ImagePoolPickerContextValue = {
   available: false,
   openPicker: () => undefined,
+  poolItems: [],
+  refreshPool: () => undefined,
 };
 
 const ImagePoolPickerContext = createContext<ImagePoolPickerContextValue>(noopValue);

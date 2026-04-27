@@ -146,6 +146,19 @@ function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
   const picker = useImagePoolPicker();
   const set = <K extends keyof Payload>(key: K, value: Payload[K]) => onChange({ ...payload, [key]: value });
   const allParticipants = data?.participants ?? [];
+  const suggestionByParticipantId = (() => {
+    const out: Record<string, { url: string; name: string | null }> = {};
+    for (const it of picker.poolItems) {
+      if (!it.categories.includes("Teilnehmer")) continue;
+      if (it.participantIds.length !== 1) continue;
+      const pid = it.participantIds[0];
+      if (!pid) continue;
+      if (!out[pid]) {
+        out[pid] = { url: it.url, name: it.name ?? null };
+      }
+    }
+    return out;
+  })();
   const updateOverride = (pid: string, patch: Partial<{ funFact: string }>) => {
     const cur = payload.overrides ?? {};
     const existing = cur[pid] ?? { funFact: "" };
@@ -171,6 +184,30 @@ function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
       { filterCategory: "Teilnehmer", filterParticipantId: pid },
     );
   };
+  const acceptSuggestionForParticipant = (pid: string) => {
+    const sugg = suggestionByParticipantId[pid];
+    if (!sugg) return;
+    setPhotoForParticipant(pid, sugg.url);
+  };
+  const acceptAllSuggestions = () => {
+    const cur = payload.participantPhotosById ?? {};
+    const next = { ...cur };
+    let changed = false;
+    for (const p of allParticipants) {
+      if (next[p.id] && next[p.id].length > 0) continue;
+      const sugg = suggestionByParticipantId[p.id];
+      if (sugg) {
+        next[p.id] = sugg.url;
+        changed = true;
+      }
+    }
+    if (changed) set("participantPhotosById", next);
+  };
+  const totalSuggestions = allParticipants.reduce((acc, p) => {
+    const cur = payload.participantPhotosById?.[p.id];
+    if (cur && cur.length > 0) return acc;
+    return suggestionByParticipantId[p.id] ? acc + 1 : acc;
+  }, 0);
   return (
     <div style={{ display: "grid", gap: 12 }}>
       <div style={hintStyle}>Verkoster werden automatisch geladen. Pro Karte kannst du einen KI-Fun-Fakt überschreiben.</div>
@@ -194,10 +231,24 @@ function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
         <div style={hintStyle}>Keine Verkoster verfügbar.</div>
       ) : (
         <div style={{ display: "grid", gap: 10, marginTop: 8 }}>
-          <div style={{ fontSize: 11, letterSpacing: ".2em", textTransform: "uppercase", color: "#A89A85" }}>Pro-Verkoster Fun-Fakts</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <div style={{ fontSize: 11, letterSpacing: ".2em", textTransform: "uppercase", color: "#A89A85" }}>Pro-Verkoster Fun-Fakts</div>
+            {totalSuggestions > 0 ? (
+              <button
+                type="button"
+                onClick={acceptAllSuggestions}
+                style={acceptAllSuggBtnStyle}
+                data-testid="button-taster-accept-all-suggestions"
+                title="Alle KI-Vorschläge übernehmen"
+              >
+                KI-Vorschläge übernehmen ({totalSuggestions})
+              </button>
+            ) : null}
+          </div>
           {allParticipants.map((p) => {
             const ov = payload.overrides?.[p.id] ?? { funFact: "" };
             const photoUrl = payload.participantPhotosById?.[p.id] ?? "";
+            const suggestion = !photoUrl ? suggestionByParticipantId[p.id] : null;
             return (
               <div key={p.id} style={overrideRow}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
@@ -250,6 +301,27 @@ function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
                     </button>
                   ) : null}
                 </div>
+                {suggestion ? (
+                  <div
+                    style={suggestionPillStyle}
+                    data-testid={`suggestion-taster-photo-${p.id}`}
+                  >
+                    <img
+                      src={suggestion.url}
+                      alt=""
+                      style={{ width: 24, height: 24, borderRadius: "50%", objectFit: "cover", border: "1px solid #C9A961" }}
+                    />
+                    <span style={{ fontSize: 11, color: "#C9A961", flex: 1 }}>KI-Vorschlag aus Pool</span>
+                    <button
+                      type="button"
+                      onClick={() => acceptSuggestionForParticipant(p.id)}
+                      style={acceptSuggBtnStyle}
+                      data-testid={`button-taster-accept-suggestion-${p.id}`}
+                    >
+                      Übernehmen
+                    </button>
+                  </div>
+                ) : null}
                 <textarea
                   placeholder="KI-Fun-Fakt (z.B. Smoke-Liebhaber, mag fruchtige Sherry-Casks…)"
                   value={ov.funFact ?? ""}
@@ -272,6 +344,9 @@ const hintStyle: React.CSSProperties = { fontSize: 11, color: "#6B5F4F", padding
 const overrideRow: React.CSSProperties = { display: "grid", gap: 6, padding: "10px", border: "1px solid rgba(201,169,97,0.12)", borderRadius: 4 };
 const pickPhotoBtnStyle: React.CSSProperties = { background: "transparent", color: "#C9A961", border: "1px solid rgba(201,169,97,0.4)", borderRadius: 3, padding: "4px 8px", fontSize: 10, fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif" };
 const removePhotoBtnStyle: React.CSSProperties = { background: "transparent", color: "#d97757", border: "1px solid rgba(217,119,87,0.4)", borderRadius: 3, padding: "2px 6px", fontSize: 11, cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif" };
+const suggestionPillStyle: React.CSSProperties = { display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 4, background: "rgba(201,169,97,0.08)", border: "1px dashed rgba(201,169,97,0.5)" };
+const acceptSuggBtnStyle: React.CSSProperties = { background: "#C9A961", color: "#0B0906", border: "none", borderRadius: 3, padding: "3px 8px", fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif" };
+const acceptAllSuggBtnStyle: React.CSSProperties = { background: "rgba(201,169,97,0.15)", color: "#C9A961", border: "1px solid rgba(201,169,97,0.5)", borderRadius: 3, padding: "5px 10px", fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif" };
 
 export const tasterGridBlock: BlockDefinition<Payload> = {
   type: "taster-grid",
