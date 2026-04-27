@@ -5853,346 +5853,346 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
   const showBackToCompanion = isMobile && forceDesktopView;
 
-  if (tasting && currentParticipant && (tasting.status === "open" || tasting.status === "reveal")) {
-    const inviteSectionForCockpit: ReactNode = tasting.code ? (
-      <div className="labs-card p-4">
-        <div className="mb-3">
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <p className="text-xs font-medium mb-1" style={{ color: "var(--labs-text-muted)" }}>{t("labs.host.joinCode")}</p>
-              <p
-                className="text-2xl font-bold tracking-widest"
-                style={{ color: "var(--labs-accent)", fontFamily: "monospace" }}
-                data-testid="labs-host-code"
-              >
+  const inviteCardNode: ReactNode = tasting?.code ? (
+    <div className="labs-card p-4">
+      <div className="mb-3">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <p className="text-xs font-medium mb-1" style={{ color: "var(--labs-text-muted)" }}>{t("labs.host.joinCode")}</p>
+            <p
+              className="text-2xl font-bold tracking-widest"
+              style={{ color: "var(--labs-accent)", fontFamily: "monospace" }}
+              data-testid="labs-host-code"
+            >
                 {tasting.code}
               </p>
             </div>
+        </div>
+        <div className="flex items-center gap-1 flex-wrap">
+          <button
+            className="labs-btn-ghost flex items-center gap-1 text-xs px-2 py-1.5"
+            onClick={copyCode}
+            data-testid="labs-host-copy-code"
+          >
+            {codeCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            {codeCopied ? t("labs.host.copied") : t("labs.host.copy")}
+          </button>
+          <button
+            className="labs-btn-ghost flex items-center gap-1 text-xs px-2 py-1.5"
+            onClick={() => setShowQr(!showQr)}
+            data-testid="labs-host-toggle-qr"
+          >
+            <QrCode className="w-3.5 h-3.5" />
+            QR
+          </button>
+          <button
+            className="labs-btn-ghost flex items-center gap-1 text-xs px-2 py-1.5"
+            onClick={() => setShowEmailInvite(!showEmailInvite)}
+            data-testid="labs-host-toggle-email"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            {t("labs.host.invite")}
+          </button>
+          <button
+            className="labs-btn-ghost flex items-center gap-1 text-xs px-2 py-1.5"
+            onClick={() => setShowSocial(!showSocial)}
+            data-testid="labs-host-toggle-social"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            {t("labs.host.share")}
+          </button>
+        </div>
+      </div>
+
+      {showQr && qrDataUrl && (
+        <div
+          className="flex flex-col items-center gap-2 py-4"
+          style={{ borderTop: "1px solid var(--labs-border-subtle)" }}
+        >
+          <img
+            src={qrDataUrl}
+            alt="QR Code"
+            style={{ width: 180, height: 180, borderRadius: 10 }}
+            data-testid="img-labs-host-qr"
+          />
+          <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+            {t("labs.host.scanToJoin")}
+          </p>
+          <button
+            className="labs-btn-ghost flex items-center gap-1.5 text-xs mt-1"
+            onClick={handleDownloadQr}
+            data-testid="labs-host-download-qr"
+          >
+            <Download className="w-3.5 h-3.5" />
+            {t("labs.host.downloadQr")}
+          </button>
+        </div>
+      )}
+
+      {showSocial && (
+        <div
+          className="pt-4 space-y-3"
+          style={{ borderTop: "1px solid var(--labs-border-subtle)" }}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Share2 className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+            <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>{t("labs.host.shareTasting")}</span>
           </div>
-          <div className="flex items-center gap-1 flex-wrap">
+          <div className="flex flex-wrap gap-2">
+            {[
+              { key: "whatsapp", label: "WhatsApp", color: "#25d366" },
+              { key: "telegram", label: "Telegram", color: "#0088cc" },
+              { key: "facebook", label: "Facebook", color: "#1877f2" },
+              { key: "twitter", label: "X", color: "#1da1f2" },
+              { key: "email", label: "Email", color: "var(--labs-text-muted)" },
+            ].map(p => (
+              <button
+                key={p.key}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer"
+                style={{
+                  background: "var(--labs-surface)",
+                  border: "1px solid var(--labs-border)",
+                  color: p.color,
+                }}
+                onClick={() => handleShareSocial(p.key)}
+                data-testid={`labs-host-share-${p.key}`}
+              >
+                <ExternalLink className="w-3 h-3" />
+                {p.label}
+              </button>
+            ))}
+            {typeof navigator !== "undefined" && typeof navigator.share === "function" && (
+              <button
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium labs-btn-primary"
+                onClick={handleNativeShare}
+                data-testid="labs-host-native-share"
+              >
+                <Share2 className="w-3 h-3" />
+                {t("labs.host.share")}
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-2">
+            <input
+              readOnly
+              value={joinUrl}
+              className="labs-input flex-1 text-xs"
+              style={{ fontFamily: "monospace" }}
+              onClick={e => (e.target as HTMLInputElement).select()}
+              data-testid="labs-host-share-link"
+            />
             <button
-              className="labs-btn-ghost flex items-center gap-1 text-xs px-2 py-1.5"
-              onClick={copyCode}
-              data-testid="labs-host-copy-code"
+              className="labs-btn-ghost text-xs"
+              onClick={() => { navigator.clipboard.writeText(joinUrl); }}
+              data-testid="labs-host-copy-link"
             >
-              {codeCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              {codeCopied ? t("labs.host.copied") : t("labs.host.copy")}
-            </button>
-            <button
-              className="labs-btn-ghost flex items-center gap-1 text-xs px-2 py-1.5"
-              onClick={() => setShowQr(!showQr)}
-              data-testid="labs-host-toggle-qr"
-            >
-              <QrCode className="w-3.5 h-3.5" />
-              QR
-            </button>
-            <button
-              className="labs-btn-ghost flex items-center gap-1 text-xs px-2 py-1.5"
-              onClick={() => setShowEmailInvite(!showEmailInvite)}
-              data-testid="labs-host-toggle-email"
-            >
-              <Mail className="w-3.5 h-3.5" />
-              {t("labs.host.invite")}
-            </button>
-            <button
-              className="labs-btn-ghost flex items-center gap-1 text-xs px-2 py-1.5"
-              onClick={() => setShowSocial(!showSocial)}
-              data-testid="labs-host-toggle-social"
-            >
-              <Share2 className="w-3.5 h-3.5" />
-              {t("labs.host.share")}
+              <Copy className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
+      )}
 
-        {showQr && qrDataUrl && (
-          <div
-            className="flex flex-col items-center gap-2 py-4"
-            style={{ borderTop: "1px solid var(--labs-border-subtle)" }}
-          >
-            <img
-              src={qrDataUrl}
-              alt="QR Code"
-              style={{ width: 180, height: 180, borderRadius: 10 }}
-              data-testid="img-labs-host-qr"
-            />
-            <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-              {t("labs.host.scanToJoin")}
-            </p>
-            <button
-              className="labs-btn-ghost flex items-center gap-1.5 text-xs mt-1"
-              onClick={handleDownloadQr}
-              data-testid="labs-host-download-qr"
-            >
-              <Download className="w-3.5 h-3.5" />
-              {t("labs.host.downloadQr")}
-            </button>
+      {showEmailInvite && (
+        <div
+          className="pt-4 space-y-3"
+          style={{ borderTop: "1px solid var(--labs-border-subtle)" }}
+        >
+          <div className="flex items-center gap-2">
+            <Mail className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
+            <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>{t("labs.host.emailInvitations")}</span>
           </div>
-        )}
 
-        {showSocial && (
-          <div
-            className="pt-4 space-y-3"
-            style={{ borderTop: "1px solid var(--labs-border-subtle)" }}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <Share2 className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-              <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>{t("labs.host.shareTasting")}</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { key: "whatsapp", label: "WhatsApp", color: "#25d366" },
-                { key: "telegram", label: "Telegram", color: "#0088cc" },
-                { key: "facebook", label: "Facebook", color: "#1877f2" },
-                { key: "twitter", label: "X", color: "#1da1f2" },
-                { key: "email", label: "Email", color: "var(--labs-text-muted)" },
-              ].map(p => (
-                <button
-                  key={p.key}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer"
-                  style={{
-                    background: "var(--labs-surface)",
-                    border: "1px solid var(--labs-border)",
-                    color: p.color,
-                  }}
-                  onClick={() => handleShareSocial(p.key)}
-                  data-testid={`labs-host-share-${p.key}`}
-                >
-                  <ExternalLink className="w-3 h-3" />
-                  {p.label}
-                </button>
-              ))}
-              {typeof navigator !== "undefined" && typeof navigator.share === "function" && (
-                <button
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium labs-btn-primary"
-                  onClick={handleNativeShare}
-                  data-testid="labs-host-native-share"
-                >
-                  <Share2 className="w-3 h-3" />
-                  {t("labs.host.share")}
-                </button>
-              )}
-            </div>
-            <div className="flex items-center gap-2 mt-2">
-              <input
-                readOnly
-                value={joinUrl}
-                className="labs-input flex-1 text-xs"
-                style={{ fontFamily: "monospace" }}
-                onClick={e => (e.target as HTMLInputElement).select()}
-                data-testid="labs-host-share-link"
-              />
-              <button
-                className="labs-btn-ghost text-xs"
-                onClick={() => { navigator.clipboard.writeText(joinUrl); }}
-                data-testid="labs-host-copy-link"
-              >
-                <Copy className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {showEmailInvite && (
-          <div
-            className="pt-4 space-y-3"
-            style={{ borderTop: "1px solid var(--labs-border-subtle)" }}
-          >
-            <div className="flex items-center gap-2">
-              <Mail className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
-              <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>{t("labs.host.emailInvitations")}</span>
-            </div>
-
-            {currentParticipant?.id && (
-              <FriendsQuickSelect
-                participantId={currentParticipant.id}
-                tastingId={tastingId}
-                selectedEmails={emailList}
-                onToggle={(email, selected) => {
-                  if (selected) {
-                    if (!emailList.some(e => e.toLowerCase() === email.toLowerCase())) {
-                      setEmailList([...emailList, email]);
-                    }
-                  } else {
-                    setEmailList(emailList.filter(e => e.toLowerCase() !== email.toLowerCase()));
+          {currentParticipant?.id && (
+            <FriendsQuickSelect
+              participantId={currentParticipant.id}
+              tastingId={tastingId}
+              selectedEmails={emailList}
+              onToggle={(email, selected) => {
+                if (selected) {
+                  if (!emailList.some(e => e.toLowerCase() === email.toLowerCase())) {
+                    setEmailList([...emailList, email]);
                   }
-                }}
-              />
-            )}
+                } else {
+                  setEmailList(emailList.filter(e => e.toLowerCase() !== email.toLowerCase()));
+                }
+              }}
+            />
+          )}
 
-            <div className="flex gap-2">
-              <input
-                type="text"
-                inputMode="email"
-                autoComplete="email"
-                value={emailInput}
-                onChange={e => { setEmailInput(e.target.value); if (emailError) setEmailError(null); }}
-                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addEmail(); } }}
-                placeholder={t("labs.host.enterEmail")}
-                className="labs-input flex-1"
-                style={{
-                  background: "var(--labs-surface)",
-                  border: `1px solid ${emailError ? "#ef4444" : "var(--labs-border)"}`,
-                  borderRadius: 8,
-                  padding: "8px 12px",
-                  color: "var(--labs-text)",
-                  fontSize: 13,
-                  outline: "none",
-                  fontFamily: "inherit",
-                }}
-                data-testid="input-labs-invite-email"
-              />
-              <button
-                className="labs-btn-secondary"
-                onClick={addEmail}
-                data-testid="button-labs-add-email"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-
-            {emailError && (
-              <p
-                className="text-xs"
-                style={{ color: "#ef4444", margin: "-4px 0 0 0" }}
-                data-testid="text-email-error"
-              >
-                {emailError}
-              </p>
-            )}
-
-            {emailList.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {emailList.map(email => (
-                  <span
-                    key={email}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs"
-                    style={{
-                      background: "var(--labs-accent-muted)",
-                      color: "var(--labs-accent)",
-                      transition: "box-shadow 0.3s, transform 0.3s",
-                      ...(lastAddedEmail === email ? { boxShadow: "0 0 0 2px var(--labs-accent)", transform: "scale(1.05)" } : {}),
-                    }}
-                    data-testid={`badge-labs-invite-${email}`}
-                  >
-                    {email}
-                    <button
-                      onClick={() => removeEmail(email)}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0, lineHeight: 1 }}
-                      data-testid={`button-labs-remove-email-${email}`}
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-
-            <textarea
-              value={personalNote}
-              onChange={e => setPersonalNote(e.target.value)}
-              placeholder={t("labs.host.personalNote")}
-              rows={2}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              inputMode="email"
+              autoComplete="email"
+              value={emailInput}
+              onChange={e => { setEmailInput(e.target.value); if (emailError) setEmailError(null); }}
+              onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addEmail(); } }}
+              placeholder={t("labs.host.enterEmail")}
+              className="labs-input flex-1"
               style={{
-                width: "100%",
                 background: "var(--labs-surface)",
-                border: "1px solid var(--labs-border)",
+                border: `1px solid ${emailError ? "#ef4444" : "var(--labs-border)"}`,
                 borderRadius: 8,
                 padding: "8px 12px",
                 color: "var(--labs-text)",
                 fontSize: 13,
-                resize: "vertical",
                 outline: "none",
                 fontFamily: "inherit",
               }}
-              data-testid="textarea-labs-invite-note"
+              data-testid="input-labs-invite-email"
             />
-
-            <div className="flex items-center justify-between">
-              <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                {emailList.length} {emailList.length !== 1 ? t("labs.host.recipients") : t("labs.host.recipient")}
-              </span>
-              <button
-                className="labs-btn-primary flex items-center gap-2"
-                onClick={handleSendInvites}
-                disabled={emailList.length === 0 || sendingInvites}
-                style={{ opacity: emailList.length === 0 ? 0.5 : 1 }}
-                data-testid="button-labs-send-invites"
-              >
-                {sendingInvites ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : inviteSent ? (
-                  <Check className="w-4 h-4" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-                {sendingInvites ? t("labs.host.sending") : inviteSent ? t("labs.host.sent") : t("labs.host.sendInvites")}
-              </button>
-            </div>
-
-            {inviteFeedback && (
-              <div
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
-                style={{
-                  background: inviteFeedback.type === "success" ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)",
-                  color: inviteFeedback.type === "success" ? "#22c55e" : "#ef4444",
-                  border: `1px solid ${inviteFeedback.type === "success" ? "rgba(34,197,94,0.25)" : "rgba(239,68,68,0.25)"}`,
-                }}
-                data-testid="text-invite-feedback"
-              >
-                {inviteFeedback.type === "success" ? (
-                  <Check className="w-4 h-4 flex-shrink-0" />
-                ) : (
-                  <X className="w-4 h-4 flex-shrink-0" />
-                )}
-                {inviteFeedback.message}
-              </div>
-            )}
-
+            <button
+              className="labs-btn-secondary"
+              onClick={addEmail}
+              data-testid="button-labs-add-email"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
           </div>
-        )}
 
-        {Array.isArray(existingInvites) && existingInvites.length > 0 && (
-          <div className="pt-3 mt-2 space-y-2" style={{ borderTop: "1px solid var(--labs-border-subtle)" }}>
-            <span className="text-xs font-medium" style={{ color: "var(--labs-text-muted)" }}>
-              {t("labs.host.previouslyInvited")} ({existingInvites.length})
-            </span>
-            <div className="space-y-1">
-              {existingInvites.map((inv: any, idx: number) => (
-                <div
-                  key={inv.email || idx}
-                  className="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs"
-                  style={{ background: "var(--labs-surface)", color: "var(--labs-text-secondary)" }}
-                  data-testid={`invite-sent-${inv.email || idx}`}
+          {emailError && (
+            <p
+              className="text-xs"
+              style={{ color: "#ef4444", margin: "-4px 0 0 0" }}
+              data-testid="text-email-error"
+            >
+              {emailError}
+            </p>
+          )}
+
+          {emailList.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {emailList.map(email => (
+                <span
+                  key={email}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs"
+                  style={{
+                    background: "var(--labs-accent-muted)",
+                    color: "var(--labs-accent)",
+                    transition: "box-shadow 0.3s, transform 0.3s",
+                    ...(lastAddedEmail === email ? { boxShadow: "0 0 0 2px var(--labs-accent)", transform: "scale(1.05)" } : {}),
+                  }}
+                  data-testid={`badge-labs-invite-${email}`}
                 >
-                  <span style={{ color: "var(--labs-text)" }}>{inv.email}</span>
-                  <span className="flex items-center gap-1" style={{ color: inv.status === "accepted" ? "#22c55e" : "var(--labs-text-muted)", fontSize: 11 }}>
-                    {inv.status === "accepted" ? <Check className="w-3 h-3" /> : <Mail className="w-3 h-3" />}
-                    {inv.status === "accepted" ? t("labs.host.joined") : t("labs.host.sent")}
-                  </span>
-                </div>
+                  {email}
+                  <button
+                    onClick={() => removeEmail(email)}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0, lineHeight: 1 }}
+                    data-testid={`button-labs-remove-email-${email}`}
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
               ))}
             </div>
+          )}
+
+          <textarea
+            value={personalNote}
+            onChange={e => setPersonalNote(e.target.value)}
+            placeholder={t("labs.host.personalNote")}
+            rows={2}
+            style={{
+              width: "100%",
+              background: "var(--labs-surface)",
+              border: "1px solid var(--labs-border)",
+              borderRadius: 8,
+              padding: "8px 12px",
+              color: "var(--labs-text)",
+              fontSize: 13,
+              resize: "vertical",
+              outline: "none",
+              fontFamily: "inherit",
+            }}
+            data-testid="textarea-labs-invite-note"
+          />
+
+          <div className="flex items-center justify-between">
+            <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+              {emailList.length} {emailList.length !== 1 ? t("labs.host.recipients") : t("labs.host.recipient")}
+            </span>
+            <button
+              className="labs-btn-primary flex items-center gap-2"
+              onClick={handleSendInvites}
+              disabled={emailList.length === 0 || sendingInvites}
+              style={{ opacity: emailList.length === 0 ? 0.5 : 1 }}
+              data-testid="button-labs-send-invites"
+            >
+              {sendingInvites ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : inviteSent ? (
+                <Check className="w-4 h-4" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+              {sendingInvites ? t("labs.host.sending") : inviteSent ? t("labs.host.sent") : t("labs.host.sendInvites")}
+            </button>
           </div>
-        )}
-      </div>
-    ) : null;
 
-    const settingsSectionForCockpit: ReactNode = (
-      <TastingSetupSection
-        tasting={tasting}
-        tastingId={tastingId}
-        pid={currentParticipant.id as string}
-        queryClient={queryClient}
-      />
-    );
+          {inviteFeedback && (
+            <div
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
+              style={{
+                background: inviteFeedback.type === "success" ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)",
+                color: inviteFeedback.type === "success" ? "#22c55e" : "#ef4444",
+                border: `1px solid ${inviteFeedback.type === "success" ? "rgba(34,197,94,0.25)" : "rgba(239,68,68,0.25)"}`,
+              }}
+              data-testid="text-invite-feedback"
+            >
+              {inviteFeedback.type === "success" ? (
+                <Check className="w-4 h-4 flex-shrink-0" />
+              ) : (
+                <X className="w-4 h-4 flex-shrink-0" />
+              )}
+              {inviteFeedback.message}
+            </div>
+          )}
 
+        </div>
+      )}
+
+      {Array.isArray(existingInvites) && existingInvites.length > 0 && (
+        <div className="pt-3 mt-2 space-y-2" style={{ borderTop: "1px solid var(--labs-border-subtle)" }}>
+          <span className="text-xs font-medium" style={{ color: "var(--labs-text-muted)" }}>
+            {t("labs.host.previouslyInvited")} ({existingInvites.length})
+          </span>
+          <div className="space-y-1">
+            {existingInvites.map((inv: any, idx: number) => (
+              <div
+                key={inv.email || idx}
+                className="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs"
+                style={{ background: "var(--labs-surface)", color: "var(--labs-text-secondary)" }}
+                data-testid={`invite-sent-${inv.email || idx}`}
+              >
+                <span style={{ color: "var(--labs-text)" }}>{inv.email}</span>
+                <span className="flex items-center gap-1" style={{ color: inv.status === "accepted" ? "#22c55e" : "var(--labs-text-muted)", fontSize: 11 }}>
+                  {inv.status === "accepted" ? <Check className="w-3 h-3" /> : <Mail className="w-3 h-3" />}
+                  {inv.status === "accepted" ? t("labs.host.joined") : t("labs.host.sent")}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  ) : null;
+
+  const setupSectionNode: ReactNode = currentParticipant ? (
+    <TastingSetupSection
+      tasting={tasting}
+      tastingId={tastingId}
+      pid={currentParticipant.id as string}
+      queryClient={queryClient}
+    />
+  ) : null;
+
+  if (tasting && currentParticipant && (tasting.status === "open" || tasting.status === "reveal")) {
     return (
       <LabsHostCockpit
         tastingId={tastingId}
         onExit={() => navigate(`/labs/tastings/${tastingId}`)}
-        inviteSection={inviteSectionForCockpit}
-        settingsSection={settingsSectionForCockpit}
+        inviteSection={inviteCardNode}
+        settingsSection={setupSectionNode}
       />
     );
   }
@@ -6382,339 +6382,14 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       {tasting.code && (
         <div className="mb-5">
           <h2 className="labs-section-label">{t("labs.host.inviteShare")}</h2>
-        <div className="labs-card p-4">
-          <div className="mb-3">
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <p className="text-xs font-medium mb-1" style={{ color: "var(--labs-text-muted)" }}>{t("labs.host.joinCode")}</p>
-                <p
-                  className="text-2xl font-bold tracking-widest"
-                  style={{ color: "var(--labs-accent)", fontFamily: "monospace" }}
-                  data-testid="labs-host-code"
-                >
-                  {tasting.code}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 flex-wrap">
-              <button
-                className="labs-btn-ghost flex items-center gap-1 text-xs px-2 py-1.5"
-                onClick={copyCode}
-                data-testid="labs-host-copy-code"
-              >
-                {codeCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                {codeCopied ? t("labs.host.copied") : t("labs.host.copy")}
-              </button>
-              <button
-                className="labs-btn-ghost flex items-center gap-1 text-xs px-2 py-1.5"
-                onClick={() => setShowQr(!showQr)}
-                data-testid="labs-host-toggle-qr"
-              >
-                <QrCode className="w-3.5 h-3.5" />
-                QR
-              </button>
-              <button
-                className="labs-btn-ghost flex items-center gap-1 text-xs px-2 py-1.5"
-                onClick={() => setShowEmailInvite(!showEmailInvite)}
-                data-testid="labs-host-toggle-email"
-              >
-                <Mail className="w-3.5 h-3.5" />
-                {t("labs.host.invite")}
-              </button>
-              <button
-                className="labs-btn-ghost flex items-center gap-1 text-xs px-2 py-1.5"
-                onClick={() => setShowSocial(!showSocial)}
-                data-testid="labs-host-toggle-social"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                {t("labs.host.share")}
-              </button>
-            </div>
-          </div>
-
-          {showQr && qrDataUrl && (
-            <div
-              className="flex flex-col items-center gap-2 py-4"
-              style={{ borderTop: "1px solid var(--labs-border-subtle)" }}
-            >
-              <img
-                src={qrDataUrl}
-                alt="QR Code"
-                style={{ width: 180, height: 180, borderRadius: 10 }}
-                data-testid="img-labs-host-qr"
-              />
-              <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                {t("labs.host.scanToJoin")}
-              </p>
-              <button
-                className="labs-btn-ghost flex items-center gap-1.5 text-xs mt-1"
-                onClick={handleDownloadQr}
-                data-testid="labs-host-download-qr"
-              >
-                <Download className="w-3.5 h-3.5" />
-                {t("labs.host.downloadQr")}
-              </button>
-            </div>
-          )}
-
-          {showSocial && (
-            <div
-              className="pt-4 space-y-3"
-              style={{ borderTop: "1px solid var(--labs-border-subtle)" }}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <Share2 className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-                <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>{t("labs.host.shareTasting")}</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { key: "whatsapp", label: "WhatsApp", color: "#25d366" },
-                  { key: "telegram", label: "Telegram", color: "#0088cc" },
-                  { key: "facebook", label: "Facebook", color: "#1877f2" },
-                  { key: "twitter", label: "X", color: "#1da1f2" },
-                  { key: "email", label: "Email", color: "var(--labs-text-muted)" },
-                ].map(p => (
-                  <button
-                    key={p.key}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer"
-                    style={{
-                      background: "var(--labs-surface)",
-                      border: "1px solid var(--labs-border)",
-                      color: p.color,
-                    }}
-                    onClick={() => handleShareSocial(p.key)}
-                    data-testid={`labs-host-share-${p.key}`}
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                    {p.label}
-                  </button>
-                ))}
-                {typeof navigator !== "undefined" && typeof navigator.share === "function" && (
-                  <button
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium labs-btn-primary"
-                    onClick={handleNativeShare}
-                    data-testid="labs-host-native-share"
-                  >
-                    <Share2 className="w-3 h-3" />
-                    {t("labs.host.share")}
-                  </button>
-                )}
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                <input
-                  readOnly
-                  value={joinUrl}
-                  className="labs-input flex-1 text-xs"
-                  style={{ fontFamily: "monospace" }}
-                  onClick={e => (e.target as HTMLInputElement).select()}
-                  data-testid="labs-host-share-link"
-                />
-                <button
-                  className="labs-btn-ghost text-xs"
-                  onClick={() => { navigator.clipboard.writeText(joinUrl); }}
-                  data-testid="labs-host-copy-link"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {showEmailInvite && (
-            <div
-              className="pt-4 space-y-3"
-              style={{ borderTop: "1px solid var(--labs-border-subtle)" }}
-            >
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
-                <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>{t("labs.host.emailInvitations")}</span>
-              </div>
-
-              {currentParticipant?.id && (
-                <FriendsQuickSelect
-                  participantId={currentParticipant.id}
-                  tastingId={tastingId}
-                  selectedEmails={emailList}
-                  onToggle={(email, selected) => {
-                    if (selected) {
-                      if (!emailList.some(e => e.toLowerCase() === email.toLowerCase())) {
-                        setEmailList([...emailList, email]);
-                      }
-                    } else {
-                      setEmailList(emailList.filter(e => e.toLowerCase() !== email.toLowerCase()));
-                    }
-                  }}
-                />
-              )}
-
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  inputMode="email"
-                  autoComplete="email"
-                  value={emailInput}
-                  onChange={e => { setEmailInput(e.target.value); if (emailError) setEmailError(null); }}
-                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addEmail(); } }}
-                  placeholder={t("labs.host.enterEmail")}
-                  className="labs-input flex-1"
-                  style={{
-                    background: "var(--labs-surface)",
-                    border: `1px solid ${emailError ? "#ef4444" : "var(--labs-border)"}`,
-                    borderRadius: 8,
-                    padding: "8px 12px",
-                    color: "var(--labs-text)",
-                    fontSize: 13,
-                    outline: "none",
-                    fontFamily: "inherit",
-                  }}
-                  data-testid="input-labs-invite-email"
-                />
-                <button
-                  className="labs-btn-secondary"
-                  onClick={addEmail}
-                  data-testid="button-labs-add-email"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-
-              {emailError && (
-                <p
-                  className="text-xs"
-                  style={{ color: "#ef4444", margin: "-4px 0 0 0" }}
-                  data-testid="text-email-error"
-                >
-                  {emailError}
-                </p>
-              )}
-
-              {emailList.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {emailList.map(email => (
-                    <span
-                      key={email}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs"
-                      style={{
-                        background: "var(--labs-accent-muted)",
-                        color: "var(--labs-accent)",
-                        transition: "box-shadow 0.3s, transform 0.3s",
-                        ...(lastAddedEmail === email ? { boxShadow: "0 0 0 2px var(--labs-accent)", transform: "scale(1.05)" } : {}),
-                      }}
-                      data-testid={`badge-labs-invite-${email}`}
-                    >
-                      {email}
-                      <button
-                        onClick={() => removeEmail(email)}
-                        style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0, lineHeight: 1 }}
-                        data-testid={`button-labs-remove-email-${email}`}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              <textarea
-                value={personalNote}
-                onChange={e => setPersonalNote(e.target.value)}
-                placeholder={t("labs.host.personalNote")}
-                rows={2}
-                style={{
-                  width: "100%",
-                  background: "var(--labs-surface)",
-                  border: "1px solid var(--labs-border)",
-                  borderRadius: 8,
-                  padding: "8px 12px",
-                  color: "var(--labs-text)",
-                  fontSize: 13,
-                  resize: "vertical",
-                  outline: "none",
-                  fontFamily: "inherit",
-                }}
-                data-testid="textarea-labs-invite-note"
-              />
-
-              <div className="flex items-center justify-between">
-                <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                  {emailList.length} {emailList.length !== 1 ? t("labs.host.recipients") : t("labs.host.recipient")}
-                </span>
-                <button
-                  className="labs-btn-primary flex items-center gap-2"
-                  onClick={handleSendInvites}
-                  disabled={emailList.length === 0 || sendingInvites}
-                  style={{ opacity: emailList.length === 0 ? 0.5 : 1 }}
-                  data-testid="button-labs-send-invites"
-                >
-                  {sendingInvites ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : inviteSent ? (
-                    <Check className="w-4 h-4" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                  {sendingInvites ? t("labs.host.sending") : inviteSent ? t("labs.host.sent") : t("labs.host.sendInvites")}
-                </button>
-              </div>
-
-              {inviteFeedback && (
-                <div
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
-                  style={{
-                    background: inviteFeedback.type === "success" ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)",
-                    color: inviteFeedback.type === "success" ? "#22c55e" : "#ef4444",
-                    border: `1px solid ${inviteFeedback.type === "success" ? "rgba(34,197,94,0.25)" : "rgba(239,68,68,0.25)"}`,
-                  }}
-                  data-testid="text-invite-feedback"
-                >
-                  {inviteFeedback.type === "success" ? (
-                    <Check className="w-4 h-4 flex-shrink-0" />
-                  ) : (
-                    <X className="w-4 h-4 flex-shrink-0" />
-                  )}
-                  {inviteFeedback.message}
-                </div>
-              )}
-
-            </div>
-          )}
-
-          {Array.isArray(existingInvites) && existingInvites.length > 0 && (
-            <div className="pt-3 mt-2 space-y-2" style={{ borderTop: "1px solid var(--labs-border-subtle)" }}>
-              <span className="text-xs font-medium" style={{ color: "var(--labs-text-muted)" }}>
-                {t("labs.host.previouslyInvited")} ({existingInvites.length})
-              </span>
-              <div className="space-y-1">
-                {existingInvites.map((inv: any, idx: number) => (
-                  <div
-                    key={inv.email || idx}
-                    className="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs"
-                    style={{ background: "var(--labs-surface)", color: "var(--labs-text-secondary)" }}
-                    data-testid={`invite-sent-${inv.email || idx}`}
-                  >
-                    <span style={{ color: "var(--labs-text)" }}>{inv.email}</span>
-                    <span className="flex items-center gap-1" style={{ color: inv.status === "accepted" ? "#22c55e" : "var(--labs-text-muted)", fontSize: 11 }}>
-                      {inv.status === "accepted" ? <Check className="w-3 h-3" /> : <Mail className="w-3 h-3" />}
-                      {inv.status === "accepted" ? t("labs.host.joined") : t("labs.host.sent")}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+          {inviteCardNode}
         </div>
       )}
 
       {currentParticipant && (
         <div className="mb-6">
           <h2 className="labs-section-label">{t("labs.host.tastingSetup")}</h2>
-          <TastingSetupSection
-            tasting={tasting}
-            tastingId={tastingId}
-            pid={currentParticipant.id as string}
-            queryClient={queryClient}
-          />
+          {setupSectionNode}
         </div>
       )}
 
