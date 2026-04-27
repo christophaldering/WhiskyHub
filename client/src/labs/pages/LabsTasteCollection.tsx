@@ -28,6 +28,29 @@ type ActivePanel = null | "importSync" | "priceSelect";
 
 const STATUS_CYCLE: string[] = ["closed", "open", "empty"];
 
+function buildCollectionExportRows(items: WhiskybaseCollectionItem[]): Record<string, unknown>[] {
+  return items.map(e => ({
+    Brand: e.brand ?? "",
+    Name: e.name ?? "",
+    WhiskybaseId: e.whiskybaseId ?? "",
+    BottlingSeries: e.bottlingSeries ?? "",
+    Status: e.status ?? "",
+    Distillery: e.distillery ?? "",
+    Region: e.region ?? "",
+    Country: e.country ?? "",
+    StatedAge: e.statedAge ?? "",
+    ABV: e.abv ?? "",
+    CaskType: e.caskType ?? "",
+    DistilledYear: e.distilledYear ?? "",
+    CommunityRating: e.communityRating ?? "",
+    PersonalRating: e.personalRating ?? "",
+    PricePaid: e.pricePaid ?? "",
+    Currency: e.currency ?? "",
+    Notes: e.notes ?? "",
+    AddedAt: e.addedAt ?? "",
+  }));
+}
+
 export default function LabsTasteCollection() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
@@ -418,20 +441,7 @@ export default function LabsTasteCollection() {
                 testId: "button-collection-download-csv",
                 run: () => downloadCsvFromRows(
                   `casksense_collection_${safeFileSegment(new Date().toISOString().split("T")[0])}.csv`,
-                  getExportItems().map((e: any) => ({
-                    Brand: e.brand || "",
-                    Name: e.name || "",
-                    WhiskybaseId: e.whiskybaseId || "",
-                    Category: e.category || "",
-                    Rating: e.rating ?? "",
-                    Region: e.region || "",
-                    Country: e.country || "",
-                    Age: e.age || "",
-                    ABV: e.abv || "",
-                    DistilledYear: e.distilledYear || "",
-                    Notes: e.notes || "",
-                    AddedAt: e.createdAt || "",
-                  })),
+                  buildCollectionExportRows(getExportItems()),
                 ),
               },
               {
@@ -442,20 +452,7 @@ export default function LabsTasteCollection() {
                   `casksense_collection_${safeFileSegment(new Date().toISOString().split("T")[0])}.xlsx`,
                   [{
                     name: t("collectionUi.collection", { defaultValue: "Collection" }),
-                    rows: getExportItems().map((e: any) => ({
-                      Brand: e.brand || "",
-                      Name: e.name || "",
-                      WhiskybaseId: e.whiskybaseId || "",
-                      Category: e.category || "",
-                      Rating: e.rating ?? "",
-                      Region: e.region || "",
-                      Country: e.country || "",
-                      Age: e.age || "",
-                      ABV: e.abv || "",
-                      DistilledYear: e.distilledYear || "",
-                      Notes: e.notes || "",
-                      AddedAt: e.createdAt || "",
-                    })),
+                    rows: buildCollectionExportRows(getExportItems()),
                   }],
                 ),
               },

@@ -133,6 +133,40 @@ function parseNoseNotes(raw: string) {
   return { cleanText: cleanText.trim(), scores, dims };
 }
 
+interface DramExportRecord {
+  createdAt?: string | Date | null;
+  name?: string | null;
+  title?: string | null;
+  distillery?: string | null;
+  region?: string | null;
+  age?: string | null;
+  abv?: number | string | null;
+  personalScore?: number | null;
+  rating?: number | null;
+  noseNotes?: string | null;
+  tasteNotes?: string | null;
+  finishNotes?: string | null;
+  notes?: string | null;
+  source?: string | null;
+}
+
+function buildDramsExportRows(items: readonly DramExportRecord[]): Record<string, unknown>[] {
+  return items.map(e => ({
+    Date: e.createdAt instanceof Date ? e.createdAt.toISOString() : e.createdAt ?? "",
+    Name: e.name ?? e.title ?? "",
+    Distillery: e.distillery ?? "",
+    Region: e.region ?? "",
+    Age: e.age ?? "",
+    ABV: e.abv ?? "",
+    Rating: e.personalScore ?? e.rating ?? "",
+    Nose: e.noseNotes ?? "",
+    Taste: e.tasteNotes ?? "",
+    Finish: e.finishNotes ?? "",
+    Notes: e.notes ?? "",
+    Source: e.source ?? "",
+  }));
+}
+
 export default function LabsTasteDrams() {
   const { t } = useTranslation();
   const session = useSession();
@@ -1142,20 +1176,7 @@ export default function LabsTasteDrams() {
                   testId: "button-drams-download-csv",
                   run: () => downloadCsvFromRows(
                     `casksense_journal_${safeFileSegment(new Date().toISOString().split("T")[0])}.csv`,
-                    filteredEntries.map((e: any) => ({
-                      Date: e.createdAt || "",
-                      Name: e.name || e.title || "",
-                      Distillery: e.distillery || "",
-                      Region: e.region || "",
-                      Age: e.age || "",
-                      ABV: e.abv || "",
-                      Rating: e.personalScore ?? e.rating ?? "",
-                      Nose: e.noseNotes || "",
-                      Taste: e.tasteNotes || "",
-                      Finish: e.finishNotes || "",
-                      Notes: e.notes || "",
-                      Source: e.source || "",
-                    })),
+                    buildDramsExportRows(filteredEntries as readonly DramExportRecord[]),
                   ),
                 },
                 {
@@ -1166,20 +1187,7 @@ export default function LabsTasteDrams() {
                     `casksense_journal_${safeFileSegment(new Date().toISOString().split("T")[0])}.xlsx`,
                     [{
                       name: t("drams.title", { defaultValue: "Journal" }),
-                      rows: filteredEntries.map((e: any) => ({
-                        Date: e.createdAt || "",
-                        Name: e.name || e.title || "",
-                        Distillery: e.distillery || "",
-                        Region: e.region || "",
-                        Age: e.age || "",
-                        ABV: e.abv || "",
-                        Rating: e.personalScore ?? e.rating ?? "",
-                        Nose: e.noseNotes || "",
-                        Taste: e.tasteNotes || "",
-                        Finish: e.finishNotes || "",
-                        Notes: e.notes || "",
-                        Source: e.source || "",
-                      })),
+                      rows: buildDramsExportRows(filteredEntries as readonly DramExportRecord[]),
                     }],
                   ),
                 },
