@@ -713,23 +713,33 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
           </div>
         )}
 
-        {(isLive || isReveal) && (
-          <div>
-            <button
-              className="labs-btn-primary w-full flex items-center justify-center gap-2 py-3 text-base font-semibold"
-              onClick={() => navigate(`/labs/live/${tastingId}`)}
-              data-testid="labs-detail-join-live"
-            >
-              <Play className="w-5 h-5" />
-              {isLive ? t("tastingDetail.enterLiveSession") : t("tastingDetail.viewReveal")}
-            </button>
-            <p className="text-xs mt-1 text-center" style={{ color: "var(--labs-text-muted)" }} data-testid="text-join-live-subtitle">
-              {isLive
-                ? t("tastingDetail.enterLiveSessionSubtitle", "Tasting moderieren und Whiskys live enthüllen")
-                : t("tastingDetail.viewRevealSubtitle", "Whiskys nacheinander dramatisch enthüllen")}
-            </p>
-          </div>
-        )}
+        {(isLive || isReveal) && (() => {
+          const label = isReveal
+            ? t("tastingDetail.viewReveal", "Reveal-Übersicht öffnen")
+            : isHost
+              ? t("tastingDetail.enterLiveSession", "Live-Tasting als Host öffnen")
+              : t("tastingDetail.joinLiveSession", "Zur Live-Session");
+          const subtitle = isReveal
+            ? t("tastingDetail.viewRevealSubtitle", "Sehen, welche Whiskys im Tasting waren")
+            : isHost
+              ? t("tastingDetail.enterLiveSessionSubtitle", "Bewertungen verfolgen und Whiskys live enthüllen")
+              : t("tastingDetail.joinLiveSessionSubtitle", "Jetzt bewerten und Reveals miterleben");
+          return (
+            <div>
+              <button
+                className="labs-btn-primary w-full flex items-center justify-center gap-2 py-3 text-base font-semibold"
+                onClick={() => navigate(`/labs/live/${tastingId}`)}
+                data-testid="labs-detail-join-live"
+              >
+                <Play className="w-5 h-5" />
+                {label}
+              </button>
+              <p className="text-xs mt-1 text-center" style={{ color: "var(--labs-text-muted)" }} data-testid="text-join-live-subtitle">
+                {subtitle}
+              </p>
+            </div>
+          );
+        })()}
 
         {isDraft && !isHost && (
           <button
