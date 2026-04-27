@@ -196,16 +196,14 @@ function Redirect({ to }: { to: string }) {
   return null;
 }
 
-function RedirectWithQuery({ to, query }: { to: string; query?: string }) {
+function RedirectWithQuery({ to, query, replaceQuery = false }: { to: string; query?: string; replaceQuery?: boolean }) {
   const [, navigate] = useLocation();
-  const incomingSearch = typeof window !== "undefined" ? window.location.search : "";
+  const incomingSearch = !replaceQuery && typeof window !== "undefined" ? window.location.search : "";
   const merged = (() => {
     const params = new URLSearchParams(query || "");
     if (incomingSearch) {
       const incoming = new URLSearchParams(incomingSearch.startsWith("?") ? incomingSearch.slice(1) : incomingSearch);
-      incoming.forEach((value, key) => {
-        if (!params.has(key)) params.set(key, value);
-      });
+      incoming.forEach((value, key) => { params.set(key, value); });
     }
     const qs = params.toString();
     return qs ? `${to}?${qs}` : to;
@@ -693,8 +691,8 @@ function Router() {
                     toCommunity = params.get("tab") === "community";
                   } catch {}
                   return toCommunity
-                    ? <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=nachschlagewerk&sub=community-handouts" />
-                    : <RedirectWithQuery to="/labs/taste" query="tab=collection&sub=labs-link-collection-hub-handouts" />;
+                    ? <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=nachschlagewerk&sub=community-handouts" replaceQuery />
+                    : <RedirectWithQuery to="/labs/taste" query="tab=collection&sub=labs-link-collection-hub-handouts" replaceQuery />;
                 }}
               </Route>
               <Route path="/labs/host/handout-library/community">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=nachschlagewerk&sub=community-handouts" />}</Route>

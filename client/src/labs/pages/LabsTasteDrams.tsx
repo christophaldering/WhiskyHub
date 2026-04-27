@@ -512,7 +512,11 @@ export default function LabsTasteDrams() {
     if (enteredViaDeepLink) {
       setEnteredViaDeepLink(false);
       setSelectedEntry(null);
-      navigate("/labs/taste");
+      if (typeof window !== "undefined" && window.history.length > 1) {
+        window.history.back();
+      } else {
+        navigate("/labs/taste");
+      }
       return;
     }
     setViewState("list");
@@ -916,6 +920,7 @@ export default function LabsTasteDrams() {
         finishNotes: [data.notes.finish, ...(data.tags.finish || [])].filter(Boolean).join(", ") || selectedEntry.finishNotes || "",
         ...(selectedEntry.status === "draft" && data.overallExplicit ? { status: "final" } : {}),
       };
+      setEnteredViaDeepLink(false);
       deepRateMutation.mutate({ id: selectedEntry.id, data: patchData });
     };
     const handleDeepRateSaveAsDraft = (data: RatingData) => {
@@ -929,6 +934,7 @@ export default function LabsTasteDrams() {
         tasteNotes: [data.notes.palate, ...(data.tags.palate || [])].filter(Boolean).join(", ") || selectedEntry.tasteNotes || "",
         finishNotes: [data.notes.finish, ...(data.tags.finish || [])].filter(Boolean).join(", ") || selectedEntry.finishNotes || "",
       };
+      setEnteredViaDeepLink(false);
       deepRateDraftMutation.mutate({ id: selectedEntry.id, data: patchData });
     };
     return (
@@ -952,7 +958,11 @@ export default function LabsTasteDrams() {
             if (enteredViaDeepLink && selectedEntry.status === "draft") {
               setEnteredViaDeepLink(false);
               setSelectedEntry(null);
-              navigate("/labs/taste");
+              if (typeof window !== "undefined" && window.history.length > 1) {
+                window.history.back();
+              } else {
+                navigate("/labs/taste");
+              }
               return;
             }
             setViewState(selectedEntry.status === "draft" ? "list" : "detail");
