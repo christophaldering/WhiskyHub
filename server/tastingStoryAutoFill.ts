@@ -106,25 +106,28 @@ export function buildInitialTastingStoryBlocks(args: {
     },
   });
 
-  const introParts: string[] = [];
-  introParts.push(
-    `<p>Willkommen zur Verkostung. Auf den n\u00e4chsten Seiten begleiten wir dich durch ${
-      whiskies.length === 1 ? "einen Whisky" : `${whiskies.length} Whiskys`
-    }, gemeinsam verkostet von ${participantCount === 1 ? "einer Person" : `${participantCount} Personen`}.</p>`,
-  );
-  if (tasting.storyPrompt) {
-    introParts.push(`<p>${escapeHtml(tasting.storyPrompt)}</p>`);
-  }
+  const introBody = buildAutoIntroBody({
+    whiskyCount: whiskies.length,
+    participantCount,
+    storyPrompt: tasting.storyPrompt ?? null,
+  });
+  const introMeta: AutoIntroMeta = {
+    autoIntro: true,
+    whiskyCount: whiskies.length,
+    participantCount,
+    storyPrompt: tasting.storyPrompt ?? null,
+  };
 
   blocks.push({
     id: blockId(),
     type: "text-section",
     payload: {
-      eyebrow: "Begr\u00fc\u00dfung",
+      eyebrow: INTRO_EYEBROW,
       heading: "Eine Reise durch das Glas",
-      body: introParts.join(""),
+      body: introBody,
       alignment: "left",
       variant: "act-intro",
+      meta: introMeta,
     },
   });
 
@@ -270,13 +273,67 @@ export function buildInitialTastingStoryBlocks(args: {
 }
 
 const INTRO_EYEBROW = "Begr\u00fc\u00dfung";
-const INTRO_COUNT_REGEX = /gemeinsam verkostet von (einer Person|\d+ Personen)/;
+
+type AutoIntroMeta = {
+  autoIntro: true;
+  whiskyCount: number;
+  participantCount: number;
+  storyPrompt: string | null;
+};
+
+function isAutoIntroMeta(value: unknown): value is AutoIntroMeta {
+  if (!value || typeof value !== "object") return false;
+  const m = value as Record<string, unknown>;
+  return (
+    m.autoIntro === true &&
+    typeof m.whiskyCount === "number" &&
+    typeof m.participantCount === "number" &&
+    (m.storyPrompt === null || typeof m.storyPrompt === "string")
+  );
+}
+
+function buildAutoIntroBody(args: {
+  whiskyCount: number;
+  participantCount: number;
+  storyPrompt: string | null | undefined;
+}): string {
+  const parts: string[] = [];
+  parts.push(
+    `<p>Willkommen zur Verkostung. Auf den n\u00e4chsten Seiten begleiten wir dich durch ${
+      args.whiskyCount === 1 ? "einen Whisky" : `${args.whiskyCount} Whiskys`
+    }, gemeinsam verkostet von ${
+      args.participantCount === 1 ? "einer Person" : `${args.participantCount} Personen`
+    }.</p>`,
+  );
+  const prompt = typeof args.storyPrompt === "string" ? args.storyPrompt : "";
+  if (prompt) {
+    parts.push(`<p>${escapeHtml(prompt)}</p>`);
+  }
+  return parts.join("");
+}
+
+// Tolerant fallback for legacy stories that lack the structured marker.
+// Catches the historical phrasing (with optional "gemeinsam") plus minor
+// whitespace variations (NBSP, multiple spaces) and is case-insensitive so
+// stories that ended up with capitalisation tweaks still get normalised.
+const LEGACY_INTRO_COUNT_REGEX =
+  /(verkostet[\s\u00a0]+von[\s\u00a0]+)(einer[\s\u00a0]+Person|\d+[\s\u00a0]+Personen)/gi;
+
+function applyLegacyCountRewrite(body: string, includedCount: number): { body: string; changed: boolean } {
+  const expected = includedCount === 1 ? "einer Person" : `${includedCount} Personen`;
+  let changed = false;
+  const out = body.replace(LEGACY_INTRO_COUNT_REGEX, (match, prefix: string, captured: string) => {
+    if (captured === expected) return match;
+    changed = true;
+    return `${prefix}${expected}`;
+  });
+  return { body: changed ? out : body, changed };
+}
 
 export function rewriteAutoIntroParticipantCount(
   blocks: StoryBlock[],
   includedCount: number,
 ): StoryBlock[] {
-  const expected = includedCount === 1 ? "einer Person" : `${includedCount} Personen`;
   let mutated = false;
   const out = blocks.map((b) => {
     if (b.type !== "text-section") return b;
@@ -285,11 +342,54 @@ export function rewriteAutoIntroParticipantCount(
     const eyebrow = (payload as { eyebrow?: unknown }).eyebrow;
     if (typeof eyebrow !== "string" || eyebrow !== INTRO_EYEBROW) return b;
     const body = typeof payload.body === "string" ? payload.body : "";
-    const m = body.match(INTRO_COUNT_REGEX);
-    if (!m || m[1] === expected) return b;
-    const newBody = body.replace(INTRO_COUNT_REGEX, `gemeinsam verkostet von ${expected}`);
+    const meta = (payload as { meta?: unknown }).meta;
+
+    // Path 1: structured marker present — deterministic rebuild when the body
+    // still matches the originally generated template. Always keep the meta's
+    // participantCount in sync with the included count.
+    if (isAutoIntroMeta(meta)) {
+      const expectedOldBody = buildAutoIntroBody({
+        whiskyCount: meta.whiskyCount,
+        participantCount: meta.participantCount,
+        storyPrompt: meta.storyPrompt,
+      });
+      if (body === expectedOldBody) {
+        if (meta.participantCount === includedCount) return b;
+        const newBody = buildAutoIntroBody({
+          whiskyCount: meta.whiskyCount,
+          participantCount: includedCount,
+          storyPrompt: meta.storyPrompt,
+        });
+        mutated = true;
+        return {
+          ...b,
+          payload: {
+            ...payload,
+            body: newBody,
+            meta: { ...meta, participantCount: includedCount },
+          },
+        };
+      }
+      // Body diverged from the template (host edited around the count).
+      // Fall back to the regex rewrite so the count still gets corrected.
+      const { body: rewrittenBody, changed } = applyLegacyCountRewrite(body, includedCount);
+      if (!changed) return b;
+      mutated = true;
+      return {
+        ...b,
+        payload: {
+          ...payload,
+          body: rewrittenBody,
+          meta: { ...meta, participantCount: includedCount },
+        },
+      };
+    }
+
+    // Path 2: legacy block without marker — rely on the broader regex.
+    const { body: rewrittenBody, changed } = applyLegacyCountRewrite(body, includedCount);
+    if (!changed) return b;
     mutated = true;
-    return { ...b, payload: { ...payload, body: newBody } };
+    return { ...b, payload: { ...payload, body: rewrittenBody } };
   });
   return mutated ? out : blocks;
 }
