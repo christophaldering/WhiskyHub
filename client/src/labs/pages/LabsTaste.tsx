@@ -260,26 +260,30 @@ export default function LabsTaste() {
     staleTime: 60_000,
   });
 
-  const rawTastingsCount = useMemo(() => {
-    if (activeTastingsFilter === "active") {
-      if (!activeTastingsData) return null;
-      return activeTastingsData.filter(
-        (t: any) => !t.isTestData && !t.invitePending && (t.status === "open" || t.status === "draft"),
-      ).length;
-    } else {
-      if (!historyData) return null;
-      return (historyData.tastings ?? []).filter(
-        (t: any) => t.status !== "open" && t.status !== "draft" && t.status !== "deleted",
-      ).length;
-    }
-  }, [activeTastingsFilter, activeTastingsData, historyData]);
-
   const { data: journalData } = useQuery({
     queryKey: ["journal-entries", currentParticipant?.id],
     queryFn: () => journalApi.getAll(currentParticipant!.id),
     enabled: !!currentParticipant?.id && (activeTab === "collection" || activeTab === "tastings"),
     staleTime: 60_000,
   });
+
+  const rawTastingsCount = useMemo(() => {
+    if (activeTastingsFilter === "active") {
+      if (!activeTastingsData) return null;
+      const tastingsCount = activeTastingsData.filter(
+        (t: any) => !t.isTestData && !t.invitePending && (t.status === "open" || t.status === "draft"),
+      ).length;
+      const draftDramsCount = (journalData ?? []).filter(
+        (entry: any) => entry?.status === "draft",
+      ).length;
+      return tastingsCount + draftDramsCount;
+    } else {
+      if (!historyData) return null;
+      return (historyData.tastings ?? []).filter(
+        (t: any) => t.status !== "open" && t.status !== "draft" && t.status !== "deleted",
+      ).length;
+    }
+  }, [activeTastingsFilter, activeTastingsData, historyData, journalData]);
 
   const recentItems = useMemo(
     () => buildRecentRatedItems(historyData, journalData, { participantId: currentParticipant?.id, preferredRatingScale: currentParticipant?.preferredRatingScale ?? 100 }),
