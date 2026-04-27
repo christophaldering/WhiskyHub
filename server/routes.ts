@@ -6667,6 +6667,16 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
           return res.status(400).json({ message: "Invalid rating scale. Must be 5, 10, 20, 100 or null." });
         }
       }
+      if (req.body.preferredRatingMode !== undefined) {
+        const m = req.body.preferredRatingMode;
+        if (m === null) {
+          updates.preferredRatingMode = null;
+        } else if (["guided", "compact", "quick"].includes(String(m))) {
+          updates.preferredRatingMode = String(m);
+        } else {
+          return res.status(400).json({ message: "Invalid rating mode. Must be guided, compact, quick or null." });
+        }
+      }
 
       if (req.body.pin !== undefined) {
         if (!req.body.pin || req.body.pin.length < 4 || req.body.pin.length > 64) {

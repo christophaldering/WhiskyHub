@@ -54,6 +54,7 @@ export default function LabsTasteSettings() {
   const [tastingInviteEnabled, setTastingInviteEnabled] = useState(true);
   const [notifSaving, setNotifSaving] = useState(false);
   const [preferredRatingScale, setPreferredRatingScale] = useState<number | null>(null);
+  const [preferredRatingMode, setPreferredRatingMode] = useState<"guided" | "compact" | "quick" | null>(null);
   const activeScale = useRatingScale();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deletePin, setDeletePin] = useState("");
@@ -90,7 +91,14 @@ export default function LabsTasteSettings() {
   }, [profile]);
 
   useEffect(() => {
-    if (participant) { setDisplayName(participant.name || ""); setEmail(participant.email || ""); setNewsletterOptIn(participant.newsletterOptIn || false); setPreferredRatingScale(participant.preferredRatingScale ?? null); }
+    if (participant) {
+      setDisplayName(participant.name || "");
+      setEmail(participant.email || "");
+      setNewsletterOptIn(participant.newsletterOptIn || false);
+      setPreferredRatingScale(participant.preferredRatingScale ?? null);
+      const m = participant.preferredRatingMode;
+      setPreferredRatingMode(m === "guided" || m === "compact" || m === "quick" ? m : null);
+    }
   }, [participant]);
 
   const saveNotificationPref = useCallback(async (prefs: { onlineToastLevel?: string; cheersEnabled?: boolean; tastingInviteEnabled?: boolean }) => {
@@ -128,6 +136,8 @@ export default function LabsTasteSettings() {
       if (email !== (participant?.email || "")) participantUpdates.email = email;
       if (newsletterOptIn !== (participant?.newsletterOptIn || false)) participantUpdates.newsletterOptIn = newsletterOptIn;
       if (preferredRatingScale !== (participant?.preferredRatingScale ?? null)) participantUpdates.preferredRatingScale = preferredRatingScale;
+      const currentPreferredMode = participant?.preferredRatingMode ?? null;
+      if (preferredRatingMode !== currentPreferredMode) participantUpdates.preferredRatingMode = preferredRatingMode;
       if (newPin) {
         if (newPin.length < 4 || newPin.length > 64) throw new Error("Password must be 4–64 characters");
         if (newPin !== confirmPin) throw new Error("PINs don't match");
@@ -300,6 +310,28 @@ export default function LabsTasteSettings() {
                   <button key={String(s)} onClick={() => setPreferredRatingScale(s)}
                     style={{ flex: 1, padding: "10px 4px", borderRadius: 10, border: active ? "2px solid var(--labs-accent)" : "1px solid var(--labs-border)", background: active ? "var(--labs-accent-muted)" : "transparent", color: active ? "var(--labs-accent)" : "var(--labs-text)", fontSize: 13, fontWeight: active ? 600 : 400, cursor: "pointer", fontFamily: "inherit" }}
                     data-testid={`button-scale-${s ?? "auto"}`}>{label}</button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 14 }}>
+            <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: "var(--labs-text-muted)" }}>{t("m2.taste.settings.ratingMode", "Bewertungsform")}</label>
+            <p className="text-[11px] mb-2" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }}>{t("m2.taste.settings.ratingModeHint", "Deine Standard-Form. „Auto“ fragt jedes Mal.")}</p>
+            <div className="flex gap-2" data-testid="select-preferred-rating-mode">
+              {(([null, "guided", "compact", "quick"] as const)).map(m => {
+                const active = preferredRatingMode === m;
+                const label = m === null
+                  ? t("m2.taste.settings.modeAuto", "Auto")
+                  : m === "guided"
+                    ? t("v2.ratingGuided", "Geführt")
+                    : m === "compact"
+                      ? t("v2.ratingCompact", "Kompakt")
+                      : t("v2.ratingQuick", "Quick");
+                return (
+                  <button key={String(m)} onClick={() => setPreferredRatingMode(m)}
+                    style={{ flex: 1, padding: "10px 4px", borderRadius: 10, border: active ? "2px solid var(--labs-accent)" : "1px solid var(--labs-border)", background: active ? "var(--labs-accent-muted)" : "transparent", color: active ? "var(--labs-accent)" : "var(--labs-text)", fontSize: 13, fontWeight: active ? 600 : 400, cursor: "pointer", fontFamily: "inherit" }}
+                    data-testid={`button-mode-${m ?? "auto"}`}>{label}</button>
                 );
               })}
             </div>

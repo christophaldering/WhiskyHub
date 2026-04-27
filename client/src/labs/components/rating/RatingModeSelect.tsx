@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { SP, FONT, RADIUS, TOUCH_MIN } from "./theme";
 import { BackIcon } from "./icons";
 import PhaseSignature from "./PhaseSignature";
@@ -15,16 +16,19 @@ interface RatingLabels {
   quickD?: string;
   quickH?: string;
   back: string;
+  rememberDefault?: string;
 }
 
 interface RatingModeSelectProps {
   labels: RatingLabels;
-  onSelect: (mode: "guided" | "compact" | "quick") => void;
+  onSelect: (mode: "guided" | "compact" | "quick", remember?: boolean) => void;
   onBack: () => void;
   hideQuick?: boolean;
+  showRememberToggle?: boolean;
 }
 
-export default function RatingModeSelect({ labels, onSelect, onBack, hideQuick }: RatingModeSelectProps) {
+export default function RatingModeSelect({ labels, onSelect, onBack, hideQuick, showRememberToggle }: RatingModeSelectProps) {
+  const [remember, setRemember] = useState(false);
   const allCards: Array<{
     mode: "guided" | "compact" | "quick";
     title: string;
@@ -93,7 +97,7 @@ export default function RatingModeSelect({ labels, onSelect, onBack, hideQuick }
             <button
               key={mode}
               data-testid={`rating-mode-${mode}`}
-              onClick={() => onSelect(mode)}
+              onClick={() => onSelect(mode, showRememberToggle ? remember : undefined)}
               style={{
                 display: "flex",
                 gap: SP.md,
@@ -148,6 +152,32 @@ export default function RatingModeSelect({ labels, onSelect, onBack, hideQuick }
           );
         })}
       </div>
+
+      {showRememberToggle && (
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: SP.sm,
+            marginTop: SP.lg,
+            padding: SP.md,
+            cursor: "pointer",
+            color: "var(--labs-text-muted)",
+            fontFamily: FONT.body,
+            fontSize: 13,
+          }}
+          data-testid="label-remember-mode"
+        >
+          <input
+            type="checkbox"
+            checked={remember}
+            onChange={(e) => setRemember(e.target.checked)}
+            style={{ accentColor: "var(--labs-accent)" }}
+            data-testid="checkbox-remember-mode"
+          />
+          <span>{labels.rememberDefault || "Remember as my default"}</span>
+        </label>
+      )}
     </div>
   );
 }

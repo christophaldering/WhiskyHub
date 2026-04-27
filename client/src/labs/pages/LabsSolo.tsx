@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { useIsEmbeddedInTastings } from "@/labs/embeddedTastingsContext";
 import { useLocation } from "wouter";
@@ -7,6 +8,8 @@ import { useAppStore } from "@/lib/store";
 import { queryClient } from "@/lib/queryClient";
 import { Loader2, Check } from "lucide-react";
 import { tryAutoResume, getSession } from "@/lib/session";
+import { participantApi, participantUpdateApi } from "@/lib/api";
+import type { Participant } from "@shared/schema";
 import SoloCaptureScreen, { type CapturedWhisky } from "./solo/SoloCaptureScreen";
 import SoloWhiskyForm from "./solo/SoloWhiskyForm";
 import SoloDoneScreen from "./solo/SoloDoneScreen";
@@ -130,6 +133,25 @@ export default function LabsSolo() {
   const [ratingMode, setRatingMode] = useState<"guided" | "compact" | "quick" | null>(null);
   const [ratingPhaseIndex, setRatingPhaseIndex] = useState(0);
   const [ratingInitialData, setRatingInitialData] = useState<RatingData | undefined>(undefined);
+
+  const { data: participantData } = useQuery<Participant>({
+    queryKey: ["participant", participantId],
+    queryFn: () => participantApi.get(participantId),
+    enabled: !!participantId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const rawPreferred = participantData?.preferredRatingMode;
+  const preferredRatingModeFromProfile: "guided" | "compact" | "quick" | null =
+    rawPreferred === "guided" || rawPreferred === "compact" || rawPreferred === "quick" ? rawPreferred : null;
+
+  const handleSetPreferredMode = useCallback(async (mode: "guided" | "compact" | "quick" | null) => {
+    if (!participantId) return;
+    try {
+      await participantUpdateApi.update(participantId, { preferredRatingMode: mode });
+      queryClient.invalidateQueries({ queryKey: ["participant", participantId] });
+    } catch {}
+  }, [participantId]);
 
   const hasUnsavedRef = useRef(false);
   const latestRatingDataRef = useRef<Partial<RatingData>>({});
@@ -758,6 +780,8 @@ export default function LabsSolo() {
           onBack={handleRatingBack}
           onChange={handleRatingChange}
           onSaveAsDraft={handleSaveAsDraft}
+          preferredMode={preferredRatingModeFromProfile}
+          onSetPreferredMode={handleSetPreferredMode}
         />
         {saveError && (
           <div className="labs-card" style={{

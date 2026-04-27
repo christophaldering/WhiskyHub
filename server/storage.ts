@@ -332,7 +332,7 @@ export interface IStorage {
   getParticipantByName(name: string): Promise<Participant | undefined>;
   getParticipantByEmail(email: string): Promise<Participant | undefined>;
   createParticipant(data: InsertParticipant): Promise<Participant>;
-  updateParticipant(id: string, data: Partial<{name: string; email: string; pin: string; newsletterOptIn: boolean; experienceLevel: string; preferredRatingScale: number | null}>): Promise<Participant | undefined>;
+  updateParticipant(id: string, data: Partial<{name: string; email: string; pin: string; newsletterOptIn: boolean; experienceLevel: string; preferredRatingScale: number | null; preferredRatingMode: string | null}>): Promise<Participant | undefined>;
   updateLastSeen(id: string): Promise<void>;
   markOffline(id: string): Promise<void>;
   getOnlineParticipants(thresholdMinutes?: number): Promise<Participant[]>;
@@ -912,7 +912,7 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async updateParticipant(id: string, data: Partial<{name: string; email: string; pin: string; newsletterOptIn: boolean; experienceLevel: string; preferredRatingScale: number | null}>): Promise<Participant | undefined> {
+  async updateParticipant(id: string, data: Partial<{name: string; email: string; pin: string; newsletterOptIn: boolean; experienceLevel: string; preferredRatingScale: number | null; preferredRatingMode: string | null}>): Promise<Participant | undefined> {
     const [result] = await db.update(participants).set(data).where(eq(participants.id, id)).returning();
     return result;
   }

@@ -4,7 +4,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useSession } from "@/lib/session";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
-import { journalApi, tastingHistoryApi } from "@/lib/api";
+import { journalApi, tastingHistoryApi, participantApi, participantUpdateApi } from "@/lib/api";
+import type { Participant } from "@shared/schema";
 import { useLocation, Link } from "wouter";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import type { JournalEntry } from "@shared/schema";
@@ -161,6 +162,25 @@ export default function LabsTasteDrams() {
     scores: { nose: string; taste: string; finish: string };
     dims: Record<string, { chips: string; text: string }>;
   } | null>(null);
+
+  const { data: participantData } = useQuery<Participant>({
+    queryKey: ["participant", session.pid],
+    queryFn: () => participantApi.get(session.pid!),
+    enabled: !!session.pid,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const rawPreferred = participantData?.preferredRatingMode;
+  const preferredRatingModeFromProfile: "guided" | "compact" | "quick" | null =
+    rawPreferred === "guided" || rawPreferred === "compact" || rawPreferred === "quick" ? rawPreferred : null;
+
+  const handleSetPreferredMode = useCallback(async (mode: "guided" | "compact" | "quick" | null) => {
+    if (!session.pid) return;
+    try {
+      await participantUpdateApi.update(session.pid, { preferredRatingMode: mode });
+      queryClient.invalidateQueries({ queryKey: ["participant", session.pid] });
+    } catch {}
+  }, [session.pid]);
 
   const { data: journal = [], isLoading, isError, refetch } = useQuery<JournalEntry[]>({
     queryKey: ["journal", session.pid],
@@ -968,6 +988,8 @@ export default function LabsTasteDrams() {
           }}
           onSaveAsDraft={handleDeepRateSaveAsDraft}
           hideQuick
+          preferredMode={preferredRatingModeFromProfile}
+          onSetPreferredMode={handleSetPreferredMode}
         />
       </div>
     );

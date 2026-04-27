@@ -1,8 +1,9 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import type { RatingData } from "./types";
 import type { RatingScale } from "@/labs/hooks/useRatingScale";
 import RatingModeSelect from "./RatingModeSelect";
+import RatingModeChip from "./RatingModeChip";
 import GuidedRating from "./GuidedRating";
 import CompactRating from "./CompactRating";
 import QuickRating from "./QuickRating";
@@ -30,14 +31,55 @@ interface RatingFlowV2Props {
   onSaveAsDraft?: (data: RatingData) => void;
   hideQuick?: boolean;
   scale?: RatingScale;
+  preferredMode?: "guided" | "compact" | "quick" | null;
+  onSetPreferredMode?: (mode: "guided" | "compact" | "quick" | null) => void;
 }
 
 type Step = "mode" | "rating";
 
-export default function RatingFlowV2({ whisky, initialData, initialMode, initialPhaseIndex, onDone, onBack, onChange, onSaveAsDraft, hideQuick, scale }: RatingFlowV2Props) {
+export default function RatingFlowV2({
+  whisky,
+  initialData,
+  initialMode,
+  initialPhaseIndex,
+  onDone,
+  onBack,
+  onChange,
+  onSaveAsDraft,
+  hideQuick,
+  scale,
+  preferredMode,
+  onSetPreferredMode,
+}: RatingFlowV2Props) {
   const { t } = useTranslation();
-  const [mode, setMode] = useState<"guided" | "compact" | "quick" | null>(initialMode ?? null);
-  const [step, setStep] = useState<Step>(initialMode ? "rating" : "mode");
+
+  const resolvedInitialMode = useMemo<"guided" | "compact" | "quick" | null>(() => {
+    if (initialMode) return initialMode;
+    if (preferredMode && (preferredMode === "guided" || preferredMode === "compact" || (preferredMode === "quick" && !hideQuick))) {
+      return preferredMode;
+    }
+    return null;
+  }, [initialMode, preferredMode, hideQuick]);
+
+  const [mode, setMode] = useState<"guided" | "compact" | "quick" | null>(resolvedInitialMode);
+  const [step, setStep] = useState<Step>(resolvedInitialMode ? "rating" : "mode");
+  const [liveData, setLiveData] = useState<RatingData | undefined>(initialData);
+  const liveDataRef = useRef<RatingData | undefined>(initialData);
+  const userPickedModeRef = useRef<boolean>(!!resolvedInitialMode);
+
+  useEffect(() => {
+    liveDataRef.current = liveData;
+  }, [liveData]);
+
+  useEffect(() => {
+    if (userPickedModeRef.current) return;
+    if (initialMode) return;
+    if (step !== "mode") return;
+    if (!preferredMode) return;
+    if (preferredMode === "quick" && hideQuick) return;
+    setMode(preferredMode);
+    setStep("rating");
+  }, [preferredMode, initialMode, hideQuick, step]);
 
   const modeLabels = useMemo(() => ({
     modeQ: t("v2.ratingModeQ", "Wie moechtest du bewerten?"),
@@ -52,6 +94,7 @@ export default function RatingFlowV2({ whisky, initialData, initialMode, initial
     quickD: t("v2.ratingQuickD", "Nur Overall-Score -- zwei Taps und fertig."),
     quickH: t("v2.ratingQuickH", "Wenn es schnell gehen soll."),
     back: t("v2.back", "Zurueck"),
+    rememberDefault: t("v2.ratingModeRemember", "Als meine Standard-Form merken"),
   }), [t]);
 
   const guidedLabels = useMemo(() => ({
@@ -109,17 +152,41 @@ export default function RatingFlowV2({ whisky, initialData, initialMode, initial
     back: modeLabels.back,
   }), [t, guidedLabels, modeLabels.back]);
 
-  const handleModeSelect = useCallback((m: "guided" | "compact" | "quick") => {
+  const chipLabels = useMemo(() => ({
+    current: t("v2.ratingModeChipCurrent", "Modus"),
+    title: t("v2.ratingModeChipTitle", "Bewertungsform wechseln"),
+    guided: modeLabels.guided,
+    compact: modeLabels.compact,
+    quick: modeLabels.quick,
+    setDefault: t("v2.ratingModeSetDefault", "Als Standard merken"),
+    cancel: t("v2.back", "Zurueck"),
+  }), [t, modeLabels]);
+
+  const handleModeSelect = useCallback((m: "guided" | "compact" | "quick", remember?: boolean) => {
     setMode(m);
     setStep("rating");
+    if (remember && onSetPreferredMode) {
+      onSetPreferredMode(m);
+    }
     onChange?.({ mode: m, phaseIndex: 0, data: initialData ?? {} });
-  }, [onChange, initialData]);
+  }, [onChange, initialData, onSetPreferredMode]);
 
   const handleRatingDone = useCallback((data: RatingData) => {
     onDone(data);
   }, [onDone]);
 
   const handleChange = useCallback((phaseIndex: number, data: Partial<RatingData>) => {
+    if (data && (data.scores || data.tags || data.notes)) {
+      const prev = liveDataRef.current;
+      const merged: RatingData = {
+        scores: { ...(prev?.scores ?? { nose: 0, palate: 0, finish: 0, overall: 0 }), ...(data.scores ?? {}) },
+        tags: { ...(prev?.tags ?? { nose: [], palate: [], finish: [], overall: [] }), ...(data.tags ?? {}) },
+        notes: { ...(prev?.notes ?? { nose: "", palate: "", finish: "", overall: "" }), ...(data.notes ?? {}) },
+        overallExplicit: data.overallExplicit !== undefined ? data.overallExplicit : prev?.overallExplicit,
+      };
+      setLiveData(merged);
+      liveDataRef.current = merged;
+    }
     onChange?.({ mode, phaseIndex, data });
   }, [mode, onChange]);
 
@@ -131,6 +198,15 @@ export default function RatingFlowV2({ whisky, initialData, initialMode, initial
     }
   }, [onBack, onSaveAsDraft]);
 
+  const handleSwitchMode = useCallback((next: "guided" | "compact" | "quick", makeDefault?: boolean) => {
+    if (next === mode) return;
+    if (makeDefault && onSetPreferredMode) {
+      onSetPreferredMode(next);
+    }
+    setMode(next);
+    onChange?.({ mode: next, phaseIndex: 0, data: liveDataRef.current ?? {} });
+  }, [mode, onChange, onSetPreferredMode]);
+
   if (step === "mode") {
     return (
       <RatingModeSelect
@@ -138,53 +214,90 @@ export default function RatingFlowV2({ whisky, initialData, initialMode, initial
         onSelect={handleModeSelect}
         onBack={onBack}
         hideQuick={hideQuick}
+        showRememberToggle={!!onSetPreferredMode}
       />
     );
   }
 
+  const subviewInitialData: RatingData | undefined = liveData ?? initialData;
+  const showChip = true;
+
   if (step === "rating" && mode === "guided") {
     return (
-      <GuidedRating
-        labels={guidedLabels}
-        whisky={{ ...whisky, blind: whisky.blind ?? false, flavorProfile: whisky.flavorProfile }}
-        initialData={initialData}
-        initialPhaseIndex={initialPhaseIndex}
-        onDone={handleRatingDone}
-        onBack={handleRatingBack}
-        onChange={handleChange}
-        onSaveAsDraft={onSaveAsDraft}
-        scale={scale}
-      />
+      <div style={{ position: "relative" }}>
+        {showChip && (
+          <RatingModeChip
+            mode="guided"
+            hideQuick={hideQuick}
+            labels={chipLabels}
+            allowSetDefault={!!onSetPreferredMode}
+            onSwitch={handleSwitchMode}
+          />
+        )}
+        <GuidedRating
+          labels={guidedLabels}
+          whisky={{ ...whisky, blind: whisky.blind ?? false, flavorProfile: whisky.flavorProfile }}
+          initialData={subviewInitialData}
+          initialPhaseIndex={initialPhaseIndex}
+          onDone={handleRatingDone}
+          onBack={handleRatingBack}
+          onChange={handleChange}
+          onSaveAsDraft={onSaveAsDraft}
+          scale={scale}
+        />
+      </div>
     );
   }
 
   if (step === "rating" && mode === "compact") {
     return (
-      <CompactRating
-        labels={compactLabels}
-        whisky={{ ...whisky, blind: whisky.blind ?? false, flavorProfile: whisky.flavorProfile }}
-        initialData={initialData}
-        onDone={handleRatingDone}
-        onBack={handleRatingBack}
-        onChange={handleChange}
-        onSaveAsDraft={onSaveAsDraft}
-        scale={scale}
-      />
+      <div style={{ position: "relative" }}>
+        {showChip && (
+          <RatingModeChip
+            mode="compact"
+            hideQuick={hideQuick}
+            labels={chipLabels}
+            allowSetDefault={!!onSetPreferredMode}
+            onSwitch={handleSwitchMode}
+          />
+        )}
+        <CompactRating
+          labels={compactLabels}
+          whisky={{ ...whisky, blind: whisky.blind ?? false, flavorProfile: whisky.flavorProfile }}
+          initialData={subviewInitialData}
+          onDone={handleRatingDone}
+          onBack={handleRatingBack}
+          onChange={handleChange}
+          onSaveAsDraft={onSaveAsDraft}
+          scale={scale}
+        />
+      </div>
     );
   }
 
   if (step === "rating" && mode === "quick") {
     return (
-      <QuickRating
-        labels={quickLabels}
-        whisky={{ ...whisky, blind: whisky.blind ?? false }}
-        initialData={initialData}
-        onDone={handleRatingDone}
-        onBack={handleRatingBack}
-        onChange={handleChange}
-        onSaveAsDraft={onSaveAsDraft}
-        scale={scale}
-      />
+      <div style={{ position: "relative" }}>
+        {showChip && (
+          <RatingModeChip
+            mode="quick"
+            hideQuick={hideQuick}
+            labels={chipLabels}
+            allowSetDefault={!!onSetPreferredMode}
+            onSwitch={handleSwitchMode}
+          />
+        )}
+        <QuickRating
+          labels={quickLabels}
+          whisky={{ ...whisky, blind: whisky.blind ?? false }}
+          initialData={subviewInitialData}
+          onDone={handleRatingDone}
+          onBack={handleRatingBack}
+          onChange={handleChange}
+          onSaveAsDraft={onSaveAsDraft}
+          scale={scale}
+        />
+      </div>
     );
   }
 
