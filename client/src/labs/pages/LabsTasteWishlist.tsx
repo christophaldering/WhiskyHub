@@ -8,7 +8,7 @@ import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useSession } from "@/lib/session";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import ContextDownloadBar from "@/labs/components/ContextDownloadBar";
-import { downloadServerExport } from "@/labs/utils/contextDownloads";
+import { downloadCsvFromRows, downloadXlsxFromSheets, safeFileSegment } from "@/labs/utils/contextDownloads";
 import { useLocation, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -106,13 +106,44 @@ export default function LabsTasteWishlist() {
                         key: "csv",
                         label: t("downloads.csv", { defaultValue: "CSV" }),
                         testId: "button-wishlist-download-csv",
-                        run: () => downloadServerExport("wishlist", "csv", participantId, t),
+                        run: () => downloadCsvFromRows(
+                          `casksense_wishlist_${safeFileSegment(new Date().toISOString().split("T")[0])}.csv`,
+                          sortedEntries.map((e: WishlistEntry) => ({
+                            Name: e.name || "",
+                            Distillery: e.distillery || "",
+                            Region: e.region || "",
+                            Age: e.age || "",
+                            ABV: e.abv || "",
+                            CaskType: e.caskType || "",
+                            Notes: e.notes || "",
+                            Priority: e.priority || "",
+                            Source: e.source || "",
+                            AddedAt: e.createdAt || "",
+                          })),
+                        ),
                       },
                       {
                         key: "xlsx",
                         label: t("downloads.excel", { defaultValue: "Excel" }),
                         testId: "button-wishlist-download-xlsx",
-                        run: () => downloadServerExport("wishlist", "xlsx", participantId, t),
+                        run: () => downloadXlsxFromSheets(
+                          `casksense_wishlist_${safeFileSegment(new Date().toISOString().split("T")[0])}.xlsx`,
+                          [{
+                            name: t("wishlist.title", { defaultValue: "Wishlist" }),
+                            rows: sortedEntries.map((e: WishlistEntry) => ({
+                              Name: e.name || "",
+                              Distillery: e.distillery || "",
+                              Region: e.region || "",
+                              Age: e.age || "",
+                              ABV: e.abv || "",
+                              CaskType: e.caskType || "",
+                              Notes: e.notes || "",
+                              Priority: e.priority || "",
+                              Source: e.source || "",
+                              AddedAt: e.createdAt || "",
+                            })),
+                          }],
+                        ),
                       },
                     ]}
                   />

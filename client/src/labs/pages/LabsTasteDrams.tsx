@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import ContextDownloadBar from "@/labs/components/ContextDownloadBar";
-import { downloadServerExport } from "@/labs/utils/contextDownloads";
+import { downloadCsvFromRows, downloadXlsxFromSheets, safeFileSegment } from "@/labs/utils/contextDownloads";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import type { RatingData } from "@/labs/components/rating/types";
@@ -1140,13 +1140,48 @@ export default function LabsTasteDrams() {
                   key: "csv",
                   label: t("downloads.csv", { defaultValue: "CSV" }),
                   testId: "button-drams-download-csv",
-                  run: () => downloadServerExport("journal", "csv", session.pid!, t),
+                  run: () => downloadCsvFromRows(
+                    `casksense_journal_${safeFileSegment(new Date().toISOString().split("T")[0])}.csv`,
+                    filteredEntries.map((e: any) => ({
+                      Date: e.createdAt || "",
+                      Name: e.name || e.title || "",
+                      Distillery: e.distillery || "",
+                      Region: e.region || "",
+                      Age: e.age || "",
+                      ABV: e.abv || "",
+                      Rating: e.personalScore ?? e.rating ?? "",
+                      Nose: e.noseNotes || "",
+                      Taste: e.tasteNotes || "",
+                      Finish: e.finishNotes || "",
+                      Notes: e.notes || "",
+                      Source: e.source || "",
+                    })),
+                  ),
                 },
                 {
                   key: "xlsx",
                   label: t("downloads.excel", { defaultValue: "Excel" }),
                   testId: "button-drams-download-xlsx",
-                  run: () => downloadServerExport("journal", "xlsx", session.pid!, t),
+                  run: () => downloadXlsxFromSheets(
+                    `casksense_journal_${safeFileSegment(new Date().toISOString().split("T")[0])}.xlsx`,
+                    [{
+                      name: t("drams.title", { defaultValue: "Journal" }),
+                      rows: filteredEntries.map((e: any) => ({
+                        Date: e.createdAt || "",
+                        Name: e.name || e.title || "",
+                        Distillery: e.distillery || "",
+                        Region: e.region || "",
+                        Age: e.age || "",
+                        ABV: e.abv || "",
+                        Rating: e.personalScore ?? e.rating ?? "",
+                        Nose: e.noseNotes || "",
+                        Taste: e.tasteNotes || "",
+                        Finish: e.finishNotes || "",
+                        Notes: e.notes || "",
+                        Source: e.source || "",
+                      })),
+                    }],
+                  ),
                 },
               ]}
             />

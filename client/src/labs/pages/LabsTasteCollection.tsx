@@ -17,7 +17,7 @@ import {
 import type { WhiskybaseCollectionItem } from "@shared/schema";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import ContextDownloadBar from "@/labs/components/ContextDownloadBar";
-import { downloadServerExport } from "@/labs/utils/contextDownloads";
+import { downloadCsvFromRows, downloadXlsxFromSheets, safeFileSegment } from "@/labs/utils/contextDownloads";
 
 type SortKey = "name" | "rating" | "price" | "added";
 type SortDirection = "asc" | "desc";
@@ -416,13 +416,48 @@ export default function LabsTasteCollection() {
                 key: "csv",
                 label: t("downloads.csv", { defaultValue: "CSV" }),
                 testId: "button-collection-download-csv",
-                run: () => downloadServerExport("collection", "csv", pid, t),
+                run: () => downloadCsvFromRows(
+                  `casksense_collection_${safeFileSegment(new Date().toISOString().split("T")[0])}.csv`,
+                  getExportItems().map((e: any) => ({
+                    Brand: e.brand || "",
+                    Name: e.name || "",
+                    WhiskybaseId: e.whiskybaseId || "",
+                    Category: e.category || "",
+                    Rating: e.rating ?? "",
+                    Region: e.region || "",
+                    Country: e.country || "",
+                    Age: e.age || "",
+                    ABV: e.abv || "",
+                    DistilledYear: e.distilledYear || "",
+                    Notes: e.notes || "",
+                    AddedAt: e.createdAt || "",
+                  })),
+                ),
               },
               {
                 key: "xlsx",
                 label: t("downloads.excel", { defaultValue: "Excel" }),
                 testId: "button-collection-download-xlsx",
-                run: () => downloadServerExport("collection", "xlsx", pid, t),
+                run: () => downloadXlsxFromSheets(
+                  `casksense_collection_${safeFileSegment(new Date().toISOString().split("T")[0])}.xlsx`,
+                  [{
+                    name: t("collectionUi.collection", { defaultValue: "Collection" }),
+                    rows: getExportItems().map((e: any) => ({
+                      Brand: e.brand || "",
+                      Name: e.name || "",
+                      WhiskybaseId: e.whiskybaseId || "",
+                      Category: e.category || "",
+                      Rating: e.rating ?? "",
+                      Region: e.region || "",
+                      Country: e.country || "",
+                      Age: e.age || "",
+                      ABV: e.abv || "",
+                      DistilledYear: e.distilledYear || "",
+                      Notes: e.notes || "",
+                      AddedAt: e.createdAt || "",
+                    })),
+                  }],
+                ),
               },
             ]}
           />
