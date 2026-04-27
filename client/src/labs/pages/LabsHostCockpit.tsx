@@ -2707,13 +2707,13 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
         {status === "archived" && currentParticipant?.role === "admin" && !restartDialog && (
           <button onClick={() => setRestartDialog("choose")} className="cockpit-action-btn cockpit-action-secondary" data-testid="cockpit-restart">
             <RotateCcw style={{ width: 14, height: 14 }} />
-            Reopen (Admin)
+            {t("cockpit.reopenAdmin", "Reopen (Admin)")}
           </button>
         )}
 
         {restartDialog === "choose" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 0" }}>
-            <div style={{ fontSize: 12, color: "var(--labs-text-muted)", textAlign: "center", fontWeight: 600 }}>Restart Options</div>
+            <div style={{ fontSize: 12, color: "var(--labs-text-muted)", textAlign: "center", fontWeight: 600 }}>{t("cockpit.restartOptionsTitle", "Restart Options")}</div>
             <button
               onClick={() => restartMut.mutate(false)}
               disabled={restartMut.isPending}
@@ -2721,7 +2721,7 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
               data-testid="cockpit-restart-continue"
             >
               {restartMut.isPending ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <Play style={{ width: 14, height: 14 }} />}
-              Continue (keep ratings)
+              {t("cockpit.restartContinueKeep", "Continue (keep ratings)")}
             </button>
             <button
               onClick={() => setRestartDialog("confirmClear")}
@@ -2729,7 +2729,7 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
               data-testid="cockpit-restart-full"
             >
               <AlertTriangle style={{ width: 14, height: 14 }} />
-              Full restart (delete ratings)
+              {t("cockpit.restartFullDelete", "Full restart (delete ratings)")}
             </button>
             <button onClick={() => setRestartDialog(false)} className="cockpit-action-btn cockpit-action-secondary" data-testid="cockpit-restart-cancel">
               {t("ui.cancel")}
@@ -2741,7 +2741,7 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
           <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 0" }}>
             <div style={{ fontSize: 12, color: "var(--labs-danger, #e53e3e)", textAlign: "center", fontWeight: 600 }}>
               <AlertTriangle style={{ width: 14, height: 14, display: "inline", verticalAlign: "middle", marginRight: 4 }} />
-              Are you sure? All ratings will be permanently deleted.
+              {t("cockpit.restartConfirmClearMessage", "Are you sure? All ratings will be permanently deleted.")}
             </div>
             <button
               onClick={() => restartMut.mutate(true)}
@@ -2750,10 +2750,10 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
               data-testid="cockpit-restart-confirm-clear"
             >
               {restartMut.isPending ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <AlertTriangle style={{ width: 14, height: 14 }} />}
-              Yes, delete all ratings & restart
+              {t("cockpit.restartConfirmClearAction", "Yes, delete all ratings & restart")}
             </button>
             <button onClick={() => setRestartDialog("choose")} className="cockpit-action-btn cockpit-action-secondary" data-testid="cockpit-restart-back">
-              Back
+              {t("cockpit.restartBack", "Back")}
             </button>
           </div>
         )}
