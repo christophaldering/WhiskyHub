@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSearch } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import {
   ChevronLeft, Sparkles, Users, Trophy, TrendingUp, TrendingDown,
@@ -256,9 +257,10 @@ export default function LabsGroupReport({ params }: LabsGroupReportProps) {
   const [genProgress, setGenProgress] = useState<{ done: number; total: number; currentName: string | null } | null>(null);
   const [highlightWhisky, setHighlightWhisky] = useState<string | null>(null);
 
+  const reportSearch = useSearch();
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(reportSearch);
     const highlight = params.get("highlight");
     if (!highlight) return;
     setHighlightWhisky(highlight);
@@ -268,7 +270,7 @@ export default function LabsGroupReport({ params }: LabsGroupReportProps) {
     }, 500);
     const clearTimer = setTimeout(() => setHighlightWhisky(null), 4500);
     return () => { clearTimeout(scrollTimer); clearTimeout(clearTimer); };
-  }, []);
+  }, [reportSearch]);
 
   const { data: tasting } = useQuery({
     queryKey: ["tasting", tastingId],

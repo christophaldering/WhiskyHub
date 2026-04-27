@@ -12,7 +12,7 @@ import { wishlistKey, useCollectionKeys } from "@/lib/wishlistKey";
 import CollectionBadge from "@/labs/components/CollectionBadge";
 import type { WishlistEntry } from "@shared/schema";
 import { Activity, Download, Copy, Check, TrendingUp, Sparkles, ChevronLeft, Compass, BookmarkPlus, BookmarkCheck, X, Database, Bot, RefreshCw, ExternalLink, Loader2 } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 
 interface DnaCategory {
   id: string;
@@ -361,9 +361,10 @@ export default function LabsWhiskyDNA() {
   const [aiRefreshKey, setAiRefreshKey] = useState(0);
   const [highlightAxis, setHighlightAxis] = useState<string | null>(null);
 
+  const dnaSearch = useSearch();
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(dnaSearch);
     const highlight = params.get("highlight");
     if (!highlight) return;
     setHighlightAxis(highlight);
@@ -373,7 +374,7 @@ export default function LabsWhiskyDNA() {
     }, 350);
     const clearTimer = setTimeout(() => setHighlightAxis(null), 4500);
     return () => { clearTimeout(timer); clearTimeout(clearTimer); };
-  }, []);
+  }, [dnaSearch]);
 
   const { data: dna, isLoading, error } = useQuery<DnaResponse>({
     queryKey: ["whisky-dna", pid],

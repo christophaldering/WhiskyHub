@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import { useSession } from "@/lib/session";
 import { statsApi, flavorProfileApi, journalApi, ratingNotesApi } from "@/lib/api";
@@ -308,9 +308,10 @@ export default function LabsTasteAnalytics() {
   const [, navigate] = useLocation();
   const { t } = useTranslation();
 
+  const analyticsSearch = useSearch();
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(analyticsSearch);
     const highlight = params.get("highlight");
     if (!highlight) return;
     const targets: Record<string, string> = {
