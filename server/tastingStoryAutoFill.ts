@@ -13,15 +13,29 @@ type ParticipantLite = { id: string; displayName?: string | null; name?: string 
 
 export type StoryWizardTone = "festive" | "casual" | "analytical" | "poetic";
 
+export type CategorizedPhoto = {
+  url: string;
+  categories: string[];
+};
+
 export type StoryWizardOptions = {
   tone?: StoryWizardTone | null;
   headlineOverride?: string | null;
   subtitleOverride?: string | null;
   heroImageUrl?: string | null;
   galleryImageUrls?: string[];
+  categorizedPhotos?: CategorizedPhoto[];
   spotlightParticipantIds?: string[];
   highlightContext?: string | null;
+  detailPrompt?: string | null;
 };
+
+const PHOTO_CAT_HERO = "Hero";
+const PHOTO_CAT_GALLERY = "Galerie";
+const PHOTO_CAT_PARTICIPANT = "Teilnehmer";
+const PHOTO_CAT_GROUP = "Gruppenbild";
+
+const NON_GALLERY_CATEGORIES = new Set<string>([PHOTO_CAT_HERO, PHOTO_CAT_PARTICIPANT, PHOTO_CAT_GROUP]);
 
 function blockId(): string {
   return "blk_" + Math.random().toString(36).slice(2, 11);
@@ -56,6 +70,51 @@ function trimString(value: string | null | undefined): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+type CategorizedPhotoBuckets = {
+  heroUrl: string;
+  groupUrl: string;
+  galleryUrls: string[];
+  participantUrls: string[];
+};
+
+function bucketCategorizedPhotos(wizard: StoryWizardOptions | undefined): CategorizedPhotoBuckets {
+  const result: CategorizedPhotoBuckets = {
+    heroUrl: "",
+    groupUrl: "",
+    galleryUrls: [],
+    participantUrls: [],
+  };
+  const list = wizard?.categorizedPhotos;
+  if (!Array.isArray(list) || list.length === 0) return result;
+  const seenGallery = new Set<string>();
+  const seenParticipant = new Set<string>();
+  for (const entry of list) {
+    if (!entry || typeof entry !== "object") continue;
+    const url = trimString(entry.url);
+    if (!url) continue;
+    const cats = Array.isArray(entry.categories)
+      ? entry.categories.filter((c): c is string => typeof c === "string" && c.length > 0)
+      : [];
+    if (cats.length === 0) continue;
+    if (cats.includes(PHOTO_CAT_HERO) && !result.heroUrl) {
+      result.heroUrl = url;
+    }
+    if (cats.includes(PHOTO_CAT_GROUP) && !result.groupUrl) {
+      result.groupUrl = url;
+    }
+    if (cats.includes(PHOTO_CAT_PARTICIPANT) && !seenParticipant.has(url)) {
+      seenParticipant.add(url);
+      result.participantUrls.push(url);
+    }
+    const otherTags = cats.filter((c) => !NON_GALLERY_CATEGORIES.has(c));
+    if (otherTags.length > 0 && url !== result.heroUrl && !seenGallery.has(url)) {
+      seenGallery.add(url);
+      result.galleryUrls.push(url);
+    }
+  }
+  return result;
+}
+
 function ensureGalleryItems(urls: string[] | undefined): Array<{ url: string; alt: string; caption: string }> {
   if (!urls || urls.length === 0) return [];
   const seen = new Set<string>();
@@ -81,12 +140,14 @@ export function buildInitialTastingStoryBlocks(args: {
   const { tasting, whiskies, participantCount, wizard } = args;
   const blocks: StoryBlock[] = [];
 
+  const photoBuckets = bucketCategorizedPhotos(wizard);
+
   const dateLabel = tastingDateLabel(tasting);
   const heroMeta = [dateLabel, tasting.location ?? ""].filter((p) => p && p.length > 0).join(" \u00b7 ");
 
   const heroTitle = trimString(wizard?.headlineOverride) || tasting.title || "Verkostung";
   const heroSubtitle = trimString(wizard?.subtitleOverride) || tasting.location || "";
-  const heroImage = trimString(wizard?.heroImageUrl) || tasting.coverImageUrl || "";
+  const heroImage = photoBuckets.heroUrl || trimString(wizard?.heroImageUrl) || tasting.coverImageUrl || "";
 
   blocks.push({
     id: blockId(),
@@ -186,16 +247,20 @@ export function buildInitialTastingStoryBlocks(args: {
       });
     }
 
+    const tasterGridPayload: Record<string, unknown> = {
+      eyebrow: "Wer mitverkostet hat",
+      heading: "Die Verkoster",
+      columns: participantCount >= 4 ? "4" : "3",
+      includeParticipantIds: null,
+      overrides,
+    };
+    if (photoBuckets.participantUrls.length > 0) {
+      tasterGridPayload.participantPhotos = photoBuckets.participantUrls;
+    }
     blocks.push({
       id: blockId(),
       type: "taster-grid",
-      payload: {
-        eyebrow: "Wer mitverkostet hat",
-        heading: "Die Verkoster",
-        columns: participantCount >= 4 ? "4" : "3",
-        includeParticipantIds: null,
-        overrides,
-      },
+      payload: tasterGridPayload,
     });
   }
 
@@ -243,7 +308,12 @@ export function buildInitialTastingStoryBlocks(args: {
     });
   }
 
-  const galleryItems = ensureGalleryItems(wizard?.galleryImageUrls);
+  const hasCategorizedPhotos = Array.isArray(wizard?.categorizedPhotos)
+    && wizard.categorizedPhotos.some((p) => Array.isArray(p?.categories) && p.categories.length > 0);
+  const galleryUrlsForBlock = hasCategorizedPhotos
+    ? photoBuckets.galleryUrls
+    : (wizard?.galleryImageUrls ?? []);
+  const galleryItems = ensureGalleryItems(galleryUrlsForBlock);
   if (galleryItems.length > 0) {
     blocks.push({
       id: blockId(),
@@ -265,7 +335,7 @@ export function buildInitialTastingStoryBlocks(args: {
       heading: "Auf den n\u00e4chsten Dram.",
       closingLine: finaleClosing,
       signatureLine: "",
-      hostPhotoUrl: "",
+      hostPhotoUrl: photoBuckets.groupUrl,
     },
   });
 

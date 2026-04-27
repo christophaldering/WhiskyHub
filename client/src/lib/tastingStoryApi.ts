@@ -90,14 +90,21 @@ export async function snapshotTastingStory(
 
 export type WizardTone = "festive" | "casual" | "analytical" | "poetic";
 
+export type CategorizedPhoto = {
+  url: string;
+  categories: string[];
+};
+
 export type WizardGenerateInput = {
   tone?: WizardTone | null;
   headlineOverride?: string | null;
   subtitleOverride?: string | null;
   heroImageUrl?: string | null;
   galleryImageUrls?: string[];
+  categorizedPhotos?: CategorizedPhoto[];
   spotlightParticipantIds?: string[];
   highlightContext?: string | null;
+  detailPrompt?: string | null;
   overwriteExisting?: boolean;
 };
 

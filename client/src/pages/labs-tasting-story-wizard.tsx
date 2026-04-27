@@ -32,9 +32,39 @@ type WizardState = {
   subtitleOverride: string;
   heroImageUrl: string;
   galleryImageUrls: string[];
+  imageCategories: Record<string, string[]>;
+  customCategories: string[];
   spotlightParticipantIds: string[];
   highlightContext: string;
+  detailPrompt: string;
 };
+
+const PHOTO_CATEGORY_HERO = "Hero";
+const PHOTO_CATEGORY_GALLERY = "Galerie";
+const PHOTO_CATEGORY_PARTICIPANT = "Teilnehmer";
+const PHOTO_CATEGORY_GROUP = "Gruppenbild";
+const PHOTO_CATEGORY_MOOD = "Szene & Stimmung";
+const PHOTO_CATEGORY_WHISKY = "Whisky";
+const PHOTO_CATEGORY_SETUP = "Setup";
+
+const BUILTIN_PHOTO_CATEGORIES: string[] = [
+  PHOTO_CATEGORY_HERO,
+  PHOTO_CATEGORY_GALLERY,
+  PHOTO_CATEGORY_PARTICIPANT,
+  PHOTO_CATEGORY_GROUP,
+  PHOTO_CATEGORY_MOOD,
+  PHOTO_CATEGORY_WHISKY,
+  PHOTO_CATEGORY_SETUP,
+];
+
+function categoryTestId(cat: string): string {
+  return cat
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 32) || "custom";
+}
 
 const TONE_OPTIONS: Array<{ value: WizardTone; label: string; hint: string }> = [
   { value: "festive", label: "Festlich", hint: "Feierlich, warm, einladend" },
@@ -50,14 +80,55 @@ function loadFromSession(tastingId: string): WizardState | null {
     const raw = sessionStorage.getItem(STORAGE_KEY_PREFIX + tastingId);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<WizardState>;
+    const heroImageUrl = typeof parsed.heroImageUrl === "string" ? parsed.heroImageUrl : "";
+    const galleryImageUrls = Array.isArray(parsed.galleryImageUrls)
+      ? parsed.galleryImageUrls.filter((u): u is string => typeof u === "string")
+      : [];
+    let imageCategories: Record<string, string[]> = {};
+    if (parsed.imageCategories && typeof parsed.imageCategories === "object" && !Array.isArray(parsed.imageCategories)) {
+      for (const [url, cats] of Object.entries(parsed.imageCategories as Record<string, unknown>)) {
+        if (typeof url !== "string" || !url) continue;
+        if (!Array.isArray(cats)) continue;
+        const cleaned = cats.filter((c): c is string => typeof c === "string" && c.length > 0).slice(0, 10);
+        imageCategories[url] = cleaned;
+      }
+    }
+    if (Object.keys(imageCategories).length === 0) {
+      const migrated: Record<string, string[]> = {};
+      if (heroImageUrl) migrated[heroImageUrl] = [PHOTO_CATEGORY_HERO];
+      for (const url of galleryImageUrls) {
+        if (!url) continue;
+        const existing = migrated[url] ?? [];
+        if (!existing.includes(PHOTO_CATEGORY_GALLERY)) existing.push(PHOTO_CATEGORY_GALLERY);
+        migrated[url] = existing;
+      }
+      imageCategories = migrated;
+    } else {
+      let heroSeen = false;
+      for (const [url, cats] of Object.entries(imageCategories)) {
+        if (!cats.includes(PHOTO_CATEGORY_HERO)) continue;
+        if (!heroSeen) {
+          heroSeen = true;
+          continue;
+        }
+        imageCategories[url] = cats.filter((c) => c !== PHOTO_CATEGORY_HERO);
+      }
+    }
+    const customCategoriesRaw = Array.isArray(parsed.customCategories)
+      ? parsed.customCategories.filter((c): c is string => typeof c === "string" && c.trim().length > 0)
+      : [];
+    const customCategories = Array.from(new Set(customCategoriesRaw.map((c) => c.trim()))).slice(0, 12);
     return {
       tone: (parsed.tone as WizardTone) ?? null,
       headlineOverride: typeof parsed.headlineOverride === "string" ? parsed.headlineOverride : "",
       subtitleOverride: typeof parsed.subtitleOverride === "string" ? parsed.subtitleOverride : "",
-      heroImageUrl: typeof parsed.heroImageUrl === "string" ? parsed.heroImageUrl : "",
-      galleryImageUrls: Array.isArray(parsed.galleryImageUrls) ? parsed.galleryImageUrls.filter((u) => typeof u === "string") : [],
-      spotlightParticipantIds: Array.isArray(parsed.spotlightParticipantIds) ? parsed.spotlightParticipantIds.filter((u) => typeof u === "string") : [],
+      heroImageUrl,
+      galleryImageUrls,
+      imageCategories,
+      customCategories,
+      spotlightParticipantIds: Array.isArray(parsed.spotlightParticipantIds) ? parsed.spotlightParticipantIds.filter((u): u is string => typeof u === "string") : [],
       highlightContext: typeof parsed.highlightContext === "string" ? parsed.highlightContext : "",
+      detailPrompt: typeof parsed.detailPrompt === "string" ? parsed.detailPrompt : "",
     };
   } catch {
     return null;
@@ -94,8 +165,11 @@ export default function LabsTastingStoryWizardPage({ id }: Props) {
         subtitleOverride: "",
         heroImageUrl: "",
         galleryImageUrls: [],
+        imageCategories: {},
+        customCategories: [],
         spotlightParticipantIds: [],
         highlightContext: "",
+        detailPrompt: "",
       }
     );
   }, [id]);
@@ -201,14 +275,30 @@ export default function LabsTastingStoryWizardPage({ id }: Props) {
   const handleStart = useCallback(async () => {
     setErrorMessage(null);
     try {
+      const categorizedPhotos = Object.entries(state.imageCategories)
+        .map(([url, categories]) => ({
+          url: url.trim(),
+          categories: Array.from(new Set((categories ?? []).filter((c) => typeof c === "string" && c.length > 0))),
+        }))
+        .filter((p) => p.url.length > 0 && p.categories.length > 0);
+      const heroEntry = categorizedPhotos.find((p) => p.categories.includes(PHOTO_CATEGORY_HERO));
+      const derivedHero = heroEntry?.url ?? state.heroImageUrl.trim();
+      const galleryFromCategories = Array.from(
+        new Set(categorizedPhotos.filter((p) => p.url !== heroEntry?.url).map((p) => p.url)),
+      );
+      const galleryUrls = categorizedPhotos.length > 0
+        ? galleryFromCategories
+        : state.galleryImageUrls.filter((u) => u.trim().length > 0);
       const input: WizardGenerateInput = {
         tone: state.tone,
         headlineOverride: state.headlineOverride.trim() || null,
         subtitleOverride: state.subtitleOverride.trim() || null,
-        heroImageUrl: state.heroImageUrl.trim() || null,
-        galleryImageUrls: state.galleryImageUrls.filter((u) => u.trim().length > 0),
+        heroImageUrl: derivedHero || null,
+        galleryImageUrls: galleryUrls,
+        categorizedPhotos: categorizedPhotos.length > 0 ? categorizedPhotos : undefined,
         spotlightParticipantIds: state.spotlightParticipantIds,
         highlightContext: state.highlightContext.trim() || null,
+        detailPrompt: state.detailPrompt.trim() || null,
         overwriteExisting: hasExistingStory && overwriteAck,
       };
       setStage("generating");
@@ -515,18 +605,20 @@ function QuestionsStage({
   participants: Array<{ id: string; name: string }>;
   onSubmit: () => void;
 }) {
-  const totalSteps = 5;
-  const stepLabels = ["Stimmung", "Headline", "Fotos", "Highlight", "Spotlight"];
+  const totalSteps = 6;
+  const stepLabels = ["Stimmung", "Headline", "Fotos", "Highlight", "Briefing", "Spotlight"];
   const [stepError, setStepError] = useState<string | null>(null);
 
   const validateStep = (idx: number): string | null => {
     if (idx === 2) {
-      if (!state.heroImageUrl.trim()) {
-        return "Bitte waehle ein Hero-Bild aus oder lade eines hoch.";
+      const heroEntries = Object.entries(state.imageCategories).filter(
+        ([, cats]) => Array.isArray(cats) && cats.includes(PHOTO_CATEGORY_HERO),
+      );
+      if (heroEntries.length === 0) {
+        return "Bitte markiere genau ein Foto als Hero-Bild.";
       }
-      const galleryCount = state.galleryImageUrls.filter((u) => u.trim().length > 0).length;
-      if (galleryCount > 0 && (galleryCount < 3 || galleryCount > 8)) {
-        return "Galerie braucht entweder kein Bild oder zwischen 3 und 8 Bildern.";
+      if (heroEntries.length > 1) {
+        return "Es darf nur ein Hero-Bild gesetzt sein. Entferne den Hero-Tag bei den anderen Fotos.";
       }
     }
     return null;
@@ -556,7 +648,8 @@ function QuestionsStage({
         {step === 1 ? <HeadlineStep state={state} setState={setState} tastingId={id} /> : null}
         {step === 2 ? <PhotosStep state={state} setState={setState} photoOptions={photoOptions} /> : null}
         {step === 3 ? <HighlightStep state={state} setState={setState} /> : null}
-        {step === 4 ? <SpotlightStep state={state} setState={setState} participants={participants} /> : null}
+        {step === 4 ? <BriefingStep state={state} setState={setState} /> : null}
+        {step === 5 ? <SpotlightStep state={state} setState={setState} participants={participants} /> : null}
       </div>
 
       {stepError ? (
@@ -733,11 +826,17 @@ function PhotosStep({
   setState: (u: (p: WizardState) => WizardState) => void;
   photoOptions: Array<{ url: string; label: string }>;
 }) {
-  const [uploadBusy, setUploadBusy] = useState<"hero" | "gallery" | null>(null);
+  const [uploadBusy, setUploadBusy] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [newCategoryDraft, setNewCategoryDraft] = useState("");
 
-  const upload = async (file: File, target: "hero" | "gallery") => {
-    setUploadBusy(target);
+  const ensurePhoto = (mapping: Record<string, string[]>, url: string): Record<string, string[]> => {
+    if (mapping[url]) return mapping;
+    return { ...mapping, [url]: [] };
+  };
+
+  const upload = async (file: File) => {
+    setUploadBusy(true);
     setUploadError(null);
     try {
       const fd = new FormData();
@@ -749,115 +848,117 @@ function PhotosStep({
       }
       const data = (await resp.json()) as { url?: string };
       if (!data.url) throw new Error("Antwort ohne URL");
-      if (target === "hero") {
-        setState((p) => ({ ...p, heroImageUrl: data.url! }));
-      } else {
-        setState((p) => ({ ...p, galleryImageUrls: [...p.galleryImageUrls, data.url!] }));
-      }
+      const newUrl = data.url;
+      setState((p) => ({ ...p, imageCategories: ensurePhoto(p.imageCategories, newUrl) }));
     } catch (e) {
       setUploadError(e instanceof Error ? e.message : "Upload fehlgeschlagen");
     } finally {
-      setUploadBusy(null);
+      setUploadBusy(false);
     }
   };
 
-  const toggleGallery = (url: string) => {
+  const toggleCategory = (url: string, category: string) => {
     setState((p) => {
-      if (p.galleryImageUrls.includes(url)) {
-        return { ...p, galleryImageUrls: p.galleryImageUrls.filter((u) => u !== url) };
+      const current = p.imageCategories[url] ?? [];
+      const has = current.includes(category);
+      const next: Record<string, string[]> = {};
+      if (category === PHOTO_CATEGORY_HERO && !has) {
+        for (const [k, cats] of Object.entries(p.imageCategories)) {
+          next[k] = cats.filter((c) => c !== PHOTO_CATEGORY_HERO);
+        }
+      } else {
+        for (const [k, cats] of Object.entries(p.imageCategories)) {
+          next[k] = [...cats];
+        }
       }
-      if (p.galleryImageUrls.length >= 8) return p;
-      return { ...p, galleryImageUrls: [...p.galleryImageUrls, url] };
+      const updated = has
+        ? current.filter((c) => c !== category)
+        : Array.from(new Set([...current, category]));
+      next[url] = updated;
+      return { ...p, imageCategories: next };
     });
   };
 
+  const removePhoto = (url: string) => {
+    setState((p) => {
+      const next: Record<string, string[]> = {};
+      for (const [k, cats] of Object.entries(p.imageCategories)) {
+        if (k === url) continue;
+        next[k] = cats;
+      }
+      return { ...p, imageCategories: next };
+    });
+  };
+
+  const addCustomCategory = () => {
+    const draft = newCategoryDraft.trim().slice(0, 40);
+    if (!draft) return;
+    setState((p) => {
+      const all = new Set([...BUILTIN_PHOTO_CATEGORIES.map((c) => c.toLowerCase()), ...p.customCategories.map((c) => c.toLowerCase())]);
+      if (all.has(draft.toLowerCase())) return p;
+      return { ...p, customCategories: [...p.customCategories, draft].slice(0, 12) };
+    });
+    setNewCategoryDraft("");
+  };
+
+  const removeCustomCategory = (cat: string) => {
+    setState((p) => {
+      const nextCustoms = p.customCategories.filter((c) => c !== cat);
+      const nextMap: Record<string, string[]> = {};
+      for (const [k, cats] of Object.entries(p.imageCategories)) {
+        nextMap[k] = cats.filter((c) => c !== cat);
+      }
+      return { ...p, customCategories: nextCustoms, imageCategories: nextMap };
+    });
+  };
+
+  const allCategories = useMemo(
+    () => [...BUILTIN_PHOTO_CATEGORIES, ...state.customCategories],
+    [state.customCategories],
+  );
+
+  const tasting = useMemo(() => {
+    const seen = new Set<string>();
+    const out: Array<{ url: string; label: string; selected: boolean; categories: string[] }> = [];
+    for (const opt of photoOptions) {
+      if (seen.has(opt.url)) continue;
+      seen.add(opt.url);
+      const cats = state.imageCategories[opt.url] ?? [];
+      out.push({ url: opt.url, label: opt.label, selected: !!state.imageCategories[opt.url], categories: cats });
+    }
+    return out;
+  }, [photoOptions, state.imageCategories]);
+
+  const uploadedPhotos = useMemo(() => {
+    const tastingUrls = new Set(photoOptions.map((p) => p.url));
+    return Object.entries(state.imageCategories)
+      .filter(([url]) => !tastingUrls.has(url))
+      .map(([url, categories]) => ({ url, categories }));
+  }, [photoOptions, state.imageCategories]);
+
+  const totalSelected = Object.keys(state.imageCategories).length;
+  const heroCount = Object.values(state.imageCategories).filter((cats) => cats.includes(PHOTO_CATEGORY_HERO)).length;
+
   return (
     <div>
-      <h2 style={questionTitleStyle}>Bilder fuer Hero und Galerie</h2>
-      <p style={questionHintStyle}>Hero-Bild ist erforderlich. Galerie ist optional, dann aber 3 bis 8 Bilder.</p>
+      <h2 style={questionTitleStyle}>Fotos kategorisieren</h2>
+      <p style={questionHintStyle}>
+        Lade beliebig viele Fotos hoch oder waehle aus den Tasting-Bildern. Tagge jedes Foto mit einer oder mehreren Kategorien. Genau ein Foto muss als <strong>Hero</strong> markiert werden.
+      </p>
 
-      <div style={{ marginTop: 18 }}>
-        <div style={subSectionTitle}>Hero-Bild *</div>
-        {state.heroImageUrl ? (
-          <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 8 }}>
-            <img src={state.heroImageUrl} alt="Hero" style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 4, border: `1px solid ${ACCENT_DIM}` }} data-testid="img-wizard-hero-preview" />
-            <button type="button" style={miniGhostButton} onClick={() => setState((p) => ({ ...p, heroImageUrl: "" }))} data-testid="button-wizard-hero-clear">
-              <X style={{ width: 12, height: 12 }} /> Entfernen
-            </button>
-          </div>
-        ) : null}
-        <UploadInline
-          busy={uploadBusy === "hero"}
-          onPick={(file) => upload(file, "hero")}
-          testId="upload-wizard-hero"
-          accept="image/*"
-          captureCamera
-        />
+      <div style={{ marginTop: 16, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", fontSize: 12, color: "#A89A85" }}>
+        <span data-testid="text-wizard-photo-count">Fotos: {totalSelected}</span>
+        <span data-testid="text-wizard-hero-count" style={{ color: heroCount === 1 ? ACCENT : "#d97757" }}>
+          Hero: {heroCount}
+        </span>
       </div>
 
-      {photoOptions.length > 0 ? (
-        <div style={{ marginTop: 22 }}>
-          <div style={subSectionTitle}>Aus bestehenden Tasting-Bildern auswaehlen</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 8 }}>
-            {photoOptions.map((opt) => {
-              const isHero = state.heroImageUrl === opt.url;
-              const inGallery = state.galleryImageUrls.includes(opt.url);
-              return (
-                <div key={opt.url} style={photoTileStyle} data-testid={`photo-option-${opt.url.slice(-12)}`}>
-                  <img src={opt.url} alt={opt.label} style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", display: "block", borderRadius: 4 }} />
-                  <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
-                    <button
-                      type="button"
-                      style={{ ...tagButton, color: isHero ? "#0B0906" : ACCENT, background: isHero ? ACCENT : "transparent" }}
-                      onClick={() => setState((p) => ({ ...p, heroImageUrl: isHero ? "" : opt.url }))}
-                      data-testid={`button-mark-hero-${opt.url.slice(-12)}`}
-                    >
-                      {isHero ? <Check style={{ width: 10, height: 10 }} /> : null} Hero
-                    </button>
-                    <button
-                      type="button"
-                      style={{ ...tagButton, color: inGallery ? "#0B0906" : ACCENT, background: inGallery ? ACCENT : "transparent" }}
-                      onClick={() => toggleGallery(opt.url)}
-                      data-testid={`button-toggle-gallery-${opt.url.slice(-12)}`}
-                    >
-                      {inGallery ? <Check style={{ width: 10, height: 10 }} /> : null} Galerie
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
-
-      <div style={{ marginTop: 22 }}>
-        <div style={subSectionTitle}>
-          Galerie-Bilder ({state.galleryImageUrls.length} / 8)
-        </div>
-        {state.galleryImageUrls.length > 0 ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))", gap: 6, marginBottom: 8 }}>
-            {state.galleryImageUrls.map((url, idx) => (
-              <div key={url + idx} style={{ position: "relative" }} data-testid={`gallery-thumb-${idx}`}>
-                <img src={url} alt={`Galerie ${idx + 1}`} style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", borderRadius: 4 }} />
-                <button
-                  type="button"
-                  style={{ position: "absolute", top: 2, right: 2, ...miniGhostButton, padding: "2px 4px" }}
-                  onClick={() => setState((p) => ({ ...p, galleryImageUrls: p.galleryImageUrls.filter((u) => u !== url) }))}
-                  aria-label="Entfernen"
-                  data-testid={`button-gallery-remove-${idx}`}
-                >
-                  <X style={{ width: 10, height: 10 }} />
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : null}
+      <div style={{ marginTop: 16 }}>
         <UploadInline
-          busy={uploadBusy === "gallery"}
-          onPick={(file) => upload(file, "gallery")}
-          testId="upload-wizard-gallery"
+          busy={uploadBusy}
+          onPick={(file) => upload(file)}
+          testId="upload-wizard-photo"
           accept="image/*"
-          disabled={state.galleryImageUrls.length >= 8}
           captureCamera
         />
       </div>
@@ -867,6 +968,201 @@ function PhotosStep({
           {uploadError}
         </div>
       ) : null}
+
+      <div style={{ marginTop: 22 }}>
+        <div style={subSectionTitle}>Eigene Kategorien</div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+          {state.customCategories.length === 0 ? (
+            <span style={{ fontSize: 12, color: "#665B49" }}>Noch keine eigenen Kategorien.</span>
+          ) : (
+            state.customCategories.map((cat) => (
+              <span
+                key={cat}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  background: "rgba(201,169,97,0.08)",
+                  border: `1px solid ${ACCENT_DIM}`,
+                  borderRadius: 3,
+                  padding: "3px 8px",
+                  fontSize: 11,
+                  color: "#F5EDE0",
+                }}
+                data-testid={`chip-custom-category-${categoryTestId(cat)}`}
+              >
+                {cat}
+                <button
+                  type="button"
+                  onClick={() => removeCustomCategory(cat)}
+                  style={{ background: "transparent", border: "none", color: "#A89A85", cursor: "pointer", padding: 0, lineHeight: 0 }}
+                  aria-label={`${cat} entfernen`}
+                  data-testid={`button-remove-custom-category-${categoryTestId(cat)}`}
+                >
+                  <X style={{ width: 10, height: 10 }} />
+                </button>
+              </span>
+            ))
+          )}
+        </div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <input
+            type="text"
+            value={newCategoryDraft}
+            onChange={(e) => setNewCategoryDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addCustomCategory();
+              }
+            }}
+            placeholder="z.B. Cigars, Snacks, Glaeser…"
+            maxLength={40}
+            style={{ ...inputStyle, flex: "1 1 200px", minWidth: 0 }}
+            data-testid="input-wizard-custom-category"
+          />
+          <button
+            type="button"
+            style={miniGhostButton}
+            onClick={addCustomCategory}
+            disabled={!newCategoryDraft.trim()}
+            data-testid="button-wizard-add-custom-category"
+          >
+            Hinzufuegen
+          </button>
+        </div>
+      </div>
+
+      {tasting.length > 0 ? (
+        <div style={{ marginTop: 22 }}>
+          <div style={subSectionTitle}>Aus bestehenden Tasting-Bildern</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10 }}>
+            {tasting.map((opt) => (
+              <PhotoTile
+                key={opt.url}
+                url={opt.url}
+                alt={opt.label}
+                categories={opt.categories}
+                allCategories={allCategories}
+                onToggle={(cat) => toggleCategory(opt.url, cat)}
+                onRemove={opt.selected ? () => removePhoto(opt.url) : null}
+                testId={`photo-option-${opt.url.slice(-12)}`}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {uploadedPhotos.length > 0 ? (
+        <div style={{ marginTop: 22 }}>
+          <div style={subSectionTitle}>Eigene Uploads</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10 }}>
+            {uploadedPhotos.map((p, idx) => (
+              <PhotoTile
+                key={p.url}
+                url={p.url}
+                alt={`Foto ${idx + 1}`}
+                categories={p.categories}
+                allCategories={allCategories}
+                onToggle={(cat) => toggleCategory(p.url, cat)}
+                onRemove={() => removePhoto(p.url)}
+                testId={`photo-upload-${idx}`}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function PhotoTile({
+  url,
+  alt,
+  categories,
+  allCategories,
+  onToggle,
+  onRemove,
+  testId,
+}: {
+  url: string;
+  alt: string;
+  categories: string[];
+  allCategories: string[];
+  onToggle: (category: string) => void;
+  onRemove: (() => void) | null;
+  testId: string;
+}) {
+  return (
+    <div style={photoTileStyle} data-testid={testId}>
+      <div style={{ position: "relative" }}>
+        <img
+          src={url}
+          alt={alt}
+          style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", display: "block", borderRadius: 4 }}
+        />
+        {onRemove ? (
+          <button
+            type="button"
+            style={{ position: "absolute", top: 4, right: 4, ...miniGhostButton, padding: "2px 4px" }}
+            onClick={onRemove}
+            aria-label="Foto entfernen"
+            data-testid={`${testId}-remove`}
+          >
+            <X style={{ width: 10, height: 10 }} />
+          </button>
+        ) : null}
+      </div>
+      <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
+        {allCategories.map((cat) => {
+          const active = categories.includes(cat);
+          return (
+            <button
+              key={cat}
+              type="button"
+              style={{
+                ...tagButton,
+                flex: "0 0 auto",
+                color: active ? "#0B0906" : ACCENT,
+                background: active ? ACCENT : "transparent",
+              }}
+              onClick={() => onToggle(cat)}
+              data-testid={`${testId}-tag-${categoryTestId(cat)}`}
+            >
+              {active ? <Check style={{ width: 10, height: 10 }} /> : null} {cat}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function BriefingStep({
+  state,
+  setState,
+}: {
+  state: WizardState;
+  setState: (u: (p: WizardState) => WizardState) => void;
+}) {
+  return (
+    <div>
+      <h2 style={questionTitleStyle}>Briefing fuer die KI</h2>
+      <p style={questionHintStyle}>
+        Optional. Beschreibe in eigenen Worten, wie die Story klingen soll, welche Details wichtig sind oder was die KI vermeiden soll. Diese Anweisungen fliessen in alle KI-generierten Bloecke ein.
+      </p>
+      <textarea
+        value={state.detailPrompt}
+        onChange={(e) => setState((p) => ({ ...p, detailPrompt: e.target.value }))}
+        placeholder="z.B. Bitte mit Fokus auf den Vergleich zwischen Highland und Islay. Keine Pathos-Saetze. Nenne Anna besonders herzlich, sie war Gastgeberin."
+        maxLength={2000}
+        rows={8}
+        style={{ ...inputStyle, minHeight: 180, resize: "vertical" }}
+        data-testid="input-wizard-detail-prompt"
+      />
+      <div style={{ fontSize: 11, color: "#665B49", marginTop: 6, textAlign: "right" }}>
+        {state.detailPrompt.length} / 2000
+      </div>
     </div>
   );
 }

@@ -26141,9 +26141,19 @@ ${cleaned.slice(0, 60000)}`;
     headlineOverride: z.string().max(280).nullable().optional(),
     subtitleOverride: z.string().max(280).nullable().optional(),
     heroImageUrl: z.string().max(2000).nullable().optional(),
-    galleryImageUrls: z.array(z.string().max(2000)).max(20).optional(),
+    galleryImageUrls: z.array(z.string().max(2000)).max(100).optional(),
+    categorizedPhotos: z
+      .array(
+        z.object({
+          url: z.string().min(1).max(2000),
+          categories: z.array(z.string().min(1).max(80)).max(10),
+        }),
+      )
+      .max(100)
+      .optional(),
     spotlightParticipantIds: z.array(z.string().max(128)).max(5).optional(),
     highlightContext: z.string().max(2000).nullable().optional(),
+    detailPrompt: z.string().max(2000).nullable().optional(),
     overwriteExisting: z.boolean().optional(),
   });
 
@@ -26197,8 +26207,10 @@ ${cleaned.slice(0, 60000)}`;
           subtitleOverride: wizard.subtitleOverride ?? null,
           heroImageUrl: wizard.heroImageUrl ?? null,
           galleryImageUrls: wizard.galleryImageUrls ?? [],
+          categorizedPhotos: wizard.categorizedPhotos ?? [],
           spotlightParticipantIds: wizard.spotlightParticipantIds ?? [],
           highlightContext: wizard.highlightContext ?? null,
+          detailPrompt: wizard.detailPrompt ?? null,
         },
       });
       const reparsed = tastingStoryBlocksSchema.safeParse(initialBlocks);
@@ -26273,6 +26285,7 @@ ${cleaned.slice(0, 60000)}`;
                 tone: wizard.tone ?? null,
                 highlightContext: wizard.highlightContext ?? null,
                 spotlightParticipantIds: wizard.spotlightParticipantIds ?? [],
+                customInstructions: wizard.detailPrompt ?? null,
               };
               for (const target of aiTargets) {
                 const stepKey = `ai:${target.id}`;
