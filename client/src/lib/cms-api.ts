@@ -140,3 +140,61 @@ export async function fetchPublicCmsPage(slug: string): Promise<CmsPublicPage | 
   if (res.status === 404) return null;
   return readJson<CmsPublicPage>(res, "Seite konnte nicht geladen werden");
 }
+
+const PUBLIC_CMS_CACHE_TTL_MS = 5 * 60 * 1000;
+const PUBLIC_CMS_CACHE_PREFIX = "cms:public:";
+
+type CachedPublicCmsPage = {
+  cachedAt: number;
+  page: CmsPublicPage;
+};
+
+function getSessionStorage(): Storage | null {
+  try {
+    if (typeof window === "undefined") return null;
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+export function readCachedPublicCmsPage(slug: string): CmsPublicPage | null {
+  const storage = getSessionStorage();
+  if (!storage) return null;
+  try {
+    const raw = storage.getItem(`${PUBLIC_CMS_CACHE_PREFIX}${slug}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedPublicCmsPage | null;
+    if (!parsed || typeof parsed.cachedAt !== "number" || !parsed.page) return null;
+    if (Date.now() - parsed.cachedAt > PUBLIC_CMS_CACHE_TTL_MS) {
+      storage.removeItem(`${PUBLIC_CMS_CACHE_PREFIX}${slug}`);
+      return null;
+    }
+    const page = parsed.page;
+    if (!page || !Array.isArray(page.blocksJson) || page.blocksJson.length === 0) return null;
+    return page;
+  } catch {
+    return null;
+  }
+}
+
+export function writeCachedPublicCmsPage(slug: string, page: CmsPublicPage): void {
+  const storage = getSessionStorage();
+  if (!storage) return;
+  try {
+    const payload: CachedPublicCmsPage = { cachedAt: Date.now(), page };
+    storage.setItem(`${PUBLIC_CMS_CACHE_PREFIX}${slug}`, JSON.stringify(payload));
+  } catch {
+    // ignore quota / serialization errors
+  }
+}
+
+export function clearCachedPublicCmsPage(slug: string): void {
+  const storage = getSessionStorage();
+  if (!storage) return;
+  try {
+    storage.removeItem(`${PUBLIC_CMS_CACHE_PREFIX}${slug}`);
+  } catch {
+    // ignore
+  }
+}
