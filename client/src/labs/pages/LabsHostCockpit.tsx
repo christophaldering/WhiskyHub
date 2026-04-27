@@ -144,6 +144,8 @@ const REVEAL_FIELD_LABELS: Record<string, string> = {
 interface LabsHostCockpitProps {
   tastingId: string;
   onExit: () => void;
+  inviteSection?: ReactNode;
+  settingsSection?: ReactNode;
 }
 
 type CockpitTab = "live" | "lineup" | "guests" | "rating";
@@ -161,7 +163,7 @@ function getDefaultTab(status: string): CockpitTab {
   }
 }
 
-export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitProps) {
+export default function LabsHostCockpit({ tastingId, onExit, inviteSection, settingsSection }: LabsHostCockpitProps) {
   const { currentParticipant } = useAppStore();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -212,6 +214,8 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
     }
     return false;
   });
+  const [showInviteSection, setShowInviteSection] = useState(false);
+  const [showSettingsSection, setShowSettingsSection] = useState(false);
 
   const { t } = useTranslation();
   const [revealConfirmed, setRevealConfirmed] = useState(false);
@@ -1383,6 +1387,105 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
           </>
         )}
 
+        {(inviteSection || settingsSection) && (
+          <div
+            style={{
+              marginTop: 32,
+              paddingTop: 24,
+              borderTop: "1px solid var(--labs-border-subtle)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+            }}
+            data-testid="cockpit-trailing-sections"
+          >
+            {inviteSection && (
+              <div data-testid="cockpit-section-invite">
+                <button
+                  onClick={() => setShowInviteSection(!showInviteSection)}
+                  className="w-full flex items-center justify-between labs-card p-4 cursor-pointer"
+                  style={{ background: "none", border: "1.5px solid var(--labs-border)", fontFamily: "inherit" }}
+                  data-testid="cockpit-section-invite-toggle"
+                  aria-expanded={showInviteSection}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center"
+                      style={{ background: "var(--labs-accent-muted)" }}
+                    >
+                      <Users style={{ width: 20, height: 20, color: "var(--labs-accent)" }} />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>
+                        {t("cockpit.sectionInviteTitle", "Einladen & Teilen")}
+                      </p>
+                      <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                        {t("cockpit.sectionInviteDesc", "Code, QR, E-Mail-Einladungen und bereits Eingeladene")}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronDown
+                    style={{
+                      width: 16,
+                      height: 16,
+                      color: "var(--labs-text-muted)",
+                      transition: "transform 200ms",
+                      transform: showInviteSection ? "rotate(180deg)" : "rotate(0deg)",
+                    }}
+                  />
+                </button>
+                {showInviteSection && (
+                  <div className="mt-3" data-testid="cockpit-section-invite-content">
+                    {inviteSection}
+                  </div>
+                )}
+              </div>
+            )}
+            {settingsSection && (
+              <div data-testid="cockpit-section-settings">
+                <button
+                  onClick={() => setShowSettingsSection(!showSettingsSection)}
+                  className="w-full flex items-center justify-between labs-card p-4 cursor-pointer"
+                  style={{ background: "none", border: "1.5px solid var(--labs-border)", fontFamily: "inherit" }}
+                  data-testid="cockpit-section-settings-toggle"
+                  aria-expanded={showSettingsSection}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center"
+                      style={{ background: "var(--labs-accent-muted)" }}
+                    >
+                      <Sliders style={{ width: 20, height: 20, color: "var(--labs-accent)" }} />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>
+                        {t("cockpit.sectionSettingsTitle", "Tasting-Einrichtung")}
+                      </p>
+                      <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                        {t("cockpit.sectionSettingsDesc", "Bewertungsskala, Blind Tasting, Host steuert das Tempo und mehr")}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronDown
+                    style={{
+                      width: 16,
+                      height: 16,
+                      color: "var(--labs-text-muted)",
+                      transition: "transform 200ms",
+                      transform: showSettingsSection ? "rotate(180deg)" : "rotate(0deg)",
+                    }}
+                  />
+                </button>
+                {showSettingsSection && (
+                  <div className="mt-3" data-testid="cockpit-section-settings-content">
+                    {settingsSection}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
 
       {(() => {
@@ -2520,28 +2623,56 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
           </button>
         )}
 
-        {status === "reveal" && !restartDialog && (
-          <button
-            onClick={() => {
-              if (confirm("Archive this tasting? It will become immutable and appear in the Historical Tastings archive. An admin can reopen it if needed.")) {
-                tastingApi.updateStatus(tastingId, "archived", undefined, pid).then(() => {
-                  queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
-                });
-              }
-            }}
-            className="cockpit-action-btn cockpit-action-primary"
-            data-testid="cockpit-archive"
-          >
-            <Archive style={{ width: 14, height: 14 }} />
-            Archive Tasting
-          </button>
-        )}
-
         {["closed", "reveal"].includes(status) && !restartDialog && (
-          <button onClick={() => setRestartDialog("choose")} className="cockpit-action-btn cockpit-action-secondary" data-testid="cockpit-restart">
-            <RotateCcw style={{ width: 14, height: 14 }} />
-            Restart Session
-          </button>
+          <div
+            data-testid="cockpit-danger-zone"
+            style={{
+              marginTop: 12,
+              paddingTop: 12,
+              borderTop: "1px dashed var(--labs-border-subtle)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: 0.6,
+                textTransform: "uppercase",
+                color: "var(--labs-text-muted)",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              <AlertTriangle style={{ width: 11, height: 11, color: "var(--labs-danger, #e53e3e)" }} />
+              {t("cockpit.dangerZoneTitle", "Gefahrenzone")}
+            </div>
+            {status === "reveal" && (
+              <button
+                onClick={() => {
+                  if (confirm("Archive this tasting? It will become immutable and appear in the Historical Tastings archive. An admin can reopen it if needed.")) {
+                    tastingApi.updateStatus(tastingId, "archived", undefined, pid).then(() => {
+                      queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+                    });
+                  }
+                }}
+                className="cockpit-action-btn cockpit-action-secondary"
+                data-testid="cockpit-archive-tasting"
+              >
+                <Archive style={{ width: 14, height: 14 }} />
+                Archive Tasting
+              </button>
+            )}
+            {["closed", "reveal"].includes(status) && (
+              <button onClick={() => setRestartDialog("choose")} className="cockpit-action-btn cockpit-action-secondary" data-testid="cockpit-restart-session">
+                <RotateCcw style={{ width: 14, height: 14 }} />
+                Restart Session
+              </button>
+            )}
+          </div>
         )}
 
         {status === "archived" && currentParticipant?.role === "admin" && !restartDialog && (

@@ -46,6 +46,7 @@ import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
 import { formatRejoinCode } from "@/labs/utils/rejoinCode";
 import { LabsParticipantDownloads } from "@/components/ParticipantDownloads";
 import { getStoryPdfAvailable, getPresentationPdfAvailable, getNotesDocxAvailable } from "@/labs/utils/labsExports";
+import { selectDescriptors } from "@/labs/utils/downloadMatrix";
 import TastingDownloadGrid from "@/labs/components/TastingDownloadGrid";
 import { getTastingPhase, isResultDownloadsPhase, RESULT_DOWNLOAD_KINDS } from "@/labs/utils/tastingPhase";
 import type { Tasting, WhiskyFriend } from "@shared/schema";
@@ -203,6 +204,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
   const [showAddWhisky, setShowAddWhisky] = useState(false);
   const [newWhiskyName, setNewWhiskyName] = useState("");
   const [showSessionSettings, setShowSessionSettings] = useState(false);
+  const [showResultsDownloads, setShowResultsDownloads] = useState(false);
   const [editingMeta, setEditingMeta] = useState(false);
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDate, setMetaDate] = useState("");
@@ -855,7 +857,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 subtitle={
                   isCompleted
                     ? t("tastingDetail.restartTastingSubtitle", "Status zurücksetzen oder neu öffnen")
-                    : t("tastingDetail.manageSessionSubtitle", "Reihenfolge, Whiskys und Reveal steuern")
+                    : t("tastingDetail.manageSessionSubtitle", "Reihenfolge, Reveal, Gäste-Status & Einstellungen")
                 }
                 onClick={() => navigate(`/labs/host/${tastingId}`)}
                 testId="detail-secondary-manage"
@@ -1718,25 +1720,82 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
               </p>
             )}
             {showResults && (
-              <div className="labs-card p-4 mb-3" data-testid="labs-detail-results-downloads">
-                <div className="labs-section-label flex items-center gap-2">
-                  <Download className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-                  {t("resultsUi.downloadsBlockTitle", "Daten & Dokumente herunterladen")}
-                </div>
-                <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>
-                  {t("resultsUi.downloadsBlockDesc", "Wähle das passende Format für deinen Anwendungsfall")}
-                </p>
-                <TastingDownloadGrid
-                  tastingId={tastingId}
-                  participantId={currentParticipant?.id ?? null}
-                  storyAvailable={getStoryPdfAvailable(tasting, !!isHost)}
-                  presentationAvailable={getPresentationPdfAvailable(tasting)}
-                  notesAvailable={getNotesDocxAvailable(tasting, currentParticipant?.id)}
-                  kinds={RESULT_DOWNLOAD_KINDS}
-                  variant="cards"
-                  testIdPrefix="labs-detail-download"
-                  showSourceLinks={false}
-                />
+              <div className="mb-3" data-testid="labs-detail-results-downloads">
+                <button
+                  onClick={() => setShowResultsDownloads(!showResultsDownloads)}
+                  className="w-full flex items-center justify-between labs-card p-4 cursor-pointer"
+                  style={{ background: "none", border: "1.5px solid var(--labs-border)", fontFamily: "inherit" }}
+                  data-testid="detail-downloads-toggle"
+                  aria-expanded={showResultsDownloads}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center"
+                      style={{ background: "var(--labs-accent-muted)" }}
+                    >
+                      <Download className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-semibold flex items-center gap-2" style={{ color: "var(--labs-text)" }}>
+                        {t("tastingDetail.downloadsToggleTitle", "Downloads & Exporte")}
+                        <span
+                          className="inline-flex items-center justify-center text-xs font-semibold"
+                          style={{
+                            minWidth: 22,
+                            height: 20,
+                            padding: "0 6px",
+                            borderRadius: 10,
+                            background: "var(--labs-accent-muted)",
+                            color: "var(--labs-accent)",
+                          }}
+                          data-testid="detail-downloads-toggle-count"
+                        >
+                          {selectDescriptors(
+                            RESULT_DOWNLOAD_KINDS,
+                            {
+                              story: getStoryPdfAvailable(tasting, !!isHost),
+                              presentation: getPresentationPdfAvailable(tasting),
+                              notes: getNotesDocxAvailable(tasting, currentParticipant?.id),
+                            },
+                            currentParticipant?.id ?? null,
+                          ).length}
+                        </span>
+                      </p>
+                      <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                        {t("tastingDetail.downloadsToggleDesc", "PDF, Excel, CSV, Story, Präsentation, Notizen")}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronDown
+                    className="w-4 h-4 transition-transform"
+                    style={{
+                      color: "var(--labs-text-muted)",
+                      transform: showResultsDownloads ? "rotate(180deg)" : "rotate(0deg)",
+                    }}
+                  />
+                </button>
+                {showResultsDownloads && (
+                  <div className="labs-card p-4 mt-3" data-testid="labs-detail-results-downloads-content">
+                    <div className="labs-section-label flex items-center gap-2">
+                      <Download className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                      {t("resultsUi.downloadsBlockTitle", "Daten & Dokumente herunterladen")}
+                    </div>
+                    <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>
+                      {t("resultsUi.downloadsBlockDesc", "Wähle das passende Format für deinen Anwendungsfall")}
+                    </p>
+                    <TastingDownloadGrid
+                      tastingId={tastingId}
+                      participantId={currentParticipant?.id ?? null}
+                      storyAvailable={getStoryPdfAvailable(tasting, !!isHost)}
+                      presentationAvailable={getPresentationPdfAvailable(tasting)}
+                      notesAvailable={getNotesDocxAvailable(tasting, currentParticipant?.id)}
+                      kinds={RESULT_DOWNLOAD_KINDS}
+                      variant="cards"
+                      testIdPrefix="labs-detail-download"
+                      showSourceLinks={false}
+                    />
+                  </div>
+                )}
               </div>
             )}
             {showPrintMaterials && <LabsParticipantDownloads tasting={tasting as Tasting} />}
