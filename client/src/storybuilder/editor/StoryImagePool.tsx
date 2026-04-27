@@ -62,6 +62,7 @@ export function StoryImagePool({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploadProgress, setUploadProgress] = useState<Array<{ name: string; status: "uploading" | "done" | "error"; message?: string }>>([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<Record<string, { participantIds: string[]; whiskyIds: string[] }>>({});
   const [aiPreview, setAiPreview] = useState<{
     items: Array<{
       id: string;
@@ -256,17 +257,17 @@ export function StoryImagePool({
       try {
         const result = await aiDescribeTastingStoryImage(tastingId, imageId, { fields, language });
         setItems((prev) => prev.map((it) => (it.id === imageId ? result.item : it)));
-        if (result.suggestedParticipantIds.length > 0 || result.suggestedWhiskyIds.length > 0) {
-          const merged = {
-            ...result.item,
-            participantIds: Array.from(new Set([...result.item.participantIds, ...result.suggestedParticipantIds])),
-            whiskyIds: Array.from(new Set([...result.item.whiskyIds, ...result.suggestedWhiskyIds])),
-          };
-          const updated = await updateTastingStoryImagePoolEntry(tastingId, imageId, {
-            participantIds: merged.participantIds,
-            whiskyIds: merged.whiskyIds,
+        const newPids = result.suggestedParticipantIds.filter((pid) => !result.item.participantIds.includes(pid));
+        const newWids = result.suggestedWhiskyIds.filter((wid) => !result.item.whiskyIds.includes(wid));
+        if (newPids.length > 0 || newWids.length > 0) {
+          setAiSuggestions((prev) => ({ ...prev, [imageId]: { participantIds: newPids, whiskyIds: newWids } }));
+        } else {
+          setAiSuggestions((prev) => {
+            if (!prev[imageId]) return prev;
+            const next = { ...prev };
+            delete next[imageId];
+            return next;
           });
-          setItems((prev) => prev.map((it) => (it.id === imageId ? updated : it)));
         }
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : "KI-Beschreibung fehlgeschlagen");
@@ -277,44 +278,124 @@ export function StoryImagePool({
     [tastingId, language],
   );
 
+  const acceptSuggestedParticipant = useCallback(
+    async (imageId: string, participantId: string) => {
+      const current = items.find((it) => it.id === imageId);
+      if (!current) return;
+      if (current.participantIds.includes(participantId)) return;
+      const nextIds = [...current.participantIds, participantId];
+      try {
+        const updated = await updateTastingStoryImagePoolEntry(tastingId, imageId, { participantIds: nextIds });
+        setItems((prev) => prev.map((it) => (it.id === imageId ? updated : it)));
+        setAiSuggestions((prev) => {
+          const cur = prev[imageId];
+          if (!cur) return prev;
+          const remaining = cur.participantIds.filter((id) => id !== participantId);
+          if (remaining.length === 0 && cur.whiskyIds.length === 0) {
+            const next = { ...prev };
+            delete next[imageId];
+            return next;
+          }
+          return { ...prev, [imageId]: { ...cur, participantIds: remaining } };
+        });
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : "Übernahme fehlgeschlagen");
+      }
+    },
+    [items, tastingId],
+  );
+
+  const acceptSuggestedWhisky = useCallback(
+    async (imageId: string, whiskyId: string) => {
+      const current = items.find((it) => it.id === imageId);
+      if (!current) return;
+      if (current.whiskyIds.includes(whiskyId)) return;
+      const nextIds = [...current.whiskyIds, whiskyId];
+      try {
+        const updated = await updateTastingStoryImagePoolEntry(tastingId, imageId, { whiskyIds: nextIds });
+        setItems((prev) => prev.map((it) => (it.id === imageId ? updated : it)));
+        setAiSuggestions((prev) => {
+          const cur = prev[imageId];
+          if (!cur) return prev;
+          const remaining = cur.whiskyIds.filter((id) => id !== whiskyId);
+          if (remaining.length === 0 && cur.participantIds.length === 0) {
+            const next = { ...prev };
+            delete next[imageId];
+            return next;
+          }
+          return { ...prev, [imageId]: { ...cur, whiskyIds: remaining } };
+        });
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : "Übernahme fehlgeschlagen");
+      }
+    },
+    [items, tastingId],
+  );
+
+  const dismissSuggestion = useCallback((imageId: string) => {
+    setAiSuggestions((prev) => {
+      if (!prev[imageId]) return prev;
+      const next = { ...prev };
+      delete next[imageId];
+      return next;
+    });
+  }, []);
+
   const aiDescribeAll = useCallback(async () => {
-    if (filtered.length === 0) return;
+    const candidates = filtered.filter((it) => {
+      const hasName = typeof it.name === "string" && it.name.trim().length > 0;
+      const hasCaption = typeof it.caption === "string" && it.caption.trim().length > 0;
+      return !hasName || !hasCaption;
+    });
+    if (candidates.length === 0) {
+      setError("Keine Bilder ohne Name oder Caption gefunden.");
+      return;
+    }
     setBatchBusy(true);
     setError(null);
     try {
-      const ids = filtered.map((it) => it.id);
-      const result = await aiDescribeTastingStoryImagesBatch(tastingId, ids, { language, onlyMissing: false, dryRun: true });
+      const ids = candidates.map((it) => it.id);
+      const result = await aiDescribeTastingStoryImagesBatch(tastingId, ids, { language, onlyMissing: true, dryRun: true });
       const previews = result.previews ?? [];
       if (previews.length === 0) {
         setError(`Keine KI-Vorschläge erhalten. (Fehlgeschlagen: ${result.failedIds.length})`);
         return;
       }
       const itemsById = new Map(items.map((it) => [it.id, it] as const));
+      const isEmpty = (v: string | null | undefined): boolean => !(typeof v === "string" && v.trim().length > 0);
       setAiPreview({
         items: previews.map((p) => {
           const cur = itemsById.get(p.id);
+          const curName = cur?.name ?? p.current.name;
+          const curCaption = cur?.caption ?? p.current.caption;
+          const curAlt = cur?.altText ?? p.current.altText;
+          const curMood = cur?.moodDescription ?? p.current.moodDescription;
+          const curPids = cur?.participantIds ?? [];
+          const curWids = cur?.whiskyIds ?? [];
+          const newPids = p.suggestedParticipantIds.filter((id) => !curPids.includes(id));
+          const newWids = p.suggestedWhiskyIds.filter((id) => !curWids.includes(id));
           return {
             id: p.id,
             url: p.current.url,
-            currentName: cur?.name ?? p.current.name,
-            currentCaption: cur?.caption ?? p.current.caption,
-            currentAltText: cur?.altText ?? p.current.altText,
-            currentMoodDescription: cur?.moodDescription ?? p.current.moodDescription,
+            currentName: curName,
+            currentCaption: curCaption,
+            currentAltText: curAlt,
+            currentMoodDescription: curMood,
             suggested: {
               name: p.suggested.name ?? null,
               caption: p.suggested.caption ?? null,
               altText: p.suggested.altText ?? null,
               moodDescription: p.suggested.moodDescription ?? null,
-              suggestedParticipantIds: p.suggestedParticipantIds,
-              suggestedWhiskyIds: p.suggestedWhiskyIds,
+              suggestedParticipantIds: newPids,
+              suggestedWhiskyIds: newWids,
             },
             apply: {
-              name: typeof p.suggested.name === "string" && p.suggested.name.length > 0,
-              caption: typeof p.suggested.caption === "string" && p.suggested.caption.length > 0,
-              altText: typeof p.suggested.altText === "string" && p.suggested.altText.length > 0,
-              moodDescription: typeof p.suggested.moodDescription === "string" && p.suggested.moodDescription.length > 0,
-              participants: p.suggestedParticipantIds.length > 0,
-              whiskies: p.suggestedWhiskyIds.length > 0,
+              name: typeof p.suggested.name === "string" && p.suggested.name.length > 0 && isEmpty(curName),
+              caption: typeof p.suggested.caption === "string" && p.suggested.caption.length > 0 && isEmpty(curCaption),
+              altText: typeof p.suggested.altText === "string" && p.suggested.altText.length > 0 && isEmpty(curAlt),
+              moodDescription: typeof p.suggested.moodDescription === "string" && p.suggested.moodDescription.length > 0 && isEmpty(curMood),
+              participants: false,
+              whiskies: false,
             },
           };
         }),
@@ -349,34 +430,41 @@ export function StoryImagePool({
     try {
       const itemsById = new Map(items.map((it) => [it.id, it] as const));
       const updates: TastingStoryImageItem[] = [];
+      const isEmpty = (v: string | null | undefined): boolean => !(typeof v === "string" && v.trim().length > 0);
       for (const entry of aiPreview.items) {
         const current = itemsById.get(entry.id);
         if (!current) continue;
         const patch: ImagePoolMetadataPatch = {};
         let changed = false;
-        if (entry.apply.name && typeof entry.suggested.name === "string" && entry.suggested.name.length > 0) {
+        if (entry.apply.name && typeof entry.suggested.name === "string" && entry.suggested.name.length > 0 && isEmpty(current.name)) {
           patch.name = entry.suggested.name;
           changed = true;
         }
-        if (entry.apply.caption && typeof entry.suggested.caption === "string" && entry.suggested.caption.length > 0) {
+        if (entry.apply.caption && typeof entry.suggested.caption === "string" && entry.suggested.caption.length > 0 && isEmpty(current.caption)) {
           patch.caption = entry.suggested.caption;
           changed = true;
         }
-        if (entry.apply.altText && typeof entry.suggested.altText === "string" && entry.suggested.altText.length > 0) {
+        if (entry.apply.altText && typeof entry.suggested.altText === "string" && entry.suggested.altText.length > 0 && isEmpty(current.altText)) {
           patch.altText = entry.suggested.altText;
           changed = true;
         }
-        if (entry.apply.moodDescription && typeof entry.suggested.moodDescription === "string" && entry.suggested.moodDescription.length > 0) {
+        if (entry.apply.moodDescription && typeof entry.suggested.moodDescription === "string" && entry.suggested.moodDescription.length > 0 && isEmpty(current.moodDescription)) {
           patch.moodDescription = entry.suggested.moodDescription;
           changed = true;
         }
         if (entry.apply.participants && entry.suggested.suggestedParticipantIds && entry.suggested.suggestedParticipantIds.length > 0) {
-          patch.participantIds = Array.from(new Set([...current.participantIds, ...entry.suggested.suggestedParticipantIds]));
-          changed = true;
+          const additions = entry.suggested.suggestedParticipantIds.filter((id) => !current.participantIds.includes(id));
+          if (additions.length > 0) {
+            patch.participantIds = [...current.participantIds, ...additions];
+            changed = true;
+          }
         }
         if (entry.apply.whiskies && entry.suggested.suggestedWhiskyIds && entry.suggested.suggestedWhiskyIds.length > 0) {
-          patch.whiskyIds = Array.from(new Set([...current.whiskyIds, ...entry.suggested.suggestedWhiskyIds]));
-          changed = true;
+          const additions = entry.suggested.suggestedWhiskyIds.filter((id) => !current.whiskyIds.includes(id));
+          if (additions.length > 0) {
+            patch.whiskyIds = [...current.whiskyIds, ...additions];
+            changed = true;
+          }
         }
         if (!changed) continue;
         try {
@@ -504,6 +592,64 @@ export function StoryImagePool({
           </div>
         ) : null}
 
+        <div
+          onDragEnter={onDragOverDropZone}
+          onDragOver={onDragOverDropZone}
+          onDragLeave={onDragLeaveDropZone}
+          onDrop={onDropFiles}
+          style={{
+            margin: "10px 18px 0",
+            border: `1px dashed ${isDragOver ? "#C9A961" : "rgba(201,169,97,0.35)"}`,
+            background: isDragOver ? "rgba(201,169,97,0.12)" : "rgba(201,169,97,0.04)",
+            borderRadius: 6,
+            padding: "14px 16px",
+            color: isDragOver ? "#F5EDE0" : "#A89A85",
+            fontSize: 12,
+            textAlign: "center",
+            transition: "background 120ms",
+          }}
+          data-testid={`dropzone-${testIdPrefix}`}
+        >
+          {isDragOver ? "Hier loslassen, um hochzuladen" : "Bilder per Drag-and-Drop hierhin ziehen oder oben auf Hochladen klicken"}
+        </div>
+
+        {uploadProgress.length > 0 ? (
+          <div
+            style={{ margin: "8px 18px 0", display: "grid", gap: 4 }}
+            data-testid={`uploadprogress-${testIdPrefix}`}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontSize: 11, letterSpacing: ".15em", textTransform: "uppercase", color: "#C9A961" }}>
+                Uploads ({uploadProgress.filter((u) => u.status === "done").length}/{uploadProgress.length})
+              </div>
+              <button
+                type="button"
+                onClick={dismissUploadProgress}
+                style={{ background: "transparent", color: "#A89A85", border: "none", fontSize: 11, cursor: "pointer", padding: 2 }}
+                data-testid={`button-${testIdPrefix}-uploadprogress-dismiss`}
+              >
+                Ausblenden
+              </button>
+            </div>
+            <div style={{ display: "grid", gap: 2, maxHeight: 96, overflowY: "auto" }}>
+              {uploadProgress.map((u, idx) => {
+                const color = u.status === "done" ? "#C9A961" : u.status === "error" ? "#d97757" : "#F5EDE0";
+                const statusText = u.status === "done" ? "Fertig" : u.status === "error" ? "Fehler" : "Laedt";
+                return (
+                  <div
+                    key={`${u.name}-${idx}`}
+                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, color, padding: "2px 6px", background: "rgba(201,169,97,0.04)", border: "1px solid rgba(201,169,97,0.12)", borderRadius: 3 }}
+                    data-testid={`uploadprogress-${testIdPrefix}-row-${idx}`}
+                  >
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, marginRight: 8 }}>{u.name}</span>
+                    <span>{statusText}{u.message ? `: ${u.message}` : ""}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
         <div style={bodyStyle}>
           <div style={gridStyle} data-testid={`grid-${testIdPrefix}`}>
             {loading ? (
@@ -567,9 +713,14 @@ export function StoryImagePool({
                 participants={participants}
                 whiskies={whiskies}
                 busy={busy}
+                suggestedParticipantIds={aiSuggestions[selected.id]?.participantIds ?? []}
+                suggestedWhiskyIds={aiSuggestions[selected.id]?.whiskyIds ?? []}
                 onChange={(patch) => void updateItem(selected.id, patch)}
                 onAiDescribe={(fields) => void aiDescribeOne(selected.id, fields)}
                 onDelete={() => void removeItem(selected.id)}
+                onAcceptSuggestedParticipant={(pid) => void acceptSuggestedParticipant(selected.id, pid)}
+                onAcceptSuggestedWhisky={(wid) => void acceptSuggestedWhisky(selected.id, wid)}
+                onDismissSuggestions={() => dismissSuggestion(selected.id)}
                 testIdPrefix={`${testIdPrefix}-inspector`}
               />
             ) : (
@@ -712,13 +863,32 @@ type InspectorProps = {
   participants: Participant[];
   whiskies: Whisky[];
   busy: boolean;
+  suggestedParticipantIds: string[];
+  suggestedWhiskyIds: string[];
   onChange: (patch: ImagePoolMetadataPatch) => void;
   onAiDescribe: (fields?: ImagePoolDescribeFields[]) => void;
   onDelete: () => void;
+  onAcceptSuggestedParticipant: (participantId: string) => void;
+  onAcceptSuggestedWhisky: (whiskyId: string) => void;
+  onDismissSuggestions: () => void;
   testIdPrefix: string;
 };
 
-function ImageInspector({ item, participants, whiskies, busy, onChange, onAiDescribe, onDelete, testIdPrefix }: InspectorProps) {
+function ImageInspector({
+  item,
+  participants,
+  whiskies,
+  busy,
+  suggestedParticipantIds,
+  suggestedWhiskyIds,
+  onChange,
+  onAiDescribe,
+  onDelete,
+  onAcceptSuggestedParticipant,
+  onAcceptSuggestedWhisky,
+  onDismissSuggestions,
+  testIdPrefix,
+}: InspectorProps) {
   const [name, setName] = useState(item.name ?? "");
   const [caption, setCaption] = useState(item.caption ?? "");
   const [altText, setAltText] = useState(item.altText ?? "");
@@ -750,20 +920,50 @@ function ImageInspector({ item, participants, whiskies, busy, onChange, onAiDesc
     });
   }, [name, caption, altText, mood, categories, participantIds, whiskyIds, onChange]);
 
+  const persistCategories = useCallback(
+    (next: string[]) => {
+      setCategories(next);
+      onChange({ categories: next });
+    },
+    [onChange],
+  );
+  const persistParticipantIds = useCallback(
+    (next: string[]) => {
+      setParticipantIds(next);
+      onChange({ participantIds: next });
+    },
+    [onChange],
+  );
+  const persistWhiskyIds = useCallback(
+    (next: string[]) => {
+      setWhiskyIds(next);
+      onChange({ whiskyIds: next });
+    },
+    [onChange],
+  );
+
   const toggleCategory = (c: string) => {
-    setCategories((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
+    const next = categories.includes(c) ? categories.filter((x) => x !== c) : [...categories, c];
+    persistCategories(next);
   };
   const addCustomCategory = () => {
     const v = newCategory.trim();
     if (!v) return;
-    if (!categories.includes(v)) setCategories((prev) => [...prev, v]);
+    if (categories.includes(v)) {
+      setNewCategory("");
+      return;
+    }
+    const next = [...categories, v];
+    persistCategories(next);
     setNewCategory("");
   };
   const togglePid = (pid: string) => {
-    setParticipantIds((prev) => (prev.includes(pid) ? prev.filter((x) => x !== pid) : [...prev, pid]));
+    const next = participantIds.includes(pid) ? participantIds.filter((x) => x !== pid) : [...participantIds, pid];
+    persistParticipantIds(next);
   };
   const toggleWid = (wid: string) => {
-    setWhiskyIds((prev) => (prev.includes(wid) ? prev.filter((x) => x !== wid) : [...prev, wid]));
+    const next = whiskyIds.includes(wid) ? whiskyIds.filter((x) => x !== wid) : [...whiskyIds, wid];
+    persistWhiskyIds(next);
   };
 
   return (
@@ -788,6 +988,70 @@ function ImageInspector({ item, participants, whiskies, busy, onChange, onAiDesc
           KI: Stimmung
         </button>
       </div>
+      {suggestedParticipantIds.length > 0 || suggestedWhiskyIds.length > 0 ? (
+        <div
+          style={{ display: "grid", gap: 8, padding: 10, border: "1px solid rgba(201,169,97,0.35)", background: "rgba(201,169,97,0.06)", borderRadius: 4 }}
+          data-testid={`suggestions-${testIdPrefix}`}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontSize: 11, letterSpacing: ".25em", textTransform: "uppercase", color: "#C9A961" }}>
+              KI-Vorschläge
+            </div>
+            <button
+              type="button"
+              onClick={onDismissSuggestions}
+              style={{ background: "transparent", color: "#A89A85", border: "none", fontSize: 11, cursor: "pointer", padding: 2 }}
+              data-testid={`button-${testIdPrefix}-suggestions-dismiss`}
+            >
+              Verwerfen
+            </button>
+          </div>
+          {suggestedParticipantIds.length > 0 ? (
+            <div>
+              <div style={{ fontSize: 11, color: "#A89A85", marginBottom: 4 }}>Teilnehmer (klicken zum Übernehmen):</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                {suggestedParticipantIds.map((pid) => {
+                  const p = participants.find((x) => x.id === pid);
+                  const lbl = p ? (p.displayName || p.name || pid) : pid;
+                  return (
+                    <button
+                      key={pid}
+                      type="button"
+                      onClick={() => onAcceptSuggestedParticipant(pid)}
+                      style={primaryBtn}
+                      data-testid={`button-${testIdPrefix}-suggestion-participant-${pid}`}
+                    >
+                      + {lbl}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+          {suggestedWhiskyIds.length > 0 ? (
+            <div>
+              <div style={{ fontSize: 11, color: "#A89A85", marginBottom: 4 }}>Whisky (klicken zum Übernehmen):</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                {suggestedWhiskyIds.map((wid) => {
+                  const w = whiskies.find((x) => x.id === wid);
+                  const lbl = w ? ([w.distillery, w.name].filter(Boolean).join(" – ") || wid) : wid;
+                  return (
+                    <button
+                      key={wid}
+                      type="button"
+                      onClick={() => onAcceptSuggestedWhisky(wid)}
+                      style={primaryBtn}
+                      data-testid={`button-${testIdPrefix}-suggestion-whisky-${wid}`}
+                    >
+                      + {lbl}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       <label style={labelStyle}>
         Name
         <input
@@ -841,10 +1105,7 @@ function ImageInspector({ item, participants, whiskies, busy, onChange, onAiDesc
               <button
                 key={c}
                 type="button"
-                onClick={() => {
-                  toggleCategory(c);
-                  setTimeout(commit, 0);
-                }}
+                onClick={() => toggleCategory(c)}
                 style={chipStyle(active)}
                 data-testid={`chip-${testIdPrefix}-category-${c}`}
               >
@@ -856,10 +1117,7 @@ function ImageInspector({ item, participants, whiskies, busy, onChange, onAiDesc
             <button
               key={c}
               type="button"
-              onClick={() => {
-                toggleCategory(c);
-                setTimeout(commit, 0);
-              }}
+              onClick={() => toggleCategory(c)}
               style={chipStyle(true)}
               data-testid={`chip-${testIdPrefix}-category-custom-${c}`}
             >
@@ -878,10 +1136,7 @@ function ImageInspector({ item, participants, whiskies, busy, onChange, onAiDesc
           />
           <button
             type="button"
-            onClick={() => {
-              addCustomCategory();
-              setTimeout(commit, 0);
-            }}
+            onClick={addCustomCategory}
             style={ghostBtn}
             data-testid={`button-${testIdPrefix}-newcategory-add`}
           >
@@ -899,10 +1154,7 @@ function ImageInspector({ item, participants, whiskies, busy, onChange, onAiDesc
                 <button
                   key={p.id}
                   type="button"
-                  onClick={() => {
-                    togglePid(p.id);
-                    setTimeout(commit, 0);
-                  }}
+                  onClick={() => togglePid(p.id)}
                   style={chipStyle(active)}
                   data-testid={`chip-${testIdPrefix}-participant-${p.id}`}
                 >
@@ -924,10 +1176,7 @@ function ImageInspector({ item, participants, whiskies, busy, onChange, onAiDesc
                 <button
                   key={w.id}
                   type="button"
-                  onClick={() => {
-                    toggleWid(w.id);
-                    setTimeout(commit, 0);
-                  }}
+                  onClick={() => toggleWid(w.id)}
                   style={chipStyle(active)}
                   data-testid={`chip-${testIdPrefix}-whisky-${w.id}`}
                 >
