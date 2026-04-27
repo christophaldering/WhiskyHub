@@ -304,8 +304,8 @@ export default function LabsTasteProfile() {
             {t("labs.profile.subtitle", "Your flavor fingerprint based on {{count}} ratings", { count: nRatings })}
           </p>
         </div>
-        {hasData && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+          {hasData && (
             <ContextDownloadBar
               testId="profile-download-bar"
               align="end"
@@ -324,25 +324,25 @@ export default function LabsTasteProfile() {
                 },
               ]}
             />
-            <Link
-              href="/labs/downloads"
-              data-testid="link-profile-downloads-hub"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "4px 10px",
-                fontSize: 11,
-                color: "var(--labs-accent)",
-                textDecoration: "none",
-                borderBottom: "1px solid color-mix(in srgb, var(--labs-accent) 40%, transparent)",
-              }}
-            >
-              <Library style={{ width: 12, height: 12 }} />
-              {t("labs.profile.allDownloads", "Alle Downloads & Exporte")}
-            </Link>
-          </div>
-        )}
+          )}
+          <Link
+            href="/labs/downloads"
+            data-testid="link-profile-downloads-hub"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "4px 10px",
+              fontSize: 11,
+              color: "var(--labs-accent)",
+              textDecoration: "none",
+              borderBottom: "1px solid color-mix(in srgb, var(--labs-accent) 40%, transparent)",
+            }}
+          >
+            <Library style={{ width: 12, height: 12 }} />
+            {t("labs.profile.allDownloads", "Alle Downloads & Exporte")}
+          </Link>
+        </div>
       </div>
 
       {!hasData ? (

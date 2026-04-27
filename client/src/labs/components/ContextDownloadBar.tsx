@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, type ElementType } from "react";
 import { Download, Loader2 } from "lucide-react";
 
 export interface ContextDownloadAction {
   key: string;
   label: string;
-  icon?: React.ElementType;
+  icon?: ElementType;
   testId: string;
   run: () => Promise<void>;
 }
