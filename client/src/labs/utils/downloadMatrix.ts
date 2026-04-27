@@ -220,7 +220,7 @@ export function buildSourceHref(contentType: DownloadContentType, tastingId: str
     case "tasting-results":
       return `/labs/results/${tastingId}`;
     case "tasting-story":
-      return `/labs/story/${tastingId}`;
+      return `/labs/results/${tastingId}/story`;
     case "tasting-presentation":
       return `/labs/results/${tastingId}/present`;
     case "tasting-notes":
