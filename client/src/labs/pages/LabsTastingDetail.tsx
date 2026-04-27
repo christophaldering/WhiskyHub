@@ -475,15 +475,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
     }
   }
 
-  // Per-whisky reveal markers for the collapsed Whiskies preview.
-  const revealMarkerFor = (idx: number): "done" | "current" | "pending" => {
-    if (isCompleted) return "done";
-    if (!(isLive || isReveal)) return "pending";
-    if (idx < currentRevealPos0) return "done";
-    if (idx === currentRevealPos0) return "current";
-    return "pending";
-  };
-
   // Downloads availability (used both for the participant chip and the
   // existing LabsParticipantDownloads component).
   const downloadsAvailable = (() => {
@@ -1211,37 +1202,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
           </div>
         </button>
 
-        {!showWhiskies && (isLive || isReveal || isCompleted) && totalWhiskyCount > 0 && (
-          <div
-            className="labs-card flex items-center gap-1 px-3 py-2 mb-1 flex-wrap"
-            data-testid="labs-detail-whiskies-preview"
-          >
-            {(whiskies || []).map((w: Record<string, unknown>, idx: number) => {
-              const marker = revealMarkerFor(idx);
-              return (
-                <span
-                  key={(w.id as string) || idx}
-                  className="inline-flex items-center justify-center text-[10px]"
-                  title={`${idx + 1}`}
-                  style={{
-                    width: 16,
-                    height: 16,
-                    borderRadius: 4,
-                    color:
-                      marker === "done"
-                        ? "var(--labs-success, #38a169)"
-                        : marker === "current"
-                          ? "var(--labs-accent)"
-                          : "var(--labs-text-muted)",
-                  }}
-                  data-testid={`labs-detail-whisky-marker-${idx}`}
-                >
-                  {marker === "done" ? "✓" : marker === "current" ? "●" : "–"}
-                </span>
-              );
-            })}
-          </div>
-        )}
 
         {isHost && isDraft && showAddWhisky && (
           <div className="labs-card p-3 mb-3 flex gap-2" data-testid="labs-detail-add-whisky-form">
