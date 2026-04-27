@@ -158,7 +158,7 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
 
   const handleRegenerateStory = async (
     currentBlocks: StoryBlock[],
-    extras?: { customInstructions?: string; stylePresets?: string[] },
+    extras?: { customInstructions?: string; stylePresets?: string[]; lengthLevel?: "compact" | "default" | "expanded" | "epic" },
   ): Promise<StoryBlock[] | null> => {
     const payload = currentBlocks.map((b) => ({
       id: b.id,
@@ -172,6 +172,12 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
     const regeneratedIds = new Set(result.regenerated);
     const skippedIds = new Set(result.skipped);
     if (regeneratedIds.size === 0) {
+      const isDE = editorLanguage === "de";
+      setActionError(
+        isDE
+          ? "Es konnten keine Bloecke neu generiert werden. Vermutlich sind alle Bloecke gesperrt oder es gibt aktuell keine KI-faehigen Bloecke in der Story."
+          : "No blocks could be regenerated. They may all be locked or there are no AI-eligible blocks in the story.",
+      );
       return null;
     }
     const regenSanitized: StoryBlock[] = [];

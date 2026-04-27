@@ -115,9 +115,12 @@ export type RegenerateBlocksResponse = {
   skipped: string[];
 };
 
+export type RegenLengthLevel = "compact" | "default" | "expanded" | "epic";
+
 export type RegenerateExtras = {
   customInstructions?: string;
   stylePresets?: string[];
+  lengthLevel?: RegenLengthLevel;
 };
 
 export async function regenerateTastingStoryBlocks(
@@ -131,6 +134,7 @@ export async function regenerateTastingStoryBlocks(
   const ci = extras?.customInstructions?.trim();
   if (ci) body.customInstructions = ci;
   if (extras?.stylePresets && extras.stylePresets.length > 0) body.stylePresets = extras.stylePresets;
+  if (extras?.lengthLevel) body.lengthLevel = extras.lengthLevel;
   const res = await fetch(`/api/tasting-stories/${encodeURIComponent(tastingId)}/regenerate-blocks`, {
     method: "POST",
     credentials: "include",

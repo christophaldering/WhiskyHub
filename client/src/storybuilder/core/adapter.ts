@@ -21,11 +21,11 @@ export type StoryPersistenceAdapter = {
     blockId: string,
     blockType: string,
     currentBlocks: StoryBlock[],
-    extras?: { customInstructions?: string; stylePresets?: string[] },
+    extras?: { customInstructions?: string; stylePresets?: string[]; lengthLevel?: "compact" | "default" | "expanded" | "epic" },
   ) => Promise<Record<string, unknown> | null>;
   regenerateStory?: (
     currentBlocks: StoryBlock[],
-    extras?: { customInstructions?: string; stylePresets?: string[] },
+    extras?: { customInstructions?: string; stylePresets?: string[]; lengthLevel?: "compact" | "default" | "expanded" | "epic" },
   ) => Promise<StoryBlock[] | null>;
 };
 

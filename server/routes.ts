@@ -26072,6 +26072,7 @@ ${cleaned.slice(0, 60000)}`;
         blockId: z.string().min(1).max(128).optional(),
         customInstructions: z.string().max(2000).optional(),
         stylePresets: z.array(z.string().min(1).max(64)).max(8).optional(),
+        lengthLevel: z.enum(["compact", "default", "expanded", "epic"]).optional(),
       }).refine((v) => v.scope !== "single" || (typeof v.blockId === "string" && v.blockId.length > 0), {
         message: "blockId ist bei scope=single erforderlich",
         path: ["blockId"],
@@ -26096,6 +26097,7 @@ ${cleaned.slice(0, 60000)}`;
       const regenOptions = {
         customInstructions: parsed.data.customInstructions ?? null,
         stylePresets: parsed.data.stylePresets ?? [],
+        lengthLevel: parsed.data.lengthLevel ?? null,
       };
       const regenerated: string[] = [];
       const skipped: string[] = [];

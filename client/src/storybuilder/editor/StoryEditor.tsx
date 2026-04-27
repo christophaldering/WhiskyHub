@@ -31,6 +31,8 @@ import {
   AiInstructionInput,
   DEFAULT_PRESETS_DE,
   DEFAULT_PRESETS_EN,
+  LENGTH_OPTIONS_DE,
+  LENGTH_OPTIONS_EN,
   type AiInstructionPreset,
   type AiInstructionValue,
 } from "./AiInstructionInput";
@@ -58,16 +60,19 @@ type Props = {
     blockId: string,
     blockType: string,
     currentBlocks: StoryBlock[],
-    extras?: { customInstructions?: string; stylePresets?: string[] },
+    extras?: { customInstructions?: string; stylePresets?: string[]; lengthLevel?: "compact" | "default" | "expanded" | "epic" },
   ) => Promise<Record<string, unknown> | null>;
   onRegenerateStory?: (
     currentBlocks: StoryBlock[],
-    extras?: { customInstructions?: string; stylePresets?: string[] },
+    extras?: { customInstructions?: string; stylePresets?: string[]; lengthLevel?: "compact" | "default" | "expanded" | "epic" },
   ) => Promise<StoryBlock[] | null>;
   language?: "de" | "en";
 };
 
-const EMPTY_INSTRUCTION_VALUE: AiInstructionValue = { customInstructions: "", stylePresets: [] };
+const VALID_LENGTH_LEVELS = ["compact", "default", "expanded", "epic"] as const;
+type StoredLengthLevel = (typeof VALID_LENGTH_LEVELS)[number];
+
+const EMPTY_INSTRUCTION_VALUE: AiInstructionValue = { customInstructions: "", stylePresets: [], lengthLevel: "default" };
 
 function instructionStorageKey(sourceContext: StoryEditorSourceContext | undefined): string | null {
   if (!sourceContext) return null;
@@ -87,7 +92,10 @@ function loadInstructionValue(sourceContext: StoryEditorSourceContext | undefine
       const sp = Array.isArray(obj.stylePresets)
         ? (obj.stylePresets as unknown[]).filter((x): x is string => typeof x === "string")
         : [];
-      return { customInstructions: ci, stylePresets: sp };
+      const ll = typeof obj.lengthLevel === "string" && (VALID_LENGTH_LEVELS as readonly string[]).includes(obj.lengthLevel)
+        ? (obj.lengthLevel as StoredLengthLevel)
+        : "default";
+      return { customInstructions: ci, stylePresets: sp, lengthLevel: ll };
     }
   } catch {
     void 0;
@@ -99,7 +107,7 @@ function saveInstructionValue(sourceContext: StoryEditorSourceContext | undefine
   const key = instructionStorageKey(sourceContext);
   if (!key || typeof window === "undefined") return;
   try {
-    if (!value.customInstructions && value.stylePresets.length === 0) {
+    if (!value.customInstructions && value.stylePresets.length === 0 && value.lengthLevel === "default") {
       window.localStorage.removeItem(key);
     } else {
       window.localStorage.setItem(key, JSON.stringify(value));
@@ -445,6 +453,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
         const result = await onRegenerateStory(doc.blocks, {
           customInstructions: trimmed.length > 0 ? trimmed : undefined,
           stylePresets: extras.stylePresets.length > 0 ? extras.stylePresets : undefined,
+          lengthLevel: extras.lengthLevel !== "default" ? extras.lengthLevel : undefined,
         });
         if (result) {
           const next: StoryDocument = {
@@ -1024,6 +1033,7 @@ function StoryRegenerateDialog({
           `Gesperrte Bloecke (${n}) werden uebersprungen.`,
         textareaLabel: "Zusätzliche Anweisungen (optional)",
         presetsLabel: "Stil-Presets (optional, kombinierbar)",
+        lengthLabel: "Länge",
         placeholder:
           "z. B. Lockerer schreiben, Fokus auf Torf, Zitat einer Islay-Brennerei einbauen.",
         cancel: "Abbrechen",
@@ -1037,6 +1047,7 @@ function StoryRegenerateDialog({
         lockedNote: (n: number) => `Locked blocks (${n}) will be skipped.`,
         textareaLabel: "Additional instructions (optional)",
         presetsLabel: "Style presets (optional, combinable)",
+        lengthLabel: "Length",
         placeholder:
           "e.g. write more casually, focus on peat, include a quote from an Islay distillery.",
         cancel: "Cancel",
@@ -1109,9 +1120,11 @@ function StoryRegenerateDialog({
           value={value}
           onChange={onChange}
           presets={presets}
+          lengthOptions={isDE ? LENGTH_OPTIONS_DE : LENGTH_OPTIONS_EN}
           placeholder={t.placeholder}
           textareaLabel={t.textareaLabel}
           presetsLabel={t.presetsLabel}
+          lengthLabel={t.lengthLabel}
           rows={4}
           testIdPrefix="story-regen-instruction"
         />
@@ -1400,7 +1413,23 @@ function SaveBadge({
   );
 }
 
-const TASTING_REGEN_TYPES = new Set(["winner-hero", "finale-card", "taster-grid", "ranking-list", "blind-results", "whisky-card-grid"]);
+const TASTING_REGEN_TYPES = new Set([
+  "winner-hero",
+  "finale-card",
+  "taster-grid",
+  "ranking-list",
+  "blind-results",
+  "whisky-card-grid",
+  "hero-cover",
+  "text-section",
+  "quote",
+  "feature-cards",
+  "stats-grid",
+  "two-column",
+  "cta-button",
+  "full-width-image",
+  "image-gallery",
+]);
 
 function SelectedBlockEditor({
   block,
@@ -1448,6 +1477,7 @@ function SelectedBlockEditor({
         promptHint: "Optional: gib der KI eine kurze Anweisung oder waehle Stil-Presets.",
         textareaLabel: "Anweisung (optional)",
         presetsLabel: "Stil-Presets",
+        lengthLabel: "Länge",
         placeholder: "z. B. lockerer schreiben, Fokus auf Torf",
       }
     : {
@@ -1465,6 +1495,7 @@ function SelectedBlockEditor({
         promptHint: "Optional: give the AI a short instruction or pick style presets.",
         textareaLabel: "Instruction (optional)",
         presetsLabel: "Style presets",
+        lengthLabel: "Length",
         placeholder: "e.g. write more casually, focus on peat",
       };
   if (!def) {
@@ -1488,6 +1519,8 @@ function SelectedBlockEditor({
         customInstructions: trimmed.length > 0 ? trimmed : undefined,
         stylePresets:
           instructionValue.stylePresets.length > 0 ? instructionValue.stylePresets : undefined,
+        lengthLevel:
+          instructionValue.lengthLevel !== "default" ? instructionValue.lengthLevel : undefined,
       };
       const next = await onRegenerateBlock(block.id, block.type, extras);
       if (next) {
@@ -1601,9 +1634,11 @@ function SelectedBlockEditor({
                 value={instructionValue}
                 onChange={setInstructionValue}
                 presets={presetItems}
+                lengthOptions={isDE ? LENGTH_OPTIONS_DE : LENGTH_OPTIONS_EN}
                 placeholder={labels.placeholder}
                 textareaLabel={labels.textareaLabel}
                 presetsLabel={labels.presetsLabel}
+                lengthLabel={labels.lengthLabel}
                 rows={2}
                 compact
                 testIdPrefix={`block-instruction-${block.id}`}
