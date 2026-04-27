@@ -672,13 +672,29 @@ export default function LabsWhiskyDNA() {
                   key: "xlsx",
                   label: t("downloads.excel", { defaultValue: "Excel" }),
                   testId: "button-dna-download-xlsx",
-                  run: () => downloadXlsxFromSheets(
-                    `casksense_whisky_dna_${safeFileSegment(todaySegment)}.xlsx`,
-                    buildDnaSections().map(sec => ({
+                  run: () => {
+                    const sheets: { name: string; rows: Record<string, string | number | null | undefined>[] }[] = buildDnaSections().map(sec => ({
                       name: sec.heading,
                       rows: sec.rows.map(r => ({ Kennzahl: r.label, Wert: r.value })),
-                    })),
-                  ),
+                    }));
+                    if (dna?.affinity && dna.affinity.length > 0) {
+                      sheets.push({
+                        name: t("downloads.rawData", { defaultValue: "Rohdaten" }),
+                        rows: dna.affinity.map(a => ({
+                          AxisId: a.id,
+                          AxisEn: a.en,
+                          AxisDe: a.de,
+                          Affinity: a.affinity,
+                          Sample: a.sample,
+                          MeanCentered: a.meanCentered,
+                          CiLower: a.ciLower,
+                          CiUpper: a.ciUpper,
+                          Sufficient: a.sufficient ? "yes" : "no",
+                        })),
+                      });
+                    }
+                    return downloadXlsxFromSheets(`casksense_whisky_dna_${safeFileSegment(todaySegment)}.xlsx`, sheets);
+                  },
                 },
               ]}
             />

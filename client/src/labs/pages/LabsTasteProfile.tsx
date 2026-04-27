@@ -280,10 +280,29 @@ export default function LabsTasteProfile() {
   };
 
   const handleDownloadProfileXlsx = async () => {
-    const sheets = buildProfileSections().map(sec => ({
+    const sheets: { name: string; rows: Record<string, string | number | null | undefined>[] }[] = buildProfileSections().map(sec => ({
       name: sec.heading,
       rows: sec.rows.map(r => ({ Label: r.label, Value: r.value })),
     }));
+    const rated = profile?.ratedWhiskies as Array<{
+      whisky?: { name?: string; distillery?: string | null; region?: string | null };
+      rating?: { nose?: number | null; taste?: number | null; finish?: number | null; overall?: number | null; flavors?: string[] };
+    }> | undefined;
+    if (rated && rated.length > 0) {
+      sheets.push({
+        name: t("downloads.rawData", { defaultValue: "Rohdaten" }),
+        rows: rated.map(rw => ({
+          Whisky: rw.whisky?.name ?? "",
+          Distillery: rw.whisky?.distillery ?? "",
+          Region: rw.whisky?.region ?? "",
+          Nose: rw.rating?.nose ?? "",
+          Taste: rw.rating?.taste ?? "",
+          Finish: rw.rating?.finish ?? "",
+          Overall: rw.rating?.overall ?? "",
+          Flavors: (rw.rating?.flavors ?? []).join(", "),
+        })),
+      });
+    }
     await downloadXlsxFromSheets(`casksense_profile_${safeFileSegment(todaySegment)}.xlsx`, sheets);
   };
 
