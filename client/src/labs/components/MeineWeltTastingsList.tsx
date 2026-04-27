@@ -15,6 +15,8 @@ interface OpenDram {
   name: string;
   distillery: string | null;
   source: "solo" | "fair";
+  occasion: string | null;
+  fairDate: string | null;
   updatedAt: string | Date | null;
   createdAt: string | Date | null;
 }
@@ -31,6 +33,20 @@ function detectDramSource(entry: any): "solo" | "fair" {
     }
   }
   return "solo";
+}
+
+function extractFairDate(entry: any): string | null {
+  const ctx = entry?.tastingContext;
+  if (typeof ctx !== "string" || ctx.length === 0) return null;
+  let tag = "";
+  try {
+    const parsed = JSON.parse(ctx);
+    tag = String(parsed?.sessionTag ?? "");
+  } catch {
+    tag = ctx;
+  }
+  const m = tag.match(/fair-mode-(\d{4}-\d{2}-\d{2})/);
+  return m ? m[1] : null;
 }
 
 function getDramTimestamp(entry: any): number {
@@ -115,6 +131,8 @@ export default function MeineWeltTastingsList({ filter, searchQuery = "" }: Prop
         name: String(e.name || e.title || "").trim(),
         distillery: e.distillery ? String(e.distillery) : null,
         source: detectDramSource(e),
+        occasion: e.occasion ? String(e.occasion).trim() : null,
+        fairDate: extractFairDate(e),
         updatedAt: e.updatedAt ?? null,
         createdAt: e.createdAt ?? null,
       }))
@@ -548,13 +566,49 @@ export default function MeineWeltTastingsList({ filter, searchQuery = "" }: Prop
                           </span>
                         </div>
                       </div>
-                      {dram.distillery && (
-                        <div className="labs-tasting-card-meta">
-                          <span className="labs-tasting-card-meta-item">
-                            <span className="labs-tasting-card-host-name">{dram.distillery}</span>
-                          </span>
-                        </div>
-                      )}
+                      {(() => {
+                        const dateSource = dram.fairDate ?? dram.updatedAt ?? dram.createdAt;
+                        const dateLabel = formatTastingDate(
+                          typeof dateSource === "string"
+                            ? dateSource
+                            : dateSource instanceof Date
+                              ? dateSource.toISOString()
+                              : null,
+                        );
+                        const contextLabel = dram.source === "fair" ? null : dram.occasion;
+                        const hasMeta = dram.distillery || dateLabel || contextLabel;
+                        if (!hasMeta) return null;
+                        return (
+                          <div className="labs-tasting-card-meta">
+                            {dram.distillery && (
+                              <span
+                                className="labs-tasting-card-meta-item"
+                                data-testid={`meine-welt-open-dram-distillery-${dram.id}`}
+                              >
+                                <span className="labs-tasting-card-host-name">{dram.distillery}</span>
+                              </span>
+                            )}
+                            {dateLabel && (
+                              <span
+                                className="labs-tasting-card-meta-item"
+                                data-testid={`meine-welt-open-dram-date-${dram.id}`}
+                              >
+                                <Calendar className="labs-tasting-card-meta-icon" />
+                                {dateLabel}
+                              </span>
+                            )}
+                            {contextLabel && (
+                              <span
+                                className="labs-tasting-card-meta-item labs-tasting-card-meta-item--location"
+                                data-testid={`meine-welt-open-dram-context-${dram.id}`}
+                              >
+                                <MapPin className="labs-tasting-card-meta-icon" />
+                                {contextLabel}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                     <div
                       className="labs-tasting-card-actions"
