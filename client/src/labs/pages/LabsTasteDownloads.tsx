@@ -12,7 +12,6 @@ import {
   getPresentationPdfAvailable,
   getNotesDocxAvailable,
 } from "@/labs/utils/labsExports";
-import { buildSourceHref } from "@/labs/utils/downloadMatrix";
 import { downloadBlob } from "@/lib/download";
 import { generateBlankTastingSheet, generateBlankTastingMat } from "@/components/printable-tasting-sheets";
 import { Link , useLocation } from "wouter";
@@ -163,7 +162,6 @@ export default function LabsTasteDownloads() {
                 const storyAvailable = getStoryPdfAvailable(tg, isHostOfThis);
                 const presentationAvailable = getPresentationPdfAvailable(tg);
                 const notesAvailable = getNotesDocxAvailable(tg, participantId);
-                const sourceHref = buildSourceHref("tasting-results", tg.id);
                 return (
                   <div
                     key={tg.id}
@@ -196,7 +194,6 @@ export default function LabsTasteDownloads() {
                       notesAvailable={notesAvailable}
                       variant="buttons"
                       testIdPrefix={`tasting-download-${tg.id}`}
-                      sourceHref={sourceHref}
                     />
                   </div>
                 );

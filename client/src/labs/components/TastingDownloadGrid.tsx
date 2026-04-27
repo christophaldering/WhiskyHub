@@ -28,8 +28,6 @@ interface Props {
   variant?: Variant;
   testIdPrefix?: string;
   kinds?: DownloadKind[];
-  sourceHref?: string;
-  sourceLabel?: string;
 }
 
 export default function TastingDownloadGrid({
@@ -42,8 +40,6 @@ export default function TastingDownloadGrid({
   variant = "cards",
   testIdPrefix,
   kinds = DEFAULT_TASTING_KINDS,
-  sourceHref,
-  sourceLabel,
 }: Props) {
   const { t } = useTranslation();
   const [busy, setBusy] = useState<DownloadKind | null>(null);
@@ -164,33 +160,6 @@ export default function TastingDownloadGrid({
               </div>
             );
           })}
-          {sourceHref && (
-            <a
-              href={sourceHref}
-              data-testid={`${prefix}-source-link`}
-              style={{
-                display: "flex", alignItems: "center", gap: 8,
-                padding: "8px 12px", borderRadius: 8,
-                border: "1px dashed var(--labs-border)",
-                background: "transparent",
-                color: "var(--labs-text-muted)",
-                cursor: "pointer",
-                fontFamily: "inherit",
-                textAlign: "left",
-                textDecoration: "none",
-              }}
-            >
-              <ExternalLink className="w-4 h-4 mt-0.5" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
-              <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                <span style={{ fontSize: 13, fontWeight: 600 }}>
-                  {sourceLabel ?? t("downloads.openSource", "Quelle öffnen")}
-                </span>
-                <span style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.3 }}>
-                  {t("downloads.openSourceDesc", "Direkt zur Ergebnis-Ansicht des Tastings")}
-                </span>
-              </span>
-            </a>
-          )}
         </div>
         {error && (
           <p style={{ fontSize: 11, color: "var(--labs-danger)", marginTop: 6 }} data-testid={`${prefix}-error`}>
