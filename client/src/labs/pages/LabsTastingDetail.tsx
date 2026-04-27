@@ -1705,7 +1705,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
       {(() => {
         const phase = getTastingPhase(tasting?.status);
         const showResults = isResultDownloadsPhase(phase);
-        const showPrintMaterials = !isHost && downloadsAvailable;
+        const showPrintMaterials = !isHost && downloadsAvailable && !isResultDownloadsPhase(phase);
         return (
           <div className="mb-6" data-testid={`labs-detail-downloads-${phase}`}>
             {showResults && (

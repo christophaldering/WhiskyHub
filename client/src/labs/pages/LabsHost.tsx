@@ -7454,7 +7454,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             {(() => {
               const phase: TastingPhase = getTastingPhase((tasting as { status?: string | null }).status);
               const showResultDownloads = isResultDownloadsPhase(phase);
-              const printMaterialsNode = whiskyCount > 0 ? (
+              const showPrintMaterials = !isResultDownloadsPhase(phase);
+              const printMaterialsNode = showPrintMaterials && whiskyCount > 0 ? (
                 <PrintMaterialsSection
                   tasting={tasting}
                   whiskies={whiskies || []}
