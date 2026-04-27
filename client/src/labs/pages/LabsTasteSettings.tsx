@@ -322,7 +322,7 @@ export default function LabsTasteSettings() {
               {(([null, "guided", "compact", "quick"] as const)).map(m => {
                 const active = preferredRatingMode === m;
                 const label = m === null
-                  ? t("m2.taste.settings.modeAuto", "Auto")
+                  ? t("m2.taste.settings.modeAuto", "Jedes Mal fragen")
                   : m === "guided"
                     ? t("v2.ratingGuided", "Geführt")
                     : m === "compact"

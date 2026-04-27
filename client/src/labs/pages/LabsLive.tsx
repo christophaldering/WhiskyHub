@@ -8,6 +8,7 @@ import { Wine, ChevronLeft, ChevronRight, ChevronDown, Eye, EyeOff, Check, Clock
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi, participantApi, participantUpdateApi } from "@/lib/api";
 import type { Participant } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
 import { formatScore } from "@/lib/utils";
 import { queryClient } from "@/lib/queryClient";
@@ -319,13 +320,19 @@ function GuidedStepView({
   const preferredRatingModeFromProfile: "guided" | "compact" | "quick" | null =
     rawPreferred === "guided" || rawPreferred === "compact" || rawPreferred === "quick" ? rawPreferred : null;
 
+  const { toast: liveToast } = useToast();
   const handleSetPreferredMode = useCallback(async (m: "guided" | "compact" | "quick" | null) => {
     if (!currentParticipant?.id) return;
     try {
       await participantUpdateApi.update(currentParticipant.id, { preferredRatingMode: m });
       queryClient.invalidateQueries({ queryKey: ["participant", currentParticipant.id] });
-    } catch {}
-  }, [currentParticipant?.id]);
+    } catch (err) {
+      liveToast({
+        title: t("v2.ratingModeSaveFailed", "Standard-Form konnte nicht gespeichert werden"),
+        variant: "destructive",
+      });
+    }
+  }, [currentParticipant?.id, liveToast, t]);
 
   useEffect(() => {
     if (myRating) {

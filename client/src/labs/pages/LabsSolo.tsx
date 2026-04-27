@@ -10,6 +10,7 @@ import { Loader2, Check } from "lucide-react";
 import { tryAutoResume, getSession } from "@/lib/session";
 import { participantApi, participantUpdateApi } from "@/lib/api";
 import type { Participant } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 import SoloCaptureScreen, { type CapturedWhisky } from "./solo/SoloCaptureScreen";
 import SoloWhiskyForm from "./solo/SoloWhiskyForm";
 import SoloDoneScreen from "./solo/SoloDoneScreen";
@@ -145,13 +146,19 @@ export default function LabsSolo() {
   const preferredRatingModeFromProfile: "guided" | "compact" | "quick" | null =
     rawPreferred === "guided" || rawPreferred === "compact" || rawPreferred === "quick" ? rawPreferred : null;
 
+  const { toast: soloToast } = useToast();
   const handleSetPreferredMode = useCallback(async (mode: "guided" | "compact" | "quick" | null) => {
     if (!participantId) return;
     try {
       await participantUpdateApi.update(participantId, { preferredRatingMode: mode });
       queryClient.invalidateQueries({ queryKey: ["participant", participantId] });
-    } catch {}
-  }, [participantId]);
+    } catch (err) {
+      soloToast({
+        title: t("v2.ratingModeSaveFailed", "Standard-Form konnte nicht gespeichert werden"),
+        variant: "destructive",
+      });
+    }
+  }, [participantId, soloToast, t]);
 
   const hasUnsavedRef = useRef(false);
   const latestRatingDataRef = useRef<Partial<RatingData>>({});

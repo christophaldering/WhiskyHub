@@ -6,6 +6,7 @@ import { useSession } from "@/lib/session";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { journalApi, tastingHistoryApi, participantApi, participantUpdateApi } from "@/lib/api";
 import type { Participant } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import type { JournalEntry } from "@shared/schema";
@@ -174,13 +175,19 @@ export default function LabsTasteDrams() {
   const preferredRatingModeFromProfile: "guided" | "compact" | "quick" | null =
     rawPreferred === "guided" || rawPreferred === "compact" || rawPreferred === "quick" ? rawPreferred : null;
 
+  const { toast: dramsToast } = useToast();
   const handleSetPreferredMode = useCallback(async (mode: "guided" | "compact" | "quick" | null) => {
     if (!session.pid) return;
     try {
       await participantUpdateApi.update(session.pid, { preferredRatingMode: mode });
       queryClient.invalidateQueries({ queryKey: ["participant", session.pid] });
-    } catch {}
-  }, [session.pid]);
+    } catch (err) {
+      dramsToast({
+        title: t("v2.ratingModeSaveFailed", "Standard-Form konnte nicht gespeichert werden"),
+        variant: "destructive",
+      });
+    }
+  }, [session.pid, dramsToast, t]);
 
   const { data: journal = [], isLoading, isError, refetch } = useQuery<JournalEntry[]>({
     queryKey: ["journal", session.pid],
