@@ -1,48 +1,73 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FileSpreadsheet, FileText, Download, BookOpen, Loader2 } from "lucide-react";
+import { Download, Loader2, ExternalLink } from "lucide-react";
 import {
-  labsExportFromServer,
-  labsExportPdf,
-  labsExportPdfForTasting,
-  labsExportStoryPdfForTasting,
-} from "@/labs/utils/labsExports";
+  DEFAULT_TASTING_KINDS,
+  selectDescriptors,
+  type DownloadKind,
+  type DownloadDescriptor,
+  type DownloadContext,
+  type AvailabilityState,
+} from "@/labs/utils/downloadMatrix";
 
 type Variant = "cards" | "buttons";
 
 interface InlineData {
-  tasting: any;
-  whiskyResults: any[];
+  tasting: unknown;
+  whiskyResults: unknown[];
 }
 
 interface Props {
   tastingId: string;
+  participantId?: string | null;
   storyAvailable: boolean;
+  presentationAvailable?: boolean;
+  notesAvailable?: boolean;
   inlineData?: InlineData;
   variant?: Variant;
   testIdPrefix?: string;
+  kinds?: DownloadKind[];
+  sourceHref?: string;
+  sourceLabel?: string;
 }
-
-type Kind = "xlsx" | "csv" | "pdf" | "story";
 
 export default function TastingDownloadGrid({
   tastingId,
+  participantId,
   storyAvailable,
+  presentationAvailable = false,
+  notesAvailable = false,
   inlineData,
   variant = "cards",
   testIdPrefix,
+  kinds = DEFAULT_TASTING_KINDS,
+  sourceHref,
+  sourceLabel,
 }: Props) {
   const { t } = useTranslation();
-  const [busy, setBusy] = useState<Kind | null>(null);
+  const [busy, setBusy] = useState<DownloadKind | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const prefix = testIdPrefix ?? `tasting-download-${tastingId}`;
 
-  const run = async (kind: Kind, fn: () => Promise<void>) => {
-    setBusy(kind);
+  const availability: AvailabilityState = {
+    story: storyAvailable,
+    presentation: presentationAvailable,
+    notes: notesAvailable,
+  };
+
+  const ctx: DownloadContext = {
+    tastingId,
+    participantId,
+    inlineData,
+    t: t as DownloadContext["t"],
+  };
+
+  const runDescriptor = async (descriptor: DownloadDescriptor) => {
+    setBusy(descriptor.kind);
     setError(null);
     try {
-      await fn();
+      await descriptor.run(ctx);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : t("downloads.toastExportFailed", "Download failed"));
     } finally {
@@ -50,59 +75,13 @@ export default function TastingDownloadGrid({
     }
   };
 
-  const handlers: Record<Kind, () => Promise<void>> = {
-    xlsx: () => labsExportFromServer(tastingId, "xlsx", t).then(() => undefined),
-    csv: () => labsExportFromServer(tastingId, "csv", t).then(() => undefined),
-    pdf: () =>
-      inlineData
-        ? labsExportPdf(inlineData.tasting, inlineData.whiskyResults, t)
-        : labsExportPdfForTasting(tastingId, t),
-    story: () => labsExportStoryPdfForTasting(tastingId, t),
-  };
+  const visible: DownloadDescriptor[] = selectDescriptors(kinds, availability, participantId);
 
-  const items: {
-    kind: Kind;
-    icon: React.ElementType;
-    title: string;
-    desc: string;
-    badge: string;
-    show: boolean;
-  }[] = [
-    {
-      kind: "xlsx",
-      icon: FileSpreadsheet,
-      title: t("resultsUi.downloadExcelTitle", "Excel-Tabelle"),
-      desc: t("resultsUi.downloadExcelDesc", "Alle Bewertungen tabellarisch für eigene Statistik-Auswertung"),
-      badge: ".xlsx",
-      show: true,
-    },
-    {
-      kind: "csv",
-      icon: FileText,
-      title: t("resultsUi.downloadCsvTitle", "CSV-Datei"),
-      desc: t("resultsUi.downloadCsvDesc", "Rohdaten für Import in andere Tools"),
-      badge: ".csv",
-      show: true,
-    },
-    {
-      kind: "pdf",
-      icon: Download,
-      title: t("resultsUi.downloadPdfTitle", "Auswertungs-PDF"),
-      desc: t("resultsUi.downloadPdfDesc", "Kompakte Rangliste & Statistiken (1-3 Seiten, ideal zum Versenden)"),
-      badge: "PDF",
-      show: true,
-    },
-    {
-      kind: "story",
-      icon: BookOpen,
-      title: t("resultsUi.downloadStoryTitle", "Story-PDF"),
-      desc: t("resultsUi.downloadStoryDesc", "Magazin-Stil mit Fotos, Geschichten und Profilen"),
-      badge: t("resultsUi.formatStoryBadge", "Premium PDF"),
-      show: storyAvailable,
-    },
-  ];
+  const renderBadge = (item: DownloadDescriptor) =>
+    item.badgeKey ? t(item.badgeKey, item.badgeFallback) : item.badgeFallback;
 
-  const visible = items.filter(i => i.show);
+  const renderTitle = (item: DownloadDescriptor) => t(item.titleKey, item.titleFallback);
+  const renderDesc = (item: DownloadDescriptor) => t(item.descKey, item.descFallback);
 
   if (variant === "buttons") {
     return (
@@ -117,13 +96,16 @@ export default function TastingDownloadGrid({
           {visible.map(item => {
             const Icon = item.icon;
             const isBusy = busy === item.kind;
+            const title = renderTitle(item);
+            const desc = renderDesc(item);
+            const badge = renderBadge(item);
             return (
               <button
                 key={item.kind}
-                onClick={() => run(item.kind, handlers[item.kind])}
+                onClick={() => runDescriptor(item)}
                 disabled={isBusy}
-                title={`${item.title} · ${item.desc}`}
-                aria-label={`${item.title}: ${item.desc}`}
+                title={`${title} · ${desc}`}
+                aria-label={`${title}: ${desc}`}
                 data-testid={`${prefix}-${item.kind}`}
                 style={{
                   display: "flex", alignItems: "flex-start", gap: 8,
@@ -143,16 +125,43 @@ export default function TastingDownloadGrid({
                 }
                 <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 13, fontWeight: 600 }}>{item.title}</span>
-                    <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{item.badge}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>{title}</span>
+                    <span style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{badge}</span>
                   </span>
                   <span style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.3 }}>
-                    {item.desc}
+                    {desc}
                   </span>
                 </span>
               </button>
             );
           })}
+          {sourceHref && (
+            <a
+              href={sourceHref}
+              data-testid={`${prefix}-source-link`}
+              style={{
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "8px 12px", borderRadius: 8,
+                border: "1px dashed var(--labs-border)",
+                background: "transparent",
+                color: "var(--labs-text-muted)",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                textAlign: "left",
+                textDecoration: "none",
+              }}
+            >
+              <ExternalLink className="w-4 h-4 mt-0.5" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
+              <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>
+                  {sourceLabel ?? t("downloads.openSource", "Quelle öffnen")}
+                </span>
+                <span style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.3 }}>
+                  {t("downloads.openSourceDesc", "Direkt zur Ergebnis-Ansicht des Tastings")}
+                </span>
+              </span>
+            </a>
+          )}
         </div>
         {error && (
           <p style={{ fontSize: 11, color: "var(--labs-danger)", marginTop: 6 }} data-testid={`${prefix}-error`}>
@@ -175,6 +184,9 @@ export default function TastingDownloadGrid({
         {visible.map(item => {
           const Icon = item.icon;
           const isBusy = busy === item.kind;
+          const title = renderTitle(item);
+          const desc = renderDesc(item);
+          const badge = renderBadge(item);
           return (
             <div
               key={item.kind}
@@ -202,7 +214,7 @@ export default function TastingDownloadGrid({
                       fontSize: 14, fontWeight: 600, color: "var(--labs-text)",
                       margin: 0, lineHeight: 1.3,
                     }}>
-                      {item.title}
+                      {title}
                     </h3>
                     <span style={{
                       fontSize: 10, fontWeight: 600, letterSpacing: "0.04em",
@@ -210,19 +222,19 @@ export default function TastingDownloadGrid({
                       background: "var(--labs-accent-muted)",
                       padding: "2px 6px", borderRadius: 4,
                     }}>
-                      {item.badge}
+                      {badge}
                     </span>
                   </div>
                   <p style={{
                     fontSize: 12, color: "var(--labs-text-muted)",
                     margin: "4px 0 0", lineHeight: 1.4,
                   }}>
-                    {item.desc}
+                    {desc}
                   </p>
                 </div>
               </div>
               <button
-                onClick={() => run(item.kind, handlers[item.kind])}
+                onClick={() => runDescriptor(item)}
                 disabled={isBusy}
                 className="labs-btn-secondary"
                 data-testid={`${prefix}-action-${item.kind}`}
@@ -244,6 +256,47 @@ export default function TastingDownloadGrid({
             </div>
           );
         })}
+        {sourceHref && (
+          <a
+            href={sourceHref}
+            data-testid={`${prefix}-card-source-link`}
+            className="labs-card"
+            style={{
+              padding: 16,
+              display: "flex", flexDirection: "column", gap: 10,
+              textDecoration: "none",
+              border: "1px dashed var(--labs-border)",
+              background: "transparent",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+              <div
+                style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: "var(--labs-accent-muted)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <ExternalLink className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h3 style={{
+                  fontSize: 14, fontWeight: 600, color: "var(--labs-text)",
+                  margin: 0, lineHeight: 1.3,
+                }}>
+                  {sourceLabel ?? t("downloads.openSource", "Quelle öffnen")}
+                </h3>
+                <p style={{
+                  fontSize: 12, color: "var(--labs-text-muted)",
+                  margin: "4px 0 0", lineHeight: 1.4,
+                }}>
+                  {t("downloads.openSourceDesc", "Direkt zur Ergebnis-Ansicht des Tastings")}
+                </p>
+              </div>
+            </div>
+          </a>
+        )}
       </div>
       {error && (
         <p style={{ fontSize: 12, color: "var(--labs-danger)", marginTop: 10 }} data-testid={`${prefix}-error`}>

@@ -7,6 +7,12 @@ import { exportStoryPdf } from "@/lib/pdf-story";
 import { exportTastingStoryBlocksPdfFor } from "@/lib/pdf-story-blocks";
 import { getPublicTastingStory, TastingStoryApiError } from "@/lib/tastingStoryApi";
 import {
+  exportPresentationPdf,
+  type PresentationData,
+  type PresentationWhisky,
+  type PresentationParticipant,
+} from "@/lib/pdf-presentation";
+import {
   type RGB,
   mean,
   median,
@@ -1280,4 +1286,128 @@ export async function labsExportPdfForTasting(
   }));
 
   await labsExportPdf(tasting, whiskyResults, t, fullStats);
+}
+
+const PRESENTATION_ELIGIBLE_STATUSES = new Set(["reveal", "completed", "closed", "archived"]);
+
+export function getPresentationPdfAvailable(
+  tasting: { status?: string | null } | null | undefined,
+): boolean {
+  if (!tasting) return false;
+  return PRESENTATION_ELIGIBLE_STATUSES.has(tasting.status ?? "");
+}
+
+export function getNotesDocxAvailable(
+  tasting: { status?: string | null } | null | undefined,
+  participantId: string | null | undefined,
+): boolean {
+  if (!tasting || !participantId) return false;
+  return PRESENTATION_ELIGIBLE_STATUSES.has(tasting.status ?? "");
+}
+
+export async function labsExportPresentationPdfForTasting(
+  tastingId: string,
+  t: (key: string, opts?: any) => string,
+): Promise<void> {
+  const [tastingRes, whiskiesRes, ratingsRes, participantsRes] = await Promise.all([
+    fetch(`/api/tastings/${tastingId}`, { headers: pidHeaders() }),
+    fetch(`/api/tastings/${tastingId}/whiskies`, { headers: pidHeaders() }),
+    fetch(`/api/tastings/${tastingId}/ratings`, { headers: pidHeaders() }),
+    fetch(`/api/tastings/${tastingId}/participants`, { headers: pidHeaders() }),
+  ]);
+  if (!tastingRes.ok || !whiskiesRes.ok || !ratingsRes.ok) {
+    throw new Error(t("downloads.exportErrorTastingData", { defaultValue: "Tasting data could not be loaded." }));
+  }
+  const tasting = await tastingRes.json();
+  const whiskies: any[] = await whiskiesRes.json();
+  const allRatings: any[] = await ratingsRes.json();
+  const participants: any[] = participantsRes.ok ? await participantsRes.json() : [];
+
+  const fullStats = computeFullStats(tasting, whiskies, allRatings, participants);
+
+  const presentationWhiskies: PresentationWhisky[] = fullStats.whiskies.map(w => {
+    const raw = whiskies.find(x => x.id === w.id);
+    return {
+      id: w.id,
+      name: w.name,
+      distillery: w.distillery,
+      region: raw?.region ?? null,
+      age: raw?.age ?? null,
+      abv: raw?.abv ?? null,
+      avgOverall: w.avgOverall,
+      avgNose: w.avgNose,
+      avgTaste: w.avgTaste,
+      avgFinish: w.avgFinish,
+      ratingCount: w.n,
+    };
+  });
+
+  const presentationParticipants: PresentationParticipant[] = fullStats.participants.map(p => ({
+    id: p.pid,
+    name: p.displayName,
+  }));
+
+  let highestSingle: { value: number; whiskyName: string } | null = null;
+  if (fullStats.overview.highest) {
+    highestSingle = {
+      value: fullStats.overview.highest.value,
+      whiskyName: fullStats.overview.highest.whiskyName,
+    };
+  }
+
+  const data: PresentationData = {
+    tasting: {
+      id: tasting.id,
+      title: tasting.title,
+      date: tasting.date,
+      location: tasting.location,
+      ratingScale: tasting.ratingScale,
+    },
+    whiskies: presentationWhiskies,
+    participants: presentationParticipants,
+    highlights: {
+      mostAgreed: fullStats.highlights.biggestAgreement,
+      mostDebated: fullStats.highlights.biggestDispute
+        ? { name: fullStats.highlights.biggestDispute.name, stdDev: fullStats.highlights.biggestDispute.spread }
+        : null,
+      mostGenerous: fullStats.awards.mostGenerous
+        ? { name: fullStats.awards.mostGenerous.name, avg: fullStats.awards.mostGenerous.value }
+        : null,
+      toughest: fullStats.awards.strictest
+        ? { name: fullStats.awards.strictest.name, avg: fullStats.awards.strictest.value }
+        : null,
+      highestSingle,
+    },
+    scaleMax: fullStats.scaleMax,
+    t,
+  };
+
+  await exportPresentationPdf(data);
+}
+
+export async function labsExportNotesDocxForTasting(
+  tastingId: string,
+  participantId: string,
+  t: (key: string, opts?: any) => string,
+): Promise<void> {
+  const res = await fetch("/api/export/notes-docx", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...pidHeaders() },
+    body: JSON.stringify({ tastingId, participantId }),
+  });
+  if (!res.ok) {
+    let msg = t("downloads.exportErrorServer", { status: res.status, defaultValue: `Export failed (${res.status})` });
+    try {
+      const body = await res.json();
+      if (body?.message) msg = body.message;
+    } catch {
+      void 0;
+    }
+    throw new Error(msg);
+  }
+  const blob = await res.blob();
+  const disp = res.headers.get("Content-Disposition");
+  const filenameMatch = disp?.match(/filename="?([^"]+)"?/);
+  const filename = filenameMatch?.[1] || `notes_${tastingId}.docx`;
+  downloadBlob(blob, filename);
 }
