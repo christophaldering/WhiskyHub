@@ -806,6 +806,8 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
           height: 52,
           overflow: 'visible',
           width: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
           background: "var(--labs-header-bg)",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
@@ -1088,6 +1090,10 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
             borderTop: "0.5px solid var(--labs-border, rgba(255,255,255,0.1))",
             paddingTop: 8,
             paddingBottom: "max(12px, env(safe-area-inset-bottom))",
+            paddingLeft: "env(safe-area-inset-left, 0)",
+            paddingRight: "env(safe-area-inset-right, 0)",
+            maxWidth: "100vw",
+            boxSizing: "border-box",
           }}
         >
           {navItems.map((item) => {

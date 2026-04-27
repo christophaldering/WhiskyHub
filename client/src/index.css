@@ -171,10 +171,21 @@
 html, body {
   overflow-x: hidden;
   overflow-x: clip;
-  max-width: 100%;
+  max-width: 100vw;
   width: 100%;
   -webkit-text-size-adjust: 100%;
   overscroll-behavior-x: none;
+  position: relative;
+  box-sizing: border-box;
+}
+
+body {
+  /* Safe-area insets must not increase body width beyond the viewport.
+     With box-sizing: border-box (Tailwind preflight + explicit above),
+     the env() padding stays inside the 100% width and cannot create
+     horizontal overflow on iOS Safari (notch/home indicator). */
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
 }
 
 #root {
@@ -182,6 +193,8 @@ html, body {
   overflow-x: clip;
   max-width: 100%;
   width: 100%;
+  position: relative;
+  box-sizing: border-box;
 }
 
 iframe, img, video, embed, object, canvas, svg, table, pre {
