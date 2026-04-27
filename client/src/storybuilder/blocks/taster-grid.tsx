@@ -12,6 +12,7 @@ const payloadSchema = z.object({
   columns: z.enum(["2", "3", "4"]).default("3"),
   includeParticipantIds: z.array(z.string()).nullable().optional().default(null),
   overrides: z.record(overrideSchema).optional().default({}),
+  participantPhotos: z.array(z.string()).optional().default([]),
 });
 
 type Payload = z.infer<typeof payloadSchema>;
@@ -54,9 +55,10 @@ function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
           gap: "clamp(1.2rem, 2.4vw, 2rem)",
         }}
       >
-        {participants.map((p) => {
+        {participants.map((p, idx) => {
           const ov = payload.overrides?.[p.id];
           const funFact = ov?.funFact && ov.funFact.trim().length > 0 ? ov.funFact : null;
+          const photoUrl = payload.participantPhotos?.[idx];
           return (
             <article
               key={p.id}
@@ -73,26 +75,41 @@ function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
                 color: theme.colors.ink,
               }}
             >
-              <div
-                aria-hidden
-                data-testid={`taster-avatar-${p.id}`}
-                style={{
-                  width: 84,
-                  height: 84,
-                  borderRadius: "50%",
-                  background: `linear-gradient(135deg, ${theme.colors.amber}33, ${theme.colors.amber}11)`,
-                  border: `1px solid ${theme.colors.amber}`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontFamily: theme.fonts.serif,
-                  fontSize: "1.6rem",
-                  letterSpacing: ".05em",
-                  color: theme.colors.amber,
-                }}
-              >
-                {p.initials}
-              </div>
+              {photoUrl && photoUrl.trim().length > 0 ? (
+                <img
+                  src={photoUrl}
+                  alt={p.name}
+                  data-testid={`taster-photo-${p.id}`}
+                  style={{
+                    width: 84,
+                    height: 84,
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    border: `1px solid ${theme.colors.amber}`,
+                  }}
+                />
+              ) : (
+                <div
+                  aria-hidden
+                  data-testid={`taster-avatar-${p.id}`}
+                  style={{
+                    width: 84,
+                    height: 84,
+                    borderRadius: "50%",
+                    background: `linear-gradient(135deg, ${theme.colors.amber}33, ${theme.colors.amber}11)`,
+                    border: `1px solid ${theme.colors.amber}`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontFamily: theme.fonts.serif,
+                    fontSize: "1.6rem",
+                    letterSpacing: ".05em",
+                    color: theme.colors.amber,
+                  }}
+                >
+                  {p.initials}
+                </div>
+              )}
               <div>
                 <div data-testid={`text-taster-name-${p.id}`} style={{ fontFamily: theme.fonts.serif, fontSize: "1.25rem", color: theme.colors.ink, lineHeight: 1.2 }}>
                   {p.name}
@@ -189,6 +206,7 @@ export const tasterGridBlock: BlockDefinition<Payload> = {
     columns: "3",
     includeParticipantIds: null,
     overrides: {},
+    participantPhotos: [],
   }),
   payloadSchema,
   Renderer,

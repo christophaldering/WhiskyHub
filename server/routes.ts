@@ -26153,7 +26153,7 @@ ${cleaned.slice(0, 60000)}`;
       .optional(),
     spotlightParticipantIds: z.array(z.string().max(128)).max(5).optional(),
     highlightContext: z.string().max(2000).nullable().optional(),
-    detailPrompt: z.string().max(2000).nullable().optional(),
+    detailPrompt: z.string().max(4000).nullable().optional(),
     overwriteExisting: z.boolean().optional(),
   });
 
@@ -26281,11 +26281,31 @@ ${cleaned.slice(0, 60000)}`;
             const data = await aggregateTastingStoryData(tastingId);
             const { regenerateBlockWithAi } = await import("./tastingStoryRegen");
             if (data) {
+              const photoCategorySummary = (() => {
+                const cp = Array.isArray(wizard.categorizedPhotos) ? wizard.categorizedPhotos : [];
+                if (cp.length === 0) return null;
+                const counts = new Map<string, number>();
+                for (const p of cp) {
+                  const cats = Array.isArray(p?.categories) ? p.categories : [];
+                  for (const c of cats) {
+                    if (typeof c !== "string") continue;
+                    const label = c.trim();
+                    if (!label) continue;
+                    counts.set(label, (counts.get(label) ?? 0) + 1);
+                  }
+                }
+                if (counts.size === 0) return null;
+                const parts = Array.from(counts.entries())
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([label, n]) => `${label}: ${n}`);
+                return `Insgesamt ${cp.length} Fotos kategorisiert (${parts.join(", ")}).`;
+              })();
               const regenOptions = {
                 tone: wizard.tone ?? null,
                 highlightContext: wizard.highlightContext ?? null,
                 spotlightParticipantIds: wizard.spotlightParticipantIds ?? [],
                 customInstructions: wizard.detailPrompt ?? null,
+                photoCategorySummary,
               };
               for (const target of aiTargets) {
                 const stepKey = `ai:${target.id}`;

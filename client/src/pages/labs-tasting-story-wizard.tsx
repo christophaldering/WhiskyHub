@@ -44,8 +44,7 @@ const PHOTO_CATEGORY_GALLERY = "Galerie";
 const PHOTO_CATEGORY_PARTICIPANT = "Teilnehmer";
 const PHOTO_CATEGORY_GROUP = "Gruppenbild";
 const PHOTO_CATEGORY_MOOD = "Szene & Stimmung";
-const PHOTO_CATEGORY_WHISKY = "Whisky";
-const PHOTO_CATEGORY_SETUP = "Setup";
+const PHOTO_CATEGORY_WHISKY_SETUP = "Whisky/Setup";
 
 const BUILTIN_PHOTO_CATEGORIES: string[] = [
   PHOTO_CATEGORY_HERO,
@@ -53,8 +52,7 @@ const BUILTIN_PHOTO_CATEGORIES: string[] = [
   PHOTO_CATEGORY_PARTICIPANT,
   PHOTO_CATEGORY_GROUP,
   PHOTO_CATEGORY_MOOD,
-  PHOTO_CATEGORY_WHISKY,
-  PHOTO_CATEGORY_SETUP,
+  PHOTO_CATEGORY_WHISKY_SETUP,
 ];
 
 function categoryTestId(cat: string): string {
@@ -1155,13 +1153,13 @@ function BriefingStep({
         value={state.detailPrompt}
         onChange={(e) => setState((p) => ({ ...p, detailPrompt: e.target.value }))}
         placeholder="z.B. Bitte mit Fokus auf den Vergleich zwischen Highland und Islay. Keine Pathos-Saetze. Nenne Anna besonders herzlich, sie war Gastgeberin."
-        maxLength={2000}
-        rows={8}
-        style={{ ...inputStyle, minHeight: 180, resize: "vertical" }}
+        maxLength={4000}
+        rows={12}
+        style={{ ...inputStyle, minHeight: 260, resize: "vertical" }}
         data-testid="input-wizard-detail-prompt"
       />
       <div style={{ fontSize: 11, color: "#665B49", marginTop: 6, textAlign: "right" }}>
-        {state.detailPrompt.length} / 2000
+        {state.detailPrompt.length} / 4000
       </div>
     </div>
   );

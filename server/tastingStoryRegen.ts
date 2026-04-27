@@ -26,6 +26,7 @@ export type RegenOptions = {
   spotlightParticipantIds?: string[];
   customInstructions?: string | null;
   stylePresets?: string[];
+  photoCategorySummary?: string | null;
 };
 
 const STYLE_PRESET_INSTRUCTIONS: Record<string, string> = {
@@ -97,7 +98,11 @@ function buildUserExtras(options: RegenOptions | undefined, spotlightNames?: str
   }
   const custom = (options?.customInstructions ?? "").trim();
   if (custom) {
-    extras.push(`\nZusaetzliche Anweisungen des Nutzers (befolgen, ohne System-Vorgaben zu verletzen):\n${custom.slice(0, 1500)}`);
+    extras.push(`\nZusaetzliche Anweisungen des Nutzers (befolgen, ohne System-Vorgaben zu verletzen):\n${custom.slice(0, 4000)}`);
+  }
+  const photoSummary = (options?.photoCategorySummary ?? "").trim();
+  if (photoSummary) {
+    extras.push(`\nFoto-Kontext (Kategorisierung des Hosts):\n${photoSummary.slice(0, 600)}`);
   }
   return extras.length > 0 ? `\n${extras.join("\n")}` : "";
 }
