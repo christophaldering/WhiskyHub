@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import ContextDownloadBar from "@/labs/components/ContextDownloadBar";
+import { downloadXlsxFromSheets } from "@/labs/utils/contextDownloads";
 import { downloadAnalyticsPdf, safeFileSegment, type PdfSection } from "@/labs/utils/contextDownloads";
 import { Link } from "wouter";
 import { useSession } from "@/lib/session";
@@ -279,6 +280,14 @@ export default function LabsTasteProfile() {
     );
   };
 
+  const handleDownloadProfileXlsx = async () => {
+    const sheets = buildProfileSections().map(sec => ({
+      name: sec.heading,
+      rows: sec.rows.map(r => ({ Label: r.label, Value: r.value })),
+    }));
+    await downloadXlsxFromSheets(`casksense_profile_${safeFileSegment(todaySegment)}.xlsx`, sheets);
+  };
+
   return (
     <div className="labs-page" data-testid="labs-taste-profile">
       <MeineWeltActionBar active="analytics" />
@@ -307,6 +316,12 @@ export default function LabsTasteProfile() {
                   testId: "button-profile-download-pdf",
                   run: handleDownloadProfilePdf,
                 },
+                {
+                  key: "xlsx",
+                  label: t("downloads.excel", { defaultValue: "Excel" }),
+                  testId: "button-profile-download-xlsx",
+                  run: handleDownloadProfileXlsx,
+                },
               ]}
             />
             <Link
@@ -324,7 +339,7 @@ export default function LabsTasteProfile() {
               }}
             >
               <Library style={{ width: 12, height: 12 }} />
-              {t("labs.profile.allDownloads", "Alle Downloads im Hub")}
+              {t("labs.profile.allDownloads", "Alle Downloads & Exporte")}
             </Link>
           </div>
         )}
