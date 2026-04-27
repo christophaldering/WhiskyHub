@@ -28,6 +28,7 @@ interface Props {
   variant?: Variant;
   testIdPrefix?: string;
   kinds?: DownloadKind[];
+  showSourceLinks?: boolean;
 }
 
 export default function TastingDownloadGrid({
@@ -40,6 +41,7 @@ export default function TastingDownloadGrid({
   variant = "cards",
   testIdPrefix,
   kinds = DEFAULT_TASTING_KINDS,
+  showSourceLinks = true,
 }: Props) {
   const { t } = useTranslation();
   const [busy, setBusy] = useState<DownloadKind | null>(null);
@@ -141,22 +143,24 @@ export default function TastingDownloadGrid({
                     </span>
                   </span>
                 </button>
-                <a
-                  href={itemSourceHref}
-                  title={t("downloads.openSource", "Quelle öffnen")}
-                  aria-label={t("downloads.openSource", "Quelle öffnen")}
-                  data-testid={`${prefix}-${item.kind}-source`}
-                  style={{
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    padding: "0 10px",
-                    borderLeft: "1px solid var(--labs-border)",
-                    background: "transparent",
-                    color: "var(--labs-accent)",
-                    textDecoration: "none",
-                  }}
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </a>
+                {showSourceLinks && itemSourceHref && (
+                  <a
+                    href={itemSourceHref}
+                    title={t("downloads.openSource", "Quelle öffnen")}
+                    aria-label={t("downloads.openSource", "Quelle öffnen")}
+                    data-testid={`${prefix}-${item.kind}-source`}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      padding: "0 10px",
+                      borderLeft: "1px solid var(--labs-border)",
+                      background: "transparent",
+                      color: "var(--labs-accent)",
+                      textDecoration: "none",
+                    }}
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                )}
               </div>
             );
           })}
@@ -254,23 +258,25 @@ export default function TastingDownloadGrid({
                     ? t("resultsUi.downloadInProgress", "Wird vorbereitet…")
                     : t("resultsUi.downloadButton", "Herunterladen")}
                 </button>
-                <a
-                  href={itemSourceHref}
-                  title={t("downloads.openSource", "Quelle öffnen")}
-                  aria-label={t("downloads.openSource", "Quelle öffnen")}
-                  data-testid={`${prefix}-card-${item.kind}-source`}
-                  style={{
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    padding: "0 10px",
-                    borderRadius: 6,
-                    border: "1px solid var(--labs-border)",
-                    color: "var(--labs-accent)",
-                    textDecoration: "none",
-                    fontSize: 12,
-                  }}
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </a>
+                {showSourceLinks && itemSourceHref && (
+                  <a
+                    href={itemSourceHref}
+                    title={t("downloads.openSource", "Quelle öffnen")}
+                    aria-label={t("downloads.openSource", "Quelle öffnen")}
+                    data-testid={`${prefix}-card-${item.kind}-source`}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      padding: "0 10px",
+                      borderRadius: 6,
+                      border: "1px solid var(--labs-border)",
+                      color: "var(--labs-accent)",
+                      textDecoration: "none",
+                      fontSize: 12,
+                    }}
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                )}
               </div>
             </div>
           );

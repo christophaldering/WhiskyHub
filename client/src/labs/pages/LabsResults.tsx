@@ -1262,6 +1262,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
             inlineData={{ tasting, whiskyResults }}
             variant="buttons"
             testIdPrefix="results-download-inline"
+            showSourceLinks={false}
           />
         </div>
       )}
@@ -1767,6 +1768,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
             inlineData={{ tasting, whiskyResults }}
             variant="cards"
             testIdPrefix="results-download"
+            showSourceLinks={false}
           />
         </div>
       )}
