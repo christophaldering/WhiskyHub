@@ -924,16 +924,18 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
   const hostId = currentParticipant?.id;
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const isAllowedForPresentation = tasting?.status === "archived" || tasting?.status === "completed" || tasting?.status === "closed" || tasting?.status === "reveal";
+  const isHostUser = tasting?.hostId === hostId;
+  const replayMode = !isHostUser;
+
   const syncSlide = useCallback((slide: number) => {
+    if (replayMode) return;
     if (!hostId || !tastingId) return;
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     syncTimerRef.current = setTimeout(() => {
       presentationApi.setSlide(tastingId, hostId, slide).catch(() => {});
     }, 150);
-  }, [hostId, tastingId]);
-
-  const isAllowedForPresentation = tasting?.status === "archived" || tasting?.status === "completed" || tasting?.status === "closed" || tasting?.status === "reveal";
-  const isHostUser = tasting?.hostId === hostId;
+  }, [hostId, tastingId, replayMode]);
 
   useEffect(() => {
     if (hostId && tastingId && tasting && isHostUser && isAllowedForPresentation) {
@@ -965,14 +967,14 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
   }, [currentSlide, syncSlide]);
 
   const exitPresentation = useCallback(() => {
-    if (hostId && tastingId) {
+    if (!replayMode && hostId && tastingId) {
       presentationApi.stop(tastingId, hostId).catch(() => {});
     }
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
     }
     navigate(`/labs/results/${tastingId}`);
-  }, [navigate, tastingId, hostId]);
+  }, [navigate, tastingId, hostId, replayMode]);
 
   const toggleFullscreen = useCallback(async () => {
     try {
@@ -993,6 +995,7 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
   }, []);
 
   useEffect(() => {
+    if (replayMode) return;
     const handleBeforeUnload = () => {
       if (hostId && tastingId) {
         navigator.sendBeacon(
@@ -1008,7 +1011,7 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
         presentationApi.stop(tastingId, hostId).catch(() => {});
       }
     };
-  }, [hostId, tastingId]);
+  }, [hostId, tastingId, replayMode]);
 
   useEffect(() => {
     const isDesktop = window.matchMedia("(min-width: 768px) and (pointer: fine)").matches;
@@ -1043,10 +1046,9 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
     );
   }
 
-  const isHost = tasting?.hostId === currentParticipant?.id;
   const isAllowedStatus = tasting?.status === "archived" || tasting?.status === "completed" || tasting?.status === "closed" || tasting?.status === "reveal";
 
-  if (!tasting || !isHost || !isAllowedStatus) {
+  if (!tasting || !isAllowedStatus) {
     return (
       <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "#0B0906", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
         <Wine style={{ width: 40, height: 40, color: "var(--labs-text-muted)" }} />
@@ -1125,9 +1127,9 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
             background: STORY.goldTintStrong, border: `1px solid ${STORY.goldBorderStrong}`,
             fontSize: 11, fontWeight: 600, color: STORY.gold,
             backdropFilter: "blur(8px)", letterSpacing: STORY.capsLetterSpacing, textTransform: "uppercase", fontFamily: STORY.bodyFont,
-          }} data-testid="present-live-indicator">
-            <span style={{ width: 7, height: 7, borderRadius: 4, background: STORY.gold, animation: "pulse 2s infinite" }} />
-            {t("resultsUi.live")}
+          }} data-testid={replayMode ? "present-replay-indicator" : "present-live-indicator"}>
+            {replayMode ? null : <span style={{ width: 7, height: 7, borderRadius: 4, background: STORY.gold, animation: "pulse 2s infinite" }} />}
+            {replayMode ? t("resultsUi.replayBadge", "Replay") : t("resultsUi.live")}
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, pointerEvents: "auto" }}>

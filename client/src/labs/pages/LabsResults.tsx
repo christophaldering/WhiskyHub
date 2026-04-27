@@ -421,6 +421,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
   const [previousRatingsMap, setPreviousRatingsMap] = useState<Record<string, { date: string; tastingTitle: string; nose: number; taste: number; finish: number; overall: number }[]>>({});
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [showManageTasters, setShowManageTasters] = useState(false);
+  const [inlineDownloadsOpen, setInlineDownloadsOpen] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -908,91 +909,100 @@ export default function LabsResults({ params }: LabsResultsProps) {
       </div>
 
       <div className="mb-3 labs-stagger-1 labs-fade-in">
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-          <div style={{ flex: "1 1 0", minWidth: 200 }}>
-            <h1
-              className="labs-h2 mb-1"
-              style={{ color: "var(--labs-text)" }}
-              data-testid="results-title"
+        <h1
+          className="labs-h2 mb-1"
+          style={{ color: "var(--labs-text)" }}
+          data-testid="results-title"
+        >
+          {tasting.title}
+        </h1>
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="text-sm" style={{ color: "var(--labs-text-muted)" }} data-testid="text-results-meta">
+            {tasting.date}{(tasting as any).time ? ` · ${(tasting as any).time}` : ""} · {tasting.location}
+          </p>
+          {tasting.guidedMode && (
+            <span
+              className="labs-badge"
+              style={{ background: "var(--labs-info-muted)", color: "var(--labs-info)" }}
+              data-testid="results-guided-badge"
             >
-              {tasting.title}
-            </h1>
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-sm" style={{ color: "var(--labs-text-muted)" }} data-testid="text-results-meta">
-                {tasting.date}{(tasting as any).time ? ` · ${(tasting as any).time}` : ""} · {tasting.location}
-              </p>
-              {tasting.guidedMode && (
-                <span
-                  className="labs-badge"
-                  style={{ background: "var(--labs-info-muted)", color: "var(--labs-info)" }}
-                  data-testid="results-guided-badge"
-                >
-                  Guided Tasting
-                </span>
-              )}
-              {tasting.status === "archived" && (
-                <span
-                  className={getStatusConfig("archived").cssClass}
-                  data-testid="results-archived-badge"
-                >
-                  <Lock className="w-3 h-3" />
-                  {t(getStatusConfig("archived").labelKey, getStatusConfig("archived").fallbackLabel)}
-                </span>
-              )}
-            </div>
-          </div>
-          {isHost && (
-            <div style={{ display: "flex", gap: 8, flexShrink: 0, flexWrap: "wrap" }}>
-              <button
-                className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
-                style={{ background: "var(--labs-surface)", border: "1px solid var(--labs-border)", color: "var(--labs-text)", cursor: "pointer", fontFamily: "inherit" }}
-                onClick={() => setShowManageTasters(true)}
-                data-testid="button-manage-tasters"
-                title={t("manageTasters.openButton", "Taster verwalten")}
-              >
-                <Sliders className="w-4 h-4" />
-                {t("manageTasters.openButton", "Taster verwalten")}
-              </button>
-              {tasting.status === "reveal" && (
-                <button
-                  className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
-                  style={{ background: "var(--labs-surface)", border: "1px solid var(--labs-border)", color: "var(--labs-text)", cursor: "pointer", fontFamily: "inherit" }}
-                  onClick={() => setShowArchiveDialog(true)}
-                  data-testid="button-archive-tasting"
-                >
-                  <Archive className="w-4 h-4" />
-                  Archive
-                </button>
-              )}
-            </div>
+              Guided Tasting
+            </span>
+          )}
+          {tasting.status === "archived" && (
+            <span
+              className={getStatusConfig("archived").cssClass}
+              data-testid="results-archived-badge"
+            >
+              <Lock className="w-3 h-3" />
+              {t(getStatusConfig("archived").labelKey, getStatusConfig("archived").fallbackLabel)}
+            </span>
           )}
         </div>
-        {sorted.length > 0 && (
-          <p
-            style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "6px 0 0" }}
-            data-testid="text-results-counts"
-          >
-            {t("resultsUi.metaWhiskies", { count: whiskyResults.length, defaultValue: `${whiskyResults.length} whiskies` })}
-            {" · "}
-            {t("resultsUi.metaRatings", { count: totalRatings, defaultValue: `${totalRatings} ratings` })}
-            {participantCount > 0 && (
-              <>
-                {" · "}
-                {t("resultsUi.metaParticipants", { count: participantCount, defaultValue: `${participantCount} participants` })}
-              </>
-            )}
-          </p>
-        )}
       </div>
+
+      {sorted.length > 0 && (
+        <div
+          className="mb-4 labs-fade-in"
+          data-testid="results-stats-bar"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: 8,
+          }}
+        >
+          {[
+            { icon: Wine, value: whiskyResults.length, label: t("resultsUi.statsBarLabelWhiskies", "Whiskys"), testId: "stat-whiskies" },
+            { icon: Star, value: totalRatings, label: t("resultsUi.statsBarLabelRatings", "Bewertungen"), testId: "stat-ratings" },
+            { icon: Users, value: participantCount, label: t("resultsUi.statsBarLabelTasters", "Taster"), testId: "stat-tasters" },
+            { icon: BarChart3, value: summaryData.groupAvg ?? "\u2014", label: t("resultsUi.statsBarLabelGroupAvg", "Ø Score"), testId: "stat-groupavg" },
+          ].map((s) => {
+            const Icon = s.icon;
+            return (
+              <div
+                key={s.testId}
+                data-testid={s.testId}
+                style={{
+                  padding: "12px 8px",
+                  borderRadius: 12,
+                  background: "var(--labs-surface-elevated)",
+                  border: "1px solid var(--labs-border)",
+                  textAlign: "center",
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                }}
+              >
+                <Icon className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                <div
+                  style={{
+                    fontSize: 22, fontWeight: 700,
+                    color: "var(--labs-text)",
+                    fontVariantNumeric: "tabular-nums",
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {s.value}
+                </div>
+                <div
+                  style={{
+                    fontSize: 10, fontWeight: 600,
+                    color: "var(--labs-text-muted)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                  }}
+                >
+                  {s.label}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {sorted.length > 0 && (() => {
         const aiAvailable = ["archived", "completed", "closed", "reveal"].includes(tasting.status as string);
-        const presentAvailable = isHost && aiAvailable;
+        const presentAvailable = aiAvailable;
         const isAdmin = currentParticipant?.role === "admin";
-        const canEditStory = isHost || isAdmin;
         const storyAvailable = getStoryPdfAvailable(tasting, isHost) || (isAdmin && aiAvailable);
-        const storyBlocksRaw = (tasting as { storyBlocks?: unknown }).storyBlocks;
-        const hasBlockStory = Array.isArray(storyBlocksRaw) && storyBlocksRaw.length > 0;
         const actions: { key: string; icon: React.ElementType; title: string; desc: string; onClick: () => void; badge?: string; testId?: string }[] = [];
         if (aiAvailable) {
           actions.push({
@@ -1010,19 +1020,6 @@ export default function LabsResults({ params }: LabsResultsProps) {
             title: t("resultsUi.actionStoryTitle", "Tasting-Story"),
             desc: t("resultsUi.actionStoryDesc", "Magazin-Layout mit Highlights und Erzählung"),
             onClick: () => navigate(`/labs/results/${tastingId}/story`),
-            badge: canEditStory && !hasBlockStory ? t("resultsUi.actionStoryNotCreatedYet", "Neu erstellen") : undefined,
-          });
-        }
-        if (canEditStory && aiAvailable) {
-          actions.push({
-            key: "story-editor",
-            icon: Pencil,
-            title: t("resultsUi.actionStoryEditorTitle", "Story bearbeiten"),
-            desc: hasBlockStory
-              ? t("resultsUi.actionStoryEditorDesc", "Block-Editor für Aufbau, Texte und Bilder")
-              : t("resultsUi.actionStoryEditorDescEmpty", "Neue Block-Story anlegen oder migrieren"),
-            onClick: () => navigate(`/labs/tastings/${tastingId}/story-wizard`),
-            testId: "labs-results-edit-story",
           });
         }
         if (presentAvailable) {
@@ -1030,18 +1027,30 @@ export default function LabsResults({ params }: LabsResultsProps) {
             key: "present",
             icon: Monitor,
             title: t("resultsUi.actionPresentTitle", "Live-Präsentation"),
-            desc: t("resultsUi.actionPresentDesc", "Ergebnisse als Show präsentieren"),
+            desc: isHost
+              ? t("resultsUi.actionPresentDesc", "Ergebnisse als Show präsentieren")
+              : t("resultsUi.actionPresentReplayDesc", "Slideshow in deinem Tempo erneut ansehen"),
             onClick: () => navigate(`/labs/results/${tastingId}/present`),
+            badge: !isHost ? t("resultsUi.replayBadge", "Replay") : undefined,
+          });
+        }
+        if (sorted.length > 0) {
+          actions.push({
+            key: "downloads",
+            icon: Archive,
+            title: t("resultsUi.actionDownloadsTitle", "Downloads"),
+            desc: t("resultsUi.actionDownloadsDesc", "PDF, Excel, CSV und Story-Formate"),
+            onClick: () => setInlineDownloadsOpen(o => !o),
           });
         }
         if (actions.length === 0) return null;
         return (
-          <div className="mb-4" data-testid="results-actions-block">
+          <div className="mb-4" data-testid="results-view-block">
             <h2 style={{
               fontSize: 13, fontWeight: 700, color: "var(--labs-text)",
               margin: "0 0 8px", letterSpacing: "0.02em",
             }}>
-              {t("resultsUi.actionsBlockTitle", "Tasting erkunden")}
+              {t("resultsUi.viewResultsBlockTitle", "Ergebnisse ansehen")}
             </h2>
             <div style={{
               display: "grid",
@@ -1050,6 +1059,8 @@ export default function LabsResults({ params }: LabsResultsProps) {
             }}>
               {actions.map(a => {
                 const Icon = a.icon;
+                const isDownloads = a.key === "downloads";
+                const isOpen = isDownloads && inlineDownloadsOpen;
                 return (
                   <button
                     key={a.key}
@@ -1061,7 +1072,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                       display: "flex", alignItems: "flex-start", gap: 12,
                       padding: 14, textAlign: "left",
                       background: "var(--labs-surface-elevated)",
-                      border: "1px solid var(--labs-border)",
+                      border: isOpen ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border)",
                       cursor: "pointer", fontFamily: "inherit",
                       transition: "all 0.15s",
                     }}
@@ -1102,6 +1113,11 @@ export default function LabsResults({ params }: LabsResultsProps) {
                         {a.desc}
                       </p>
                     </div>
+                    {isDownloads ? (
+                      isOpen
+                        ? <ChevronUp className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
+                        : <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
+                    ) : null}
                   </button>
                 );
               })}
@@ -1110,134 +1126,19 @@ export default function LabsResults({ params }: LabsResultsProps) {
         );
       })()}
 
-      {isHostForStory && (
-        <div className="labs-card-elevated labs-fade-in" style={{ marginBottom: 16 }} data-testid="results-story-photos-section">
-          <div
-            style={{ padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, cursor: "pointer" }}
-            onClick={() => setPhotosPanelOpen(o => !o)}
-            data-testid="button-story-photos-toggle"
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <Camera className="w-4 h-4" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3 }}>
-                  Story-Fotos {eventPhotos?.length ? `(${eventPhotos.length}/30)` : ""}
-                </div>
-                <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.3 }}>
-                  {eventPhotos?.length
-                    ? "Erscheinen als Hintergrund in Eröffnung & Finale"
-                    : "Fotos vom Event für die Story hochladen"}
-                </div>
-              </div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              {eventPhotos?.length ? (
-                <div style={{ display: "flex", gap: 3 }}>
-                  {eventPhotos.slice(0, 3).map((p) => (
-                    <img key={p.id} src={p.photoUrl} alt="" style={{ width: 32, height: 32, objectFit: "cover", borderRadius: 5, border: "1px solid var(--labs-border)" }} />
-                  ))}
-                </div>
-              ) : null}
-              {photosPanelOpen ? <ChevronUp className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} /> : <ChevronDown className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />}
-            </div>
-          </div>
-
-          {photosPanelOpen && (
-            <div style={{ padding: "0 16px 16px" }}>
-              <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 14 }}>
-                <input
-                  ref={photoInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  style={{ display: "none" }}
-                  data-testid="input-story-photo-file"
-                  onChange={e => { if (e.target.files?.length) handlePhotoFiles(e.target.files); e.target.value = ""; }}
-                />
-
-                {eventPhotos && eventPhotos.length > 0 && (
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-                    {eventPhotos.map(p => (
-                      <div key={p.id} style={{ position: "relative", width: 72, height: 72 }} data-testid={`event-photo-${p.id}`}>
-                        <img
-                          src={p.photoUrl}
-                          alt={p.caption ?? ""}
-                          onClick={() => { setEditCaptionPhotoId(p.id); setEditCaptionValue(p.caption ?? ""); setPhotosError(null); }}
-                          data-testid={`button-edit-caption-${p.id}`}
-                          style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 8, border: editCaptionPhotoId === p.id ? "2px solid var(--labs-accent)" : "1px solid var(--labs-border)", display: "block", cursor: "pointer" }}
-                        />
-                        {p.caption && (
-                          <div style={{ position: "absolute", bottom: 2, left: 2, right: 14, background: "rgba(0,0,0,0.55)", borderRadius: 3, padding: "1px 3px", fontSize: 8, color: "#fff", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", pointerEvents: "none" }}>
-                            {p.caption}
-                          </div>
-                        )}
-                        <button
-                          onClick={() => handleDeletePhoto(p.id)}
-                          data-testid={`button-delete-photo-${p.id}`}
-                          style={{ position: "absolute", top: 2, right: 2, background: "rgba(0,0,0,0.65)", border: "none", borderRadius: 4, padding: "2px 3px", cursor: "pointer", display: "flex", alignItems: "center" }}
-                        >
-                          <Trash2 style={{ width: 10, height: 10, color: "#fff" }} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {editCaptionPhotoId && (
-                  <div style={{ marginBottom: 12, padding: 10, background: "var(--labs-surface-elevated)", borderRadius: 8, border: "1px solid var(--labs-border)" }}>
-                    <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 6 }}>Bildunterschrift (optional)</div>
-                    <input
-                      type="text"
-                      value={editCaptionValue}
-                      onChange={e => setEditCaptionValue(e.target.value)}
-                      onKeyDown={e => { if (e.key === "Enter") handleSaveCaption(); if (e.key === "Escape") setEditCaptionPhotoId(null); }}
-                      placeholder="z.B. &quot;Siegermoment&quot;"
-                      maxLength={200}
-                      autoFocus
-                      data-testid="input-edit-caption"
-                      style={{ width: "100%", fontSize: 12, padding: "6px 8px", borderRadius: 6, border: "1px solid var(--labs-border)", background: "var(--labs-bg)", color: "var(--labs-text)", fontFamily: "inherit", boxSizing: "border-box", marginBottom: 8 }}
-                    />
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <button
-                        className="labs-btn-primary"
-                        onClick={handleSaveCaption}
-                        disabled={captionSaving}
-                        data-testid="button-save-caption"
-                        style={{ fontSize: 11, padding: "4px 10px" }}
-                      >
-                        {captionSaving ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> : "Speichern"}
-                      </button>
-                      <button
-                        className="labs-btn-ghost"
-                        onClick={() => setEditCaptionPhotoId(null)}
-                        data-testid="button-cancel-caption"
-                        style={{ fontSize: 11, padding: "4px 10px" }}
-                      >
-                        Abbrechen
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {photosError && (
-                  <div style={{ fontSize: 11, color: "#e57373", marginBottom: 8 }}>{photosError}</div>
-                )}
-
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <button
-                    className="labs-btn-secondary"
-                    onClick={() => photoInputRef.current?.click()}
-                    disabled={photosUploading || (eventPhotos?.length ?? 0) >= 30}
-                    data-testid="button-add-story-photos"
-                    style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}
-                  >
-                    {photosUploading ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> : <Plus style={{ width: 14, height: 14 }} />}
-                    {photosUploading ? "Wird hochgeladen…" : "Fotos hinzufügen"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+      {inlineDownloadsOpen && sorted.length > 0 && (
+        <div
+          className="labs-card-elevated mb-6 labs-fade-in"
+          data-testid="results-downloads-inline-panel"
+          style={{ padding: 14 }}
+        >
+          <TastingDownloadGrid
+            tastingId={tastingId}
+            storyAvailable={getStoryPdfAvailable(tasting, isHost)}
+            inlineData={{ tasting, whiskyResults }}
+            variant="buttons"
+            testIdPrefix="results-download-inline"
+          />
         </div>
       )}
 
@@ -1709,6 +1610,247 @@ export default function LabsResults({ params }: LabsResultsProps) {
           </div>
         </div>
       )}
+
+      {isHost && (() => {
+        const aiAvailable = ["archived", "completed", "closed", "reveal"].includes(tasting.status as string);
+        const isAdmin = currentParticipant?.role === "admin";
+        const canEditStory = isHost || isAdmin;
+        const hostTools: { key: string; icon: React.ElementType; title: string; desc: string; onClick: () => void; testId: string }[] = [];
+        if (canEditStory && aiAvailable) {
+          hostTools.push({
+            key: "story-edit",
+            icon: Pencil,
+            title: t("resultsUi.hostToolsStoryEdit", "Story bearbeiten"),
+            desc: t("resultsUi.hostToolsStoryEditDesc", "Block-Editor für Aufbau, Texte und Bilder"),
+            onClick: () => navigate(`/labs/tastings/${tastingId}/story-wizard`),
+            testId: "labs-results-edit-story",
+          });
+        }
+        if (aiAvailable) {
+          hostTools.push({
+            key: "present-live",
+            icon: Monitor,
+            title: t("resultsUi.hostToolsPresentLive", "Live-Präsentation starten"),
+            desc: t("resultsUi.hostToolsPresentLiveDesc", "Slideshow für deine Taster spiegeln"),
+            onClick: () => navigate(`/labs/results/${tastingId}/present`),
+            testId: "host-tools-present-live",
+          });
+        }
+        hostTools.push({
+          key: "manage-tasters",
+          icon: Sliders,
+          title: t("resultsUi.hostToolsManageTasters", "Taster verwalten"),
+          desc: t("resultsUi.hostToolsManageTastersDesc", "Teilnehmer hinzufügen, entfernen oder ausschließen"),
+          onClick: () => setShowManageTasters(true),
+          testId: "button-manage-tasters",
+        });
+        if (tasting.status === "reveal") {
+          hostTools.push({
+            key: "archive",
+            icon: Lock,
+            title: t("resultsUi.hostToolsArchive", "Tasting archivieren"),
+            desc: t("resultsUi.hostToolsArchiveDesc", "Ergebnisse sperren, damit nichts mehr geändert werden kann"),
+            onClick: () => setShowArchiveDialog(true),
+            testId: "button-archive-tasting",
+          });
+        }
+        return (
+          <div
+            className="mt-8 mb-6 labs-fade-in"
+            data-testid="results-section-host-tools"
+            style={{
+              borderTop: "1px solid var(--labs-border)",
+              paddingTop: 18,
+            }}
+          >
+            <h2 style={{
+              fontSize: 13, fontWeight: 700, color: "var(--labs-text-muted)",
+              margin: "0 0 2px", letterSpacing: "0.04em", textTransform: "uppercase",
+            }}>
+              {t("resultsUi.hostToolsTitle", "Host-Tools")}
+            </h2>
+            <p style={{
+              fontSize: 11, color: "var(--labs-text-muted)",
+              margin: "0 0 12px", opacity: 0.75,
+            }}>
+              {t("resultsUi.hostToolsSubtitle", "Nur für dich als Host sichtbar")}
+            </p>
+
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 8,
+              marginBottom: isHostForStory ? 12 : 0,
+            }}>
+              {hostTools.map(a => {
+                const Icon = a.icon;
+                return (
+                  <button
+                    key={a.key}
+                    type="button"
+                    onClick={a.onClick}
+                    className="labs-card"
+                    data-testid={a.testId}
+                    style={{
+                      display: "flex", alignItems: "flex-start", gap: 10,
+                      padding: 12, textAlign: "left",
+                      background: "var(--labs-surface)",
+                      border: "1px solid var(--labs-border)",
+                      cursor: "pointer", fontFamily: "inherit",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    <div style={{
+                      width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+                      background: "var(--labs-surface-elevated)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <Icon className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
+                        {a.title}
+                      </p>
+                      <p style={{ fontSize: 10, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
+                        {a.desc}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {isHostForStory && (
+              <div className="labs-card-elevated labs-fade-in" data-testid="results-story-photos-section">
+                <div
+                  style={{ padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, cursor: "pointer" }}
+                  onClick={() => setPhotosPanelOpen(o => !o)}
+                  data-testid="button-story-photos-toggle"
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <Camera className="w-4 h-4" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3 }}>
+                        {t("resultsUi.hostToolsStoryPhotos", "Story-Fotos verwalten")} {eventPhotos?.length ? `(${eventPhotos.length}/30)` : ""}
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.3 }}>
+                        {t("resultsUi.hostToolsStoryPhotosDesc", "Hintergrund-Fotos für Eröffnung und Finale")}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    {eventPhotos?.length ? (
+                      <div style={{ display: "flex", gap: 3 }}>
+                        {eventPhotos.slice(0, 3).map((p) => (
+                          <img key={p.id} src={p.photoUrl} alt="" style={{ width: 32, height: 32, objectFit: "cover", borderRadius: 5, border: "1px solid var(--labs-border)" }} />
+                        ))}
+                      </div>
+                    ) : null}
+                    {photosPanelOpen ? <ChevronUp className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} /> : <ChevronDown className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />}
+                  </div>
+                </div>
+
+                {photosPanelOpen && (
+                  <div style={{ padding: "0 16px 16px" }}>
+                    <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 14 }}>
+                      <input
+                        ref={photoInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        style={{ display: "none" }}
+                        data-testid="input-story-photo-file"
+                        onChange={e => { if (e.target.files?.length) handlePhotoFiles(e.target.files); e.target.value = ""; }}
+                      />
+
+                      {eventPhotos && eventPhotos.length > 0 && (
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+                          {eventPhotos.map(p => (
+                            <div key={p.id} style={{ position: "relative", width: 72, height: 72 }} data-testid={`event-photo-${p.id}`}>
+                              <img
+                                src={p.photoUrl}
+                                alt={p.caption ?? ""}
+                                onClick={() => { setEditCaptionPhotoId(p.id); setEditCaptionValue(p.caption ?? ""); setPhotosError(null); }}
+                                data-testid={`button-edit-caption-${p.id}`}
+                                style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 8, border: editCaptionPhotoId === p.id ? "2px solid var(--labs-accent)" : "1px solid var(--labs-border)", display: "block", cursor: "pointer" }}
+                              />
+                              {p.caption && (
+                                <div style={{ position: "absolute", bottom: 2, left: 2, right: 14, background: "rgba(0,0,0,0.55)", borderRadius: 3, padding: "1px 3px", fontSize: 8, color: "#fff", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", pointerEvents: "none" }}>
+                                  {p.caption}
+                                </div>
+                              )}
+                              <button
+                                onClick={() => handleDeletePhoto(p.id)}
+                                data-testid={`button-delete-photo-${p.id}`}
+                                style={{ position: "absolute", top: 2, right: 2, background: "rgba(0,0,0,0.65)", border: "none", borderRadius: 4, padding: "2px 3px", cursor: "pointer", display: "flex", alignItems: "center" }}
+                              >
+                                <Trash2 style={{ width: 10, height: 10, color: "#fff" }} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {editCaptionPhotoId && (
+                        <div style={{ marginBottom: 12, padding: 10, background: "var(--labs-surface-elevated)", borderRadius: 8, border: "1px solid var(--labs-border)" }}>
+                          <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 6 }}>Bildunterschrift (optional)</div>
+                          <input
+                            type="text"
+                            value={editCaptionValue}
+                            onChange={e => setEditCaptionValue(e.target.value)}
+                            onKeyDown={e => { if (e.key === "Enter") handleSaveCaption(); if (e.key === "Escape") setEditCaptionPhotoId(null); }}
+                            placeholder="z.B. &quot;Siegermoment&quot;"
+                            maxLength={200}
+                            autoFocus
+                            data-testid="input-edit-caption"
+                            style={{ width: "100%", fontSize: 12, padding: "6px 8px", borderRadius: 6, border: "1px solid var(--labs-border)", background: "var(--labs-bg)", color: "var(--labs-text)", fontFamily: "inherit", boxSizing: "border-box", marginBottom: 8 }}
+                          />
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button
+                              className="labs-btn-primary"
+                              onClick={handleSaveCaption}
+                              disabled={captionSaving}
+                              data-testid="button-save-caption"
+                              style={{ fontSize: 11, padding: "4px 10px" }}
+                            >
+                              {captionSaving ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> : "Speichern"}
+                            </button>
+                            <button
+                              className="labs-btn-ghost"
+                              onClick={() => setEditCaptionPhotoId(null)}
+                              data-testid="button-cancel-caption"
+                              style={{ fontSize: 11, padding: "4px 10px" }}
+                            >
+                              Abbrechen
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {photosError && (
+                        <div style={{ fontSize: 11, color: "#e57373", marginBottom: 8 }}>{photosError}</div>
+                      )}
+
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <button
+                          className="labs-btn-secondary"
+                          onClick={() => photoInputRef.current?.click()}
+                          disabled={photosUploading || (eventPhotos?.length ?? 0) >= 30}
+                          data-testid="button-add-story-photos"
+                          style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}
+                        >
+                          {photosUploading ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> : <Plus style={{ width: 14, height: 14 }} />}
+                          {photosUploading ? "Wird hochgeladen…" : "Fotos hinzufügen"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {sorted.length > 0 && (
         <div className="mt-6 mb-8 labs-fade-in" data-testid="results-downloads-block">
