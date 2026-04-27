@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode, type KeyboardEvent } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -206,7 +206,8 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
   const [showParticipantPicker, setShowParticipantPicker] = useState(false);
   const [pickerSaving, setPickerSaving] = useState(false);
   const [showManageTasters, setShowManageTasters] = useState(false);
-  const [restartDialog, setRestartDialog] = useState<false | "choose" | "confirmClear" | "confirmArchive">(false);
+  const [restartDialog, setRestartDialog] = useState<false | "choose" | "confirmContinue" | "confirmClear" | "confirmArchive">(false);
+  const [restartConfirmText, setRestartConfirmText] = useState("");
   const [hostRatingIdx, setHostRatingIdx] = useState(0);
   const [cockpitWizard, setCockpitWizard] = useState(() => {
     if (typeof window !== "undefined") {
@@ -285,11 +286,39 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
     mutationFn: (clearRatings: boolean) => tastingApi.updateStatus(tastingId, "open", undefined, pid, clearRatings),
     onSuccess: () => {
       setRestartDialog(false);
+      setRestartConfirmText("");
       queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
       queryClient.invalidateQueries({ queryKey: ["tastings"] });
       queryClient.invalidateQueries({ queryKey: ["tasting-ratings", tastingId] });
     },
   });
+
+  const restartTitleMatches = (() => {
+    const expected = (tasting?.title ?? "").trim().toLowerCase();
+    return expected.length > 0 && restartConfirmText.trim().toLowerCase() === expected;
+  })();
+
+  const closeRestartDialog = () => {
+    setRestartDialog(false);
+    setRestartConfirmText("");
+  };
+
+  const goRestartChoose = () => {
+    setRestartDialog("choose");
+    setRestartConfirmText("");
+  };
+
+  const handleRestartConfirmKeyDown = (event: KeyboardEvent<HTMLInputElement>, clearRatings: boolean) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      if (restartTitleMatches && !restartMut.isPending) {
+        restartMut.mutate(clearRatings);
+      }
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      goRestartChoose();
+    }
+  };
 
   const revealNextMut = useMutation({
     mutationFn: () => blindModeApi.revealNext(tastingId, pid),
@@ -2715,44 +2744,155 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
           <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 0" }}>
             <div style={{ fontSize: 12, color: "var(--labs-text-muted)", textAlign: "center", fontWeight: 600 }}>{t("cockpit.restartOptionsTitle", "Restart Options")}</div>
             <button
-              onClick={() => restartMut.mutate(false)}
-              disabled={restartMut.isPending}
+              onClick={() => { setRestartConfirmText(""); setRestartDialog("confirmContinue"); }}
               className="cockpit-action-btn cockpit-action-primary"
               data-testid="cockpit-restart-continue"
             >
-              {restartMut.isPending ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <Play style={{ width: 14, height: 14 }} />}
+              <Play style={{ width: 14, height: 14 }} />
               {t("cockpit.restartContinueKeep", "Continue (keep ratings)")}
             </button>
             <button
-              onClick={() => setRestartDialog("confirmClear")}
+              onClick={() => { setRestartConfirmText(""); setRestartDialog("confirmClear"); }}
               className="cockpit-action-btn cockpit-action-danger"
               data-testid="cockpit-restart-full"
             >
               <AlertTriangle style={{ width: 14, height: 14 }} />
               {t("cockpit.restartFullDelete", "Full restart (delete ratings)")}
             </button>
-            <button onClick={() => setRestartDialog(false)} className="cockpit-action-btn cockpit-action-secondary" data-testid="cockpit-restart-cancel">
+            <button onClick={closeRestartDialog} className="cockpit-action-btn cockpit-action-secondary" data-testid="cockpit-restart-cancel">
               {t("ui.cancel")}
             </button>
           </div>
         )}
 
+        {restartDialog === "confirmContinue" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 0" }} data-testid="cockpit-restart-confirm-continue-dialog">
+            <div style={{ fontSize: 12, color: "var(--labs-text)", textAlign: "left", fontWeight: 500, lineHeight: 1.45 }}>
+              {t("cockpit.restartContinueConfirmMessage", "Type the tasting title to confirm the reset — all ratings will be preserved.")}
+            </div>
+            <div style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 600 }}>
+              {t("cockpit.restartConfirmTypeTitle", "Type the tasting title to confirm:")}
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                fontFamily: "var(--labs-font-display, 'EB Garamond', serif)",
+                fontStyle: "italic",
+                color: "var(--labs-text)",
+                padding: "4px 8px",
+                background: "var(--labs-surface-2, rgba(255,255,255,0.04))",
+                borderRadius: 4,
+                wordBreak: "break-word",
+              }}
+              data-testid="cockpit-restart-confirm-title-ref"
+            >
+              {tasting?.title ?? ""}
+            </div>
+            <input
+              type="text"
+              value={restartConfirmText}
+              onChange={(e) => setRestartConfirmText(e.target.value)}
+              onKeyDown={(e) => handleRestartConfirmKeyDown(e, false)}
+              placeholder={t("cockpit.restartConfirmPlaceholder", "Type the tasting title here…")}
+              aria-label={t("cockpit.restartConfirmInputAria", "Confirm by typing the tasting title")}
+              autoFocus
+              autoComplete="off"
+              spellCheck={false}
+              className="cockpit-restart-confirm-input"
+              style={{
+                width: "100%",
+                padding: "8px 10px",
+                fontSize: 13,
+                background: "var(--labs-surface, rgba(255,255,255,0.03))",
+                color: "var(--labs-text)",
+                border: `1px solid ${restartConfirmText.length > 0 && !restartTitleMatches ? "var(--labs-danger, #e53e3e)" : "var(--labs-border)"}`,
+                borderRadius: 6,
+                outline: "none",
+              }}
+              data-testid="cockpit-restart-confirm-input"
+            />
+            {restartConfirmText.length > 0 && !restartTitleMatches && (
+              <div style={{ fontSize: 11, color: "var(--labs-danger, #e53e3e)" }} data-testid="cockpit-restart-confirm-mismatch">
+                {t("cockpit.restartConfirmMismatch", "Entry does not match the tasting title.")}
+              </div>
+            )}
+            <button
+              onClick={() => restartMut.mutate(false)}
+              disabled={!restartTitleMatches || restartMut.isPending}
+              className="cockpit-action-btn cockpit-action-primary"
+              data-testid="cockpit-restart-continue-confirm"
+            >
+              {restartMut.isPending ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <Play style={{ width: 14, height: 14 }} />}
+              {t("cockpit.restartContinueConfirmAction", "Reset session")}
+            </button>
+            <button onClick={goRestartChoose} className="cockpit-action-btn cockpit-action-secondary" data-testid="cockpit-restart-back">
+              {t("cockpit.restartBack", "Back")}
+            </button>
+          </div>
+        )}
+
         {restartDialog === "confirmClear" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 0" }}>
-            <div style={{ fontSize: 12, color: "var(--labs-danger, #e53e3e)", textAlign: "center", fontWeight: 600 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 0" }} data-testid="cockpit-restart-confirm-clear-dialog">
+            <div style={{ fontSize: 12, color: "var(--labs-danger, #e53e3e)", textAlign: "left", fontWeight: 600, lineHeight: 1.45 }}>
               <AlertTriangle style={{ width: 14, height: 14, display: "inline", verticalAlign: "middle", marginRight: 4 }} />
               {t("cockpit.restartConfirmClearMessage", "Are you sure? All ratings will be permanently deleted.")}
             </div>
+            <div style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 600 }}>
+              {t("cockpit.restartConfirmTypeTitle", "Type the tasting title to confirm:")}
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                fontFamily: "var(--labs-font-display, 'EB Garamond', serif)",
+                fontStyle: "italic",
+                color: "var(--labs-text)",
+                padding: "4px 8px",
+                background: "var(--labs-surface-2, rgba(255,255,255,0.04))",
+                borderRadius: 4,
+                wordBreak: "break-word",
+              }}
+              data-testid="cockpit-restart-confirm-clear-title-ref"
+            >
+              {tasting?.title ?? ""}
+            </div>
+            <input
+              type="text"
+              value={restartConfirmText}
+              onChange={(e) => setRestartConfirmText(e.target.value)}
+              onKeyDown={(e) => handleRestartConfirmKeyDown(e, true)}
+              placeholder={t("cockpit.restartConfirmPlaceholder", "Type the tasting title here…")}
+              aria-label={t("cockpit.restartConfirmInputAria", "Confirm by typing the tasting title")}
+              autoFocus
+              autoComplete="off"
+              spellCheck={false}
+              className="cockpit-restart-confirm-input"
+              style={{
+                width: "100%",
+                padding: "8px 10px",
+                fontSize: 13,
+                background: "var(--labs-surface, rgba(255,255,255,0.03))",
+                color: "var(--labs-text)",
+                border: `1px solid ${restartConfirmText.length > 0 && !restartTitleMatches ? "var(--labs-danger, #e53e3e)" : "var(--labs-border)"}`,
+                borderRadius: 6,
+                outline: "none",
+              }}
+              data-testid="cockpit-restart-confirm-input"
+            />
+            {restartConfirmText.length > 0 && !restartTitleMatches && (
+              <div style={{ fontSize: 11, color: "var(--labs-danger, #e53e3e)" }} data-testid="cockpit-restart-confirm-clear-mismatch">
+                {t("cockpit.restartConfirmMismatch", "Entry does not match the tasting title.")}
+              </div>
+            )}
             <button
               onClick={() => restartMut.mutate(true)}
-              disabled={restartMut.isPending}
+              disabled={!restartTitleMatches || restartMut.isPending}
               className="cockpit-action-btn cockpit-action-danger"
               data-testid="cockpit-restart-confirm-clear"
             >
               {restartMut.isPending ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <AlertTriangle style={{ width: 14, height: 14 }} />}
               {t("cockpit.restartConfirmClearAction", "Yes, delete all ratings & restart")}
             </button>
-            <button onClick={() => setRestartDialog("choose")} className="cockpit-action-btn cockpit-action-secondary" data-testid="cockpit-restart-back">
+            <button onClick={goRestartChoose} className="cockpit-action-btn cockpit-action-secondary" data-testid="cockpit-restart-back">
               {t("cockpit.restartBack", "Back")}
             </button>
           </div>
