@@ -1216,7 +1216,7 @@ function drawAIFeatures(doc: jsPDF) {
   // ─── Page: Features 31–32 ───
   newFeaturePage(doc);
 
-  // 31. AI Import
+  // 31. Smart Import
   y = rowY(0);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
@@ -1255,7 +1255,7 @@ function drawAIFeatures(doc: jsPDF) {
       doc.rect(cx + 16 + col * 10, cy - 10 + row * 6, 9, 5, "F");
     }
   }
-  drawFeatureRight(doc, TEXT_X, y, "AI Tasting Import", "Parse unstructured documents — PDFs, Excel files, photos — into structured tasting events with complete whisky data.", "Chaos in, structure out.");
+  drawFeatureRight(doc, TEXT_X, y, "Smart Import", "Parse unstructured documents — PDFs, Excel files, photos — into structured tasting events with complete whisky data.", "Chaos in, structure out.");
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
 

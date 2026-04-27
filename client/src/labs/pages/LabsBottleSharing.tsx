@@ -426,7 +426,7 @@ export default function LabsBottleSharing() {
                 <Edit3 size={14} /> {t("bottleSharing.manualEntry") || "Manual"}
               </button>
               <button data-testid="tab-ai-import" onClick={() => setBottleInputMode("ai-import")} style={tabStyle(bottleInputMode === "ai-import")}>
-                <Sparkles size={14} /> {t("bottleSharing.aiImport") || "AI Import"}
+                <Sparkles size={14} /> {t("bottleSharing.aiImport") || "Smart Import"}
               </button>
               <button data-testid="tab-curation" onClick={() => setBottleInputMode("curation")} style={tabStyle(bottleInputMode === "curation")}>
                 <Wand2 size={14} /> {t("bottleSharing.curation") || "Curation"}
