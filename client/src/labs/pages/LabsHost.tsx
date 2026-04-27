@@ -7467,6 +7467,15 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               ) : null;
               return (
                 <div data-testid={`labs-host-downloads-phase-${phase}`}>
+                  {!showResultDownloads && (
+                    <p
+                      className="text-xs mb-3"
+                      style={{ color: "var(--labs-text-muted)", fontStyle: "italic" }}
+                      data-testid="labs-host-results-after-reveal-hint"
+                    >
+                      {t("downloads.resultsAvailableAfterReveal", "Auswertungs-Downloads (PDF, Excel, CSV, Story, Präsentation, Notizen) sind nach dem Reveal verfügbar.")}
+                    </p>
+                  )}
                   {showResultDownloads && (
                     <div className="mb-3" data-testid="labs-host-result-downloads">
                       <p className="text-sm font-semibold mb-2" style={{ color: "var(--labs-text)" }}>

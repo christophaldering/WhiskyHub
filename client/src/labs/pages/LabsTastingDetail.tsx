@@ -1708,6 +1708,15 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         const showPrintMaterials = !isHost && downloadsAvailable && !isResultDownloadsPhase(phase);
         return (
           <div className="mb-6" data-testid={`labs-detail-downloads-${phase}`}>
+            {!showResults && (
+              <p
+                className="text-xs mb-3"
+                style={{ color: "var(--labs-text-muted)", fontStyle: "italic" }}
+                data-testid="labs-detail-results-after-reveal-hint"
+              >
+                {t("downloads.resultsAvailableAfterReveal", "Auswertungs-Downloads (PDF, Excel, CSV, Story, Präsentation, Notizen) sind nach dem Reveal verfügbar.")}
+              </p>
+            )}
             {showResults && (
               <div className="labs-card p-4 mb-3" data-testid="labs-detail-results-downloads">
                 <div className="labs-section-label flex items-center gap-2">

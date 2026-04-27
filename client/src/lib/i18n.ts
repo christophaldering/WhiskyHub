@@ -1949,6 +1949,7 @@ const resources = {
         tastingResultsSectionDesc: "Download analyses of your completed tastings",
         tastingResultsEmpty: "No completed tastings yet",
         allDownloadsLink: "Show all downloads",
+        resultsAvailableAfterReveal: "Result downloads (PDF, Excel, CSV, story, presentation, notes) become available after the reveal.",
       },
       dataExport: {
         title: "Data Export",
@@ -11522,6 +11523,7 @@ const resources = {
         tastingResultsSectionDesc: "Lade Auswertungen deiner abgeschlossenen Tastings herunter",
         tastingResultsEmpty: "Noch keine abgeschlossenen Tastings",
         allDownloadsLink: "Alle Downloads anzeigen",
+        resultsAvailableAfterReveal: "Auswertungs-Downloads (PDF, Excel, CSV, Story, Präsentation, Notizen) sind nach dem Reveal verfügbar.",
       },
       dataExport: {
         title: "Daten-Export",
