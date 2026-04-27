@@ -1260,7 +1260,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
             tastingId={tastingId}
             participantId={currentParticipant?.id ?? null}
             storyAvailable={getStoryPdfAvailable(tasting, isHost)}
-            presentationAvailable={getPresentationPdfAvailable(tasting)}
+            presentationAvailable={isHost && getPresentationPdfAvailable(tasting)}
             notesAvailable={getNotesDocxAvailable(tasting, currentParticipant?.id)}
             inlineData={{ tasting, whiskyResults }}
             variant="buttons"
@@ -1769,7 +1769,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
             tastingId={tastingId}
             participantId={currentParticipant?.id ?? null}
             storyAvailable={getStoryPdfAvailable(tasting, isHost)}
-            presentationAvailable={getPresentationPdfAvailable(tasting)}
+            presentationAvailable={isHost && getPresentationPdfAvailable(tasting)}
             notesAvailable={getNotesDocxAvailable(tasting, currentParticipant?.id)}
             inlineData={{ tasting, whiskyResults }}
             variant="cards"
