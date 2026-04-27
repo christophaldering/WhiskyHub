@@ -509,16 +509,13 @@ export default function LabsTasteDrams() {
   };
 
   const handleBack = () => {
-    if (enteredViaDeepLink) {
+    if (enteredViaDeepLink && typeof window !== "undefined" && window.history.length > 1) {
       setEnteredViaDeepLink(false);
       setSelectedEntry(null);
-      if (typeof window !== "undefined" && window.history.length > 1) {
-        window.history.back();
-      } else {
-        navigate("/labs/taste");
-      }
+      window.history.back();
       return;
     }
+    setEnteredViaDeepLink(false);
     setViewState("list");
     setSelectedEntry(null);
   };
@@ -955,16 +952,13 @@ export default function LabsTasteDrams() {
           initialMode={initialDeepRateMode}
           onDone={handleDeepRateDone}
           onBack={() => {
-            if (enteredViaDeepLink && selectedEntry.status === "draft") {
+            if (enteredViaDeepLink && selectedEntry.status === "draft" && typeof window !== "undefined" && window.history.length > 1) {
               setEnteredViaDeepLink(false);
               setSelectedEntry(null);
-              if (typeof window !== "undefined" && window.history.length > 1) {
-                window.history.back();
-              } else {
-                navigate("/labs/taste");
-              }
+              window.history.back();
               return;
             }
+            setEnteredViaDeepLink(false);
             setViewState(selectedEntry.status === "draft" ? "list" : "detail");
           }}
           onChange={(draft) => {
