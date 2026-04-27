@@ -334,7 +334,7 @@ export default function LabsTasteAnalytics() {
       }, 2200);
     }, 400);
     return () => clearTimeout(timer);
-  }, []);
+  }, [analyticsSearch]);
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ["labs-participant-stats-threshold", pid],
