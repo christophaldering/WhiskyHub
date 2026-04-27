@@ -1,10 +1,10 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useLabsBack } from "@/labs/LabsLayout";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
-import { Wine, ChevronLeft, ChevronRight, ChevronDown, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, Monitor, Sparkles, Settings, Pencil, RotateCcw } from "lucide-react";
+import { Wine, ChevronLeft, ChevronRight, ChevronDown, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, Monitor, Sparkles, Settings, Pencil, RotateCcw, Download, Library } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi, participantApi, participantUpdateApi } from "@/lib/api";
 import type { Participant } from "@shared/schema";
@@ -18,7 +18,10 @@ import { getEffectiveProfile } from "@/labs/data/flavor-data";
 import FlavourStudioSheet from "@/labs/components/FlavourStudioSheet";
 import { type DimKey } from "@/labs/components/LabsRatingPanel";
 import { useRatingScale } from "@/labs/hooks/useRatingScale";
-import { CompactDownloadButton } from "@/components/ParticipantDownloads";
+import { CompactDownloadButton, LabsParticipantDownloads } from "@/components/ParticipantDownloads";
+import TastingDownloadGrid from "@/labs/components/TastingDownloadGrid";
+import { getTastingPhase, isResultDownloadsPhase, RESULT_DOWNLOAD_KINDS } from "@/labs/utils/tastingPhase";
+import { getStoryPdfAvailable, getPresentationPdfAvailable, getNotesDocxAvailable } from "@/labs/utils/labsExports";
 import LabsRevealMoment from "@/labs/pages/LabsRevealMoment";
 import { WhiskyHandoutViewer } from "@/labs/components/WhiskyHandoutManager";
 import { TastingHandoutViewer } from "@/labs/components/TastingHandoutManager";
@@ -82,6 +85,68 @@ function PresentationLiveBanner({ tastingId }: { tastingId: string }) {
         <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: 0 }}>{t("liveUi.tapToWatch")}</p>
       </div>
       <Monitor style={{ width: 18, height: 18, color: "var(--labs-accent)" }} />
+    </div>
+  );
+}
+
+function LiveDownloadsSection({
+  tasting,
+  currentParticipant,
+  testIdPrefix,
+}: {
+  tasting: any;
+  currentParticipant: { id?: string | null; userId?: string | null } | null;
+  testIdPrefix: string;
+}) {
+  const { t } = useTranslation();
+  if (!tasting?.id) return null;
+  const tastingId = String(tasting.id);
+  const phase = getTastingPhase(tasting?.status);
+  const showResults = isResultDownloadsPhase(phase);
+  const isHost = !!currentParticipant?.id && currentParticipant.id === tasting?.hostId;
+
+  return (
+    <div className="mb-6" data-testid={`${testIdPrefix}-${phase}`}>
+      {showResults && (
+        <div className="labs-card p-4 mb-3" data-testid={`${testIdPrefix}-results-downloads`}>
+          <div className="labs-section-label flex items-center gap-2">
+            <Download className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+            {t("resultsUi.downloadsBlockTitle", "Daten & Dokumente herunterladen")}
+          </div>
+          <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>
+            {t("resultsUi.downloadsBlockDesc", "Wähle das passende Format für deinen Anwendungsfall")}
+          </p>
+          <TastingDownloadGrid
+            tastingId={tastingId}
+            participantId={currentParticipant?.id ?? null}
+            storyAvailable={getStoryPdfAvailable(tasting, isHost)}
+            presentationAvailable={getPresentationPdfAvailable(tasting)}
+            notesAvailable={getNotesDocxAvailable(tasting, currentParticipant?.id)}
+            kinds={RESULT_DOWNLOAD_KINDS}
+            variant="cards"
+            testIdPrefix={`${testIdPrefix}-download`}
+            showSourceLinks={false}
+          />
+        </div>
+      )}
+      {!showResults && !isHost && <LabsParticipantDownloads tasting={tasting as Tasting} />}
+      <Link
+        href="/labs/downloads"
+        data-testid={`link-${testIdPrefix}-hub`}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          padding: "6px 12px",
+          fontSize: 12,
+          color: "var(--labs-accent)",
+          textDecoration: "none",
+          borderBottom: "1px solid color-mix(in srgb, var(--labs-accent) 40%, transparent)",
+        }}
+      >
+        <Library style={{ width: 12, height: 12 }} />
+        {t("downloads.allDownloadsLink", "Alle Downloads anzeigen")}
+      </Link>
     </div>
   );
 }
@@ -1176,7 +1241,9 @@ export default function LabsLive({ params }: LabsLiveProps) {
                 Cockpit
               </button>
             )}
-            {currentParticipant?.id !== tasting.hostId && <CompactDownloadButton tasting={tasting as Tasting} />}
+            {currentParticipant?.id !== tasting.hostId
+              && !isResultDownloadsPhase(getTastingPhase(tasting?.status))
+              && <CompactDownloadButton tasting={tasting as Tasting} />}
           </div>
         </div>
 
@@ -1199,6 +1266,14 @@ export default function LabsLive({ params }: LabsLiveProps) {
           />
         ) : (
           <GuidedLobby tasting={tasting} participantCount={participantCount} />
+        )}
+
+        {!isLobby && (
+          <LiveDownloadsSection
+            tasting={tasting}
+            currentParticipant={currentParticipant}
+            testIdPrefix="labs-live-guided-downloads"
+          />
         )}
 
         {showGuidedLeaveConfirm && (
@@ -1322,7 +1397,9 @@ export default function LabsLive({ params }: LabsLiveProps) {
               Cockpit
             </button>
           )}
-          {currentParticipant?.id !== tasting.hostId && <CompactDownloadButton tasting={tasting as Tasting} />}
+          {currentParticipant?.id !== tasting.hostId
+            && !isResultDownloadsPhase(getTastingPhase(tasting?.status))
+            && <CompactDownloadButton tasting={tasting as Tasting} />}
         </div>
       </div>
 
@@ -1910,6 +1987,12 @@ export default function LabsLive({ params }: LabsLiveProps) {
               </div>
             </div>
           )}
+
+          <LiveDownloadsSection
+            tasting={tasting}
+            currentParticipant={currentParticipant}
+            testIdPrefix="labs-live-downloads"
+          />
         </>
       )}
     </div>
