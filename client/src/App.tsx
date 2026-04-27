@@ -198,8 +198,19 @@ function Redirect({ to }: { to: string }) {
 
 function RedirectWithQuery({ to, query }: { to: string; query?: string }) {
   const [, navigate] = useLocation();
-  const target = query ? `${to}?${query}` : to;
-  useEffect(() => { navigate(target, { replace: true }); }, [target, navigate]);
+  const incomingSearch = typeof window !== "undefined" ? window.location.search : "";
+  const merged = (() => {
+    const params = new URLSearchParams(query || "");
+    if (incomingSearch) {
+      const incoming = new URLSearchParams(incomingSearch.startsWith("?") ? incomingSearch.slice(1) : incomingSearch);
+      incoming.forEach((value, key) => {
+        if (!params.has(key)) params.set(key, value);
+      });
+    }
+    const qs = params.toString();
+    return qs ? `${to}?${qs}` : to;
+  })();
+  useEffect(() => { navigate(merged, { replace: true }); }, [merged, navigate]);
   return null;
 }
 

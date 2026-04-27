@@ -181,6 +181,7 @@ export default function LabsTasteDrams() {
   }, [journal, isLoading]);
 
   const deepLinkAppliedRef = useRef(false);
+  const [enteredViaDeepLink, setEnteredViaDeepLink] = useState(false);
   useEffect(() => {
     if (deepLinkAppliedRef.current) return;
     if (isLoading || !journal.length) return;
@@ -193,6 +194,7 @@ export default function LabsTasteDrams() {
       setSelectedEntry(match as DramEntry);
       const isSolo = (match as any).status === "draft" && isSoloEntry(match);
       setViewState(isSolo ? "deepRate" : "detail");
+      setEnteredViaDeepLink(true);
     }
     deepLinkAppliedRef.current = true;
     const url = new URL(window.location.href);
@@ -506,7 +508,16 @@ export default function LabsTasteDrams() {
     updateMutation.mutate({ id: selectedEntry.id, data });
   };
 
-  const handleBack = () => { setViewState("list"); setSelectedEntry(null); };
+  const handleBack = () => {
+    if (enteredViaDeepLink) {
+      setEnteredViaDeepLink(false);
+      setSelectedEntry(null);
+      navigate("/labs/taste");
+      return;
+    }
+    setViewState("list");
+    setSelectedEntry(null);
+  };
   const isSoloEntry = (entry: any) => !entry.source || entry.source === "solo" || entry.source === "casksense";
   const isQuickRating = (entry: DramEntry) => {
     if (!isSoloEntry(entry)) return false;
@@ -937,7 +948,15 @@ export default function LabsTasteDrams() {
           initialData={deepRateInitialData}
           initialMode={initialDeepRateMode}
           onDone={handleDeepRateDone}
-          onBack={() => setViewState(selectedEntry.status === "draft" ? "list" : "detail")}
+          onBack={() => {
+            if (enteredViaDeepLink && selectedEntry.status === "draft") {
+              setEnteredViaDeepLink(false);
+              setSelectedEntry(null);
+              navigate("/labs/taste");
+              return;
+            }
+            setViewState(selectedEntry.status === "draft" ? "list" : "detail");
+          }}
           onChange={(draft) => {
             if (draft.mode === "guided" || draft.mode === "compact") {
               try { localStorage.setItem(modeStorageKey, draft.mode); } catch {}
