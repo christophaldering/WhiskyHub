@@ -557,36 +557,88 @@ async function regenerateFeatureCards(payload: Record<string, unknown>, data: Ag
   return { ...payload, items: nextItems };
 }
 
+type StatCandidate = { value: string; topic: string };
+
+function buildStatsCandidates(data: AggregatedTastingStoryData): StatCandidate[] {
+  const cands: StatCandidate[] = [];
+  if (data.whiskies.length > 0) {
+    cands.push({ value: String(data.whiskies.length), topic: "Anzahl Whiskys im Tasting" });
+  }
+  if (data.participants.length > 0) {
+    cands.push({ value: String(data.participants.length), topic: "Anzahl Verkoster" });
+  }
+  const ratedRanks = data.ranking.filter((r) => r.avgScore !== null);
+  if (ratedRanks.length > 0) {
+    const sum = ratedRanks.reduce((s, r) => s + (r.avgScore ?? 0), 0);
+    const avg = sum / ratedRanks.length;
+    cands.push({ value: avg.toFixed(1), topic: "Durchschnittliche Punktzahl ueber alle Whiskys" });
+    const top = ratedRanks.reduce((best, r) => ((r.avgScore ?? 0) > (best.avgScore ?? 0) ? r : best), ratedRanks[0]);
+    if (top.avgScore !== null) {
+      cands.push({ value: top.avgScore.toFixed(1), topic: `Hoechste Punktzahl im Tasting (${top.name})` });
+    }
+  }
+  const abvs = data.whiskies.map((w) => w.abv).filter((a): a is number => typeof a === "number" && Number.isFinite(a));
+  if (abvs.length > 0) {
+    const maxAbv = Math.max(...abvs);
+    cands.push({ value: `${maxAbv.toFixed(1)}%`, topic: "Hoechste Trinkstaerke (ABV)" });
+    const avgAbv = abvs.reduce((s, a) => s + a, 0) / abvs.length;
+    cands.push({ value: `${avgAbv.toFixed(1)}%`, topic: "Durchschnittliche Trinkstaerke (ABV)" });
+  }
+  const ages = data.whiskies.map((w) => w.age).filter((a): a is number => typeof a === "number" && Number.isFinite(a));
+  if (ages.length > 0) {
+    cands.push({ value: `${Math.max(...ages)}J`, topic: "Aeltester Whisky im Tasting" });
+  }
+  const regions = new Set(
+    data.whiskies
+      .map((w) => (typeof w.region === "string" ? w.region.trim() : ""))
+      .filter((r) => r.length > 0),
+  );
+  if (regions.size > 0) {
+    cands.push({ value: String(regions.size), topic: "Anzahl unterschiedlicher Regionen" });
+  }
+  const totalRatings = data.participants.reduce((s, p) => s + (typeof p.ratingCount === "number" ? p.ratingCount : 0), 0);
+  if (totalRatings > 0) {
+    cands.push({ value: String(totalRatings), topic: "Anzahl abgegebener Bewertungen insgesamt" });
+  }
+  return cands;
+}
+
 async function regenerateStatsGrid(payload: Record<string, unknown>, data: AggregatedTastingStoryData, openai: OpenAI, options?: RegenOptions): Promise<Record<string, unknown> | null> {
   const items = Array.isArray(payload.items) ? payload.items : [];
   if (items.length === 0) return null;
+  const candidates = buildStatsCandidates(data);
+  if (candidates.length === 0) return null;
+  const slotCount = Math.min(items.length, candidates.length);
+  const slots = candidates.slice(0, slotCount);
   const system = buildSystem(
-    "Du bist ein deutschsprachiger Whisky-Redakteur und beschriftest die Kennzahlen einer Stats-Grid-Sektion. Liefere fuer jede Kennzahl ein neues Label und einen kurzen Hinweis-Text. Die numerischen Werte (value) bleiben unveraendert. Antworte ausschliesslich mit einem JSON-Objekt der Form {\"items\": [{\"label\": \"<text>\", \"hint\": \"<text>\"}, ...]}. Reihenfolge entspricht der Eingabe.",
+    "Du bist ein deutschsprachiger Whisky-Redakteur und beschriftest die Kennzahlen einer Stats-Grid-Sektion. Du bekommst pro Slot einen exakten Wert (value) und einen Themen-Hinweis. Liefere zu jedem Slot ein praegnantes Label und einen kurzen Hinweis-Satz. Die numerischen Werte werden serverseitig gesetzt und sind nicht zu wiederholen. Antworte ausschliesslich mit einem JSON-Objekt der Form {\"items\": [{\"label\": \"<text>\", \"hint\": \"<text>\"}, ...]}. Reihenfolge entspricht der Eingabe.",
     options,
   );
-  const itemLines = items.map((it, idx) => {
-    const rec = isPlainRecord(it) ? it : {};
-    return `${idx + 1}|value=${safeString(rec.value)}|label=${safeString(rec.label)}|hint=${safeString(rec.hint).slice(0, 160)}`;
-  }).join("\n");
-  const user = `${tastingContextLines(data)}\n\nKennzahlen (idx|value|label|hint):\n${itemLines}` + buildUserExtras(options);
+  const slotLines = slots.map((s, idx) => `${idx + 1}|value=${s.value}|thema=${s.topic}`).join("\n");
+  const user = `${tastingContextLines(data)}\n\nSlots (idx|value|thema):\n${slotLines}` + buildUserExtras(options);
   const raw = await callOpenAi(openai, system, user, true, options);
   const parsed = parseJsonObject(raw);
-  const newItemsRaw = parsed && Array.isArray(parsed.items) ? parsed.items : null;
-  if (!newItemsRaw) return null;
+  const newItemsRaw = parsed && Array.isArray(parsed.items) ? parsed.items : [];
   const cap = lengthCapFor(options);
   const labelCap = Math.min(cap, 120);
+  let updated = 0;
   const nextItems = items.map((it, idx) => {
     const cur = isPlainRecord(it) ? it : {};
+    if (idx >= slotCount) return cur;
+    const slot = slots[idx];
     const incoming = newItemsRaw[idx];
     const incomingRec = isPlainRecord(incoming) ? incoming : {};
     const newLabel = safeString(incomingRec.label).trim();
     const newHint = safeString(incomingRec.hint).trim();
+    updated += 1;
     return {
       ...cur,
-      label: newLabel.length > 0 ? trimSentence(newLabel, labelCap) : safeString(cur.label),
+      value: slot.value,
+      label: newLabel.length > 0 ? trimSentence(newLabel, labelCap) : trimSentence(slot.topic, labelCap),
       hint: newHint.length > 0 ? trimSentence(newHint, Math.min(cap, 240)) : safeString(cur.hint),
     };
   });
+  if (updated === 0) return null;
   return { ...payload, items: nextItems };
 }
 

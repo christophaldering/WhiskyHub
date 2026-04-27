@@ -26105,9 +26105,19 @@ ${cleaned.slice(0, 60000)}`;
         blocks.map(async (block) => {
           if (parsed.data.scope === "single") {
             if (block.id !== parsed.data.blockId) return block;
-          } else if (block.locked) {
-            skipped.push(block.id);
-            return block;
+            if (block.locked) {
+              skipped.push(block.id);
+              return block;
+            }
+          } else {
+            if (block.locked) {
+              skipped.push(block.id);
+              return block;
+            }
+            if (block.hidden) {
+              skipped.push(block.id);
+              return block;
+            }
           }
           if (!isRegeneratable(block.type)) {
             skipped.push(block.id);
