@@ -6,7 +6,8 @@ import { useLabsBack } from "@/labs/LabsLayout";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { Wine, ChevronLeft, ChevronRight, ChevronDown, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, Monitor, Sparkles, Settings, Pencil, RotateCcw } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
+import { tastingApi, whiskyApi, ratingApi, participantApi, participantUpdateApi } from "@/lib/api";
+import type { Participant } from "@shared/schema";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
 import { formatScore } from "@/lib/utils";
 import { queryClient } from "@/lib/queryClient";
@@ -307,6 +308,25 @@ function GuidedStepView({
     enabled: !!currentParticipant && !!activeWhisky,
   });
 
+  const { data: participantData } = useQuery<Participant>({
+    queryKey: ["participant", currentParticipant?.id],
+    queryFn: () => participantApi.get(currentParticipant!.id),
+    enabled: !!currentParticipant?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const rawPreferred = participantData?.preferredRatingMode;
+  const preferredRatingModeFromProfile: "guided" | "compact" | "quick" | null =
+    rawPreferred === "guided" || rawPreferred === "compact" || rawPreferred === "quick" ? rawPreferred : null;
+
+  const handleSetPreferredMode = useCallback(async (m: "guided" | "compact" | "quick" | null) => {
+    if (!currentParticipant?.id) return;
+    try {
+      await participantUpdateApi.update(currentParticipant.id, { preferredRatingMode: m });
+      queryClient.invalidateQueries({ queryKey: ["participant", currentParticipant.id] });
+    } catch {}
+  }, [currentParticipant?.id]);
+
   useEffect(() => {
     if (myRating) {
       setFlowSaved(true);
@@ -583,6 +603,8 @@ function GuidedStepView({
               setDramTransitionKey(k => k + 1);
             }}
             onChange={handleGuidedDraftChange}
+            preferredMode={preferredRatingModeFromProfile}
+            onSetPreferredMode={handleSetPreferredMode}
           />
 
           {flowSaved && viewingHostDram && (
