@@ -21,9 +21,7 @@ interface InlineData {
 interface Props {
   tastingId: string;
   participantId?: string | null;
-  storyAvailable: boolean;
-  presentationAvailable?: boolean;
-  notesAvailable?: boolean;
+  availability?: AvailabilityState;
   inlineData?: InlineData;
   variant?: Variant;
   testIdPrefix?: string;
@@ -34,9 +32,7 @@ interface Props {
 export default function TastingDownloadGrid({
   tastingId,
   participantId,
-  storyAvailable,
-  presentationAvailable = false,
-  notesAvailable = false,
+  availability = {},
   inlineData,
   variant = "cards",
   testIdPrefix,
@@ -48,12 +44,6 @@ export default function TastingDownloadGrid({
   const [error, setError] = useState<string | null>(null);
 
   const prefix = testIdPrefix ?? `tasting-download-${tastingId}`;
-
-  const availability: AvailabilityState = {
-    story: storyAvailable,
-    presentation: presentationAvailable,
-    notes: notesAvailable,
-  };
 
   const ctx: DownloadContext = {
     tastingId,

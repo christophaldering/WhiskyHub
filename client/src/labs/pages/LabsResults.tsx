@@ -1259,9 +1259,11 @@ export default function LabsResults({ params }: LabsResultsProps) {
           <TastingDownloadGrid
             tastingId={tastingId}
             participantId={currentParticipant?.id ?? null}
-            storyAvailable={getStoryPdfAvailable(tasting, isHost)}
-            presentationAvailable={isHost && getPresentationPdfAvailable(tasting)}
-            notesAvailable={getNotesDocxAvailable(tasting, currentParticipant?.id)}
+            availability={{
+              story: getStoryPdfAvailable(tasting, isHost),
+              presentation: isHost && getPresentationPdfAvailable(tasting),
+              notes: getNotesDocxAvailable(tasting, currentParticipant?.id),
+            }}
             inlineData={{ tasting, whiskyResults }}
             variant="buttons"
             testIdPrefix="results-download-inline"
@@ -1768,9 +1770,11 @@ export default function LabsResults({ params }: LabsResultsProps) {
           <TastingDownloadGrid
             tastingId={tastingId}
             participantId={currentParticipant?.id ?? null}
-            storyAvailable={getStoryPdfAvailable(tasting, isHost)}
-            presentationAvailable={isHost && getPresentationPdfAvailable(tasting)}
-            notesAvailable={getNotesDocxAvailable(tasting, currentParticipant?.id)}
+            availability={{
+              story: getStoryPdfAvailable(tasting, isHost),
+              presentation: isHost && getPresentationPdfAvailable(tasting),
+              notes: getNotesDocxAvailable(tasting, currentParticipant?.id),
+            }}
             inlineData={{ tasting, whiskyResults }}
             variant="cards"
             testIdPrefix="results-download"

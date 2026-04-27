@@ -7807,9 +7807,11 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       <TastingDownloadGrid
                         tastingId={tastingId}
                         participantId={(currentParticipant as { id?: string | null } | null)?.id ?? null}
-                        storyAvailable={getStoryPdfAvailable(tasting as { status?: string | null; storyEnabled?: boolean | null } | null | undefined, true)}
-                        presentationAvailable={getPresentationPdfAvailable(tasting as { status?: string | null } | null | undefined)}
-                        notesAvailable={getNotesDocxAvailable(tasting as { status?: string | null } | null | undefined, (currentParticipant as { id?: string | null } | null)?.id)}
+                        availability={{
+                          story: getStoryPdfAvailable(tasting as { status?: string | null; storyEnabled?: boolean | null } | null | undefined, true),
+                          presentation: getPresentationPdfAvailable(tasting as { status?: string | null } | null | undefined),
+                          notes: getNotesDocxAvailable(tasting as { status?: string | null } | null | undefined, (currentParticipant as { id?: string | null } | null)?.id),
+                        }}
                         kinds={RESULT_DOWNLOAD_KINDS}
                         variant="cards"
                         testIdPrefix="labs-host-download"

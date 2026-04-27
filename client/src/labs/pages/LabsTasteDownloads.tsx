@@ -189,9 +189,7 @@ export default function LabsTasteDownloads() {
                     <TastingDownloadGrid
                       tastingId={tg.id}
                       participantId={participantId}
-                      storyAvailable={storyAvailable}
-                      presentationAvailable={presentationAvailable}
-                      notesAvailable={notesAvailable}
+                      availability={{ story: storyAvailable, presentation: presentationAvailable, notes: notesAvailable }}
                       variant="buttons"
                       testIdPrefix={`tasting-download-${tg.id}`}
                     />

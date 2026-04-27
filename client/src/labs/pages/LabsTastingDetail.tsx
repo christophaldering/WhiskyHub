@@ -1786,9 +1786,11 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                     <TastingDownloadGrid
                       tastingId={tastingId}
                       participantId={currentParticipant?.id ?? null}
-                      storyAvailable={getStoryPdfAvailable(tasting, !!isHost)}
-                      presentationAvailable={getPresentationPdfAvailable(tasting)}
-                      notesAvailable={getNotesDocxAvailable(tasting, currentParticipant?.id)}
+                      availability={{
+                        story: getStoryPdfAvailable(tasting, !!isHost),
+                        presentation: getPresentationPdfAvailable(tasting),
+                        notes: getNotesDocxAvailable(tasting, currentParticipant?.id),
+                      }}
                       kinds={RESULT_DOWNLOAD_KINDS}
                       variant="cards"
                       testIdPrefix="labs-detail-download"
