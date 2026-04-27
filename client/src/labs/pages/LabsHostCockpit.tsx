@@ -2672,7 +2672,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                         fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center",
                         border: "1px solid var(--labs-bg)", lineHeight: 1,
                       }}>
-                        {isPast ? <CheckCircle2 style={{ width: 9, height: 9 }} /> : idx + 1}
+                        {isPast ? <CheckCircle2 style={{ width: 9, height: 9 }} /> : isBlind ? blindLabel(idx) : idx + 1}
                       </div>
                     </div>
                   );
@@ -2762,7 +2762,7 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                               fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center",
                               border: "1px solid var(--labs-bg)", lineHeight: 1,
                             }}>
-                              {isPast ? <CheckCircle2 style={{ width: 10, height: 10 }} /> : idx + 1}
+                              {isPast ? <CheckCircle2 style={{ width: 10, height: 10 }} /> : isBlind ? blindLabel(idx) : idx + 1}
                             </div>
                           </div>
                         );

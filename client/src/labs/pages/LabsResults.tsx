@@ -1364,7 +1364,10 @@ export default function LabsResults({ params }: LabsResultsProps) {
           </div>
           <div className="space-y-2">
             {summaryData.myHighlights.slice(0, 3).map(w => (
-              <div key={w.id} className="labs-card p-3 flex items-center justify-between" data-testid={`results-highlight-${w.id}`}>
+              <div key={w.id} className="labs-card p-3 flex items-center gap-3" data-testid={`results-highlight-${w.id}`}>
+                {w.imageUrl && (!tasting.blindMode || isRevealed) && (
+                  <WhiskyImage imageUrl={w.imageUrl} name={w.name || t("resultsUi.unknown")} size={32} whiskyId={w.id} testId={`results-highlight-image-${w.id}`} />
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>{w.name || t("resultsUi.unknown")}</p>
                   <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
@@ -1386,7 +1389,10 @@ export default function LabsResults({ params }: LabsResultsProps) {
           </div>
           <div className="space-y-2">
             {summaryData.consensusWhiskies.slice(0, 3).map(w => (
-              <div key={w.id} className="labs-card p-3 flex items-center justify-between" data-testid={`results-consensus-${w.id}`}>
+              <div key={w.id} className="labs-card p-3 flex items-center gap-3" data-testid={`results-consensus-${w.id}`}>
+                {w.imageUrl && (!tasting.blindMode || isRevealed) && (
+                  <WhiskyImage imageUrl={w.imageUrl} name={w.name || t("resultsUi.unknown")} size={32} whiskyId={w.id} testId={`results-consensus-image-${w.id}`} />
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>{w.name || t("resultsUi.unknown")}</p>
                   <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
@@ -1408,7 +1414,10 @@ export default function LabsResults({ params }: LabsResultsProps) {
           </div>
           <div className="space-y-2">
             {summaryData.debatedWhiskies.slice(0, 3).map(w => (
-              <div key={w.id} className="labs-card p-3 flex items-center justify-between" data-testid={`results-debated-${w.id}`}>
+              <div key={w.id} className="labs-card p-3 flex items-center gap-3" data-testid={`results-debated-${w.id}`}>
+                {w.imageUrl && (!tasting.blindMode || isRevealed) && (
+                  <WhiskyImage imageUrl={w.imageUrl} name={w.name || t("resultsUi.unknown")} size={32} whiskyId={w.id} testId={`results-debated-image-${w.id}`} />
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>{w.name || t("resultsUi.unknown")}</p>
                   <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>

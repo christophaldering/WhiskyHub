@@ -996,7 +996,9 @@ function PrintMaterialsSection({
               {participants.length > 0 && (
                 <div className="mb-2 rounded-lg overflow-hidden" style={{ border: "1px solid var(--labs-border-subtle)" }}>
                   {participants.map((p: Record<string, unknown>, idx: number) => {
-                    const pName = stripGuestSuffix(((p.participant as Record<string, unknown>)?.name || p.name || t("labs.host.anonymous")) as string);
+                    const pp = (p.participant as Record<string, unknown>) || {};
+                    const pName = stripGuestSuffix(((pp.name as string) || (p.name as string) || t("labs.host.anonymous")));
+                    const pPhotoUrl = ((pp.photoUrl as string) || (p.photoUrl as string) || null);
                     return (
                       <div
                         key={(p.participantId || p.id) as string}
@@ -1009,7 +1011,7 @@ function PrintMaterialsSection({
                       >
                         <ParticipantAvatar
                           name={pName}
-                          photoUrl={((p.participant as Record<string, unknown>)?.photoUrl || (p as Record<string, unknown>).photoUrl || null) as string | null}
+                          photoUrl={pPhotoUrl}
                           size={24}
                           fontSize={11}
                           testId={`avatar-print-participant-${idx}`}
