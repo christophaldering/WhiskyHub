@@ -14,6 +14,7 @@ import LabsScoreRing from "@/labs/components/LabsScoreRing";
 import InsightStrip from "@/labs/components/InsightStrip";
 import { selectGroupInsights } from "@/labs/insights/engine";
 import WhiskyImage from "@/labs/components/WhiskyImage";
+import ParticipantAvatar from "@/labs/components/ParticipantAvatar";
 import CoverImage16x9 from "@/labs/components/CoverImage16x9";
 import TastingDownloadGrid from "@/labs/components/TastingDownloadGrid";
 import { getStoryPdfAvailable } from "@/labs/utils/labsExports";
@@ -188,7 +189,10 @@ function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCou
             )}
 
             {slide.type === "tasters" && (() => {
-              const names = (participants || []).filter((p: any) => !p.excludedFromResults).map((p: any) => stripGuestSuffix(p.participant?.name || p.participant?.email || p.name || p.email || "Anonymous"));
+              const tasters = (participants || []).filter((p: any) => !p.excludedFromResults).map((p: any) => ({
+                name: stripGuestSuffix(p.participant?.name || p.participant?.email || p.name || p.email || "Anonymous"),
+                photoUrl: (p.participant?.photoUrl || p.photoUrl || null) as string | null,
+              }));
               return (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "40px 24px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
@@ -196,15 +200,21 @@ function PresentationViewerOverlay({ tasting, slideIndex, sorted, participantCou
                     <span style={{ fontSize: 11, fontWeight: 700, color: "var(--labs-text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{t("resultsUi.theTasters")}</span>
                   </div>
                   <h2 className="labs-serif" style={{ fontSize: "clamp(24px, 4vw, 42px)", fontWeight: 700, color: "var(--labs-text)", margin: "4px 0 28px", textAlign: "center" }}>
-                    {names.length} {t("resultsUi.palatesOneMission")}
+                    {tasters.length} {t("resultsUi.palatesOneMission")}
                   </h2>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", maxWidth: 650, marginBottom: 28 }}>
-                    {names.map((name, i) => (
+                    {tasters.map((tw, i) => (
                       <div key={i} style={{ padding: "7px 16px", borderRadius: 16, background: "rgba(212,162,86,0.06)", border: "1px solid rgba(212,162,86,0.2)", display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ width: 24, height: 24, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, var(--labs-accent), #e8c878)", color: "var(--labs-bg)", fontSize: 10, fontWeight: 700 }}>
-                          {name.charAt(0).toUpperCase()}
-                        </div>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)" }}>{name}</span>
+                        <ParticipantAvatar
+                          name={tw.name}
+                          photoUrl={tw.photoUrl}
+                          size={24}
+                          fontSize={10}
+                          background="linear-gradient(135deg, var(--labs-accent), #e8c878)"
+                          color="var(--labs-bg)"
+                          testId={`avatar-results-taster-${i}`}
+                        />
+                        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)" }}>{tw.name}</span>
                       </div>
                     ))}
                   </div>
@@ -1425,15 +1435,31 @@ export default function LabsResults({ params }: LabsResultsProps) {
                 className="flex items-center gap-3 p-4 cursor-pointer"
                 onClick={() => toggleExpand(w.id)}
               >
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-sm font-bold"
-                  style={{
-                    background: idx < 3 ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated)",
-                    color: idx < 3 ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                  }}
-                >
-                  {medal || idx + 1}
-                </div>
+                {w.imageUrl && (!tasting.blindMode || isRevealed) ? (
+                  <div style={{ position: "relative", width: 36, height: 36, flexShrink: 0 }}>
+                    <WhiskyImage imageUrl={w.imageUrl} name={w.name || `#${idx + 1}`} size={36} whiskyId={w.id} testId={`results-whisky-image-${w.id}`} />
+                    <div style={{
+                      position: "absolute", top: -6, left: -6, minWidth: 18, height: 18, padding: "0 4px", borderRadius: 9,
+                      background: idx < 3 ? "var(--labs-accent)" : "var(--labs-surface-elevated)",
+                      color: idx < 3 ? "var(--labs-bg)" : "var(--labs-text-muted)",
+                      fontSize: 10, fontWeight: 700,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      border: "1px solid var(--labs-bg)", lineHeight: 1,
+                    }}>
+                      {medal || idx + 1}
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-sm font-bold"
+                    style={{
+                      background: idx < 3 ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated)",
+                      color: idx < 3 ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                    }}
+                  >
+                    {medal || idx + 1}
+                  </div>
+                )}
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">

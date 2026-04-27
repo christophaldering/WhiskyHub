@@ -11,6 +11,7 @@ import {
 import ModalPortal from "@/labs/components/ModalPortal";
 import ManageTastersDialog, { invalidateTastingAggregates } from "@/labs/components/ManageTastersDialog";
 import WhiskyImage from "@/labs/components/WhiskyImage";
+import ParticipantAvatar from "@/labs/components/ParticipantAvatar";
 import { useAppStore } from "@/lib/store";
 import { stripGuestSuffix, formatScore } from "@/lib/utils";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
@@ -2658,12 +2659,33 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
               onClick={() => isGuided ? guidedGoToMut.mutate({ whiskyIndex: idx, revealStep: 0 }) : setHostViewIdx(idx)}
               data-testid={`cockpit-compact-lineup-${idx}`}
             >
-              <div className="cockpit-compact-badge" style={{
-                background: isCurrent ? "var(--labs-accent)" : isPast ? "var(--labs-success-muted)" : "var(--labs-surface-elevated)",
-                color: isCurrent ? "var(--labs-bg)" : isPast ? "var(--labs-success)" : "var(--labs-text-muted)",
-              }}>
-                {isPast ? <CheckCircle2 style={{ width: 13, height: 13 }} /> : isBlind ? blindLabel(idx) : idx + 1}
-              </div>
+              {(() => {
+                const imageRevealed = !isBlind || isPast || (isCurrent && gv?.isFieldRevealed("image"));
+                if (w.imageUrl && imageRevealed) {
+                  return (
+                    <div style={{ position: "relative", width: 28, height: 28, flexShrink: 0 }}>
+                      <WhiskyImage imageUrl={w.imageUrl} name={w.name || `Whisky ${idx + 1}`} size={28} whiskyId={w.id} testId={`cockpit-compact-lineup-image-${idx}`} />
+                      <div style={{
+                        position: "absolute", top: -4, left: -4, minWidth: 14, height: 14, padding: "0 3px", borderRadius: 7,
+                        background: isCurrent ? "var(--labs-accent)" : isPast ? "var(--labs-success)" : "var(--labs-surface-elevated)",
+                        color: isCurrent || isPast ? "var(--labs-bg)" : "var(--labs-text-muted)",
+                        fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center",
+                        border: "1px solid var(--labs-bg)", lineHeight: 1,
+                      }}>
+                        {isPast ? <CheckCircle2 style={{ width: 9, height: 9 }} /> : idx + 1}
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="cockpit-compact-badge" style={{
+                    background: isCurrent ? "var(--labs-accent)" : isPast ? "var(--labs-success-muted)" : "var(--labs-surface-elevated)",
+                    color: isCurrent ? "var(--labs-bg)" : isPast ? "var(--labs-success)" : "var(--labs-text-muted)",
+                  }}>
+                    {isPast ? <CheckCircle2 style={{ width: 13, height: 13 }} /> : isBlind ? blindLabel(idx) : idx + 1}
+                  </div>
+                );
+              })()}
 
               <div style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12, fontWeight: 600, color: isCurrent ? "var(--labs-text)" : "var(--labs-text-secondary)" }}>
                 {shortName}
@@ -2727,12 +2749,33 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                     onClick={() => isGuided ? guidedGoToMut.mutate({ whiskyIndex: idx, revealStep: 0 }) : setHostViewIdx(idx)}
                     data-testid={`cockpit-lineup-${idx}`}
                   >
-                    <div className="cockpit-dram-badge" style={{
-                      background: isCurrent ? "var(--labs-accent)" : isPast ? "var(--labs-success-muted)" : "var(--labs-surface-elevated)",
-                      color: isCurrent ? "var(--labs-bg)" : isPast ? "var(--labs-success)" : "var(--labs-text-muted)",
-                    }}>
-                      {isPast ? <CheckCircle2 style={{ width: 15, height: 15 }} /> : isBlind ? blindLabel(idx) : idx + 1}
-                    </div>
+                    {(() => {
+                      const imageRevealed = !isBlind || isPast || (isCurrent && gv?.isFieldRevealed("image"));
+                      if (w.imageUrl && imageRevealed) {
+                        return (
+                          <div style={{ position: "relative", width: 32, height: 32, flexShrink: 0 }}>
+                            <WhiskyImage imageUrl={w.imageUrl} name={w.name || `Whisky ${idx + 1}`} size={32} whiskyId={w.id} testId={`cockpit-lineup-image-${idx}`} />
+                            <div style={{
+                              position: "absolute", top: -5, left: -5, minWidth: 16, height: 16, padding: "0 4px", borderRadius: 8,
+                              background: isCurrent ? "var(--labs-accent)" : isPast ? "var(--labs-success)" : "var(--labs-surface-elevated)",
+                              color: isCurrent || isPast ? "var(--labs-bg)" : "var(--labs-text-muted)",
+                              fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center",
+                              border: "1px solid var(--labs-bg)", lineHeight: 1,
+                            }}>
+                              {isPast ? <CheckCircle2 style={{ width: 10, height: 10 }} /> : idx + 1}
+                            </div>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div className="cockpit-dram-badge" style={{
+                          background: isCurrent ? "var(--labs-accent)" : isPast ? "var(--labs-success-muted)" : "var(--labs-surface-elevated)",
+                          color: isCurrent ? "var(--labs-bg)" : isPast ? "var(--labs-success)" : "var(--labs-text-muted)",
+                        }}>
+                          {isPast ? <CheckCircle2 style={{ width: 15, height: 15 }} /> : isBlind ? blindLabel(idx) : idx + 1}
+                        </div>
+                      );
+                    })()}
 
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: isCurrent ? "var(--labs-text)" : "var(--labs-text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -2875,14 +2918,37 @@ export default function LabsHostCockpit({ tastingId, onExit }: LabsHostCockpitPr
                           }}
                           aria-label={t("cockpit.detail.openLabel", "Details öffnen für {{name}}", { name: pName(p) })}
                         >
-                          <div className="cockpit-participant-avatar" style={{
-                            background: source === "digital" ? "var(--labs-success-muted)" : source === "paper" ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated)",
-                          }}>
-                            {source === "digital"
-                              ? <CheckCircle2 style={{ width: 14, height: 14, color: "var(--labs-success)" }} />
-                              : source === "paper"
-                              ? <FileText style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
-                              : <Clock style={{ width: 14, height: 14, color: "var(--labs-text-muted)" }} />}
+                          <div style={{ position: "relative", width: 28, height: 28, flexShrink: 0 }}>
+                            <ParticipantAvatar
+                              name={pName(p)}
+                              photoUrl={p.participant?.photoUrl || p.photoUrl || null}
+                              size={28}
+                              background={source === "digital" ? "var(--labs-success-muted)" : source === "paper" ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated)"}
+                              color={source === "digital" ? "var(--labs-success)" : source === "paper" ? "var(--labs-accent)" : "var(--labs-text-muted)"}
+                              testId={`avatar-cockpit-participant-${participantId}`}
+                            />
+                            <div
+                              title={source === "digital" ? "digital" : source === "paper" ? "paper" : "pending"}
+                              style={{
+                                position: "absolute",
+                                bottom: -2,
+                                right: -2,
+                                width: 14,
+                                height: 14,
+                                borderRadius: 7,
+                                background: source === "digital" ? "var(--labs-success-muted)" : source === "paper" ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated)",
+                                border: "1px solid var(--labs-bg)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              {source === "digital"
+                                ? <CheckCircle2 style={{ width: 10, height: 10, color: "var(--labs-success)" }} />
+                                : source === "paper"
+                                ? <FileText style={{ width: 10, height: 10, color: "var(--labs-accent)" }} />
+                                : <Clock style={{ width: 10, height: 10, color: "var(--labs-text-muted)" }} />}
+                            </div>
                           </div>
                           <span style={{ flex: 1, fontSize: 13, color: "var(--labs-text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pName(p)}</span>
                           <span style={{ fontSize: 11, color: countColor, fontWeight: isInProgress ? 700 : 500, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>

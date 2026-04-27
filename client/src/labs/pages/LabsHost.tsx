@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import ParticipantAvatar from "@/labs/components/ParticipantAvatar";
+import WhiskyImage from "@/labs/components/WhiskyImage";
 import { stripGuestSuffix } from "@/lib/utils";
 import ManageTastersDialog from "@/labs/components/ManageTastersDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -1005,12 +1007,13 @@ function PrintMaterialsSection({
                         }}
                         data-testid={`print-participant-${idx}`}
                       >
-                        <div
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"
-                          style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
-                        >
-                          {pName.charAt(0).toUpperCase()}
-                        </div>
+                        <ParticipantAvatar
+                          name={pName}
+                          photoUrl={((p.participant as Record<string, unknown>)?.photoUrl || (p as Record<string, unknown>).photoUrl || null) as string | null}
+                          size={24}
+                          fontSize={11}
+                          testId={`avatar-print-participant-${idx}`}
+                        />
                         <span className="text-xs truncate" style={{ color: "var(--labs-text)" }}>{pName}</span>
                       </div>
                     );
@@ -3396,12 +3399,12 @@ function ParticipantStatusSection({
                       style={{ opacity: isExcluded ? 0.6 : 1 }}
                     >
                       <div className="flex items-center gap-3 px-4 py-3">
-                        <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
-                          style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
-                        >
-                          {stripGuestSuffix((p.participant?.name || p.name || "?") as string).charAt(0).toUpperCase()}
-                        </div>
+                        <ParticipantAvatar
+                          name={stripGuestSuffix((p.participant?.name || p.name || "?") as string)}
+                          photoUrl={p.participant?.photoUrl || p.photoUrl || null}
+                          size={32}
+                          testId={`avatar-labs-host-participant-${p.id}`}
+                        />
                         <div className="flex items-center gap-1.5 flex-1 min-w-0">
                           <p
                             className="text-sm font-medium truncate"
@@ -3451,12 +3454,40 @@ function ParticipantStatusSection({
                     style={{ background: "transparent", border: "none", color: "inherit", cursor: "pointer", font: "inherit" }}
                     data-testid={`labs-host-whisky-completion-${w.id}`}
                   >
-                    <div
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
-                      style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
-                    >
-                      {i + 1}
-                    </div>
+                    {w.imageUrl ? (
+                      <div style={{ position: "relative", width: 28, height: 28, flexShrink: 0 }}>
+                        <WhiskyImage imageUrl={w.imageUrl} name={w.name || `Whisky ${i + 1}`} size={28} whiskyId={w.id} testId={`whisky-image-completion-${w.id}`} />
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: -4,
+                            left: -4,
+                            minWidth: 16,
+                            height: 16,
+                            padding: "0 4px",
+                            borderRadius: 8,
+                            background: "var(--labs-accent)",
+                            color: "var(--labs-bg)",
+                            fontSize: 9,
+                            fontWeight: 700,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            border: "1px solid var(--labs-bg)",
+                            lineHeight: 1,
+                          }}
+                        >
+                          {i + 1}
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
+                        style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                      >
+                        {i + 1}
+                      </div>
+                    )}
                     <span className="text-sm font-medium truncate flex-1 min-w-0">
                       {w.name || `Whisky ${i + 1}`}
                     </span>
@@ -3859,15 +3890,26 @@ function GuidedTastingEngine({
                   }}
                   data-testid={`guided-participant-${p.id}`}
                 >
-                  <div
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
-                    style={{
-                      background: hasRated ? "var(--labs-success)" : "var(--labs-border)",
-                      color: hasRated ? "var(--labs-bg)" : "var(--labs-text-muted)",
-                    }}
-                  >
-                    {hasRated ? <Check className="w-3.5 h-3.5" /> : displayName.charAt(0).toUpperCase()}
-                  </div>
+                  {hasRated ? (
+                    <div
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
+                      style={{
+                        background: "var(--labs-success)",
+                        color: "var(--labs-bg)",
+                      }}
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                  ) : (
+                    <ParticipantAvatar
+                      name={displayName}
+                      photoUrl={p.participant?.photoUrl || p.photoUrl || null}
+                      size={28}
+                      background="var(--labs-border)"
+                      color="var(--labs-text-muted)"
+                      testId={`avatar-guided-participant-${p.id}`}
+                    />
+                  )}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1">
                       <p className="text-xs font-medium truncate" style={{ color: "var(--labs-text)" }}>
