@@ -26660,19 +26660,78 @@ ${cleaned.slice(0, 60000)}`;
       const parsed = imagePoolBackfillSchema.safeParse(req.body);
       if (!parsed.success) return res.status(422).json({ message: "Ungültiger Request-Body" });
       const created: TastingStoryImage[] = [];
+      const seen = new Set<string>();
+      const itemsToCreate: Array<{
+        url: string;
+        name: string | null;
+        caption: string | null;
+        altText: string | null;
+        categories: string[];
+        participantIds: string[];
+        whiskyIds: string[];
+      }> = [];
       for (const item of parsed.data.items) {
+        if (seen.has(item.url)) continue;
+        seen.add(item.url);
+        itemsToCreate.push({
+          url: item.url,
+          name: item.name ?? null,
+          caption: item.caption ?? null,
+          altText: item.altText ?? null,
+          categories: item.categories ?? [],
+          participantIds: [],
+          whiskyIds: [],
+        });
+      }
+      try {
+        const eventPhotos = await storage.getTastingEventPhotos(tastingId);
+        for (const ph of eventPhotos) {
+          if (seen.has(ph.photoUrl)) continue;
+          seen.add(ph.photoUrl);
+          itemsToCreate.push({
+            url: ph.photoUrl,
+            name: null,
+            caption: ph.caption ?? null,
+            altText: null,
+            categories: ["Szene & Stimmung"],
+            participantIds: [],
+            whiskyIds: [],
+          });
+        }
+      } catch (err) {
+        console.warn("[tasting-stories/image-pool/backfill] event photos failed", err);
+      }
+      try {
+        const participantPhotos = await storage.getTastingPhotos(tastingId);
+        for (const ph of participantPhotos) {
+          if (seen.has(ph.photoUrl)) continue;
+          seen.add(ph.photoUrl);
+          itemsToCreate.push({
+            url: ph.photoUrl,
+            name: null,
+            caption: ph.caption ?? null,
+            altText: null,
+            categories: ["Teilnehmer"],
+            participantIds: ph.participantId ? [ph.participantId] : [],
+            whiskyIds: ph.whiskyId ? [ph.whiskyId] : [],
+          });
+        }
+      } catch (err) {
+        console.warn("[tasting-stories/image-pool/backfill] participant photos failed", err);
+      }
+      for (const item of itemsToCreate) {
         const existing = await storage.findTastingStoryImageByUrl(tastingId, item.url);
         if (existing) continue;
         const row = await storage.createTastingStoryImage({
           tastingId,
           url: item.url,
-          name: item.name ?? null,
-          caption: item.caption ?? null,
-          altText: item.altText ?? null,
+          name: item.name,
+          caption: item.caption,
+          altText: item.altText,
           moodDescription: null,
-          categories: item.categories ?? [],
-          participantIds: [],
-          whiskyIds: [],
+          categories: item.categories,
+          participantIds: item.participantIds,
+          whiskyIds: item.whiskyIds,
           uploadedByParticipantId: access.participant.id,
         });
         created.push(row);

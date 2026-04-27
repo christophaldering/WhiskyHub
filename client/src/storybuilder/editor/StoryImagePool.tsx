@@ -30,7 +30,7 @@ type Props = {
   testIdPrefix?: string;
 };
 
-const COMMON_CATEGORIES = ["Hero", "Galerie", "Atmosphäre", "Teilnehmer", "Whisky", "Detail", "Raum", "Sonstiges"];
+const COMMON_CATEGORIES = ["Hero", "Galerie", "Teilnehmer", "Gruppenbild", "Szene & Stimmung", "Whisky/Setup"];
 
 export function StoryImagePool({
   tastingId,
