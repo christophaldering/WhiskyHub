@@ -53,7 +53,7 @@ export default function LandingCmsPage() {
         data-testid="landing-cms-loading"
         style={{
           minHeight: "100vh",
-          background: "#0B0906",
+          background: "transparent",
         }}
       />
     );
@@ -79,7 +79,7 @@ export default function LandingCmsPage() {
 
   return (
     <div data-testid="landing-cms-fallback">
-      <Suspense fallback={<div data-testid="landing-cms-fallback-loading" style={{ minHeight: "100vh", background: "#0B0906" }} />}>
+      <Suspense fallback={<div data-testid="landing-cms-fallback-loading" style={{ minHeight: "100vh", background: "transparent" }} />}>
         <LandingNew />
       </Suspense>
     </div>
