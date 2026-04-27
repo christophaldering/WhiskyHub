@@ -27,6 +27,13 @@ import { StoryRenderer } from "../renderer/StoryRenderer";
 import { VersionDrawer } from "./VersionDrawer";
 import { TemplateLibrary, type InsertStrategy } from "./TemplateLibrary";
 import { AiActionPanel } from "./AiActionPanel";
+import {
+  AiInstructionInput,
+  DEFAULT_PRESETS_DE,
+  DEFAULT_PRESETS_EN,
+  type AiInstructionPreset,
+  type AiInstructionValue,
+} from "./AiInstructionInput";
 
 const HISTORY_LIMIT = 50;
 const AUTO_SAVE_DELAY_MS = 2000;
@@ -51,9 +58,56 @@ type Props = {
     blockId: string,
     blockType: string,
     currentBlocks: StoryBlock[],
+    extras?: { customInstructions?: string; stylePresets?: string[] },
   ) => Promise<Record<string, unknown> | null>;
-  onRegenerateStory?: (currentBlocks: StoryBlock[]) => Promise<StoryBlock[] | null>;
+  onRegenerateStory?: (
+    currentBlocks: StoryBlock[],
+    extras?: { customInstructions?: string; stylePresets?: string[] },
+  ) => Promise<StoryBlock[] | null>;
+  language?: "de" | "en";
 };
+
+const EMPTY_INSTRUCTION_VALUE: AiInstructionValue = { customInstructions: "", stylePresets: [] };
+
+function instructionStorageKey(sourceContext: StoryEditorSourceContext | undefined): string | null {
+  if (!sourceContext) return null;
+  return `casksense.story-editor.ai-instructions.${sourceContext.sourceType}:${sourceContext.sourceId}`;
+}
+
+function loadInstructionValue(sourceContext: StoryEditorSourceContext | undefined): AiInstructionValue {
+  const key = instructionStorageKey(sourceContext);
+  if (!key || typeof window === "undefined") return { ...EMPTY_INSTRUCTION_VALUE };
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return { ...EMPTY_INSTRUCTION_VALUE };
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      const obj = parsed as Record<string, unknown>;
+      const ci = typeof obj.customInstructions === "string" ? obj.customInstructions : "";
+      const sp = Array.isArray(obj.stylePresets)
+        ? (obj.stylePresets as unknown[]).filter((x): x is string => typeof x === "string")
+        : [];
+      return { customInstructions: ci, stylePresets: sp };
+    }
+  } catch {
+    void 0;
+  }
+  return { ...EMPTY_INSTRUCTION_VALUE };
+}
+
+function saveInstructionValue(sourceContext: StoryEditorSourceContext | undefined, value: AiInstructionValue): void {
+  const key = instructionStorageKey(sourceContext);
+  if (!key || typeof window === "undefined") return;
+  try {
+    if (!value.customInstructions && value.stylePresets.length === 0) {
+      window.localStorage.removeItem(key);
+    } else {
+      window.localStorage.setItem(key, JSON.stringify(value));
+    }
+  } catch {
+    void 0;
+  }
+}
 
 type HistoryState = {
   past: StoryDocument[];
@@ -80,8 +134,10 @@ function redoHistory(state: HistoryState): HistoryState {
   return { past: [...state.past, state.present].slice(-HISTORY_LIMIT), present: next, future: rest };
 }
 
-export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapshot, sourceContext, isAdmin, paletteCategories, adapter, onRegenerateBlock, onRegenerateStory }: Props) {
+export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapshot, sourceContext, isAdmin, paletteCategories, adapter, onRegenerateBlock, onRegenerateStory, language }: Props) {
   const { t } = useTranslation();
+  const isDE = (language ?? "de") === "de";
+  const presetItems: AiInstructionPreset[] = isDE ? DEFAULT_PRESETS_DE : DEFAULT_PRESETS_EN;
   const [history, setHistory] = useState<HistoryState>({ past: [], present: initialDocument, future: [] });
   const doc = history.present;
 
@@ -369,35 +425,54 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
 
   const [storyRegenBusy, setStoryRegenBusy] = useState(false);
   const [storyRegenInfo, setStoryRegenInfo] = useState<string | null>(null);
+  const [storyRegenDialogOpen, setStoryRegenDialogOpen] = useState(false);
+  const [storyInstructionValue, setStoryInstructionValue] = useState<AiInstructionValue>(() =>
+    loadInstructionValue(sourceContext),
+  );
 
-  const handleStoryRegenerate = useCallback(async () => {
-    if (!onRegenerateStory || storyRegenBusy) return;
-    const lockedCount = doc.blocks.filter((b) => b.locked).length;
-    const lockedNote = lockedCount > 0 ? `\n\nGesperrte Bloecke (${lockedCount}) werden uebersprungen.` : "";
-    if (!window.confirm(`Alle KI-Texte in dieser Story neu generieren?${lockedNote}`)) return;
-    setStoryRegenBusy(true);
-    setStoryRegenInfo(null);
-    try {
-      const result = await onRegenerateStory(doc.blocks);
-      if (result) {
-        const next: StoryDocument = {
-          ...doc,
-          blocks: result,
-          metadata: { ...doc.metadata, updatedAt: new Date().toISOString() },
-        };
-        setHistory((h) => pushHistory(h, next));
-        onChange?.(next);
-        setStoryRegenInfo("Story neu generiert");
-      } else {
-        setStoryRegenInfo("Keine Aenderungen");
+  useEffect(() => {
+    setStoryInstructionValue(loadInstructionValue(sourceContext));
+  }, [sourceContext]);
+
+  const runStoryRegenerate = useCallback(
+    async (extras: AiInstructionValue) => {
+      if (!onRegenerateStory || storyRegenBusy) return;
+      saveInstructionValue(sourceContext, extras);
+      setStoryRegenBusy(true);
+      setStoryRegenInfo(null);
+      try {
+        const trimmed = (extras.customInstructions ?? "").trim();
+        const result = await onRegenerateStory(doc.blocks, {
+          customInstructions: trimmed.length > 0 ? trimmed : undefined,
+          stylePresets: extras.stylePresets.length > 0 ? extras.stylePresets : undefined,
+        });
+        if (result) {
+          const next: StoryDocument = {
+            ...doc,
+            blocks: result,
+            metadata: { ...doc.metadata, updatedAt: new Date().toISOString() },
+          };
+          setHistory((h) => pushHistory(h, next));
+          onChange?.(next);
+          setStoryRegenInfo(isDE ? "Story neu generiert" : "Story regenerated");
+        } else {
+          setStoryRegenInfo(isDE ? "Keine Aenderungen" : "No changes");
+        }
+      } catch (err: unknown) {
+        setStoryRegenInfo(err instanceof Error ? err.message : isDE ? "Regenerierung fehlgeschlagen" : "Regeneration failed");
+      } finally {
+        setStoryRegenBusy(false);
+        setTimeout(() => setStoryRegenInfo(null), 3500);
       }
-    } catch (err: unknown) {
-      setStoryRegenInfo(err instanceof Error ? err.message : "Regenerierung fehlgeschlagen");
-    } finally {
-      setStoryRegenBusy(false);
-      setTimeout(() => setStoryRegenInfo(null), 3500);
-    }
-  }, [doc, onChange, onRegenerateStory, storyRegenBusy]);
+    },
+    [doc, onChange, onRegenerateStory, storyRegenBusy, sourceContext, isDE],
+  );
+
+  const handleStoryRegenerate = useCallback(() => {
+    if (!onRegenerateStory || storyRegenBusy) return;
+    setStoryInstructionValue(loadInstructionValue(sourceContext));
+    setStoryRegenDialogOpen(true);
+  }, [onRegenerateStory, storyRegenBusy, sourceContext]);
 
   const duplicateBlock = useCallback(
     (id: string) => {
@@ -865,9 +940,12 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
             onChange={(payload) => updateBlockPayload(selectedBlock.id, payload)}
             onRegenerateBlock={
               onRegenerateBlock
-                ? (blockId, blockType) => onRegenerateBlock(blockId, blockType, doc.blocks)
+                ? (blockId, blockType, extras) => onRegenerateBlock(blockId, blockType, doc.blocks, extras)
                 : undefined
             }
+            sourceContext={sourceContext}
+            presetItems={presetItems}
+            isDE={isDE}
           />
         ) : (
           <div style={{ fontSize: 12, color: theme.colors.inkFaint, padding: 12, textAlign: "center" }}>
@@ -897,6 +975,185 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
           isAdmin={isAdmin}
         />
       ) : null}
+      {storyRegenDialogOpen ? (
+        <StoryRegenerateDialog
+          value={storyInstructionValue}
+          onChange={setStoryInstructionValue}
+          presets={presetItems}
+          isDE={isDE}
+          lockedCount={doc.blocks.filter((b) => b.locked).length}
+          onCancel={() => setStoryRegenDialogOpen(false)}
+          onConfirm={() => {
+            setStoryRegenDialogOpen(false);
+            void runStoryRegenerate(storyInstructionValue);
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function StoryRegenerateDialog({
+  value,
+  onChange,
+  presets,
+  isDE,
+  lockedCount,
+  onCancel,
+  onConfirm,
+}: {
+  value: AiInstructionValue;
+  onChange: (next: AiInstructionValue) => void;
+  presets: AiInstructionPreset[];
+  isDE: boolean;
+  lockedCount: number;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const t = isDE
+    ? {
+        eyebrow: "KI-Story neu generieren",
+        title: "Alle KI-Texte neu generieren",
+        description:
+          "Optional: Gib der KI zusaetzliche Anweisungen oder waehle Stil-Presets, um Tonalitaet und Fokus zu steuern.",
+        lockedNote: (n: number) =>
+          `Gesperrte Bloecke (${n}) werden uebersprungen.`,
+        textareaLabel: "Zusätzliche Anweisungen (optional)",
+        presetsLabel: "Stil-Presets (optional, kombinierbar)",
+        placeholder:
+          "z. B. Lockerer schreiben, Fokus auf Torf, Zitat einer Islay-Brennerei einbauen.",
+        cancel: "Abbrechen",
+        confirm: "Story neu generieren",
+      }
+    : {
+        eyebrow: "Regenerate story with AI",
+        title: "Regenerate all AI texts",
+        description:
+          "Optional: Add custom instructions or pick style presets to steer tone and focus.",
+        lockedNote: (n: number) => `Locked blocks (${n}) will be skipped.`,
+        textareaLabel: "Additional instructions (optional)",
+        presetsLabel: "Style presets (optional, combinable)",
+        placeholder:
+          "e.g. write more casually, focus on peat, include a quote from an Islay distillery.",
+        cancel: "Cancel",
+        confirm: "Regenerate story",
+      };
+  return (
+    <div
+      data-testid="modal-story-regen-prompt"
+      onClick={onCancel}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.7)",
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 24,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "100%",
+          maxWidth: 560,
+          background: "#15110C",
+          border: "1px solid rgba(201,169,97,0.25)",
+          borderRadius: 6,
+          padding: 24,
+          color: "#F5EDE0",
+          fontFamily: "'Inter', system-ui, sans-serif",
+          display: "grid",
+          gap: 16,
+          maxHeight: "90vh",
+          overflowY: "auto",
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontSize: 10,
+              letterSpacing: ".25em",
+              textTransform: "uppercase",
+              color: "#C9A961",
+            }}
+          >
+            {t.eyebrow}
+          </div>
+          <div
+            style={{
+              fontFamily: "'EB Garamond', serif",
+              fontSize: 22,
+              color: "#F5EDE0",
+              marginTop: 4,
+            }}
+          >
+            {t.title}
+          </div>
+          <div style={{ fontSize: 12, color: "#A89A85", marginTop: 6, lineHeight: 1.5 }}>
+            {t.description}
+            {lockedCount > 0 ? (
+              <>
+                <br />
+                <span data-testid="text-story-regen-locked-note">{t.lockedNote(lockedCount)}</span>
+              </>
+            ) : null}
+          </div>
+        </div>
+        <AiInstructionInput
+          value={value}
+          onChange={onChange}
+          presets={presets}
+          placeholder={t.placeholder}
+          textareaLabel={t.textareaLabel}
+          presetsLabel={t.presetsLabel}
+          rows={4}
+          testIdPrefix="story-regen-instruction"
+        />
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+          <button
+            type="button"
+            onClick={onCancel}
+            data-testid="button-story-regen-cancel"
+            style={{
+              background: "transparent",
+              border: "1px solid rgba(201,169,97,0.3)",
+              color: "#A89A85",
+              borderRadius: 3,
+              padding: "8px 16px",
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: ".15em",
+              textTransform: "uppercase",
+              cursor: "pointer",
+              fontFamily: "'Inter', system-ui, sans-serif",
+            }}
+          >
+            {t.cancel}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            data-testid="button-story-regen-confirm"
+            style={{
+              background: "#C9A961",
+              color: "#0B0906",
+              border: "none",
+              borderRadius: 3,
+              padding: "8px 18px",
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: ".15em",
+              textTransform: "uppercase",
+              cursor: "pointer",
+              fontFamily: "'Inter', system-ui, sans-serif",
+            }}
+          >
+            {t.confirm}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1145,22 +1402,72 @@ function SelectedBlockEditor({
   block,
   onChange,
   onRegenerateBlock,
+  sourceContext,
+  presetItems,
+  isDE,
 }: {
   block: StoryBlock;
   onChange: (payload: Record<string, unknown>) => void;
   onRegenerateBlock?: (
     blockId: string,
     blockType: string,
+    extras?: { customInstructions?: string; stylePresets?: string[] },
   ) => Promise<Record<string, unknown> | null>;
+  sourceContext?: StoryEditorSourceContext;
+  presetItems: AiInstructionPreset[];
+  isDE: boolean;
 }) {
   const def = getBlockDefinition(block.type);
   const [regenBusy, setRegenBusy] = useState(false);
   const [regenInfo, setRegenInfo] = useState<string | null>(null);
+  const [showInstruction, setShowInstruction] = useState(false);
+  const [instructionValue, setInstructionValue] = useState<AiInstructionValue>(() =>
+    loadInstructionValue(sourceContext),
+  );
+  useEffect(() => {
+    setInstructionValue(loadInstructionValue(sourceContext));
+    setShowInstruction(false);
+  }, [sourceContext, block.id]);
+  const labels = isDE
+    ? {
+        unknown: `Unbekannter Block-Typ: ${block.type}`,
+        noEditor: "Für diesen Block ist kein Editor verfügbar.",
+        invalid: "Daten ungültig — Standardwerte geladen.",
+        regenHint: "KI-Vorschlaege fuer diesen Block aktualisieren",
+        toggleOpen: "Anweisungen",
+        toggleClose: "Schliessen",
+        regen: "Neu generieren",
+        busy: "Generiere…",
+        ok: "Neu generiert",
+        empty: "Kein Ergebnis",
+        error: "Fehler bei Regenerierung",
+        promptHint: "Optional: gib der KI eine kurze Anweisung oder waehle Stil-Presets.",
+        textareaLabel: "Anweisung (optional)",
+        presetsLabel: "Stil-Presets",
+        placeholder: "z. B. lockerer schreiben, Fokus auf Torf",
+      }
+    : {
+        unknown: `Unknown block type: ${block.type}`,
+        noEditor: "No editor available for this block.",
+        invalid: "Data invalid — defaults loaded.",
+        regenHint: "Refresh AI suggestions for this block",
+        toggleOpen: "Instructions",
+        toggleClose: "Close",
+        regen: "Regenerate",
+        busy: "Generating…",
+        ok: "Regenerated",
+        empty: "No result",
+        error: "Regeneration failed",
+        promptHint: "Optional: give the AI a short instruction or pick style presets.",
+        textareaLabel: "Instruction (optional)",
+        presetsLabel: "Style presets",
+        placeholder: "e.g. write more casually, focus on peat",
+      };
   if (!def) {
-    return <div style={{ fontSize: 12, color: "#d97757" }}>Unbekannter Block-Typ: {block.type}</div>;
+    return <div style={{ fontSize: 12, color: "#d97757" }}>{labels.unknown}</div>;
   }
   if (!def.EditorPanel) {
-    return <div style={{ fontSize: 12, color: "#A89A85" }}>Für diesen Block ist kein Editor verfügbar.</div>;
+    return <div style={{ fontSize: 12, color: "#A89A85" }}>{labels.noEditor}</div>;
   }
   const Panel = def.EditorPanel;
   const validation = validatePayload(block.type, block.payload);
@@ -1168,23 +1475,33 @@ function SelectedBlockEditor({
   const canRegen = !!onRegenerateBlock && TASTING_REGEN_TYPES.has(block.type);
   const handleRegen = async () => {
     if (!onRegenerateBlock || regenBusy) return;
+    saveInstructionValue(sourceContext, instructionValue);
     setRegenBusy(true);
     setRegenInfo(null);
     try {
-      const next = await onRegenerateBlock(block.id, block.type);
+      const trimmed = (instructionValue.customInstructions ?? "").trim();
+      const extras = {
+        customInstructions: trimmed.length > 0 ? trimmed : undefined,
+        stylePresets:
+          instructionValue.stylePresets.length > 0 ? instructionValue.stylePresets : undefined,
+      };
+      const next = await onRegenerateBlock(block.id, block.type, extras);
       if (next) {
         onChange(next);
-        setRegenInfo("Neu generiert");
+        setRegenInfo(labels.ok);
       } else {
-        setRegenInfo("Kein Ergebnis");
+        setRegenInfo(labels.empty);
       }
     } catch (err: unknown) {
-      setRegenInfo(err instanceof Error ? err.message : "Fehler bei Regenerierung");
+      setRegenInfo(err instanceof Error ? err.message : labels.error);
     } finally {
       setRegenBusy(false);
       setTimeout(() => setRegenInfo(null), 3000);
     }
   };
+  const hasInstruction =
+    instructionValue.customInstructions.trim().length > 0 ||
+    instructionValue.stylePresets.length > 0;
   return (
     <div>
       <div style={{ fontSize: 14, color: "#F5EDE0", marginBottom: 4 }}>{def.label}</div>
@@ -1201,35 +1518,94 @@ function SelectedBlockEditor({
             marginBottom: 12,
           }}
         >
-          Daten ungültig — Standardwerte geladen.
+          {labels.invalid}
         </div>
       ) : null}
       {canRegen ? (
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 8,
             background: "rgba(201,169,97,0.06)",
             border: "1px solid rgba(201,169,97,0.2)",
             borderRadius: 4,
             padding: "8px 10px",
             marginBottom: 12,
+            display: "grid",
+            gap: 8,
           }}
         >
-          <div style={{ fontSize: 11, color: "#A89A85", letterSpacing: ".05em" }}>
-            {regenInfo ?? "KI-Vorschlaege fuer diesen Block aktualisieren"}
-          </div>
-          <button
-            type="button"
-            onClick={handleRegen}
-            disabled={regenBusy}
-            style={regenBusy ? { ...primaryButtonStyle, opacity: 0.5, cursor: "wait" } : primaryButtonStyle}
-            data-testid={`button-regenerate-block-${block.id}`}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
           >
-            {regenBusy ? "Generiere…" : "Neu generieren"}
-          </button>
+            <div style={{ fontSize: 11, color: "#A89A85", letterSpacing: ".05em", flex: 1, minWidth: 120 }}>
+              {regenInfo ?? labels.regenHint}
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button
+                type="button"
+                onClick={() => setShowInstruction((v) => !v)}
+                data-testid={`button-toggle-block-instruction-${block.id}`}
+                aria-expanded={showInstruction}
+                style={{
+                  background: showInstruction || hasInstruction ? "rgba(201,169,97,0.2)" : "transparent",
+                  border: "1px solid rgba(201,169,97,0.35)",
+                  color: "#C9A961",
+                  borderRadius: 3,
+                  padding: "4px 10px",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: ".1em",
+                  textTransform: "uppercase",
+                  cursor: "pointer",
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                }}
+                title={labels.promptHint}
+              >
+                ✦ {showInstruction ? labels.toggleClose : labels.toggleOpen}
+                {hasInstruction && !showInstruction ? " •" : ""}
+              </button>
+              <button
+                type="button"
+                onClick={handleRegen}
+                disabled={regenBusy}
+                style={regenBusy ? { ...primaryButtonStyle, opacity: 0.5, cursor: "wait" } : primaryButtonStyle}
+                data-testid={`button-regenerate-block-${block.id}`}
+              >
+                {regenBusy ? labels.busy : labels.regen}
+              </button>
+            </div>
+          </div>
+          {showInstruction ? (
+            <div
+              data-testid={`block-instruction-popover-${block.id}`}
+              style={{
+                background: "rgba(11,9,6,0.45)",
+                border: "1px solid rgba(201,169,97,0.2)",
+                borderRadius: 4,
+                padding: 10,
+              }}
+            >
+              <div style={{ fontSize: 11, color: "#A89A85", marginBottom: 8, lineHeight: 1.45 }}>
+                {labels.promptHint}
+              </div>
+              <AiInstructionInput
+                value={instructionValue}
+                onChange={setInstructionValue}
+                presets={presetItems}
+                placeholder={labels.placeholder}
+                textareaLabel={labels.textareaLabel}
+                presetsLabel={labels.presetsLabel}
+                rows={2}
+                compact
+                testIdPrefix={`block-instruction-${block.id}`}
+              />
+            </div>
+          ) : null}
         </div>
       ) : null}
       {aiFields.length > 0 ? (

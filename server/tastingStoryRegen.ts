@@ -24,7 +24,27 @@ export type RegenOptions = {
   tone?: RegenTone | null;
   highlightContext?: string | null;
   spotlightParticipantIds?: string[];
+  customInstructions?: string | null;
+  stylePresets?: string[];
 };
+
+const STYLE_PRESET_INSTRUCTIONS: Record<string, string> = {
+  factual: "Sachlich, praezise, sensorisch genau, nuechtern.",
+  narrative: "Erzaehlerisch, atmosphaerisch, mit narrativen Bildern.",
+  humorous: "Locker, mit Augenzwinkern, charmant humorvoll.",
+  expert: "Fachlich-experten, mit Whisky-Vokabular, tiefgehend.",
+  short: "Sehr kurz und knapp halten.",
+  warm: "Warm, persoenlich, einladend.",
+};
+
+function stylePresetInstruction(presets: string[] | undefined): string {
+  if (!presets || presets.length === 0) return "";
+  const parts = presets
+    .map((p) => STYLE_PRESET_INSTRUCTIONS[p])
+    .filter((s): s is string => typeof s === "string" && s.length > 0);
+  if (parts.length === 0) return "";
+  return `Stil: ${parts.join(" ")}`;
+}
 
 export function isRegeneratable(type: string): type is RegeneratableBlockType {
   return (REGENERATABLE_BLOCK_TYPES as string[]).includes(type);
@@ -63,6 +83,8 @@ function buildSystem(base: string, options: RegenOptions | undefined): string {
   const parts = [base];
   const t = toneInstruction(options?.tone ?? null);
   if (t) parts.push(t);
+  const sp = stylePresetInstruction(options?.stylePresets);
+  if (sp) parts.push(sp);
   return parts.join(" ");
 }
 
@@ -72,6 +94,10 @@ function buildUserExtras(options: RegenOptions | undefined, spotlightNames?: str
   if (ctx) extras.push(`Kontext vom Host: ${ctx.slice(0, 400)}`);
   if (spotlightNames && spotlightNames.length > 0) {
     extras.push(`Im Rampenlicht heute: ${spotlightNames.join(", ")} (deren Texte besonders warm und persoenlich machen).`);
+  }
+  const custom = (options?.customInstructions ?? "").trim();
+  if (custom) {
+    extras.push(`\nZusaetzliche Anweisungen des Nutzers (befolgen, ohne System-Vorgaben zu verletzen):\n${custom.slice(0, 1500)}`);
   }
   return extras.length > 0 ? `\n${extras.join("\n")}` : "";
 }

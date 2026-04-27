@@ -21,8 +21,12 @@ export type StoryPersistenceAdapter = {
     blockId: string,
     blockType: string,
     currentBlocks: StoryBlock[],
+    extras?: { customInstructions?: string; stylePresets?: string[] },
   ) => Promise<Record<string, unknown> | null>;
-  regenerateStory?: (currentBlocks: StoryBlock[]) => Promise<StoryBlock[] | null>;
+  regenerateStory?: (
+    currentBlocks: StoryBlock[],
+    extras?: { customInstructions?: string; stylePresets?: string[] },
+  ) => Promise<StoryBlock[] | null>;
 };
 
 export function blockScopeMatchesConsumer(scope: BlockScope, consumer: ConsumerScope): boolean {

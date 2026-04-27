@@ -31,7 +31,8 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
   const { currentParticipant } = useAppStore();
   const qc = useQueryClient();
   const [, navigate] = useLocation();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const editorLanguage: "de" | "en" = i18n.language?.startsWith("de") ? "de" : "en";
   const [actionError, setActionError] = useState<string | null>(null);
   const [pendingRegen, setPendingRegen] = useState<{
     original: StoryBlock[];
@@ -139,6 +140,7 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
     blockId: string,
     _blockType: string,
     currentBlocks: StoryBlock[],
+    extras?: { customInstructions?: string; stylePresets?: string[] },
   ): Promise<Record<string, unknown> | null> => {
     const payload = currentBlocks.map((b) => ({
       id: b.id,
@@ -148,13 +150,16 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
       locked: b.locked,
       editedByHost: b.editedByHost,
     }));
-    const result = await regenerateTastingStoryBlocks(id, payload, "single", blockId);
+    const result = await regenerateTastingStoryBlocks(id, payload, "single", blockId, extras);
     const updated = result.blocks.find((b) => b.id === blockId);
     if (!updated) return null;
     return updated.payload;
   };
 
-  const handleRegenerateStory = async (currentBlocks: StoryBlock[]): Promise<StoryBlock[] | null> => {
+  const handleRegenerateStory = async (
+    currentBlocks: StoryBlock[],
+    extras?: { customInstructions?: string; stylePresets?: string[] },
+  ): Promise<StoryBlock[] | null> => {
     const payload = currentBlocks.map((b) => ({
       id: b.id,
       type: b.type,
@@ -163,7 +168,7 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
       locked: b.locked,
       editedByHost: b.editedByHost,
     }));
-    const result = await regenerateTastingStoryBlocks(id, payload, "all");
+    const result = await regenerateTastingStoryBlocks(id, payload, "all", undefined, extras);
     const regeneratedIds = new Set(result.regenerated);
     const skippedIds = new Set(result.skipped);
     if (regeneratedIds.size === 0) {
@@ -395,6 +400,7 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
             adapter={tastingAdapter}
             onRegenerateBlock={handleRegenerateBlock}
             onRegenerateStory={handleRegenerateStory}
+            language={editorLanguage}
           />
         </TastingStoryDataProvider>
       </div>

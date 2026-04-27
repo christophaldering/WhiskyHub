@@ -115,17 +115,27 @@ export type RegenerateBlocksResponse = {
   skipped: string[];
 };
 
+export type RegenerateExtras = {
+  customInstructions?: string;
+  stylePresets?: string[];
+};
+
 export async function regenerateTastingStoryBlocks(
   tastingId: string,
   blocks: Array<{ id: string; type: string; payload: Record<string, unknown>; hidden?: boolean; locked?: boolean; editedByHost?: boolean }>,
   scope: RegenerateScope,
   blockId?: string,
+  extras?: RegenerateExtras,
 ): Promise<RegenerateBlocksResponse> {
+  const body: Record<string, unknown> = { blocks, scope, blockId };
+  const ci = extras?.customInstructions?.trim();
+  if (ci) body.customInstructions = ci;
+  if (extras?.stylePresets && extras.stylePresets.length > 0) body.stylePresets = extras.stylePresets;
   const res = await fetch(`/api/tasting-stories/${encodeURIComponent(tastingId)}/regenerate-blocks`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json", ...pidHeaders() },
-    body: JSON.stringify({ blocks, scope, blockId }),
+    body: JSON.stringify(body),
   });
   return readJson<RegenerateBlocksResponse>(res, "KI-Regenerierung fehlgeschlagen");
 }

@@ -26035,6 +26035,8 @@ ${cleaned.slice(0, 60000)}`;
         blocks: tastingStoryBlocksSchema,
         scope: z.enum(["all", "single"]),
         blockId: z.string().min(1).max(128).optional(),
+        customInstructions: z.string().max(2000).optional(),
+        stylePresets: z.array(z.string().min(1).max(64)).max(8).optional(),
       }).refine((v) => v.scope !== "single" || (typeof v.blockId === "string" && v.blockId.length > 0), {
         message: "blockId ist bei scope=single erforderlich",
         path: ["blockId"],
@@ -26056,6 +26058,10 @@ ${cleaned.slice(0, 60000)}`;
       }
       const { regenerateBlockWithAi, isRegeneratable } = await import("./tastingStoryRegen");
       const blocks = parsed.data.blocks;
+      const regenOptions = {
+        customInstructions: parsed.data.customInstructions ?? null,
+        stylePresets: parsed.data.stylePresets ?? [],
+      };
       const regenerated: string[] = [];
       const skipped: string[] = [];
       const updatedBlocks = await Promise.all(
@@ -26071,7 +26077,7 @@ ${cleaned.slice(0, 60000)}`;
             return block;
           }
           try {
-            const newPayload = await regenerateBlockWithAi(block.type, block.payload, data, aiResult.client!);
+            const newPayload = await regenerateBlockWithAi(block.type, block.payload, data, aiResult.client!, regenOptions);
             if (!newPayload) {
               skipped.push(block.id);
               return block;
