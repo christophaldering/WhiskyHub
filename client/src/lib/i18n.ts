@@ -940,6 +940,10 @@ const resources = {
         sectionSettingsDesc: "Rating scale, blind tasting, host pacing and more",
         dangerZoneTitle: "Danger Zone",
         dangerZoneDesc: "Irreversible actions for this tasting",
+        archiveTasting: "Archive Tasting",
+        restartSession: "Restart Session",
+        archiveConfirmMessage: "Archive this tasting? It will become immutable and appear in the Historical Tastings archive. An admin can reopen it if needed.",
+        archiveConfirmAction: "Archive",
         detail: {
           openLabel: "Open details for {{name}}",
           statusNotStarted: "Not started",
@@ -10549,6 +10553,10 @@ const resources = {
         sectionSettingsDesc: "Bewertungsskala, Blind Tasting, Host steuert das Tempo und mehr",
         dangerZoneTitle: "Gefahrenzone",
         dangerZoneDesc: "Unumkehrbare Aktionen für dieses Tasting",
+        archiveTasting: "Tasting archivieren",
+        restartSession: "Session neu starten",
+        archiveConfirmMessage: "Dieses Tasting archivieren? Es wird unveränderlich und erscheint im Archiv der historischen Tastings. Ein Admin kann es bei Bedarf wieder öffnen.",
+        archiveConfirmAction: "Archivieren",
       },
       palateLetter: {},
       landing: {

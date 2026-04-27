@@ -206,7 +206,7 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
   const [showParticipantPicker, setShowParticipantPicker] = useState(false);
   const [pickerSaving, setPickerSaving] = useState(false);
   const [showManageTasters, setShowManageTasters] = useState(false);
-  const [restartDialog, setRestartDialog] = useState<false | "choose" | "confirmClear">(false);
+  const [restartDialog, setRestartDialog] = useState<false | "choose" | "confirmClear" | "confirmArchive">(false);
   const [hostRatingIdx, setHostRatingIdx] = useState(0);
   const [cockpitWizard, setCockpitWizard] = useState(() => {
     if (typeof window !== "undefined") {
@@ -2652,26 +2652,55 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
             </div>
             {status === "reveal" && (
               <button
-                onClick={() => {
-                  if (confirm("Archive this tasting? It will become immutable and appear in the Historical Tastings archive. An admin can reopen it if needed.")) {
-                    tastingApi.updateStatus(tastingId, "archived", undefined, pid).then(() => {
-                      queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
-                    });
-                  }
-                }}
+                onClick={() => setRestartDialog("confirmArchive")}
                 className="cockpit-action-btn cockpit-action-secondary"
                 data-testid="cockpit-archive-tasting"
               >
                 <Archive style={{ width: 14, height: 14 }} />
-                Archive Tasting
+                {t("cockpit.archiveTasting", "Archive Tasting")}
               </button>
             )}
             {["closed", "reveal"].includes(status) && (
               <button onClick={() => setRestartDialog("choose")} className="cockpit-action-btn cockpit-action-secondary" data-testid="cockpit-restart-session">
                 <RotateCcw style={{ width: 14, height: 14 }} />
-                Restart Session
+                {t("cockpit.restartSession", "Restart Session")}
               </button>
             )}
+          </div>
+        )}
+
+        {restartDialog === "confirmArchive" && (
+          <div className="cockpit-confirm-inline" data-testid="cockpit-archive-confirm-dialog">
+            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)" }}>
+              {t(
+                "cockpit.archiveConfirmMessage",
+                "Archive this tasting? It will become immutable and appear in the Historical Tastings archive. An admin can reopen it if needed.",
+              )}
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button
+                onClick={() => setRestartDialog(false)}
+                className="cockpit-action-btn cockpit-action-secondary"
+                style={{ flex: 1, padding: "8px 12px" }}
+                data-testid="cockpit-archive-cancel"
+              >
+                {t("common.cancel", "Cancel")}
+              </button>
+              <button
+                onClick={() => {
+                  setRestartDialog(false);
+                  tastingApi.updateStatus(tastingId, "archived", undefined, pid).then(() => {
+                    queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+                  });
+                }}
+                className="cockpit-action-btn cockpit-action-danger"
+                style={{ flex: 1, padding: "8px 12px" }}
+                data-testid="cockpit-archive-confirm"
+              >
+                <Archive style={{ width: 13, height: 13 }} />
+                {t("cockpit.archiveConfirmAction", "Archive")}
+              </button>
+            </div>
           </div>
         )}
 
