@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import i18n from "i18next";
 import BackLink from "@/labs/components/BackLink";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
+import ContextDownloadBar from "@/labs/components/ContextDownloadBar";
+import { downloadAnalyticsPdf, downloadXlsxFromSheets, safeFileSegment, type PdfSection } from "@/labs/utils/contextDownloads";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useSession } from "@/lib/session";
 import { pidHeaders, wishlistApi } from "@/lib/api";
@@ -604,14 +606,84 @@ export default function LabsWhiskyDNA() {
         </button>
       </BackLink>
 
-      <div className="labs-fade-in" style={{ marginBottom: 16 }}>
-        <h1 className="labs-h2" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Activity className="w-6 h-6" style={{ color: "var(--labs-gold)" }} />
-          <span data-testid="text-page-title">{t("whiskyDna", "Your Whisky DNA")}</span>
-        </h1>
-        <p style={{ color: "var(--labs-text-muted)", fontSize: 13, marginTop: 6, lineHeight: 1.5 }}>
-          {t("whiskyDnaDesc", "A preference radar: each axis shows how strongly an aroma appears in your highly-rated drams. Bands narrow as more rated drams accumulate per axis.")}
-        </p>
+      <div className="labs-fade-in" style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 auto", minWidth: 0 }}>
+          <h1 className="labs-h2" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <Activity className="w-6 h-6" style={{ color: "var(--labs-gold)" }} />
+            <span data-testid="text-page-title">{t("whiskyDna", "Your Whisky DNA")}</span>
+          </h1>
+          <p style={{ color: "var(--labs-text-muted)", fontSize: 13, marginTop: 6, lineHeight: 1.5 }}>
+            {t("whiskyDnaDesc", "A preference radar: each axis shows how strongly an aroma appears in your highly-rated drams. Bands narrow as more rated drams accumulate per axis.")}
+          </p>
+        </div>
+        {dna && dna.n >= 5 && (() => {
+          const buildDnaSections = (): PdfSection[] => {
+            const sections: PdfSection[] = [
+              {
+                heading: t("whiskyDna.pdfOverview", "Übersicht"),
+                rows: [
+                  { label: t("whiskyDna.totalDrams", "Bewertete Drams"), value: String(dna.n) },
+                  { label: t("whiskyDna.phase", "Phase"), value: String(dna.phase) },
+                  { label: t("whiskyDna.stability", "Stabilität"), value: dna.stability.toFixed(2) },
+                  ...(dna.dominantCategory ? [{ label: t("whiskyDna.dominant", "Dominant"), value: dna.dominantCategory }] : []),
+                  ...(dna.rareCategory ? [{ label: t("whiskyDna.rare", "Selten"), value: dna.rareCategory }] : []),
+                ],
+              },
+            ];
+            if (dna.categories?.length > 0) {
+              sections.push({
+                heading: t("whiskyDna.categories", "Kategorien"),
+                rows: dna.categories.map(c => ({ label: i18n.language === "de" ? c.de : c.en, value: `${(c.pct * 100).toFixed(0)}%` })),
+              });
+            }
+            if (dna.affinity && dna.affinity.length > 0) {
+              sections.push({
+                heading: t("whiskyDna.affinity", "Affinität"),
+                rows: dna.affinity.map(a => ({ label: i18n.language === "de" ? a.de : a.en, value: `${a.affinity.toFixed(2)} (n=${a.sample})` })),
+              });
+            }
+            if (dna.topKeywords && dna.topKeywords.length > 0) {
+              sections.push({
+                heading: t("whiskyDna.topKeywords", "Top-Aromen"),
+                rows: dna.topKeywords.slice(0, 15).map(k => ({ label: k.keyword, value: String(k.count) })),
+              });
+            }
+            return sections;
+          };
+          const todaySegment = new Date().toISOString().split("T")[0];
+          return (
+            <ContextDownloadBar
+              testId="dna-download-bar"
+              align="end"
+              actions={[
+                {
+                  key: "pdf",
+                  label: t("downloads.pdf", { defaultValue: "PDF" }),
+                  testId: "button-dna-download-pdf",
+                  run: () => downloadAnalyticsPdf(
+                    `casksense_whisky_dna_${safeFileSegment(todaySegment)}.pdf`,
+                    t("whiskyDna", "Your Whisky DNA"),
+                    t("whiskyDna.pdfSubtitle", "Aroma-Präferenzen & Affinitäten"),
+                    buildDnaSections(),
+                    { generatedLabel: t("downloads.generatedAt", { defaultValue: "Erzeugt" }) },
+                  ),
+                },
+                {
+                  key: "xlsx",
+                  label: t("downloads.excel", { defaultValue: "Excel" }),
+                  testId: "button-dna-download-xlsx",
+                  run: () => downloadXlsxFromSheets(
+                    `casksense_whisky_dna_${safeFileSegment(todaySegment)}.xlsx`,
+                    buildDnaSections().map(sec => ({
+                      name: sec.heading,
+                      rows: sec.rows.map(r => ({ Kennzahl: r.label, Wert: r.value })),
+                    })),
+                  ),
+                },
+              ]}
+            />
+          );
+        })()}
       </div>
 
       {isLoading && (

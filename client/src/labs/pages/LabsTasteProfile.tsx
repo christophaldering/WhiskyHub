@@ -2,9 +2,13 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
+import ContextDownloadBar from "@/labs/components/ContextDownloadBar";
+import { downloadAnalyticsPdf, safeFileSegment, type PdfSection } from "@/labs/utils/contextDownloads";
+import { Link } from "wouter";
 import { useSession } from "@/lib/session";
 import { flavorProfileApi } from "@/lib/api";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import { Library } from "lucide-react";
 import {
   Radar,
   RadarChart,
@@ -223,19 +227,108 @@ export default function LabsTasteProfile() {
     { key: "platform", label: t("labs.profile.global", "Global") },
   ];
 
+  const buildProfileSections = (): PdfSection[] => {
+    const fmt = (v: unknown): string => v === null || v === undefined || v === "" ? "—" : String(v);
+    const sections: PdfSection[] = [
+      {
+        heading: t("labs.profile.pdfOverview", "Profil-Übersicht"),
+        rows: [
+          { label: t("labs.profile.totalRatings", "Bewertungen"), value: String(nRatings) },
+          ...(styleLabel ? [{ label: t("labs.profile.style", "Stil"), value: styleLabel }] : []),
+          ...(sweetSpotLabel ? [{ label: t("labs.profile.sweetSpot", "Sweet Spot"), value: sweetSpotLabel }] : []),
+          { label: t("labs.profile.stability", "Stabilität"), value: fmt(stabilityInfo?.label ?? null) },
+        ],
+      },
+    ];
+    if (radarData.length > 0) {
+      sections.push({
+        heading: t("labs.profile.tasteStructure", "Geschmacks-Struktur"),
+        rows: radarData.map(r => ({ label: String(r.dimension), value: typeof r.value === "number" ? r.value.toFixed(1) : fmt(r.value) })),
+      });
+    }
+    if (regionEntries.length > 0) {
+      sections.push({
+        heading: t("labs.profile.regions", "Regionen"),
+        rows: regionEntries.slice(0, 12).map(([k, v]) => ({ label: k, value: `${v.count} · ø ${v.avgScore.toFixed(1)}` })),
+      });
+    }
+    if (caskEntries.length > 0) {
+      sections.push({
+        heading: t("labs.profile.casks", "Fasstypen"),
+        rows: caskEntries.slice(0, 12).map(([k, v]) => ({ label: k, value: `${v.count} · ø ${v.avgScore.toFixed(1)}` })),
+      });
+    }
+    if (peatEntries.length > 0) {
+      sections.push({
+        heading: t("labs.profile.peat", "Rauch"),
+        rows: peatEntries.slice(0, 12).map(([k, v]) => ({ label: k, value: `${v.count} · ø ${v.avgScore.toFixed(1)}` })),
+      });
+    }
+    return sections;
+  };
+
+  const todaySegment = new Date().toISOString().split("T")[0];
+
+  const handleDownloadProfilePdf = async () => {
+    await downloadAnalyticsPdf(
+      `casksense_profile_${safeFileSegment(todaySegment)}.pdf`,
+      t("labs.profile.title", "CaskSense Profile"),
+      t("labs.profile.subtitle", "Your flavor fingerprint based on {{count}} ratings", { count: nRatings }),
+      buildProfileSections(),
+      { generatedLabel: t("downloads.generatedAt", { defaultValue: "Erzeugt" }) },
+    );
+  };
+
   return (
     <div className="labs-page" data-testid="labs-taste-profile">
       <MeineWeltActionBar active="analytics" />
 
-      <div className="flex items-center gap-3 mb-1 labs-fade-in">
-        <Activity className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
-        <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="text-profile-title">
-          {t("labs.profile.title", "CaskSense Profile")}
-        </h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 auto", minWidth: 0 }}>
+          <div className="flex items-center gap-3 mb-1 labs-fade-in">
+            <Activity className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
+            <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="text-profile-title">
+              {t("labs.profile.title", "CaskSense Profile")}
+            </h1>
+          </div>
+          <p className="text-sm mb-6 labs-fade-in" style={{ color: "var(--labs-text-muted)" }}>
+            {t("labs.profile.subtitle", "Your flavor fingerprint based on {{count}} ratings", { count: nRatings })}
+          </p>
+        </div>
+        {hasData && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+            <ContextDownloadBar
+              testId="profile-download-bar"
+              align="end"
+              actions={[
+                {
+                  key: "pdf",
+                  label: t("labs.profile.downloadPdf", { defaultValue: "Profil als PDF" }),
+                  testId: "button-profile-download-pdf",
+                  run: handleDownloadProfilePdf,
+                },
+              ]}
+            />
+            <Link
+              href="/labs/downloads"
+              data-testid="link-profile-downloads-hub"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "4px 10px",
+                fontSize: 11,
+                color: "var(--labs-accent)",
+                textDecoration: "none",
+                borderBottom: "1px solid color-mix(in srgb, var(--labs-accent) 40%, transparent)",
+              }}
+            >
+              <Library style={{ width: 12, height: 12 }} />
+              {t("labs.profile.allDownloads", "Alle Downloads im Hub")}
+            </Link>
+          </div>
+        )}
       </div>
-      <p className="text-sm mb-6 labs-fade-in" style={{ color: "var(--labs-text-muted)" }}>
-        {t("labs.profile.subtitle", "Your flavor fingerprint based on {{count}} ratings", { count: nRatings })}
-      </p>
 
       {!hasData ? (
         <div className="labs-empty labs-fade-in">

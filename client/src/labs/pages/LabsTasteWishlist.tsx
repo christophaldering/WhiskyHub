@@ -7,6 +7,8 @@ import { useAIStatus } from "@/hooks/use-ai-status";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useSession } from "@/lib/session";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
+import ContextDownloadBar from "@/labs/components/ContextDownloadBar";
+import { downloadServerExport } from "@/labs/utils/contextDownloads";
 import { useLocation, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -91,13 +93,34 @@ export default function LabsTasteWishlist() {
         {view === "list" && (
           <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <MeineWeltActionBar active="collection" />
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-1 gap-3 flex-wrap">
               <div className="flex items-center gap-3">
                 <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-wishlist-title">{t("wishlist.title")}</h1>
               </div>
-              <button onClick={() => { setEditingEntry(null); setView("form"); }} className="labs-btn-primary flex items-center gap-1.5" style={{ padding: "8px 16px", fontSize: 13 }} data-testid="button-labs-add-wishlist">
-                <Plus className="w-4 h-4" /> {t("wishlist.addWhisky")}
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                {participantId && entries.length > 0 && (
+                  <ContextDownloadBar
+                    testId="wishlist-download-bar"
+                    actions={[
+                      {
+                        key: "csv",
+                        label: t("downloads.csv", { defaultValue: "CSV" }),
+                        testId: "button-wishlist-download-csv",
+                        run: () => downloadServerExport("wishlist", "csv", participantId, t),
+                      },
+                      {
+                        key: "xlsx",
+                        label: t("downloads.excel", { defaultValue: "Excel" }),
+                        testId: "button-wishlist-download-xlsx",
+                        run: () => downloadServerExport("wishlist", "xlsx", participantId, t),
+                      },
+                    ]}
+                  />
+                )}
+                <button onClick={() => { setEditingEntry(null); setView("form"); }} className="labs-btn-primary flex items-center gap-1.5" style={{ padding: "8px 16px", fontSize: 13 }} data-testid="button-labs-add-wishlist">
+                  <Plus className="w-4 h-4" /> {t("wishlist.addWhisky")}
+                </button>
+              </div>
             </div>
             <p className="text-sm mb-5" style={{ color: "var(--labs-text-muted)", marginLeft: 28 }}>
               {entries.length > 0 ? t("wishlist.whiskiesToTry", { count: entries.length }) : t("wishlist.whiskiesToTryEmpty")}

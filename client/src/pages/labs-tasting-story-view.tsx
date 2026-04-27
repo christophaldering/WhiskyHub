@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Download, Loader2 } from "lucide-react";
 import { StoryRenderer } from "@/storybuilder/renderer/StoryRenderer";
 import type { StoryDocument } from "@/storybuilder/core/types";
 import { getPublicTastingStory, type TastingStoryResponse } from "@/lib/tastingStoryApi";
 import { getPublicTastingStoryData, type TastingStoryDataResponse } from "@/lib/tastingStoryDataApi";
 import { TastingStoryDataProvider } from "@/storybuilder/data/TastingStoryDataContext";
+import { exportTastingStoryBlocksPdfFor } from "@/lib/pdf-story-blocks";
 
 type Props = { id: string };
 
 export default function LabsTastingStoryViewPage({ id }: Props) {
   const [fellBack, setFellBack] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   const { data, isLoading, isError, error } = useQuery<TastingStoryResponse>({
     queryKey: ["/api/public/tasting-stories", id],
@@ -94,8 +98,80 @@ export default function LabsTastingStoryViewPage({ id }: Props) {
     );
   }
 
+  const handleDownloadPdf = async () => {
+    setPdfBusy(true);
+    setPdfError(null);
+    try {
+      await exportTastingStoryBlocksPdfFor(id, data?.tasting?.title ?? undefined);
+    } catch (err) {
+      setPdfError(err instanceof Error ? err.message : "Story-PDF konnte nicht erzeugt werden.");
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+
   return (
-    <div data-testid="page-labs-tasting-story-view" style={{ background: "#0B0906", minHeight: "100vh" }}>
+    <div data-testid="page-labs-tasting-story-view" style={{ background: "#0B0906", minHeight: "100vh", position: "relative" }}>
+      <div
+        data-testid="story-view-download-bar"
+        style={{
+          position: "fixed",
+          top: 16,
+          right: 16,
+          zIndex: 50,
+          display: "flex",
+          flexDirection: "column",
+          gap: 6,
+          alignItems: "flex-end",
+        }}
+      >
+        <button
+          onClick={handleDownloadPdf}
+          disabled={pdfBusy}
+          data-testid="button-story-view-download-pdf"
+          aria-label="Story als PDF herunterladen"
+          title="Story als PDF herunterladen"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "8px 14px",
+            borderRadius: 999,
+            background: pdfBusy ? "rgba(201,169,97,0.45)" : "#C9A961",
+            color: "#1A1714",
+            border: "none",
+            fontFamily: "'Inter', sans-serif",
+            fontSize: 12,
+            fontWeight: 600,
+            letterSpacing: ".08em",
+            textTransform: "uppercase",
+            cursor: pdfBusy ? "wait" : "pointer",
+            boxShadow: "0 6px 18px rgba(0,0,0,0.35)",
+          }}
+        >
+          {pdfBusy
+            ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} />
+            : <Download style={{ width: 14, height: 14 }} />}
+          {pdfBusy ? "Wird vorbereitet…" : "Story-PDF"}
+        </button>
+        {pdfError && (
+          <span
+            data-testid="text-story-view-download-error"
+            style={{
+              maxWidth: 240,
+              padding: "6px 10px",
+              borderRadius: 6,
+              background: "rgba(224,96,96,0.15)",
+              color: "#E06060",
+              fontFamily: "'Inter', sans-serif",
+              fontSize: 11,
+              textAlign: "right",
+            }}
+          >
+            {pdfError}
+          </span>
+        )}
+      </div>
       {storyDataError ? (
         <div
           data-testid="banner-tasting-data-unavailable"

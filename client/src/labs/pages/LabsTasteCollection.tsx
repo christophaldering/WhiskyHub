@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import type { WhiskybaseCollectionItem } from "@shared/schema";
 import WhiskyImage from "@/labs/components/WhiskyImage";
+import ContextDownloadBar from "@/labs/components/ContextDownloadBar";
+import { downloadServerExport } from "@/labs/utils/contextDownloads";
 
 type SortKey = "name" | "rating" | "price" | "added";
 type SortDirection = "asc" | "desc";
@@ -403,8 +405,28 @@ export default function LabsTasteCollection() {
       <input ref={syncFileInputRef} type="file" accept=".csv,.xlsx,.xls" style={{ display: "none" }} onChange={handleSyncFileInput} data-testid="input-labs-sync-file" />
 
       <MeineWeltActionBar active="collection" />
-      <div className="flex items-center gap-3 mb-1">
+      <div className="flex items-center justify-between gap-3 mb-1 flex-wrap">
         <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-collection-title">{t("collectionUi.collection")}</h1>
+        {pid && hasCollection && (
+          <ContextDownloadBar
+            testId="collection-download-bar"
+            align="end"
+            actions={[
+              {
+                key: "csv",
+                label: t("downloads.csv", { defaultValue: "CSV" }),
+                testId: "button-collection-download-csv",
+                run: () => downloadServerExport("collection", "csv", pid, t),
+              },
+              {
+                key: "xlsx",
+                label: t("downloads.excel", { defaultValue: "Excel" }),
+                testId: "button-collection-download-xlsx",
+                run: () => downloadServerExport("collection", "xlsx", pid, t),
+              },
+            ]}
+          />
+        )}
       </div>
 
       {hasCollection && (

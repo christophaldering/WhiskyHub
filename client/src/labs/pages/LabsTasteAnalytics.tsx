@@ -2,6 +2,13 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
+import ContextDownloadBar from "@/labs/components/ContextDownloadBar";
+import {
+  downloadAnalyticsPdf,
+  downloadXlsxFromSheets,
+  safeFileSegment,
+  type PdfSection,
+} from "@/labs/utils/contextDownloads";
 import { useSession } from "@/lib/session";
 import { statsApi, flavorProfileApi, journalApi, ratingNotesApi } from "@/lib/api";
 import { ChevronLeft, Lock, TrendingUp, TrendingDown, Minus, PenLine, Sparkles, Info } from "lucide-react";
@@ -350,22 +357,110 @@ export default function LabsTasteAnalytics() {
     staleTime: 120000,
   });
 
-  const typedStats = stats as ParticipantStats | undefined;
+  const typedStats = stats as (ParticipantStats & {
+    totalRatings?: number;
+    totalTastings?: number;
+    ratedRegions?: Record<string, number>;
+    ratedCaskTypes?: Record<string, number>;
+    ratedPeatLevels?: Record<string, number>;
+    highestOverall?: number;
+    ratingStabilityScore?: number | null;
+    explorationIndex?: number | null;
+  }) | undefined;
   const totalRatings = (typedStats?.totalTastingWhiskies ?? 0) + (typedStats?.totalJournalEntries ?? 0);
   const isUnlocked = totalRatings >= THRESHOLD;
   const justUnlocked = isUnlocked && totalRatings < THRESHOLD + 3;
   const pct = Math.min((totalRatings / THRESHOLD) * 100, 100);
 
+  const buildAnalyticsSummary = () => {
+    const s = typedStats ?? {};
+    const fmt = (v: unknown): string => v === null || v === undefined || v === "" ? "—" : String(v);
+    const recordRows = (rec?: Record<string, number>): { label: string; value: string }[] => {
+      if (!rec) return [];
+      return Object.entries(rec)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([k, v]) => ({ label: k, value: String(v) }));
+    };
+    const sections: PdfSection[] = [
+      {
+        heading: t("labs.analytics.pdfSectionOverview", "Übersicht"),
+        rows: [
+          { label: t("labs.analytics.totalRatings", "Bewertungen gesamt"), value: fmt(s.totalRatings ?? totalRatings) },
+          { label: t("labs.analytics.totalTastings", "Tastings"), value: fmt(s.totalTastings) },
+          { label: t("labs.analytics.totalTastingWhiskies", "Tasting-Whiskies"), value: fmt(s.totalTastingWhiskies) },
+          { label: t("labs.analytics.totalJournalEntries", "Journal-Einträge"), value: fmt(s.totalJournalEntries) },
+          { label: t("labs.analytics.highestOverall", "Höchste Bewertung"), value: fmt(s.highestOverall) },
+          { label: t("labs.analytics.ratingStability", "Bewertungs-Stabilität"), value: fmt(s.ratingStabilityScore) },
+          { label: t("labs.analytics.explorationIndex", "Erkundungs-Index"), value: fmt(s.explorationIndex) },
+        ],
+      },
+    ];
+    const regionRows = recordRows(s.ratedRegions);
+    if (regionRows.length > 0) sections.push({ heading: t("labs.analytics.pdfSectionRegions", "Regionen"), rows: regionRows });
+    const caskRows = recordRows(s.ratedCaskTypes);
+    if (caskRows.length > 0) sections.push({ heading: t("labs.analytics.pdfSectionCasks", "Fasstypen"), rows: caskRows });
+    const peatRows = recordRows(s.ratedPeatLevels);
+    if (peatRows.length > 0) sections.push({ heading: t("labs.analytics.pdfSectionPeat", "Rauchgrade"), rows: peatRows });
+    return sections;
+  };
+
+  const todaySegment = new Date().toISOString().split("T")[0];
+
+  const handleDownloadPdf = async () => {
+    const sections = buildAnalyticsSummary();
+    await downloadAnalyticsPdf(
+      `casksense_analytics_${safeFileSegment(todaySegment)}.pdf`,
+      t("labs.analytics.title", "Analytics"),
+      t("labs.analytics.pdfSubtitle", "Persönliche Geschmacks-Analyse"),
+      sections,
+      { generatedLabel: t("downloads.generatedAt", { defaultValue: "Erzeugt" }) },
+    );
+  };
+
+  const handleDownloadXlsx = async () => {
+    const sections = buildAnalyticsSummary();
+    const sheets = sections.map(sec => ({
+      name: sec.heading,
+      rows: sec.rows.map(r => ({ Kennzahl: r.label, Wert: r.value })),
+    }));
+    await downloadXlsxFromSheets(`casksense_analytics_${safeFileSegment(todaySegment)}.xlsx`, sheets);
+  };
+
   return (
     <div className="labs-page" data-testid="labs-taste-analytics">
       <MeineWeltActionBar active="analytics" />
 
-      <h1 className="labs-h2" style={{ color: th.text, marginBottom: SP.xs }} data-testid="text-analytics-title">
-        {t("labs.analytics.title", "Analytics")}
-      </h1>
-      <p style={{ fontSize: 14, color: th.muted, marginBottom: SP.md }}>
-        {t("labs.analytics.subtitle", "Your taste evolution & rating consistency")}
-      </p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 auto", minWidth: 0 }}>
+          <h1 className="labs-h2" style={{ color: th.text, marginBottom: SP.xs }} data-testid="text-analytics-title">
+            {t("labs.analytics.title", "Analytics")}
+          </h1>
+          <p style={{ fontSize: 14, color: th.muted, marginBottom: SP.md }}>
+            {t("labs.analytics.subtitle", "Your taste evolution & rating consistency")}
+          </p>
+        </div>
+        {isUnlocked && pid && (
+          <ContextDownloadBar
+            testId="analytics-download-bar"
+            align="end"
+            actions={[
+              {
+                key: "pdf",
+                label: t("downloads.pdf", { defaultValue: "PDF" }),
+                testId: "button-analytics-download-pdf",
+                run: handleDownloadPdf,
+              },
+              {
+                key: "xlsx",
+                label: t("downloads.excel", { defaultValue: "Excel" }),
+                testId: "button-analytics-download-xlsx",
+                run: handleDownloadXlsx,
+              },
+            ]}
+          />
+        )}
+      </div>
       {scaleInfo?.hasMultipleScales && (
         <p style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 4, marginBottom: SP.lg, color: th.faint }} data-testid="analytics-normalized-hint">
           <Info style={{ width: 12, height: 12, flexShrink: 0 }} />

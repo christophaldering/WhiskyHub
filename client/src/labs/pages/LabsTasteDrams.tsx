@@ -19,6 +19,8 @@ import {
   Users, Smile,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
+import ContextDownloadBar from "@/labs/components/ContextDownloadBar";
+import { downloadServerExport } from "@/labs/utils/contextDownloads";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import type { RatingData } from "@/labs/components/rating/types";
@@ -1107,26 +1109,48 @@ export default function LabsTasteDrams() {
     <div className="labs-page" style={{ paddingBottom: 32 }} data-testid="labs-taste-drams">
       <MeineWeltActionBar active="collection" />
       <div>
-        <div style={{ marginBottom: 16 }}>
-          <h1 className="labs-h2" style={{ color: "var(--labs-text)", margin: 0 }} data-testid="labs-drams-title">{t("drams.title")}</h1>
-          <button
-            type="button"
-            onClick={() => navigate("/labs/solo")}
-            data-testid="link-labs-drams-capture-hint"
-            style={{
-              marginTop: 6,
-              padding: 0,
-              background: "transparent",
-              border: "none",
-              color: "var(--labs-text-muted)",
-              fontSize: 12,
-              cursor: "pointer",
-              textAlign: "left",
-            }}
-          >
-            {t("drams.captureHint", "Neue Drams erfasst du im Tastings-Tab unter Solo.")}
-            <span style={{ color: "var(--labs-accent)", marginLeft: 4 }}>{t("drams.captureHintCta", "Solo öffnen →")}</span>
-          </button>
+        <div style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+          <div style={{ minWidth: 0, flex: "1 1 auto" }}>
+            <h1 className="labs-h2" style={{ color: "var(--labs-text)", margin: 0 }} data-testid="labs-drams-title">{t("drams.title")}</h1>
+            <button
+              type="button"
+              onClick={() => navigate("/labs/solo")}
+              data-testid="link-labs-drams-capture-hint"
+              style={{
+                marginTop: 6,
+                padding: 0,
+                background: "transparent",
+                border: "none",
+                color: "var(--labs-text-muted)",
+                fontSize: 12,
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+            >
+              {t("drams.captureHint", "Neue Drams erfasst du im Tastings-Tab unter Solo.")}
+              <span style={{ color: "var(--labs-accent)", marginLeft: 4 }}>{t("drams.captureHintCta", "Solo öffnen →")}</span>
+            </button>
+          </div>
+          {session.signedIn && session.pid && allItems.length > 0 && (
+            <ContextDownloadBar
+              testId="drams-download-bar"
+              align="end"
+              actions={[
+                {
+                  key: "csv",
+                  label: t("downloads.csv", { defaultValue: "CSV" }),
+                  testId: "button-drams-download-csv",
+                  run: () => downloadServerExport("journal", "csv", session.pid!, t),
+                },
+                {
+                  key: "xlsx",
+                  label: t("downloads.excel", { defaultValue: "Excel" }),
+                  testId: "button-drams-download-xlsx",
+                  run: () => downloadServerExport("journal", "xlsx", session.pid!, t),
+                },
+              ]}
+            />
+          )}
         </div>
       </div>
 

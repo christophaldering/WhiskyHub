@@ -17,7 +17,7 @@ import WhiskyImage from "@/labs/components/WhiskyImage";
 import ParticipantAvatar from "@/labs/components/ParticipantAvatar";
 import CoverImage16x9 from "@/labs/components/CoverImage16x9";
 import TastingDownloadGrid from "@/labs/components/TastingDownloadGrid";
-import { getStoryPdfAvailable } from "@/labs/utils/labsExports";
+import { getStoryPdfAvailable, getPresentationPdfAvailable, getNotesDocxAvailable } from "@/labs/utils/labsExports";
 import { stripGuestSuffix, formatScore } from "@/lib/utils";
 import { useUpload } from "@/hooks/use-upload";
 
@@ -1258,7 +1258,10 @@ export default function LabsResults({ params }: LabsResultsProps) {
         >
           <TastingDownloadGrid
             tastingId={tastingId}
+            participantId={currentParticipant?.id ?? null}
             storyAvailable={getStoryPdfAvailable(tasting, isHost)}
+            presentationAvailable={getPresentationPdfAvailable(tasting)}
+            notesAvailable={getNotesDocxAvailable(tasting, currentParticipant?.id)}
             inlineData={{ tasting, whiskyResults }}
             variant="buttons"
             testIdPrefix="results-download-inline"
@@ -1764,7 +1767,10 @@ export default function LabsResults({ params }: LabsResultsProps) {
           </p>
           <TastingDownloadGrid
             tastingId={tastingId}
+            participantId={currentParticipant?.id ?? null}
             storyAvailable={getStoryPdfAvailable(tasting, isHost)}
+            presentationAvailable={getPresentationPdfAvailable(tasting)}
+            notesAvailable={getNotesDocxAvailable(tasting, currentParticipant?.id)}
             inlineData={{ tasting, whiskyResults }}
             variant="cards"
             testIdPrefix="results-download"

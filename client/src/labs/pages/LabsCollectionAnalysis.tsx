@@ -2,6 +2,8 @@ import { useState, Component, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
+import ContextDownloadBar from "@/labs/components/ContextDownloadBar";
+import { downloadAnalyticsPdf, downloadXlsxFromSheets, safeFileSegment, type PdfSection } from "@/labs/utils/contextDownloads";
 import { useSession } from "@/lib/session";
 import { collectionApi } from "@/lib/api";
 import { distilleries } from "@/data/distilleries";
@@ -306,21 +308,75 @@ export default function LabsCollectionAnalysis() {
     </div>
   );
 
+  const buildSummarySections = (): PdfSection[] => {
+    const sections: PdfSection[] = [
+      {
+        heading: t("labs.collection.overview", "Overview"),
+        rows: [
+          { label: t("labs.collection.bottles", "Bottles"), value: String(total) },
+          { label: t("labs.collection.totalValue", "Total Value"), value: paidCount > 0 ? `€${totalPaid.toLocaleString("de-DE", { maximumFractionDigits: 0 })}` : "—" },
+          { label: t("labs.collection.avgPrice", "Avg Price"), value: paidCount > 0 ? `€${avgPrice.toFixed(0)}` : "—" },
+          { label: t("labs.collection.open", "Open"), value: String(statusCounts.open) },
+          { label: t("labs.collection.sealed", "Sealed"), value: String(statusCounts.closed) },
+          { label: t("labs.collection.empty", "Empty"), value: String(statusCounts.empty) },
+        ],
+      },
+    ];
+    if (regionEntries.length > 0) sections.push({ heading: t("labs.collection.regions", "Regions"), rows: regionEntries.slice(0, 12).map(e => ({ label: e.label, value: `${e.value} (${e.pct.toFixed(0)}%)` })) });
+    if (distilleryList.length > 0) sections.push({ heading: t("labs.collection.distilleries", "Distilleries"), rows: distilleryList.slice(0, 12).map(e => ({ label: e.label, value: String(e.count) })) });
+    if (caskEntries.length > 0) sections.push({ heading: t("labs.collection.caskTypes", "Cask Types"), rows: caskEntries.slice(0, 12).map(e => ({ label: e.label, value: `${e.value} (${e.pct.toFixed(0)}%)` })) });
+    if (ageEntries.length > 0) sections.push({ heading: t("labs.collection.ageDistribution", "Age Distribution"), rows: ageEntries.map(e => ({ label: e.label, value: `${e.value} (${e.pct.toFixed(0)}%)` })) });
+    if (abvEntries.length > 0) sections.push({ heading: t("labs.collection.abvDistribution", "ABV Distribution"), rows: abvEntries.map(e => ({ label: e.label, value: `${e.value} (${e.pct.toFixed(0)}%)` })) });
+    if (vintageEntries.length > 0) sections.push({ heading: t("labs.collection.vintages", "Vintages"), rows: vintageEntries.map(e => ({ label: e.label, value: String(e.value) })) });
+    if (top10Valuable.length > 0) sections.push({ heading: t("labs.collection.topValuable", "Top valuable bottles"), rows: top10Valuable.map(v => ({ label: v.name, value: `${v.currency} ${v.price.toLocaleString("de-DE", { maximumFractionDigits: 0 })}` })) });
+    return sections;
+  };
+
+  const todaySegment = new Date().toISOString().split("T")[0];
+
+  const handleDownloadPdf = async () => {
+    await downloadAnalyticsPdf(
+      `casksense_collection_analysis_${safeFileSegment(todaySegment)}.pdf`,
+      t("labs.collection.title", "Collection Analysis"),
+      t("labs.collection.subtitle", "Deep insights into your {{count}} bottles", { count: total }),
+      buildSummarySections(),
+      { generatedLabel: t("downloads.generatedAt", { defaultValue: "Erzeugt" }) },
+    );
+  };
+
+  const handleDownloadXlsx = async () => {
+    const sheets = buildSummarySections().map(sec => ({
+      name: sec.heading,
+      rows: sec.rows.map(r => ({ Kennzahl: r.label, Wert: r.value })),
+    }));
+    await downloadXlsxFromSheets(`casksense_collection_analysis_${safeFileSegment(todaySegment)}.xlsx`, sheets);
+  };
+
   return (
     <AnalysisErrorBoundary fallback={errorFallback}>
     <div className="labs-page" data-testid="labs-collection-analysis">
       <MeineWeltActionBar active="ai" />
 
-      <div style={{ marginBottom: SP.lg }}>
-        <div style={{ display: "flex", alignItems: "center", gap: SP.md, marginBottom: SP.xs }}>
-          <Library style={{ width: 20, height: 20, color: th.gold }} />
-          <h1 className="labs-h2" style={{ color: th.text, margin: 0 }} data-testid="text-collection-analysis-title">
-            {t("labs.collection.title", "Collection Analysis")}
-          </h1>
+      <div style={{ marginBottom: SP.lg, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 auto", minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: SP.md, marginBottom: SP.xs }}>
+            <Library style={{ width: 20, height: 20, color: th.gold }} />
+            <h1 className="labs-h2" style={{ color: th.text, margin: 0 }} data-testid="text-collection-analysis-title">
+              {t("labs.collection.title", "Collection Analysis")}
+            </h1>
+          </div>
+          <p style={{ fontSize: 14, color: th.muted }}>
+            {t("labs.collection.subtitle", "Deep insights into your {{count}} bottles", { count: total })}
+          </p>
         </div>
-        <p style={{ fontSize: 14, color: th.muted }}>
-          {t("labs.collection.subtitle", "Deep insights into your {{count}} bottles", { count: total })}
-        </p>
+        <ContextDownloadBar
+          testId="collection-analysis-download-bar"
+          align="end"
+          actions={[
+            { key: "pdf", label: t("downloads.pdf", { defaultValue: "PDF" }), testId: "button-collection-analysis-download-pdf", run: handleDownloadPdf },
+            { key: "xlsx", label: t("downloads.excel", { defaultValue: "Excel" }), testId: "button-collection-analysis-download-xlsx", run: handleDownloadXlsx },
+          ]}
+        />
       </div>
 
       <div style={cardStyle} data-testid="card-collection-overview">
