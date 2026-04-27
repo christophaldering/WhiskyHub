@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { BlockDefinition, BlockEditorPanelProps, BlockRendererProps } from "../core/types";
 import { useTastingStoryData } from "../data/TastingStoryDataContext";
+import { useImagePoolPicker } from "../editor/imagePoolPickerContext";
 
 const overrideSchema = z.object({
   funFact: z.string().optional().default(""),
@@ -13,6 +14,7 @@ const payloadSchema = z.object({
   includeParticipantIds: z.array(z.string()).nullable().optional().default(null),
   overrides: z.record(overrideSchema).optional().default({}),
   participantPhotos: z.array(z.string()).optional().default([]),
+  participantPhotosById: z.record(z.string()).optional().default({}),
 });
 
 type Payload = z.infer<typeof payloadSchema>;
@@ -58,7 +60,11 @@ function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
         {participants.map((p, idx) => {
           const ov = payload.overrides?.[p.id];
           const funFact = ov?.funFact && ov.funFact.trim().length > 0 ? ov.funFact : null;
-          const photoUrl = payload.participantPhotos?.[idx];
+          const byIdPhoto = payload.participantPhotosById?.[p.id];
+          const photoUrl =
+            byIdPhoto && byIdPhoto.trim().length > 0
+              ? byIdPhoto
+              : payload.participantPhotos?.[idx];
           return (
             <article
               key={p.id}
@@ -137,6 +143,7 @@ function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
 
 function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
   const data = useTastingStoryData();
+  const picker = useImagePoolPicker();
   const set = <K extends keyof Payload>(key: K, value: Payload[K]) => onChange({ ...payload, [key]: value });
   const allParticipants = data?.participants ?? [];
   const updateOverride = (pid: string, patch: Partial<{ funFact: string }>) => {
@@ -144,6 +151,25 @@ function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
     const existing = cur[pid] ?? { funFact: "" };
     const next = { ...cur, [pid]: { ...existing, ...patch } };
     set("overrides", next);
+  };
+  const setPhotoForParticipant = (pid: string, url: string | null) => {
+    const cur = payload.participantPhotosById ?? {};
+    const next = { ...cur };
+    if (url && url.trim().length > 0) {
+      next[pid] = url;
+    } else {
+      delete next[pid];
+    }
+    set("participantPhotosById", next);
+  };
+  const pickPhotoForParticipant = (pid: string) => {
+    if (!picker.available) return;
+    picker.openPicker(
+      (item) => {
+        setPhotoForParticipant(pid, item.url);
+      },
+      { filterCategory: "Teilnehmer", filterParticipantId: pid },
+    );
   };
   return (
     <div style={{ display: "grid", gap: 12 }}>
@@ -171,9 +197,59 @@ function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
           <div style={{ fontSize: 11, letterSpacing: ".2em", textTransform: "uppercase", color: "#A89A85" }}>Pro-Verkoster Fun-Fakts</div>
           {allParticipants.map((p) => {
             const ov = payload.overrides?.[p.id] ?? { funFact: "" };
+            const photoUrl = payload.participantPhotosById?.[p.id] ?? "";
             return (
               <div key={p.id} style={overrideRow}>
-                <div style={{ fontSize: 12, color: "#F5EDE0", marginBottom: 4 }}>{p.name}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                  {photoUrl ? (
+                    <img
+                      src={photoUrl}
+                      alt={p.name}
+                      style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", border: "1px solid #C9A961" }}
+                      data-testid={`preview-taster-photo-${p.id}`}
+                    />
+                  ) : (
+                    <div
+                      aria-hidden
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "50%",
+                        background: "rgba(201,169,97,0.15)",
+                        border: "1px solid rgba(201,169,97,0.4)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 12,
+                        color: "#C9A961",
+                      }}
+                      data-testid={`preview-taster-initials-${p.id}`}
+                    >
+                      {p.initials}
+                    </div>
+                  )}
+                  <div style={{ fontSize: 12, color: "#F5EDE0", flex: 1 }}>{p.name}</div>
+                  {picker.available ? (
+                    <button
+                      type="button"
+                      onClick={() => pickPhotoForParticipant(p.id)}
+                      style={pickPhotoBtnStyle}
+                      data-testid={`button-taster-pick-photo-${p.id}`}
+                    >
+                      Foto aus Pool
+                    </button>
+                  ) : null}
+                  {photoUrl ? (
+                    <button
+                      type="button"
+                      onClick={() => setPhotoForParticipant(p.id, null)}
+                      style={removePhotoBtnStyle}
+                      data-testid={`button-taster-remove-photo-${p.id}`}
+                    >
+                      ✕
+                    </button>
+                  ) : null}
+                </div>
                 <textarea
                   placeholder="KI-Fun-Fakt (z.B. Smoke-Liebhaber, mag fruchtige Sherry-Casks…)"
                   value={ov.funFact ?? ""}
@@ -194,6 +270,8 @@ const labelStyle: React.CSSProperties = { display: "grid", gap: 4, fontFamily: "
 const inputStyle: React.CSSProperties = { background: "rgba(201,169,97,0.06)", border: "1px solid rgba(201,169,97,0.25)", borderRadius: 4, padding: "8px 10px", color: "#F5EDE0", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, outline: "none" };
 const hintStyle: React.CSSProperties = { fontSize: 11, color: "#6B5F4F", padding: "8px 10px", background: "rgba(201,169,97,0.04)", border: "1px dashed rgba(201,169,97,0.15)", borderRadius: 4 };
 const overrideRow: React.CSSProperties = { display: "grid", gap: 6, padding: "10px", border: "1px solid rgba(201,169,97,0.12)", borderRadius: 4 };
+const pickPhotoBtnStyle: React.CSSProperties = { background: "transparent", color: "#C9A961", border: "1px solid rgba(201,169,97,0.4)", borderRadius: 3, padding: "4px 8px", fontSize: 10, fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase", cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif" };
+const removePhotoBtnStyle: React.CSSProperties = { background: "transparent", color: "#d97757", border: "1px solid rgba(217,119,87,0.4)", borderRadius: 3, padding: "2px 6px", fontSize: 11, cursor: "pointer", fontFamily: "'Inter', system-ui, sans-serif" };
 
 export const tasterGridBlock: BlockDefinition<Payload> = {
   type: "taster-grid",
@@ -207,6 +285,7 @@ export const tasterGridBlock: BlockDefinition<Payload> = {
     includeParticipantIds: null,
     overrides: {},
     participantPhotos: [],
+    participantPhotosById: {},
   }),
   payloadSchema,
   Renderer,

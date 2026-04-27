@@ -7,7 +7,7 @@ import { getParticipantOverallScores, computeStabilityScore } from "./participan
 import {
   participants, tastings, tastingParticipants, sharingParticipants, whiskies, whiskyHandoutLibrary, whiskyHandouts, tastingHandouts, distilleryHandouts, pdfSplitSessions, ratings, ratingAudit,
   profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, whiskyGroups, whiskyGroupMembers, journalEntries, benchmarkEntries, wishlistEntries,
-  newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, tastingPhotos, tastingEventPhotos, tastingStoryVersions, storyVersions, storyTemplates, userFeedback,
+  newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, tastingPhotos, tastingEventPhotos, tastingStoryVersions, tastingStoryImages, storyVersions, storyTemplates, userFeedback,
   type InsertParticipant, type Participant,
   type InsertTasting, type Tasting,
   type InsertTastingParticipant, type TastingParticipant,
@@ -41,6 +41,7 @@ import {
   type InsertTastingPhoto, type TastingPhoto,
   type InsertTastingEventPhoto, type TastingEventPhoto,
   type InsertTastingStoryVersion, type TastingStoryVersion,
+  type InsertTastingStoryImage, type TastingStoryImage,
   type InsertStoryVersion, type StoryVersion,
   type InsertStoryTemplate, type StoryTemplate,
   cmsPages,
@@ -694,6 +695,14 @@ export interface IStorage {
   getTastingStoryVersion(id: string): Promise<TastingStoryVersion | undefined>;
   createTastingStoryVersion(data: InsertTastingStoryVersion): Promise<TastingStoryVersion>;
   deleteTastingStoryVersion(id: string): Promise<void>;
+
+  // Tasting Story Images (per-tasting image pool with metadata)
+  listTastingStoryImages(tastingId: string): Promise<TastingStoryImage[]>;
+  getTastingStoryImage(id: string): Promise<TastingStoryImage | undefined>;
+  createTastingStoryImage(data: InsertTastingStoryImage): Promise<TastingStoryImage>;
+  updateTastingStoryImage(id: string, data: Partial<Omit<InsertTastingStoryImage, "tastingId">>): Promise<TastingStoryImage | undefined>;
+  deleteTastingStoryImage(id: string): Promise<void>;
+  findTastingStoryImageByUrl(tastingId: string, url: string): Promise<TastingStoryImage | undefined>;
 
   // Storybuilder Versions (Phase 2 — generic block-based stories)
   getLatestStoryVersion(sourceType: string, sourceId: string): Promise<StoryVersion | undefined>;
@@ -3758,6 +3767,45 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTastingStoryVersion(id: string): Promise<void> {
     await db.delete(tastingStoryVersions).where(eq(tastingStoryVersions.id, id));
+  }
+
+  // --- Tasting Story Images (per-tasting image pool) ---
+  async listTastingStoryImages(tastingId: string): Promise<TastingStoryImage[]> {
+    return db
+      .select()
+      .from(tastingStoryImages)
+      .where(eq(tastingStoryImages.tastingId, tastingId))
+      .orderBy(asc(tastingStoryImages.createdAt));
+  }
+
+  async getTastingStoryImage(id: string): Promise<TastingStoryImage | undefined> {
+    const [row] = await db.select().from(tastingStoryImages).where(eq(tastingStoryImages.id, id));
+    return row;
+  }
+
+  async createTastingStoryImage(data: InsertTastingStoryImage): Promise<TastingStoryImage> {
+    const [row] = await db.insert(tastingStoryImages).values(data).returning();
+    return row;
+  }
+
+  async updateTastingStoryImage(
+    id: string,
+    data: Partial<Omit<InsertTastingStoryImage, "tastingId">>,
+  ): Promise<TastingStoryImage | undefined> {
+    const [row] = await db.update(tastingStoryImages).set(data).where(eq(tastingStoryImages.id, id)).returning();
+    return row;
+  }
+
+  async deleteTastingStoryImage(id: string): Promise<void> {
+    await db.delete(tastingStoryImages).where(eq(tastingStoryImages.id, id));
+  }
+
+  async findTastingStoryImageByUrl(tastingId: string, url: string): Promise<TastingStoryImage | undefined> {
+    const [row] = await db
+      .select()
+      .from(tastingStoryImages)
+      .where(and(eq(tastingStoryImages.tastingId, tastingId), eq(tastingStoryImages.url, url)));
+    return row;
   }
 
   // --- Storybuilder Versions ---

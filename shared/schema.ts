@@ -800,6 +800,28 @@ export const insertTastingStoryVersionSchema = createInsertSchema(tastingStoryVe
 export type InsertTastingStoryVersion = z.infer<typeof insertTastingStoryVersionSchema>;
 export type TastingStoryVersion = typeof tastingStoryVersions.$inferSelect;
 
+// --- Tasting Story Images (central per-tasting image pool) ---
+export const tastingStoryImages = pgTable("tasting_story_images", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tastingId: varchar("tasting_id").notNull(),
+  url: text("url").notNull(),
+  name: text("name"),
+  caption: text("caption"),
+  altText: text("alt_text"),
+  moodDescription: text("mood_description"),
+  categories: text("categories").array().notNull().default(sql`ARRAY[]::text[]`),
+  participantIds: text("participant_ids").array().notNull().default(sql`ARRAY[]::text[]`),
+  whiskyIds: text("whisky_ids").array().notNull().default(sql`ARRAY[]::text[]`),
+  uploadedByParticipantId: varchar("uploaded_by_participant_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  tastingIdx: index("idx_tasting_story_images_tasting").on(table.tastingId, table.createdAt),
+}));
+
+export const insertTastingStoryImageSchema = createInsertSchema(tastingStoryImages).omit({ id: true, createdAt: true });
+export type InsertTastingStoryImage = z.infer<typeof insertTastingStoryImageSchema>;
+export type TastingStoryImage = typeof tastingStoryImages.$inferSelect;
+
 // --- User Feedback ---
 export const userFeedback = pgTable("user_feedback", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

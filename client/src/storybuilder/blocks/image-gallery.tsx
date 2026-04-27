@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { BlockDefinition, BlockEditorPanelProps, BlockRendererProps } from "../core/types";
 import { safeUrl } from "../editor/RichTextEditor";
 import { ImageUploadField } from "../editor/ImageUploadField";
+import { useImagePoolPicker } from "../editor/imagePoolPickerContext";
 import { ResponsiveImage } from "../renderer/ResponsiveImage";
 
 const itemSchema = z.object({
@@ -98,11 +99,39 @@ function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
 
 function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
   const set = <K extends keyof Payload>(key: K, value: Payload[K]) => onChange({ ...payload, [key]: value });
+  const picker = useImagePoolPicker();
   const updateItem = (idx: number, patch: Partial<Item>) => {
     const items = payload.items.map((it, i) => (i === idx ? { ...it, ...patch } : it));
     set("items", items);
   };
   const addItem = () => set("items", [...payload.items, { url: "", alt: "", caption: "" }]);
+  const addFromPool = () => {
+    if (!picker.available) return;
+    picker.openPicker(
+      (item) => {
+        set("items", [
+          ...payload.items,
+          { url: item.url, alt: item.altText ?? item.name ?? "", caption: item.caption ?? "" },
+        ]);
+      },
+      { filterCategory: "Galerie" },
+    );
+  };
+  const replaceFromPool = (idx: number) => {
+    if (!picker.available) return;
+    picker.openPicker(
+      (item) => {
+        const cur = payload.items[idx];
+        if (!cur) return;
+        updateItem(idx, {
+          url: item.url,
+          alt: cur.alt && cur.alt.length > 0 ? cur.alt : item.altText ?? item.name ?? "",
+          caption: cur.caption && cur.caption.length > 0 ? cur.caption : item.caption ?? "",
+        });
+      },
+      { filterCategory: "Galerie" },
+    );
+  };
   const removeItem = (idx: number) => set("items", payload.items.filter((_, i) => i !== idx));
   const moveItem = (idx: number, dir: -1 | 1) => {
     const target = idx + dir;
@@ -192,6 +221,16 @@ function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
               onChange={(url) => updateItem(idx, { url })}
               testId={`gallery-${idx}`}
             />
+            {picker.available ? (
+              <button
+                type="button"
+                onClick={() => replaceFromPool(idx)}
+                style={poolPickerBtnStyle}
+                data-testid={`button-gallery-pick-from-pool-${idx}`}
+              >
+                Aus Bild-Pool wählen
+              </button>
+            ) : null}
             <input
               type="text"
               value={item.alt ?? ""}
@@ -213,23 +252,35 @@ function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
           </div>
         ))}
       </div>
-      <button
-        type="button"
-        onClick={addItem}
-        style={{
-          background: "rgba(201,169,97,0.1)",
-          border: "1px dashed rgba(201,169,97,0.4)",
-          color: "#C9A961",
-          padding: "8px 10px",
-          borderRadius: 4,
-          fontFamily: "'Inter', system-ui, sans-serif",
-          fontSize: 12,
-          cursor: "pointer",
-        }}
-        data-testid="button-gallery-add-item"
-      >
-        + Bild hinzufügen
-      </button>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <button
+          type="button"
+          onClick={addItem}
+          style={{
+            background: "rgba(201,169,97,0.1)",
+            border: "1px dashed rgba(201,169,97,0.4)",
+            color: "#C9A961",
+            padding: "8px 10px",
+            borderRadius: 4,
+            fontFamily: "'Inter', system-ui, sans-serif",
+            fontSize: 12,
+            cursor: "pointer",
+          }}
+          data-testid="button-gallery-add-item"
+        >
+          + Bild hinzufügen
+        </button>
+        {picker.available ? (
+          <button
+            type="button"
+            onClick={addFromPool}
+            style={poolPickerBtnStyle}
+            data-testid="button-gallery-add-from-pool"
+          >
+            Aus Bild-Pool hinzufügen
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -263,6 +314,21 @@ const miniButtonStyle: React.CSSProperties = {
   cursor: "pointer",
   fontFamily: "'Inter', system-ui, sans-serif",
   minWidth: 24,
+};
+
+const poolPickerBtnStyle: React.CSSProperties = {
+  background: "transparent",
+  color: "#C9A961",
+  border: "1px solid rgba(201,169,97,0.4)",
+  borderRadius: 3,
+  padding: "5px 10px",
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: ".1em",
+  textTransform: "uppercase",
+  cursor: "pointer",
+  fontFamily: "'Inter', system-ui, sans-serif",
+  justifySelf: "start",
 };
 
 export const imageGalleryBlock: BlockDefinition<Payload> = {

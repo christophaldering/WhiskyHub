@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { BlockDefinition, BlockEditorPanelProps, BlockRendererProps } from "../core/types";
 import { safeUrl } from "../editor/RichTextEditor";
 import { ImageUploadField } from "../editor/ImageUploadField";
+import { useImagePoolPicker } from "../editor/imagePoolPickerContext";
 
 const payloadSchema = z.object({
   eyebrow: z.string().optional().default(""),
@@ -187,6 +188,7 @@ function Renderer({ payload, theme, mode }: BlockRendererProps<Payload>) {
 
 function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
   const set = <K extends keyof Payload>(key: K, value: Payload[K]) => onChange({ ...payload, [key]: value });
+  const picker = useImagePoolPicker();
   return (
     <div style={{ display: "grid", gap: 12 }}>
       <label style={labelStyle}>
@@ -229,12 +231,31 @@ function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
           data-testid="input-hero-meta"
         />
       </label>
-      <ImageUploadField
-        value={payload.imageUrl ?? ""}
-        onChange={(url) => set("imageUrl", url)}
-        label="Hintergrundbild"
-        testId="hero-image"
-      />
+      <div style={{ display: "grid", gap: 4 }}>
+        <ImageUploadField
+          value={payload.imageUrl ?? ""}
+          onChange={(url) => set("imageUrl", url)}
+          label="Hintergrundbild"
+          testId="hero-image"
+        />
+        {picker.available ? (
+          <button
+            type="button"
+            onClick={() =>
+              picker.openPicker(
+                (item) => {
+                  set("imageUrl", item.url);
+                },
+                { filterCategory: "Hero" },
+              )
+            }
+            style={poolPickerBtnStyle}
+            data-testid="button-hero-pick-from-pool"
+          >
+            Aus Bild-Pool wählen
+          </button>
+        ) : null}
+      </div>
       <label style={labelStyle}>
         <span>Ausrichtung</span>
         <select
@@ -348,6 +369,21 @@ const inputStyle: React.CSSProperties = {
   fontFamily: "'Inter', system-ui, sans-serif",
   fontSize: 14,
   outline: "none",
+};
+
+const poolPickerBtnStyle: React.CSSProperties = {
+  background: "transparent",
+  color: "#C9A961",
+  border: "1px solid rgba(201,169,97,0.4)",
+  borderRadius: 3,
+  padding: "5px 10px",
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: ".1em",
+  textTransform: "uppercase",
+  cursor: "pointer",
+  fontFamily: "'Inter', system-ui, sans-serif",
+  justifySelf: "start",
 };
 
 export const heroCoverBlock: BlockDefinition<Payload> = {

@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { BlockDefinition, BlockEditorPanelProps, BlockRendererProps } from "../core/types";
 import { safeUrl } from "../editor/RichTextEditor";
 import { ImageUploadField } from "../editor/ImageUploadField";
+import { useImagePoolPicker } from "../editor/imagePoolPickerContext";
 import { ResponsiveImage } from "../renderer/ResponsiveImage";
 
 const payloadSchema = z.object({
@@ -78,14 +79,39 @@ function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
 
 function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
   const set = <K extends keyof Payload>(key: K, value: Payload[K]) => onChange({ ...payload, [key]: value });
+  const picker = useImagePoolPicker();
   return (
     <div style={{ display: "grid", gap: 12 }}>
-      <ImageUploadField
-        value={payload.imageUrl}
-        onChange={(url) => set("imageUrl", url)}
-        label="Bild"
-        testId="full-width-image"
-      />
+      <div style={{ display: "grid", gap: 4 }}>
+        <ImageUploadField
+          value={payload.imageUrl}
+          onChange={(url) => set("imageUrl", url)}
+          label="Bild"
+          testId="full-width-image"
+        />
+        {picker.available ? (
+          <button
+            type="button"
+            onClick={() =>
+              picker.openPicker(
+                (item) => {
+                  onChange({
+                    ...payload,
+                    imageUrl: item.url,
+                    alt: payload.alt || item.altText || item.name || "",
+                    caption: payload.caption || item.caption || undefined,
+                  });
+                },
+                { filterCategory: "Galerie" },
+              )
+            }
+            style={poolPickerBtnStyle}
+            data-testid="button-fullwidth-pick-from-pool"
+          >
+            Aus Bild-Pool wählen
+          </button>
+        ) : null}
+      </div>
       <label style={labelStyle}>
         <span>Alt-Text (Barrierefreiheit, Pflicht)</span>
         <input
@@ -156,6 +182,21 @@ const inputStyle: React.CSSProperties = {
   fontFamily: "'Inter', system-ui, sans-serif",
   fontSize: 14,
   outline: "none",
+};
+
+const poolPickerBtnStyle: React.CSSProperties = {
+  background: "transparent",
+  color: "#C9A961",
+  border: "1px solid rgba(201,169,97,0.4)",
+  borderRadius: 3,
+  padding: "5px 10px",
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: ".1em",
+  textTransform: "uppercase",
+  cursor: "pointer",
+  fontFamily: "'Inter', system-ui, sans-serif",
+  justifySelf: "start",
 };
 
 export const fullWidthImageBlock: BlockDefinition<Payload> = {

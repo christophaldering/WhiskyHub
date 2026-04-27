@@ -143,3 +143,136 @@ export async function regenerateTastingStoryBlocks(
   });
   return readJson<RegenerateBlocksResponse>(res, "KI-Regenerierung fehlgeschlagen");
 }
+
+export type TastingStoryImageItem = {
+  id: string;
+  tastingId: string;
+  url: string;
+  name: string | null;
+  caption: string | null;
+  altText: string | null;
+  moodDescription: string | null;
+  categories: string[];
+  participantIds: string[];
+  whiskyIds: string[];
+  uploadedByParticipantId: string | null;
+  createdAt: string;
+};
+
+export type ImagePoolMetadataPatch = {
+  name?: string | null;
+  caption?: string | null;
+  altText?: string | null;
+  moodDescription?: string | null;
+  categories?: string[];
+  participantIds?: string[];
+  whiskyIds?: string[];
+};
+
+export async function listTastingStoryImagePool(tastingId: string): Promise<TastingStoryImageItem[]> {
+  const res = await fetch(`/api/tasting-stories/${encodeURIComponent(tastingId)}/image-pool`, {
+    credentials: "include",
+    headers: pidHeaders(),
+  });
+  const data = await readJson<{ items: TastingStoryImageItem[] }>(res, "Bild-Pool konnte nicht geladen werden");
+  return data.items;
+}
+
+export async function createTastingStoryImagePoolEntry(
+  tastingId: string,
+  payload: { url: string } & ImagePoolMetadataPatch,
+): Promise<TastingStoryImageItem> {
+  const res = await fetch(`/api/tasting-stories/${encodeURIComponent(tastingId)}/image-pool`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json", ...pidHeaders() },
+    body: JSON.stringify(payload),
+  });
+  const data = await readJson<{ item: TastingStoryImageItem }>(res, "Bild konnte nicht angelegt werden");
+  return data.item;
+}
+
+export async function updateTastingStoryImagePoolEntry(
+  tastingId: string,
+  imageId: string,
+  patch: ImagePoolMetadataPatch,
+): Promise<TastingStoryImageItem> {
+  const res = await fetch(`/api/tasting-stories/${encodeURIComponent(tastingId)}/image-pool/${encodeURIComponent(imageId)}`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json", ...pidHeaders() },
+    body: JSON.stringify(patch),
+  });
+  const data = await readJson<{ item: TastingStoryImageItem }>(res, "Bild konnte nicht aktualisiert werden");
+  return data.item;
+}
+
+export async function deleteTastingStoryImagePoolEntry(tastingId: string, imageId: string): Promise<void> {
+  const res = await fetch(`/api/tasting-stories/${encodeURIComponent(tastingId)}/image-pool/${encodeURIComponent(imageId)}`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: pidHeaders(),
+  });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    throw new Error(txt || "Bild konnte nicht gelöscht werden");
+  }
+}
+
+export type ImagePoolDescribeFields = "name" | "caption" | "altText" | "moodDescription";
+
+export async function aiDescribeTastingStoryImage(
+  tastingId: string,
+  imageId: string,
+  options?: { fields?: ImagePoolDescribeFields[]; language?: "de" | "en" },
+): Promise<TastingStoryImageItem> {
+  const res = await fetch(
+    `/api/tasting-stories/${encodeURIComponent(tastingId)}/image-pool/${encodeURIComponent(imageId)}/ai-describe`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...pidHeaders() },
+      body: JSON.stringify(options ?? {}),
+    },
+  );
+  const data = await readJson<{ item: TastingStoryImageItem }>(res, "KI-Beschreibung fehlgeschlagen");
+  return data.item;
+}
+
+export async function aiDescribeTastingStoryImagesBatch(
+  tastingId: string,
+  imageIds: string[],
+  options?: { fields?: ImagePoolDescribeFields[]; language?: "de" | "en"; onlyMissing?: boolean },
+): Promise<{ items: TastingStoryImageItem[]; failedIds: string[]; skippedIds: string[] }> {
+  const res = await fetch(`/api/tasting-stories/${encodeURIComponent(tastingId)}/image-pool/ai-describe-batch`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json", ...pidHeaders() },
+    body: JSON.stringify({ imageIds, ...(options ?? {}) }),
+  });
+  return readJson<{ items: TastingStoryImageItem[]; failedIds: string[]; skippedIds: string[] }>(
+    res,
+    "Batch-Beschreibung fehlgeschlagen",
+  );
+}
+
+export type ImagePoolBackfillItem = {
+  url: string;
+  name?: string | null;
+  caption?: string | null;
+  altText?: string | null;
+  categories?: string[];
+};
+
+export async function backfillTastingStoryImagePool(
+  tastingId: string,
+  items: ImagePoolBackfillItem[],
+): Promise<{ created: TastingStoryImageItem[]; createdCount: number }> {
+  const res = await fetch(`/api/tasting-stories/${encodeURIComponent(tastingId)}/image-pool/backfill`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json", ...pidHeaders() },
+    body: JSON.stringify({ items }),
+  });
+  return readJson<{ created: TastingStoryImageItem[]; createdCount: number }>(res, "Backfill fehlgeschlagen");
+}

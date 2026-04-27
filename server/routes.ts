@@ -9,7 +9,7 @@ import { readExcelBuffer, sheetToArrayOfArrays, sheetToJson, sheetToCsv, jsonToS
 // @ts-ignore
 import AdmZip from "adm-zip";
 import { storage, getUniquePersonCount, deduplicateParticipantList, getAllCommunityRatings, buildCommunityWhiskyKey, invalidateCommunityRatingsCache } from "./storage";
-import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema, insertBenchmarkEntrySchema, type Participant, type WhiskyFriend, type WhiskybaseCollectionItem, type JournalEntry, type PdfSplitPage, type WhiskyHandoutLibraryEntry, type InsertWhiskyHandoutLibraryEntry, type InsertTastingAiReport } from "@shared/schema";
+import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema, insertBenchmarkEntrySchema, type Participant, type WhiskyFriend, type WhiskybaseCollectionItem, type JournalEntry, type PdfSplitPage, type WhiskyHandoutLibraryEntry, type InsertWhiskyHandoutLibraryEntry, type InsertTastingAiReport, type InsertTastingStoryImage, type TastingStoryImage } from "@shared/schema";
 import OpenAI from "openai";
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
@@ -26501,6 +26501,376 @@ ${cleaned.slice(0, 60000)}`;
     } catch (e: unknown) {
       console.error("[tasting-stories/wizard-suggest-headline] error:", e);
       const msg = e instanceof Error ? e.message : "Vorschlag fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  // ===== Tasting Story Image Pool =====
+  const imagePoolMetadataSchema = z.object({
+    name: z.string().max(200).nullable().optional(),
+    caption: z.string().max(800).nullable().optional(),
+    altText: z.string().max(400).nullable().optional(),
+    moodDescription: z.string().max(2000).nullable().optional(),
+    categories: z.array(z.string().min(1).max(80)).max(20).optional(),
+    participantIds: z.array(z.string().min(1).max(128)).max(50).optional(),
+    whiskyIds: z.array(z.string().min(1).max(128)).max(50).optional(),
+  });
+
+  const imagePoolCreateSchema = imagePoolMetadataSchema.extend({
+    url: z.string().min(1).max(2000),
+  });
+
+  const imagePoolBackfillSchema = z.object({
+    items: z
+      .array(
+        z.object({
+          url: z.string().min(1).max(2000),
+          name: z.string().max(200).nullable().optional(),
+          caption: z.string().max(800).nullable().optional(),
+          altText: z.string().max(400).nullable().optional(),
+          categories: z.array(z.string().min(1).max(80)).max(20).optional(),
+        }),
+      )
+      .max(200),
+  });
+
+  app.get("/api/tasting-stories/:tastingId/image-pool", async (req: Request, res: Response) => {
+    try {
+      const tastingId = sanitizeTastingId(req.params.tastingId);
+      if (!tastingId) return res.status(400).json({ message: "tastingId fehlt" });
+      const access = await checkTastingStoryAccess(req, tastingId);
+      if (!access.ok) return res.status(access.status).json({ message: access.message });
+      const items = await storage.listTastingStoryImages(tastingId);
+      return res.json({ items });
+    } catch (e: unknown) {
+      console.error("[tasting-stories/image-pool/list] error:", e);
+      const msg = e instanceof Error ? e.message : "Bild-Pool konnte nicht geladen werden";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.post("/api/tasting-stories/:tastingId/image-pool/upload", memUpload.single("file"), async (req: Request, res: Response) => {
+    try {
+      const tastingId = sanitizeTastingId(req.params.tastingId);
+      if (!tastingId) return res.status(400).json({ message: "tastingId fehlt" });
+      const access = await checkTastingStoryAccess(req, tastingId);
+      if (!access.ok) return res.status(access.status).json({ message: access.message });
+      const file = (req as Request & { file?: Express.Multer.File }).file;
+      if (!file) return res.status(400).json({ message: "Keine Datei übergeben" });
+      const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      if (!allowed.includes(file.mimetype)) {
+        return res.status(415).json({ message: "Nur JPG, PNG, WebP oder GIF erlaubt" });
+      }
+      if (file.buffer.length > 10 * 1024 * 1024) {
+        return res.status(413).json({ message: "Datei zu groß (max 10 MB)" });
+      }
+      const url = await uploadBufferToObjectStorage(objectStorage, file.buffer, file.mimetype);
+      return res.json({ url });
+    } catch (e: unknown) {
+      console.error("[tasting-stories/image-pool/upload] error:", e);
+      const msg = e instanceof Error ? e.message : "Upload fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.post("/api/tasting-stories/:tastingId/image-pool", async (req: Request, res: Response) => {
+    try {
+      const tastingId = sanitizeTastingId(req.params.tastingId);
+      if (!tastingId) return res.status(400).json({ message: "tastingId fehlt" });
+      const access = await checkTastingStoryAccess(req, tastingId);
+      if (!access.ok) return res.status(access.status).json({ message: access.message });
+      const parsed = imagePoolCreateSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(422).json({ message: "Ungültiger Request-Body" });
+      const existing = await storage.findTastingStoryImageByUrl(tastingId, parsed.data.url);
+      if (existing) return res.json({ item: existing, deduped: true });
+      const created = await storage.createTastingStoryImage({
+        tastingId,
+        url: parsed.data.url,
+        name: parsed.data.name ?? null,
+        caption: parsed.data.caption ?? null,
+        altText: parsed.data.altText ?? null,
+        moodDescription: parsed.data.moodDescription ?? null,
+        categories: parsed.data.categories ?? [],
+        participantIds: parsed.data.participantIds ?? [],
+        whiskyIds: parsed.data.whiskyIds ?? [],
+        uploadedByParticipantId: access.participant.id,
+      });
+      return res.status(201).json({ item: created });
+    } catch (e: unknown) {
+      console.error("[tasting-stories/image-pool/create] error:", e);
+      const msg = e instanceof Error ? e.message : "Bild konnte nicht angelegt werden";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.patch("/api/tasting-stories/:tastingId/image-pool/:imageId", async (req: Request, res: Response) => {
+    try {
+      const tastingId = sanitizeTastingId(req.params.tastingId);
+      if (!tastingId) return res.status(400).json({ message: "tastingId fehlt" });
+      const access = await checkTastingStoryAccess(req, tastingId);
+      if (!access.ok) return res.status(access.status).json({ message: access.message });
+      const imageId = String(req.params.imageId ?? "").trim();
+      if (!imageId) return res.status(400).json({ message: "imageId fehlt" });
+      const existing = await storage.getTastingStoryImage(imageId);
+      if (!existing || existing.tastingId !== tastingId) return res.status(404).json({ message: "Bild nicht gefunden" });
+      const parsed = imagePoolMetadataSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(422).json({ message: "Ungültiger Request-Body" });
+      const patch: Partial<Omit<InsertTastingStoryImage, "tastingId">> = {};
+      if (parsed.data.name !== undefined) patch.name = parsed.data.name ?? null;
+      if (parsed.data.caption !== undefined) patch.caption = parsed.data.caption ?? null;
+      if (parsed.data.altText !== undefined) patch.altText = parsed.data.altText ?? null;
+      if (parsed.data.moodDescription !== undefined) patch.moodDescription = parsed.data.moodDescription ?? null;
+      if (parsed.data.categories !== undefined) patch.categories = parsed.data.categories;
+      if (parsed.data.participantIds !== undefined) patch.participantIds = parsed.data.participantIds;
+      if (parsed.data.whiskyIds !== undefined) patch.whiskyIds = parsed.data.whiskyIds;
+      const updated = await storage.updateTastingStoryImage(imageId, patch);
+      return res.json({ item: updated ?? existing });
+    } catch (e: unknown) {
+      console.error("[tasting-stories/image-pool/update] error:", e);
+      const msg = e instanceof Error ? e.message : "Bild konnte nicht aktualisiert werden";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.delete("/api/tasting-stories/:tastingId/image-pool/:imageId", async (req: Request, res: Response) => {
+    try {
+      const tastingId = sanitizeTastingId(req.params.tastingId);
+      if (!tastingId) return res.status(400).json({ message: "tastingId fehlt" });
+      const access = await checkTastingStoryAccess(req, tastingId);
+      if (!access.ok) return res.status(access.status).json({ message: access.message });
+      const imageId = String(req.params.imageId ?? "").trim();
+      if (!imageId) return res.status(400).json({ message: "imageId fehlt" });
+      const existing = await storage.getTastingStoryImage(imageId);
+      if (!existing || existing.tastingId !== tastingId) return res.status(404).json({ message: "Bild nicht gefunden" });
+      await storage.deleteTastingStoryImage(imageId);
+      return res.json({ ok: true });
+    } catch (e: unknown) {
+      console.error("[tasting-stories/image-pool/delete] error:", e);
+      const msg = e instanceof Error ? e.message : "Bild konnte nicht gelöscht werden";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.post("/api/tasting-stories/:tastingId/image-pool/backfill", async (req: Request, res: Response) => {
+    try {
+      const tastingId = sanitizeTastingId(req.params.tastingId);
+      if (!tastingId) return res.status(400).json({ message: "tastingId fehlt" });
+      const access = await checkTastingStoryAccess(req, tastingId);
+      if (!access.ok) return res.status(access.status).json({ message: access.message });
+      const parsed = imagePoolBackfillSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(422).json({ message: "Ungültiger Request-Body" });
+      const created: TastingStoryImage[] = [];
+      for (const item of parsed.data.items) {
+        const existing = await storage.findTastingStoryImageByUrl(tastingId, item.url);
+        if (existing) continue;
+        const row = await storage.createTastingStoryImage({
+          tastingId,
+          url: item.url,
+          name: item.name ?? null,
+          caption: item.caption ?? null,
+          altText: item.altText ?? null,
+          moodDescription: null,
+          categories: item.categories ?? [],
+          participantIds: [],
+          whiskyIds: [],
+          uploadedByParticipantId: access.participant.id,
+        });
+        created.push(row);
+      }
+      return res.json({ created, createdCount: created.length });
+    } catch (e: unknown) {
+      console.error("[tasting-stories/image-pool/backfill] error:", e);
+      const msg = e instanceof Error ? e.message : "Backfill fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  const aiDescribeSchema = z.object({
+    fields: z.array(z.enum(["name", "caption", "altText", "moodDescription"])).min(1).max(4).optional(),
+    language: z.enum(["de", "en"]).optional(),
+  });
+
+  const buildImagePoolPrompt = (lang: "de" | "en", img: TastingStoryImage): { system: string; user: string } => {
+    if (lang === "en") {
+      return {
+        system:
+          "You are a whisky-event editor describing a single photo from a tasting evening. Reply with a JSON object {\"name\":\"<short title>\",\"caption\":\"<one short sentence>\",\"altText\":\"<short accessible alt-text>\",\"moodDescription\":\"<2-3 sentences atmospheric description>\"}. Plain text only, no quotes inside fields.",
+        user: `Image URL: ${img.url}\nExisting categories: ${img.categories.join(", ") || "none"}\nExisting name: ${img.name ?? "(none)"}`,
+      };
+    }
+    return {
+      system:
+        "Du bist ein Redakteur für Whisky-Events und beschreibst ein einzelnes Foto eines Tasting-Abends. Antworte ausschliesslich mit einem JSON-Objekt {\"name\":\"<kurzer Titel>\",\"caption\":\"<ein kurzer Satz>\",\"altText\":\"<kurzer barrierefreier Alt-Text>\",\"moodDescription\":\"<2-3 Sätze atmosphärische Beschreibung>\"}. Reiner Text, keine Anführungszeichen in den Feldern.",
+      user: `Bild-URL: ${img.url}\nVorhandene Kategorien: ${img.categories.join(", ") || "keine"}\nVorhandener Name: ${img.name ?? "(keiner)"}`,
+    };
+  };
+
+  const tryParsePoolJson = (raw: string): Record<string, string> => {
+    try {
+      const stripped = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+      const parsed = JSON.parse(stripped) as unknown;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        const out: Record<string, string> = {};
+        for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+          if (typeof v === "string") out[k] = v.trim();
+        }
+        return out;
+      }
+    } catch {
+      void 0;
+    }
+    return {};
+  };
+
+  const describeImageOnce = async (
+    openaiClient: OpenAI,
+    img: TastingStoryImage,
+    fields: Array<"name" | "caption" | "altText" | "moodDescription">,
+    language: "de" | "en",
+  ): Promise<Partial<Pick<InsertTastingStoryImage, "name" | "caption" | "altText" | "moodDescription">>> => {
+    const { system, user } = buildImagePoolPrompt(language, img);
+    const completion = await openaiClient.chat.completions.create({
+      model: "gpt-4o-mini",
+      response_format: { type: "json_object" },
+      max_tokens: 600,
+      temperature: 0.6,
+      messages: [
+        { role: "system", content: system },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: user },
+            { type: "image_url", image_url: { url: img.url, detail: "low" } },
+          ],
+        },
+      ],
+    });
+    const raw = completion.choices[0]?.message?.content?.trim() ?? "";
+    const parsed = tryParsePoolJson(raw);
+    const result: Partial<Pick<InsertTastingStoryImage, "name" | "caption" | "altText" | "moodDescription">> = {};
+    if (fields.includes("name") && typeof parsed.name === "string" && parsed.name.length > 0) result.name = parsed.name.slice(0, 200);
+    if (fields.includes("caption") && typeof parsed.caption === "string" && parsed.caption.length > 0) result.caption = parsed.caption.slice(0, 800);
+    if (fields.includes("altText") && typeof parsed.altText === "string" && parsed.altText.length > 0) result.altText = parsed.altText.slice(0, 400);
+    if (fields.includes("moodDescription") && typeof parsed.moodDescription === "string" && parsed.moodDescription.length > 0) {
+      result.moodDescription = parsed.moodDescription.slice(0, 2000);
+    }
+    return result;
+  };
+
+  app.post("/api/tasting-stories/:tastingId/image-pool/:imageId/ai-describe", async (req: Request, res: Response) => {
+    try {
+      const tastingId = sanitizeTastingId(req.params.tastingId);
+      if (!tastingId) return res.status(400).json({ message: "tastingId fehlt" });
+      const access = await checkTastingStoryAccess(req, tastingId);
+      if (!access.ok) return res.status(access.status).json({ message: access.message });
+      const imageId = String(req.params.imageId ?? "").trim();
+      if (!imageId) return res.status(400).json({ message: "imageId fehlt" });
+      const img = await storage.getTastingStoryImage(imageId);
+      if (!img || img.tastingId !== tastingId) return res.status(404).json({ message: "Bild nicht gefunden" });
+      const parsed = aiDescribeSchema.safeParse(req.body ?? {});
+      if (!parsed.success) return res.status(422).json({ message: "Ungültiger Request-Body" });
+      const fields = parsed.data.fields ?? ["name", "caption", "altText", "moodDescription"];
+      const language = parsed.data.language ?? "de";
+      const rate = checkStoryAiRate(`image-pool:${access.participant.id}`);
+      if (!rate.allowed) {
+        return res.status(429).json({ message: `Zu viele Anfragen. Versuche es in ${rate.retryAfterSeconds ?? 30} Sekunden erneut.` });
+      }
+      const aiResult = await getAIClient(access.participant.id, "storybuilder");
+      if (!aiResult.client) {
+        if (aiResult.error === "AI_LIMIT_EXCEEDED") return res.status(429).json({ message: "KI-Kontingent erreicht.", quotaInfo: aiResult.quotaInfo });
+        if (aiResult.error === "AI_DISABLED") return res.status(503).json({ message: "KI-Funktionen sind aktuell deaktiviert." });
+        return res.status(503).json({ message: "Kein KI-Anbieter verfügbar." });
+      }
+      const description = await describeImageOnce(aiResult.client, img, fields, language);
+      if (Object.keys(description).length === 0) {
+        return res.status(502).json({ message: "KI lieferte keine verwertbare Beschreibung" });
+      }
+      const updated = await storage.updateTastingStoryImage(imageId, description);
+      return res.json({ item: updated ?? img, applied: description });
+    } catch (e: unknown) {
+      console.error("[tasting-stories/image-pool/ai-describe] error:", e);
+      const msg = e instanceof Error ? e.message : "KI-Beschreibung fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  const aiDescribeBatchSchema = z.object({
+    imageIds: z.array(z.string().min(1).max(128)).min(1).max(40),
+    fields: z.array(z.enum(["name", "caption", "altText", "moodDescription"])).min(1).max(4).optional(),
+    language: z.enum(["de", "en"]).optional(),
+    onlyMissing: z.boolean().optional(),
+  });
+
+  app.post("/api/tasting-stories/:tastingId/image-pool/ai-describe-batch", async (req: Request, res: Response) => {
+    try {
+      const tastingId = sanitizeTastingId(req.params.tastingId);
+      if (!tastingId) return res.status(400).json({ message: "tastingId fehlt" });
+      const access = await checkTastingStoryAccess(req, tastingId);
+      if (!access.ok) return res.status(access.status).json({ message: access.message });
+      const parsed = aiDescribeBatchSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(422).json({ message: "Ungültiger Request-Body" });
+      const fields = parsed.data.fields ?? ["name", "caption", "altText", "moodDescription"];
+      const language = parsed.data.language ?? "de";
+      const onlyMissing = parsed.data.onlyMissing !== false;
+      const rate = checkStoryAiRate(`image-pool-batch:${access.participant.id}`);
+      if (!rate.allowed) {
+        return res.status(429).json({ message: `Zu viele Anfragen. Versuche es in ${rate.retryAfterSeconds ?? 30} Sekunden erneut.` });
+      }
+      const aiResult = await getAIClient(access.participant.id, "storybuilder");
+      if (!aiResult.client) {
+        if (aiResult.error === "AI_LIMIT_EXCEEDED") return res.status(429).json({ message: "KI-Kontingent erreicht.", quotaInfo: aiResult.quotaInfo });
+        if (aiResult.error === "AI_DISABLED") return res.status(503).json({ message: "KI-Funktionen sind aktuell deaktiviert." });
+        return res.status(503).json({ message: "Kein KI-Anbieter verfügbar." });
+      }
+      const updatedItems: TastingStoryImage[] = [];
+      const failedIds: string[] = [];
+      const skippedIds: string[] = [];
+      for (const id of parsed.data.imageIds) {
+        const img = await storage.getTastingStoryImage(id);
+        if (!img || img.tastingId !== tastingId) {
+          skippedIds.push(id);
+          continue;
+        }
+        if (onlyMissing) {
+          const allFilled = fields.every((f) => {
+            const v = img[f];
+            return typeof v === "string" && v.trim().length > 0;
+          });
+          if (allFilled) {
+            skippedIds.push(id);
+            continue;
+          }
+        }
+        try {
+          const description = await describeImageOnce(aiResult.client, img, fields, language);
+          if (Object.keys(description).length === 0) {
+            failedIds.push(id);
+            continue;
+          }
+          const patch: Partial<Pick<InsertTastingStoryImage, "name" | "caption" | "altText" | "moodDescription">> = {};
+          for (const f of fields) {
+            const cur = img[f];
+            const fresh = description[f];
+            if (typeof fresh === "string" && fresh.length > 0 && (!onlyMissing || !(typeof cur === "string" && cur.trim().length > 0))) {
+              patch[f] = fresh;
+            }
+          }
+          if (Object.keys(patch).length === 0) {
+            skippedIds.push(id);
+            continue;
+          }
+          const updated = await storage.updateTastingStoryImage(id, patch);
+          if (updated) updatedItems.push(updated);
+          else failedIds.push(id);
+        } catch (err) {
+          console.warn("[tasting-stories/image-pool/ai-describe-batch] item error:", id, err);
+          failedIds.push(id);
+        }
+      }
+      return res.json({ items: updatedItems, failedIds, skippedIds });
+    } catch (e: unknown) {
+      console.error("[tasting-stories/image-pool/ai-describe-batch] error:", e);
+      const msg = e instanceof Error ? e.message : "Batch-Beschreibung fehlgeschlagen";
       return res.status(500).json({ message: msg });
     }
   });

@@ -36,6 +36,10 @@ import {
   type AiInstructionPreset,
   type AiInstructionValue,
 } from "./AiInstructionInput";
+import { StoryImagePool } from "./StoryImagePool";
+import { ImagePoolPickerProvider, type OpenPickerOptions } from "./imagePoolPickerContext";
+import { backfillTastingStoryImagePool, type ImagePoolBackfillItem, type TastingStoryImageItem } from "../../lib/tastingStoryDataApi";
+import { useTastingStoryData } from "../data/TastingStoryDataContext";
 
 const HISTORY_LIMIT = 50;
 const AUTO_SAVE_DELAY_MS = 2000;
@@ -164,6 +168,14 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
     return window.matchMedia("(max-width: 1023px)").matches;
   });
   const [mobilePanel, setMobilePanel] = useState<"blocks" | "properties" | null>(null);
+  const [imagePoolOpen, setImagePoolOpen] = useState(false);
+  const [imagePoolMode, setImagePoolMode] = useState<"manage" | "pick">("manage");
+  const [imagePoolFilter, setImagePoolFilter] = useState<{ category: string | null; participantId: string | null }>({
+    category: null,
+    participantId: null,
+  });
+  const imagePoolPickResolverRef = useRef<((item: TastingStoryImageItem) => void) | null>(null);
+  const imagePoolBackfilledRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.matchMedia) return;
@@ -214,6 +226,110 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
       onChange?.(stamped);
     },
     [onChange],
+  );
+
+  const isTastingStorySource = sourceContext?.sourceType === "tasting" && !!sourceContext?.sourceId;
+  const tastingIdForPool = isTastingStorySource ? sourceContext!.sourceId : null;
+  const tastingStoryData = useTastingStoryData();
+  const poolParticipants = useMemo(
+    () =>
+      (tastingStoryData?.participants ?? []).map((p) => ({
+        id: p.id,
+        name: p.name,
+        displayName: p.name,
+      })),
+    [tastingStoryData?.participants],
+  );
+  const poolWhiskies = useMemo(
+    () =>
+      (tastingStoryData?.whiskies ?? []).map((w) => ({
+        id: w.id,
+        name: w.name,
+        distillery: w.distillery ?? null,
+      })),
+    [tastingStoryData?.whiskies],
+  );
+
+  const collectBackfillItems = useCallback((blocks: StoryBlock[]): ImagePoolBackfillItem[] => {
+    const items: ImagePoolBackfillItem[] = [];
+    const pushUrl = (url: unknown, base: Partial<ImagePoolBackfillItem>) => {
+      if (typeof url !== "string") return;
+      const trimmed = url.trim();
+      if (!trimmed) return;
+      items.push({ ...base, url: trimmed });
+    };
+    for (const b of blocks) {
+      const p = b.payload as Record<string, unknown>;
+      if (b.type === "hero-cover") {
+        pushUrl(p.imageUrl, { categories: ["Hero"], altText: typeof p.headline === "string" ? p.headline : null });
+      } else if (b.type === "full-width-image") {
+        pushUrl(p.imageUrl, { categories: ["Galerie"], caption: typeof p.caption === "string" ? p.caption : null });
+      } else if (b.type === "image-gallery") {
+        const gItems = Array.isArray(p.items) ? p.items : [];
+        for (const raw of gItems) {
+          if (raw && typeof raw === "object") {
+            const it = raw as Record<string, unknown>;
+            pushUrl(it.url, {
+              categories: ["Galerie"],
+              caption: typeof it.caption === "string" ? it.caption : null,
+              altText: typeof it.altText === "string" ? it.altText : null,
+            });
+          }
+        }
+      }
+    }
+    const seen = new Set<string>();
+    return items.filter((it) => {
+      if (seen.has(it.url)) return false;
+      seen.add(it.url);
+      return true;
+    });
+  }, []);
+
+  const ensureImagePoolBackfill = useCallback(async () => {
+    if (!tastingIdForPool) return;
+    if (imagePoolBackfilledRef.current) return;
+    imagePoolBackfilledRef.current = true;
+    try {
+      const items = collectBackfillItems(doc.blocks);
+      if (items.length > 0) {
+        await backfillTastingStoryImagePool(tastingIdForPool, items);
+      }
+    } catch (err) {
+      console.warn("[image-pool] backfill failed", err);
+    }
+  }, [tastingIdForPool, doc.blocks, collectBackfillItems]);
+
+  const openImagePool = useCallback(async () => {
+    if (!tastingIdForPool) return;
+    setImagePoolMode("manage");
+    setImagePoolFilter({ category: null, participantId: null });
+    imagePoolPickResolverRef.current = null;
+    setImagePoolOpen(true);
+    await ensureImagePoolBackfill();
+  }, [tastingIdForPool, ensureImagePoolBackfill]);
+
+  const openImagePoolPicker = useCallback(
+    (onPick: (item: TastingStoryImageItem) => void, options?: OpenPickerOptions) => {
+      if (!tastingIdForPool) return;
+      setImagePoolMode("pick");
+      setImagePoolFilter({
+        category: options?.filterCategory ?? null,
+        participantId: options?.filterParticipantId ?? null,
+      });
+      imagePoolPickResolverRef.current = onPick;
+      setImagePoolOpen(true);
+      void ensureImagePoolBackfill();
+    },
+    [tastingIdForPool, ensureImagePoolBackfill],
+  );
+
+  const imagePoolPickerCtx = useMemo(
+    () => ({
+      available: !!tastingIdForPool,
+      openPicker: openImagePoolPicker,
+    }),
+    [tastingIdForPool, openImagePoolPicker],
   );
 
   useEffect(() => {
@@ -571,6 +687,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
       };
 
   return (
+    <ImagePoolPickerProvider value={imagePoolPickerCtx}>
     <div
       data-testid="story-editor"
       data-layout={isCompact ? "compact" : "wide"}
@@ -623,14 +740,27 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
               align="start"
             />
           </div>
-          <button
-            type="button"
-            onClick={() => setShowPalette((s) => !s)}
-            style={primaryButtonStyle}
-            data-testid="button-toggle-palette"
-          >
-            {showPalette ? "Schließen" : "+ Block"}
-          </button>
+          <div style={{ display: "inline-flex", gap: 6 }}>
+            {tastingIdForPool ? (
+              <button
+                type="button"
+                onClick={() => void openImagePool()}
+                style={secondaryButtonStyleForPool}
+                data-testid="button-open-image-pool"
+                title="Bild-Pool dieser Verkostung öffnen"
+              >
+                Bild-Pool
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setShowPalette((s) => !s)}
+              style={primaryButtonStyle}
+              data-testid="button-toggle-palette"
+            >
+              {showPalette ? "Schließen" : "+ Block"}
+            </button>
+          </div>
         </div>
         {showPalette ? (
           <div
@@ -1002,7 +1132,31 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
           }}
         />
       ) : null}
+      {tastingIdForPool ? (
+        <StoryImagePool
+          tastingId={tastingIdForPool}
+          mode={imagePoolMode}
+          open={imagePoolOpen}
+          language={language}
+          participants={poolParticipants}
+          whiskies={poolWhiskies}
+          initialFilterCategory={imagePoolFilter.category}
+          initialFilterParticipantId={imagePoolFilter.participantId}
+          onClose={() => {
+            setImagePoolOpen(false);
+            imagePoolPickResolverRef.current = null;
+          }}
+          onPick={(item) => {
+            const cb = imagePoolPickResolverRef.current;
+            imagePoolPickResolverRef.current = null;
+            setImagePoolOpen(false);
+            if (cb) cb(item);
+          }}
+          testIdPrefix="story-image-pool"
+        />
+      ) : null}
     </div>
+    </ImagePoolPickerProvider>
   );
 }
 
@@ -1696,6 +1850,20 @@ const primaryButtonStyle: React.CSSProperties = {
   background: "#C9A961",
   color: "#0B0906",
   border: "none",
+  borderRadius: 4,
+  padding: "4px 10px",
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: ".1em",
+  textTransform: "uppercase",
+  cursor: "pointer",
+  fontFamily: "'Inter', system-ui, sans-serif",
+};
+
+const secondaryButtonStyleForPool: React.CSSProperties = {
+  background: "transparent",
+  color: "#C9A961",
+  border: "1px solid rgba(201,169,97,0.45)",
   borderRadius: 4,
   padding: "4px 10px",
   fontSize: 11,
