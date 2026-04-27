@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { StoryRenderer } from "@/storybuilder/renderer/StoryRenderer";
 import type { StoryDocument } from "@/storybuilder/core/types";
@@ -10,13 +10,13 @@ import ContextDownloadBar from "@/labs/components/ContextDownloadBar";
 
 type Props = { id: string };
 
-const STORY_DOWNLOAD_THEME: CSSProperties = {
-  ["--labs-text" as unknown as keyof CSSProperties]: "#F5EFE3",
-  ["--labs-text-muted" as unknown as keyof CSSProperties]: "rgba(245,239,227,0.65)",
-  ["--labs-border" as unknown as keyof CSSProperties]: "rgba(245,239,227,0.35)",
-  ["--labs-accent" as unknown as keyof CSSProperties]: "#C9A961",
-  ["--labs-danger" as unknown as keyof CSSProperties]: "#E06060",
-} as CSSProperties;
+const STORY_DOWNLOAD_THEME: Record<string, string> = {
+  "--labs-text": "#F5EFE3",
+  "--labs-text-muted": "rgba(245,239,227,0.65)",
+  "--labs-border": "rgba(245,239,227,0.35)",
+  "--labs-accent": "#C9A961",
+  "--labs-danger": "#E06060",
+};
 
 export default function LabsTastingStoryViewPage({ id }: Props) {
   const [fellBack, setFellBack] = useState(false);
@@ -117,7 +117,7 @@ export default function LabsTastingStoryViewPage({ id }: Props) {
           right: 16,
           zIndex: 50,
           ...STORY_DOWNLOAD_THEME,
-        }}
+        } as React.CSSProperties}
       >
         <ContextDownloadBar
           testId="story-view-download-bar"
