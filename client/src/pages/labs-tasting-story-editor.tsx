@@ -140,7 +140,7 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
     blockId: string,
     _blockType: string,
     currentBlocks: StoryBlock[],
-    extras?: { customInstructions?: string; stylePresets?: string[] },
+    extras?: { customInstructions?: string; stylePresets?: string[]; lengthLevel?: "compact" | "default" | "expanded" | "epic" },
   ): Promise<Record<string, unknown> | null> => {
     const payload = currentBlocks.map((b) => ({
       id: b.id,
@@ -511,7 +511,7 @@ function RegenPreviewModal({
               {items.length} {items.length === 1 ? "Block" : "Bloecke"} neu generiert
             </div>
             <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "#A89A85", marginTop: 4 }}>
-              Pruefe die Vorschlaege und uebernimm nur, was du moechtest.{preview.skippedIds.size > 0 ? ` ${preview.skippedIds.size} gesperrte Bloecke wurden uebersprungen.` : ""}
+              Pruefe die Vorschlaege und uebernimm nur, was du moechtest.{preview.skippedIds.size > 0 ? ` ${preview.skippedIds.size} Bloecke wurden uebersprungen (gesperrt, ausgeblendet, ohne KI-Inhalt oder ohne Ergebnis).` : ""}
             </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
