@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
-import { ChevronLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Sparkles, Clock, Monitor, Archive, Check, Info, Lock, Loader2, BookOpen, Camera, Trash2, Plus, Sliders, Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Sparkles, Clock, Monitor, Archive, Check, Info, Lock, Loader2, BookOpen, Camera, Trash2, Plus, Sliders, Pencil, Download, FileText, Eye, EyeOff, Glasses } from "lucide-react";
 import ManageTastersDialog from "@/labs/components/ManageTastersDialog";
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
@@ -532,6 +532,26 @@ export default function LabsResults({ params }: LabsResultsProps) {
     staleTime: 30_000,
   });
 
+  type AiReportEnvelope = {
+    report: {
+      aiReportEnabled?: boolean | null;
+      individualReports?: Record<string, { narrative?: string | null } | null> | null;
+    } | null;
+    locked?: boolean;
+    isHost?: boolean;
+  };
+  const { data: aiReport } = useQuery<AiReportEnvelope | null>({
+    queryKey: ["tasting-ai-report", tastingId, currentParticipant?.id],
+    queryFn: async () => {
+      const pid = currentParticipant?.id || "";
+      const res = await fetch(`/api/tastings/${tastingId}/ai-report`, { headers: pid ? { "x-participant-id": pid } : undefined });
+      if (!res.ok) return null;
+      return res.json() as Promise<AiReportEnvelope>;
+    },
+    enabled: !!tastingId && !!currentParticipant?.id && isRevealed,
+    staleTime: 60_000,
+  });
+
   const [photosPanelOpen, setPhotosPanelOpen] = useState(false);
   const [photosUploading, setPhotosUploading] = useState(false);
   const [photosError, setPhotosError] = useState<string | null>(null);
@@ -846,7 +866,13 @@ export default function LabsResults({ params }: LabsResultsProps) {
       ? (participantNames.get(worstSpreadId) || null)
       : null;
 
-    return { closestTwinName, biggestOutlierName, spreadChampion };
+    return {
+      closestTwinName,
+      biggestOutlierName,
+      spreadChampion,
+      bestSpreadId,
+      worstSpreadId,
+    };
   }, [allRatings, participants, sorted, currentParticipant?.id]);
 
   const groupInsights = useMemo(() => {
@@ -1065,212 +1091,658 @@ export default function LabsResults({ params }: LabsResultsProps) {
         </div>
       </div>
 
-      {sorted.length > 0 && (
-        <div
-          className="mb-4 labs-fade-in"
-          data-testid="results-stats-bar"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: 8,
-          }}
-        >
-          {[
-            { icon: Wine, value: whiskyResults.length, label: t("resultsUi.statsBarLabelWhiskies", "Whiskys"), testId: "stat-whiskies" },
-            { icon: Star, value: totalRatings, label: t("resultsUi.statsBarLabelRatings", "Bewertungen"), testId: "stat-ratings" },
-            { icon: Users, value: participantCount, label: t("resultsUi.statsBarLabelTasters", "Taster"), testId: "stat-tasters" },
-            { icon: BarChart3, value: summaryData.groupAvg ?? "\u2014", label: t("resultsUi.statsBarLabelGroupAvg", "Ø Score"), testId: "stat-groupavg" },
-          ].map((s) => {
-            const Icon = s.icon;
-            return (
-              <div
-                key={s.testId}
-                data-testid={s.testId}
-                style={{
-                  padding: "12px 8px",
-                  borderRadius: 12,
-                  background: "var(--labs-surface-elevated)",
-                  border: "1px solid var(--labs-border)",
-                  textAlign: "center",
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-                }}
-              >
-                <Icon className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-                <div
-                  style={{
-                    fontSize: 22, fontWeight: 700,
-                    color: "var(--labs-text)",
-                    fontVariantNumeric: "tabular-nums",
-                    lineHeight: 1.1,
-                  }}
-                >
-                  {s.value}
-                </div>
-                <div
-                  style={{
-                    fontSize: 10, fontWeight: 600,
-                    color: "var(--labs-text-muted)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                  }}
-                >
-                  {s.label}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      {/* === SECTION 1: RÜCKBLICK === */}
+      {(whiskies?.length ?? 0) > 0 && (() => {
+        const FREE_REVEAL_DEFAULT: string[][] = [
+          ["name"],
+          ["distillery", "age", "abv", "region", "country", "category", "caskType", "bottler", "vintage", "peatLevel", "ppm", "price"],
+          ["image"],
+        ];
+        let stepGroups: string[][] = FREE_REVEAL_DEFAULT;
+        const rawRevealOrder = (tasting as { revealOrder?: string | null }).revealOrder;
+        if (typeof rawRevealOrder === "string" && rawRevealOrder.length > 0) {
+          try {
+            const parsed: unknown = JSON.parse(rawRevealOrder);
+            if (Array.isArray(parsed) && parsed.length > 0 && parsed.every((g) => Array.isArray(g))) {
+              stepGroups = parsed as string[][];
+            }
+          } catch (err) {
+            console.warn("[LabsResults] Failed to parse revealOrder", err);
+          }
+        }
+        const tastingReveal = tasting as { revealIndex?: number | null; revealStep?: number | null };
+        const revealIdx = tastingReveal.revealIndex ?? 0;
+        const revealStp = tastingReveal.revealStep ?? 0;
+        const isRevealPhase = tasting.status === "reveal";
+        const isCompletedPhase = tasting.status === "archived" || tasting.status === "completed" || tasting.status === "closed";
 
+        const getRevealedFieldsFor = (idx: number) => {
+          const fields = new Set<string>();
+          if (!tasting.blindMode) {
+            for (const g of stepGroups) for (const f of g) fields.add(f);
+            return fields;
+          }
+          if (isCompletedPhase) {
+            for (const g of stepGroups) for (const f of g) fields.add(f);
+            return fields;
+          }
+          if (idx < revealIdx) {
+            for (const g of stepGroups) for (const f of g) fields.add(f);
+          } else if (idx === revealIdx) {
+            for (let s = 0; s < revealStp && s < stepGroups.length; s++) {
+              for (const f of stepGroups[s]) fields.add(f);
+            }
+          }
+          return fields;
+        };
+
+        const totalSteps = stepGroups.length;
+        const allRevealed = revealIdx >= (whiskies?.length ?? 0) - 1 && revealStp >= totalSteps;
+
+        return (
+          <section className="mb-8 labs-fade-in" data-testid="results-section-rueckblick">
+            <header style={{ marginBottom: 12, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+              <div>
+                <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", margin: 0, letterSpacing: "0.02em" }}>
+                  {t("resultsUi.sectionRueckblickTitle", "Rückblick")}
+                </h2>
+                <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
+                  {t("resultsUi.sectionRueckblickSubtitle", "Whisky für Whisky — was war heute Abend dabei")}
+                </p>
+              </div>
+              {isHost && isRevealPhase && tasting.blindMode && (
+                <div style={{ display: "flex", gap: 6, flexShrink: 0, flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    disabled={allRevealed}
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(`/api/tastings/${tastingId}/reveal-next`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json", "x-participant-id": currentParticipant?.id || "" },
+                          body: JSON.stringify({ hostId: currentParticipant?.id }),
+                        });
+                        if (!res.ok) throw new Error(`reveal-next failed: ${res.status}`);
+                        queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+                      } catch (err) {
+                        console.error("[LabsResults] Reveal next step failed", err);
+                      }
+                    }}
+                    className="labs-btn-primary"
+                    data-testid="rueckblick-host-reveal-next"
+                    style={{ fontSize: 12, padding: "6px 12px", display: "inline-flex", alignItems: "center", gap: 6, opacity: allRevealed ? 0.4 : 1 }}
+                  >
+                    <Glasses className="w-3.5 h-3.5" />
+                    {t("resultsUi.rueckblickRevealNext", "Nächsten Schritt enthüllen")}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={allRevealed}
+                    onClick={async () => {
+                      try {
+                        const total = whiskies?.length ?? 0;
+                        const res = await fetch(`/api/tastings/${tastingId}/blind-mode`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json", "x-participant-id": currentParticipant?.id || "" },
+                          body: JSON.stringify({ hostId: currentParticipant?.id, revealIndex: total - 1, revealStep: totalSteps }),
+                        });
+                        if (!res.ok) throw new Error(`reveal-all failed: ${res.status}`);
+                        queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+                      } catch (err) {
+                        console.error("[LabsResults] Reveal all failed", err);
+                      }
+                    }}
+                    className="labs-btn-ghost"
+                    data-testid="rueckblick-host-reveal-all"
+                    style={{ fontSize: 12, padding: "6px 12px", display: "inline-flex", alignItems: "center", gap: 6, opacity: allRevealed ? 0.4 : 1 }}
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    {t("resultsUi.rueckblickRevealAll", "Alle enthüllen")}
+                  </button>
+                </div>
+              )}
+            </header>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+                gap: 10,
+              }}
+            >
+              {(whiskies || []).map((w: any, i: number) => {
+                const fields = getRevealedFieldsFor(i);
+                const nameRevealed = !tasting.blindMode || fields.has("name") || isCompletedPhase || (isRevealPhase && i < revealIdx);
+                const imgRevealed = !tasting.blindMode || fields.has("image") || isCompletedPhase || (isRevealPhase && i < revealIdx);
+                const fullyRevealed = isCompletedPhase || (i < revealIdx) || (i === revealIdx && revealStp >= totalSteps);
+                const partiallyRevealed = !fullyRevealed && (nameRevealed || imgRevealed || fields.size > 0);
+                const displayName = nameRevealed ? (w.name || `#${i + 1}`) : `Sample ${String.fromCharCode(65 + i)}`;
+                const meta: { label: string; value: string }[] = [];
+                if (nameRevealed && w.distillery) meta.push({ label: t("taxonomy.distillery", "Distillery"), value: w.distillery });
+                if (fields.has("region") && w.region) meta.push({ label: t("taxonomy.region", "Region"), value: w.region });
+                if (fields.has("country") && w.country) meta.push({ label: t("taxonomy.country", "Country"), value: w.country });
+                if (fields.has("age") && w.age) meta.push({ label: t("taxonomy.age", "Age"), value: `${w.age}y` });
+                if (fields.has("abv") && w.abv) meta.push({ label: t("taxonomy.abv", "ABV"), value: `${w.abv}%` });
+                if (fields.has("caskType") && w.caskType) meta.push({ label: t("taxonomy.cask", "Cask"), value: w.caskType });
+                if (fields.has("peatLevel") && w.peatLevel) meta.push({ label: t("taxonomy.peat", "Peat"), value: w.peatLevel });
+                return (
+                  <div
+                    key={w.id}
+                    className="labs-card"
+                    data-testid={`rueckblick-whisky-${w.id}`}
+                    style={{
+                      padding: 12, display: "flex", flexDirection: "column",
+                      alignItems: "center", textAlign: "center", gap: 8,
+                    }}
+                  >
+                    <WhiskyImage
+                      imageUrl={imgRevealed ? w.imageUrl : undefined}
+                      name={displayName}
+                      size={64}
+                      height={78}
+                      whiskyId={w.id}
+                      testId={`rueckblick-image-${w.id}`}
+                    />
+                    <div style={{ minWidth: 0, width: "100%" }}>
+                      <p
+                        style={{
+                          fontSize: 12, fontWeight: 600, color: "var(--labs-text)",
+                          margin: 0, lineHeight: 1.25,
+                          overflow: "hidden", textOverflow: "ellipsis",
+                          display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                        }}
+                        data-testid={`rueckblick-name-${w.id}`}
+                      >
+                        {displayName}
+                      </p>
+                      {meta.length > 0 && (
+                        <div
+                          data-testid={`rueckblick-meta-${w.id}`}
+                          style={{
+                            marginTop: 4, fontSize: 10, color: "var(--labs-text-muted)",
+                            lineHeight: 1.35, display: "flex", flexDirection: "column", gap: 1,
+                          }}
+                        >
+                          {meta.map((m, j) => (
+                            <span key={j} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              <span style={{ opacity: 0.7 }}>{m.label}:</span> {m.value}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {tasting.blindMode && (
+                      <span
+                        data-testid={`rueckblick-status-${w.id}`}
+                        style={{
+                          fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
+                          padding: "2px 8px", borderRadius: 999,
+                          background: fullyRevealed ? "var(--labs-success-muted, rgba(74,222,128,0.12))"
+                            : partiallyRevealed ? "var(--labs-accent-muted, rgba(212,162,86,0.15))"
+                            : "var(--labs-surface-elevated)",
+                          color: fullyRevealed ? "var(--labs-success, #4ade80)"
+                            : partiallyRevealed ? "var(--labs-accent)"
+                            : "var(--labs-text-muted)",
+                          border: "1px solid var(--labs-border)",
+                          display: "inline-flex", alignItems: "center", gap: 4,
+                        }}
+                      >
+                        {fullyRevealed
+                          ? (<><Eye className="w-3 h-3" />{t("resultsUi.rueckblickStatusRevealed", "Enthüllt")}</>)
+                          : partiallyRevealed
+                          ? (<><Glasses className="w-3 h-3" />{t("resultsUi.rueckblickStatusPartial", "Teil-Reveal")}</>)
+                          : (<><EyeOff className="w-3 h-3" />{t("resultsUi.rueckblickStatusBlind", "Blind")}</>)}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })()}
+
+      {/* === SECTION 2: ERGEBNIS-PRÄSENTATION === */}
       {sorted.length > 0 && (() => {
         const aiAvailable = ["archived", "completed", "closed", "reveal"].includes(tasting.status as string);
         const presentAvailable = aiAvailable;
         const isAdmin = currentParticipant?.role === "admin";
+        const canEditStory = isHost || isAdmin;
         const storyAvailable = getStoryPdfAvailable(tasting, isHost) || (isAdmin && aiAvailable);
-        const actions: { key: string; icon: React.ElementType; title: string; desc: string; onClick: () => void; badge?: string; testId?: string }[] = [];
-        if (aiAvailable) {
-          actions.push({
-            key: "ai",
-            icon: Sparkles,
-            title: t("resultsUi.actionAiTitle", "KI-Tasting-Report"),
-            desc: t("resultsUi.actionAiDesc", "Tiefgehende KI-Auswertung dieser Tastingrunde"),
-            onClick: () => navigate(`/labs/results/${tastingId}/report`),
-          });
-        }
-        if (storyAvailable) {
-          actions.push({
-            key: "story",
-            icon: BookOpen,
-            title: t("resultsUi.actionStoryTitle", "Tasting-Story"),
-            desc: t("resultsUi.actionStoryDesc", "Magazin-Layout mit Highlights und Erzählung"),
-            onClick: () => navigate(`/labs/results/${tastingId}/story`),
-          });
-        }
-        if (presentAvailable) {
-          actions.push({
-            key: "present",
-            icon: Monitor,
-            title: t("resultsUi.actionPresentTitle", "Live-Präsentation"),
-            desc: isHost
-              ? t("resultsUi.actionPresentDesc", "Ergebnisse als Show präsentieren")
-              : t("resultsUi.actionPresentReplayDesc", "Slideshow in deinem Tempo erneut ansehen"),
-            onClick: () => navigate(`/labs/results/${tastingId}/present`),
-            badge: !isHost ? t("resultsUi.replayBadge", "Replay") : undefined,
-          });
-        }
-        if (sorted.length > 0) {
-          actions.push({
-            key: "downloads",
-            icon: Archive,
-            title: t("resultsUi.actionDownloadsTitle", "Downloads"),
-            desc: t("resultsUi.actionDownloadsDesc", "PDF, Excel, CSV und Story-Formate"),
-            onClick: () => setInlineDownloadsOpen(o => !o),
-          });
-        }
-        if (actions.length === 0) return null;
         return (
-          <div className="mb-4" data-testid="results-view-block">
-            <h2 style={{
-              fontSize: 13, fontWeight: 700, color: "var(--labs-text)",
-              margin: "0 0 8px", letterSpacing: "0.02em",
-            }}>
-              {t("resultsUi.viewResultsBlockTitle", "Ergebnisse ansehen")}
-            </h2>
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: `repeat(auto-fit, minmax(220px, 1fr))`,
-              gap: 10,
-            }}>
-              {actions.map(a => {
-                const Icon = a.icon;
-                const isDownloads = a.key === "downloads";
-                const isOpen = isDownloads && inlineDownloadsOpen;
-                return (
-                  <button
-                    key={a.key}
-                    type="button"
-                    onClick={a.onClick}
-                    className="labs-card"
-                    data-testid={a.testId ?? `results-action-${a.key}`}
-                    style={{
-                      display: "flex", alignItems: "flex-start", gap: 12,
-                      padding: 14, textAlign: "left",
-                      background: "var(--labs-surface-elevated)",
-                      border: isOpen ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border)",
-                      cursor: "pointer", fontFamily: "inherit",
-                      transition: "all 0.15s",
-                    }}
-                  >
+          <section className="mb-8 labs-fade-in" data-testid="results-section-praesentation">
+            <header style={{ marginBottom: 12 }}>
+              <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", margin: 0, letterSpacing: "0.02em" }}>
+                {t("resultsUi.sectionPraesentationTitle", "Ergebnis-Präsentation")}
+              </h2>
+              <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
+                {t("resultsUi.sectionPraesentationSubtitle", "Story, Live-Show und KI-Analyse")}
+              </p>
+            </header>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: 12,
+              }}
+            >
+              {presentAvailable && (
+                <div
+                  className="labs-card"
+                  data-testid="ergebnis-card-praesentation"
+                  style={{
+                    padding: 14, background: "var(--labs-surface-elevated)",
+                    border: "1px solid var(--labs-border)",
+                    display: "flex", flexDirection: "column", gap: 10,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                     <div style={{
                       width: 36, height: 36, borderRadius: 10, flexShrink: 0,
                       background: "var(--labs-accent-muted)",
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}>
-                      <Icon className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                      <Monitor className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
-                          {a.title}
-                        </p>
-                        {a.badge ? (
-                          <span
-                            data-testid={`badge-${a.key}`}
-                            style={{
-                              fontSize: 10,
-                              fontWeight: 600,
-                              letterSpacing: "0.04em",
-                              textTransform: "uppercase",
-                              color: "var(--labs-accent)",
-                              background: "var(--labs-accent-muted)",
-                              border: "1px solid var(--labs-accent)",
-                              padding: "1px 6px",
-                              borderRadius: 999,
-                              lineHeight: 1.4,
-                            }}
-                          >
-                            {a.badge}
-                          </span>
-                        ) : null}
-                      </div>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
+                        {t("resultsUi.ergebnisCardPresentTitle", "Ergebnis-Präsentation")}
+                      </p>
                       <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
-                        {a.desc}
+                        {isHost
+                          ? t("resultsUi.actionPresentDesc", "Ergebnisse als Show präsentieren")
+                          : t("resultsUi.ergebnisCardPresentDesc", "Slideshow in deinem Tempo erneut ansehen")}
                       </p>
                     </div>
-                    {isDownloads ? (
-                      isOpen
-                        ? <ChevronUp className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
-                        : <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
-                    ) : null}
-                  </button>
-                );
-              })}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <button
+                      type="button"
+                      className="labs-btn-secondary"
+                      onClick={() => navigate(`/labs/results/${tastingId}/present`)}
+                      data-testid="ergebnis-card-praesentation-open"
+                      style={{ fontSize: 12, padding: "6px 10px" }}
+                    >
+                      {isHost
+                        ? t("resultsUi.ergebnisCardPresentHostStart", "Ergebnis-Präsentation starten")
+                        : t("resultsUi.replayBadge", "Replay")}
+                    </button>
+                    <button
+                      type="button"
+                      className="labs-btn-ghost"
+                      onClick={() => {
+                        setInlineDownloadsOpen(true);
+                        setTimeout(() => {
+                          document.querySelector('[data-testid="results-section-downloads"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }, 50);
+                      }}
+                      data-testid="ergebnis-card-praesentation-download"
+                      style={{ fontSize: 11, padding: "4px 8px", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
+                    >
+                      <Download className="w-3 h-3" />
+                      {t("resultsUi.ergebnisCardPresentDownload", "Handout herunterladen")}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {storyAvailable && (
+                <div
+                  className="labs-card"
+                  data-testid="ergebnis-card-story"
+                  style={{
+                    padding: 14, background: "var(--labs-surface-elevated)",
+                    border: "1px solid var(--labs-border)",
+                    display: "flex", flexDirection: "column", gap: 10,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                      background: "var(--labs-accent-muted)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <BookOpen className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
+                        {t("resultsUi.ergebnisCardStoryTitle", "Tasting-Story")}
+                      </p>
+                      <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
+                        {t("resultsUi.ergebnisCardStoryDesc", "Magazin-Rückblick mit Fotos & Geschichten")}
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <button
+                      type="button"
+                      className="labs-btn-secondary"
+                      onClick={() => navigate(`/labs/results/${tastingId}/story`)}
+                      data-testid="ergebnis-card-story-open"
+                      style={{ fontSize: 12, padding: "6px 10px" }}
+                    >
+                      {t("tastingDetail.viewStory", "Story anzeigen")}
+                    </button>
+                    <button
+                      type="button"
+                      className="labs-btn-ghost"
+                      onClick={() => {
+                        setInlineDownloadsOpen(true);
+                        setTimeout(() => {
+                          document.querySelector('[data-testid="results-section-downloads"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }, 50);
+                      }}
+                      data-testid="ergebnis-card-story-download"
+                      style={{ fontSize: 11, padding: "4px 8px", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
+                    >
+                      <Download className="w-3 h-3" />
+                      {t("resultsUi.ergebnisCardStoryDownload", "Story-PDF herunterladen")}
+                    </button>
+                    {canEditStory && aiAvailable && (
+                      <>
+                        <button
+                          type="button"
+                          className="labs-btn-ghost"
+                          onClick={() => navigate(`/labs/tastings/${tastingId}/story-wizard`)}
+                          data-testid="ergebnis-card-story-edit"
+                          style={{ fontSize: 11, padding: "4px 8px", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
+                        >
+                          <Pencil className="w-3 h-3" />
+                          {t("resultsUi.ergebnisCardStoryHostEdit", "Story bearbeiten")}
+                        </button>
+                        {isHostForStory && (
+                          <button
+                            type="button"
+                            className="labs-btn-ghost"
+                            onClick={() => setPhotosPanelOpen(o => !o)}
+                            data-testid="ergebnis-card-story-photos"
+                            style={{ fontSize: 11, padding: "4px 8px", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
+                          >
+                            <Camera className="w-3 h-3" />
+                            {t("resultsUi.ergebnisCardStoryHostPhotos", "Story-Fotos verwalten")}
+                            {eventPhotos?.length ? ` (${eventPhotos.length}/30)` : ""}
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {aiAvailable && (
+                <div
+                  className="labs-card"
+                  data-testid="ergebnis-card-ai"
+                  style={{
+                    padding: 14, background: "var(--labs-surface-elevated)",
+                    border: "1px solid var(--labs-border)",
+                    display: "flex", flexDirection: "column", gap: 10,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                      background: "var(--labs-accent-muted)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <Sparkles className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
+                        {t("resultsUi.ergebnisCardAiTitle", "KI-Tasting-Report")}
+                      </p>
+                      <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
+                        {t("resultsUi.ergebnisCardAiDesc", "Gruppen-Narrativ, Übereinstimmungen & persönliche Analyse")}
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <button
+                      type="button"
+                      className="labs-btn-secondary"
+                      onClick={() => navigate(`/labs/results/${tastingId}/report`)}
+                      data-testid="ergebnis-card-ai-open"
+                      style={{ fontSize: 12, padding: "6px 10px" }}
+                    >
+                      {t("resultsUi.actionAiTitle", "KI-Tasting-Report")}
+                    </button>
+                    <button
+                      type="button"
+                      className="labs-btn-ghost"
+                      onClick={() => {
+                        setInlineDownloadsOpen(true);
+                        setTimeout(() => {
+                          document.querySelector('[data-testid="results-section-downloads"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }, 50);
+                      }}
+                      data-testid="ergebnis-card-ai-download"
+                      style={{ fontSize: 11, padding: "4px 8px", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
+                    >
+                      <Download className="w-3 h-3" />
+                      {t("resultsUi.ergebnisCardAiDownload", "KI-Report-PDF herunterladen")}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+
+            {isHostForStory && photosPanelOpen && (
+              <div className="labs-card-elevated labs-fade-in mt-3" data-testid="results-story-photos-section" style={{ padding: "14px 16px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <Camera className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)" }}>
+                      {t("resultsUi.hostToolsStoryPhotos", "Story-Fotos verwalten")} {eventPhotos?.length ? `(${eventPhotos.length}/30)` : ""}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setPhotosPanelOpen(false)}
+                    className="labs-btn-ghost"
+                    data-testid="button-story-photos-close"
+                    style={{ fontSize: 11, padding: "2px 6px" }}
+                  >
+                    <ChevronUp className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
+                  </button>
+                </div>
+
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  style={{ display: "none" }}
+                  data-testid="input-story-photo-file"
+                  onChange={e => { if (e.target.files?.length) handlePhotoFiles(e.target.files); e.target.value = ""; }}
+                />
+
+                {eventPhotos && eventPhotos.length > 0 && (
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+                    {eventPhotos.map(p => (
+                      <div key={p.id} style={{ position: "relative", width: 72, height: 72 }} data-testid={`event-photo-${p.id}`}>
+                        <img
+                          src={p.photoUrl}
+                          alt={p.caption ?? ""}
+                          onClick={() => { setEditCaptionPhotoId(p.id); setEditCaptionValue(p.caption ?? ""); setPhotosError(null); }}
+                          data-testid={`button-edit-caption-${p.id}`}
+                          style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 8, border: editCaptionPhotoId === p.id ? "2px solid var(--labs-accent)" : "1px solid var(--labs-border)", display: "block", cursor: "pointer" }}
+                        />
+                        {p.caption && (
+                          <div style={{ position: "absolute", bottom: 2, left: 2, right: 14, background: "rgba(0,0,0,0.55)", borderRadius: 3, padding: "1px 3px", fontSize: 8, color: "#fff", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", pointerEvents: "none" }}>
+                            {p.caption}
+                          </div>
+                        )}
+                        <button
+                          onClick={() => handleDeletePhoto(p.id)}
+                          data-testid={`button-delete-photo-${p.id}`}
+                          style={{ position: "absolute", top: 2, right: 2, background: "rgba(0,0,0,0.65)", border: "none", borderRadius: 4, padding: "2px 3px", cursor: "pointer", display: "flex", alignItems: "center" }}
+                        >
+                          <Trash2 style={{ width: 10, height: 10, color: "#fff" }} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {editCaptionPhotoId && (
+                  <div style={{ marginBottom: 12, padding: 10, background: "var(--labs-surface-elevated)", borderRadius: 8, border: "1px solid var(--labs-border)" }}>
+                    <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 6 }}>Bildunterschrift (optional)</div>
+                    <input
+                      type="text"
+                      value={editCaptionValue}
+                      onChange={e => setEditCaptionValue(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter") handleSaveCaption(); if (e.key === "Escape") setEditCaptionPhotoId(null); }}
+                      placeholder="z.B. &quot;Siegermoment&quot;"
+                      maxLength={200}
+                      autoFocus
+                      data-testid="input-edit-caption"
+                      style={{ width: "100%", fontSize: 12, padding: "6px 8px", borderRadius: 6, border: "1px solid var(--labs-border)", background: "var(--labs-bg)", color: "var(--labs-text)", fontFamily: "inherit", boxSizing: "border-box", marginBottom: 8 }}
+                    />
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button
+                        className="labs-btn-primary"
+                        onClick={handleSaveCaption}
+                        disabled={captionSaving}
+                        data-testid="button-save-caption"
+                        style={{ fontSize: 11, padding: "4px 10px" }}
+                      >
+                        {captionSaving ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> : "Speichern"}
+                      </button>
+                      <button
+                        className="labs-btn-ghost"
+                        onClick={() => setEditCaptionPhotoId(null)}
+                        data-testid="button-cancel-caption"
+                        style={{ fontSize: 11, padding: "4px 10px" }}
+                      >
+                        Abbrechen
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {photosError && (
+                  <div style={{ fontSize: 11, color: "#e57373", marginBottom: 8 }}>{photosError}</div>
+                )}
+
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <button
+                    className="labs-btn-secondary"
+                    onClick={() => photoInputRef.current?.click()}
+                    disabled={photosUploading || (eventPhotos?.length ?? 0) >= 30}
+                    data-testid="button-add-story-photos"
+                    style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}
+                  >
+                    {photosUploading ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> : <Plus style={{ width: 14, height: 14 }} />}
+                    {photosUploading ? "Wird hochgeladen…" : "Fotos hinzufügen"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
         );
       })()}
 
-      {inlineDownloadsOpen && sorted.length > 0 && (
-        <div
-          className="labs-card-elevated mb-6 labs-fade-in"
-          data-testid="results-downloads-inline-panel"
-          style={{ padding: 14 }}
+      {/* === SECTION 3: AUSWERTUNG === (closes after Persönliche Auswertung sub-section, before Section 4) */}
+      <section className="mb-8 labs-fade-in" data-testid="results-section-auswertung">
+        <header
+          style={{
+            marginBottom: 12,
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
         >
-          <TastingDownloadGrid
-            tastingId={tastingId}
-            participantId={currentParticipant?.id ?? null}
-            availability={{
-              story: getStoryPdfAvailable(tasting, isHost),
-              presentation: isHost && getPresentationPdfAvailable(tasting),
-              notes: getNotesDocxAvailable(tasting, currentParticipant?.id),
-            }}
-            inlineData={{ tasting, whiskyResults }}
-            variant="buttons"
-            testIdPrefix="results-download-inline"
-            showSourceLinks={false}
-          />
-        </div>
-      )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", margin: 0, letterSpacing: "0.02em" }}>
+              {t("resultsUi.sectionAuswertungTitle", "Auswertung")}
+            </h2>
+            <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
+              {t("resultsUi.sectionAuswertungSubtitle", "Statistiken & persönliche Erkenntnisse")}
+            </p>
+          </div>
+          {isHost && (
+            <button
+              type="button"
+              className="labs-btn-ghost"
+              onClick={() => setShowManageTasters(true)}
+              data-testid="button-manage-tasters"
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                fontSize: 12, padding: "6px 10px",
+              }}
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              {t("resultsUi.hostToolsManageTasters", "Taster verwalten")}
+            </button>
+          )}
+        </header>
+
+        {/* === SUB-SECTION: ALLGEMEINE STATISTIKEN === */}
+        <div data-testid="results-subsection-allgemein">
+          <div className="labs-section-label" style={{ marginBottom: 4 }}>
+            {t("resultsUi.subsectionAllgemeinTitle", "Allgemeine Statistiken")}
+          </div>
+          <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "0 0 12px", lineHeight: 1.4 }}>
+            {t("resultsUi.subsectionAllgemeinSubtitle", "Gruppen-Bewertungen, Übereinstimmung und Ranking")}
+          </p>
+
+          {sorted.length > 0 && (
+            <div
+              className="mb-4 labs-fade-in"
+              data-testid="results-stats-bar"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                gap: 8,
+              }}
+            >
+              {[
+                { icon: Wine, value: whiskyResults.length, label: t("resultsUi.statsBarLabelWhiskies", "Whiskys"), testId: "stat-whiskies" },
+                { icon: Star, value: totalRatings, label: t("resultsUi.statsBarLabelRatings", "Bewertungen"), testId: "stat-ratings" },
+                { icon: Users, value: participantCount, label: t("resultsUi.statsBarLabelTasters", "Taster"), testId: "stat-tasters" },
+                { icon: BarChart3, value: summaryData.groupAvg ?? "\u2014", label: t("resultsUi.statsBarLabelGroupAvg", "Ø Score"), testId: "stat-groupavg" },
+              ].map((s) => {
+                const Icon = s.icon;
+                return (
+                  <div
+                    key={s.testId}
+                    data-testid={s.testId}
+                    style={{
+                      padding: "12px 8px",
+                      borderRadius: 12,
+                      background: "var(--labs-surface-elevated)",
+                      border: "1px solid var(--labs-border)",
+                      textAlign: "center",
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                    }}
+                  >
+                    <Icon className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                    <div
+                      style={{
+                        fontSize: 22, fontWeight: 700,
+                        color: "var(--labs-text)",
+                        fontVariantNumeric: "tabular-nums",
+                        lineHeight: 1.1,
+                      }}
+                    >
+                      {s.value}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 10, fontWeight: 600,
+                        color: "var(--labs-text-muted)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                      }}
+                    >
+                      {s.label}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
       <div
         className="labs-card-elevated p-5 mb-6 labs-stagger-2 labs-fade-in"
@@ -1358,31 +1830,6 @@ export default function LabsResults({ params }: LabsResultsProps) {
               color="var(--labs-accent)"
               label="avg"
             />
-          </div>
-        </div>
-      )}
-
-      {summaryData.myHighlights.length > 0 && (
-        <div className="mb-6 labs-fade-in">
-          <div className="labs-section-label flex items-center gap-1.5">
-            <TrendingUp className="w-3.5 h-3.5" style={{ color: "var(--labs-success)" }} />
-            Your Highlights
-          </div>
-          <div className="space-y-2">
-            {summaryData.myHighlights.slice(0, 3).map(w => (
-              <div key={w.id} className="labs-card p-3 flex items-center gap-3" data-testid={`results-highlight-${w.id}`}>
-                {w.imageUrl && (!tasting.blindMode || isRevealed) && (
-                  <WhiskyImage imageUrl={w.imageUrl} name={w.name || t("resultsUi.unknown")} size={32} whiskyId={w.id} testId={`results-highlight-image-${w.id}`} />
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>{w.name || t("resultsUi.unknown")}</p>
-                  <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                    You: {fmt(w.myRating?.overall)} · Group: {fmt(w.avgOverall)}
-                  </p>
-                </div>
-                <DeltaIndicator delta={w.myDelta} />
-              </div>
-            ))}
           </div>
         </div>
       )}
@@ -1753,276 +2200,592 @@ export default function LabsResults({ params }: LabsResultsProps) {
         </div>
       )}
 
-      {sorted.length > 0 && (
-        <div className="mt-6 mb-8 labs-fade-in" data-testid="results-downloads-block">
-          <h2 style={{
-            fontSize: 15, fontWeight: 700, color: "var(--labs-text)",
-            margin: "0 0 4px",
-          }}>
-            {t("resultsUi.downloadsBlockTitle", "Daten & Dokumente herunterladen")}
-          </h2>
-          <p style={{
-            fontSize: 12, color: "var(--labs-text-muted)",
-            margin: "0 0 12px",
-          }}>
-            {t("resultsUi.downloadsBlockDesc", "Wähle das passende Format für deinen Anwendungsfall")}
-          </p>
-          <TastingDownloadGrid
-            tastingId={tastingId}
-            participantId={currentParticipant?.id ?? null}
-            availability={{
-              story: getStoryPdfAvailable(tasting, isHost),
-              presentation: isHost && getPresentationPdfAvailable(tasting),
-              notes: getNotesDocxAvailable(tasting, currentParticipant?.id),
-            }}
-            inlineData={{ tasting, whiskyResults }}
-            variant="cards"
-            testIdPrefix="results-download"
-            showSourceLinks={false}
-          />
         </div>
-      )}
+        {/* /results-subsection-allgemein */}
 
-      {isHost && (() => {
-        const aiAvailable = ["archived", "completed", "closed", "reveal"].includes(tasting.status as string);
-        const isAdmin = currentParticipant?.role === "admin";
-        const canEditStory = isHost || isAdmin;
-        const hostTools: { key: string; icon: React.ElementType; title: string; desc: string; onClick: () => void; testId: string }[] = [];
-        if (canEditStory && aiAvailable) {
-          hostTools.push({
-            key: "story-edit",
-            icon: Pencil,
-            title: t("resultsUi.hostToolsStoryEdit", "Story bearbeiten"),
-            desc: t("resultsUi.hostToolsStoryEditDesc", "Block-Editor für Aufbau, Texte und Bilder"),
-            onClick: () => navigate(`/labs/tastings/${tastingId}/story-wizard`),
-            testId: "labs-results-edit-story",
-          });
-        }
-        if (aiAvailable) {
-          hostTools.push({
-            key: "present-live",
-            icon: Monitor,
-            title: t("resultsUi.hostToolsPresentLive", "Live-Präsentation starten"),
-            desc: t("resultsUi.hostToolsPresentLiveDesc", "Slideshow für deine Taster spiegeln"),
-            onClick: () => navigate(`/labs/results/${tastingId}/present`),
-            testId: "host-tools-present-live",
-          });
-        }
-        hostTools.push({
-          key: "manage-tasters",
-          icon: Sliders,
-          title: t("resultsUi.hostToolsManageTasters", "Taster verwalten"),
-          desc: t("resultsUi.hostToolsManageTastersDesc", "Teilnehmer hinzufügen, entfernen oder ausschließen"),
-          onClick: () => setShowManageTasters(true),
-          testId: "button-manage-tasters",
-        });
-        if (tasting.status === "reveal") {
-          hostTools.push({
-            key: "archive",
-            icon: Lock,
-            title: t("resultsUi.hostToolsArchive", "Tasting archivieren"),
-            desc: t("resultsUi.hostToolsArchiveDesc", "Ergebnisse sperren, damit nichts mehr geändert werden kann"),
-            onClick: () => setShowArchiveDialog(true),
-            testId: "button-archive-tasting",
-          });
-        }
-        return (
-          <div
-            className="mt-8 mb-6 labs-fade-in"
-            data-testid="results-section-host-tools"
-            style={{
-              borderTop: "1px solid var(--labs-border)",
-              paddingTop: 18,
-            }}
-          >
-            <h2 style={{
-              fontSize: 13, fontWeight: 700, color: "var(--labs-text-muted)",
-              margin: "0 0 2px", letterSpacing: "0.04em", textTransform: "uppercase",
-            }}>
-              {t("resultsUi.hostToolsTitle", "Host-Tools")}
-            </h2>
-            <p style={{
-              fontSize: 11, color: "var(--labs-text-muted)",
-              margin: "0 0 12px", opacity: 0.75,
-            }}>
-              {t("resultsUi.hostToolsSubtitle", "Nur für dich als Host sichtbar")}
+        {/* === SUB-SECTION: PERSÖNLICHE AUSWERTUNG === */}
+        {currentParticipant && (
+          <div data-testid="results-subsection-persoenlich" style={{ marginTop: 24 }}>
+            <div className="labs-section-label" style={{ marginBottom: 4 }}>
+              {t("resultsUi.subsectionPersoenlichTitle", "Persönliche Auswertung")}
+            </div>
+            <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "0 0 12px", lineHeight: 1.4 }}>
+              {t("resultsUi.subsectionPersoenlichSubtitle", "So passt du in dieses Tasting")}
             </p>
 
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: 8,
-              marginBottom: isHostForStory ? 12 : 0,
-            }}>
-              {hostTools.map(a => {
-                const Icon = a.icon;
-                return (
-                  <button
-                    key={a.key}
-                    type="button"
-                    onClick={a.onClick}
-                    className="labs-card"
-                    data-testid={a.testId}
-                    style={{
-                      display: "flex", alignItems: "flex-start", gap: 10,
-                      padding: 12, textAlign: "left",
-                      background: "var(--labs-surface)",
-                      border: "1px solid var(--labs-border)",
-                      cursor: "pointer", fontFamily: "inherit",
-                      transition: "all 0.15s",
-                    }}
-                  >
-                    <div style={{
-                      width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-                      background: "var(--labs-surface-elevated)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
-                      <Icon className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
-                        {a.title}
-                      </p>
-                      <p style={{ fontSize: 10, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
-                        {a.desc}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {isHostForStory && (
-              <div className="labs-card-elevated labs-fade-in" data-testid="results-story-photos-section">
-                <div
-                  style={{ padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, cursor: "pointer" }}
-                  onClick={() => setPhotosPanelOpen(o => !o)}
-                  data-testid="button-story-photos-toggle"
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <Camera className="w-4 h-4" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)", lineHeight: 1.3 }}>
-                        {t("resultsUi.hostToolsStoryPhotos", "Story-Fotos verwalten")} {eventPhotos?.length ? `(${eventPhotos.length}/30)` : ""}
-                      </div>
-                      <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.3 }}>
-                        {t("resultsUi.hostToolsStoryPhotosDesc", "Hintergrund-Fotos für Eröffnung und Finale")}
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    {eventPhotos?.length ? (
-                      <div style={{ display: "flex", gap: 3 }}>
-                        {eventPhotos.slice(0, 3).map((p) => (
-                          <img key={p.id} src={p.photoUrl} alt="" style={{ width: 32, height: 32, objectFit: "cover", borderRadius: 5, border: "1px solid var(--labs-border)" }} />
-                        ))}
-                      </div>
-                    ) : null}
-                    {photosPanelOpen ? <ChevronUp className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} /> : <ChevronDown className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />}
-                  </div>
-                </div>
-
-                {photosPanelOpen && (
-                  <div style={{ padding: "0 16px 16px" }}>
-                    <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 14 }}>
-                      <input
-                        ref={photoInputRef}
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        style={{ display: "none" }}
-                        data-testid="input-story-photo-file"
-                        onChange={e => { if (e.target.files?.length) handlePhotoFiles(e.target.files); e.target.value = ""; }}
-                      />
-
-                      {eventPhotos && eventPhotos.length > 0 && (
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-                          {eventPhotos.map(p => (
-                            <div key={p.id} style={{ position: "relative", width: 72, height: 72 }} data-testid={`event-photo-${p.id}`}>
-                              <img
-                                src={p.photoUrl}
-                                alt={p.caption ?? ""}
-                                onClick={() => { setEditCaptionPhotoId(p.id); setEditCaptionValue(p.caption ?? ""); setPhotosError(null); }}
-                                data-testid={`button-edit-caption-${p.id}`}
-                                style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 8, border: editCaptionPhotoId === p.id ? "2px solid var(--labs-accent)" : "1px solid var(--labs-border)", display: "block", cursor: "pointer" }}
-                              />
-                              {p.caption && (
-                                <div style={{ position: "absolute", bottom: 2, left: 2, right: 14, background: "rgba(0,0,0,0.55)", borderRadius: 3, padding: "1px 3px", fontSize: 8, color: "#fff", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", pointerEvents: "none" }}>
-                                  {p.caption}
-                                </div>
-                              )}
-                              <button
-                                onClick={() => handleDeletePhoto(p.id)}
-                                data-testid={`button-delete-photo-${p.id}`}
-                                style={{ position: "absolute", top: 2, right: 2, background: "rgba(0,0,0,0.65)", border: "none", borderRadius: 4, padding: "2px 3px", cursor: "pointer", display: "flex", alignItems: "center" }}
-                              >
-                                <Trash2 style={{ width: 10, height: 10, color: "#fff" }} />
-                              </button>
+            {summaryData.userAvg == null ? (
+              <div
+                className="labs-card"
+                data-testid={isHost ? "results-personal-empty-host" : "results-personal-empty"}
+                style={{
+                  padding: 16, textAlign: "center",
+                  background: "var(--labs-surface-elevated)",
+                  border: "1px dashed var(--labs-border)",
+                }}
+              >
+                <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: 0, lineHeight: 1.5 }}>
+                  {isHost
+                    ? t(
+                        "resultsUi.personalNoDataHost",
+                        "Persönliche Sicht — du hast als Host noch nichts bewertet. Sobald du eigene Bewertungen abgibst, erscheinen hier deine Highlights, Tiefpunkte und der Vergleich mit der Gruppe."
+                      )
+                    : t(
+                        "resultsUi.personalNoData",
+                        "Noch keine persönlichen Insights — bewerte mindestens zwei Whiskys, um deine Auswertung zu sehen."
+                      )}
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Personal stat trio: my avg / group avg / delta */}
+                {(() => {
+                  const myAvg = summaryData.userAvg;
+                  const groupAvg = summaryData.groupAvg;
+                  const delta = (myAvg != null && groupAvg != null) ? (myAvg - groupAvg) : null;
+                  const tiles: { icon: React.ElementType; value: string | number; label: string; testId: string; valueColor?: string }[] = [
+                    { icon: Star, value: myAvg ?? "—", label: t("resultsUi.personalYourAvg", "Dein Schnitt"), testId: "personal-stat-myavg" },
+                    { icon: BarChart3, value: groupAvg ?? "—", label: t("resultsUi.personalStatGroupAvg", "Gruppen-Ø"), testId: "personal-stat-groupavg" },
+                    {
+                      icon: delta != null && delta > 0 ? TrendingUp : delta != null && delta < 0 ? TrendingDown : Minus,
+                      value: delta == null ? "—" : (delta > 0 ? `+${formatScore(delta)}` : formatScore(delta)),
+                      label: t("resultsUi.personalStatDelta", "Δ Gruppe"),
+                      testId: "personal-stat-delta",
+                      valueColor: delta == null ? undefined : (Math.abs(delta) < 1 ? "var(--labs-text-muted)" : delta > 0 ? "var(--labs-success)" : "var(--labs-danger)"),
+                    },
+                  ];
+                  return (
+                    <div
+                      className="mb-4 labs-fade-in"
+                      data-testid="results-personal-stats-bar"
+                      style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}
+                    >
+                      {tiles.map((s) => {
+                        const Icon = s.icon;
+                        return (
+                          <div
+                            key={s.testId}
+                            data-testid={s.testId}
+                            style={{
+                              padding: "12px 8px", borderRadius: 12,
+                              background: "var(--labs-surface-elevated)",
+                              border: "1px solid var(--labs-border)",
+                              textAlign: "center",
+                              display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                            }}
+                          >
+                            <Icon className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                            <div style={{
+                              fontSize: 22, fontWeight: 700,
+                              color: s.valueColor || "var(--labs-text)",
+                              fontVariantNumeric: "tabular-nums", lineHeight: 1.1,
+                            }}>
+                              {s.value}
                             </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {editCaptionPhotoId && (
-                        <div style={{ marginBottom: 12, padding: 10, background: "var(--labs-surface-elevated)", borderRadius: 8, border: "1px solid var(--labs-border)" }}>
-                          <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 6 }}>Bildunterschrift (optional)</div>
-                          <input
-                            type="text"
-                            value={editCaptionValue}
-                            onChange={e => setEditCaptionValue(e.target.value)}
-                            onKeyDown={e => { if (e.key === "Enter") handleSaveCaption(); if (e.key === "Escape") setEditCaptionPhotoId(null); }}
-                            placeholder="z.B. &quot;Siegermoment&quot;"
-                            maxLength={200}
-                            autoFocus
-                            data-testid="input-edit-caption"
-                            style={{ width: "100%", fontSize: 12, padding: "6px 8px", borderRadius: 6, border: "1px solid var(--labs-border)", background: "var(--labs-bg)", color: "var(--labs-text)", fontFamily: "inherit", boxSizing: "border-box", marginBottom: 8 }}
-                          />
-                          <div style={{ display: "flex", gap: 6 }}>
-                            <button
-                              className="labs-btn-primary"
-                              onClick={handleSaveCaption}
-                              disabled={captionSaving}
-                              data-testid="button-save-caption"
-                              style={{ fontSize: 11, padding: "4px 10px" }}
-                            >
-                              {captionSaving ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> : "Speichern"}
-                            </button>
-                            <button
-                              className="labs-btn-ghost"
-                              onClick={() => setEditCaptionPhotoId(null)}
-                              data-testid="button-cancel-caption"
-                              style={{ fontSize: 11, padding: "4px 10px" }}
-                            >
-                              Abbrechen
-                            </button>
+                            <div style={{
+                              fontSize: 10, fontWeight: 600,
+                              color: "var(--labs-text-muted)",
+                              textTransform: "uppercase", letterSpacing: "0.06em",
+                            }}>
+                              {s.label}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
 
-                      {photosError && (
-                        <div style={{ fontSize: 11, color: "#e57373", marginBottom: 8 }}>{photosError}</div>
-                      )}
-
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <button
-                          className="labs-btn-secondary"
-                          onClick={() => photoInputRef.current?.click()}
-                          disabled={photosUploading || (eventPhotos?.length ?? 0) >= 30}
-                          data-testid="button-add-story-photos"
-                          style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}
-                        >
-                          {photosUploading ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> : <Plus style={{ width: 14, height: 14 }} />}
-                          {photosUploading ? "Wird hochgeladen…" : "Fotos hinzufügen"}
-                        </button>
+                {/* Personal AI Analysis card */}
+                {(() => {
+                  // Mirrors LabsGroupReport unlock logic: server already gates the
+                  // payload via `locked: true` for non-hosts when aiReportEnabled
+                  // is false, and returns `report: null` when no report exists.
+                  const reportPayload = aiReport?.report ?? null;
+                  const aiExists = !!reportPayload;
+                  const aiLocked = aiReport?.locked === true;
+                  const aiUnlocked = aiExists && !aiLocked;
+                  const indReport = (aiUnlocked && currentParticipant?.id)
+                    ? (reportPayload?.individualReports?.[currentParticipant.id] ?? null)
+                    : null;
+                  const status: "available" | "pending" | "locked" =
+                    aiLocked ? "locked"
+                    : (indReport ? "available" : "pending");
+                  const previewText = indReport?.narrative ? String(indReport.narrative).slice(0, 180) : "";
+                  return (
+                    <div className="mb-4 labs-fade-in" data-testid="results-personal-ai">
+                      <div className="labs-section-label flex items-center gap-1.5" style={{ marginBottom: 6 }}>
+                        <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
+                        {t("resultsUi.personalAiTitle", "Persönliche KI-Analyse")}
                       </div>
+                      <div
+                        className="labs-card p-3"
+                        data-testid={`results-personal-ai-card-${status}`}
+                        style={{ display: "flex", flexDirection: "column", gap: 8 }}
+                      >
+                        {status === "locked" && (
+                          <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: 0, lineHeight: 1.5 }}>
+                            {t("resultsUi.personalAiLocked", "Der Host hat die KI-Analyse noch nicht für Teilnehmer freigeschaltet.")}
+                          </p>
+                        )}
+                        {status === "pending" && (
+                          <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: 0, lineHeight: 1.5 }}>
+                            {aiExists
+                              ? t("resultsUi.personalAiPending", "Deine persönliche KI-Analyse ist noch nicht verfügbar — der Host kann sie generieren.")
+                              : t("resultsUi.personalAiNotGenerated", "Es wurde noch keine KI-Analyse erzeugt.")}
+                          </p>
+                        )}
+                        {status === "available" && previewText && (
+                          <p style={{ fontSize: 13, color: "var(--labs-text)", margin: 0, lineHeight: 1.55, whiteSpace: "pre-line" }}>
+                            {previewText}{indReport?.narrative && indReport.narrative.length > 180 ? "…" : ""}
+                          </p>
+                        )}
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: status === "available" ? 4 : 0 }}>
+                          {(status === "available" || (isHost && aiExists)) && (
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/labs/results/${tastingId}/report`)}
+                              className="labs-btn-ghost"
+                              data-testid="results-personal-ai-open"
+                              style={{ fontSize: 12, padding: "6px 12px", display: "inline-flex", alignItems: "center", gap: 6 }}
+                            >
+                              <Sparkles className="w-3.5 h-3.5" />
+                              {t("resultsUi.personalAiOpen", "KI-Analyse öffnen")}
+                            </button>
+                          )}
+                          {status === "available" && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setInlineDownloadsOpen(true);
+                                setTimeout(() => {
+                                  document.querySelector('[data-testid="results-section-downloads"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                }, 50);
+                              }}
+                              className="labs-btn-ghost"
+                              data-testid="results-personal-ai-download"
+                              style={{ fontSize: 12, padding: "6px 12px", display: "inline-flex", alignItems: "center", gap: 6 }}
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              {t("resultsUi.personalAiDownload", "Persönliches PDF")}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Per-whisky personal ratings — link into general ranking */}
+                {sorted.some(w => w.myRating?.overall != null) && (
+                  <div className="mb-4 labs-fade-in" data-testid="results-personal-ratings">
+                    <div className="labs-section-label flex items-center gap-1.5" style={{ marginBottom: 6 }}>
+                      <Star className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
+                      {t("resultsUi.personalRatingsTitle", "Deine Bewertungen")}
+                    </div>
+                    <div className="space-y-1.5">
+                      {sorted.filter(w => w.myRating?.overall != null).map(w => (
+                        <button
+                          key={w.id}
+                          type="button"
+                          onClick={() => {
+                            const target = document.querySelector(`[data-testid="results-whisky-${w.id}"]`);
+                            if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
+                          }}
+                          className="labs-card w-full p-2.5 flex items-center gap-3 text-left"
+                          data-testid={`results-personal-rating-${w.id}`}
+                          style={{ cursor: "pointer" }}
+                        >
+                          {w.imageUrl && (!tasting.blindMode || isRevealed) && (
+                            <WhiskyImage imageUrl={w.imageUrl} name={w.name || t("resultsUi.unknown")} size={28} whiskyId={w.id} testId={`results-personal-rating-image-${w.id}`} />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-medium truncate" style={{ color: "var(--labs-text)" }}>
+                              {w.name || t("resultsUi.unknown")}
+                            </p>
+                            <p className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>
+                              {t("resultsUi.personalYou", "Du")}: {fmt(w.myRating?.overall)} · {t("resultsUi.personalGroup", "Gruppe")}: {fmt(w.avgOverall)}
+                            </p>
+                          </div>
+                          <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
-              </div>
+
+                {/* My highlights — whiskys I rated higher than the group */}
+                {summaryData.myHighlights.length > 0 && (
+                  <div className="mb-4 labs-fade-in" data-testid="results-personal-highlights">
+                    <div className="labs-section-label flex items-center gap-1.5" style={{ marginBottom: 6 }}>
+                      <TrendingUp className="w-3.5 h-3.5" style={{ color: "var(--labs-success)" }} />
+                      {t("resultsUi.personalHighlightsTitle", "Deine Highlights")}
+                    </div>
+                    <div className="space-y-2">
+                      {summaryData.myHighlights.slice(0, 3).map(w => (
+                        <div key={w.id} className="labs-card p-3 flex items-center gap-3" data-testid={`results-highlight-${w.id}`}>
+                          {w.imageUrl && (!tasting.blindMode || isRevealed) && (
+                            <WhiskyImage imageUrl={w.imageUrl} name={w.name || t("resultsUi.unknown")} size={32} whiskyId={w.id} testId={`results-highlight-image-${w.id}`} />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>{w.name || t("resultsUi.unknown")}</p>
+                            <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                              {t("resultsUi.personalYou", "Du")}: {fmt(w.myRating?.overall)} · {t("resultsUi.personalGroup", "Gruppe")}: {fmt(w.avgOverall)}
+                            </p>
+                          </div>
+                          <DeltaIndicator delta={w.myDelta} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* My lowlights — whiskys I rated lower than the group */}
+                {summaryData.myLowlights.length > 0 && (
+                  <div className="mb-4 labs-fade-in" data-testid="results-personal-lowlights">
+                    <div className="labs-section-label flex items-center gap-1.5" style={{ marginBottom: 6 }}>
+                      <TrendingDown className="w-3.5 h-3.5" style={{ color: "var(--labs-danger)" }} />
+                      {t("resultsUi.personalLowlightsTitle", "Deine Tiefpunkte")}
+                    </div>
+                    <div className="space-y-2">
+                      {summaryData.myLowlights.slice(0, 3).map(w => (
+                        <div key={w.id} className="labs-card p-3 flex items-center gap-3" data-testid={`results-lowlight-${w.id}`}>
+                          {w.imageUrl && (!tasting.blindMode || isRevealed) && (
+                            <WhiskyImage imageUrl={w.imageUrl} name={w.name || t("resultsUi.unknown")} size={32} whiskyId={w.id} testId={`results-lowlight-image-${w.id}`} />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>{w.name || t("resultsUi.unknown")}</p>
+                            <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                              {t("resultsUi.personalYou", "Du")}: {fmt(w.myRating?.overall)} · {t("resultsUi.personalGroup", "Gruppe")}: {fmt(w.avgOverall)}
+                            </p>
+                          </div>
+                          <DeltaIndicator delta={w.myDelta} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Personal notes inline trigger (jumps to Downloads section) */}
+                <div className="mb-3 labs-fade-in" data-testid="results-personal-notes">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInlineDownloadsOpen(true);
+                      setTimeout(() => {
+                        document.querySelector('[data-testid="results-section-downloads"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }, 50);
+                    }}
+                    className="labs-card w-full p-3 flex items-center gap-3 text-left"
+                    data-testid="results-personal-notes-trigger"
+                    style={{ cursor: "pointer" }}
+                  >
+                    <div style={{
+                      width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                      background: "var(--labs-accent-muted)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <FileText className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>
+                        {t("resultsUi.personalNotesTitle", "Deine Notizen als Dokument")}
+                      </p>
+                      <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                        {t("resultsUi.personalNotesDesc", "Lade deine Bewertungen und Tasting-Notizen als DOCX herunter.")}
+                      </p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
+                  </button>
+                </div>
+
+                {/* Twin + Champion/Outlier self-badges */}
+                {(participantStats.closestTwinName
+                  || currentParticipant.id === participantStats.bestSpreadId
+                  || currentParticipant.id === participantStats.worstSpreadId) && (
+                  <div className="mb-2 labs-fade-in" data-testid="results-personal-badges" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {participantStats.closestTwinName && (
+                      <div
+                        className="labs-card p-3 flex items-center gap-3"
+                        data-testid="results-personal-twin"
+                      >
+                        <div style={{
+                          width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                          background: "var(--labs-accent-muted)",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}>
+                          <Users className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>
+                            {t("resultsUi.personalTwinTitle", "Dein Geschmacks-Zwilling")}
+                          </p>
+                          <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                            {t("resultsUi.personalTwinDesc", "Am ähnlichsten zu dir bewertet:")} <strong style={{ color: "var(--labs-text)" }}>{participantStats.closestTwinName}</strong>
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {currentParticipant.id === participantStats.bestSpreadId && (
+                      <div
+                        className="labs-card p-3 flex items-center gap-3"
+                        data-testid="results-personal-champion"
+                      >
+                        <div style={{
+                          width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                          background: "var(--labs-accent-muted)",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}>
+                          <Target className="w-4 h-4" style={{ color: "var(--labs-success)" }} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>
+                            {t("resultsUi.personalChampionTitle", "Konsens-Champion")}
+                          </p>
+                          <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                            {t("resultsUi.personalChampionDesc", "Deine Bewertungen lagen am dichtesten am Gruppenschnitt.")}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {currentParticipant.id === participantStats.worstSpreadId
+                      && participantStats.worstSpreadId !== participantStats.bestSpreadId && (
+                      <div
+                        className="labs-card p-3 flex items-center gap-3"
+                        data-testid="results-personal-outlier"
+                      >
+                        <div style={{
+                          width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                          background: "var(--labs-accent-muted)",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}>
+                          <MessageCircle className="w-4 h-4" style={{ color: "var(--labs-danger)" }} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>
+                            {t("resultsUi.personalOutlierTitle", "Eigenwilliger Gaumen")}
+                          </p>
+                          <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                            {t("resultsUi.personalOutlierDesc", "Deine Bewertungen wichen am stärksten vom Gruppenschnitt ab — du hast deinen eigenen Stil.")}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Strongest personal whisky-level outlier vs group */}
+                {(() => {
+                  type WhiskyRow = (typeof sorted)[number];
+                  let strongest: WhiskyRow | null = null;
+                  let strongestAbs = 0;
+                  for (const w of sorted) {
+                    const mine = w.myRating?.overall;
+                    const group = w.avgOverall;
+                    if (mine == null || group == null) continue;
+                    const abs = Math.abs(mine - group);
+                    if (abs > strongestAbs) {
+                      strongestAbs = abs;
+                      strongest = w;
+                    }
+                  }
+                  if (!strongest || strongestAbs < 0.5) return null;
+                  const mine = strongest.myRating?.overall ?? 0;
+                  const group = strongest.avgOverall ?? 0;
+                  const delta = mine - group;
+                  const above = delta > 0;
+                  const Icon = above ? TrendingUp : TrendingDown;
+                  const color = above ? "var(--labs-success, #4ade80)" : "var(--labs-danger)";
+                  return (
+                    <div
+                      className="mt-2 labs-card p-3 flex items-center gap-3 cursor-pointer"
+                      data-testid={`results-personal-whisky-outlier-${strongest.id}`}
+                      onClick={() => {
+                        document.querySelector(`[data-testid="results-whisky-${strongest!.id}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }}
+                    >
+                      <div style={{
+                        width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                        background: "var(--labs-accent-muted)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        <Icon className="w-4 h-4" style={{ color }} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>
+                          {t("resultsUi.personalWhiskyOutlierTitle", "Stärkste persönliche Abweichung")}
+                        </p>
+                        <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                          <strong style={{ color: "var(--labs-text)" }}>{strongest.name || `#${(sorted.indexOf(strongest) + 1)}`}</strong>
+                          {" — "}
+                          {above
+                            ? t("resultsUi.personalWhiskyOutlierAbove", "Du lagst {{delta}} Punkte über dem Gruppenschnitt.", { delta: `+${formatScore(delta)}` })
+                            : t("resultsUi.personalWhiskyOutlierBelow", "Du lagst {{delta}} Punkte unter dem Gruppenschnitt.", { delta: formatScore(delta) })}
+                        </p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
+                    </div>
+                  );
+                })()}
+              </>
             )}
           </div>
-        );
-      })()}
+        )}
+      </section>
+      {/* /Section 3 Auswertung */}
+
+      {/* === SECTION 4: DOWNLOADS === (collapsible) */}
+      {sorted.length > 0 && (
+        <section className="mb-6 labs-fade-in" data-testid="results-section-downloads">
+          <button
+            type="button"
+            onClick={() => setInlineDownloadsOpen(o => !o)}
+            className="labs-card"
+            data-testid="results-section-downloads-toggle"
+            style={{
+              width: "100%", padding: "14px 16px",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              background: "var(--labs-surface-elevated)",
+              border: inlineDownloadsOpen ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border)",
+              cursor: "pointer", fontFamily: "inherit",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                background: "var(--labs-accent-muted)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <Archive className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+              </div>
+              <div style={{ textAlign: "left" }}>
+                <p style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", margin: 0 }}>
+                  {t("resultsUi.sectionDownloadsTitle", "Downloads")}
+                </p>
+                <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "2px 0 0" }}>
+                  {t("resultsUi.sectionDownloadsSubtitle", "PDF, Excel, CSV und Story-Formate")}
+                </p>
+              </div>
+            </div>
+            {inlineDownloadsOpen
+              ? <ChevronUp className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
+              : <ChevronDown className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />}
+          </button>
+          {inlineDownloadsOpen && (
+            <div
+              className="labs-card-elevated labs-fade-in mt-3"
+              style={{ padding: 14 }}
+              data-testid="results-section-downloads-panel"
+            >
+              <TastingDownloadGrid
+                tastingId={tastingId}
+                participantId={currentParticipant?.id ?? null}
+                availability={{
+                  story: getStoryPdfAvailable(tasting, isHost),
+                  presentation: isHost && getPresentationPdfAvailable(tasting),
+                  notes: getNotesDocxAvailable(tasting, currentParticipant?.id),
+                }}
+                inlineData={{ tasting, whiskyResults }}
+                variant="cards"
+                testIdPrefix="results-download"
+                showSourceLinks={false}
+              />
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* === HOST FOOTER === */}
+      {isHost && (
+        <section
+          className="mb-6 labs-fade-in"
+          data-testid="results-host-footer"
+          style={{
+            borderTop: "1px solid var(--labs-border)",
+            paddingTop: 16, marginTop: 16,
+          }}
+        >
+          <h2 style={{
+            fontSize: 13, fontWeight: 700, color: "var(--labs-text-muted)",
+            margin: "0 0 2px", letterSpacing: "0.04em", textTransform: "uppercase",
+          }}>
+            {t("resultsUi.hostFooterTitle", "Host-Aktionen")}
+          </h2>
+          <p style={{
+            fontSize: 11, color: "var(--labs-text-muted)",
+            margin: "0 0 12px", opacity: 0.75,
+          }}>
+            {t("resultsUi.hostFooterSubtitle", "Nur für dich als Host sichtbar")}
+          </p>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: 8,
+          }}>
+            <button
+              type="button"
+              onClick={() => navigate(`/labs/host/${tastingId}`)}
+              className="labs-card"
+              data-testid="host-footer-cockpit"
+              style={{
+                display: "flex", alignItems: "flex-start", gap: 10,
+                padding: 12, textAlign: "left",
+                background: "var(--labs-surface)",
+                border: "1px solid var(--labs-border)",
+                cursor: "pointer", fontFamily: "inherit",
+                transition: "all 0.15s",
+              }}
+            >
+              <div style={{
+                width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+                background: "var(--labs-surface-elevated)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <Sliders className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
+                  {t("resultsUi.hostFooterCockpit", "Zum Cockpit")}
+                </p>
+                <p style={{ fontSize: 10, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
+                  {t("resultsUi.hostFooterCockpitDesc", "Live-Steuerung & Reveal-Schritte öffnen")}
+                </p>
+              </div>
+            </button>
+            {tasting.status === "reveal" && (
+              <button
+                type="button"
+                onClick={() => setShowArchiveDialog(true)}
+                className="labs-card"
+                data-testid="button-archive-tasting"
+                style={{
+                  display: "flex", alignItems: "flex-start", gap: 10,
+                  padding: 12, textAlign: "left",
+                  background: "var(--labs-surface)",
+                  border: "1px solid var(--labs-border)",
+                  cursor: "pointer", fontFamily: "inherit",
+                  transition: "all 0.15s",
+                }}
+              >
+                <div style={{
+                  width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+                  background: "var(--labs-surface-elevated)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <Lock className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
+                    {t("resultsUi.hostToolsArchive", "Tasting archivieren")}
+                  </p>
+                  <p style={{ fontSize: 10, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
+                    {t("resultsUi.hostToolsArchiveDesc", "Ergebnisse sperren, damit nichts mehr geändert werden kann")}
+                  </p>
+                </div>
+              </button>
+            )}
+          </div>
+        </section>
+      )}
 
       <div className="flex justify-center gap-3 pb-8">
         <button

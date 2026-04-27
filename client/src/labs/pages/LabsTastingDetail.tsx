@@ -718,17 +718,29 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
           </div>
         )}
 
-        {(isLive || isReveal) && (() => {
-          const label = isReveal
-            ? t("tastingDetail.viewReveal", "Reveal-Übersicht öffnen")
-            : isHost
-              ? t("tastingDetail.enterLiveSession", "Live-Tasting als Host öffnen")
-              : t("tastingDetail.joinLiveSession", "Zur Live-Session");
-          const subtitle = isReveal
-            ? t("tastingDetail.viewRevealSubtitle", "Sehen, welche Whiskys im Tasting waren")
-            : isHost
-              ? t("tastingDetail.enterLiveSessionSubtitle", "Bewertungen verfolgen und Whiskys live enthüllen")
-              : t("tastingDetail.joinLiveSessionSubtitle", "Jetzt bewerten und Reveals miterleben");
+        {isReveal && (
+          <div>
+            <button
+              className="labs-btn-primary w-full flex items-center justify-center gap-2 py-3 text-base font-semibold"
+              onClick={() => navigate(`/labs/results/${tastingId}`)}
+              data-testid="labs-detail-open-results"
+            >
+              <BarChart3 className="w-5 h-5" />
+              {t("tastingDetail.openResults", "Auswertungen und Ergebnisse öffnen")}
+            </button>
+            <p className="text-xs mt-1 text-center" style={{ color: "var(--labs-text-muted)" }} data-testid="text-open-results-subtitle">
+              {t("tastingDetail.openResultsSubtitle", "Rückblick, Statistiken, Story, KI-Report und Downloads")}
+            </p>
+          </div>
+        )}
+
+        {isLive && (() => {
+          const label = isHost
+            ? t("tastingDetail.enterLiveSession", "Live-Tasting als Host öffnen")
+            : t("tastingDetail.joinLiveSession", "Zur Live-Session");
+          const subtitle = isHost
+            ? t("tastingDetail.enterLiveSessionSubtitle", "Bewertungen verfolgen und Whiskys live enthüllen")
+            : t("tastingDetail.joinLiveSessionSubtitle", "Jetzt bewerten und Reveals miterleben");
           return (
             <div>
               <button
@@ -761,10 +773,10 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
           <button
             className="labs-btn-primary w-full flex items-center justify-center gap-2 py-3 text-base font-semibold"
             onClick={() => navigate(`/labs/results/${tastingId}`)}
-            data-testid="labs-detail-view-results"
+            data-testid="labs-detail-open-results"
           >
             <BarChart3 className="w-5 h-5" />
-            {t("tastingDetail.viewResults")}
+            {t("tastingDetail.openResults", "Auswertungen und Ergebnisse öffnen")}
           </button>
         )}
       </div>
@@ -805,7 +817,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
       {(isLive || isReveal || isCompleted) && (
         <div className="mb-4 labs-stagger-3" data-testid="detail-secondary-actions">
           <div className="labs-card overflow-hidden">
-            {(isLive || isReveal) && (
+            {isLive && (
               <SecondaryRowAction
                 icon={BarChart3}
                 title={t("tastingDetail.viewResultsReveal", "Auswertung & Statistiken")}
