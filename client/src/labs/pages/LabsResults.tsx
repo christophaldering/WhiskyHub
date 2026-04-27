@@ -749,6 +749,96 @@ export default function LabsResults({ params }: LabsResultsProps) {
     return { groupAvg, userAvg, mostAgreed, mostDebated, consensusWhiskies, debatedWhiskies, myHighlights, myLowlights };
   }, [sorted]);
 
+  const participantStats = useMemo(() => {
+    const excludedPids = new Set<string>(
+      (participants || []).filter((p: any) => p.excludedFromResults).map((p: any) => p.participantId || p.id)
+    );
+    const includedRatings = excludedPids.size > 0
+      ? (allRatings || []).filter((r: any) => !excludedPids.has(r.participantId))
+      : (allRatings || []);
+
+    const ratingsByParticipant = new Map<string, Map<string, number>>();
+    for (const r of includedRatings) {
+      if (r.overall == null || r.overall <= 0) continue;
+      let inner = ratingsByParticipant.get(r.participantId);
+      if (!inner) {
+        inner = new Map<string, number>();
+        ratingsByParticipant.set(r.participantId, inner);
+      }
+      inner.set(String(r.whiskyId), r.overall);
+    }
+
+    const groupAvgByWhisky = new Map<string, number>();
+    for (const w of sorted) {
+      if (w.avgOverall != null) groupAvgByWhisky.set(String(w.id), w.avgOverall);
+    }
+
+    const participantNames = new Map<string, string>();
+    for (const p of (participants || [])) {
+      const id = p.participantId || p.id;
+      const rawName = p.participant?.name || p.participant?.email || p.name || p.email || "";
+      participantNames.set(id, stripGuestSuffix(rawName));
+    }
+
+    let closestTwinName: string | null = null;
+    if (currentParticipant?.id) {
+      const myRatings = ratingsByParticipant.get(currentParticipant.id);
+      if (myRatings && myRatings.size > 0) {
+        let bestAvg = Infinity;
+        let twinId: string | null = null;
+        const entries = Array.from(ratingsByParticipant.entries());
+        for (const [pid, theirRatings] of entries) {
+          if (pid === currentParticipant.id) continue;
+          let count = 0;
+          let sumDelta = 0;
+          const myEntries = Array.from(myRatings.entries());
+          for (const [wid, mine] of myEntries) {
+            const their = theirRatings.get(wid);
+            if (their == null) continue;
+            sumDelta += Math.abs(mine - their);
+            count++;
+          }
+          if (count >= 2) {
+            const avg = sumDelta / count;
+            if (avg < bestAvg) { bestAvg = avg; twinId = pid; }
+          }
+        }
+        if (twinId) closestTwinName = participantNames.get(twinId) || null;
+      }
+    }
+
+    let bestSpreadAvg = Infinity;
+    let bestSpreadId: string | null = null;
+    let worstSpreadAvg = -Infinity;
+    let worstSpreadId: string | null = null;
+    const partEntries = Array.from(ratingsByParticipant.entries());
+    for (const [pid, theirRatings] of partEntries) {
+      let count = 0;
+      let sumDev = 0;
+      const wEntries = Array.from(theirRatings.entries());
+      for (const [wid, score] of wEntries) {
+        const ga = groupAvgByWhisky.get(wid);
+        if (ga == null) continue;
+        sumDev += Math.abs(score - ga);
+        count++;
+      }
+      if (count >= 2) {
+        const avg = sumDev / count;
+        if (avg < bestSpreadAvg) { bestSpreadAvg = avg; bestSpreadId = pid; }
+        if (avg > worstSpreadAvg) { worstSpreadAvg = avg; worstSpreadId = pid; }
+      }
+    }
+
+    const spreadChampion = bestSpreadId
+      ? { participantName: participantNames.get(bestSpreadId) || "", avgDeviation: bestSpreadAvg }
+      : null;
+    const biggestOutlierName = worstSpreadId && worstSpreadId !== bestSpreadId
+      ? (participantNames.get(worstSpreadId) || null)
+      : null;
+
+    return { closestTwinName, biggestOutlierName, spreadChampion };
+  }, [allRatings, participants, sorted, currentParticipant?.id]);
+
   const groupInsights = useMemo(() => {
     if (!tastingId || sorted.length === 0) return [];
     return selectGroupInsights({
@@ -764,9 +854,12 @@ export default function LabsResults({ params }: LabsResultsProps) {
         myDelta: w.myDelta ?? null,
       })),
       myParticipantId: currentParticipant?.id || null,
+      closestTwinName: participantStats.closestTwinName,
+      biggestOutlierName: participantStats.biggestOutlierName,
+      spreadChampion: participantStats.spreadChampion,
       t,
     });
-  }, [tastingId, sorted, currentParticipant?.id, t]);
+  }, [tastingId, sorted, currentParticipant?.id, participantStats, t]);
 
   if (tastingError) {
     return (

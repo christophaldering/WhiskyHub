@@ -78,7 +78,12 @@ export function selectSoloInsights(input: SoloEngineInput): Insight[] {
   if (Array.isArray(journal) && journal.length > 0) {
     const region = (whisky.region || "").trim();
     if (region) {
-      const sameRegion = journal.filter(j => j.id !== whisky.id && (j.region || "").toLowerCase() === region.toLowerCase() && typeof j.personalScore === "number");
+      const wName = (whisky.name || "").trim().toLowerCase();
+      const sameRegion = journal.filter(j => {
+        if (j.id === whisky.id) return false;
+        if (wName && (j.title || "").trim().toLowerCase() === wName) return false;
+        return (j.region || "").toLowerCase() === region.toLowerCase() && typeof j.personalScore === "number";
+      });
       if (sameRegion.length === 0) {
         insights.push({
           id: makeId(["solo", "first-region", whisky.id, region]),

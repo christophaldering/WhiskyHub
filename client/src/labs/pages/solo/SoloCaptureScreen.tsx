@@ -6,6 +6,7 @@ import BottleRecognitionFeedback, { type BottleRecognitionResult } from "@/labs/
 import { CollectionPicker, type SelectedWhisky } from "@/labs/components/CollectionPicker";
 
 export interface CapturedWhisky {
+  id?: string;
   name: string;
   distillery: string;
   country: string;

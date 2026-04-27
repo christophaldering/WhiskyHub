@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearch, useLocation } from "wouter";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
@@ -107,6 +107,31 @@ export default function LabsTasteCompare() {
   const [showFilters, setShowFilters] = useState(false);
 
   const filters = parseSearch(searchStr);
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchStr);
+    const highlight = params.get("highlight");
+    if (!highlight) return;
+    const tryScroll = (attempt: number) => {
+      const directEl = document.querySelector(`[data-testid="row-compare-${highlight}"]`) as HTMLElement | null;
+      let target: HTMLElement | null = directEl;
+      if (!target) {
+        const allRows = Array.from(document.querySelectorAll<HTMLElement>('[data-testid^="row-compare-"]'));
+        const lower = highlight.toLowerCase();
+        target = allRows.find(el => (el.textContent || "").toLowerCase().includes(lower)) || null;
+      }
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        target.style.transition = "background-color 1.5s ease-out";
+        const orig = target.style.backgroundColor;
+        target.style.backgroundColor = "rgba(201, 169, 97, 0.18)";
+        window.setTimeout(() => { target!.style.backgroundColor = orig; }, 1800);
+        return;
+      }
+      if (attempt < 10) window.setTimeout(() => tryScroll(attempt + 1), 200);
+    };
+    window.setTimeout(() => tryScroll(0), 250);
+  }, [searchStr]);
 
   const setFilter = (key: string, value: string | number) => {
     const next = { ...filters, [key]: value };
