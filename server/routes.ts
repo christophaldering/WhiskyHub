@@ -13171,19 +13171,40 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
   app.post("/api/export/notes-docx", async (req, res) => {
     try {
-      const { tastingId, participantId } = req.body;
-      if (!tastingId || !participantId) {
-        return res.status(400).json({ message: "tastingId and participantId are required" });
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+
+      const { tastingId } = req.body ?? {};
+      if (!tastingId) {
+        return res.status(400).json({ message: "tastingId is required" });
       }
 
-      const [tasting, participant, whiskies, ratings] = await Promise.all([
-        storage.getTasting(tastingId),
-        storage.getParticipant(participantId),
+      const tasting = await storage.getTasting(tastingId);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+
+      const isAdmin = auth.participant.role === "admin";
+      const isHost = tasting.hostId === auth.participant.id;
+      const requestedParticipantId = (req.body?.participantId as string | undefined) ?? auth.participant.id;
+
+      if (requestedParticipantId !== auth.participant.id && !isAdmin && !isHost) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      if (!isAdmin && !isHost) {
+        const tps = await storage.getTastingParticipants(tastingId);
+        const isMember = tps.some(tp => tp.participantId === auth.participant.id);
+        if (!isMember) {
+          return res.status(403).json({ message: "Not a member of this tasting" });
+        }
+      }
+
+      const [participant, whiskies, ratings] = await Promise.all([
+        storage.getParticipant(requestedParticipantId),
         storage.getWhiskiesForTasting(tastingId),
         storage.getRatingsForTasting(tastingId),
       ]);
+      const participantId = requestedParticipantId;
 
-      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
       if (!participant) return res.status(404).json({ message: "Participant not found" });
 
       const participantRatings = ratings.filter(r => r.participantId === participantId);
