@@ -586,6 +586,94 @@ const resources = {
         allInsights: "All insights",
         heroAvgScore: "Avg. score",
         heroTotalRatings: "Ratings",
+        stripTitle: "Insights",
+        you: "You",
+        cohort: "Cohort",
+        group: "Group",
+        agreed: "Agreed",
+        split: "Split",
+        solo: {
+          title: "What this dram tells you",
+          dnaHighlight: {
+            headline: "Strong affinity: {{label}}",
+            subline: "You consistently rate {{label}} drams above your baseline.",
+          },
+          firstOfRegion: {
+            headline: "First {{region}} in your diary",
+            subline: "Open up a new region in your taste map.",
+          },
+          bestRegion: {
+            headline: "+{{delta}} above your {{region}} average",
+            subline: "You usually rate {{region}} around {{avg}}.",
+          },
+          streak: {
+            headline: "{{n}} drams logged today",
+            subline: "Keep tasting — patterns sharpen with reps.",
+          },
+          clusterTop: {
+            headline: "Top {{p}}% of your drams",
+            subline: "This dram sits in your highest-rated band.",
+          },
+          outlierAge: {
+            headline: "Below average for {{age}}-year drams",
+            subline: "You're tougher on aged drams than most tasters.",
+          },
+        },
+        groupRecap: {
+          title: "Tasting insights",
+          mostAgreed: {
+            headline: "Group consensus: {{name}}",
+            subline: "Std-dev {{sd}} across {{n}} tasters.",
+          },
+          mostDebated: {
+            headline: "Most debated: {{name}}",
+            subline: "Spread of {{sd}} points — tastes diverged.",
+          },
+          twin: {
+            headline: "Closest taste twin: {{name}}",
+            subline: "Their palate aligns most with yours tonight.",
+          },
+          outlier: {
+            headline: "Biggest outlier: {{name}}",
+            subline: "Furthest from the group average.",
+          },
+          spreadChampion: {
+            headline: "Most consistent: {{name}}",
+            subline: "Avg deviation \u00b1{{d}} across all drams.",
+          },
+          personalAbove: {
+            headline: "You loved {{name}} more than the group",
+          },
+          personalBelow: {
+            headline: "Group liked {{name}} more than you",
+          },
+          personalDelta: {
+            subline: "{{sign}}{{d}} pts vs. group average.",
+          },
+          personalAligned: {
+            headline: "Spot on with the group on {{name}}",
+            subline: "Your score matched the group within {{d}} pts.",
+          },
+        },
+        feed: {
+          weekly: {
+            headline: "{{n}} drams this week",
+            subline: "Average score {{avg}}.",
+            sublineNoScore: "Keep the diary going.",
+          },
+          streak: {
+            headline: "{{n}}-day tasting streak",
+            subline: "Don't break the chain.",
+          },
+          regionMilestone: {
+            headline: "{{n}} drams from {{region}}",
+            subline: "Your {{region}} chapter is taking shape.",
+          },
+          aromaUnlock: {
+            headline: "Aroma unlocked: {{label}}",
+            subline: "Your DNA shows a clear preference.",
+          },
+        },
       },
       contextLevel: {
         naked: "Naked",
@@ -10082,6 +10170,94 @@ const resources = {
         allInsights: "Alle Insights",
         heroAvgScore: "Ø Bewertung",
         heroTotalRatings: "Bewertungen",
+        stripTitle: "Insights",
+        you: "Du",
+        cohort: "Vergleichsgruppe",
+        group: "Gruppe",
+        agreed: "Einig",
+        split: "Uneinig",
+        solo: {
+          title: "Was dieser Dram über dich verrät",
+          dnaHighlight: {
+            headline: "Starke Affinität: {{label}}",
+            subline: "Du bewertest {{label}}-Drams konstant über deinem Schnitt.",
+          },
+          firstOfRegion: {
+            headline: "Erster {{region}} in deinem Tagebuch",
+            subline: "Eine neue Region für deine Geschmackskarte.",
+          },
+          bestRegion: {
+            headline: "+{{delta}} über deinem {{region}}-Schnitt",
+            subline: "Du bewertest {{region}} sonst um {{avg}}.",
+          },
+          streak: {
+            headline: "{{n}} Drams heute notiert",
+            subline: "Weiter so — Muster werden mit Wiederholung schärfer.",
+          },
+          clusterTop: {
+            headline: "Top {{p}}% deiner Drams",
+            subline: "Dieser Dram landet ganz oben in deinem Bewertungsband.",
+          },
+          outlierAge: {
+            headline: "Unter dem Schnitt für {{age}}-jährige Drams",
+            subline: "Du bist strenger mit alten Drams als die meisten.",
+          },
+        },
+        groupRecap: {
+          title: "Tasting-Insights",
+          mostAgreed: {
+            headline: "Konsens der Runde: {{name}}",
+            subline: "Std-Abw {{sd}} über {{n}} Taster.",
+          },
+          mostDebated: {
+            headline: "Am meisten diskutiert: {{name}}",
+            subline: "Spannweite von {{sd}} Punkten — die Meinungen gingen auseinander.",
+          },
+          twin: {
+            headline: "Geschmacks-Zwilling: {{name}}",
+            subline: "Sein Gaumen ist heute deinem am ähnlichsten.",
+          },
+          outlier: {
+            headline: "Größter Ausreißer: {{name}}",
+            subline: "Am weitesten vom Gruppenschnitt entfernt.",
+          },
+          spreadChampion: {
+            headline: "Konstantester Taster: {{name}}",
+            subline: "Ø Abweichung \u00b1{{d}} über alle Drams.",
+          },
+          personalAbove: {
+            headline: "Du mochtest {{name}} mehr als die Gruppe",
+          },
+          personalBelow: {
+            headline: "Die Gruppe mochte {{name}} mehr als du",
+          },
+          personalDelta: {
+            subline: "{{sign}}{{d}} Punkte ggü. Gruppenschnitt.",
+          },
+          personalAligned: {
+            headline: "Auf Linie mit der Gruppe bei {{name}}",
+            subline: "Deine Bewertung lag {{d}} Punkte am Gruppenschnitt.",
+          },
+        },
+        feed: {
+          weekly: {
+            headline: "{{n}} Drams diese Woche",
+            subline: "Durchschnitt {{avg}}.",
+            sublineNoScore: "Bleib am Tagebuch dran.",
+          },
+          streak: {
+            headline: "{{n}}-Tage-Tasting-Streak",
+            subline: "Brich die Kette nicht.",
+          },
+          regionMilestone: {
+            headline: "{{n}} Drams aus {{region}}",
+            subline: "Dein {{region}}-Kapitel nimmt Form an.",
+          },
+          aromaUnlock: {
+            headline: "Aroma freigeschaltet: {{label}}",
+            subline: "Deine DNA zeigt eine klare Vorliebe.",
+          },
+        },
       },
       contextLevel: {
         naked: "Naked",

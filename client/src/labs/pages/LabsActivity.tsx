@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
@@ -6,6 +7,9 @@ import { getSession } from "@/lib/session";
 import { stripGuestSuffix } from "@/lib/utils";
 import { FileText, Wine, Star, Activity, ChevronLeft } from "lucide-react";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import InsightCard from "@/labs/components/InsightCard";
+import { selectFeedInsights, type FeedEngineDram, type SoloEngineDna, type SoloEngineDnaAxis } from "@/labs/insights/engine";
+import type { Insight } from "@/labs/insights/types";
 
 interface ActivityItem {
   type: "journal" | "tasting";
@@ -41,6 +45,73 @@ export default function LabsActivity() {
   });
 
   const activities = data?.activities || [];
+
+  const ownDramsQuery = useQuery<FeedEngineDram[]>({
+    queryKey: ["journal-list", pid, "feed-insights"],
+    queryFn: async () => {
+      const res = await fetch(`/api/journal/${pid}`, {
+        headers: { "x-participant-id": pid || "" },
+      });
+      if (!res.ok) return [];
+      const json = await res.json();
+      const entries = Array.isArray(json) ? json : Array.isArray(json?.entries) ? json.entries : [];
+      return entries.map((e: Record<string, unknown>) => ({
+        id: String(e.id ?? ""),
+        title: typeof e.title === "string" ? e.title : null,
+        region: typeof e.region === "string" ? e.region : null,
+        personalScore: typeof e.personalScore === "number" ? e.personalScore : (typeof e.overallScore === "number" ? e.overallScore : null),
+        createdAt: typeof e.createdAt === "string" ? e.createdAt : null,
+      }));
+    },
+    enabled: !!pid,
+    staleTime: 60000,
+  });
+
+  const dnaQuery = useQuery<SoloEngineDna | null>({
+    queryKey: ["whisky-dna", pid, "feed-insights"],
+    queryFn: async () => {
+      const res = await fetch(`/api/participants/${pid}/whisky-dna`, {
+        headers: { "x-participant-id": pid || "" },
+      });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!pid,
+    staleTime: 60000,
+  });
+
+  const insights: Insight[] = useMemo(() => {
+    if (!pid) return [];
+    return selectFeedInsights({
+      drams: ownDramsQuery.data ?? [],
+      dnaAxes: (dnaQuery.data?.axes ?? []) as SoloEngineDnaAxis[],
+      t,
+    });
+  }, [pid, ownDramsQuery.data, dnaQuery.data, t]);
+
+  type FeedNode =
+    | { kind: "activity"; key: string; activity: ActivityItem; sortKey: number }
+    | { kind: "insight"; key: string; insight: Insight; sortKey: number };
+
+  const feed: FeedNode[] = useMemo(() => {
+    const nodes: FeedNode[] = activities.map((a, i) => ({
+      kind: "activity",
+      key: `act-${a.type}-${a.participantId}-${i}`,
+      activity: a,
+      sortKey: new Date(a.timestamp).getTime() || (Date.now() - i * 1000),
+    }));
+    const now = Date.now();
+    insights.forEach((ins, i) => {
+      nodes.push({
+        kind: "insight",
+        key: `ins-${ins.id}`,
+        insight: ins,
+        sortKey: now - i * 90000,
+      });
+    });
+    nodes.sort((a, b) => b.sortKey - a.sortKey);
+    return nodes;
+  }, [activities, insights]);
 
   return (
     <div className="labs-page labs-fade-in" data-testid="labs-activity-page">
@@ -84,7 +155,7 @@ export default function LabsActivity() {
         </div>
       )}
 
-      {pid && !isLoading && activities.length === 0 && (
+      {pid && !isLoading && feed.length === 0 && (
         <div className="labs-empty" style={{ minHeight: "30vh" }}>
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: "var(--labs-accent-muted)" }}>
             <Activity className="w-7 h-7" style={{ color: "var(--labs-accent)" }} />
@@ -96,10 +167,16 @@ export default function LabsActivity() {
         </div>
       )}
 
-      {activities.length > 0 && (
+      {feed.length > 0 && (
         <div className="space-y-2">
-          {activities.map((a, i) => (
-            <div key={`${a.type}-${a.participantId}-${i}`} className="labs-card p-4 flex gap-3" data-testid={`labs-activity-item-${i}`}>
+          {feed.map((node, i) => node.kind === "insight" ? (
+            <div key={node.key} data-testid={`labs-activity-insight-${i}`}>
+              <InsightCard insight={node.insight} size="standard" />
+            </div>
+          ) : (() => {
+            const a = node.activity;
+            return (
+            <div key={node.key} className="labs-card p-4 flex gap-3" data-testid={`labs-activity-item-${i}`}>
               <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "var(--labs-accent-muted)" }}>
                 {a.type === "journal" ? (
                   <FileText className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
@@ -141,7 +218,8 @@ export default function LabsActivity() {
                 )}
               </div>
             </div>
-          ))}
+            );
+          })())}
         </div>
       )}
     </div>

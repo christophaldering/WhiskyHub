@@ -359,6 +359,21 @@ export default function LabsWhiskyDNA() {
   const [copied, setCopied] = useState(false);
   const [recSource, setRecSource] = useState<RecSource>("data");
   const [aiRefreshKey, setAiRefreshKey] = useState(0);
+  const [highlightAxis, setHighlightAxis] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const highlight = params.get("highlight");
+    if (!highlight) return;
+    setHighlightAxis(highlight);
+    const timer = setTimeout(() => {
+      const el = document.querySelector(`[data-testid="row-affinity-${highlight}"]`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 350);
+    const clearTimer = setTimeout(() => setHighlightAxis(null), 4500);
+    return () => { clearTimeout(timer); clearTimeout(clearTimer); };
+  }, []);
 
   const { data: dna, isLoading, error } = useQuery<DnaResponse>({
     queryKey: ["whisky-dna", pid],
@@ -981,8 +996,23 @@ export default function LabsWhiskyDNA() {
                 const aff = Math.round(c.affinity ?? 50);
                 const sample = c.sample ?? 0;
                 const sufficient = c.sufficient !== false && sample >= 3;
+                const isHighlighted = highlightAxis === c.id;
                 return (
-                  <div key={c.id} data-testid={`row-affinity-${c.id}`} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div
+                    key={c.id}
+                    data-testid={`row-affinity-${c.id}`}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: isHighlighted ? "6px 8px" : "0",
+                      margin: isHighlighted ? "-6px -8px" : "0",
+                      borderRadius: 8,
+                      background: isHighlighted ? "color-mix(in srgb, var(--labs-accent) 12%, transparent)" : "transparent",
+                      boxShadow: isHighlighted ? "0 0 0 1px color-mix(in srgb, var(--labs-accent) 45%, transparent)" : "none",
+                      transition: "background 300ms ease, box-shadow 300ms ease, padding 300ms ease, margin 300ms ease",
+                    }}
+                  >
                     <div style={{ width: 10, height: 10, borderRadius: 3, background: c.color, flexShrink: 0 }} />
                     <div style={{ flex: 1, fontSize: 13, color: "var(--labs-text)" }}>
                       {lang === "de" ? c.de : c.en}

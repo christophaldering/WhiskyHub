@@ -308,6 +308,33 @@ export default function LabsTasteAnalytics() {
   const [, navigate] = useLocation();
   const { t } = useTranslation();
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const highlight = params.get("highlight");
+    if (!highlight) return;
+    const targets: Record<string, string> = {
+      consistency: "card-rating-consistency",
+      evolution: "card-taste-evolution",
+      ai: "card-ai-insight",
+    };
+    const id = targets[highlight] ?? highlight;
+    const timer = setTimeout(() => {
+      const el = document.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      const prevShadow = el.style.boxShadow;
+      const prevTransition = el.style.transition;
+      el.style.transition = "box-shadow 300ms ease";
+      el.style.boxShadow = "0 0 0 2px color-mix(in srgb, var(--labs-accent) 50%, transparent)";
+      setTimeout(() => {
+        el.style.boxShadow = prevShadow;
+        setTimeout(() => { el.style.transition = prevTransition; }, 350);
+      }, 2200);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, []);
+
   const { data: stats, isLoading } = useQuery({
     queryKey: ["labs-participant-stats-threshold", pid],
     queryFn: () => statsApi.get(pid!),

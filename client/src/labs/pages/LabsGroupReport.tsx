@@ -6,7 +6,7 @@ import {
   CheckCircle, RefreshCw, User, Zap, Activity, Sliders,
 } from "lucide-react";
 import ManageTastersDialog from "@/labs/components/ManageTastersDialog";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi, getParticipantId, pidHeaders } from "@/lib/api";
 import { useTranslation } from "react-i18next";
@@ -254,6 +254,21 @@ export default function LabsGroupReport({ params }: LabsGroupReportProps) {
   const [showManageTasters, setShowManageTasters] = useState(false);
   // Progress for batched per-participant generation: { done, total, currentName }
   const [genProgress, setGenProgress] = useState<{ done: number; total: number; currentName: string | null } | null>(null);
+  const [highlightWhisky, setHighlightWhisky] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const highlight = params.get("highlight");
+    if (!highlight) return;
+    setHighlightWhisky(highlight);
+    const scrollTimer = setTimeout(() => {
+      const el = document.querySelector(`[data-testid="report-whisky-${highlight}"]`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 500);
+    const clearTimer = setTimeout(() => setHighlightWhisky(null), 4500);
+    return () => { clearTimeout(scrollTimer); clearTimeout(clearTimer); };
+  }, []);
 
   const { data: tasting } = useQuery({
     queryKey: ["tasting", tastingId],
@@ -644,8 +659,23 @@ export default function LabsGroupReport({ params }: LabsGroupReportProps) {
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   {whiskyResults.map((w: any, i: number) => {
                     const char = report.whiskyCharacteristics?.[w.id];
+                    const isHl = highlightWhisky === String(w.id);
                     return (
-                      <div key={w.id} style={{ display: "flex", gap: 12, alignItems: "flex-start" }} data-testid={`report-whisky-${w.id}`}>
+                      <div
+                        key={w.id}
+                        style={{
+                          display: "flex",
+                          gap: 12,
+                          alignItems: "flex-start",
+                          padding: isHl ? "8px 10px" : "0",
+                          margin: isHl ? "-8px -10px" : "0",
+                          borderRadius: 10,
+                          background: isHl ? "color-mix(in srgb, var(--labs-accent) 12%, transparent)" : "transparent",
+                          boxShadow: isHl ? "0 0 0 1px color-mix(in srgb, var(--labs-accent) 45%, transparent)" : "none",
+                          transition: "background 300ms ease, box-shadow 300ms ease, padding 300ms ease, margin 300ms ease",
+                        }}
+                        data-testid={`report-whisky-${w.id}`}
+                      >
                         <span style={{ fontSize: 11, fontWeight: 700, color: i < 3 ? "var(--labs-accent)" : "var(--labs-text-muted)", width: 22, flexShrink: 0, paddingTop: 2 }}>
                           #{i + 1}
                         </span>

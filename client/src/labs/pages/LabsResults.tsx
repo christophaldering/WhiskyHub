@@ -11,6 +11,8 @@ import { tastingApi, whiskyApi, ratingApi, collectionApi, getParticipantId } fro
 import { useTranslation } from "react-i18next";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
 import LabsScoreRing from "@/labs/components/LabsScoreRing";
+import InsightStrip from "@/labs/components/InsightStrip";
+import { selectGroupInsights } from "@/labs/insights/engine";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import CoverImage16x9 from "@/labs/components/CoverImage16x9";
 import TastingDownloadGrid from "@/labs/components/TastingDownloadGrid";
@@ -747,6 +749,25 @@ export default function LabsResults({ params }: LabsResultsProps) {
     return { groupAvg, userAvg, mostAgreed, mostDebated, consensusWhiskies, debatedWhiskies, myHighlights, myLowlights };
   }, [sorted]);
 
+  const groupInsights = useMemo(() => {
+    if (!tastingId || sorted.length === 0) return [];
+    return selectGroupInsights({
+      tastingId,
+      whiskies: sorted.map(w => ({
+        id: String(w.id),
+        name: w.name || "",
+        region: w.region || null,
+        avgOverall: w.avgOverall ?? null,
+        overallStdDev: w.overallStdDev ?? null,
+        ratingCount: w.ratingCount,
+        myRating: w.myRating ? { overall: w.myRating.overall ?? null } : null,
+        myDelta: w.myDelta ?? null,
+      })),
+      myParticipantId: currentParticipant?.id || null,
+      t,
+    });
+  }, [tastingId, sorted, currentParticipant?.id, t]);
+
   if (tastingError) {
     return (
       <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
@@ -1173,33 +1194,20 @@ export default function LabsResults({ params }: LabsResultsProps) {
           </div>
         </div>
 
-        {(summaryData.mostAgreed || summaryData.mostDebated) && (
+        {groupInsights.length > 0 && (
           <div
-            className="pt-3 grid grid-cols-1 sm:grid-cols-2 gap-3"
+            className="pt-3"
             style={{ borderTop: "1px solid var(--labs-border-subtle)" }}
+            data-testid="results-insights"
           >
-            {summaryData.mostAgreed && (
-              <div className="flex items-start gap-2" data-testid="results-most-agreed">
-                <Target className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "var(--labs-success)" }} />
-                <div>
-                  <p className="text-[11px] font-medium" style={{ color: "var(--labs-success)" }}>Most Agreed</p>
-                  <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
-                    {summaryData.mostAgreed.name || t("resultsUi.unknown")}
-                  </p>
-                </div>
-              </div>
-            )}
-            {summaryData.mostDebated && (
-              <div className="flex items-start gap-2" data-testid="results-most-debated">
-                <MessageCircle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "var(--labs-danger)" }} />
-                <div>
-                  <p className="text-[11px] font-medium" style={{ color: "var(--labs-danger)" }}>Most Debated</p>
-                  <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
-                    {summaryData.mostDebated.name || t("resultsUi.unknown")}
-                  </p>
-                </div>
-              </div>
-            )}
+            <InsightStrip
+              insights={groupInsights}
+              size="standard"
+              layout="scroll"
+              testId="insight-strip-group"
+              title={t("insights.groupRecap.title", "Tasting insights")}
+              maxItems={5}
+            />
           </div>
         )}
       </div>

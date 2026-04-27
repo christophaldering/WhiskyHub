@@ -881,6 +881,11 @@ export default function LabsSolo() {
         added={bottleAdded}
         isDraft={isDraftSave}
         tastingContext={tastingContext}
+        whiskyId={whisky?.name || undefined}
+        whiskyRegion={whisky?.region || whisky?.country || undefined}
+        whiskyAge={whisky?.age || undefined}
+        whiskyDistillery={whisky?.distillery || undefined}
+        participantId={authenticated ? participantId : undefined}
       />
     );
   }

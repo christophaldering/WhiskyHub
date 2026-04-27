@@ -1,5 +1,9 @@
+import { useMemo, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import { Check, FileEdit, MapPin, Sparkles, Users, Wine } from "lucide-react";
+import InsightStrip from "@/labs/components/InsightStrip";
+import { selectSoloInsights, type SoloEngineDna, type SoloEngineJournalEntry } from "@/labs/insights/engine";
 
 interface TastingContextLike {
   place?: string;
@@ -21,6 +25,11 @@ interface Props {
   added?: boolean;
   isDraft?: boolean;
   tastingContext?: TastingContextLike | string | null;
+  whiskyId?: string;
+  whiskyRegion?: string | null;
+  whiskyAge?: number | string | null;
+  whiskyDistillery?: string | null;
+  participantId?: string | null;
 }
 
 const PLACE_LABEL_KEY: Record<string, string> = {
@@ -60,11 +69,64 @@ function parseContext(input?: TastingContextLike | string | null): TastingContex
   return input;
 }
 
-export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, showAddToCollection, onAddToCollection, added, isDraft, tastingContext }: Props) {
+export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, showAddToCollection, onAddToCollection, added, isDraft, tastingContext, whiskyId, whiskyRegion, whiskyAge, whiskyDistillery, participantId }: Props) {
   const { t } = useTranslation();
 
+  const insightsEnabled = !isDraft && !!participantId;
+
+  const dnaQuery = useQuery<SoloEngineDna | null>({
+    queryKey: ["whisky-dna", participantId, "solo-recap"],
+    queryFn: async () => {
+      const res = await fetch(`/api/participants/${participantId}/whisky-dna`, {
+        headers: { "x-participant-id": participantId || "" },
+      });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: insightsEnabled,
+    staleTime: 30000,
+  });
+
+  const journalQuery = useQuery<SoloEngineJournalEntry[]>({
+    queryKey: ["journal-list", participantId, "solo-recap"],
+    queryFn: async () => {
+      const res = await fetch(`/api/journal/${participantId}`, {
+        headers: { "x-participant-id": participantId || "" },
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      const entries = Array.isArray(data) ? data : Array.isArray(data?.entries) ? data.entries : [];
+      return entries.map((e: Record<string, unknown>) => ({
+        id: String(e.id ?? ""),
+        title: typeof e.title === "string" ? e.title : null,
+        region: typeof e.region === "string" ? e.region : null,
+        personalScore: typeof e.personalScore === "number" ? e.personalScore : (typeof e.overallScore === "number" ? e.overallScore : null),
+        createdAt: typeof e.createdAt === "string" ? e.createdAt : null,
+      }));
+    },
+    enabled: insightsEnabled,
+    staleTime: 30000,
+  });
+
+  const insights = useMemo(() => {
+    if (!insightsEnabled) return [];
+    return selectSoloInsights({
+      whisky: {
+        id: whiskyId || whiskyName,
+        name: whiskyName,
+        region: whiskyRegion ?? null,
+        age: typeof whiskyAge === "string" ? Number(whiskyAge) || whiskyAge : whiskyAge ?? null,
+        distillery: whiskyDistillery ?? null,
+      },
+      score,
+      dna: dnaQuery.data ?? null,
+      journal: journalQuery.data ?? [],
+      t,
+    });
+  }, [insightsEnabled, whiskyId, whiskyName, whiskyRegion, whiskyAge, whiskyDistillery, score, dnaQuery.data, journalQuery.data, t]);
+
   const ctx = parseContext(tastingContext);
-  const contextItems: { icon: JSX.Element; label: string }[] = [];
+  const contextItems: { icon: ReactElement; label: string }[] = [];
   if (ctx) {
     const placeFreetext = (ctx.placeCustom || ctx.placeOther || "").trim();
     if (ctx.place) {
@@ -183,6 +245,19 @@ export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, sh
           }} data-testid="solo-done-draft-hint">
             {t("v2.solo.draftHint", "Du kannst den Entwurf jederzeit unter \"My Drams\" vervollständigen.")}
           </p>
+        )}
+
+        {insights.length > 0 && (
+          <div style={{ width: "100%" }} data-testid="solo-done-insights">
+            <InsightStrip
+              insights={insights}
+              size="standard"
+              layout="scroll"
+              testId="insight-strip-solo"
+              title={t("insights.solo.title", "What this dram tells you")}
+              maxItems={4}
+            />
+          </div>
         )}
 
         {showAddToCollection && (
