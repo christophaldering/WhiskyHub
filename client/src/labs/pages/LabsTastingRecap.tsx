@@ -7,9 +7,10 @@ import { recapApi, collectionApi, getParticipantId, pidHeaders } from "@/lib/api
 import { stripGuestSuffix } from "@/lib/utils";
 import {
   Trophy, Copy, Printer, AlertTriangle, Users, Wine, Star, FileDown,
-  Loader2, ChevronLeft, AlertCircle, Archive, Check, BookOpen, Camera, X
+  Loader2, ChevronLeft, AlertCircle, Archive, Check, BookOpen, Camera, X, Sparkles
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
+import AutoStorySheet from "@/labs/components/AutoStorySheet";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import jsPDF from "jspdf";
 import { saveJsPdf } from "@/lib/pdf";
@@ -70,6 +71,7 @@ export default function LabsTastingRecap() {
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [autoStoryOpen, setAutoStoryOpen] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
   const pid = getParticipantId();
@@ -482,15 +484,26 @@ export default function LabsTastingRecap() {
               <BookOpen style={{ width: 18, height: 18, color: "var(--labs-accent)" }} />
               Story
             </h2>
-            <button
-              className="labs-btn-secondary"
-              onClick={() => navigate(`/labs/results/${recap.tasting.id}/story`)}
-              data-testid="button-recap-story-open"
-              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-            >
-              <BookOpen style={{ width: 14, height: 14 }} />
-              Story anzeigen
-            </button>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button
+                className="labs-btn-primary"
+                onClick={() => setAutoStoryOpen(true)}
+                data-testid="button-recap-story-auto-create"
+                style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+              >
+                <Sparkles style={{ width: 14, height: 14 }} />
+                Story automatisch erstellen
+              </button>
+              <button
+                className="labs-btn-secondary"
+                onClick={() => navigate(`/labs/results/${recap.tasting.id}/story`)}
+                data-testid="button-recap-story-open"
+                style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+              >
+                <BookOpen style={{ width: 14, height: 14 }} />
+                Story anzeigen
+              </button>
+            </div>
           </div>
 
           {eventPhotos.length > 0 && (
@@ -758,6 +771,15 @@ export default function LabsTastingRecap() {
             ))}
           </div>
         </div>
+      )}
+
+      {isHost && tastingId && (
+        <AutoStorySheet
+          open={autoStoryOpen}
+          tastingId={tastingId}
+          eventPhotos={eventPhotos}
+          onClose={() => setAutoStoryOpen(false)}
+        />
       )}
     </div>
   );
