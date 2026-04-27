@@ -5,6 +5,8 @@ import type { StoryDocument } from "@/storybuilder/core/types";
 
 const LandingNew = lazy(() => import("@/pages/landing-new"));
 
+const FALLBACK_TIMEOUT_MS = 1500;
+
 type State =
   | { status: "loading" }
   | { status: "cms"; page: CmsPublicPage }
@@ -15,9 +17,19 @@ export default function LandingCmsPage() {
 
   useEffect(() => {
     let cancelled = false;
+    let lockedToFallback = false;
+
+    void import("@/pages/landing-new");
+
+    const timeoutId = window.setTimeout(() => {
+      if (cancelled) return;
+      lockedToFallback = true;
+      setState((prev) => (prev.status === "loading" ? { status: "fallback" } : prev));
+    }, FALLBACK_TIMEOUT_MS);
+
     fetchPublicCmsPage("home")
       .then((page) => {
-        if (cancelled) return;
+        if (cancelled || lockedToFallback) return;
         if (page && Array.isArray(page.blocksJson) && page.blocksJson.length > 0) {
           setState({ status: "cms", page });
         } else {
@@ -25,11 +37,13 @@ export default function LandingCmsPage() {
         }
       })
       .catch(() => {
-        if (cancelled) return;
+        if (cancelled || lockedToFallback) return;
         setState({ status: "fallback" });
       });
+
     return () => {
       cancelled = true;
+      window.clearTimeout(timeoutId);
     };
   }, []);
 
@@ -40,17 +54,8 @@ export default function LandingCmsPage() {
         style={{
           minHeight: "100vh",
           background: "#0B0906",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#A89A85",
-          fontFamily: "'EB Garamond', serif",
-          fontSize: 18,
-          letterSpacing: ".1em",
         }}
-      >
-        Lade…
-      </div>
+      />
     );
   }
 
@@ -74,7 +79,7 @@ export default function LandingCmsPage() {
 
   return (
     <div data-testid="landing-cms-fallback">
-      <Suspense fallback={<div data-testid="landing-cms-loading" />}>
+      <Suspense fallback={<div data-testid="landing-cms-fallback-loading" style={{ minHeight: "100vh", background: "#0B0906" }} />}>
         <LandingNew />
       </Suspense>
     </div>

@@ -2,6 +2,7 @@ import { queryClient } from "./queryClient";
 
 let updateAvailable = false;
 let swRegistration: ServiceWorkerRegistration | undefined;
+let userTriggeredReload = false;
 const listeners = new Set<(available: boolean) => void>();
 
 export function onUpdateAvailable(cb: (available: boolean) => void) {
@@ -16,6 +17,7 @@ function setUpdateAvailable(val: boolean) {
 }
 
 export function applyUpdate() {
+  userTriggeredReload = true;
   const waiting = swRegistration?.waiting;
   if (waiting) {
     waiting.postMessage({ type: "SKIP_WAITING" });
@@ -50,6 +52,7 @@ function doRegister() {
     });
 
     navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!userTriggeredReload) return;
       queryClient.invalidateQueries();
       window.location.reload();
     });
