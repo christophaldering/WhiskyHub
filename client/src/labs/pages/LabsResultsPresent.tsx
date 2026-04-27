@@ -875,7 +875,7 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
     }
 
     return stats.slice(0, 6);
-  }, [sorted, allRatings, presentationParticipants]);
+  }, [sorted, presentationRatings, presentationParticipants]);
 
   const slides = useMemo(() => {
     const s: { type: string; data?: any }[] = [];
