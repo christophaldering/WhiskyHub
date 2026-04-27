@@ -349,6 +349,20 @@ export default function LabsCollectionAnalysis() {
       name: sec.heading,
       rows: sec.rows.map(r => ({ Kennzahl: r.label, Wert: r.value })),
     }));
+    const rawRows = items.map(it => ({
+      Distillery: it.distillery ?? "",
+      Name: it.name ?? "",
+      Status: it.status ?? "",
+      ABV: it.abv ?? "",
+      StatedAge: it.statedAge ?? "",
+      CaskType: it.caskType ?? "",
+      DistilledYear: it.distilledYear ?? "",
+      PersonalRating: it.personalRating ?? "",
+      CommunityRating: it.communityRating ?? "",
+      PricePaid: it.pricePaid ?? "",
+      Currency: it.currency ?? "",
+    }));
+    sheets.push({ name: t("downloads.rawData", { defaultValue: "Rohdaten" }), rows: rawRows });
     await downloadXlsxFromSheets(`casksense_collection_analysis_${safeFileSegment(todaySegment)}.xlsx`, sheets);
   };
 
