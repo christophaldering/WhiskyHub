@@ -1175,6 +1175,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
             setImagePoolOpen(false);
             if (cb) cb(item);
           }}
+          onMutate={() => { void refreshPoolItems(); }}
           testIdPrefix="story-image-pool"
         />
       ) : null}

@@ -27,6 +27,7 @@ type Props = {
   initialFilterParticipantId?: string | null;
   onClose: () => void;
   onPick?: (item: TastingStoryImageItem) => void;
+  onMutate?: () => void;
   testIdPrefix?: string;
 };
 
@@ -43,6 +44,7 @@ export function StoryImagePool({
   initialFilterParticipantId = null,
   onClose,
   onPick,
+  onMutate,
   testIdPrefix = "image-pool",
 }: Props) {
   const [items, setItems] = useState<TastingStoryImageItem[]>([]);
@@ -112,7 +114,7 @@ export function StoryImagePool({
         }
         const fd = new FormData();
         fd.append("file", file);
-        const resp = await fetch(`/api/tasting-stories/${tastingId}/image-pool/upload`, { method: "POST", body: fd, credentials: "include" });
+        const resp = await fetch(`/api/cms/upload`, { method: "POST", body: fd, credentials: "include" });
         if (!resp.ok) {
           const txt = await resp.text().catch(() => "");
           let parsed = "";
@@ -136,12 +138,13 @@ export function StoryImagePool({
         });
         setSelectedId(created.id);
         setUploadProgress((prev) => prev.map((p, i) => (i === slotIndex ? { ...p, status: "done" } : p)));
+        if (onMutate) onMutate();
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Upload fehlgeschlagen";
         setUploadProgress((prev) => prev.map((p, i) => (i === slotIndex ? { ...p, status: "error", message: msg } : p)));
       }
     },
-    [tastingId],
+    [tastingId, onMutate],
   );
 
   const onPickFiles = useCallback(
@@ -223,13 +226,14 @@ export function StoryImagePool({
       try {
         const updated = await updateTastingStoryImagePoolEntry(tastingId, imageId, patch);
         setItems((prev) => prev.map((it) => (it.id === imageId ? updated : it)));
+        if (onMutate) onMutate();
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : "Aktualisierung fehlgeschlagen");
       } finally {
         setBusy(false);
       }
     },
-    [tastingId],
+    [tastingId, onMutate],
   );
 
   const removeItem = useCallback(
@@ -241,13 +245,14 @@ export function StoryImagePool({
         await deleteTastingStoryImagePoolEntry(tastingId, imageId);
         setItems((prev) => prev.filter((it) => it.id !== imageId));
         if (selectedId === imageId) setSelectedId(null);
+        if (onMutate) onMutate();
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : "Löschen fehlgeschlagen");
       } finally {
         setBusy(false);
       }
     },
-    [tastingId, selectedId],
+    [tastingId, selectedId, onMutate],
   );
 
   const aiDescribeOne = useCallback(
@@ -257,6 +262,7 @@ export function StoryImagePool({
       try {
         const result = await aiDescribeTastingStoryImage(tastingId, imageId, { fields, language });
         setItems((prev) => prev.map((it) => (it.id === imageId ? result.item : it)));
+        if (onMutate) onMutate();
         const newPids = result.suggestedParticipantIds.filter((pid) => !result.item.participantIds.includes(pid));
         const newWids = result.suggestedWhiskyIds.filter((wid) => !result.item.whiskyIds.includes(wid));
         if (newPids.length > 0 || newWids.length > 0) {
@@ -275,7 +281,7 @@ export function StoryImagePool({
         setBusy(false);
       }
     },
-    [tastingId, language],
+    [tastingId, language, onMutate],
   );
 
   const acceptSuggestedParticipant = useCallback(
@@ -287,6 +293,7 @@ export function StoryImagePool({
       try {
         const updated = await updateTastingStoryImagePoolEntry(tastingId, imageId, { participantIds: nextIds });
         setItems((prev) => prev.map((it) => (it.id === imageId ? updated : it)));
+        if (onMutate) onMutate();
         setAiSuggestions((prev) => {
           const cur = prev[imageId];
           if (!cur) return prev;
@@ -302,7 +309,7 @@ export function StoryImagePool({
         setError(e instanceof Error ? e.message : "Übernahme fehlgeschlagen");
       }
     },
-    [items, tastingId],
+    [items, tastingId, onMutate],
   );
 
   const acceptSuggestedWhisky = useCallback(
@@ -314,6 +321,7 @@ export function StoryImagePool({
       try {
         const updated = await updateTastingStoryImagePoolEntry(tastingId, imageId, { whiskyIds: nextIds });
         setItems((prev) => prev.map((it) => (it.id === imageId ? updated : it)));
+        if (onMutate) onMutate();
         setAiSuggestions((prev) => {
           const cur = prev[imageId];
           if (!cur) return prev;
@@ -477,12 +485,13 @@ export function StoryImagePool({
       if (updates.length > 0) {
         const map = new Map(updates.map((it) => [it.id, it] as const));
         setItems((prev) => prev.map((it) => map.get(it.id) ?? it));
+        if (onMutate) onMutate();
       }
       setAiPreview(null);
     } finally {
       setBatchBusy(false);
     }
-  }, [aiPreview, items, tastingId]);
+  }, [aiPreview, items, tastingId, onMutate]);
 
   if (!open) return null;
 
