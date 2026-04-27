@@ -514,12 +514,13 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
   const canUndo = history.past.length > 0;
   const canRedo = history.future.length > 0;
 
+  const mobileBottomReserve = "calc(6rem + env(safe-area-inset-bottom, 0px))";
   const blocksAsideStyle: React.CSSProperties = isCompact
     ? {
         position: "fixed",
         top: 0,
         left: 0,
-        bottom: 0,
+        bottom: mobileBottomReserve,
         width: "min(85vw, 320px)",
         background: "#0B0906",
         borderRight: "1px solid rgba(201,169,97,0.25)",
@@ -534,6 +535,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
         borderRight: "1px solid rgba(201,169,97,0.15)",
         padding: "16px 12px",
         overflowY: "auto",
+        minHeight: 0,
       };
 
   const propertiesAsideStyle: React.CSSProperties = isCompact
@@ -541,7 +543,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
         position: "fixed",
         top: 0,
         right: 0,
-        bottom: 0,
+        bottom: mobileBottomReserve,
         width: "min(90vw, 360px)",
         background: "#0B0906",
         borderLeft: "1px solid rgba(201,169,97,0.25)",
@@ -556,6 +558,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
         borderLeft: "1px solid rgba(201,169,97,0.15)",
         padding: "16px 16px",
         overflowY: "auto",
+        minHeight: 0,
       };
 
   return (
@@ -565,7 +568,8 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
       style={{
         display: "grid",
         gridTemplateColumns: isCompact ? "1fr" : "260px 1fr 320px",
-        height: "100vh",
+        height: "100%",
+        minHeight: 0,
         background: "#0B0906",
         color: "#F5EDE0",
         fontFamily: "'Inter', system-ui, sans-serif",

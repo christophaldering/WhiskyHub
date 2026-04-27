@@ -254,7 +254,12 @@ export default function LabsTastingStoryEditorPage({ id }: Props) {
   return (
     <div
       data-testid="page-labs-tasting-story-editor"
-      style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#0B0906" }}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "calc(100dvh - 52px - 6rem - env(safe-area-inset-bottom, 0px))",
+        background: "#0B0906",
+      }}
     >
       <header
         style={{
