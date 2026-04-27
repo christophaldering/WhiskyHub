@@ -924,6 +924,7 @@ function SortableBlockItem({
   onToggleLocked: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   const def = getBlockDefinition(block.type);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
   const style: React.CSSProperties = {
@@ -998,6 +999,14 @@ function SortableBlockItem({
         >
           ↓
         </button>
+        <span onClick={(e) => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center" }}>
+          <InfoHint
+            text={t("storyEditor.tooltips.moveArrows")}
+            testId={`info-hint-move-arrows-${block.id}`}
+            side="bottom"
+            align="start"
+          />
+        </span>
         <button
           type="button"
           onClick={(e) => {
