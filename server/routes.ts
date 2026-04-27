@@ -26407,10 +26407,10 @@ ${cleaned.slice(0, 60000)}`;
       };
       const toneLine = tone && toneHints[tone] ? `Tonalitaet: ${toneHints[tone]}.` : "Tonalitaet: warm und einladend.";
       const winnerLine = data.winner
-        ? `Sieger: ${data.winner.whisky.label}${data.winner.score != null ? ` (Score ${data.winner.score.toFixed(2)})` : ""}.`
+        ? `Sieger: ${data.winner.name}${data.winner.avgScore != null ? ` (Score ${data.winner.avgScore.toFixed(2)})` : ""}.`
         : "Kein klarer Sieger.";
       const whiskyLine = data.whiskies.length > 0
-        ? `Whiskys: ${data.whiskies.slice(0, 6).map((w) => w.label).join(", ")}.`
+        ? `Whiskys: ${data.whiskies.slice(0, 6).map((w) => w.name).join(", ")}.`
         : "";
       const locationLine = data.meta.location ? `Ort: ${data.meta.location}.` : "";
 
