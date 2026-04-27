@@ -13190,12 +13190,16 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         return res.status(403).json({ message: "Forbidden" });
       }
 
-      if (!isAdmin && !isHost) {
-        const tps = await storage.getTastingParticipants(tastingId);
-        const isMember = tps.some(tp => tp.participantId === auth.participant.id);
-        if (!isMember) {
-          return res.status(403).json({ message: "Not a member of this tasting" });
-        }
+      const tps = await storage.getTastingParticipants(tastingId);
+      const callerIsMember = tps.some(tp => tp.participantId === auth.participant.id);
+      if (!isAdmin && !isHost && !callerIsMember) {
+        return res.status(403).json({ message: "Not a member of this tasting" });
+      }
+
+      const targetIsHost = tasting.hostId === requestedParticipantId;
+      const targetIsMember = tps.some(tp => tp.participantId === requestedParticipantId);
+      if (!targetIsHost && !targetIsMember) {
+        return res.status(404).json({ message: "Participant not found" });
       }
 
       const [participant, whiskies, ratings] = await Promise.all([
