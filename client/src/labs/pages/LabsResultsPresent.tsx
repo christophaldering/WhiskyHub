@@ -102,9 +102,24 @@ function DimBar({ label, value, maxScore, delay }: { label: string; value: numbe
   }, [delay]);
   const pct = value != null ? Math.min((value / maxScore) * 100, 100) : 0;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 10 }}>
-      <span style={{ width: 56, fontSize: 12, fontWeight: 600, color: STORY.gold, textAlign: "right", letterSpacing: STORY.capsLetterSpacing, textTransform: "uppercase", fontFamily: STORY.bodyFont }}>{label}</span>
-      <div style={{ flex: 1, height: 6, borderRadius: 3, background: "rgba(255,255,255,0.05)", overflow: "hidden", border: `1px solid ${STORY.goldBorder}` }}>
+    <div style={{ display: "flex", alignItems: "center", gap: "clamp(8px, 2vw, 14px)", marginBottom: 10, minWidth: 0 }}>
+      <span
+        style={{
+          flex: "0 0 auto",
+          minWidth: 60,
+          fontSize: "clamp(10px, 2.6vw, 12px)",
+          fontWeight: 600,
+          color: STORY.gold,
+          textAlign: "right",
+          letterSpacing: STORY.capsLetterSpacing,
+          textTransform: "uppercase",
+          fontFamily: STORY.bodyFont,
+          whiteSpace: "nowrap",
+        }}
+      >
+        {label}
+      </span>
+      <div style={{ flex: "1 1 auto", minWidth: 32, height: 6, borderRadius: 3, background: "rgba(255,255,255,0.05)", overflow: "hidden", border: `1px solid ${STORY.goldBorder}` }}>
         <div style={{
           height: "100%",
           width: animated ? `${pct}%` : "0%",
@@ -113,7 +128,7 @@ function DimBar({ label, value, maxScore, delay }: { label: string; value: numbe
           transition: "width 1000ms cubic-bezier(0.25, 0.46, 0.45, 0.94)",
         }} />
       </div>
-      <span style={{ width: 38, fontSize: 14, fontWeight: 700, color: STORY.cream, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+      <span style={{ flex: "0 0 auto", minWidth: 32, fontSize: 14, fontWeight: 700, color: STORY.cream, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
         {value != null ? formatScore(value) : "—"}
       </span>
     </div>
@@ -474,11 +489,11 @@ function WhiskySlide({ whisky, rank, totalWhiskies, maxScore }: {
             </motion.div>
           )}
 
-          <div style={{ display: "flex", alignItems: "center", gap: 24, marginBottom: 16 }}>
-            <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.35 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "clamp(12px, 3vw, 24px)", marginBottom: 16, flexWrap: "wrap" }}>
+            <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.35 }} style={{ flexShrink: 0 }}>
               <LabsScoreRing score={whisky.avgOverall ?? 0} maxScore={maxScore} size={90} strokeWidth={6} showValue />
             </motion.div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: "1 1 220px", minWidth: 0 }}>
               <DimBar label={t("resultsUi.nose")} value={whisky.avgNose} maxScore={maxScore} delay={450} />
               <DimBar label={t("resultsUi.taste")} value={whisky.avgTaste} maxScore={maxScore} delay={550} />
               <DimBar label={t("resultsUi.finish")} value={whisky.avgFinish} maxScore={maxScore} delay={650} />
