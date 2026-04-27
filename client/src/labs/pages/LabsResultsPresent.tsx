@@ -785,6 +785,27 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
     enabled: !!tastingId,
   });
 
+  const excludedParticipantIds = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of participants || []) {
+      if (p?.excludedFromResults) {
+        const id = p.participantId || p.participant?.id || p.id;
+        if (id) set.add(String(id));
+      }
+    }
+    return set;
+  }, [participants]);
+
+  const presentationParticipants = useMemo(
+    () => (participants || []).filter((p: any) => !p?.excludedFromResults),
+    [participants],
+  );
+
+  const presentationRatings = useMemo(
+    () => (allRatings || []).filter((r: any) => !excludedParticipantIds.has(String(r.participantId))),
+    [allRatings, excludedParticipantIds],
+  );
+
   const maxScore = tasting?.ratingScale || 100;
 
   const whiskyResults = useMemo(() => {
@@ -823,7 +844,7 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
     const mostDebated = [...withStdDev].sort((a, b) => (b.overallStdDev || 0) - (a.overallStdDev || 0))[0];
     if (mostDebated && mostDebated.id !== mostAgreed?.id) stats.push({ icon: <MessageCircle style={{ width: 16, height: 16 }} />, label: "Most Debated", value: mostDebated.name || "Unknown", sub: `σ = ${formatScore(mostDebated.overallStdDev || 0)}` });
 
-    const ratings = allRatings || [];
+    const ratings = presentationRatings;
     if (ratings.length > 0) {
       const byParticipant: Record<string, { total: number; count: number; name?: string }> = {};
       for (const r of ratings) {
@@ -831,7 +852,7 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
         byParticipant[r.participantId].total += r.overall || 0;
         byParticipant[r.participantId].count += 1;
       }
-      const pNames = (participants || []).reduce((m: Record<string, string>, p: any) => {
+      const pNames = presentationParticipants.reduce((m: Record<string, string>, p: any) => {
         m[p.participantId || p.id] = stripGuestSuffix(p.participant?.name || p.name || "Anonymous");
         return m;
       }, {} as Record<string, string>);
@@ -854,14 +875,14 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
     }
 
     return stats.slice(0, 6);
-  }, [sorted, allRatings, participants]);
+  }, [sorted, allRatings, presentationParticipants]);
 
   const slides = useMemo(() => {
     const s: { type: string; data?: any }[] = [];
 
     s.push({ type: "title" });
     if (sorted.length > 1) s.push({ type: "lineup" });
-    if (participants && participants.length > 0) s.push({ type: "tasters" });
+    if (presentationParticipants.length > 0) s.push({ type: "tasters" });
     if (funStats.length > 0) s.push({ type: "funstats" });
 
     if (sorted.length > 3) {
@@ -882,7 +903,7 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
 
     s.push({ type: "outro" });
     return s;
-  }, [sorted, participants, funStats]);
+  }, [sorted, presentationParticipants, funStats]);
 
   const totalSlides = slides.length;
   const hostId = currentParticipant?.id;
@@ -1020,9 +1041,9 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
     );
   }
 
-  const uniqueRaters = new Set((allRatings || []).map((r: any) => r.participantId)).size;
-  const totalRatings = allRatings?.length || 0;
-  const participantCount = Math.max(participants?.length || 0, uniqueRaters, totalRatings > 0 ? 1 : 0);
+  const uniqueRaters = new Set(presentationRatings.map((r: any) => r.participantId)).size;
+  const totalRatings = presentationRatings.length;
+  const participantCount = Math.max(presentationParticipants.length, uniqueRaters, totalRatings > 0 ? 1 : 0);
   const slide = slides[currentSlide];
 
   const actLabel = (() => {
@@ -1140,7 +1161,7 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
           >
             {slide.type === "title" && <CinematicTitleSlide tasting={tasting} whiskyCount={sorted.length} participantCount={participantCount} totalRatings={totalRatings} />}
             {slide.type === "lineup" && <LineupSlide whiskies={whiskies || []} blindMode={!!tasting.blindMode} />}
-            {slide.type === "tasters" && <TastersSlide participants={participants || []} totalRatings={totalRatings} whiskyCount={sorted.length} />}
+            {slide.type === "tasters" && <TastersSlide participants={presentationParticipants} totalRatings={totalRatings} whiskyCount={sorted.length} />}
             {slide.type === "funstats" && <FunStatsSlide stats={funStats} />}
             {slide.type === "transition" && <TransitionSlide title={slide.data.title} subtitle={slide.data.subtitle} icon={slide.data.icon} />}
             {slide.type === "whisky" && <WhiskySlide whisky={slide.data.whisky} rank={slide.data.rank} totalWhiskies={sorted.length} maxScore={maxScore} />}
