@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import { useIsEmbeddedInTastings } from "@/labs/embeddedTastingsContext";
 import {
@@ -13,7 +13,7 @@ import {
   MessageCircle, Video, FileText, FileSpreadsheet, Settings, Upload, Share2,
   Sparkles, RefreshCw, Camera, BookOpen, Heart, Pencil, Image, Image as ImageIcon,
   Download, ExternalLink, Lock, Printer, ScanLine, GripVertical, Layers, ArrowRightLeft, Archive, Info,
-  Crown, Scissors, RotateCcw,
+  Crown, Scissors, RotateCcw, Library,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
@@ -51,6 +51,9 @@ import { downloadDataUrl } from "@/lib/download";
 import { compressImage, isAcceptedImageType, fileTooLargeAfterCompression, IMAGE_ACCEPT_STRING } from "@/lib/image-compress";
 import { generateTastingMenu } from "@/components/tasting-menu-pdf";
 import { generateBlankTastingSheet, generateBlankTastingMat, generateBatchPersonalizedPdf, generateTastingNotesSheet, generateBlindEvaluationSheet } from "@/components/printable-tasting-sheets";
+import TastingDownloadGrid from "@/labs/components/TastingDownloadGrid";
+import { getStoryPdfAvailable, getPresentationPdfAvailable, getNotesDocxAvailable } from "@/labs/utils/labsExports";
+import { getTastingPhase, isResultDownloadsPhase, RESULT_DOWNLOAD_KINDS, type TastingPhase } from "@/labs/utils/tastingPhase";
 import QRCode from "qrcode";
 import * as XLSX from "xlsx";
 
@@ -7448,16 +7451,65 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         <div className="mb-6">
           <h2 className="labs-section-label">{t("labs.host.tools")}</h2>
           <div className="labs-card p-4 space-y-3">
-            {whiskyCount > 0 && (
-              <PrintMaterialsSection
-                tasting={tasting}
-                whiskies={whiskies || []}
-                participants={participants || []}
-                currentParticipant={currentParticipant}
-                navigate={navigate}
-                tastingId={tastingId}
-              />
-            )}
+            {(() => {
+              const phase: TastingPhase = getTastingPhase((tasting as { status?: string | null }).status);
+              const showResultDownloads = isResultDownloadsPhase(phase);
+              const printMaterialsNode = whiskyCount > 0 ? (
+                <PrintMaterialsSection
+                  tasting={tasting}
+                  whiskies={whiskies || []}
+                  participants={participants || []}
+                  currentParticipant={currentParticipant}
+                  navigate={navigate}
+                  tastingId={tastingId}
+                />
+              ) : null;
+              return (
+                <div data-testid={`labs-host-downloads-phase-${phase}`}>
+                  {showResultDownloads && (
+                    <div className="mb-3" data-testid="labs-host-result-downloads">
+                      <p className="text-sm font-semibold mb-2" style={{ color: "var(--labs-text)" }}>
+                        {t("resultsUi.downloadsBlockTitle", "Daten & Dokumente herunterladen")}
+                      </p>
+                      <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>
+                        {t("resultsUi.downloadsBlockDesc", "Wähle das passende Format für deinen Anwendungsfall")}
+                      </p>
+                      <TastingDownloadGrid
+                        tastingId={tastingId}
+                        participantId={(currentParticipant as { id?: string | null } | null)?.id ?? null}
+                        storyAvailable={getStoryPdfAvailable(tasting as { status?: string | null; storyEnabled?: boolean | null } | null | undefined, true)}
+                        presentationAvailable={getPresentationPdfAvailable(tasting as { status?: string | null } | null | undefined)}
+                        notesAvailable={getNotesDocxAvailable(tasting as { status?: string | null } | null | undefined, (currentParticipant as { id?: string | null } | null)?.id)}
+                        kinds={RESULT_DOWNLOAD_KINDS}
+                        variant="cards"
+                        testIdPrefix="labs-host-download"
+                        showSourceLinks={false}
+                      />
+                    </div>
+                  )}
+                  {printMaterialsNode}
+                  <div className="mt-3">
+                    <Link
+                      href="/labs/downloads"
+                      data-testid="link-host-downloads-hub"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        padding: "6px 12px",
+                        fontSize: 12,
+                        color: "var(--labs-accent)",
+                        textDecoration: "none",
+                        borderBottom: "1px solid color-mix(in srgb, var(--labs-accent) 40%, transparent)",
+                      }}
+                    >
+                      <Library style={{ width: 12, height: 12 }} />
+                      {t("downloads.allDownloadsLink", "Alle Downloads anzeigen")}
+                    </Link>
+                  </div>
+                </div>
+              );
+            })()}
 
             <button
               className="labs-btn-secondary w-full flex items-center justify-center gap-2"

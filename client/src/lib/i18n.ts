@@ -1948,6 +1948,7 @@ const resources = {
         tastingResultsSection: "Tasting Analyses",
         tastingResultsSectionDesc: "Download analyses of your completed tastings",
         tastingResultsEmpty: "No completed tastings yet",
+        allDownloadsLink: "Show all downloads",
       },
       dataExport: {
         title: "Data Export",
@@ -11520,6 +11521,7 @@ const resources = {
         tastingResultsSection: "Tasting-Auswertungen",
         tastingResultsSectionDesc: "Lade Auswertungen deiner abgeschlossenen Tastings herunter",
         tastingResultsEmpty: "Noch keine abgeschlossenen Tastings",
+        allDownloadsLink: "Alle Downloads anzeigen",
       },
       dataExport: {
         title: "Daten-Export",

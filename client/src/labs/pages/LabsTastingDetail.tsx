@@ -1,7 +1,7 @@
 import type * as React from "react";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import { SkeletonList, SkeletonLine } from "@/labs/components/LabsSkeleton";
 import {
@@ -37,6 +37,7 @@ import {
   BookOpen,
   Sparkles,
   Monitor,
+  Library,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, inviteApi, guidedApi, friendsApi } from "@/lib/api";
@@ -44,7 +45,9 @@ import { stripGuestSuffix } from "@/lib/utils";
 import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
 import { formatRejoinCode } from "@/labs/utils/rejoinCode";
 import { LabsParticipantDownloads } from "@/components/ParticipantDownloads";
-import { getStoryPdfAvailable } from "@/labs/utils/labsExports";
+import { getStoryPdfAvailable, getPresentationPdfAvailable, getNotesDocxAvailable } from "@/labs/utils/labsExports";
+import TastingDownloadGrid from "@/labs/components/TastingDownloadGrid";
+import { getTastingPhase, isResultDownloadsPhase, RESULT_DOWNLOAD_KINDS } from "@/labs/utils/tastingPhase";
 import type { Tasting, WhiskyFriend } from "@shared/schema";
 import QRCode from "qrcode";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
@@ -1699,7 +1702,55 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         </div>
       )}
 
-      {!isHost && <LabsParticipantDownloads tasting={tasting as Tasting} />}
+      {(() => {
+        const phase = getTastingPhase(tasting?.status);
+        const showResults = isResultDownloadsPhase(phase);
+        const showPrintMaterials = !isHost && downloadsAvailable;
+        return (
+          <div className="mb-6" data-testid={`labs-detail-downloads-${phase}`}>
+            {showResults && (
+              <div className="labs-card p-4 mb-3" data-testid="labs-detail-results-downloads">
+                <div className="labs-section-label flex items-center gap-2">
+                  <Download className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                  {t("resultsUi.downloadsBlockTitle", "Daten & Dokumente herunterladen")}
+                </div>
+                <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>
+                  {t("resultsUi.downloadsBlockDesc", "Wähle das passende Format für deinen Anwendungsfall")}
+                </p>
+                <TastingDownloadGrid
+                  tastingId={tastingId}
+                  participantId={currentParticipant?.id ?? null}
+                  storyAvailable={getStoryPdfAvailable(tasting, !!isHost)}
+                  presentationAvailable={getPresentationPdfAvailable(tasting)}
+                  notesAvailable={getNotesDocxAvailable(tasting, currentParticipant?.id)}
+                  kinds={RESULT_DOWNLOAD_KINDS}
+                  variant="cards"
+                  testIdPrefix="labs-detail-download"
+                  showSourceLinks={false}
+                />
+              </div>
+            )}
+            {showPrintMaterials && <LabsParticipantDownloads tasting={tasting as Tasting} />}
+            <Link
+              href="/labs/downloads"
+              data-testid="link-detail-downloads-hub"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "6px 12px",
+                fontSize: 12,
+                color: "var(--labs-accent)",
+                textDecoration: "none",
+                borderBottom: "1px solid color-mix(in srgb, var(--labs-accent) 40%, transparent)",
+              }}
+            >
+              <Library style={{ width: 12, height: 12 }} />
+              {t("downloads.allDownloadsLink", "Alle Downloads anzeigen")}
+            </Link>
+          </div>
+        );
+      })()}
 
       {showRejoinSheet && myRejoinCode && (
         <div
