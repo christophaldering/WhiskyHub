@@ -3456,7 +3456,7 @@ function ParticipantStatusSection({
                     style={{ background: "transparent", border: "none", color: "inherit", cursor: "pointer", font: "inherit" }}
                     data-testid={`labs-host-whisky-completion-${w.id}`}
                   >
-                    {w.imageUrl ? (
+                    {w.imageUrl && (!tasting.blindMode || tasting.status === "reveal" || tasting.status === "archived" || tasting.status === "completed") ? (
                       <div style={{ position: "relative", width: 28, height: 28, flexShrink: 0 }}>
                         <WhiskyImage imageUrl={w.imageUrl} name={w.name || `Whisky ${i + 1}`} size={28} whiskyId={w.id} testId={`whisky-image-completion-${w.id}`} />
                         <div
