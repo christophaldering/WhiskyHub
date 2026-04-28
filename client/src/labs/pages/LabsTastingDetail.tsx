@@ -1,5 +1,5 @@
 import type * as React from "react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
@@ -565,6 +565,38 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [activeSection, setActiveSection] = useState<DetailSectionKey | null>(initialActiveSection);
+  const sectionMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!showSectionMenu) return;
+    const el = sectionMenuRef.current;
+    if (!el || typeof window === "undefined") return;
+    const root = document.documentElement;
+    const headerOffset = 52;
+    const buffer = 12;
+    const update = () => {
+      const height = el.getBoundingClientRect().height;
+      if (!height) return;
+      root.style.setProperty(
+        "--labs-detail-section-scroll-margin",
+        `${Math.round(headerOffset + height + buffer)}px`,
+      );
+    };
+    update();
+    let observer: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      observer = new ResizeObserver(update);
+      observer.observe(el);
+    }
+    window.addEventListener("resize", update);
+    window.addEventListener("orientationchange", update);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", update);
+      window.removeEventListener("orientationchange", update);
+      root.style.removeProperty("--labs-detail-section-scroll-margin");
+    };
+  }, [showSectionMenu]);
 
   useEffect(() => {
     if (!showSectionMenu) return;
@@ -910,7 +942,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         const activeTestId = activeSection ? `detail-jump-${activeSection}` : undefined;
         return (
           <>
-            <div className="mb-4 labs-fade-in labs-detail-section-menu" data-testid="detail-jump-bar">
+            <div ref={sectionMenuRef} className="mb-4 labs-fade-in labs-detail-section-menu" data-testid="detail-jump-bar">
               <HubTileGrid
                 tiles={detailSectionTiles}
                 t={(key, fallback) => t(key, fallback)}
@@ -1540,9 +1572,10 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         const navigateAndScrollDownloads = () => {
           if (showSectionMenu) {
             setActiveSection("downloads");
+            return;
           }
           setTimeout(() => {
-            document.querySelector('[data-testid="labs-detail-results-downloads"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
+            document.getElementById("section-downloads")?.scrollIntoView({ behavior: "smooth", block: "start" });
           }, 120);
         };
         return (

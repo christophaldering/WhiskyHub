@@ -2846,7 +2846,7 @@ a.labs-dram-item {
 }
 
 :root {
-  --labs-detail-section-scroll-margin: 168px;
+  --labs-detail-section-scroll-margin: 200px;
 }
 
 .labs-detail-section-anchor {
@@ -2871,9 +2871,6 @@ a.labs-dram-item {
 }
 
 @media (max-width: 390px) {
-  :root {
-    --labs-detail-section-scroll-margin: 156px;
-  }
   .labs-detail-section-menu {
     padding: 6px 1.25rem;
   }
