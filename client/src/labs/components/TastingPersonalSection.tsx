@@ -399,14 +399,54 @@ export default function TastingPersonalSection({
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const scrollToWhisky = (whiskyId: string) => {
-    const target = document.querySelector(`[data-testid="detail-results-whisky-${whiskyId}"]`);
-    if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
+  const flashTarget = (el: HTMLElement) => {
+    const prevOutline = el.style.outline;
+    const prevOffset = el.style.outlineOffset;
+    const prevTransition = el.style.transition;
+    const prevBoxShadow = el.style.boxShadow;
+    el.style.transition = "box-shadow 0.4s ease, outline-color 0.4s ease";
+    el.style.outline = "2px solid var(--labs-accent)";
+    el.style.outlineOffset = "2px";
+    el.style.boxShadow = "0 0 0 4px rgba(201, 169, 97, 0.15)";
+    window.setTimeout(() => {
+      el.style.outline = prevOutline;
+      el.style.outlineOffset = prevOffset;
+      el.style.boxShadow = prevBoxShadow;
+      window.setTimeout(() => {
+        el.style.transition = prevTransition;
+      }, 500);
+    }, 1100);
   };
 
-  const scrollToDownloads = () => {
+  const scrollAndFlash = (selector: string) => {
+    let attempts = 0;
+    const tryScroll = () => {
+      const target = document.querySelector(selector);
+      if (target instanceof HTMLElement) {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        flashTarget(target);
+        return;
+      }
+      attempts += 1;
+      if (attempts < 4) window.setTimeout(tryScroll, 100);
+    };
+    tryScroll();
+  };
+
+  const scrollToWhisky = (whiskyId: string) => {
+    window.dispatchEvent(new CustomEvent("labs-tasting-detail-set-section", { detail: "auswertung" }));
+    window.setTimeout(() => {
+      scrollAndFlash(`[data-testid="detail-results-whisky-${whiskyId}"]`);
+    }, 120);
+  };
+
+  const scrollToDownloads = (cardId?: string) => {
     window.dispatchEvent(new CustomEvent("labs-tasting-detail-set-section", { detail: "downloads" }));
-    setTimeout(() => {
+    window.setTimeout(() => {
+      if (cardId) {
+        scrollAndFlash(`#${cardId}`);
+        return;
+      }
       const el = document.getElementById("section-downloads") || document.getElementById("downloads");
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 120);
@@ -862,7 +902,7 @@ export default function TastingPersonalSection({
             {aiStatus === "available" && (
               <button
                 type="button"
-                onClick={scrollToDownloads}
+                onClick={() => scrollToDownloads()}
                 className="labs-btn-ghost"
                 data-testid="results-personal-ai-download"
                 style={{ fontSize: 12, padding: "6px 12px", display: "inline-flex", alignItems: "center", gap: 6 }}
@@ -928,7 +968,6 @@ export default function TastingPersonalSection({
                     {t("resultsUi.personalGroup", "Gruppe")}: {fmt(w.avgOverall)}
                   </p>
                 </div>
-                <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
               </button>
             ))}
           </div>
@@ -1021,7 +1060,7 @@ export default function TastingPersonalSection({
 
         <button
           type="button"
-          onClick={scrollToDownloads}
+          onClick={() => scrollToDownloads("download-card-notes-docx")}
           className="labs-card w-full p-3 flex items-center gap-3 text-left"
           data-testid="results-personal-notes-trigger"
           style={{ cursor: "pointer", fontFamily: "inherit" }}
@@ -1035,10 +1074,10 @@ export default function TastingPersonalSection({
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>
-              {t("resultsUi.personalNotesTitle", "Deine Notizen als Dokument")}
+              {t("resultsUi.personalNotesTitle", "Deine Bewertungen & Notizen als Dokument")}
             </p>
             <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-              {t("resultsUi.personalNotesDesc", "Lade deine Bewertungen und Tasting-Notizen als DOCX herunter.")}
+              {t("resultsUi.personalNotesDesc", "Bewertungen und Tasting-Notizen als Word-Dokument herunterladen.")}
             </p>
           </div>
           <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />

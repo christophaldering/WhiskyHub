@@ -183,6 +183,7 @@ export default function TastingDownloadGrid({
           return (
             <div
               key={item.kind}
+              id={`download-card-${item.kind.replace(/^tasting-/, "")}`}
               className="labs-card"
               style={{
                 padding: 16,
