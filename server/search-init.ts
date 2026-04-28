@@ -2,6 +2,8 @@ import { sql } from "drizzle-orm";
 import { db } from "./db";
 import { lexicon } from "@shared/schema";
 import { lexiconData } from "../client/src/labs/data/lexiconData";
+import { isEmbeddingAvailable } from "./lib/embeddings";
+import { backfillTable } from "./lib/embed-backfill";
 
 const SEARCH_TABLES = [
   {
@@ -91,6 +93,11 @@ async function ensureColumns(): Promise<void> {
       await db.execute(sql.raw(`ALTER TABLE "${t.table}" ADD COLUMN IF NOT EXISTS search_vector tsvector`));
     } catch (e) {
       console.warn(`[search-init] could not add search_vector column to ${t.table}:`, e instanceof Error ? e.message : e);
+    }
+    try {
+      await db.execute(sql.raw(`ALTER TABLE "${t.table}" ADD COLUMN IF NOT EXISTS embedding vector(1536)`));
+    } catch (e) {
+      console.warn(`[search-init] could not add embedding column to ${t.table}:`, e instanceof Error ? e.message : e);
     }
   }
 }
@@ -209,6 +216,17 @@ async function seedLexicon(): Promise<void> {
     summary.push(`${r.locale}=${r.n} (+${delta})`);
   }
   console.log(`[search-init] lexicon upserted ${inserted} rows | per-locale ${summary.join(", ")}`);
+
+  if (isEmbeddingAvailable()) {
+    const pending = await db.execute(sql.raw(`SELECT count(*)::int AS n FROM lexicon WHERE embedding IS NULL`));
+    const count = (pending.rows[0] as { n: number } | undefined)?.n ?? 0;
+    if (count > 0) {
+      console.log(`[search-init] background lexicon embedding backfill scheduled (${count} pending rows)`);
+      void backfillTable("lexicon", { batchSize: 32, pauseMs: 1000 }).catch((e) => {
+        console.warn("[search-init] lexicon background backfill failed:", e instanceof Error ? e.message : e);
+      });
+    }
+  }
 }
 
 let initialized = false;

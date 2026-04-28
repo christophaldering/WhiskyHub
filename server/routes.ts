@@ -27518,5 +27518,103 @@ ${cleaned.slice(0, 60000)}`;
     }
   });
 
+  let activeBackfillJob: { startedAt: number; tables: string[] } | null = null;
+
+  app.get("/api/admin/embedding-stats", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin only" });
+      const { getEmbeddingStats } = await import("./lib/embed-backfill");
+      const { isEmbeddingAvailable } = await import("./lib/embeddings");
+      const stats = await getEmbeddingStats();
+      const overall = stats.reduce(
+        (acc, s) => ({ total: acc.total + s.total, withEmbedding: acc.withEmbedding + s.withEmbedding }),
+        { total: 0, withEmbedding: 0 },
+      );
+      return res.json({
+        ok: true,
+        embeddingAvailable: isEmbeddingAvailable(),
+        activeJob: activeBackfillJob,
+        overall: {
+          total: overall.total,
+          withEmbedding: overall.withEmbedding,
+          withoutEmbedding: Math.max(0, overall.total - overall.withEmbedding),
+          coverage: overall.total === 0 ? 1 : overall.withEmbedding / overall.total,
+        },
+        tables: stats.map((s) => ({
+          table: s.table,
+          total: s.total,
+          withEmbedding: s.withEmbedding,
+          withoutEmbedding: s.withoutEmbedding,
+          coverage: s.coverage,
+          coveragePercent: Math.round(s.coverage * 1000) / 10,
+        })),
+      });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to load embedding stats";
+      console.error("[admin/embedding-stats] error:", msg);
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.post("/api/admin/embed-backfill", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin only" });
+
+      const { isEmbeddingAvailable } = await import("./lib/embeddings");
+      if (!isEmbeddingAvailable()) {
+        return res.status(503).json({ message: "No OpenAI key configured or quota exhausted (OPENAI_API_KEY)" });
+      }
+
+      const { backfillAll, backfillTable, BACKFILL_TABLE_KEYS, isValidBackfillTable } = await import("./lib/embed-backfill");
+
+      const tableParam = typeof req.query.table === "string" ? req.query.table : "all";
+      const batchSizeParam = typeof req.query.batchSize === "string" ? Number.parseInt(req.query.batchSize, 10) : NaN;
+      const pauseMsParam = typeof req.query.pauseMs === "string" ? Number.parseInt(req.query.pauseMs, 10) : NaN;
+      const batchSize = Number.isFinite(batchSizeParam) ? batchSizeParam : undefined;
+      const pauseMs = Number.isFinite(pauseMsParam) ? pauseMsParam : undefined;
+
+      if (tableParam !== "all" && !isValidBackfillTable(tableParam)) {
+        return res.status(400).json({ message: `Invalid table "${tableParam}"`, valid: [...BACKFILL_TABLE_KEYS, "all"] });
+      }
+
+      const targets: string[] = tableParam === "all" ? BACKFILL_TABLE_KEYS : [tableParam];
+
+      if (activeBackfillJob) {
+        return res.status(409).json({ message: "Backfill already running", activeJob: activeBackfillJob });
+      }
+      activeBackfillJob = { startedAt: Date.now(), tables: targets };
+
+      const runJob = async (): Promise<void> => {
+        try {
+          if (tableParam === "all") {
+            await backfillAll({ batchSize, pauseMs });
+          } else if (isValidBackfillTable(tableParam)) {
+            await backfillTable(tableParam, { batchSize, pauseMs });
+          }
+        } catch (e) {
+          console.error("[admin/embed-backfill] job failed:", e instanceof Error ? e.message : e);
+        } finally {
+          activeBackfillJob = null;
+        }
+      };
+      void runJob();
+
+      return res.status(202).json({
+        ok: true,
+        started: true,
+        job: { tables: targets, batchSize: batchSize ?? 32, pauseMs: pauseMs ?? 500 },
+        message: "Backfill started in background. Poll /api/admin/embedding-stats for progress.",
+      });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to start backfill";
+      console.error("[admin/embed-backfill] error:", msg);
+      return res.status(500).json({ message: msg });
+    }
+  });
+
   return httpServer;
 }

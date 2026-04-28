@@ -6,18 +6,14 @@ const EMBED_MODEL = "text-embedding-3-small";
 const EMBED_DIM = 1536;
 
 let cachedClient: OpenAI | null | undefined;
+let quotaExhausted = false;
 
 function getEmbeddingClient(): OpenAI | null {
+  if (quotaExhausted) return null;
   if (cachedClient !== undefined) return cachedClient;
   const directKey = process.env.OPENAI_API_KEY;
   if (directKey) {
     cachedClient = new OpenAI({ apiKey: directKey });
-    return cachedClient;
-  }
-  const platformKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
-  const platformBaseUrl = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
-  if (platformKey) {
-    cachedClient = new OpenAI({ apiKey: platformKey, baseURL: platformBaseUrl });
     return cachedClient;
   }
   cachedClient = null;
@@ -26,6 +22,11 @@ function getEmbeddingClient(): OpenAI | null {
 
 export function isEmbeddingAvailable(): boolean {
   return getEmbeddingClient() !== null;
+}
+
+export function resetEmbeddingClient(): void {
+  cachedClient = undefined;
+  quotaExhausted = false;
 }
 
 function clean(value: string | null | undefined): string {
@@ -67,20 +68,64 @@ export function buildLexiconText(l: { term?: string | null; definition?: string 
   return [clean(l.term), clean(l.category), clean(l.definition)].filter(Boolean).join(" \u2022 ");
 }
 
+interface OpenAIErrorLike {
+  status?: number;
+  code?: string;
+  message?: string;
+}
+
+function isRateLimitError(e: unknown): boolean {
+  if (!e || typeof e !== "object") return false;
+  const err = e as OpenAIErrorLike;
+  if (err.status === 429) return true;
+  if (typeof err.code === "string" && err.code.toLowerCase().includes("rate_limit")) return true;
+  if (typeof err.message === "string" && /rate.?limit|429/i.test(err.message)) return true;
+  return false;
+}
+
+function isQuotaExhaustedError(e: unknown): boolean {
+  if (!e || typeof e !== "object") return false;
+  const err = e as OpenAIErrorLike;
+  if (typeof err.code === "string" && err.code === "insufficient_quota") return true;
+  if (typeof err.message === "string" && /insufficient_quota|exceeded your current quota/i.test(err.message)) return true;
+  return false;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function embedTexts(texts: string[]): Promise<number[][] | null> {
   const client = getEmbeddingClient();
   if (!client) return null;
   const cleaned = texts.map((t) => (t || "").slice(0, 8000) || " ");
-  try {
-    const response = await client.embeddings.create({
-      model: EMBED_MODEL,
-      input: cleaned,
-    });
-    return response.data.map((d) => d.embedding as number[]);
-  } catch (e) {
-    console.warn("[embeddings] embedTexts failed:", e instanceof Error ? e.message : e);
-    return null;
+  const maxAttempts = 4;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await client.embeddings.create({
+        model: EMBED_MODEL,
+        input: cleaned,
+      });
+      return response.data.map((d) => d.embedding as number[]);
+    } catch (e) {
+      if (isQuotaExhaustedError(e)) {
+        if (!quotaExhausted) {
+          console.warn("[embeddings] OpenAI quota exhausted — disabling embedding generation until restart");
+          quotaExhausted = true;
+        }
+        return null;
+      }
+      if (isRateLimitError(e) && attempt < maxAttempts) {
+        const backoff = 1000 * Math.pow(2, attempt - 1);
+        console.warn(`[embeddings] rate-limited, retrying in ${backoff}ms (attempt ${attempt}/${maxAttempts - 1})`);
+        await sleep(backoff);
+        continue;
+      }
+      console.warn("[embeddings] embedTexts failed:", e instanceof Error ? e.message : e);
+      return null;
+    }
   }
+  return null;
 }
 
 export async function embedSingle(text: string): Promise<number[] | null> {
