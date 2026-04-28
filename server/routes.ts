@@ -27518,6 +27518,275 @@ ${cleaned.slice(0, 60000)}`;
     }
   });
 
+  const askRateLimitMap: Map<string, number[]> = new Map();
+  const ASK_RATE_LIMIT_PER_HOUR = 30;
+  const ASK_RATE_WINDOW_MS = 60 * 60 * 1000;
+
+  app.post("/api/labs/ask", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const participantId = auth.participant.id;
+
+      const askBodySchema = z.object({
+        question: z.string().min(2).max(1000),
+        locale: z.string().optional(),
+        conversationHistory: z.array(z.object({
+          role: z.enum(["user", "assistant"]),
+          content: z.string().max(8000),
+        })).max(20).optional(),
+      });
+      const parsed = askBodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid body", errors: parsed.error.flatten() });
+      }
+      const question = parsed.data.question.trim();
+      const conversationHistory = parsed.data.conversationHistory ?? [];
+      const locale = (parsed.data.locale ?? "en").toLowerCase().startsWith("de") ? "de" : "en";
+
+      const now = Date.now();
+      const recent = (askRateLimitMap.get(participantId) ?? []).filter((t) => now - t < ASK_RATE_WINDOW_MS);
+      if (recent.length >= ASK_RATE_LIMIT_PER_HOUR) {
+        const oldest = recent[0];
+        const retryAfterSec = Math.ceil((ASK_RATE_WINDOW_MS - (now - oldest)) / 1000);
+        return res.status(429).json({
+          message: locale === "de"
+            ? `Limit von ${ASK_RATE_LIMIT_PER_HOUR} Fragen pro Stunde erreicht.`
+            : `Limit of ${ASK_RATE_LIMIT_PER_HOUR} questions per hour reached.`,
+          retryAfterSec,
+        });
+      }
+      recent.push(now);
+      askRateLimitMap.set(participantId, recent);
+
+      const aiResult = await getAIClient(participantId, "labs-ask");
+      if (!aiResult.client) {
+        const status = aiResult.error === "AI_LIMIT_EXCEEDED" ? 429 : 503;
+        return res.status(status).json({
+          message: aiResult.error === "AI_LIMIT_EXCEEDED"
+            ? (locale === "de" ? "KI-Kontingent fuer diesen Abrechnungszeitraum erschoepft." : "AI quota exceeded for this period.")
+            : (locale === "de" ? "KI-Dienst nicht verfuegbar." : "AI service unavailable."),
+          error: aiResult.error,
+          quotaInfo: aiResult.quotaInfo,
+        });
+      }
+
+      const userTastings = await storage.getTastingsForParticipant(participantId);
+      const userTastingIds = userTastings.map((t) => t.id);
+
+      const { pool: pgPool } = await import("./db");
+      const { getQueryEmbedding, vectorLiteral, isEmbeddingAvailable } = await import("./lib/embeddings");
+
+      let queryVecLiteral: string | null = null;
+      if (isEmbeddingAvailable() && question.length >= 3) {
+        const vec = await getQueryEmbedding(question).catch(() => null);
+        if (vec && vec.length > 0) queryVecLiteral = vectorLiteral(vec);
+      }
+
+      type Source = {
+        type: "whisky" | "tasting" | "distillery" | "lexicon";
+        id: string;
+        title: string;
+        subtitle?: string;
+        snippet?: string;
+        route: string;
+      };
+
+      const retrieve = async (
+        type: Source["type"],
+        table: string,
+        titleExpr: string,
+        subtitleExpr: string,
+        snippetExpr: string,
+        trgmCols: string[],
+        extraFilter: string,
+        extraParams: unknown[],
+        buildRoute: (id: string, title: string) => string,
+        limit: number,
+      ): Promise<Source[]> => {
+        const params: unknown[] = [question, ...extraParams];
+        const semParamIdx = queryVecLiteral ? params.push(queryVecLiteral) : 0;
+        const semExpr = queryVecLiteral
+          ? `COALESCE(GREATEST(0, 1 - (${table}.embedding <=> $${semParamIdx}::vector)), 0)`
+          : `0`;
+        const semWhereOr = queryVecLiteral
+          ? ` OR (${table}.embedding IS NOT NULL AND (${table}.embedding <=> $${semParamIdx}::vector) < 0.45)`
+          : ``;
+        const trgmCombined = trgmCols.map((c) => `similarity(unaccent(coalesce(${c},'')), unaccent($1))`).join(" + ");
+        const trgmCount = trgmCols.length || 1;
+        const trgmWhere = trgmCols.map((c) => `unaccent(coalesce(${c},'')) %> unaccent($1)`).join(" OR ");
+        const sqlText = `
+          WITH q AS (SELECT websearch_to_tsquery('simple', unaccent($1)) AS tsq)
+          SELECT
+            ${table}.id AS id,
+            ${titleExpr} AS title,
+            ${subtitleExpr} AS subtitle,
+            ${snippetExpr} AS snippet,
+            (
+              0.6 * GREATEST(
+                COALESCE(ts_rank(${table}.search_vector, (SELECT tsq FROM q)), 0) * 4,
+                ((${trgmCombined}) / ${trgmCount})
+              ) + 0.4 * ${semExpr}
+            ) AS score
+          FROM ${table}
+          WHERE (${table}.search_vector @@ (SELECT tsq FROM q) OR ${trgmWhere}${semWhereOr})
+          ${extraFilter}
+          ORDER BY score DESC
+          LIMIT ${Math.max(1, Math.floor(limit))}
+        `;
+        try {
+          const result = await pgPool.query(sqlText, params);
+          return (result.rows as Array<{ id: string; title: string; subtitle: string | null; snippet: string | null; score: number }>).map((r) => ({
+            type,
+            id: String(r.id),
+            title: String(r.title ?? ""),
+            subtitle: r.subtitle ?? undefined,
+            snippet: r.snippet ?? undefined,
+            route: buildRoute(String(r.id), String(r.title ?? "")),
+          }));
+        } catch (e) {
+          console.warn(`[labs/ask] ${type} retrieval failed:`, e instanceof Error ? e.message : e);
+          return [];
+        }
+      };
+
+      const branches: Promise<Source[]>[] = [];
+
+      if (userTastingIds.length > 0) {
+        branches.push(retrieve(
+          "whisky", "whiskies",
+          `whiskies.name`,
+          `concat_ws(' \u2022 ', whiskies.distillery, whiskies.region, whiskies.age)`,
+          `left(coalesce(whiskies.notes, whiskies.host_summary, whiskies.host_notes, ''), 240)`,
+          ["whiskies.name", "whiskies.distillery", "whiskies.region", "whiskies.cask_type", "whiskies.peat_level", "whiskies.bottler"],
+          `AND whiskies.tasting_id = ANY($2::varchar[])`,
+          [userTastingIds],
+          (id) => `/labs/explore/bottles/${id}`,
+          5,
+        ));
+        branches.push(retrieve(
+          "tasting", "tastings",
+          `tastings.title`,
+          `concat_ws(' \u2022 ', tastings.location, tastings.date, tastings.status)`,
+          `left(coalesce(tastings.host_reflection, tastings.ai_narrative, ''), 240)`,
+          ["tastings.title", "tastings.location"],
+          `AND tastings.id = ANY($2::varchar[])`,
+          [userTastingIds],
+          (id) => `/labs/tastings/${id}?section=praesentation`,
+          4,
+        ));
+      }
+
+      branches.push(retrieve(
+        "distillery", "distilleries",
+        `distilleries.name`,
+        `concat_ws(' \u2022 ', distilleries.region, distilleries.country)`,
+        `left(coalesce(distilleries.description, distilleries.feature, ''), 240)`,
+        ["distilleries.name", "distilleries.region", "distilleries.country"],
+        ``,
+        [],
+        (_id, title) => `/labs/discover/distilleries?focus=${encodeURIComponent(title)}`,
+        2,
+      ));
+
+      branches.push(retrieve(
+        "lexicon", "lexicon",
+        `lexicon.term`,
+        `lexicon.category`,
+        `left(lexicon.definition, 320)`,
+        ["lexicon.term", "lexicon.definition"],
+        `AND lexicon.locale = $2`,
+        [locale],
+        (_id, title) => `/labs/discover/lexicon?term=${encodeURIComponent(title)}`,
+        4,
+      ));
+
+      const branchResults = await Promise.all(branches);
+      const sources: Source[] = branchResults.flat();
+
+      const sysDe = `Du bist „CaskSense", ein hilfreicher Whisky-Assistent. Antworte ausschliesslich auf Basis der unten genannten Quellen. Erfinde nichts. Wenn die Quellen die Frage nicht beantworten, sag ehrlich, dass du es nicht weisst, und schlage vor, die Suche zu nutzen. Antworte freundlich, klar und in vollstaendigen deutschen Saetzen. Verweise im Text natuerlich auf Whiskys, Tastings oder Begriffe; nenne keine technischen IDs.`;
+      const sysEn = `You are "CaskSense", a helpful whisky assistant. Answer strictly based on the sources below. Do not invent facts. If the sources do not contain the answer, say honestly that you don't know and suggest using the search instead. Reply in friendly, clear, complete English sentences. Reference whiskies, tastings, or terms naturally; never mention raw IDs.`;
+
+      const sourcesBlock = sources.length === 0
+        ? (locale === "de" ? "Keine relevanten Quellen aus den Daten des Users gefunden." : "No relevant sources found in the user's data.")
+        : sources.map((s, i) => {
+            const label = s.type === "whisky" ? "WHISKY"
+              : s.type === "tasting" ? "TASTING"
+              : s.type === "distillery" ? "DISTILLERY"
+              : "LEXICON";
+            const head = `[${i + 1}] (${label}) ${s.title}${s.subtitle ? " — " + s.subtitle : ""}`;
+            return s.snippet ? `${head}\n    ${s.snippet}` : head;
+          }).join("\n");
+
+      const trimmedHistory = conversationHistory.slice(-10);
+      const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
+        { role: "system", content: locale === "de" ? sysDe : sysEn },
+        { role: "system", content: (locale === "de" ? "Verfuegbare Quellen:\n" : "Available sources:\n") + sourcesBlock },
+        ...trimmedHistory,
+        { role: "user", content: question },
+      ];
+
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Accel-Buffering", "no");
+      if (typeof res.flushHeaders === "function") res.flushHeaders();
+
+      const upstreamAbort = new AbortController();
+      let clientClosed = false;
+      const onClientClose = () => {
+        clientClosed = true;
+        upstreamAbort.abort();
+      };
+      req.on("close", onClientClose);
+
+      try {
+        const stream = await aiResult.client.chat.completions.create(
+          {
+            model: "gpt-4o-mini",
+            messages,
+            stream: true,
+            temperature: 0.4,
+            max_tokens: 800,
+          },
+          { signal: upstreamAbort.signal },
+        );
+
+        for await (const chunk of stream) {
+          if (clientClosed) break;
+          const delta = chunk.choices[0]?.delta?.content ?? "";
+          if (delta) {
+            res.write(`data: ${JSON.stringify({ delta })}\n\n`);
+          }
+        }
+        if (!clientClosed) {
+          res.write(`data: ${JSON.stringify({ done: true, sources })}\n\n`);
+          res.end();
+        }
+      } catch (aiErr: unknown) {
+        if (clientClosed || (aiErr instanceof Error && aiErr.name === "AbortError")) {
+          return;
+        }
+        const msg = aiErr instanceof Error ? aiErr.message : "AI error";
+        console.error("[labs/ask] AI stream error:", msg);
+        if (res.headersSent) {
+          res.write(`data: ${JSON.stringify({ error: msg })}\n\n`);
+          res.end();
+        } else {
+          res.status(502).json({ message: msg });
+        }
+      } finally {
+        req.off("close", onClientClose);
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Internal error";
+      console.error("[labs/ask] error:", msg);
+      if (!res.headersSent) {
+        res.status(500).json({ message: msg });
+      }
+    }
+  });
+
   let activeBackfillJob: { startedAt: number; tables: string[] } | null = null;
 
   app.get("/api/admin/embedding-stats", async (req: Request, res: Response) => {

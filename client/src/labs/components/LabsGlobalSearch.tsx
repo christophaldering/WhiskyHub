@@ -6,7 +6,7 @@ import {
   Wine, Building2, Star, MapPin, Sparkles, BarChart3, FlameKindling,
   Download, Settings, Heart, Mic, Layers, FileText, Map, Beaker,
   GraduationCap, Calendar, History, Activity, Info, Gift, Shield, Lock,
-  ArrowRight,
+  ArrowRight, MessageCircle, Send, Loader2,
 } from "lucide-react";
 import { triggerHaptic } from "@/labs/hooks/useHaptic";
 
@@ -122,6 +122,22 @@ function removeRecent(query: string) {
   } catch {}
 }
 
+interface AskSource {
+  type: "whisky" | "tasting" | "distillery" | "lexicon";
+  id: string;
+  title: string;
+  subtitle?: string;
+  route: string;
+}
+
+interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+  sources?: AskSource[];
+}
+
+type SearchMode = "search" | "ask";
+
 interface LabsGlobalSearchProps {
   open: boolean;
   onClose: () => void;
@@ -143,6 +159,14 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchStartY = useRef<number | null>(null);
 
+  const [mode, setMode] = useState<SearchMode>("search");
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [streamingText, setStreamingText] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamError, setStreamError] = useState<string | null>(null);
+  const askAbortRef = useRef<AbortController | null>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+
   const lang = i18n.language?.startsWith("de") ? "de" : "en";
   const isDe = lang === "de";
 
@@ -154,6 +178,12 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
       setDebouncedQuery("");
       setServerHits([]);
       setRecentSearches(getRecent());
+      setMode("search");
+      setChatMessages([]);
+      setStreamingText("");
+      setStreamError(null);
+      setIsStreaming(false);
+      askAbortRef.current?.abort();
       document.body.style.overflow = "hidden";
       if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
       focusTimerRef.current = setTimeout(() => inputRef.current?.focus(), 100);
@@ -219,6 +249,117 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
 
     return () => controller.abort();
   }, [debouncedQuery, lang]);
+
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [chatMessages, streamingText]);
+
+  const sendAsk = useCallback(async (rawQuestion: string) => {
+    const question = rawQuestion.trim();
+    if (!question || isStreaming) return;
+
+    const historyForRequest = chatMessages.map((m) => ({ role: m.role, content: m.content }));
+    const userMsg: ChatMessage = { role: "user", content: question };
+    setChatMessages((prev) => [...prev, userMsg]);
+    setQuery("");
+    setStreamingText("");
+    setStreamError(null);
+    setIsStreaming(true);
+    triggerHaptic("light");
+
+    askAbortRef.current?.abort();
+    const controller = new AbortController();
+    askAbortRef.current = controller;
+
+    const pid = sessionStorage.getItem("session_pid") || localStorage.getItem("casksense_participant_id");
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (pid) headers["x-participant-id"] = pid;
+
+    try {
+      const res = await fetch("/api/labs/ask", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          question,
+          locale: lang,
+          conversationHistory: historyForRequest,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = typeof data?.message === "string"
+          ? data.message
+          : (isDe ? "Antwort konnte nicht geladen werden." : "Failed to load answer.");
+        throw new Error(msg);
+      }
+      if (!res.body) {
+        throw new Error(isDe ? "Keine Antwort vom Server." : "No response body.");
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let accumulated = "";
+      let finalSources: AskSource[] | undefined;
+      let streamErr: string | null = null;
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data:")) continue;
+          const payload = trimmed.slice(5).trim();
+          if (!payload) continue;
+          try {
+            const evt = JSON.parse(payload) as { delta?: string; done?: boolean; sources?: AskSource[]; error?: string };
+            if (typeof evt.delta === "string") {
+              accumulated += evt.delta;
+              setStreamingText(accumulated);
+            } else if (evt.done) {
+              if (Array.isArray(evt.sources)) finalSources = evt.sources;
+            } else if (evt.error) {
+              streamErr = String(evt.error);
+            }
+          } catch {
+            continue;
+          }
+        }
+      }
+
+      if (streamErr && !accumulated) {
+        throw new Error(streamErr);
+      }
+
+      setChatMessages((prev) => [...prev, { role: "assistant", content: accumulated, sources: finalSources }]);
+      setStreamingText("");
+      triggerHaptic("medium");
+    } catch (err) {
+      const error = err as { name?: string; message?: string };
+      if (error.name === "AbortError") return;
+      setStreamError(error.message ?? (isDe ? "Unbekannter Fehler." : "Unknown error."));
+      setStreamingText("");
+    } finally {
+      setIsStreaming(false);
+    }
+  }, [chatMessages, isDe, isStreaming, lang]);
+
+  const handleSourceClick = useCallback((source: AskSource) => {
+    triggerHaptic("light");
+    setExiting(true);
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => {
+      onClose();
+      navigate(source.route);
+    }, 200);
+  }, [navigate, onClose]);
 
   const pageResults = useMemo((): SearchResult[] => {
     const q = debouncedQuery.toLowerCase();
@@ -388,11 +529,20 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
     if (e.key === "Escape") {
       e.preventDefault();
       handleClose();
-    } else if (e.key === "Enter" && firstResult) {
-      e.preventDefault();
-      handleNavigate(firstResult.route);
+      return;
     }
-  }, [handleClose, firstResult, handleNavigate]);
+    if (e.key === "Enter") {
+      if (mode === "ask") {
+        if (query.trim() && !isStreaming) {
+          e.preventDefault();
+          void sendAsk(query);
+        }
+      } else if (firstResult) {
+        e.preventDefault();
+        handleNavigate(firstResult.route);
+      }
+    }
+  }, [handleClose, firstResult, handleNavigate, mode, query, isStreaming, sendAsk]);
 
   const handleRemoveRecent = useCallback((q: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -488,23 +638,39 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
               alignItems: "center",
             }}
           >
-            <Search
-              style={{
-                position: "absolute",
-                left: 14,
-                width: 18,
-                height: 18,
-                color: query ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                transition: "color 200ms ease",
-                pointerEvents: "none",
-              }}
-            />
+            {mode === "ask" ? (
+              <MessageCircle
+                style={{
+                  position: "absolute",
+                  left: 14,
+                  width: 18,
+                  height: 18,
+                  color: query ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                  transition: "color 200ms ease",
+                  pointerEvents: "none",
+                }}
+              />
+            ) : (
+              <Search
+                style={{
+                  position: "absolute",
+                  left: 14,
+                  width: 18,
+                  height: 18,
+                  color: query ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                  transition: "color 200ms ease",
+                  pointerEvents: "none",
+                }}
+              />
+            )}
             <input
               ref={inputRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={t("search.placeholder", isDe ? "Whiskys, Seiten, Begriffe suchen..." : "Search whiskies, pages, terms...")}
+              placeholder={mode === "ask"
+                ? (isDe ? "Frag CaskSense..." : "Ask CaskSense...")
+                : t("search.placeholder", isDe ? "Whiskys, Seiten, Begriffe suchen..." : "Search whiskies, pages, terms...")}
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
@@ -578,8 +744,290 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
             <X style={{ width: 18, height: 18 }} />
           </button>
         </div>
+
+        <div
+          style={{
+            display: "flex",
+            gap: 6,
+            marginTop: 12,
+            padding: "4px",
+            background: "var(--labs-surface)",
+            border: "1px solid var(--labs-border)",
+            borderRadius: 12,
+            width: "fit-content",
+          }}
+          data-testid="mode-toggle"
+        >
+          <button
+            type="button"
+            onClick={() => {
+              setMode("search");
+              triggerHaptic("light");
+              setTimeout(() => inputRef.current?.focus(), 50);
+            }}
+            data-testid="button-mode-search"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "6px 14px",
+              borderRadius: 8,
+              border: "none",
+              background: mode === "search" ? "var(--labs-accent)" : "transparent",
+              color: mode === "search" ? "var(--labs-bg)" : "var(--labs-text-secondary)",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "background 200ms ease, color 200ms ease",
+              fontFamily: "inherit",
+            }}
+          >
+            <Search style={{ width: 14, height: 14 }} />
+            {isDe ? "Suche" : "Search"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMode("ask");
+              triggerHaptic("light");
+              setTimeout(() => inputRef.current?.focus(), 50);
+            }}
+            data-testid="button-mode-ask"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "6px 14px",
+              borderRadius: 8,
+              border: "none",
+              background: mode === "ask" ? "var(--labs-accent)" : "transparent",
+              color: mode === "ask" ? "var(--labs-bg)" : "var(--labs-text-secondary)",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "background 200ms ease, color 200ms ease",
+              fontFamily: "inherit",
+            }}
+          >
+            <Sparkles style={{ width: 14, height: 14 }} />
+            {isDe ? "Frag CaskSense" : "Ask CaskSense"}
+          </button>
+        </div>
       </div>
 
+      {mode === "ask" ? (
+        <div
+          ref={chatScrollRef}
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            overflowX: "hidden",
+            WebkitOverflowScrolling: "touch",
+            padding: "16px 16px 24px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 16,
+          }}
+          data-testid="chat-scroll"
+        >
+          {chatMessages.length === 0 && !isStreaming && !streamError && (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "40px 20px",
+                textAlign: "center",
+                color: "var(--labs-text-secondary)",
+                gap: 12,
+              }}
+              data-testid="chat-empty-state"
+            >
+              <div
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: "50%",
+                  background: "var(--labs-accent-muted)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Sparkles style={{ width: 26, height: 26, color: "var(--labs-accent)" }} />
+              </div>
+              <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 22, color: "var(--labs-text)" }}>
+                {isDe ? "Frag CaskSense" : "Ask CaskSense"}
+              </div>
+              <div style={{ fontSize: 14, lineHeight: 1.5, maxWidth: 360 }}>
+                {isDe
+                  ? "Stelle Fragen zu deinen Whiskys, Tastings und Notizen. Antworten basieren ausschliesslich auf deinen Daten und dem Lexikon."
+                  : "Ask about your whiskies, tastings, and notes. Answers are grounded only in your own data and the lexicon."}
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 8 }}>
+                {(isDe
+                  ? ["Welche Whiskys habe ich getrunken?", "Was ist ein Octave?", "Top 3 Tastings nach Bewertung"]
+                  : ["Which whiskies have I tried?", "What is an Octave?", "Top 3 tastings by rating"]
+                ).map((suggestion, idx) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    onClick={() => {
+                      setQuery(suggestion);
+                      void sendAsk(suggestion);
+                    }}
+                    data-testid={`button-suggestion-${idx}`}
+                    style={{
+                      padding: "8px 14px",
+                      borderRadius: 999,
+                      background: "var(--labs-surface)",
+                      border: "1px solid var(--labs-border)",
+                      color: "var(--labs-text-secondary)",
+                      fontSize: 13,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      transition: "border-color 200ms ease, color 200ms ease",
+                    }}
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {chatMessages.map((msg, idx) => (
+            <div
+              key={`msg-${idx}`}
+              data-testid={`chat-message-${idx}`}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: msg.role === "user" ? "flex-end" : "flex-start",
+                gap: 8,
+              }}
+            >
+              <div
+                style={{
+                  maxWidth: "85%",
+                  padding: "12px 16px",
+                  borderRadius: msg.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                  background: msg.role === "user" ? "var(--labs-accent)" : "var(--labs-surface)",
+                  color: msg.role === "user" ? "var(--labs-bg)" : "var(--labs-text)",
+                  border: msg.role === "assistant" ? "1px solid var(--labs-border)" : "none",
+                  fontSize: 15,
+                  lineHeight: 1.55,
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                }}
+              >
+                {msg.content}
+              </div>
+              {msg.role === "assistant" && msg.sources && msg.sources.length > 0 && (
+                <div
+                  style={{ display: "flex", flexWrap: "wrap", gap: 6, maxWidth: "85%" }}
+                  data-testid={`chat-sources-${idx}`}
+                >
+                  {msg.sources.map((src, srcIdx) => {
+                    const Icon = src.type === "whisky" ? Wine
+                      : src.type === "tasting" ? Calendar
+                      : src.type === "distillery" ? Building2
+                      : BookOpen;
+                    const labelType = src.type === "whisky" ? (isDe ? "Whisky" : "Whisky")
+                      : src.type === "tasting" ? (isDe ? "Tasting" : "Tasting")
+                      : src.type === "distillery" ? (isDe ? "Brennerei" : "Distillery")
+                      : (isDe ? "Begriff" : "Term");
+                    return (
+                      <button
+                        key={`${src.type}-${src.id}-${srcIdx}`}
+                        type="button"
+                        onClick={() => handleSourceClick(src)}
+                        data-testid={`chip-source-${src.type}-${src.id}`}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          padding: "6px 10px",
+                          borderRadius: 999,
+                          background: "var(--labs-surface)",
+                          border: "1px solid var(--labs-border)",
+                          color: "var(--labs-text-secondary)",
+                          fontSize: 12,
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          transition: "border-color 200ms ease, color 200ms ease",
+                          maxWidth: 240,
+                        }}
+                        title={src.title}
+                      >
+                        <Icon style={{ width: 12, height: 12, color: "var(--labs-accent)", flexShrink: 0 }} />
+                        <span style={{ fontWeight: 600 }}>{srcIdx + 1}.</span>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {src.title}
+                        </span>
+                        <span style={{ color: "var(--labs-text-muted)", fontSize: 11, flexShrink: 0 }}>{labelType}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
+
+          {isStreaming && (
+            <div
+              data-testid="chat-streaming"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                gap: 8,
+              }}
+            >
+              <div
+                style={{
+                  maxWidth: "85%",
+                  padding: "12px 16px",
+                  borderRadius: "18px 18px 18px 4px",
+                  background: "var(--labs-surface)",
+                  color: "var(--labs-text)",
+                  border: "1px solid var(--labs-border)",
+                  fontSize: 15,
+                  lineHeight: 1.55,
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                  minHeight: 24,
+                }}
+              >
+                {streamingText || (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--labs-text-muted)" }}>
+                    <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} />
+                    {isDe ? "Denkt nach..." : "Thinking..."}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {streamError && (
+            <div
+              data-testid="chat-error"
+              style={{
+                padding: "12px 16px",
+                borderRadius: 12,
+                background: "rgba(220, 80, 80, 0.08)",
+                border: "1px solid rgba(220, 80, 80, 0.3)",
+                color: "var(--labs-text)",
+                fontSize: 14,
+                lineHeight: 1.5,
+              }}
+            >
+              {streamError}
+            </div>
+          )}
+        </div>
+      ) : (
       <div
         style={{
           flex: 1,
@@ -902,6 +1350,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
           </div>
         )}
       </div>
+      )}
 
       <style>{`
         @keyframes labsSearchIn {
@@ -909,6 +1358,9 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
           to { opacity: 1; transform: translateY(0); }
         }
         @keyframes labsSearchSpin {
+          to { transform: rotate(360deg); }
+        }
+        @keyframes spin {
           to { transform: rotate(360deg); }
         }
       `}</style>
