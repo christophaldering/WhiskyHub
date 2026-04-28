@@ -1,4 +1,4 @@
-import { sql, and, eq, notInArray } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { db } from "./db";
 import { lexicon } from "@shared/schema";
 import { lexiconData } from "../client/src/labs/data/lexiconData";
@@ -202,27 +202,13 @@ async function seedLexicon(): Promise<void> {
     void result;
   }
 
-  const keepByLocale = new Map<string, string[]>();
-  for (const row of rows) {
-    const list = keepByLocale.get(row.locale) ?? [];
-    list.push(row.term);
-    keepByLocale.set(row.locale, list);
-  }
-  let deleted = 0;
-  for (const [loc, terms] of keepByLocale.entries()) {
-    const delResult = await db.delete(lexicon).where(
-      and(eq(lexicon.locale, loc), notInArray(lexicon.term, terms)),
-    );
-    deleted += delResult.rowCount ?? 0;
-  }
-
   const afterCounts = await db.execute(sql.raw(`SELECT locale, count(*)::int AS n FROM lexicon GROUP BY locale`));
   const summary: string[] = [];
   for (const r of afterCounts.rows as { locale: string; n: number }[]) {
     const delta = r.n - (beforeMap.get(r.locale) ?? 0);
     summary.push(`${r.locale}=${r.n} (+${delta})`);
   }
-  console.log(`[search-init] lexicon upserted ${inserted}, removed ${deleted} stale rows | per-locale ${summary.join(", ")}`);
+  console.log(`[search-init] lexicon upserted ${inserted} rows | per-locale ${summary.join(", ")}`);
 }
 
 let initialized = false;
