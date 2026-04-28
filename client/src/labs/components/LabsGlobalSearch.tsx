@@ -56,7 +56,7 @@ interface PageEntry {
 
 function getPagesRegistry(t: (key: string) => string): PageEntry[] {
   return [
-    { label: t("globalSearchUi.tastings"), labelDe: "Tastings", route: "/labs/tastings", section: t("globalSearchUi.sectionMain"), sectionDe: "Haupt", icon: Wine, keywords: ["sessions", "events"] },
+    { label: t("globalSearchUi.tastings"), labelDe: "Tastings", route: "/labs/tastings", section: t("globalSearchUi.sectionMain"), sectionDe: "Haupt", icon: Wine, keywords: ["sessions", "events", "präsentation", "presentation", "rückblick", "recap", "auswertung", "results", "ergebnisse", "persönlich", "personal", "host-aktionen", "host actions", "reveal", "enthüllen"] },
     { label: t("globalSearchUi.explore"), labelDe: "Entdecken", route: "/labs/explore", section: t("globalSearchUi.sectionMain"), sectionDe: "Haupt", icon: Compass, keywords: ["search", "whiskies", "database", "suchen"] },
     { label: t("globalSearchUi.tasteHub"), labelDe: "Geschmack", route: "/labs/taste", section: t("globalSearchUi.sectionMain"), sectionDe: "Haupt", icon: Radar, keywords: ["profile", "analytics", "profil"] },
     { label: t("globalSearchUi.discover"), labelDe: "Entdecken", route: "/labs/discover", section: t("globalSearchUi.sectionMain"), sectionDe: "Haupt", icon: BookOpen, keywords: ["knowledge", "wissen"] },
@@ -80,7 +80,7 @@ function getPagesRegistry(t: (key: string) => string): PageEntry[] {
     { label: t("globalSearchUi.myDrams"), labelDe: "Meine Drams", route: "/labs/taste/drams", section: t("globalSearchUi.sectionTaste"), sectionDe: "Geschmack", icon: Wine, keywords: ["journal", "notes", "notizen"] },
     { label: t("globalSearchUi.myCollection"), labelDe: "Meine Sammlung", route: "/labs/taste/collection", section: t("globalSearchUi.sectionTaste"), sectionDe: "Geschmack", icon: Layers, keywords: ["bottles", "cellar", "flaschen"] },
     { label: t("globalSearchUi.wishlist"), labelDe: "Wunschliste", route: "/labs/taste/wishlist", section: t("globalSearchUi.sectionTaste"), sectionDe: "Geschmack", icon: Heart, keywords: ["want", "try", "wish"] },
-    { label: t("globalSearchUi.downloads"), labelDe: "Downloads", route: "/labs/taste/downloads", section: t("globalSearchUi.sectionTaste"), sectionDe: "Geschmack", icon: Download, keywords: ["export", "data"] },
+    { label: t("globalSearchUi.downloads"), labelDe: "Downloads", route: "/labs/taste/downloads", section: t("globalSearchUi.sectionTaste"), sectionDe: "Geschmack", icon: Download, keywords: ["export", "data", "präsentation", "presentation", "pdf", "deck", "slides", "story", "report", "podium"] },
     { label: t("globalSearchUi.settings"), labelDe: "Einstellungen", route: "/labs/taste/settings", section: t("globalSearchUi.sectionTaste"), sectionDe: "Geschmack", icon: Settings, keywords: ["preferences", "config"] },
     { label: t("globalSearchUi.lexicon"), labelDe: "Lexikon", route: "/labs/discover/lexicon", section: t("globalSearchUi.sectionDiscover"), sectionDe: "Entdecken", icon: BookOpen, keywords: ["dictionary", "terms", "begriffe", "wörterbuch"] },
     { label: t("globalSearchUi.distilleries"), labelDe: "Brennereien", route: "/labs/discover/distilleries", section: t("globalSearchUi.sectionDiscover"), sectionDe: "Entdecken", icon: Building2, keywords: ["map", "karte"] },
