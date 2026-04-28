@@ -613,10 +613,23 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
 
   useEffect(() => {
     if (!showSectionMenu || !activeSection) return;
-    const targetId = `section-${activeSection}`;
+    if (typeof window === "undefined") return;
     const handle = window.requestAnimationFrame(() => {
-      const el = document.getElementById(targetId);
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      const menuEl = sectionMenuRef.current;
+      if (!menuEl) return;
+      // Use offsetTop chain to get the menu's natural document position.
+      // getBoundingClientRect would return the sticky offset (LABS_HEADER_HEIGHT)
+      // when the menu is already pinned, which would prevent the page from
+      // scrolling back up to align the new section directly under the menu.
+      let naturalTop = 0;
+      let node: HTMLElement | null = menuEl;
+      while (node) {
+        naturalTop += node.offsetTop;
+        node = node.offsetParent as HTMLElement | null;
+      }
+      const targetTop = Math.max(0, naturalTop - LABS_HEADER_HEIGHT);
+      if (Math.abs(targetTop - window.scrollY) < 1) return;
+      window.scrollTo({ top: targetTop, behavior: "smooth" });
     });
     return () => window.cancelAnimationFrame(handle);
   }, [activeSection, showSectionMenu]);
