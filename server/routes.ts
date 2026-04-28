@@ -23413,6 +23413,7 @@ Rules:
       );
       relatedTastings = relatedTastingsRaw.map((t, i) => ({
         id: t.id, title: t.title, date: t.date, status: t.status,
+        location: t.location ?? null,
         userParticipated: membershipFlags[i],
       }));
       const relatedScales = new Set(allTastings.filter(t => relatedTastingIds.includes(t.id)).map(t => t.ratingScale ?? 100));

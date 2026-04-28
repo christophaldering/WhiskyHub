@@ -275,9 +275,20 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
                     <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
                       {t.title || "Untitled Tasting"}
                     </p>
-                    {t.date && (
-                      <p className="text-xs mt-0.5" style={{ color: "var(--labs-text-muted)" }}>
-                        {t.date}
+                    {(t.date || t.location) && (
+                      <p
+                        className="text-xs mt-0.5 flex items-center gap-1.5 flex-wrap"
+                        style={{ color: "var(--labs-text-muted)" }}
+                        data-testid={`labs-bottle-tasting-meta-${t.id}`}
+                      >
+                        {t.date && <span>{t.date}</span>}
+                        {t.date && t.location && <span aria-hidden="true">·</span>}
+                        {t.location && (
+                          <span className="flex items-center gap-1" data-testid={`labs-bottle-tasting-location-${t.id}`}>
+                            <MapPin className="w-3 h-3" />
+                            {t.location}
+                          </span>
+                        )}
                       </p>
                     )}
                   </div>

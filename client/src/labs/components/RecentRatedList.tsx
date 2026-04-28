@@ -54,7 +54,7 @@ export function buildRecentRatedItems(
           origin,
           originStatus: "completed",
           rated: true,
-          originHref: `/labs/tastings/${tasting.id}`,
+          originHref: `/labs/explore/bottles/${w.id}`,
         });
       }
     }
