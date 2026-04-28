@@ -10,6 +10,7 @@ import {
   type ImagePoolMetadataPatch,
   type TastingStoryImageItem,
 } from "../../lib/tastingStoryDataApi";
+import { matchParticipantFromFilename } from "../../labs/utils/matchParticipantFromFilename";
 
 export type StoryImagePoolMode = "manage" | "pick";
 
@@ -132,11 +133,28 @@ export function StoryImagePool({
           url: data.url,
           name: file.name.replace(/\.[^/.]+$/, "").slice(0, 200),
         });
+        let finalEntry = created;
+        const match = matchParticipantFromFilename(file.name, participants);
+        if (match && !created.participantIds.includes(match.participantId)) {
+          const nextParticipantIds = [...created.participantIds, match.participantId];
+          const nextCategories = [...created.categories];
+          if (!nextCategories.includes("Teilnehmer")) nextCategories.push("Teilnehmer");
+          if (!nextCategories.includes("AutoErkannt")) nextCategories.push("AutoErkannt");
+          try {
+            const patched = await updateTastingStoryImagePoolEntry(tastingId, created.id, {
+              participantIds: nextParticipantIds,
+              categories: nextCategories,
+            });
+            finalEntry = patched;
+          } catch (matchErr) {
+            console.warn("[image-pool/auto-detect] patch failed", matchErr);
+          }
+        }
         setItems((prev) => {
-          if (prev.some((it) => it.id === created.id)) return prev;
-          return [...prev, created];
+          if (prev.some((it) => it.id === finalEntry.id)) return prev;
+          return [...prev, finalEntry];
         });
-        setSelectedId(created.id);
+        setSelectedId(finalEntry.id);
         setUploadProgress((prev) => prev.map((p, i) => (i === slotIndex ? { ...p, status: "done" } : p)));
         if (onMutate) onMutate();
       } catch (e: unknown) {
@@ -144,7 +162,7 @@ export function StoryImagePool({
         setUploadProgress((prev) => prev.map((p, i) => (i === slotIndex ? { ...p, status: "error", message: msg } : p)));
       }
     },
-    [tastingId, onMutate],
+    [tastingId, onMutate, participants],
   );
 
   const onPickFiles = useCallback(
@@ -670,6 +688,30 @@ export function StoryImagePool({
             ) : (
               filtered.map((it) => {
                 const isSelected = selectedId === it.id;
+                const isAutoDetected =
+                  it.categories.includes("AutoErkannt") && it.participantIds.length === 1;
+                const detectedParticipant = isAutoDetected
+                  ? participants.find((p) => p.id === it.participantIds[0]) ?? null
+                  : null;
+                const detectedFirstName = detectedParticipant
+                  ? (detectedParticipant.displayName || detectedParticipant.name || "")
+                      .replace(/\s*#[a-z0-9]{4}\b/gi, "")
+                      .trim()
+                      .split(/\s+/)[0]
+                  : null;
+                const visibleCategories = it.categories.filter((c) => c !== "AutoErkannt");
+                const onParticipantToggle = (pid: string) => {
+                  if (!pid) return;
+                  const nextIds = it.participantIds.includes(pid)
+                    ? it.participantIds.filter((x) => x !== pid)
+                    : [...it.participantIds, pid];
+                  const nextCategories = it.categories.filter((c) => c !== "AutoErkannt");
+                  const patch: ImagePoolMetadataPatch = { participantIds: nextIds };
+                  if (nextCategories.length !== it.categories.length) {
+                    patch.categories = nextCategories;
+                  }
+                  void updateItem(it.id, patch);
+                };
                 return (
                   <div key={it.id} style={cardStyle(isSelected)} data-testid={`card-${testIdPrefix}-${it.id}`}>
                     <button
@@ -691,13 +733,51 @@ export function StoryImagePool({
                       <div style={cardTitleStyle} data-testid={`text-${testIdPrefix}-name-${it.id}`}>
                         {it.name || "(ohne Name)"}
                       </div>
+                      {detectedFirstName ? (
+                        <div
+                          style={detectedBadgeStyle}
+                          data-testid={`badge-${testIdPrefix}-detected-participant-${it.id}`}
+                          title={`Erkannt aus Dateinamen: ${detectedFirstName}`}
+                        >
+                          Erkannt: {detectedFirstName}
+                        </div>
+                      ) : null}
                       <div style={cardTagsStyle}>
-                        {it.categories.slice(0, 3).map((c) => (
+                        {visibleCategories.slice(0, 3).map((c) => (
                           <span key={c} style={tagStyle}>
                             {c}
                           </span>
                         ))}
                       </div>
+                      {participants.length > 0 ? (
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            const pid = e.target.value;
+                            e.currentTarget.value = "";
+                            onParticipantToggle(pid);
+                          }}
+                          disabled={busy}
+                          style={cardSelectStyle}
+                          data-testid={`select-${testIdPrefix}-participants-${it.id}`}
+                          aria-label="Verkoster zuordnen oder entfernen"
+                        >
+                          <option value="">
+                            {it.participantIds.length === 0
+                              ? "Verkoster zuordnen…"
+                              : `Verkoster (${it.participantIds.length}) ändern…`}
+                          </option>
+                          {participants.map((p) => {
+                            const active = it.participantIds.includes(p.id);
+                            const label = p.displayName || p.name || p.id;
+                            return (
+                              <option key={p.id} value={p.id}>
+                                {active ? `✓ ${label}` : label}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      ) : null}
                     </div>
                     {mode === "pick" && onPick ? (
                       <button
@@ -939,9 +1019,15 @@ function ImageInspector({
   const persistParticipantIds = useCallback(
     (next: string[]) => {
       setParticipantIds(next);
-      onChange({ participantIds: next });
+      const patch: ImagePoolMetadataPatch = { participantIds: next };
+      if (categories.includes("AutoErkannt")) {
+        const nextCategories = categories.filter((c) => c !== "AutoErkannt");
+        setCategories(nextCategories);
+        patch.categories = nextCategories;
+      }
+      onChange(patch);
     },
-    [onChange],
+    [onChange, categories],
   );
   const persistWhiskyIds = useCallback(
     (next: string[]) => {
@@ -1327,6 +1413,35 @@ const tagStyle: React.CSSProperties = {
   borderRadius: 2,
   padding: "1px 4px",
   color: "#C9A961",
+};
+
+const detectedBadgeStyle: React.CSSProperties = {
+  fontSize: 10,
+  letterSpacing: ".04em",
+  fontWeight: 600,
+  background: "rgba(201,169,97,0.18)",
+  border: "1px solid rgba(201,169,97,0.6)",
+  borderRadius: 999,
+  padding: "1px 8px",
+  color: "#C9A961",
+  alignSelf: "flex-start",
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  maxWidth: "100%",
+};
+
+const cardSelectStyle: React.CSSProperties = {
+  background: "rgba(201,169,97,0.06)",
+  border: "1px solid rgba(201,169,97,0.25)",
+  borderRadius: 3,
+  padding: "3px 4px",
+  color: "#F5EDE0",
+  fontFamily: "'Inter', system-ui, sans-serif",
+  fontSize: 10,
+  outline: "none",
+  width: "100%",
+  cursor: "pointer",
 };
 
 const pickBtn: React.CSSProperties = {
