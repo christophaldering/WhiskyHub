@@ -292,7 +292,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
   const [inviteEmails, setInviteEmails] = useState("");
   const [inviteNote, setInviteNote] = useState("");
   const [inviteResults, setInviteResults] = useState<Array<{ email: string; status: string; link?: string }> | null>(null);
-  const [showParticipants, setShowParticipants] = useState(false);
   const [showInviteShare, setShowInviteShare] = useState(false);
   const [editingWhiskyId, setEditingWhiskyId] = useState<string | null>(null);
   const [deletingWhiskyId, setDeletingWhiskyId] = useState<string | null>(null);
@@ -611,22 +610,8 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
     return () => window.removeEventListener("labs-tasting-detail-set-section", handler);
   }, [isHost]);
 
-  // ----- Mini status bar / collapsed-section helpers ----------------------
-  const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
-  const onlineParticipantCount = (() => {
-    if (!Array.isArray(participants)) return 0;
-    const now = Date.now();
-    let n = 0;
-    for (const p of participants as Array<{ lastSeenAt?: string | Date | null; participant?: { lastSeenAt?: string | Date | null } }>) {
-      const seen = p.lastSeenAt ?? p.participant?.lastSeenAt ?? null;
-      if (seen && now - new Date(seen).getTime() < ONLINE_THRESHOLD_MS) n += 1;
-    }
-    return n;
-  })();
-
   const totalWhiskyCount = whiskies?.length ?? 0;
   const totalParticipantCount = participants?.length ?? 0;
-  const offlineParticipantCount = Math.max(0, totalParticipantCount - onlineParticipantCount);
 
   // Downloads availability (used both for the participant chip and the
   // existing LabsParticipantDownloads component).
@@ -1951,86 +1936,8 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         </section>
       )}
 
-      {participants && participants.length > 0 && (
-        <div className="mb-6 labs-stagger-5">
-          <button
-            type="button"
-            onClick={() => setShowParticipants(!showParticipants)}
-            className="w-full flex items-center justify-between mb-3"
-            style={{ background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}
-            data-testid="labs-detail-toggle-participants"
-          >
-            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--labs-text-muted)", letterSpacing: "0.08em", margin: 0 }}>
-              {t("tastingDetail.participantsSectionTitle", "Participants")} ({participants.length})
-            </p>
-            <span
-              className="labs-btn-ghost"
-              style={{ padding: 4, display: "inline-flex" }}
-              aria-hidden
-            >
-              <ChevronDown
-                className="w-4 h-4 transition-transform"
-                style={{
-                  color: "var(--labs-text-muted)",
-                  transform: showParticipants ? "rotate(180deg)" : "rotate(0deg)",
-                }}
-              />
-            </span>
-          </button>
-
-          {!showParticipants && (
-            <div
-              className="labs-card flex items-center gap-3 px-3 py-2 mb-1"
-              data-testid="labs-detail-participants-preview"
-            >
-              <span className="inline-flex items-center gap-1.5 text-xs" style={{ color: "var(--labs-text)" }}>
-                <span
-                  className="w-2 h-2 rounded-full"
-                  style={{ background: onlineParticipantCount > 0 ? "var(--labs-success, #38a169)" : "var(--labs-text-muted)" }}
-                  aria-hidden
-                />
-                <span data-testid="labs-detail-participants-online">
-                  {t("tastingDetail.participantsOnline", "{{count}} online", { count: onlineParticipantCount })}
-                </span>
-              </span>
-              <span aria-hidden style={{ color: "var(--labs-text-muted)" }}>·</span>
-              <span className="text-xs" style={{ color: "var(--labs-text-muted)" }} data-testid="labs-detail-participants-offline">
-                {t("tastingDetail.participantsOffline", "{{count}} offline", { count: offlineParticipantCount })}
-              </span>
-            </div>
-          )}
-
-          {showParticipants && (
-          <div className="labs-card overflow-hidden">
-            {participants.map((p: { id: string; participantId?: string; name?: string; participant?: { name?: string } }, idx: number) => {
-              const displayName = p.participant?.name || p.name || "";
-              const rowId = p.participantId || p.id;
-              return (
-              <div
-                key={rowId}
-                className="flex items-center gap-3 px-4 py-2.5"
-                style={{ borderBottom: idx < participants.length - 1 ? "1px solid var(--labs-border)" : "none" }}
-                data-testid={`labs-detail-participant-${rowId}`}
-              >
-                <div
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold flex-shrink-0"
-                  style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
-                >
-                  {stripGuestSuffix(displayName || "?").charAt(0).toUpperCase()}
-                </div>
-                <span className="text-sm font-medium flex-1 truncate">{stripGuestSuffix(displayName || "Anonymous")}</span>
-                {rowId === tasting.hostId && (
-                  <Crown className="w-3 h-3 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
-                )}
-              </div>
-            ); })}
-          </div>
-          )}
-        </div>
-      )}
-
       {tasting.code && (
-        <div className="mb-6 labs-stagger-6">
+        <div className="mb-6 labs-stagger-5">
           <button
             type="button"
             onClick={() => setShowInviteShare(!showInviteShare)}
