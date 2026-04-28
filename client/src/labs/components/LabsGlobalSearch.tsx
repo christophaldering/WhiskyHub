@@ -6,7 +6,7 @@ import {
   Wine, Building2, Star, MapPin, Sparkles, BarChart3, FlameKindling,
   Download, Settings, Heart, Mic, Layers, FileText, Map, Beaker,
   GraduationCap, Calendar, History, Activity, Info, Gift, Shield, Lock,
-  ArrowRight, MessageCircle, Send, Loader2,
+  ArrowRight, MessageCircle, Loader2,
 } from "lucide-react";
 import { triggerHaptic } from "@/labs/hooks/useHaptic";
 
@@ -195,6 +195,8 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
       document.body.style.overflow = "";
       if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+      askAbortRef.current?.abort();
+      abortRef.current?.abort();
     };
   }, [open]);
 
@@ -204,6 +206,12 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
   }, [query]);
 
   useEffect(() => {
+    if (mode !== "search") {
+      setServerHits([]);
+      setServerLoading(false);
+      abortRef.current?.abort();
+      return;
+    }
     if (!debouncedQuery || debouncedQuery.length < 2) {
       setServerHits([]);
       return;
@@ -248,7 +256,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
       });
 
     return () => controller.abort();
-  }, [debouncedQuery, lang]);
+  }, [debouncedQuery, lang, mode]);
 
   useEffect(() => {
     if (chatScrollRef.current) {
