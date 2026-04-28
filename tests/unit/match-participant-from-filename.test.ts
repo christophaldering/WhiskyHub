@@ -66,4 +66,14 @@ describe("matchParticipantFromFilename", () => {
     expect(matchParticipantFromFilename("jens.jpeg", [jens])?.participantId).toBe("p2");
     expect(matchParticipantFromFilename("jens.HEIC", [jens])?.participantId).toBe("p2");
   });
+
+  it("rejects ambiguity when transliteration collides between two participants", () => {
+    const jurgPlain: ParticipantLike = { id: "p7", displayName: "Jurg" };
+    const jurgUmlaut: ParticipantLike = { id: "p8", displayName: "Jürg" };
+    expect(matchParticipantFromFilename("jurg.jpg", [jurgPlain, jurgUmlaut])).toBeNull();
+  });
+
+  it("returns null when filename token is too short", () => {
+    expect(matchParticipantFromFilename("a.jpg", [{ id: "px", displayName: "A" }])).toBeNull();
+  });
 });
