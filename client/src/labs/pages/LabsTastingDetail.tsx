@@ -530,6 +530,24 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
     return () => window.cancelAnimationFrame(handle);
   }, [activeSection, showSectionMenu]);
 
+  useEffect(() => {
+    if (showSectionMenu && activeSection === "host-aktionen" && !isHost) {
+      setActiveSection("rueckblick");
+    }
+  }, [activeSection, isHost, showSectionMenu]);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<unknown>).detail;
+      if (typeof detail !== "string") return;
+      if (!isDetailSectionKey(detail)) return;
+      if (detail === "host-aktionen" && !isHost) return;
+      setActiveSection(detail);
+    };
+    window.addEventListener("labs-tasting-detail-set-section", handler);
+    return () => window.removeEventListener("labs-tasting-detail-set-section", handler);
+  }, [isHost]);
+
   // ----- Mini status bar / collapsed-section helpers ----------------------
   const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
   const onlineParticipantCount = (() => {
@@ -1568,10 +1586,13 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         const storyTileAvailable = storyAvailable || (canEditStory && aiAvailable);
         if (!presentAvailable && !storyTileAvailable && !aiAvailable) return null;
         const navigateAndScrollDownloads = () => {
+          if (showSectionMenu) {
+            setActiveSection("downloads");
+          }
           setShowResultsDownloads(true);
           setTimeout(() => {
             document.querySelector('[data-testid="labs-detail-results-downloads"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
-          }, 50);
+          }, 120);
         };
         return (
           <section id="section-praesentation" className="mb-8 labs-fade-in" data-testid="detail-section-praesentation" style={{ scrollMarginTop: 80 }}>

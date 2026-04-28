@@ -405,8 +405,11 @@ export default function TastingPersonalSection({
   };
 
   const scrollToDownloads = () => {
-    const el = document.getElementById("section-downloads") || document.getElementById("downloads");
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.dispatchEvent(new CustomEvent("labs-tasting-detail-set-section", { detail: "downloads" }));
+    setTimeout(() => {
+      const el = document.getElementById("section-downloads") || document.getElementById("downloads");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
   };
 
   const subTiles: Array<{
