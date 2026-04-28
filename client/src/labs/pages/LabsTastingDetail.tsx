@@ -774,7 +774,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
 
       </div>
 
-      {/* Mini status bar (live/reveal/completed) — replaces the three big stat cards. */}
       {(isLive || isReveal || isCompleted) && (
         <div className="mb-4 labs-stagger-2" data-testid="detail-status-bar">
           <div
@@ -806,7 +805,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         </div>
       )}
 
-      {/* Secondary actions (completed only) — small row items below the hero. */}
       {isCompleted && (
         <div className="mb-4 labs-stagger-3" data-testid="detail-secondary-actions">
           <div className="labs-card overflow-hidden">
@@ -1093,12 +1091,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         </div>
       )}
 
-      {/* Stat-cards block removed — mini status bar above is the single source
-          of truth for whisky/participant counts in reveal/live/completed states. */}
-
-      {/* Hidden test-id markers preserve backwards compatibility for existing
-          tests that look up whisky/participant/rating counts on the detail
-          page. They mirror the mini status bar so values can never diverge. */}
       <div style={{ display: "none" }} aria-hidden>
         <span data-testid="labs-detail-whisky-count">{whiskyCount}</span>
         <span data-testid="labs-detail-participant-count">{participantCount}</span>
@@ -1106,10 +1098,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
           {participants?.reduce((sum: number, p: { ratingCount?: number }) => sum + (p.ratingCount || 0), 0) ?? 0}
         </span>
       </div>
-
-      {/* Invite & Share section moved to the bottom of the page (rendered just
-          before participant downloads), where it is collapsed by default and
-          can be expanded via the toggle. */}
 
       {!isHost && (
         <div className="mb-6 labs-stagger-3">
@@ -1975,7 +1963,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         </div>
       )}
 
-      {/* Invite & Share — moved to bottom and collapsed by default. */}
       {tasting.code && (
         <div className="mb-6 labs-stagger-6">
           <button
