@@ -102,6 +102,12 @@ export function StoryImagePool({
   }, [open, refresh]);
 
   useEffect(() => {
+    if (open && mode === "pick") {
+      setSelectedId(null);
+    }
+  }, [open, mode]);
+
+  useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -849,14 +855,29 @@ export function StoryImagePool({
                       ) : null}
                     </div>
                     {mode === "pick" && onPick ? (
-                      <button
-                        type="button"
-                        onClick={() => onPick(it)}
-                        style={pickBtn}
-                        data-testid={`button-${testIdPrefix}-pick-${it.id}`}
-                      >
-                        Übernehmen
-                      </button>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 0 }}>
+                        <button
+                          type="button"
+                          onClick={() => onPick(it)}
+                          style={pickBtn}
+                          data-testid={`button-${testIdPrefix}-pick-${it.id}`}
+                        >
+                          Übernehmen
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedId(it.id);
+                          }}
+                          style={pickMarkBtn(isSelected)}
+                          aria-pressed={isSelected}
+                          title="Im Inspektor anzeigen, ohne direkt zu übernehmen"
+                          data-testid={`button-${testIdPrefix}-mark-${it.id}`}
+                        >
+                          {isSelected ? "Markiert" : "Vorschau"}
+                        </button>
+                      </div>
                     ) : null}
                   </div>
                 );
@@ -1624,13 +1645,30 @@ const pickBtn: React.CSSProperties = {
   color: "#0B0906",
   border: "none",
   borderRadius: 0,
-  padding: "6px 8px",
-  fontSize: 10,
+  padding: "8px 10px",
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: ".12em",
+  textTransform: "uppercase",
+  cursor: "pointer",
+  width: "100%",
+  fontFamily: "'Inter', system-ui, sans-serif",
+};
+
+const pickMarkBtn = (active: boolean): React.CSSProperties => ({
+  background: active ? "rgba(201,169,97,0.25)" : "transparent",
+  color: active ? "#F5EDE0" : "#A89A85",
+  border: "none",
+  borderLeft: "1px solid rgba(11,9,6,0.3)",
+  borderRadius: 0,
+  padding: "8px 10px",
+  fontSize: 9,
   fontWeight: 600,
   letterSpacing: ".1em",
   textTransform: "uppercase",
   cursor: "pointer",
-};
+  fontFamily: "'Inter', system-ui, sans-serif",
+});
 
 const inputStyle: React.CSSProperties = {
   background: "rgba(201,169,97,0.06)",
