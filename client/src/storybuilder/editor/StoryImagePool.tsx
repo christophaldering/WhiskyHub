@@ -1208,17 +1208,19 @@ function ImageInspector({
               </button>
             );
           })}
-          {categories.filter((c) => !COMMON_CATEGORIES.includes(c)).map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => toggleCategory(c)}
-              style={chipStyle(true)}
-              data-testid={`chip-${testIdPrefix}-category-custom-${c}`}
-            >
-              {c}
-            </button>
-          ))}
+          {categories
+            .filter((c) => !COMMON_CATEGORIES.includes(c) && c !== "AutoErkannt")
+            .map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => toggleCategory(c)}
+                style={chipStyle(true)}
+                data-testid={`chip-${testIdPrefix}-category-custom-${c}`}
+              >
+                {c}
+              </button>
+            ))}
         </div>
         <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
           <input
