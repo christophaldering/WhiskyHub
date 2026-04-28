@@ -714,6 +714,9 @@ export function StoryImagePool({
                   if (isAdding && !nextCategories.includes(PARTICIPANT_CATEGORY)) {
                     nextCategories = [...nextCategories, PARTICIPANT_CATEGORY];
                   }
+                  if (!isAdding && nextIds.length === 0) {
+                    nextCategories = nextCategories.filter((c) => c !== PARTICIPANT_CATEGORY);
+                  }
                   const patch: ImagePoolMetadataPatch = { participantIds: nextIds };
                   if (
                     nextCategories.length !== it.categories.length ||
