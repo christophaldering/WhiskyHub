@@ -27543,6 +27543,13 @@ ${cleaned.slice(0, 60000)}`;
       const question = parsed.data.question.trim();
       const conversationHistory = parsed.data.conversationHistory ?? [];
       const locale = (parsed.data.locale ?? "en").toLowerCase().startsWith("de") ? "de" : "en";
+      if (question.length < 2) {
+        return res.status(400).json({
+          message: locale === "de"
+            ? "Frage darf nicht leer sein."
+            : "Question must not be empty.",
+        });
+      }
 
       const now = Date.now();
       const recent = (askRateLimitMap.get(participantId) ?? []).filter((t) => now - t < ASK_RATE_WINDOW_MS);
