@@ -864,7 +864,7 @@ export function StoryImagePool({
                           style={pickBtn}
                           data-testid={`button-${testIdPrefix}-pick-${it.id}`}
                         >
-                          Übernehmen
+                          Auswählen
                         </button>
                         <button
                           type="button"
