@@ -82,6 +82,7 @@ export function StoryImagePool({
     }>;
     failedIds: string[];
   } | null>(null);
+  const [recentlyUploadedIds, setRecentlyUploadedIds] = useState<string[]>([]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -170,6 +171,7 @@ export function StoryImagePool({
           if (prev.some((it) => it.id === finalEntry.id)) return prev;
           return [...prev, finalEntry];
         });
+        setRecentlyUploadedIds((prev) => (prev.includes(finalEntry.id) ? prev : [...prev, finalEntry.id]));
         setSelectedId(finalEntry.id);
         setUploadProgress((prev) => prev.map((p, i) => (i === slotIndex ? { ...p, status: "done" } : p)));
         if (onMutate) onMutate();
@@ -210,6 +212,29 @@ export function StoryImagePool({
   const dismissUploadProgress = useCallback(() => {
     setUploadProgress([]);
   }, []);
+
+  useEffect(() => {
+    if (uploadProgress.length === 0) return;
+    const allFinished = uploadProgress.every((u) => u.status !== "uploading");
+    if (!allFinished) return;
+    const handle = window.setTimeout(() => {
+      setUploadProgress([]);
+    }, 4000);
+    return () => window.clearTimeout(handle);
+  }, [uploadProgress]);
+
+  const resetFilters = useCallback(() => {
+    setFilterText("");
+    setFilterCategory("");
+    setFilterParticipantId("");
+    setRecentlyUploadedIds([]);
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      setRecentlyUploadedIds([]);
+    }
+  }, [open]);
 
   const onDragOverDropZone = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -252,6 +277,16 @@ export function StoryImagePool({
   }, [items, filterCategory, filterParticipantId, filterText]);
 
   const selected = useMemo(() => items.find((it) => it.id === selectedId) ?? null, [items, selectedId]);
+
+  const hasActiveFilters = filterText.trim().length > 0 || filterCategory !== "" || filterParticipantId !== "";
+  const hiddenCount = items.length - filtered.length;
+  const hiddenRecentlyUploadedCount = useMemo(() => {
+    if (recentlyUploadedIds.length === 0) return 0;
+    const filteredIds = new Set(filtered.map((it) => it.id));
+    const itemIds = new Set(items.map((it) => it.id));
+    return recentlyUploadedIds.filter((id) => itemIds.has(id) && !filteredIds.has(id)).length;
+  }, [recentlyUploadedIds, filtered, items]);
+  const showFilterBanner = hasActiveFilters && hiddenCount > 0;
 
   const updateItem = useCallback(
     async (imageId: string, patch: ImagePoolMetadataPatch) => {
@@ -541,6 +576,7 @@ export function StoryImagePool({
       }}
     >
       <div style={modalStyle}>
+        <style>{imagePoolStyleRules}</style>
         <header style={headerStyle}>
           <div>
             <div style={{ fontSize: 11, letterSpacing: ".25em", textTransform: "uppercase", color: "#C9A961" }}>
@@ -661,15 +697,15 @@ export function StoryImagePool({
             onDragLeave={onDragLeaveDropZone}
             onDrop={onDropFiles}
             style={{
-              margin: "10px 18px 0",
+              margin: "8px 18px 0",
               border: `1px dashed ${isDragOver ? "#C9A961" : "rgba(201,169,97,0.35)"}`,
               background: isDragOver ? "rgba(201,169,97,0.12)" : "rgba(201,169,97,0.04)",
               borderRadius: 6,
-              padding: "14px 16px",
+              padding: isDragOver ? "10px 12px" : "6px 12px",
               color: isDragOver ? "#F5EDE0" : "#A89A85",
-              fontSize: 12,
+              fontSize: 11,
               textAlign: "center",
-              transition: "background 120ms",
+              transition: "background 120ms, padding 120ms",
             }}
             data-testid={`dropzone-${testIdPrefix}`}
           >
@@ -715,7 +751,37 @@ export function StoryImagePool({
         ) : null}
 
         <div style={bodyStyle}>
-          <div style={gridStyle} data-testid={`grid-${testIdPrefix}`}>
+          <div style={leftColumnStyle}>
+            {showFilterBanner ? (
+              <div style={filterBannerStyle} data-testid={`banner-${testIdPrefix}-filter-hint`}>
+                <div style={{ display: "grid", gap: 2 }}>
+                  <div style={{ fontSize: 12, color: "#F5EDE0" }}>
+                    <strong style={{ color: "#C9A961" }}>{hiddenCount}</strong> von {items.length} Bildern durch aktive Filter ausgeblendet
+                  </div>
+                  {hiddenRecentlyUploadedCount > 0 ? (
+                    <div
+                      style={{ fontSize: 11, color: "#C9A961", fontWeight: 600 }}
+                      data-testid={`text-${testIdPrefix}-filter-hint-recent`}
+                    >
+                      {hiddenRecentlyUploadedCount} gerade hochgeladene Bilder sind durch den aktuellen Filter ausgeblendet
+                    </div>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  style={ghostBtn}
+                  data-testid={`button-${testIdPrefix}-filter-reset`}
+                >
+                  Filter zurücksetzen
+                </button>
+              </div>
+            ) : null}
+            <div
+              style={gridStyle}
+              className="csl-image-pool-grid"
+              data-testid={`grid-${testIdPrefix}`}
+            >
             {loading ? (
               <div style={{ color: "#A89A85", padding: 24 }}>Lade Bilder…</div>
             ) : filtered.length === 0 ? (
@@ -762,28 +828,67 @@ export function StoryImagePool({
                   void updateItem(it.id, patch);
                 };
                 return (
-                  <div key={it.id} style={cardStyle(isSelected)} data-testid={`card-${testIdPrefix}-${it.id}`}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (mode === "pick" && onPick) {
-                          onPick(it);
-                          return;
-                        }
-                        setSelectedId(it.id);
-                      }}
-                      style={cardImageBtn}
-                      title={mode === "pick" ? `${it.name ?? it.caption ?? ""} – klicken zum Übernehmen` : it.name ?? it.caption ?? ""}
-                      data-testid={`button-${testIdPrefix}-select-${it.id}`}
-                    >
-                      <img
-                        src={it.url}
-                        alt={it.altText ?? it.name ?? ""}
-                        loading="lazy"
-                        decoding="async"
-                        style={cardImg}
-                      />
-                    </button>
+                  <div
+                    key={it.id}
+                    style={cardStyle(isSelected)}
+                    className="csl-image-pool-card"
+                    data-testid={`card-${testIdPrefix}-${it.id}`}
+                  >
+                    <div style={cardImageWrapperStyle}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (mode === "pick" && onPick) {
+                            onPick(it);
+                            return;
+                          }
+                          setSelectedId(it.id);
+                        }}
+                        style={cardImageBtn}
+                        title={mode === "pick" ? `${it.name ?? it.caption ?? ""} – klicken zum Übernehmen` : it.name ?? it.caption ?? ""}
+                        data-testid={`button-${testIdPrefix}-select-${it.id}`}
+                      >
+                        <img
+                          src={it.url}
+                          alt={it.altText ?? it.name ?? ""}
+                          loading="lazy"
+                          decoding="async"
+                          style={cardImg}
+                        />
+                      </button>
+                      {mode === "manage" ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void removeItem(it.id);
+                          }}
+                          style={cardTrashBtnStyle}
+                          className="csl-image-pool-trash"
+                          title="Bild aus Pool entfernen"
+                          aria-label="Bild aus Pool entfernen"
+                          data-testid={`button-${testIdPrefix}-card-delete-${it.id}`}
+                        >
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                            <path d="M10 11v6" />
+                            <path d="M14 11v6" />
+                            <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+                          </svg>
+                        </button>
+                      ) : null}
+                    </div>
                     <div style={cardMetaStyle}>
                       <div style={cardTitleStyle} data-testid={`text-${testIdPrefix}-name-${it.id}`}>
                         {it.name || "(ohne Name)"}
@@ -795,6 +900,15 @@ export function StoryImagePool({
                           title={`Erkannt aus Dateinamen: ${detectedFirstName}`}
                         >
                           Erkannt: {detectedFirstName}
+                        </div>
+                      ) : null}
+                      {visibleCategories.length === 0 ? (
+                        <div
+                          style={uncategorizedBadgeStyle}
+                          data-testid={`badge-${testIdPrefix}-uncategorized-${it.id}`}
+                          title="Diesem Bild wurde noch keine Kategorie zugeordnet"
+                        >
+                          Ohne Kategorie
                         </div>
                       ) : null}
                       <div style={cardTagsStyle}>
@@ -887,6 +1001,7 @@ export function StoryImagePool({
                 );
               })
             )}
+            </div>
           </div>
           <aside style={inspectorStyle} data-testid={`inspector-${testIdPrefix}`}>
             {mode === "pick" && onPick ? (
@@ -1510,19 +1625,90 @@ const bodyStyle: React.CSSProperties = {
   overflow: "hidden",
 };
 
+const leftColumnStyle: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 8,
+  minHeight: 0,
+  minWidth: 0,
+};
+
 const gridStyle: React.CSSProperties = {
   display: "grid",
   gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
   gap: 10,
   overflowY: "auto",
   padding: 4,
+  flex: 1,
+  minHeight: 0,
+  alignContent: "start",
 };
 
 const inspectorStyle: React.CSSProperties = {
   borderLeft: "1px solid rgba(201,169,97,0.15)",
   paddingLeft: 12,
   overflowY: "auto",
+  minHeight: 0,
 };
+
+const filterBannerStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 10,
+  padding: "8px 12px",
+  background: "rgba(201,169,97,0.10)",
+  border: "1px solid rgba(201,169,97,0.45)",
+  borderRadius: 4,
+  flexWrap: "wrap",
+};
+
+const cardImageWrapperStyle: React.CSSProperties = {
+  position: "relative",
+};
+
+const cardTrashBtnStyle: React.CSSProperties = {
+  position: "absolute",
+  top: 4,
+  right: 4,
+  width: 28,
+  height: 28,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "rgba(11,9,6,0.78)",
+  color: "#F5EDE0",
+  border: "1px solid rgba(201,169,97,0.55)",
+  borderRadius: 4,
+  cursor: "pointer",
+  padding: 0,
+  zIndex: 2,
+  fontFamily: "inherit",
+};
+
+const uncategorizedBadgeStyle: React.CSSProperties = {
+  fontSize: 9,
+  letterSpacing: ".08em",
+  textTransform: "uppercase",
+  background: "rgba(217,119,87,0.12)",
+  border: "1px solid rgba(217,119,87,0.45)",
+  borderRadius: 2,
+  padding: "1px 6px",
+  color: "#d97757",
+  alignSelf: "flex-start",
+  fontWeight: 600,
+};
+
+const imagePoolStyleRules = `
+.csl-image-pool-grid { scrollbar-width: thin; scrollbar-color: rgba(201,169,97,0.55) rgba(201,169,97,0.06); }
+.csl-image-pool-grid::-webkit-scrollbar { width: 12px; height: 12px; }
+.csl-image-pool-grid::-webkit-scrollbar-track { background: rgba(201,169,97,0.05); border-radius: 6px; }
+.csl-image-pool-grid::-webkit-scrollbar-thumb { background: rgba(201,169,97,0.45); border-radius: 6px; border: 2px solid #0B0906; }
+.csl-image-pool-grid::-webkit-scrollbar-thumb:hover { background: rgba(201,169,97,0.7); }
+.csl-image-pool-trash { opacity: 0; transition: opacity 120ms ease-out; }
+.csl-image-pool-card:hover .csl-image-pool-trash, .csl-image-pool-card:focus-within .csl-image-pool-trash, .csl-image-pool-trash:focus-visible { opacity: 1; }
+@media (hover: none) { .csl-image-pool-trash { opacity: 1; } }
+`;
 
 const cardStyle = (selected: boolean): React.CSSProperties => ({
   border: `1px solid ${selected ? "#C9A961" : "rgba(201,169,97,0.18)"}`,
