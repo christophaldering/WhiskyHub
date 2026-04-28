@@ -115,7 +115,6 @@ export const tastings = pgTable("tastings", {
   searchVector: tsvector("search_vector"),
 }, (t) => ({
   searchVectorIdx: index("idx_tastings_search_vector").using("gin", t.searchVector),
-  titleTrgmIdx: index("idx_tastings_title_trgm").using("gin", sql`${t.title} gin_trgm_ops`),
 }));
 
 export const insertTastingSchema = createInsertSchema(tastings).omit({ id: true, createdAt: true, openedAt: true, closedAt: true, revealedAt: true, archivedAt: true, searchVector: true });
@@ -222,8 +221,6 @@ export const whiskies = pgTable("whiskies", {
   searchVector: tsvector("search_vector"),
 }, (t) => ({
   searchVectorIdx: index("idx_whiskies_search_vector").using("gin", t.searchVector),
-  nameTrgmIdx: index("idx_whiskies_name_trgm").using("gin", sql`${t.name} gin_trgm_ops`),
-  distilleryTrgmIdx: index("idx_whiskies_distillery_trgm").using("gin", sql`${t.distillery} gin_trgm_ops`),
 }));
 
 export const insertWhiskySchema = createInsertSchema(whiskies).omit({ id: true, searchVector: true });
@@ -1250,7 +1247,6 @@ export const distilleries = pgTable("distilleries", {
   searchVector: tsvector("search_vector"),
 }, (t) => ({
   searchVectorIdx: index("idx_distilleries_search_vector").using("gin", t.searchVector),
-  nameTrgmIdx: index("idx_distilleries_name_trgm").using("gin", sql`${t.name} gin_trgm_ops`),
 }));
 
 export const insertDistillerySchema = createInsertSchema(distilleries).omit({ id: true, searchVector: true });
@@ -1288,7 +1284,6 @@ export const lexicon = pgTable("lexicon", {
   localeIdx: index("idx_lexicon_locale").on(t.locale),
   localeTermUnique: uniqueIndex("idx_lexicon_locale_term_unique").on(t.locale, t.term),
   searchVectorIdx: index("idx_lexicon_search_vector").using("gin", t.searchVector),
-  termTrgmIdx: index("idx_lexicon_term_trgm").using("gin", sql`${t.term} gin_trgm_ops`),
 }));
 
 export const insertLexiconSchema = createInsertSchema(lexicon).omit({ id: true, searchVector: true });
