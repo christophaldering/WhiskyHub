@@ -11,6 +11,7 @@ import {
   type TastingStoryImageItem,
 } from "../../lib/tastingStoryDataApi";
 import { matchParticipantFromFilename } from "../../labs/utils/matchParticipantFromFilename";
+import { pidHeaders } from "../../lib/api";
 
 export type StoryImagePoolMode = "manage" | "pick";
 
@@ -117,7 +118,12 @@ export function StoryImagePool({
         }
         const fd = new FormData();
         fd.append("file", file);
-        const resp = await fetch(`/api/cms/upload`, { method: "POST", body: fd, credentials: "include" });
+        const resp = await fetch(`/api/tasting-stories/${encodeURIComponent(tastingId)}/image-pool/upload`, {
+          method: "POST",
+          body: fd,
+          credentials: "include",
+          headers: { ...pidHeaders() },
+        });
         if (!resp.ok) {
           const txt = await resp.text().catch(() => "");
           let parsed = "";

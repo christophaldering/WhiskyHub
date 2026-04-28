@@ -15,6 +15,7 @@ import {
   type WizardTone,
 } from "@/lib/tastingStoryApi";
 import { getTastingStoryData, createTastingStoryImagePoolEntry, type TastingStoryDataResponse, type TastingStoryImageItem } from "@/lib/tastingStoryDataApi";
+import { pidHeaders } from "@/lib/api";
 import { TastingStoryDataProvider } from "@/storybuilder/data/TastingStoryDataContext";
 import { StoryRenderer } from "@/storybuilder/renderer/StoryRenderer";
 import { StoryImagePool } from "@/storybuilder/editor/StoryImagePool";
@@ -843,7 +844,12 @@ function PhotosStep({
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const resp = await fetch("/api/cms/upload", { method: "POST", body: fd, credentials: "include" });
+      const resp = await fetch(`/api/tasting-stories/${encodeURIComponent(tastingId)}/image-pool/upload`, {
+        method: "POST",
+        body: fd,
+        credentials: "include",
+        headers: { ...pidHeaders() },
+      });
       if (!resp.ok) {
         const data = await resp.json().catch(() => ({}));
         throw new Error((data as { message?: string }).message ?? "Upload fehlgeschlagen");

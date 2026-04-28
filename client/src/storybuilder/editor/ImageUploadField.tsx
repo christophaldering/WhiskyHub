@@ -1,4 +1,5 @@
 import { useCallback, useId, useRef, useState } from "react";
+import { pidHeaders } from "../../lib/api";
 
 type Props = {
   value: string;
@@ -6,9 +7,10 @@ type Props = {
   label?: string;
   testId?: string;
   placeholder?: string;
+  tastingId?: string | null;
 };
 
-export function ImageUploadField({ value, onChange, label, testId, placeholder }: Props) {
+export function ImageUploadField({ value, onChange, label, testId, placeholder, tastingId }: Props) {
   const inputId = useId();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [busy, setBusy] = useState(false);
@@ -22,10 +24,14 @@ export function ImageUploadField({ value, onChange, label, testId, placeholder }
       try {
         const fd = new FormData();
         fd.append("file", file);
-        const resp = await fetch("/api/cms/upload", {
+        const endpoint = tastingId
+          ? `/api/tasting-stories/${encodeURIComponent(tastingId)}/image-pool/upload`
+          : "/api/cms/upload";
+        const resp = await fetch(endpoint, {
           method: "POST",
           body: fd,
           credentials: "include",
+          headers: { ...pidHeaders() },
         });
         if (!resp.ok) {
           let msg = "Upload fehlgeschlagen";
@@ -46,7 +52,7 @@ export function ImageUploadField({ value, onChange, label, testId, placeholder }
         setBusy(false);
       }
     },
-    [onChange],
+    [onChange, tastingId],
   );
 
   const onPick = useCallback(

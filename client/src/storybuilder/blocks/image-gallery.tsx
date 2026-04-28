@@ -97,7 +97,7 @@ function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
   );
 }
 
-function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
+function EditorPanel({ payload, onChange, tastingId }: BlockEditorPanelProps<Payload>) {
   const set = <K extends keyof Payload>(key: K, value: Payload[K]) => onChange({ ...payload, [key]: value });
   const picker = useImagePoolPicker();
   const updateItem = (idx: number, patch: Partial<Item>) => {
@@ -220,6 +220,7 @@ function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
               value={item.url}
               onChange={(url) => updateItem(idx, { url })}
               testId={`gallery-${idx}`}
+              tastingId={tastingId ?? null}
             />
             {picker.available ? (
               <button

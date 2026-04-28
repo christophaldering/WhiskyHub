@@ -77,7 +77,7 @@ function Renderer({ payload, theme }: BlockRendererProps<Payload>) {
   );
 }
 
-function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
+function EditorPanel({ payload, onChange, tastingId }: BlockEditorPanelProps<Payload>) {
   const set = <K extends keyof Payload>(key: K, value: Payload[K]) => onChange({ ...payload, [key]: value });
   const picker = useImagePoolPicker();
   return (
@@ -88,6 +88,7 @@ function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
           onChange={(url) => set("imageUrl", url)}
           label="Bild"
           testId="full-width-image"
+          tastingId={tastingId ?? null}
         />
         {picker.available ? (
           <button
