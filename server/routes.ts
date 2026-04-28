@@ -26933,6 +26933,30 @@ ${cleaned.slice(0, 60000)}`;
     suggestedWhiskyIds: string[];
   };
 
+  const loadImagePoolImageAsDataUri = async (rawUrl: string): Promise<string> => {
+    const url = (rawUrl ?? "").trim();
+    if (!url) throw new Error("Bild-URL fehlt");
+    if (url.startsWith("data:")) return url;
+    if (url.startsWith("/objects/")) {
+      const file = await objectStorage.getObjectEntityFile(url);
+      const [meta] = await file.getMetadata();
+      const [data] = await file.download();
+      const buffer = data as Buffer;
+      const metaContentType = typeof meta.contentType === "string" ? meta.contentType : "";
+      const contentType = metaContentType.length > 0 ? metaContentType : "image/jpeg";
+      return `data:${contentType};base64,${buffer.toString("base64")}`;
+    }
+    if (/^https?:\/\//i.test(url)) {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`Bild konnte nicht geladen werden (HTTP ${resp.status})`);
+      const headerType = (resp.headers.get("content-type") ?? "").split(";")[0].trim();
+      const contentType = headerType.length > 0 ? headerType : "image/jpeg";
+      const buffer = Buffer.from(await resp.arrayBuffer());
+      return `data:${contentType};base64,${buffer.toString("base64")}`;
+    }
+    throw new Error("Bild-URL ungültig");
+  };
+
   const describeImageOnce = async (
     openaiClient: OpenAI,
     img: TastingStoryImage,
@@ -26942,6 +26966,7 @@ ${cleaned.slice(0, 60000)}`;
     rosterWhiskies: Array<{ id: string; label: string }>,
   ): Promise<ImageDescribeResult> => {
     const { system, user } = buildImagePoolPrompt(language, img, rosterParticipants, rosterWhiskies);
+    const imageDataUri = await loadImagePoolImageAsDataUri(img.url);
     const completion = await openaiClient.chat.completions.create({
       model: "gpt-4o-mini",
       response_format: { type: "json_object" },
@@ -26953,7 +26978,7 @@ ${cleaned.slice(0, 60000)}`;
           role: "user",
           content: [
             { type: "text", text: user },
-            { type: "image_url", image_url: { url: img.url, detail: "low" } },
+            { type: "image_url", image_url: { url: imageDataUri, detail: "low" } },
           ],
         },
       ],
