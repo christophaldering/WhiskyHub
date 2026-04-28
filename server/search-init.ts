@@ -195,18 +195,25 @@ async function seedLexicon(): Promise<void> {
   let inserted = 0;
   for (let i = 0; i < rows.length; i += BATCH) {
     const slice = rows.slice(i, i + BATCH);
-    const result = await db.insert(lexicon)
-      .values(slice)
-      .onConflictDoUpdate({
-        target: [lexicon.locale, lexicon.term],
-        set: {
-          category: sql`EXCLUDED.category`,
-          definition: sql`EXCLUDED.definition`,
-          sortOrder: sql`EXCLUDED.sort_order`,
-        },
-      });
+    const valuesPart = sql.join(
+      slice.map((r) => sql`(${r.locale}, ${r.category}, ${r.term}, ${r.definition}, ${r.sortOrder})`),
+      sql`, `,
+    );
+    await db.execute(sql`
+      INSERT INTO lexicon (locale, category, term, definition, sort_order)
+      VALUES ${valuesPart}
+      ON CONFLICT (locale, term) DO UPDATE SET
+        category = EXCLUDED.category,
+        definition = EXCLUDED.definition,
+        sort_order = EXCLUDED.sort_order,
+        embedding = CASE
+          WHEN lexicon.category IS DISTINCT FROM EXCLUDED.category
+            OR lexicon.definition IS DISTINCT FROM EXCLUDED.definition
+          THEN NULL
+          ELSE lexicon.embedding
+        END
+    `);
     inserted += slice.length;
-    void result;
   }
 
   const afterCounts = await db.execute(sql.raw(`SELECT locale, count(*)::int AS n FROM lexicon GROUP BY locale`));

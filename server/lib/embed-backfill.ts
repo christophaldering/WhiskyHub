@@ -133,9 +133,11 @@ export async function backfillTable(key: BackfillTableKey, options: BackfillOpti
   }
   log(`[backfill] ${target.key}: ${pending} rows pending (batchSize=${batchSize}, pauseMs=${pauseMs})`);
 
+  const PROGRESS_EVERY = 50;
   let embedded = 0;
   let skipped = 0;
   let lastLoggedAt = startedAt;
+  let lastLoggedProcessed = 0;
   for (let i = 0; i < rows.length; i += batchSize) {
     const batch = rows.slice(i, i + batchSize);
     const texts = batch.map((r) => target.build(r) || " ");
@@ -160,13 +162,15 @@ export async function backfillTable(key: BackfillTableKey, options: BackfillOpti
 
     const processed = Math.min(i + batchSize, rows.length);
     const now = Date.now();
-    if (processed === rows.length || processed - (i) >= 50 || now - lastLoggedAt >= 5000) {
+    const sinceLastLog = processed - lastLoggedProcessed;
+    if (processed === rows.length || sinceLastLog >= PROGRESS_EVERY || now - lastLoggedAt >= 5000) {
       const elapsedMs = now - startedAt;
       const rate = processed / Math.max(1, elapsedMs / 1000);
       const remaining = rows.length - processed;
       const etaSec = rate > 0 ? Math.round(remaining / rate) : 0;
       log(`[backfill] ${target.key}: ${processed}/${rows.length} (embedded=${embedded}, skipped=${skipped}, eta=${etaSec}s)`);
       lastLoggedAt = now;
+      lastLoggedProcessed = processed;
     }
 
     if (pauseMs > 0 && i + batchSize < rows.length) {
