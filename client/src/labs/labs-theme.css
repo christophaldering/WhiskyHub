@@ -1621,6 +1621,7 @@ a.labs-dram-item {
   overflow-wrap: break-word;
   word-break: normal;
   hyphens: none;
+  min-height: calc(1.15em * 2);
 }
 
 .labs-action-bar-sublabel {
