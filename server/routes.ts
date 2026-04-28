@@ -26960,7 +26960,7 @@ ${cleaned.slice(0, 60000)}`;
         throw new ImagePoolImageLoadError(`Bild konnte nicht aus dem Speicher geladen werden (${detail})`, 502);
       }
     }
-    if (/^https:\/\//i.test(url)) return url;
+    if (/^https?:\/\//i.test(url)) return url;
     throw new ImagePoolImageLoadError("Bild-URL ungültig", 422);
   };
 
