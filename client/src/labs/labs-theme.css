@@ -2845,6 +2845,14 @@ a.labs-dram-item {
   animation: labsCountPulse 300ms ease;
 }
 
+:root {
+  --labs-detail-section-scroll-margin: 104px;
+}
+
+.labs-detail-section-anchor {
+  scroll-margin-top: var(--labs-detail-section-scroll-margin);
+}
+
 /* ----- Sticky mini-header for tasting detail section navigation ----------
  * `top` here matches the global LabsLayout header height. Keep in sync with
  * LABS_HEADER_HEIGHT_PX in client/src/labs/pages/LabsTastingDetail.tsx.
