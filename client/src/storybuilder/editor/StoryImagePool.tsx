@@ -751,7 +751,7 @@ export function StoryImagePool({
                           </span>
                         ))}
                       </div>
-                      {participants.length > 0 ? (
+                      {participants.length > 0 && mode === "manage" ? (
                         <div style={participantPickerStyle}>
                           {it.participantIds.length > 0 ? (
                             <div style={participantChipsStyle}>
