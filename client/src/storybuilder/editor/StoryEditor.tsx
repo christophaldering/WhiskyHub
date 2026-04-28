@@ -155,6 +155,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
 
   const [selectedId, setSelectedId] = useState<string | null>(initialDocument.blocks[0]?.id ?? null);
   const [mode, setMode] = useState<RendererMode>("editor-preview");
+  const isPublicPreview = mode === "public";
   const [showPalette, setShowPalette] = useState(false);
   const [saveStatus, setSaveStatus] = useState<StoryEditorSaveStatus>("idle");
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
@@ -714,9 +715,10 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
     <div
       data-testid="story-editor"
       data-layout={isCompact ? "compact" : "wide"}
+      data-mode={mode}
       style={{
         display: "grid",
-        gridTemplateColumns: isCompact ? "1fr" : "260px 1fr 320px",
+        gridTemplateColumns: isPublicPreview ? "1fr" : isCompact ? "1fr" : "260px 1fr 320px",
         height: "100%",
         minHeight: 0,
         background: "#0B0906",
@@ -725,7 +727,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
         position: "relative",
       }}
     >
-      {isCompact && mobilePanel ? (
+      {!isPublicPreview && isCompact && mobilePanel ? (
         <div
           data-testid="mobile-panel-backdrop"
           onClick={() => setMobilePanel(null)}
@@ -737,6 +739,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
           }}
         />
       ) : null}
+      {!isPublicPreview ? (
       <aside
         id="story-editor-blocks-panel"
         data-testid="editor-sidebar-blocks"
@@ -841,6 +844,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
           </DndContext>
         </div>
       </aside>
+      ) : null}
 
       <main
         data-testid="editor-canvas"
@@ -865,7 +869,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            {isCompact ? (
+            {isCompact && !isPublicPreview ? (
               <button
                 type="button"
                 onClick={() => setMobilePanel(mobilePanel === "blocks" ? null : "blocks")}
@@ -962,7 +966,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
             ) : null}
           </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {isCompact ? (
+            {isCompact && !isPublicPreview ? (
               <button
                 type="button"
                 onClick={() => setMobilePanel(mobilePanel === "properties" ? null : "properties")}
@@ -1079,6 +1083,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
         <StoryRenderer document={doc} mode={mode} />
       </main>
 
+      {!isPublicPreview ? (
       <aside
         id="story-editor-properties-panel"
         data-testid="editor-sidebar-properties"
@@ -1119,6 +1124,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
           </div>
         )}
       </aside>
+      ) : null}
       {sourceContext ? (
         <VersionDrawer
           open={showVersions}
