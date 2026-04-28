@@ -1,8 +1,8 @@
 import type * as React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation, Link } from "wouter";
+import { useLocation, useSearch, Link } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
 import { SkeletonList, SkeletonLine } from "@/labs/components/LabsSkeleton";
 import {
@@ -43,6 +43,8 @@ import {
   Lock,
   Loader2,
   Glasses,
+  History,
+  User,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, inviteApi, guidedApi, friendsApi } from "@/lib/api";
@@ -53,6 +55,7 @@ import { LabsParticipantDownloads } from "@/components/ParticipantDownloads";
 import { getStoryPdfAvailable, getPresentationPdfAvailable, getNotesDocxAvailable } from "@/labs/utils/labsExports";
 import { selectDescriptors } from "@/labs/utils/downloadMatrix";
 import TastingDownloadGrid from "@/labs/components/TastingDownloadGrid";
+import { HubTileGrid, type HubTileDef } from "@/labs/pages/hubTiles";
 import ManageTastersDialog from "@/labs/components/ManageTastersDialog";
 import TastingAnalysisSection from "@/labs/components/TastingAnalysisSection";
 import TastingPersonalSection from "@/labs/components/TastingPersonalSection";
@@ -65,6 +68,27 @@ import { useTranslation } from "react-i18next";
 
 interface LabsTastingDetailProps {
   params: { id: string };
+}
+
+type DetailSectionKey =
+  | "rueckblick"
+  | "praesentation"
+  | "auswertung"
+  | "persoenlich"
+  | "host-aktionen"
+  | "downloads";
+
+const DETAIL_SECTION_KEYS: readonly DetailSectionKey[] = [
+  "rueckblick",
+  "praesentation",
+  "auswertung",
+  "persoenlich",
+  "host-aktionen",
+  "downloads",
+];
+
+function isDetailSectionKey(value: string | null): value is DetailSectionKey {
+  return value !== null && (DETAIL_SECTION_KEYS as readonly string[]).includes(value);
 }
 
 function SecondaryRowAction({ icon: Icon, title, subtitle, onClick, testId }: {
@@ -468,6 +492,44 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
   const isDraft = tasting?.status === "draft";
   const statusCfg = getStatusConfig(tasting?.status);
 
+  const showSectionMenu = isReveal || isCompleted;
+  const detailSearchStr = useSearch();
+  const initialActiveSection = useMemo<DetailSectionKey>(() => {
+    try {
+      const params = new URLSearchParams(detailSearchStr);
+      const s = params.get("section");
+      if (isDetailSectionKey(s)) return s;
+    } catch {
+      return "rueckblick";
+    }
+    return "rueckblick";
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const [activeSection, setActiveSection] = useState<DetailSectionKey | null>(initialActiveSection);
+
+  useEffect(() => {
+    if (!showSectionMenu) return;
+    const params = new URLSearchParams(window.location.search);
+    const current = params.get("section");
+    const desired = activeSection ?? null;
+    if (current === desired) return;
+    if (desired) params.set("section", desired);
+    else params.delete("section");
+    const newSearch = params.toString();
+    const path = window.location.pathname;
+    navigate(`${path}${newSearch ? `?${newSearch}` : ""}`, { replace: true });
+  }, [activeSection, showSectionMenu, navigate]);
+
+  useEffect(() => {
+    if (!showSectionMenu || !activeSection) return;
+    const targetId = `section-${activeSection}`;
+    const handle = window.requestAnimationFrame(() => {
+      const el = document.getElementById(targetId);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(handle);
+  }, [activeSection, showSectionMenu]);
+
   // ----- Mini status bar / collapsed-section helpers ----------------------
   const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
   const onlineParticipantCount = (() => {
@@ -819,62 +881,75 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         </div>
       )}
 
-      {(isReveal || isCompleted) && (() => {
-        const jumpItems: Array<{ key: string; label: string; targetId: string; testId: string }> = [
-          { key: "rueckblick", label: t("resultsUi.jumpbarRueckblick", "Rückblick"), targetId: "section-rueckblick", testId: "detail-jump-rueckblick" },
-          { key: "praesentation", label: t("resultsUi.jumpbarPraesentation", "Präsentation"), targetId: "section-praesentation", testId: "detail-jump-praesentation" },
-          { key: "auswertung", label: t("resultsUi.jumpbarAuswertung", "Auswertung"), targetId: "section-auswertung", testId: "detail-jump-auswertung" },
-          { key: "persoenlich", label: t("resultsUi.jumpbarPersoenlich", "Persönlich"), targetId: "section-persoenlich", testId: "detail-jump-persoenlich" },
-          ...(isHost ? [{ key: "host-aktionen", label: t("resultsUi.jumpbarHostAktionen", "Host-Aktionen"), targetId: "section-host-aktionen", testId: "detail-jump-host-aktionen" }] : []),
-          { key: "downloads", label: t("resultsUi.jumpbarDownloads", "Downloads"), targetId: "section-downloads", testId: "detail-jump-downloads" },
+      {showSectionMenu && (() => {
+        const detailSectionTiles: HubTileDef[] = [
+          {
+            icon: History,
+            labelKey: "resultsUi.jumpbarRueckblick",
+            labelFallback: "Rückblick",
+            descKey: "resultsUi.sectionMenuRueckblickSub",
+            descFallback: "Whisky-Liste & Reveal",
+            testId: "detail-jump-rueckblick",
+          },
+          {
+            icon: Monitor,
+            labelKey: "resultsUi.jumpbarPraesentation",
+            labelFallback: "Präsentation",
+            descKey: "resultsUi.sectionMenuPraesentationSub",
+            descFallback: "Story & Live-Show",
+            testId: "detail-jump-praesentation",
+          },
+          {
+            icon: BarChart3,
+            labelKey: "resultsUi.jumpbarAuswertung",
+            labelFallback: "Auswertung",
+            descKey: "resultsUi.sectionMenuAuswertungSub",
+            descFallback: "Charts & Vergleich",
+            testId: "detail-jump-auswertung",
+          },
+          {
+            icon: User,
+            labelKey: "resultsUi.jumpbarPersoenlich",
+            labelFallback: "Persönlich",
+            descKey: "resultsUi.sectionMenuPersoenlichSub",
+            descFallback: "Deine Notizen & KI",
+            testId: "detail-jump-persoenlich",
+          },
+          ...(isHost
+            ? [{
+                icon: Settings,
+                labelKey: "resultsUi.jumpbarHostAktionen",
+                labelFallback: "Host-Aktionen",
+                descKey: "resultsUi.sectionMenuHostAktionenSub",
+                descFallback: "Steuerung & Verwaltung",
+                testId: "detail-jump-host-aktionen",
+              }]
+            : []),
+          {
+            icon: Download,
+            labelKey: "resultsUi.jumpbarDownloads",
+            labelFallback: "Downloads",
+            descKey: "resultsUi.sectionMenuDownloadsSub",
+            descFallback: "PDFs & Exporte",
+            testId: "detail-jump-downloads",
+          },
         ];
+        const handleSectionTile = (tile: HubTileDef) => {
+          const key = tile.testId.replace("detail-jump-", "");
+          if (!isDetailSectionKey(key)) return;
+          setActiveSection((prev) => (prev === key ? null : key));
+        };
+        const activeTestId = activeSection ? `detail-jump-${activeSection}` : undefined;
         return (
           <div className="mb-4 labs-fade-in" data-testid="detail-jump-bar">
-            <div
-              className="labs-card"
-              style={{
-                padding: 8,
-                display: "flex",
-                gap: 6,
-                overflowX: "auto",
-                alignItems: "center",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: "var(--labs-text-muted)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                  paddingLeft: 4,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {t("resultsUi.jumpbarTitle", "Springen zu")}
-              </span>
-              {jumpItems.map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  data-testid={item.testId}
-                  onClick={() => {
-                    const el = document.getElementById(item.targetId);
-                    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-                  }}
-                  className="labs-btn-ghost"
-                  style={{
-                    fontSize: 12,
-                    padding: "6px 10px",
-                    whiteSpace: "nowrap",
-                    fontFamily: "inherit",
-                    cursor: "pointer",
-                  }}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
+            <HubTileGrid
+              tiles={detailSectionTiles}
+              t={(key, fallback) => t(key, fallback)}
+              variant="single-row"
+              role="filter"
+              onTileClick={handleSectionTile}
+              activeTestId={activeTestId}
+            />
           </div>
         );
       })()}
@@ -1130,7 +1205,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         </div>
       )}
 
-      {(() => {
+      {(!showSectionMenu || activeSection === "rueckblick") && (() => {
         const FREE_REVEAL_DEFAULT: string[][] = [
           ["name"],
           ["distillery", "age", "abv", "region", "country", "category", "caskType", "bottler", "vintage", "peatLevel", "ppm", "price"],
@@ -1486,7 +1561,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         );
       })()}
 
-      {(isReveal || isCompleted) && (() => {
+      {(!showSectionMenu || activeSection === "praesentation") && (isReveal || isCompleted) && (() => {
         const presentAvailable = aiAvailable;
         const isAdmin = currentParticipant?.role === "admin";
         const canEditStory = !!isHost || isAdmin;
@@ -1690,7 +1765,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         );
       })()}
 
-      {(isReveal || isCompleted) && (
+      {(!showSectionMenu || activeSection === "auswertung") && (isReveal || isCompleted) && (
         <TastingAnalysisSection
           tastingId={tastingId}
           isHost={!!isHost}
@@ -1698,7 +1773,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         />
       )}
 
-      {(isReveal || isCompleted) && (
+      {(!showSectionMenu || activeSection === "persoenlich") && (isReveal || isCompleted) && (
         <TastingPersonalSection
           tastingId={tastingId}
           isHost={!!isHost}
@@ -1706,7 +1781,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         />
       )}
 
-      {isHost && (
+      {(!showSectionMenu || activeSection === "host-aktionen") && isHost && (
         <section id="section-host-aktionen" className="mb-8 labs-fade-in" data-testid="detail-section-host-aktionen" style={{ scrollMarginTop: 80 }}>
           <header style={{ marginBottom: 12 }}>
             <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", margin: 0, letterSpacing: "0.02em" }}>
@@ -2241,7 +2316,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         </div>
       )}
 
-      {(() => {
+      {(!showSectionMenu || activeSection === "downloads") && (() => {
         const phase = getTastingPhase(tasting?.status);
         const showResults = isResultDownloadsPhase(phase);
         const showPrintMaterials = !isHost && downloadsAvailable && !isResultDownloadsPhase(phase);
