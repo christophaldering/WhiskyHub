@@ -47,6 +47,14 @@ async function preBuildMigrations() {
   const pgMod = await import("pg");
   const pool = new pgMod.default.Pool({ connectionString: process.env.DATABASE_URL, connectionTimeoutMillis: 10000 });
   try {
+    for (const ext of ["pg_trgm", "unaccent"]) {
+      try {
+        await pool.query(`CREATE EXTENSION IF NOT EXISTS ${ext}`);
+        console.log(`pre-build: ensured extension ${ext}`);
+      } catch (e) {
+        console.warn(`pre-build: could not ensure extension ${ext}:`, e instanceof Error ? e.message : e);
+      }
+    }
     const criticalTables = ["participants", "journal_entries", "ratings", "tastings", "historical_tastings", "wishlist_entries", "profiles"];
     const counts: Record<string, number> = {};
     for (const table of criticalTables) {

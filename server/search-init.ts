@@ -92,11 +92,6 @@ async function ensureColumns(): Promise<void> {
     } catch (e) {
       console.warn(`[search-init] could not add search_vector column to ${t.table}:`, e instanceof Error ? e.message : e);
     }
-    try {
-      await db.execute(sql.raw(`ALTER TABLE "${t.table}" ADD COLUMN IF NOT EXISTS embedding vector(1536)`));
-    } catch (e) {
-      console.warn(`[search-init] could not add embedding column to ${t.table}:`, e instanceof Error ? e.message : e);
-    }
   }
 }
 
@@ -149,13 +144,6 @@ async function ensureIndexes(): Promise<void> {
   for (const idx of TRGM_INDEXES) {
     const cols = idx.columns.map((c) => `"${c}" gin_trgm_ops`).join(", ");
     await db.execute(sql.raw(`CREATE INDEX IF NOT EXISTS ${idx.indexName} ON "${idx.table}" USING GIN (${cols})`));
-  }
-  for (const t of SEARCH_TABLES) {
-    try {
-      await db.execute(sql.raw(`CREATE INDEX IF NOT EXISTS idx_${t.table}_embedding ON "${t.table}" USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)`));
-    } catch (e) {
-      // pgvector may not be installed; ignore
-    }
   }
 }
 
