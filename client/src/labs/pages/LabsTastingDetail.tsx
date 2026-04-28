@@ -54,6 +54,7 @@ import { getStoryPdfAvailable, getPresentationPdfAvailable, getNotesDocxAvailabl
 import { selectDescriptors } from "@/labs/utils/downloadMatrix";
 import TastingDownloadGrid from "@/labs/components/TastingDownloadGrid";
 import ManageTastersDialog from "@/labs/components/ManageTastersDialog";
+import TastingAnalysisSection from "@/labs/components/TastingAnalysisSection";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { getTastingPhase, isResultDownloadsPhase, RESULT_DOWNLOAD_KINDS } from "@/labs/utils/tastingPhase";
 import type { Tasting, WhiskyFriend } from "@shared/schema";
@@ -1676,6 +1677,14 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
           </section>
         );
       })()}
+
+      {(isReveal || isCompleted) && (
+        <TastingAnalysisSection
+          tastingId={tastingId}
+          isHost={!!isHost}
+          currentParticipant={currentParticipant}
+        />
+      )}
 
       {isHost && (
         <section className="mb-8 labs-fade-in" data-testid="detail-section-host-aktionen">
