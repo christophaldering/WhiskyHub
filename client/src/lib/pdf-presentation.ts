@@ -325,7 +325,7 @@ function drawPodiumSlide(doc: jsPDF, data: PresentationData) {
   const top3 = data.whiskies.slice(0, 3);
   if (top3.length < 1) return;
 
-  const heights = [70, 95, 55];
+  const heights = [95, 70, 55];
   const order = [1, 0, 2];
   const colW = 60;
   const totalW = colW * 3 + 10 * 2;
