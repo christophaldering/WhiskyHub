@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
-import { useLabsBack } from "@/labs/LabsLayout";
+import { useLabsBack, LABS_HEADER_HEIGHT } from "@/labs/LabsLayout";
 import { SkeletonList, SkeletonLine } from "@/labs/components/LabsSkeleton";
 import {
   ChevronLeft,
@@ -572,7 +572,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
     const el = sectionMenuRef.current;
     if (!el || typeof window === "undefined") return;
     const root = document.documentElement;
-    const headerOffset = 52;
+    const headerOffset = LABS_HEADER_HEIGHT;
     const buffer = 12;
     const update = () => {
       const height = el.getBoundingClientRect().height;

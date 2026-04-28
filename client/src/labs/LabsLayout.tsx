@@ -605,6 +605,8 @@ export function useLabsBack(fallback: string) {
   return useBackNavigation(fallback);
 }
 
+export const LABS_HEADER_HEIGHT = 52;
+
 const PUBLIC_PATH_PREFIXES = [
   "/labs/onboarding",
   "/labs/join",
