@@ -654,26 +654,28 @@ export function StoryImagePool({
           </div>
         ) : null}
 
-        <div
-          onDragEnter={onDragOverDropZone}
-          onDragOver={onDragOverDropZone}
-          onDragLeave={onDragLeaveDropZone}
-          onDrop={onDropFiles}
-          style={{
-            margin: "10px 18px 0",
-            border: `1px dashed ${isDragOver ? "#C9A961" : "rgba(201,169,97,0.35)"}`,
-            background: isDragOver ? "rgba(201,169,97,0.12)" : "rgba(201,169,97,0.04)",
-            borderRadius: 6,
-            padding: "14px 16px",
-            color: isDragOver ? "#F5EDE0" : "#A89A85",
-            fontSize: 12,
-            textAlign: "center",
-            transition: "background 120ms",
-          }}
-          data-testid={`dropzone-${testIdPrefix}`}
-        >
-          {isDragOver ? "Hier loslassen, um hochzuladen" : "Bilder per Drag-and-Drop hierhin ziehen oder oben auf Hochladen klicken"}
-        </div>
+        {mode === "manage" ? (
+          <div
+            onDragEnter={onDragOverDropZone}
+            onDragOver={onDragOverDropZone}
+            onDragLeave={onDragLeaveDropZone}
+            onDrop={onDropFiles}
+            style={{
+              margin: "10px 18px 0",
+              border: `1px dashed ${isDragOver ? "#C9A961" : "rgba(201,169,97,0.35)"}`,
+              background: isDragOver ? "rgba(201,169,97,0.12)" : "rgba(201,169,97,0.04)",
+              borderRadius: 6,
+              padding: "14px 16px",
+              color: isDragOver ? "#F5EDE0" : "#A89A85",
+              fontSize: 12,
+              textAlign: "center",
+              transition: "background 120ms",
+            }}
+            data-testid={`dropzone-${testIdPrefix}`}
+          >
+            {isDragOver ? "Hier loslassen, um hochzuladen" : "Bilder per Drag-and-Drop hierhin ziehen oder oben auf Hochladen klicken"}
+          </div>
+        ) : null}
 
         {uploadProgress.length > 0 ? (
           <div
@@ -855,7 +857,7 @@ export function StoryImagePool({
                       ) : null}
                     </div>
                     {mode === "pick" && onPick ? (
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 0 }}>
+                      <div style={{ display: "grid", gap: 0 }}>
                         <button
                           type="button"
                           onClick={() => onPick(it)}
@@ -875,7 +877,7 @@ export function StoryImagePool({
                           title="Im Inspektor anzeigen, ohne direkt zu übernehmen"
                           data-testid={`button-${testIdPrefix}-mark-${it.id}`}
                         >
-                          {isSelected ? "Markiert" : "Vorschau"}
+                          {isSelected ? "Markiert (Vorschau rechts)" : "Nur Vorschau"}
                         </button>
                       </div>
                     ) : null}
