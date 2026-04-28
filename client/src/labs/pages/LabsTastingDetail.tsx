@@ -91,6 +91,69 @@ function isDetailSectionKey(value: string | null): value is DetailSectionKey {
   return value !== null && (DETAIL_SECTION_KEYS as readonly string[]).includes(value);
 }
 
+interface DetailSectionTileDef extends HubTileDef {
+  key: DetailSectionKey;
+  hostOnly?: boolean;
+}
+
+const DETAIL_SECTION_TILES: readonly DetailSectionTileDef[] = [
+  {
+    key: "rueckblick",
+    icon: History,
+    labelKey: "resultsUi.jumpbarRueckblick",
+    labelFallback: "Rückblick",
+    descKey: "resultsUi.sectionMenuRueckblickSub",
+    descFallback: "Whisky-Liste & Reveal",
+    testId: "detail-jump-rueckblick",
+  },
+  {
+    key: "praesentation",
+    icon: Monitor,
+    labelKey: "resultsUi.jumpbarPraesentation",
+    labelFallback: "Präsentation",
+    descKey: "resultsUi.sectionMenuPraesentationSub",
+    descFallback: "Story & Live-Show",
+    testId: "detail-jump-praesentation",
+  },
+  {
+    key: "auswertung",
+    icon: BarChart3,
+    labelKey: "resultsUi.jumpbarAuswertung",
+    labelFallback: "Auswertung",
+    descKey: "resultsUi.sectionMenuAuswertungSub",
+    descFallback: "Charts & Vergleich",
+    testId: "detail-jump-auswertung",
+  },
+  {
+    key: "persoenlich",
+    icon: User,
+    labelKey: "resultsUi.jumpbarPersoenlich",
+    labelFallback: "Persönlich",
+    descKey: "resultsUi.sectionMenuPersoenlichSub",
+    descFallback: "Deine Notizen & KI",
+    testId: "detail-jump-persoenlich",
+  },
+  {
+    key: "host-aktionen",
+    icon: Settings,
+    labelKey: "resultsUi.jumpbarHostAktionen",
+    labelFallback: "Host-Aktionen",
+    descKey: "resultsUi.sectionMenuHostAktionenSub",
+    descFallback: "Steuerung & Verwaltung",
+    testId: "detail-jump-host-aktionen",
+    hostOnly: true,
+  },
+  {
+    key: "downloads",
+    icon: Download,
+    labelKey: "resultsUi.jumpbarDownloads",
+    labelFallback: "Downloads",
+    descKey: "resultsUi.sectionMenuDownloadsSub",
+    descFallback: "PDFs & Exporte",
+    testId: "detail-jump-downloads",
+  },
+];
+
 function SecondaryRowAction({ icon: Icon, title, subtitle, onClick, testId }: {
   icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
   title: string;
@@ -900,58 +963,9 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
       )}
 
       {showSectionMenu && (() => {
-        const detailSectionTiles: HubTileDef[] = [
-          {
-            icon: History,
-            labelKey: "resultsUi.jumpbarRueckblick",
-            labelFallback: "Rückblick",
-            descKey: "resultsUi.sectionMenuRueckblickSub",
-            descFallback: "Whisky-Liste & Reveal",
-            testId: "detail-jump-rueckblick",
-          },
-          {
-            icon: Monitor,
-            labelKey: "resultsUi.jumpbarPraesentation",
-            labelFallback: "Präsentation",
-            descKey: "resultsUi.sectionMenuPraesentationSub",
-            descFallback: "Story & Live-Show",
-            testId: "detail-jump-praesentation",
-          },
-          {
-            icon: BarChart3,
-            labelKey: "resultsUi.jumpbarAuswertung",
-            labelFallback: "Auswertung",
-            descKey: "resultsUi.sectionMenuAuswertungSub",
-            descFallback: "Charts & Vergleich",
-            testId: "detail-jump-auswertung",
-          },
-          {
-            icon: User,
-            labelKey: "resultsUi.jumpbarPersoenlich",
-            labelFallback: "Persönlich",
-            descKey: "resultsUi.sectionMenuPersoenlichSub",
-            descFallback: "Deine Notizen & KI",
-            testId: "detail-jump-persoenlich",
-          },
-          ...(isHost
-            ? [{
-                icon: Settings,
-                labelKey: "resultsUi.jumpbarHostAktionen",
-                labelFallback: "Host-Aktionen",
-                descKey: "resultsUi.sectionMenuHostAktionenSub",
-                descFallback: "Steuerung & Verwaltung",
-                testId: "detail-jump-host-aktionen",
-              }]
-            : []),
-          {
-            icon: Download,
-            labelKey: "resultsUi.jumpbarDownloads",
-            labelFallback: "Downloads",
-            descKey: "resultsUi.sectionMenuDownloadsSub",
-            descFallback: "PDFs & Exporte",
-            testId: "detail-jump-downloads",
-          },
-        ];
+        const detailSectionTiles: HubTileDef[] = DETAIL_SECTION_TILES
+          .filter((tile) => !tile.hostOnly || isHost)
+          .map(({ key, hostOnly, ...rest }) => rest);
         const handleSectionTile = (tile: HubTileDef) => {
           const key = tile.testId.replace("detail-jump-", "");
           if (!isDetailSectionKey(key)) return;
@@ -959,7 +973,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         };
         const activeTestId = activeSection ? `detail-jump-${activeSection}` : undefined;
         return (
-          <div className="mb-4 labs-fade-in" data-testid="detail-jump-bar">
+          <div className="mb-4 labs-fade-in labs-detail-section-menu" data-testid="detail-jump-bar">
             <HubTileGrid
               tiles={detailSectionTiles}
               t={(key, fallback) => t(key, fallback)}
