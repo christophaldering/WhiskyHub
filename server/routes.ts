@@ -23272,7 +23272,17 @@ Rules:
           [search],
         );
         const matchIds = new Set(matchResult.rows.map((r) => r.id));
-        results = results.filter((w) => matchIds.has(w.id));
+        const isWhiskyId = (s: string): boolean =>
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+        const needle = search.toLowerCase();
+        results = results.filter((w) => {
+          if (isWhiskyId(w.id)) return matchIds.has(w.id);
+          return (
+            (w.name || "").toLowerCase().includes(needle) ||
+            (w.distillery || "").toLowerCase().includes(needle) ||
+            (w.region || "").toLowerCase().includes(needle)
+          );
+        });
       }
 
       if (region) {
