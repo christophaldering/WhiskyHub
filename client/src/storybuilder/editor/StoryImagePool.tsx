@@ -1589,7 +1589,7 @@ const modalStyle: React.CSSProperties = {
   background: "#0B0906",
   border: "1px solid rgba(201,169,97,0.35)",
   borderRadius: 6,
-  width: "min(1200px, 100%)",
+  width: "min(1400px, 100%)",
   maxHeight: "92vh",
   display: "flex",
   flexDirection: "column",
@@ -1635,8 +1635,8 @@ const leftColumnStyle: React.CSSProperties = {
 
 const gridStyle: React.CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
-  gap: 10,
+  gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+  gap: 12,
   overflowY: "auto",
   padding: 4,
   flex: 1,
@@ -1729,9 +1729,10 @@ const cardImageBtn: React.CSSProperties = {
 
 const cardImg: React.CSSProperties = {
   width: "100%",
-  height: 120,
+  height: 170,
   objectFit: "cover",
   display: "block",
+  background: "#0B0906",
 };
 
 const cardMetaStyle: React.CSSProperties = {
