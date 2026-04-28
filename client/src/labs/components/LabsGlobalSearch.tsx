@@ -8,15 +8,14 @@ import {
   GraduationCap, Calendar, History, Activity, Info, Gift, Shield, Lock,
   ArrowRight,
 } from "lucide-react";
-import { distilleries, type Distillery } from "@/data/distilleries";
 import { triggerHaptic } from "@/labs/hooks/useHaptic";
-import { lexiconData, categoryLabelMap, type LexiconEntry, type LexiconCategory } from "@/labs/data/lexiconData";
 
 interface SearchResult {
   id: string;
-  category: "pages" | "whiskies" | "distilleries" | "lexicon";
+  category: "pages" | "whiskies" | "tastings" | "distilleries" | "lexicon";
   label: string;
   subtitle: string;
+  snippet?: string;
   route: string;
   icon: React.ElementType;
   iconColor?: string;
@@ -24,12 +23,22 @@ interface SearchResult {
   extra?: { rating?: number; region?: string };
 }
 
-interface WhiskyResult {
-  id: number;
-  name: string;
-  distillery?: string;
-  region?: string;
-  avgOverall?: number;
+interface BackendHit {
+  type: "whisky" | "tasting" | "distillery" | "lexicon";
+  id: string | number;
+  title: string;
+  subtitle: string | null;
+  snippet: string | null;
+  score: number;
+  meta: Record<string, unknown>;
+}
+
+interface BackendResponse {
+  query: string;
+  locale?: string;
+  embeddingUsed?: boolean;
+  counts: { whisky: number; tasting: number; distillery: number; lexicon: number };
+  results: BackendHit[];
 }
 
 const RECENT_KEY = "cs_labs_recent_searches";
@@ -123,8 +132,8 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
   const [, navigate] = useLocation();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [whiskyResults, setWhiskyResults] = useState<WhiskyResult[]>([]);
-  const [whiskyLoading, setWhiskyLoading] = useState(false);
+  const [serverHits, setServerHits] = useState<BackendHit[]>([]);
+  const [serverLoading, setServerLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>(getRecent);
   const [visible, setVisible] = useState(false);
   const [exiting, setExiting] = useState(false);
@@ -143,7 +152,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
       setExiting(false);
       setQuery("");
       setDebouncedQuery("");
-      setWhiskyResults([]);
+      setServerHits([]);
       setRecentSearches(getRecent());
       document.body.style.overflow = "hidden";
       if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
@@ -166,39 +175,50 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
 
   useEffect(() => {
     if (!debouncedQuery || debouncedQuery.length < 2) {
-      setWhiskyResults([]);
+      setServerHits([]);
       return;
     }
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
-    setWhiskyLoading(true);
+    setServerLoading(true);
 
-    fetch(`/api/labs/explore/whiskies?search=${encodeURIComponent(debouncedQuery)}`, { signal: controller.signal })
+    const pid = sessionStorage.getItem("session_pid") || localStorage.getItem("casksense_participant_id");
+    const headers: Record<string, string> = {};
+    if (pid) headers["x-participant-id"] = pid;
+
+    fetch(
+      `/api/labs/search?q=${encodeURIComponent(debouncedQuery)}&locale=${lang}&types=whisky,tasting,distillery,lexicon&limit=6`,
+      { signal: controller.signal, headers },
+    )
       .then((r) => r.json())
-      .then((data: WhiskyResult[]) => {
+      .then((data: BackendResponse) => {
         if (!controller.signal.aborted) {
-          setWhiskyResults(data.slice(0, 5));
-          setWhiskyLoading(false);
-          const pid = sessionStorage.getItem("session_pid") || localStorage.getItem("casksense_participant_id");
+          setServerHits(Array.isArray(data?.results) ? data.results : []);
+          setServerLoading(false);
           if (pid) {
             fetch("/api/analytics/search-log", {
               method: "POST",
               headers: { "Content-Type": "application/json", "x-participant-id": pid },
-              body: JSON.stringify({ participantId: pid, query: debouncedQuery, resultCount: data.length, context: "global-search" }),
+              body: JSON.stringify({
+                participantId: pid,
+                query: debouncedQuery,
+                resultCount: data?.results?.length ?? 0,
+                context: "global-search",
+              }),
             }).catch(() => {});
           }
         }
       })
       .catch(() => {
         if (!controller.signal.aborted) {
-          setWhiskyResults([]);
-          setWhiskyLoading(false);
+          setServerHits([]);
+          setServerLoading(false);
         }
       });
 
     return () => controller.abort();
-  }, [debouncedQuery]);
+  }, [debouncedQuery, lang]);
 
   const pageResults = useMemo((): SearchResult[] => {
     const q = debouncedQuery.toLowerCase();
@@ -223,69 +243,83 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
       }));
   }, [debouncedQuery, isDe, t]);
 
-  const distilleryResults = useMemo((): SearchResult[] => {
-    const q = debouncedQuery.toLowerCase();
-    if (!q) return [];
-    return distilleries
-      .filter((d: Distillery) =>
-        d.name.toLowerCase().includes(q) ||
-        d.region.toLowerCase().includes(q) ||
-        d.country.toLowerCase().includes(q)
-      )
-      .slice(0, 3)
-      .map((d: Distillery) => ({
-        id: `dist-${d.name}`,
-        category: "distilleries" as const,
-        label: d.name,
-        subtitle: `${d.region}, ${d.country} · ${d.founded}`,
-        route: "/labs/discover/distilleries",
-        icon: Building2,
-        iconColor: "var(--labs-info)",
-        iconBg: "var(--labs-info-muted)",
+  const whiskySearchResults = useMemo((): SearchResult[] => {
+    return serverHits
+      .filter((h) => h.type === "whisky")
+      .map((h) => {
+        const meta = h.meta || {};
+        const region = typeof meta.region === "string" ? meta.region : undefined;
+        return {
+          id: `whisky-${h.id}`,
+          category: "whiskies" as const,
+          label: String(h.title ?? ""),
+          subtitle: String(h.subtitle ?? ""),
+          snippet: h.snippet ?? undefined,
+          route: `/labs/explore/bottles/${h.id}`,
+          icon: Wine,
+          iconColor: "var(--labs-dim-nose)",
+          iconBg: "rgba(201, 167, 108, 0.12)",
+          extra: { region },
+        };
+      });
+  }, [serverHits]);
+
+  const tastingResults = useMemo((): SearchResult[] => {
+    return serverHits
+      .filter((h) => h.type === "tasting")
+      .map((h) => ({
+        id: `tasting-${h.id}`,
+        category: "tastings" as const,
+        label: String(h.title ?? ""),
+        subtitle: String(h.subtitle ?? ""),
+        snippet: h.snippet ?? undefined,
+        route: `/labs/tastings/${h.id}`,
+        icon: Wine,
+        iconColor: "var(--labs-accent)",
+        iconBg: "var(--labs-accent-muted)",
       }));
-  }, [debouncedQuery]);
+  }, [serverHits]);
+
+  const distilleryResults = useMemo((): SearchResult[] => {
+    return serverHits
+      .filter((h) => h.type === "distillery")
+      .map((h) => {
+        const meta = h.meta || {};
+        const region = typeof meta.region === "string" ? meta.region : undefined;
+        return {
+          id: `dist-${h.id}`,
+          category: "distilleries" as const,
+          label: String(h.title ?? ""),
+          subtitle: String(h.subtitle ?? ""),
+          snippet: h.snippet ?? undefined,
+          route: `/labs/discover/distilleries?focus=${encodeURIComponent(String(h.title ?? ""))}`,
+          icon: Building2,
+          iconColor: "var(--labs-info)",
+          iconBg: "var(--labs-info-muted)",
+          extra: { region },
+        };
+      });
+  }, [serverHits]);
 
   const lexiconResults = useMemo((): SearchResult[] => {
-    const q = debouncedQuery.toLowerCase();
-    if (!q) return [];
-    const categories = lexiconData[lang] ?? lexiconData.en;
-    const catLabels = categoryLabelMap[lang] ?? categoryLabelMap.en;
-    const results: SearchResult[] = [];
-    for (const cat of categories) {
-      for (const entry of cat.entries) {
-        if (entry.term.toLowerCase().includes(q) || entry.definition.toLowerCase().includes(q)) {
-          results.push({
-            id: `lex-${cat.key}-${entry.term}`,
-            category: "lexicon" as const,
-            label: entry.term,
-            subtitle: entry.definition.length > 60 ? entry.definition.slice(0, 57) + "..." : entry.definition,
-            route: "/labs/discover/lexicon",
-            icon: BookOpen,
-            iconColor: "var(--labs-success)",
-            iconBg: "var(--labs-success-muted)",
-            extra: { region: catLabels[cat.key] },
-          });
-        }
-        if (results.length >= 3) break;
-      }
-      if (results.length >= 3) break;
-    }
-    return results;
-  }, [debouncedQuery, lang]);
-
-  const whiskySearchResults = useMemo((): SearchResult[] => {
-    return whiskyResults.map((w) => ({
-      id: `whisky-${w.id}`,
-      category: "whiskies" as const,
-      label: String(w.name ?? ""),
-      subtitle: [w.distillery, w.region].filter(Boolean).map(String).join(" · ") || "",
-      route: `/labs/explore/bottles/${w.id}`,
-      icon: Wine,
-      iconColor: "var(--labs-dim-nose)",
-      iconBg: "rgba(201, 167, 108, 0.12)",
-      extra: { rating: w.avgOverall ? Number(w.avgOverall) : undefined, region: typeof w.region === "string" ? w.region : undefined },
-    }));
-  }, [whiskyResults]);
+    return serverHits
+      .filter((h) => h.type === "lexicon")
+      .map((h) => {
+        const meta = h.meta || {};
+        const category = typeof meta.category === "string" ? meta.category : undefined;
+        return {
+          id: `lex-${h.id}`,
+          category: "lexicon" as const,
+          label: String(h.title ?? ""),
+          subtitle: String(h.snippet ?? h.subtitle ?? ""),
+          route: `/labs/discover/lexicon?term=${encodeURIComponent(String(h.title ?? ""))}`,
+          icon: BookOpen,
+          iconColor: "var(--labs-success)",
+          iconBg: "var(--labs-success-muted)",
+          extra: { region: category },
+        };
+      });
+  }, [serverHits]);
 
   const allResults = useMemo(() => {
     const groups: { key: string; label: string; results: SearchResult[]; showAll?: { label: string; route: string } }[] = [];
@@ -296,10 +330,16 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
       results: whiskySearchResults,
       showAll: { label: t("search.showAllWhiskies", "Show all in Explore"), route: `/labs/explore?q=${encodeURIComponent(debouncedQuery)}` },
     });
+    if (tastingResults.length > 0) groups.push({
+      key: "tastings",
+      label: t("search.tastings", isDe ? "Tastings" : "Tastings"),
+      results: tastingResults,
+      showAll: { label: t("search.showAllTastings", isDe ? "Alle Tastings" : "Show all tastings"), route: `/labs/tastings` },
+    });
     if (distilleryResults.length > 0) groups.push({ key: "distilleries", label: t("search.distilleries", "Distilleries"), results: distilleryResults });
     if (lexiconResults.length > 0) groups.push({ key: "lexicon", label: t("search.lexicon", "Lexicon"), results: lexiconResults });
     return groups;
-  }, [pageResults, whiskySearchResults, distilleryResults, lexiconResults, debouncedQuery, t]);
+  }, [pageResults, whiskySearchResults, tastingResults, distilleryResults, lexiconResults, debouncedQuery, t, isDe]);
 
   const firstResult = useMemo(() => {
     for (const g of allResults) {
@@ -404,7 +444,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
 
   const hasQuery = debouncedQuery.length >= 1;
   const hasResults = allResults.some((g) => g.results.length > 0);
-  const isSearching = hasQuery && whiskyLoading;
+  const isSearching = hasQuery && serverLoading;
 
   if (!open && !visible) return null;
 
@@ -518,7 +558,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
             )}
           </div>
           <button
-            onClick={handleClose}
+            onClick={() => handleClose()}
             style={{
               flexShrink: 0,
               width: 44,

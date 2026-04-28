@@ -22762,8 +22762,7 @@ Rules:
       const { isAdmin, communityIds } = await getRequesterInfo(req);
       const isMember = isAdmin || communityIds.length > 0;
 
-      const { db: dbInst } = await import("./db");
-      const { sql: sqlTag } = await import("drizzle-orm");
+      const { pool: pgPool } = await import("./db");
       const { getQueryEmbedding, vectorLiteral, isEmbeddingAvailable } = await import("./lib/embeddings");
 
       let queryVecLiteral: string | null = null;
@@ -22779,16 +22778,14 @@ Rules:
 
       let visibleTastingIds: string[] | null = null;
       if (!isMember && (wantTasting || wantWhisky)) {
-        const visTastings = await dbInst.execute(sqlTag.raw(`SELECT id FROM tastings WHERE visibility IN ('public','group') AND status IN ('open','closed','reveal','archived')`));
-        const visRows = ((visTastings as any).rows ?? visTastings) as { id: string }[];
-        visibleTastingIds = visRows.map(r => r.id);
+        const visTastings = await pgPool.query(
+          `SELECT id FROM tastings WHERE visibility IN ('public','group') AND status IN ('open','closed','reveal','archived')`,
+        );
+        visibleTastingIds = visTastings.rows.map((r: { id: string }) => r.id);
       }
 
       const lexCoeff = 0.6;
       const semCoeff = 0.4;
-      const semExpr = (col: string) => queryVecLiteral
-        ? `COALESCE(GREATEST(0, 1 - (${col} <=> '${queryVecLiteral}'::vector)), 0)`
-        : `0`;
 
       type Hit = {
         type: "whisky" | "tasting" | "distillery" | "lexicon";
@@ -22802,7 +22799,7 @@ Rules:
 
       const allHits: Hit[] = [];
 
-      const buildSelect = (
+      const buildAndRun = async (
         type: Hit["type"],
         table: string,
         idCol: string,
@@ -22812,15 +22809,23 @@ Rules:
         trgmExprs: string[],
         embeddingCol: string,
         extraFilter: string,
-        metaCols: string,
+        extraParams: unknown[],
+        metaExpr: string,
         limit: number,
-      ) => {
+      ): Promise<void> => {
+        const params: unknown[] = [rawQ, ...extraParams];
+        const semParamIdx = queryVecLiteral ? params.push(queryVecLiteral) : 0;
+        const semExpr = queryVecLiteral
+          ? `COALESCE(GREATEST(0, 1 - (${table}.${embeddingCol} <=> $${semParamIdx}::vector)), 0)`
+          : `0`;
+        const semWhereOr = queryVecLiteral
+          ? ` OR (${table}.${embeddingCol} IS NOT NULL AND (${table}.${embeddingCol} <=> $${semParamIdx}::vector) < 0.45)`
+          : ``;
         const trgmCombined = trgmExprs.map(e => `similarity(unaccent(coalesce(${e},'')), unaccent($1))`).join(" + ");
         const trgmCount = trgmExprs.length || 1;
-        return `
-          WITH q AS (
-            SELECT websearch_to_tsquery('simple', unaccent($1)) AS tsq
-          )
+        const trgmWhere = trgmExprs.map(e => `unaccent(coalesce(${e},'')) %> unaccent($1)`).join(" OR ");
+        const sqlText = `
+          WITH q AS (SELECT websearch_to_tsquery('simple', unaccent($1)) AS tsq)
           SELECT
             '${type}' AS type,
             ${idCol} AS id,
@@ -22832,117 +22837,103 @@ Rules:
                 COALESCE(ts_rank(${table}.search_vector, (SELECT tsq FROM q)), 0) * 4,
                 ((${trgmCombined}) / ${trgmCount})
               )
-              + ${semCoeff} * ${semExpr(`${table}.${embeddingCol}`)}
+              + ${semCoeff} * ${semExpr}
             ) AS score,
-            ${metaCols} AS meta
+            ${metaExpr} AS meta
           FROM ${table}
           WHERE (
             ${table}.search_vector @@ (SELECT tsq FROM q)
-            OR ${trgmExprs.map(e => `unaccent(coalesce(${e},'')) %> unaccent($1)`).join(" OR ")}
-            ${queryVecLiteral ? `OR (${table}.${embeddingCol} IS NOT NULL AND (${table}.${embeddingCol} <=> '${queryVecLiteral}'::vector) < 0.45)` : ""}
+            OR ${trgmWhere}
+            ${semWhereOr}
           )
           ${extraFilter}
           ORDER BY score DESC
-          LIMIT ${limit}
+          LIMIT ${Math.max(1, Math.floor(limit))}
         `;
+        try {
+          const result = await pgPool.query(sqlText, params);
+          allHits.push(...(result.rows as Hit[]));
+        } catch (e) {
+          console.error(`[labs/search] ${type} branch failed:`, e instanceof Error ? e.message : e);
+        }
       };
 
+      const branches: Promise<void>[] = [];
+
       if (wantWhisky) {
-        try {
-          let visFilter = "";
-          if (!isMember) {
-            if (visibleTastingIds && visibleTastingIds.length > 0) {
-              const inList = visibleTastingIds.map(id => `'${id.replace(/'/g, "''")}'`).join(",");
-              visFilter = `AND whiskies.tasting_id IN (${inList})`;
-            } else if (visibleTastingIds) {
-              visFilter = `AND FALSE`;
-            }
+        let visFilter = "";
+        const visParams: unknown[] = [];
+        if (!isMember) {
+          if (visibleTastingIds && visibleTastingIds.length > 0) {
+            visParams.push(visibleTastingIds);
+            visFilter = `AND whiskies.tasting_id = ANY($${1 + visParams.length}::uuid[])`;
+          } else if (visibleTastingIds) {
+            visFilter = `AND FALSE`;
           }
-          const sqlText = buildSelect(
-            "whisky", "whiskies", "whiskies.id",
-            `whiskies.name`,
-            `concat_ws(' \u2022 ', whiskies.distillery, whiskies.region, whiskies.age)`,
-            `left(coalesce(whiskies.notes, whiskies.host_summary, whiskies.host_notes, ''), 160)`,
-            ["whiskies.name", "whiskies.distillery", "whiskies.region", "whiskies.cask_type", "whiskies.peat_level", "whiskies.bottler"],
-            "embedding",
-            visFilter,
-            `jsonb_build_object('imageUrl', whiskies.image_url, 'tastingId', whiskies.tasting_id, 'region', whiskies.region, 'distillery', whiskies.distillery, 'caskType', whiskies.cask_type, 'peatLevel', whiskies.peat_level)`,
-            limitPerType,
-          );
-          const result = await dbInst.execute(sqlTag.raw(sqlText.replace(/\$1/g, `'${rawQ.replace(/'/g, "''")}'`)));
-          const rows = ((result as any).rows ?? result) as Hit[];
-          allHits.push(...rows);
-        } catch (e) {
-          console.error("[labs/search] whisky branch failed:", e instanceof Error ? e.message : e);
         }
+        branches.push(buildAndRun(
+          "whisky", "whiskies", "whiskies.id",
+          `whiskies.name`,
+          `concat_ws(' \u2022 ', whiskies.distillery, whiskies.region, whiskies.age)`,
+          `left(coalesce(whiskies.notes, whiskies.host_summary, whiskies.host_notes, ''), 160)`,
+          ["whiskies.name", "whiskies.distillery", "whiskies.region", "whiskies.cask_type", "whiskies.peat_level", "whiskies.bottler"],
+          "embedding",
+          visFilter,
+          visParams,
+          `jsonb_build_object('imageUrl', whiskies.image_url, 'tastingId', whiskies.tasting_id, 'region', whiskies.region, 'distillery', whiskies.distillery, 'caskType', whiskies.cask_type, 'peatLevel', whiskies.peat_level)`,
+          limitPerType,
+        ));
       }
 
       if (wantTasting) {
-        try {
-          let visFilter = "";
-          if (!isMember) {
-            visFilter = `AND tastings.visibility IN ('public','group') AND tastings.status IN ('open','closed','reveal','archived')`;
-          }
-          const sqlText = buildSelect(
-            "tasting", "tastings", "tastings.id",
-            `tastings.title`,
-            `concat_ws(' \u2022 ', tastings.location, tastings.date, tastings.status)`,
-            `left(coalesce(tastings.host_reflection, tastings.ai_narrative, ''), 160)`,
-            ["tastings.title", "tastings.location"],
-            "embedding",
-            visFilter,
-            `jsonb_build_object('date', tastings.date, 'location', tastings.location, 'status', tastings.status, 'visibility', tastings.visibility, 'code', tastings.code)`,
-            limitPerType,
-          );
-          const result = await dbInst.execute(sqlTag.raw(sqlText.replace(/\$1/g, `'${rawQ.replace(/'/g, "''")}'`)));
-          const rows = ((result as any).rows ?? result) as Hit[];
-          allHits.push(...rows);
-        } catch (e) {
-          console.error("[labs/search] tasting branch failed:", e instanceof Error ? e.message : e);
-        }
+        const visFilter = isMember
+          ? ""
+          : `AND tastings.visibility IN ('public','group') AND tastings.status IN ('open','closed','reveal','archived')`;
+        branches.push(buildAndRun(
+          "tasting", "tastings", "tastings.id",
+          `tastings.title`,
+          `concat_ws(' \u2022 ', tastings.location, tastings.date, tastings.status)`,
+          `left(coalesce(tastings.host_reflection, tastings.ai_narrative, ''), 160)`,
+          ["tastings.title", "tastings.location"],
+          "embedding",
+          visFilter,
+          [],
+          `jsonb_build_object('date', tastings.date, 'location', tastings.location, 'status', tastings.status, 'visibility', tastings.visibility, 'code', tastings.code)`,
+          limitPerType,
+        ));
       }
 
       if (wantDistillery) {
-        try {
-          const sqlText = buildSelect(
-            "distillery", "distilleries", "distilleries.id",
-            `distilleries.name`,
-            `concat_ws(' \u2022 ', distilleries.region, distilleries.country, distilleries.founded::text)`,
-            `left(coalesce(distilleries.description, distilleries.feature, ''), 160)`,
-            ["distilleries.name", "distilleries.region", "distilleries.country"],
-            "embedding",
-            "",
-            `jsonb_build_object('region', distilleries.region, 'country', distilleries.country, 'founded', distilleries.founded)`,
-            limitPerType,
-          );
-          const result = await dbInst.execute(sqlTag.raw(sqlText.replace(/\$1/g, `'${rawQ.replace(/'/g, "''")}'`)));
-          const rows = ((result as any).rows ?? result) as Hit[];
-          allHits.push(...rows);
-        } catch (e) {
-          console.error("[labs/search] distillery branch failed:", e instanceof Error ? e.message : e);
-        }
+        branches.push(buildAndRun(
+          "distillery", "distilleries", "distilleries.id",
+          `distilleries.name`,
+          `concat_ws(' \u2022 ', distilleries.region, distilleries.country, distilleries.founded::text)`,
+          `left(coalesce(distilleries.description, distilleries.feature, ''), 160)`,
+          ["distilleries.name", "distilleries.region", "distilleries.country"],
+          "embedding",
+          "",
+          [],
+          `jsonb_build_object('region', distilleries.region, 'country', distilleries.country, 'founded', distilleries.founded)`,
+          limitPerType,
+        ));
       }
 
       if (wantLexicon) {
-        try {
-          const sqlText = buildSelect(
-            "lexicon", "lexicon", "lexicon.id",
-            `lexicon.term`,
-            `lexicon.category`,
-            `left(lexicon.definition, 160)`,
-            ["lexicon.term", "lexicon.definition"],
-            "embedding",
-            `AND lexicon.locale = '${locale}'`,
-            `jsonb_build_object('locale', lexicon.locale, 'category', lexicon.category)`,
-            limitPerType,
-          );
-          const result = await dbInst.execute(sqlTag.raw(sqlText.replace(/\$1/g, `'${rawQ.replace(/'/g, "''")}'`)));
-          const rows = ((result as any).rows ?? result) as Hit[];
-          allHits.push(...rows);
-        } catch (e) {
-          console.error("[labs/search] lexicon branch failed:", e instanceof Error ? e.message : e);
-        }
+        branches.push(buildAndRun(
+          "lexicon", "lexicon", "lexicon.id",
+          `lexicon.term`,
+          `lexicon.category`,
+          `left(lexicon.definition, 160)`,
+          ["lexicon.term", "lexicon.definition"],
+          "embedding",
+          `AND lexicon.locale = $2`,
+          [locale],
+          `jsonb_build_object('locale', lexicon.locale, 'category', lexicon.category)`,
+          limitPerType,
+        ));
       }
+
+      await Promise.all(branches);
 
       const counts = { whisky: 0, tasting: 0, distillery: 0, lexicon: 0 };
       for (const h of allHits) counts[h.type] += 1;

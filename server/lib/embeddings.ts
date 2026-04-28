@@ -9,14 +9,19 @@ let cachedClient: OpenAI | null | undefined;
 
 function getEmbeddingClient(): OpenAI | null {
   if (cachedClient !== undefined) return cachedClient;
-  const platformKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
-  const platformBaseUrl = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
-  if (!platformKey) {
-    cachedClient = null;
-    return null;
+  const directKey = process.env.OPENAI_API_KEY;
+  if (directKey) {
+    cachedClient = new OpenAI({ apiKey: directKey });
+    return cachedClient;
   }
-  cachedClient = new OpenAI({ apiKey: platformKey, baseURL: platformBaseUrl });
-  return cachedClient;
+  const platformKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+  const platformBaseUrl = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
+  if (platformKey) {
+    cachedClient = new OpenAI({ apiKey: platformKey, baseURL: platformBaseUrl });
+    return cachedClient;
+  }
+  cachedClient = null;
+  return null;
 }
 
 export function isEmbeddingAvailable(): boolean {
