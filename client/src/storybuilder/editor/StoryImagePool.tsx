@@ -720,7 +720,9 @@ export function StoryImagePool({
               <div style={{ color: "#A89A85", padding: 24 }}>Lade Bilder…</div>
             ) : filtered.length === 0 ? (
               <div style={{ color: "#A89A85", padding: 24, gridColumn: "1 / -1", textAlign: "center" }}>
-                Keine Bilder im Pool. Lade ein Bild hoch.
+                {mode === "pick"
+                  ? "Keine Bilder im Pool. Im Verwalten-Modus zuerst Bilder hochladen."
+                  : "Keine Bilder im Pool. Lade ein Bild hoch."}
               </div>
             ) : (
               filtered.map((it) => {
