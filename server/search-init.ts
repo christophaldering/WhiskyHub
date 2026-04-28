@@ -1,0 +1,166 @@
+import { sql } from "drizzle-orm";
+import { db } from "./db";
+import { lexicon } from "@shared/schema";
+import { lexiconData } from "../client/src/labs/data/lexiconData";
+
+const SEARCH_TABLES = [
+  {
+    table: "whiskies",
+    triggerName: "trg_whiskies_search_vector",
+    funcName: "whiskies_search_vector_update",
+    searchExpr: `setweight(to_tsvector('simple', unaccent(coalesce(NEW.name,''))), 'A')
+      || setweight(to_tsvector('simple', unaccent(coalesce(NEW.distillery,''))), 'A')
+      || setweight(to_tsvector('simple', unaccent(coalesce(NEW.region,''))), 'B')
+      || setweight(to_tsvector('simple', unaccent(coalesce(NEW.country,''))), 'B')
+      || setweight(to_tsvector('simple', unaccent(coalesce(NEW.category,''))), 'B')
+      || setweight(to_tsvector('simple', unaccent(coalesce(NEW.type,''))), 'B')
+      || setweight(to_tsvector('simple', unaccent(coalesce(NEW.cask_type,''))), 'B')
+      || setweight(to_tsvector('simple', unaccent(coalesce(NEW.peat_level,''))), 'B')
+      || setweight(to_tsvector('simple', unaccent(coalesce(NEW.bottler,''))), 'B')
+      || setweight(to_tsvector('simple', unaccent(coalesce(NEW.flavor_profile,''))), 'B')
+      || setweight(to_tsvector('simple', unaccent(coalesce(NEW.notes,''))), 'C')
+      || setweight(to_tsvector('simple', unaccent(coalesce(NEW.host_notes,''))), 'C')
+      || setweight(to_tsvector('simple', unaccent(coalesce(NEW.host_summary,''))), 'C')
+      || setweight(to_tsvector('simple', unaccent(coalesce(NEW.age,''))), 'D')`,
+  },
+  {
+    table: "tastings",
+    triggerName: "trg_tastings_search_vector",
+    funcName: "tastings_search_vector_update",
+    searchExpr: `setweight(to_tsvector('simple', unaccent(coalesce(NEW.title,''))), 'A')
+      || setweight(to_tsvector('simple', unaccent(coalesce(NEW.location,''))), 'B')
+      || setweight(to_tsvector('simple', unaccent(coalesce(NEW.host_reflection,''))), 'C')
+      || setweight(to_tsvector('simple', unaccent(coalesce(NEW.ai_narrative,''))), 'D')`,
+  },
+  {
+    table: "distilleries",
+    triggerName: "trg_distilleries_search_vector",
+    funcName: "distilleries_search_vector_update",
+    searchExpr: `setweight(to_tsvector('simple', unaccent(coalesce(NEW.name,''))), 'A')
+      || setweight(to_tsvector('simple', unaccent(coalesce(NEW.region,''))), 'B')
+      || setweight(to_tsvector('simple', unaccent(coalesce(NEW.country,''))), 'B')
+      || setweight(to_tsvector('simple', unaccent(coalesce(NEW.description,''))), 'C')
+      || setweight(to_tsvector('simple', unaccent(coalesce(NEW.feature,''))), 'D')`,
+  },
+  {
+    table: "lexicon",
+    triggerName: "trg_lexicon_search_vector",
+    funcName: "lexicon_search_vector_update",
+    searchExpr: `setweight(to_tsvector('simple', unaccent(coalesce(NEW.term,''))), 'A')
+      || setweight(to_tsvector('simple', unaccent(coalesce(NEW.category,''))), 'B')
+      || setweight(to_tsvector('simple', unaccent(coalesce(NEW.definition,''))), 'C')`,
+  },
+];
+
+const TRGM_INDEXES: { table: string; indexName: string; columns: string[] }[] = [
+  { table: "whiskies", indexName: "idx_whiskies_name_trgm", columns: ["name"] },
+  { table: "whiskies", indexName: "idx_whiskies_distillery_trgm", columns: ["distillery"] },
+  { table: "tastings", indexName: "idx_tastings_title_trgm", columns: ["title"] },
+  { table: "distilleries", indexName: "idx_distilleries_name_trgm", columns: ["name"] },
+  { table: "lexicon", indexName: "idx_lexicon_term_trgm", columns: ["term"] },
+];
+
+async function ensureExtensions(): Promise<void> {
+  await db.execute(sql.raw(`CREATE EXTENSION IF NOT EXISTS pg_trgm`));
+  await db.execute(sql.raw(`CREATE EXTENSION IF NOT EXISTS unaccent`));
+  try {
+    await db.execute(sql.raw(`CREATE EXTENSION IF NOT EXISTS vector`));
+  } catch (e) {
+    console.warn("[search-init] pgvector extension unavailable:", e instanceof Error ? e.message : e);
+  }
+}
+
+async function ensureColumns(): Promise<void> {
+  for (const t of SEARCH_TABLES) {
+    await db.execute(sql.raw(`ALTER TABLE "${t.table}" ADD COLUMN IF NOT EXISTS search_vector tsvector`));
+    try {
+      await db.execute(sql.raw(`ALTER TABLE "${t.table}" ADD COLUMN IF NOT EXISTS embedding vector(1536)`));
+    } catch (e) {
+      console.warn(`[search-init] could not add embedding column to ${t.table}:`, e instanceof Error ? e.message : e);
+    }
+  }
+}
+
+async function ensureTriggers(): Promise<void> {
+  for (const t of SEARCH_TABLES) {
+    const fnSql = `CREATE OR REPLACE FUNCTION ${t.funcName}() RETURNS trigger AS $$
+BEGIN
+  NEW.search_vector := ${t.searchExpr};
+  RETURN NEW;
+END
+$$ LANGUAGE plpgsql`;
+    await db.execute(sql.raw(fnSql));
+    await db.execute(sql.raw(`DROP TRIGGER IF EXISTS ${t.triggerName} ON "${t.table}"`));
+    await db.execute(sql.raw(`CREATE TRIGGER ${t.triggerName} BEFORE INSERT OR UPDATE ON "${t.table}" FOR EACH ROW EXECUTE FUNCTION ${t.funcName}()`));
+  }
+}
+
+async function ensureIndexes(): Promise<void> {
+  for (const t of SEARCH_TABLES) {
+    await db.execute(sql.raw(`CREATE INDEX IF NOT EXISTS idx_${t.table}_search_vector ON "${t.table}" USING GIN (search_vector)`));
+  }
+  for (const idx of TRGM_INDEXES) {
+    const cols = idx.columns.map((c) => `"${c}" gin_trgm_ops`).join(", ");
+    await db.execute(sql.raw(`CREATE INDEX IF NOT EXISTS ${idx.indexName} ON "${idx.table}" USING GIN (${cols})`));
+  }
+  for (const t of SEARCH_TABLES) {
+    try {
+      await db.execute(sql.raw(`CREATE INDEX IF NOT EXISTS idx_${t.table}_embedding ON "${t.table}" USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)`));
+    } catch (e) {
+      // pgvector may not be installed; ignore
+    }
+  }
+}
+
+async function backfillSearchVectors(): Promise<void> {
+  for (const t of SEARCH_TABLES) {
+    try {
+      await db.execute(sql.raw(`UPDATE "${t.table}" SET search_vector = ${t.searchExpr.replace(/NEW\./g, `"${t.table}".`)} WHERE search_vector IS NULL`));
+    } catch (e) {
+      console.warn(`[search-init] backfillSearchVectors(${t.table}) failed:`, e instanceof Error ? e.message : e);
+    }
+  }
+}
+
+async function seedLexicon(): Promise<void> {
+  const existing = await db.select({ id: lexicon.id }).from(lexicon).limit(1);
+  if (existing.length > 0) return;
+
+  const rows: { locale: string; category: string; term: string; definition: string; sortOrder: number }[] = [];
+  for (const locale of Object.keys(lexiconData)) {
+    const categories = lexiconData[locale];
+    let order = 0;
+    for (const cat of categories) {
+      for (const entry of cat.entries) {
+        rows.push({
+          locale,
+          category: cat.key,
+          term: entry.term,
+          definition: entry.definition,
+          sortOrder: order++,
+        });
+      }
+    }
+  }
+  if (rows.length === 0) return;
+  await db.insert(lexicon).values(rows).onConflictDoNothing();
+  console.log(`[search-init] seeded lexicon with ${rows.length} entries`);
+}
+
+let initialized = false;
+
+export async function initSearchInfrastructure(): Promise<void> {
+  if (initialized) return;
+  initialized = true;
+  try {
+    await ensureExtensions();
+    await ensureColumns();
+    await ensureTriggers();
+    await ensureIndexes();
+    await backfillSearchVectors();
+    await seedLexicon();
+    console.log("[search-init] search infrastructure ready");
+  } catch (e) {
+    console.error("[search-init] initialization failed:", e instanceof Error ? e.message : e);
+  }
+}

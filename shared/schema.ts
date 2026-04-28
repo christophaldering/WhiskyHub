@@ -1256,6 +1256,23 @@ export const insertDistilleryAliasSchema = createInsertSchema(distilleryAliases)
 export type InsertDistilleryAlias = z.infer<typeof insertDistilleryAliasSchema>;
 export type DistilleryAlias = typeof distilleryAliases.$inferSelect;
 
+// --- Lexicon (whisky encyclopedia entries; locale aware) ---
+export const lexicon = pgTable("lexicon", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  locale: text("locale").notNull(),
+  category: text("category").notNull(),
+  term: text("term").notNull(),
+  definition: text("definition").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+}, (t) => ({
+  localeIdx: index("idx_lexicon_locale").on(t.locale),
+  localeTermUnique: uniqueIndex("idx_lexicon_locale_term_unique").on(t.locale, t.term),
+}));
+
+export const insertLexiconSchema = createInsertSchema(lexicon).omit({ id: true });
+export type InsertLexicon = z.infer<typeof insertLexiconSchema>;
+export type LexiconRow = typeof lexicon.$inferSelect;
+
 // --- Bottlers (encyclopedia of independent bottlers) ---
 export const bottlers = pgTable("bottlers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

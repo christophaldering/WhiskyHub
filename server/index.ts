@@ -401,6 +401,9 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
 
 (async () => {
   try {
+    const { initSearchInfrastructure } = await import("./search-init");
+    initSearchInfrastructure().catch((e) => console.error("[search-init] background init error:", e));
+
     await registerRoutes(httpServer, app);
 
     app.use((err: any, _req: Request, res: Response, next: NextFunction) => {

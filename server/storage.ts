@@ -1,5 +1,6 @@
 import { eq, ne, and, or, asc, desc, sql, inArray, gte, isNull, isNotNull, lt, type SQL } from "drizzle-orm";
 import { db } from "./db";
+import { fireAndForgetEmbed } from "./lib/embeddings";
 import { markJournalUpdated } from "./whiskyDnaCache";
 import { canonicalizeDistilleryName } from "@shared/distillery-normalizer";
 import { clampNormalized } from "@shared/score-utils";
@@ -1022,6 +1023,7 @@ export class DatabaseStorage implements IStorage {
 
   async createTasting(data: InsertTasting): Promise<Tasting> {
     const [result] = await db.insert(tastings).values(data).returning();
+    if (result?.id) fireAndForgetEmbed("tastings", result.id);
     return result;
   }
 
@@ -1591,11 +1593,13 @@ export class DatabaseStorage implements IStorage {
 
   async createWhisky(data: InsertWhisky): Promise<Whisky> {
     const [result] = await db.insert(whiskies).values(data).returning();
+    if (result?.id) fireAndForgetEmbed("whiskies", result.id);
     return result;
   }
 
   async updateWhisky(id: string, data: Partial<InsertWhisky>): Promise<Whisky | undefined> {
     const [result] = await db.update(whiskies).set(data).where(eq(whiskies.id, id)).returning();
+    if (result?.id) fireAndForgetEmbed("whiskies", result.id);
     return result;
   }
 
@@ -1844,6 +1848,7 @@ export class DatabaseStorage implements IStorage {
         status: "active",
       } as InsertDistillery)
       .returning();
+    if (created?.id) fireAndForgetEmbed("distilleries", created.id);
     return { distillery: created, created: true };
   }
 

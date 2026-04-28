@@ -22747,6 +22747,220 @@ Rules:
     }
   });
 
+  app.get("/api/labs/search", async (req: Request, res: Response) => {
+    try {
+      const rawQ = (req.query.q as string || "").trim();
+      const locale = (req.query.locale as string || "en").toLowerCase().startsWith("de") ? "de" : "en";
+      const requestedTypes = (req.query.types as string || "whisky,tasting,distillery,lexicon")
+        .split(",").map(s => s.trim()).filter(Boolean);
+      const limitPerType = Math.min(parseInt(req.query.limit as string) || 6, 20);
+
+      if (rawQ.length < 2) {
+        return res.json({ query: rawQ, results: [], counts: { whisky: 0, tasting: 0, distillery: 0, lexicon: 0 } });
+      }
+
+      const { isAdmin, communityIds } = await getRequesterInfo(req);
+      const isMember = isAdmin || communityIds.length > 0;
+
+      const { db: dbInst } = await import("./db");
+      const { sql: sqlTag } = await import("drizzle-orm");
+      const { getQueryEmbedding, vectorLiteral, isEmbeddingAvailable } = await import("./lib/embeddings");
+
+      let queryVecLiteral: string | null = null;
+      if (isEmbeddingAvailable()) {
+        const vec = await getQueryEmbedding(rawQ).catch(() => null);
+        if (vec && vec.length > 0) queryVecLiteral = vectorLiteral(vec);
+      }
+
+      const wantWhisky = requestedTypes.includes("whisky");
+      const wantTasting = requestedTypes.includes("tasting");
+      const wantDistillery = requestedTypes.includes("distillery");
+      const wantLexicon = requestedTypes.includes("lexicon");
+
+      let visibleTastingIds: string[] | null = null;
+      if (!isMember && (wantTasting || wantWhisky)) {
+        const visTastings = await dbInst.execute(sqlTag.raw(`SELECT id FROM tastings WHERE visibility IN ('public','group') AND status IN ('open','closed','reveal','archived')`));
+        const visRows = ((visTastings as any).rows ?? visTastings) as { id: string }[];
+        visibleTastingIds = visRows.map(r => r.id);
+      }
+
+      const lexCoeff = 0.6;
+      const semCoeff = 0.4;
+      const semExpr = (col: string) => queryVecLiteral
+        ? `COALESCE(GREATEST(0, 1 - (${col} <=> '${queryVecLiteral}'::vector)), 0)`
+        : `0`;
+
+      type Hit = {
+        type: "whisky" | "tasting" | "distillery" | "lexicon";
+        id: string;
+        title: string;
+        subtitle: string | null;
+        snippet: string | null;
+        score: number;
+        meta: Record<string, unknown>;
+      };
+
+      const allHits: Hit[] = [];
+
+      const buildSelect = (
+        type: Hit["type"],
+        table: string,
+        idCol: string,
+        titleExpr: string,
+        subtitleExpr: string,
+        snippetExpr: string,
+        trgmExprs: string[],
+        embeddingCol: string,
+        extraFilter: string,
+        metaCols: string,
+        limit: number,
+      ) => {
+        const trgmCombined = trgmExprs.map(e => `similarity(unaccent(coalesce(${e},'')), unaccent($1))`).join(" + ");
+        const trgmCount = trgmExprs.length || 1;
+        return `
+          WITH q AS (
+            SELECT websearch_to_tsquery('simple', unaccent($1)) AS tsq
+          )
+          SELECT
+            '${type}' AS type,
+            ${idCol} AS id,
+            ${titleExpr} AS title,
+            ${subtitleExpr} AS subtitle,
+            ${snippetExpr} AS snippet,
+            (
+              ${lexCoeff} * GREATEST(
+                COALESCE(ts_rank(${table}.search_vector, (SELECT tsq FROM q)), 0) * 4,
+                ((${trgmCombined}) / ${trgmCount})
+              )
+              + ${semCoeff} * ${semExpr(`${table}.${embeddingCol}`)}
+            ) AS score,
+            ${metaCols} AS meta
+          FROM ${table}
+          WHERE (
+            ${table}.search_vector @@ (SELECT tsq FROM q)
+            OR ${trgmExprs.map(e => `unaccent(coalesce(${e},'')) %> unaccent($1)`).join(" OR ")}
+            ${queryVecLiteral ? `OR (${table}.${embeddingCol} IS NOT NULL AND (${table}.${embeddingCol} <=> '${queryVecLiteral}'::vector) < 0.45)` : ""}
+          )
+          ${extraFilter}
+          ORDER BY score DESC
+          LIMIT ${limit}
+        `;
+      };
+
+      if (wantWhisky) {
+        try {
+          let visFilter = "";
+          if (!isMember) {
+            if (visibleTastingIds && visibleTastingIds.length > 0) {
+              const inList = visibleTastingIds.map(id => `'${id.replace(/'/g, "''")}'`).join(",");
+              visFilter = `AND whiskies.tasting_id IN (${inList})`;
+            } else if (visibleTastingIds) {
+              visFilter = `AND FALSE`;
+            }
+          }
+          const sqlText = buildSelect(
+            "whisky", "whiskies", "whiskies.id",
+            `whiskies.name`,
+            `concat_ws(' \u2022 ', whiskies.distillery, whiskies.region, whiskies.age)`,
+            `left(coalesce(whiskies.notes, whiskies.host_summary, whiskies.host_notes, ''), 160)`,
+            ["whiskies.name", "whiskies.distillery", "whiskies.region", "whiskies.cask_type", "whiskies.peat_level", "whiskies.bottler"],
+            "embedding",
+            visFilter,
+            `jsonb_build_object('imageUrl', whiskies.image_url, 'tastingId', whiskies.tasting_id, 'region', whiskies.region, 'distillery', whiskies.distillery, 'caskType', whiskies.cask_type, 'peatLevel', whiskies.peat_level)`,
+            limitPerType,
+          );
+          const result = await dbInst.execute(sqlTag.raw(sqlText.replace(/\$1/g, `'${rawQ.replace(/'/g, "''")}'`)));
+          const rows = ((result as any).rows ?? result) as Hit[];
+          allHits.push(...rows);
+        } catch (e) {
+          console.error("[labs/search] whisky branch failed:", e instanceof Error ? e.message : e);
+        }
+      }
+
+      if (wantTasting) {
+        try {
+          let visFilter = "";
+          if (!isMember) {
+            visFilter = `AND tastings.visibility IN ('public','group') AND tastings.status IN ('open','closed','reveal','archived')`;
+          }
+          const sqlText = buildSelect(
+            "tasting", "tastings", "tastings.id",
+            `tastings.title`,
+            `concat_ws(' \u2022 ', tastings.location, tastings.date, tastings.status)`,
+            `left(coalesce(tastings.host_reflection, tastings.ai_narrative, ''), 160)`,
+            ["tastings.title", "tastings.location"],
+            "embedding",
+            visFilter,
+            `jsonb_build_object('date', tastings.date, 'location', tastings.location, 'status', tastings.status, 'visibility', tastings.visibility, 'code', tastings.code)`,
+            limitPerType,
+          );
+          const result = await dbInst.execute(sqlTag.raw(sqlText.replace(/\$1/g, `'${rawQ.replace(/'/g, "''")}'`)));
+          const rows = ((result as any).rows ?? result) as Hit[];
+          allHits.push(...rows);
+        } catch (e) {
+          console.error("[labs/search] tasting branch failed:", e instanceof Error ? e.message : e);
+        }
+      }
+
+      if (wantDistillery) {
+        try {
+          const sqlText = buildSelect(
+            "distillery", "distilleries", "distilleries.id",
+            `distilleries.name`,
+            `concat_ws(' \u2022 ', distilleries.region, distilleries.country, distilleries.founded::text)`,
+            `left(coalesce(distilleries.description, distilleries.feature, ''), 160)`,
+            ["distilleries.name", "distilleries.region", "distilleries.country"],
+            "embedding",
+            "",
+            `jsonb_build_object('region', distilleries.region, 'country', distilleries.country, 'founded', distilleries.founded)`,
+            limitPerType,
+          );
+          const result = await dbInst.execute(sqlTag.raw(sqlText.replace(/\$1/g, `'${rawQ.replace(/'/g, "''")}'`)));
+          const rows = ((result as any).rows ?? result) as Hit[];
+          allHits.push(...rows);
+        } catch (e) {
+          console.error("[labs/search] distillery branch failed:", e instanceof Error ? e.message : e);
+        }
+      }
+
+      if (wantLexicon) {
+        try {
+          const sqlText = buildSelect(
+            "lexicon", "lexicon", "lexicon.id",
+            `lexicon.term`,
+            `lexicon.category`,
+            `left(lexicon.definition, 160)`,
+            ["lexicon.term", "lexicon.definition"],
+            "embedding",
+            `AND lexicon.locale = '${locale}'`,
+            `jsonb_build_object('locale', lexicon.locale, 'category', lexicon.category)`,
+            limitPerType,
+          );
+          const result = await dbInst.execute(sqlTag.raw(sqlText.replace(/\$1/g, `'${rawQ.replace(/'/g, "''")}'`)));
+          const rows = ((result as any).rows ?? result) as Hit[];
+          allHits.push(...rows);
+        } catch (e) {
+          console.error("[labs/search] lexicon branch failed:", e instanceof Error ? e.message : e);
+        }
+      }
+
+      const counts = { whisky: 0, tasting: 0, distillery: 0, lexicon: 0 };
+      for (const h of allHits) counts[h.type] += 1;
+
+      res.json({
+        query: rawQ,
+        locale,
+        embeddingUsed: queryVecLiteral !== null,
+        counts,
+        results: allHits.sort((a, b) => Number(b.score) - Number(a.score)),
+      });
+    } catch (e: unknown) {
+      console.error("[labs/search] failed:", e);
+      const msg = e instanceof Error ? e.message : "Internal error";
+      res.status(500).json({ message: msg });
+    }
+  });
+
   app.post("/api/labs/flavour-assist", async (req, res) => {
     try {
       const bodySchema = z.object({
