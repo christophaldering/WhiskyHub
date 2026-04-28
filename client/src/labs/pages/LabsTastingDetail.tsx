@@ -1,5 +1,5 @@
 import type * as React from "react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useSearch, Link } from "wouter";
@@ -77,6 +77,8 @@ type DetailSectionKey =
   | "persoenlich"
   | "host-aktionen"
   | "downloads";
+
+const LABS_HEADER_HEIGHT_PX = 52;
 
 const DETAIL_SECTION_KEYS: readonly DetailSectionKey[] = [
   "rueckblick",
@@ -611,6 +613,41 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
     return () => window.removeEventListener("labs-tasting-detail-set-section", handler);
   }, [isHost]);
 
+  const tileMenuSentinelRef = useRef<HTMLDivElement | null>(null);
+  const stickyPillsScrollerRef = useRef<HTMLDivElement | null>(null);
+  const [showStickyPills, setShowStickyPills] = useState(false);
+
+  useEffect(() => {
+    if (!showSectionMenu) {
+      setShowStickyPills(false);
+      return;
+    }
+    const sentinel = tileMenuSentinelRef.current;
+    if (!sentinel || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry) return;
+        const above = entry.boundingClientRect.top < LABS_HEADER_HEIGHT_PX;
+        setShowStickyPills(!entry.isIntersecting && above);
+      },
+      { threshold: 0, rootMargin: `-${LABS_HEADER_HEIGHT_PX}px 0px 0px 0px` },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [showSectionMenu]);
+
+  useEffect(() => {
+    if (!showStickyPills || !activeSection) return;
+    const scroller = stickyPillsScrollerRef.current;
+    if (!scroller) return;
+    const target = scroller.querySelector<HTMLElement>(
+      `[data-pill-key="${activeSection}"]`,
+    );
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    }
+  }, [showStickyPills, activeSection]);
+
   // ----- Mini status bar / collapsed-section helpers ----------------------
   const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
   const onlineParticipantCount = (() => {
@@ -963,9 +1000,8 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
       )}
 
       {showSectionMenu && (() => {
-        const detailSectionTiles: HubTileDef[] = DETAIL_SECTION_TILES
-          .filter((tile) => !tile.hostOnly || isHost)
-          .map(({ key, hostOnly, ...rest }) => rest);
+        const visibleTiles = DETAIL_SECTION_TILES.filter((tile) => !tile.hostOnly || isHost);
+        const detailSectionTiles: HubTileDef[] = visibleTiles.map(({ key, hostOnly, ...rest }) => rest);
         const handleSectionTile = (tile: HubTileDef) => {
           const key = tile.testId.replace("detail-jump-", "");
           if (!isDetailSectionKey(key)) return;
@@ -973,16 +1009,43 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         };
         const activeTestId = activeSection ? `detail-jump-${activeSection}` : undefined;
         return (
-          <div className="mb-4 labs-fade-in labs-detail-section-menu" data-testid="detail-jump-bar">
-            <HubTileGrid
-              tiles={detailSectionTiles}
-              t={(key, fallback) => t(key, fallback)}
-              variant="single-row"
-              role="filter"
-              onTileClick={handleSectionTile}
-              activeTestId={activeTestId}
-            />
-          </div>
+          <>
+            <div className="mb-4 labs-fade-in labs-detail-section-menu" data-testid="detail-jump-bar">
+              <HubTileGrid
+                tiles={detailSectionTiles}
+                t={(key, fallback) => t(key, fallback)}
+                variant="single-row"
+                role="filter"
+                onTileClick={handleSectionTile}
+                activeTestId={activeTestId}
+              />
+            </div>
+            <div ref={tileMenuSentinelRef} aria-hidden="true" style={{ height: 1, marginTop: -1 }} />
+            {showStickyPills && (
+              <div className="labs-detail-sticky-pills labs-fade-in" data-testid="detail-sticky-pill-bar">
+                <div className="labs-detail-sticky-pills-inner" ref={stickyPillsScrollerRef}>
+                  {visibleTiles.map((tile) => {
+                    const Icon = tile.icon;
+                    const active = activeSection === tile.key;
+                    return (
+                      <button
+                        key={tile.key}
+                        type="button"
+                        data-pill-key={tile.key}
+                        className={`labs-detail-sticky-pill${active ? " is-active" : ""}`}
+                        onClick={() => setActiveSection((prev) => (prev === tile.key ? null : tile.key))}
+                        aria-pressed={active}
+                        data-testid={`detail-sticky-pill-${tile.key}`}
+                      >
+                        <Icon className="w-3.5 h-3.5" strokeWidth={2} aria-hidden="true" />
+                        <span>{t(tile.labelKey, tile.labelFallback)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </>
         );
       })()}
 
