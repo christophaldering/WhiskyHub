@@ -665,20 +665,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
   const totalParticipantCount = participants?.length ?? 0;
   const offlineParticipantCount = Math.max(0, totalParticipantCount - onlineParticipantCount);
 
-  // "Currently revealing" position (0-based). Prefer guidedWhiskyIndex when guided.
-  const guidedIdx = (tasting as { guidedWhiskyIndex?: number } | undefined)?.guidedWhiskyIndex ?? -1;
-  const fallbackRevealIdx = (tasting as { revealIndex?: number } | undefined)?.revealIndex ?? 0;
-  const isGuidedActive = !!(tasting as { guidedMode?: boolean } | undefined)?.guidedMode && guidedIdx >= 0;
-  const currentRevealPos0 = isGuidedActive ? guidedIdx : fallbackRevealIdx;
-  // Display value (1-based) for the mini status bar.
-  let revealedDisplay = 0;
-  if (totalWhiskyCount > 0) {
-    if (isCompleted) revealedDisplay = totalWhiskyCount;
-    else if (isReveal || isLive) {
-      revealedDisplay = Math.min(totalWhiskyCount, Math.max(0, currentRevealPos0 + 1));
-    }
-  }
-
   // Downloads availability (used both for the participant chip and the
   // existing LabsParticipantDownloads component).
   const downloadsAvailable = (() => {
@@ -954,39 +940,8 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
 
       </div>
 
-      {(isLive || isReveal || isCompleted) && (
-        <div className="mb-4 labs-stagger-2" data-testid="detail-status-bar">
-          <div
-            className="labs-card flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2.5"
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <Wine className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
-              <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }} data-testid="detail-status-bar-revealed">
-                {t("tastingDetail.statusBarRevealed", "Whisky {{current}} / {{total}} enthüllt", {
-                  current: revealedDisplay,
-                  total: totalWhiskyCount,
-                })}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 min-w-0">
-              <span
-                className="w-2 h-2 rounded-full flex-shrink-0"
-                style={{ background: onlineParticipantCount > 0 ? "var(--labs-success, #38a169)" : "var(--labs-text-muted)" }}
-                aria-hidden
-              />
-              <span className="text-sm" style={{ color: "var(--labs-text-muted)" }} data-testid="detail-status-bar-active">
-                {t("tastingDetail.statusBarActive", "{{active}} von {{total}} Tastern aktiv", {
-                  active: onlineParticipantCount,
-                  total: totalParticipantCount,
-                })}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
       {isCompleted && (
-        <div className="mb-4 labs-stagger-3" data-testid="detail-secondary-actions">
+        <div className="mb-4 labs-stagger-2" data-testid="detail-secondary-actions">
           <div className="labs-card overflow-hidden">
             <SecondaryRowAction
               icon={Trophy}
