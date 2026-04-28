@@ -483,7 +483,7 @@ export default function TastingPersonalSection({
   const noPersonalData = summaryData.userAvg == null;
 
   return (
-    <section id="section-persoenlich" className="mb-8 labs-fade-in" data-testid="detail-section-persoenlich" style={{ scrollMarginTop: 80 }}>
+    <section id="section-persoenlich" className="mb-8 labs-fade-in" data-testid="detail-section-persoenlich" style={{ scrollMarginTop: 104 }}>
       <header style={{ marginBottom: 12 }}>
         <h2
           style={{

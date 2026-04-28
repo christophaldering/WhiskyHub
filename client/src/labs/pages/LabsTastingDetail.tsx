@@ -1343,7 +1343,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         const allRevealed = revealIdx >= whiskyCount - 1 && revealStp >= totalSteps;
 
         return (
-          <section id="section-rueckblick" className="mb-8 labs-stagger-4 labs-fade-in" data-testid="detail-section-rueckblick" style={{ scrollMarginTop: 80 }}>
+          <section id="section-rueckblick" className="mb-8 labs-stagger-4 labs-fade-in" data-testid="detail-section-rueckblick" style={{ scrollMarginTop: 104 }}>
             <header style={{ marginBottom: 12, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
               <div>
                 <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", margin: 0, letterSpacing: "0.02em" }}>
@@ -1672,7 +1672,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
           }, 120);
         };
         return (
-          <section id="section-praesentation" className="mb-8 labs-fade-in" data-testid="detail-section-praesentation" style={{ scrollMarginTop: 80 }}>
+          <section id="section-praesentation" className="mb-8 labs-fade-in" data-testid="detail-section-praesentation" style={{ scrollMarginTop: 104 }}>
             <header style={{ marginBottom: 12 }}>
               <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", margin: 0, letterSpacing: "0.02em" }}>
                 {t("resultsUi.sectionPraesentationTitle", "Ergebnis-Präsentation")}
@@ -1880,7 +1880,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
       )}
 
       {(!showSectionMenu || activeSection === "host-aktionen") && isHost && (
-        <section id="section-host-aktionen" className="mb-8 labs-fade-in" data-testid="detail-section-host-aktionen" style={{ scrollMarginTop: 80 }}>
+        <section id="section-host-aktionen" className="mb-8 labs-fade-in" data-testid="detail-section-host-aktionen" style={{ scrollMarginTop: 104 }}>
           <header style={{ marginBottom: 12 }}>
             <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", margin: 0, letterSpacing: "0.02em" }}>
               {t("resultsUi.hostFooterTitle", "Host-Aktionen")}
@@ -2419,7 +2419,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         const showResults = isResultDownloadsPhase(phase);
         const showPrintMaterials = !isHost && downloadsAvailable && !isResultDownloadsPhase(phase);
         return (
-          <div id="section-downloads" className="mb-6" style={{ scrollMarginTop: 80 }} data-testid={`labs-detail-downloads-${phase}`}>
+          <div id="section-downloads" className="mb-6" style={{ scrollMarginTop: 104 }} data-testid={`labs-detail-downloads-${phase}`}>
             {!showResults && (
               <p
                 className="text-xs mb-3"
