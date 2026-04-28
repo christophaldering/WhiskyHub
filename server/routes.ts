@@ -22766,7 +22766,9 @@ Rules:
       const { getQueryEmbedding, vectorLiteral, isEmbeddingAvailable } = await import("./lib/embeddings");
 
       let queryVecLiteral: string | null = null;
-      if (isEmbeddingAvailable()) {
+      const looksLikeId = /^[0-9a-f-]{8,}$/i.test(rawQ) || /^\d+$/.test(rawQ);
+      const eligibleForSemantic = isEmbeddingAvailable() && rawQ.length >= 3 && !looksLikeId;
+      if (eligibleForSemantic) {
         const vec = await getQueryEmbedding(rawQ).catch(() => null);
         if (vec && vec.length > 0) queryVecLiteral = vectorLiteral(vec);
       }

@@ -29,6 +29,7 @@ const SEARCH_TABLES = [
     funcName: "tastings_search_vector_update",
     searchExpr: `setweight(to_tsvector('simple', unaccent(coalesce(NEW.title,''))), 'A')
       || setweight(to_tsvector('simple', unaccent(coalesce(NEW.location,''))), 'B')
+      || setweight(to_tsvector('simple', unaccent(coalesce((SELECT string_agg(coalesce(w.name,'') || ' ' || coalesce(w.distillery,'') || ' ' || coalesce(w.region,''), ' ') FROM whiskies w WHERE w.tasting_id = NEW.id),''))), 'B')
       || setweight(to_tsvector('simple', unaccent(coalesce(NEW.host_reflection,''))), 'C')
       || setweight(to_tsvector('simple', unaccent(coalesce(NEW.ai_narrative,''))), 'D')`,
   },
@@ -70,14 +71,60 @@ async function ensureExtensions(): Promise<void> {
   }
 }
 
+async function ensureLexiconTable(): Promise<void> {
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS "lexicon" (
+      "id" varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      "locale" text NOT NULL,
+      "category" text NOT NULL,
+      "term" text NOT NULL,
+      "definition" text NOT NULL,
+      "sort_order" integer NOT NULL DEFAULT 0,
+      CONSTRAINT lexicon_locale_term_unique UNIQUE (locale, term)
+    )
+  `));
+}
+
 async function ensureColumns(): Promise<void> {
   for (const t of SEARCH_TABLES) {
-    await db.execute(sql.raw(`ALTER TABLE "${t.table}" ADD COLUMN IF NOT EXISTS search_vector tsvector`));
+    try {
+      await db.execute(sql.raw(`ALTER TABLE "${t.table}" ADD COLUMN IF NOT EXISTS search_vector tsvector`));
+    } catch (e) {
+      console.warn(`[search-init] could not add search_vector column to ${t.table}:`, e instanceof Error ? e.message : e);
+    }
     try {
       await db.execute(sql.raw(`ALTER TABLE "${t.table}" ADD COLUMN IF NOT EXISTS embedding vector(1536)`));
     } catch (e) {
       console.warn(`[search-init] could not add embedding column to ${t.table}:`, e instanceof Error ? e.message : e);
     }
+  }
+}
+
+async function ensureWhiskyTriggerOnTasting(): Promise<void> {
+  const fnSql = `CREATE OR REPLACE FUNCTION whiskies_refresh_parent_tasting() RETURNS trigger AS $$
+DECLARE
+  target_id uuid;
+BEGIN
+  IF (TG_OP = 'DELETE') THEN
+    target_id := OLD.tasting_id;
+  ELSE
+    target_id := NEW.tasting_id;
+  END IF;
+  IF target_id IS NOT NULL THEN
+    UPDATE tastings SET title = title WHERE id = target_id;
+  END IF;
+  IF (TG_OP = 'DELETE') THEN
+    RETURN OLD;
+  END IF;
+  RETURN NEW;
+END
+$$ LANGUAGE plpgsql`;
+  try {
+    await db.execute(sql.raw(fnSql));
+    await db.execute(sql.raw(`DROP TRIGGER IF EXISTS trg_whiskies_refresh_parent_tasting ON "whiskies"`));
+    await db.execute(sql.raw(`CREATE TRIGGER trg_whiskies_refresh_parent_tasting AFTER INSERT OR UPDATE OR DELETE ON "whiskies" FOR EACH ROW EXECUTE FUNCTION whiskies_refresh_parent_tasting()`));
+  } catch (e) {
+    console.warn("[search-init] whiskies->tasting refresh trigger failed:", e instanceof Error ? e.message : e);
   }
 }
 
@@ -115,7 +162,9 @@ async function ensureIndexes(): Promise<void> {
 async function backfillSearchVectors(): Promise<void> {
   for (const t of SEARCH_TABLES) {
     try {
-      await db.execute(sql.raw(`UPDATE "${t.table}" SET search_vector = ${t.searchExpr.replace(/NEW\./g, `"${t.table}".`)} WHERE search_vector IS NULL`));
+      const expr = t.searchExpr.replace(/NEW\./g, `"${t.table}".`);
+      const whereClause = t.table === "tastings" ? "" : "WHERE search_vector IS NULL";
+      await db.execute(sql.raw(`UPDATE "${t.table}" SET search_vector = ${expr} ${whereClause}`));
     } catch (e) {
       console.warn(`[search-init] backfillSearchVectors(${t.table}) failed:`, e instanceof Error ? e.message : e);
     }
@@ -154,8 +203,10 @@ export async function initSearchInfrastructure(): Promise<void> {
   initialized = true;
   try {
     await ensureExtensions();
+    await ensureLexiconTable();
     await ensureColumns();
     await ensureTriggers();
+    await ensureWhiskyTriggerOnTasting();
     await ensureIndexes();
     await backfillSearchVectors();
     await seedLexicon();

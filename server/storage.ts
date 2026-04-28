@@ -1182,6 +1182,7 @@ export class DatabaseStorage implements IStorage {
       }
     }
     const [result] = await db.update(tastings).set(patch).where(eq(tastings.id, id)).returning();
+    if (result?.id) fireAndForgetEmbed("tastings", result.id);
     return result;
   }
 
