@@ -541,38 +541,57 @@ export function StoryImagePool({
               Bild-Pool
             </div>
             <div style={{ fontSize: 16, color: "#F5EDE0", marginTop: 4 }}>
-              {mode === "pick" ? "Bild auswählen" : "Bilder verwalten"}
+              {mode === "pick" ? "Bild übernehmen" : "Bilder verwalten"}
             </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              style={primaryBtn}
-              disabled={busy}
-              data-testid={`button-${testIdPrefix}-upload`}
-            >
-              {busy ? "Lädt…" : "Hochladen"}
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-              multiple
-              onChange={(e) => void onPickFiles(e.target.files)}
-              style={{ display: "none" }}
-              data-testid={`fileinput-${testIdPrefix}`}
-            />
-            <button
-              type="button"
-              onClick={() => void aiDescribeAll()}
-              style={ghostBtn}
-              disabled={batchBusy || filtered.length === 0}
-              data-testid={`button-${testIdPrefix}-ai-all`}
-              title="Alle gefilterten Bilder per KI beschreiben (nur leere Felder)"
-            >
-              {batchBusy ? "KI läuft…" : `KI: alle (${filtered.length})`}
-            </button>
+            {mode === "pick" && onPick ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!selected) return;
+                  onPick(selected);
+                }}
+                style={primaryBtn}
+                disabled={!selected}
+                data-testid={`button-${testIdPrefix}-pick-confirm`}
+                title={selected ? "Markiertes Bild übernehmen" : "Erst ein Bild markieren"}
+              >
+                Übernehmen
+              </button>
+            ) : null}
+            {mode === "manage" ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  style={primaryBtn}
+                  disabled={busy}
+                  data-testid={`button-${testIdPrefix}-upload`}
+                >
+                  {busy ? "Lädt…" : "Hochladen"}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                  multiple
+                  onChange={(e) => void onPickFiles(e.target.files)}
+                  style={{ display: "none" }}
+                  data-testid={`fileinput-${testIdPrefix}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => void aiDescribeAll()}
+                  style={ghostBtn}
+                  disabled={batchBusy || filtered.length === 0}
+                  data-testid={`button-${testIdPrefix}-ai-all`}
+                  title="Alle gefilterten Bilder per KI beschreiben (nur leere Felder)"
+                >
+                  {batchBusy ? "KI läuft…" : `KI: alle (${filtered.length})`}
+                </button>
+              </>
+            ) : null}
             <button
               type="button"
               onClick={onClose}
@@ -736,9 +755,15 @@ export function StoryImagePool({
                   <div key={it.id} style={cardStyle(isSelected)} data-testid={`card-${testIdPrefix}-${it.id}`}>
                     <button
                       type="button"
-                      onClick={() => setSelectedId(it.id)}
+                      onClick={() => {
+                        if (mode === "pick" && onPick) {
+                          onPick(it);
+                          return;
+                        }
+                        setSelectedId(it.id);
+                      }}
                       style={cardImageBtn}
-                      title={it.name ?? it.caption ?? ""}
+                      title={mode === "pick" ? `${it.name ?? it.caption ?? ""} – klicken zum Übernehmen` : it.name ?? it.caption ?? ""}
                       data-testid={`button-${testIdPrefix}-select-${it.id}`}
                     >
                       <img
@@ -830,7 +855,7 @@ export function StoryImagePool({
                         style={pickBtn}
                         data-testid={`button-${testIdPrefix}-pick-${it.id}`}
                       >
-                        Auswählen
+                        Übernehmen
                       </button>
                     ) : null}
                   </div>
@@ -839,7 +864,16 @@ export function StoryImagePool({
             )}
           </div>
           <aside style={inspectorStyle} data-testid={`inspector-${testIdPrefix}`}>
-            {selected ? (
+            {mode === "pick" && onPick ? (
+              <PickPreview
+                item={selected}
+                onConfirm={() => {
+                  if (!selected) return;
+                  onPick(selected);
+                }}
+                testIdPrefix={`${testIdPrefix}-pick-preview`}
+              />
+            ) : selected ? (
               <ImageInspector
                 key={selected.id}
                 item={selected}
@@ -1336,6 +1370,66 @@ function ImageInspector({
           Speichern
         </button>
       </div>
+    </div>
+  );
+}
+
+type PickPreviewProps = {
+  item: TastingStoryImageItem | null;
+  onConfirm: () => void;
+  testIdPrefix: string;
+};
+
+function PickPreview({ item, onConfirm, testIdPrefix }: PickPreviewProps) {
+  if (!item) {
+    return (
+      <div style={{ display: "grid", gap: 10, padding: 12 }} data-testid={`${testIdPrefix}-empty`}>
+        <div style={{ fontSize: 11, letterSpacing: ".25em", textTransform: "uppercase", color: "#C9A961" }}>
+          Bild übernehmen
+        </div>
+        <div style={{ fontSize: 13, color: "#A89A85", lineHeight: 1.5 }}>
+          Klicke links auf ein Bild, um es direkt in den Block zu übernehmen.
+        </div>
+        <div style={{ fontSize: 12, color: "#6B5F4F", lineHeight: 1.5, padding: "8px 10px", background: "rgba(201,169,97,0.04)", border: "1px dashed rgba(201,169,97,0.2)", borderRadius: 4 }}>
+          Bearbeitung der Pool-Einträge ist im Verwalten-Modus möglich.
+        </div>
+      </div>
+    );
+  }
+  const caption = item.caption && item.caption.trim().length > 0 ? item.caption : null;
+  const altText = item.altText && item.altText.trim().length > 0 ? item.altText : null;
+  return (
+    <div style={{ display: "grid", gap: 10, padding: 12 }} data-testid={`${testIdPrefix}-content`}>
+      <div style={{ fontSize: 11, letterSpacing: ".25em", textTransform: "uppercase", color: "#C9A961" }}>
+        Aktuell ausgewählt
+      </div>
+      <img
+        src={item.url}
+        alt={altText ?? item.name ?? ""}
+        style={{ width: "100%", maxHeight: 220, objectFit: "cover", borderRadius: 4, border: "1px solid rgba(201,169,97,0.35)" }}
+        data-testid={`img-${testIdPrefix}`}
+      />
+      <div style={{ fontSize: 14, color: "#F5EDE0" }} data-testid={`text-${testIdPrefix}-name`}>
+        {item.name || "(ohne Name)"}
+      </div>
+      {caption ? (
+        <div style={{ fontSize: 12, color: "#A89A85", fontStyle: "italic", lineHeight: 1.5 }} data-testid={`text-${testIdPrefix}-caption`}>
+          {caption}
+        </div>
+      ) : null}
+      {altText ? (
+        <div style={{ fontSize: 11, color: "#6B5F4F", lineHeight: 1.5 }} data-testid={`text-${testIdPrefix}-alt`}>
+          Alt: {altText}
+        </div>
+      ) : null}
+      <button
+        type="button"
+        onClick={onConfirm}
+        style={{ ...primaryBtn, padding: "10px 14px", fontSize: 12 }}
+        data-testid={`button-${testIdPrefix}-confirm`}
+      >
+        Übernehmen
+      </button>
     </div>
   );
 }
