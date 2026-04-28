@@ -149,7 +149,9 @@ export function StoryImagePool({
             });
             finalEntry = patched;
           } catch (matchErr) {
+            const detail = matchErr instanceof Error ? matchErr.message : String(matchErr);
             console.warn("[image-pool/auto-detect] patch failed", matchErr);
+            setError(`Auto-Erkennung konnte nicht gespeichert werden (${file.name}): ${detail}`);
           }
         }
         setItems((prev) => {
