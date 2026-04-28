@@ -26933,28 +26933,35 @@ ${cleaned.slice(0, 60000)}`;
     suggestedWhiskyIds: string[];
   };
 
-  const loadImagePoolImageAsDataUri = async (rawUrl: string): Promise<string> => {
+  class ImagePoolImageLoadError extends Error {
+    readonly httpStatus: 422 | 502;
+    constructor(message: string, httpStatus: 422 | 502) {
+      super(message);
+      this.name = "ImagePoolImageLoadError";
+      this.httpStatus = httpStatus;
+    }
+  }
+
+  const resolveImagePoolImageForVision = async (rawUrl: string): Promise<string> => {
     const url = (rawUrl ?? "").trim();
-    if (!url) throw new Error("Bild-URL fehlt");
-    if (url.startsWith("data:")) return url;
+    if (!url) throw new ImagePoolImageLoadError("Bild-URL fehlt", 422);
+    if (url.startsWith("data:image/")) return url;
     if (url.startsWith("/objects/")) {
-      const file = await objectStorage.getObjectEntityFile(url);
-      const [meta] = await file.getMetadata();
-      const [data] = await file.download();
-      const buffer = data as Buffer;
-      const metaContentType = typeof meta.contentType === "string" ? meta.contentType : "";
-      const contentType = metaContentType.length > 0 ? metaContentType : "image/jpeg";
-      return `data:${contentType};base64,${buffer.toString("base64")}`;
+      try {
+        const file = await objectStorage.getObjectEntityFile(url);
+        const [meta] = await file.getMetadata();
+        const [data] = await file.download();
+        const buffer = data as Buffer;
+        const metaContentType = typeof meta.contentType === "string" ? meta.contentType : "";
+        const contentType = metaContentType.length > 0 ? metaContentType : "image/jpeg";
+        return `data:${contentType};base64,${buffer.toString("base64")}`;
+      } catch (err) {
+        const detail = err instanceof Error ? err.message : "unbekannter Fehler";
+        throw new ImagePoolImageLoadError(`Bild konnte nicht aus dem Speicher geladen werden (${detail})`, 502);
+      }
     }
-    if (/^https?:\/\//i.test(url)) {
-      const resp = await fetch(url);
-      if (!resp.ok) throw new Error(`Bild konnte nicht geladen werden (HTTP ${resp.status})`);
-      const headerType = (resp.headers.get("content-type") ?? "").split(";")[0].trim();
-      const contentType = headerType.length > 0 ? headerType : "image/jpeg";
-      const buffer = Buffer.from(await resp.arrayBuffer());
-      return `data:${contentType};base64,${buffer.toString("base64")}`;
-    }
-    throw new Error("Bild-URL ungültig");
+    if (/^https:\/\//i.test(url)) return url;
+    throw new ImagePoolImageLoadError("Bild-URL ungültig", 422);
   };
 
   const describeImageOnce = async (
@@ -26966,7 +26973,7 @@ ${cleaned.slice(0, 60000)}`;
     rosterWhiskies: Array<{ id: string; label: string }>,
   ): Promise<ImageDescribeResult> => {
     const { system, user } = buildImagePoolPrompt(language, img, rosterParticipants, rosterWhiskies);
-    const imageDataUri = await loadImagePoolImageAsDataUri(img.url);
+    const visionImageUrl = await resolveImagePoolImageForVision(img.url);
     const completion = await openaiClient.chat.completions.create({
       model: "gpt-4o-mini",
       response_format: { type: "json_object" },
@@ -26978,7 +26985,7 @@ ${cleaned.slice(0, 60000)}`;
           role: "user",
           content: [
             { type: "text", text: user },
-            { type: "image_url", image_url: { url: imageDataUri, detail: "low" } },
+            { type: "image_url", image_url: { url: visionImageUrl, detail: "low" } },
           ],
         },
       ],
@@ -27074,6 +27081,9 @@ ${cleaned.slice(0, 60000)}`;
       });
     } catch (e: unknown) {
       console.error("[tasting-stories/image-pool/ai-describe] error:", e);
+      if (e instanceof ImagePoolImageLoadError) {
+        return res.status(e.httpStatus).json({ message: e.message });
+      }
       const msg = e instanceof Error ? e.message : "KI-Beschreibung fehlgeschlagen";
       return res.status(500).json({ message: msg });
     }
@@ -27175,7 +27185,11 @@ ${cleaned.slice(0, 60000)}`;
           if (updated) updatedItems.push(updated);
           else failedIds.push(id);
         } catch (err) {
-          console.warn("[tasting-stories/image-pool/ai-describe-batch] item error:", id, err);
+          if (err instanceof ImagePoolImageLoadError) {
+            console.warn("[tasting-stories/image-pool/ai-describe-batch] load error:", id, err.httpStatus, err.message);
+          } else {
+            console.warn("[tasting-stories/image-pool/ai-describe-batch] item error:", id, err);
+          }
           failedIds.push(id);
         }
       }
