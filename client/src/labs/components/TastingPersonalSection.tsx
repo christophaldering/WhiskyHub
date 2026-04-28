@@ -442,9 +442,28 @@ export default function TastingPersonalSection({
 
   const scrollToDownloads = (cardId?: string) => {
     window.dispatchEvent(new CustomEvent("labs-tasting-detail-set-section", { detail: "downloads" }));
+    if (cardId) {
+      window.dispatchEvent(new CustomEvent("labs-tasting-detail-expand-downloads"));
+    }
     window.setTimeout(() => {
       if (cardId) {
-        scrollAndFlash(`#${cardId}`);
+        let attempts = 0;
+        const tryFind = () => {
+          const target = document.getElementById(cardId);
+          if (target instanceof HTMLElement) {
+            target.scrollIntoView({ behavior: "smooth", block: "center" });
+            flashTarget(target);
+            return;
+          }
+          attempts += 1;
+          if (attempts < 6) {
+            window.setTimeout(tryFind, 120);
+            return;
+          }
+          const fallback = document.getElementById("section-downloads") || document.getElementById("downloads");
+          if (fallback) fallback.scrollIntoView({ behavior: "smooth", block: "start" });
+        };
+        tryFind();
         return;
       }
       const el = document.getElementById("section-downloads") || document.getElementById("downloads");

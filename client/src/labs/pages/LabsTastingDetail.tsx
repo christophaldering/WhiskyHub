@@ -610,6 +610,12 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
     return () => window.removeEventListener("labs-tasting-detail-set-section", handler);
   }, [isHost]);
 
+  useEffect(() => {
+    const handler = () => setShowResultsDownloads(true);
+    window.addEventListener("labs-tasting-detail-expand-downloads", handler);
+    return () => window.removeEventListener("labs-tasting-detail-expand-downloads", handler);
+  }, []);
+
   const totalWhiskyCount = whiskies?.length ?? 0;
   const totalParticipantCount = participants?.length ?? 0;
 
