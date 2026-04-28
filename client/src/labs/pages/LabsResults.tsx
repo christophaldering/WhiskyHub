@@ -433,7 +433,6 @@ export default function LabsResults({ params }: LabsResultsProps) {
   const [previousRatingsMap, setPreviousRatingsMap] = useState<Record<string, { date: string; tastingTitle: string; nose: number; taste: number; finish: number; overall: number }[]>>({});
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [showManageTasters, setShowManageTasters] = useState(false);
-  const [inlineDownloadsOpen, setInlineDownloadsOpen] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -1371,10 +1370,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                       type="button"
                       className="labs-btn-ghost"
                       onClick={() => {
-                        setInlineDownloadsOpen(true);
-                        setTimeout(() => {
-                          document.querySelector('[data-testid="results-section-downloads"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
-                        }, 50);
+                        navigate(`/labs/tastings/${tastingId}#downloads`);
                       }}
                       data-testid="ergebnis-card-praesentation-download"
                       style={{ fontSize: 11, padding: "4px 8px", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
@@ -1427,10 +1423,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                       type="button"
                       className="labs-btn-ghost"
                       onClick={() => {
-                        setInlineDownloadsOpen(true);
-                        setTimeout(() => {
-                          document.querySelector('[data-testid="results-section-downloads"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
-                        }, 50);
+                        navigate(`/labs/tastings/${tastingId}#downloads`);
                       }}
                       data-testid="ergebnis-card-story-download"
                       style={{ fontSize: 11, padding: "4px 8px", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
@@ -1510,10 +1503,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                       type="button"
                       className="labs-btn-ghost"
                       onClick={() => {
-                        setInlineDownloadsOpen(true);
-                        setTimeout(() => {
-                          document.querySelector('[data-testid="results-section-downloads"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
-                        }, 50);
+                        navigate(`/labs/tastings/${tastingId}#downloads`);
                       }}
                       data-testid="ergebnis-card-ai-download"
                       style={{ fontSize: 11, padding: "4px 8px", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
@@ -2356,10 +2346,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                             <button
                               type="button"
                               onClick={() => {
-                                setInlineDownloadsOpen(true);
-                                setTimeout(() => {
-                                  document.querySelector('[data-testid="results-section-downloads"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
-                                }, 50);
+                                navigate(`/labs/tastings/${tastingId}#downloads`);
                               }}
                               className="labs-btn-ghost"
                               data-testid="results-personal-ai-download"
@@ -2470,10 +2457,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
                   <button
                     type="button"
                     onClick={() => {
-                      setInlineDownloadsOpen(true);
-                      setTimeout(() => {
-                        document.querySelector('[data-testid="results-section-downloads"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
-                      }, 50);
+                      navigate(`/labs/tastings/${tastingId}#downloads`);
                     }}
                     className="labs-card w-full p-3 flex items-center gap-3 text-left"
                     data-testid="results-personal-notes-trigger"
@@ -2633,19 +2617,18 @@ export default function LabsResults({ params }: LabsResultsProps) {
       </section>
       {/* /Section 3 Auswertung */}
 
-      {/* === SECTION 4: DOWNLOADS === (collapsible) */}
       {sorted.length > 0 && (
         <section className="mb-6 labs-fade-in" data-testid="results-section-downloads">
           <button
             type="button"
-            onClick={() => setInlineDownloadsOpen(o => !o)}
+            onClick={() => navigate(`/labs/tastings/${tastingId}#downloads`)}
             className="labs-card"
-            data-testid="results-section-downloads-toggle"
+            data-testid="results-section-downloads-redirect"
             style={{
               width: "100%", padding: "14px 16px",
               display: "flex", alignItems: "center", justifyContent: "space-between",
               background: "var(--labs-surface-elevated)",
-              border: inlineDownloadsOpen ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border)",
+              border: "1px solid var(--labs-border)",
               cursor: "pointer", fontFamily: "inherit",
             }}
           >
@@ -2655,42 +2638,19 @@ export default function LabsResults({ params }: LabsResultsProps) {
                 background: "var(--labs-accent-muted)",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <Archive className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                <Download className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
               </div>
               <div style={{ textAlign: "left" }}>
                 <p style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", margin: 0 }}>
                   {t("resultsUi.sectionDownloadsTitle", "Downloads")}
                 </p>
                 <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "2px 0 0" }}>
-                  {t("resultsUi.sectionDownloadsSubtitle", "PDF, Excel, CSV und Story-Formate")}
+                  {t("resultsUi.downloadsRedirectDesc", "Alle Formate sind auf der Tasting-Detailseite gebündelt")}
                 </p>
               </div>
             </div>
-            {inlineDownloadsOpen
-              ? <ChevronUp className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
-              : <ChevronDown className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />}
+            <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
           </button>
-          {inlineDownloadsOpen && (
-            <div
-              className="labs-card-elevated labs-fade-in mt-3"
-              style={{ padding: 14 }}
-              data-testid="results-section-downloads-panel"
-            >
-              <TastingDownloadGrid
-                tastingId={tastingId}
-                participantId={currentParticipant?.id ?? null}
-                availability={{
-                  story: getStoryPdfAvailable(tasting, isHost),
-                  presentation: isHost && getPresentationPdfAvailable(tasting),
-                  notes: getNotesDocxAvailable(tasting, currentParticipant?.id),
-                }}
-                inlineData={{ tasting, whiskyResults }}
-                variant="cards"
-                testIdPrefix="results-download"
-                showSourceLinks={false}
-              />
-            </div>
-          )}
         </section>
       )}
 

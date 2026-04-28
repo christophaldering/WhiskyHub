@@ -8906,6 +8906,9 @@ const resources = {
         delete: "Delete",
         edit: "Edit",
         retry: "Retry",
+        confirm: "Confirm",
+        archiving: "Archiving…",
+        error: "Error",
         copied: "Copied!",
         copy: "Copy",
         copyLink: "Copy Link",
@@ -9011,6 +9014,8 @@ const resources = {
         blindModeActive: "Active",
         blindModeOff: "Off",
         ratingScaleLabel: "Rating Scale",
+        addWhiskyHeader: "Add whisky",
+        whiskiesEmpty: "No whiskies added yet",
       },
       cockpitUi: {
         fieldName: "Name",
@@ -9342,6 +9347,7 @@ const resources = {
           empty: "Not enough data for the heatmap.",
           continued: "continued",
         },
+        downloadsRedirectDesc: "All formats are bundled on the tasting detail page",
       },
       liveUi: {
         blindTasting: "Blind Tasting",
@@ -18582,6 +18588,9 @@ const resources = {
         delete: "Löschen",
         edit: "Bearbeiten",
         retry: "Erneut versuchen",
+        confirm: "Bestätigen",
+        archiving: "Wird archiviert…",
+        error: "Fehler",
         copied: "Kopiert!",
         copy: "Kopieren",
         copyLink: "Link kopieren",
@@ -18687,6 +18696,8 @@ const resources = {
         blindModeActive: "Aktiv",
         blindModeOff: "Aus",
         ratingScaleLabel: "Bewertungsskala",
+        addWhiskyHeader: "Whisky hinzufügen",
+        whiskiesEmpty: "Noch keine Whiskys hinzugefügt",
       },
       cockpitUi: {
         fieldName: "Name",
@@ -19017,6 +19028,7 @@ const resources = {
           empty: "Nicht genügend Daten für die Heatmap.",
           continued: "Fortsetzung",
         },
+        downloadsRedirectDesc: "Alle Formate sind auf der Tasting-Detailseite gebündelt",
       },
       liveUi: {
         blindTasting: "Blindverkostung",

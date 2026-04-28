@@ -1,5 +1,6 @@
 import type * as React from "react";
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
@@ -38,6 +39,10 @@ import {
   Sparkles,
   Monitor,
   Library,
+  Archive,
+  Lock,
+  Loader2,
+  Glasses,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, inviteApi, guidedApi, friendsApi } from "@/lib/api";
@@ -48,6 +53,8 @@ import { LabsParticipantDownloads } from "@/components/ParticipantDownloads";
 import { getStoryPdfAvailable, getPresentationPdfAvailable, getNotesDocxAvailable } from "@/labs/utils/labsExports";
 import { selectDescriptors } from "@/labs/utils/downloadMatrix";
 import TastingDownloadGrid from "@/labs/components/TastingDownloadGrid";
+import ManageTastersDialog from "@/labs/components/ManageTastersDialog";
+import WhiskyImage from "@/labs/components/WhiskyImage";
 import { getTastingPhase, isResultDownloadsPhase, RESULT_DOWNLOAD_KINDS } from "@/labs/utils/tastingPhase";
 import type { Tasting, WhiskyFriend } from "@shared/schema";
 import QRCode from "qrcode";
@@ -196,7 +203,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
   const [inviteEmails, setInviteEmails] = useState("");
   const [inviteNote, setInviteNote] = useState("");
   const [inviteResults, setInviteResults] = useState<Array<{ email: string; status: string; link?: string }> | null>(null);
-  const [showWhiskies, setShowWhiskies] = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);
   const [showInviteShare, setShowInviteShare] = useState(false);
   const [editingWhiskyId, setEditingWhiskyId] = useState<string | null>(null);
@@ -205,6 +211,8 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
   const [newWhiskyName, setNewWhiskyName] = useState("");
   const [showSessionSettings, setShowSessionSettings] = useState(false);
   const [showResultsDownloads, setShowResultsDownloads] = useState(false);
+  const [showManageTasters, setShowManageTasters] = useState(false);
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [editingMeta, setEditingMeta] = useState(false);
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDate, setMetaDate] = useState("");
@@ -336,6 +344,15 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
       queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
       setNewWhiskyName("");
       setShowAddWhisky(false);
+    },
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: () => tastingApi.updateStatus(tastingId, "archived", undefined, currentParticipant?.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+      queryClient.invalidateQueries({ queryKey: ["tastings"] });
+      setShowArchiveDialog(false);
     },
   });
 
@@ -835,97 +852,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 testId="detail-secondary-recap"
               />
             )}
-            {isCompleted && (isHost || tasting.storyEnabled) && (
-              <SecondaryRowAction
-                icon={BookOpen}
-                title={t("tastingDetail.viewStory", "Story anzeigen")}
-                subtitle={t("tastingDetail.viewStorySubtitle", "Magazin-Layout mit Highlights")}
-                onClick={() => navigate(`/labs/results/${tastingId}/story`)}
-                testId="detail-secondary-story"
-              />
-            )}
-            {isCompleted && (isHost || currentParticipant?.role === "admin") && (
-              <SecondaryRowAction
-                icon={Pencil}
-                title={t("tastingDetail.editStory", "Story bearbeiten")}
-                subtitle={t("tastingDetail.editStorySubtitle", "Block-Editor für Texte und Bilder")}
-                onClick={() => navigate(`/labs/tastings/${tastingId}/story-wizard`)}
-                testId="detail-secondary-edit-story"
-              />
-            )}
-            {isCompleted && isHost && (
-              <SecondaryRowAction
-                icon={Monitor}
-                title={t("tastingDetail.viewPresentation", "Ergebnisse präsentieren")}
-                subtitle={t("tastingDetail.viewPresentationSubtitle", "Live-Show mit Ergebnissen")}
-                onClick={() => navigate(`/labs/results/${tastingId}/present`)}
-                testId="detail-secondary-present"
-              />
-            )}
-            {isHost && (
-              <SecondaryRowAction
-                icon={isCompleted ? RotateCcw : Settings}
-                title={isCompleted ? t("tastingDetail.restartTasting") : t("tastingDetail.manageSession")}
-                subtitle={
-                  isCompleted
-                    ? t("tastingDetail.restartTastingSubtitle", "Status zurücksetzen oder neu öffnen")
-                    : t("tastingDetail.manageSessionSubtitle", "Reihenfolge, Reveal, Gäste-Status & Einstellungen")
-                }
-                onClick={() => navigate(`/labs/host/${tastingId}`)}
-                testId="detail-secondary-manage"
-              />
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Participant quick chips — direct access to report/story/present/downloads
-          for non-host participants in reveal/completed states. */}
-      {!isHost && (isReveal || isCompleted) && (aiAvailable || storyAvailable || downloadsAvailable) && (
-        <div className="mb-6 labs-stagger-4" data-testid="detail-participant-quickchips">
-          <p className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--labs-text-muted)", letterSpacing: "0.08em" }}>
-            {t("tastingDetail.quickChipsTitle", "Direkter Zugriff")}
-          </p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {aiAvailable && (
-              <QuickChip
-                icon={Sparkles}
-                label={t("tastingDetail.quickChipReport", "KI-Report")}
-                onClick={() => navigate(`/labs/results/${tastingId}/report`)}
-                testId="detail-quickchip-report"
-              />
-            )}
-            {storyAvailable && (
-              <QuickChip
-                icon={BookOpen}
-                label={t("tastingDetail.quickChipStory", "Story")}
-                onClick={() => navigate(`/labs/results/${tastingId}/story`)}
-                testId="detail-quickchip-story"
-              />
-            )}
-            {aiAvailable && (
-              <QuickChip
-                icon={Monitor}
-                label={t("tastingDetail.quickChipPresent", "Präsentation")}
-                onClick={() => navigate(`/labs/results/${tastingId}/present`)}
-                testId="detail-quickchip-present"
-              />
-            )}
-            {downloadsAvailable && (
-              <QuickChip
-                icon={Download}
-                label={t("tastingDetail.quickChipDownloads", "Downloads")}
-                onClick={() => {
-                  navigate(`/labs/results/${tastingId}`);
-                  setTimeout(() => {
-                    try {
-                      window.location.hash = "downloads";
-                    } catch {}
-                  }, 50);
-                }}
-                testId="detail-quickchip-downloads"
-              />
-            )}
           </div>
         </div>
       )}
@@ -1191,173 +1117,744 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         </div>
       )}
 
-      <div className="mb-6 labs-stagger-4">
-        <button
-          type="button"
-          onClick={() => setShowWhiskies(!showWhiskies)}
-          className="w-full flex items-center justify-between mb-3"
-          style={{ background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}
-          data-testid="labs-detail-toggle-whiskies"
-        >
-          <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--labs-text-muted)", letterSpacing: "0.08em", margin: 0 }}>
-            {t("tastingDetail.whiskiesSectionTitle", "Whiskies")} ({whiskyCount})
-          </p>
-          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-            {isHost && isDraft && (
-              <button
-                onClick={() => { setShowAddWhisky(!showAddWhisky); if (!showWhiskies) setShowWhiskies(true); }}
-                className="labs-btn-ghost flex items-center gap-1 text-xs"
-                data-testid="labs-detail-add-whisky-toggle"
-              >
-                {showAddWhisky ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
-                {showAddWhisky ? t("ui.close") : t("ui.add")}
-              </button>
+      {(() => {
+        const FREE_REVEAL_DEFAULT: string[][] = [
+          ["name"],
+          ["distillery", "age", "abv", "region", "country", "category", "caskType", "bottler", "vintage", "peatLevel", "ppm", "price"],
+          ["image"],
+        ];
+        let stepGroups: string[][] = FREE_REVEAL_DEFAULT;
+        const rawRevealOrder = (tasting as { revealOrder?: string | null }).revealOrder;
+        if (typeof rawRevealOrder === "string" && rawRevealOrder.length > 0) {
+          try {
+            const parsed: unknown = JSON.parse(rawRevealOrder);
+            if (Array.isArray(parsed) && parsed.length > 0 && parsed.every((g) => Array.isArray(g))) {
+              stepGroups = parsed as string[][];
+            }
+          } catch {
+          }
+        }
+        const tastingReveal = tasting as { revealIndex?: number | null; revealStep?: number | null };
+        const revealIdx = tastingReveal.revealIndex ?? 0;
+        const revealStp = tastingReveal.revealStep ?? 0;
+        const isCompletedPhase = isCompleted || tasting.status === "closed";
+        const showAllForHost = !!isHost && (isDraft || !tasting.blindMode);
+
+        const getRevealedFieldsFor = (idx: number) => {
+          const fields = new Set<string>();
+          if (showAllForHost || !tasting.blindMode || isCompletedPhase) {
+            for (const g of stepGroups) for (const f of g) fields.add(f);
+            return fields;
+          }
+          if (idx < revealIdx) {
+            for (const g of stepGroups) for (const f of g) fields.add(f);
+          } else if (idx === revealIdx) {
+            for (let s = 0; s < revealStp && s < stepGroups.length; s++) {
+              for (const f of stepGroups[s]) fields.add(f);
+            }
+          }
+          return fields;
+        };
+
+        const totalSteps = stepGroups.length;
+        const allRevealed = revealIdx >= whiskyCount - 1 && revealStp >= totalSteps;
+
+        return (
+          <section className="mb-8 labs-stagger-4 labs-fade-in" data-testid="detail-section-rueckblick">
+            <header style={{ marginBottom: 12, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+              <div>
+                <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", margin: 0, letterSpacing: "0.02em" }}>
+                  {t("resultsUi.sectionRueckblickTitle", "Rückblick")} ({whiskyCount})
+                </h2>
+                <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
+                  {t("resultsUi.sectionRueckblickSubtitle", "Whisky für Whisky — was war heute Abend dabei")}
+                </p>
+              </div>
+              <div style={{ display: "flex", gap: 6, flexShrink: 0, flexWrap: "wrap" }}>
+                {isHost && isDraft && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAddWhisky(!showAddWhisky)}
+                    className="labs-btn-secondary"
+                    data-testid="labs-detail-add-whisky-toggle"
+                    style={{ fontSize: 12, padding: "6px 12px", display: "inline-flex", alignItems: "center", gap: 6 }}
+                  >
+                    {showAddWhisky ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                    {showAddWhisky ? t("ui.close") : t("tastingDetail.addWhiskyHeader", "Whisky hinzufügen")}
+                  </button>
+                )}
+                {isHost && isReveal && tasting.blindMode && (
+                  <>
+                    <button
+                      type="button"
+                      disabled={allRevealed}
+                      onClick={async () => {
+                        try {
+                          const res = await fetch(`/api/tastings/${tastingId}/reveal-next`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", "x-participant-id": currentParticipant?.id || "" },
+                            body: JSON.stringify({ hostId: currentParticipant?.id }),
+                          });
+                          if (!res.ok) throw new Error(`reveal-next failed: ${res.status}`);
+                          queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+                        } catch (err) {
+                          console.error("[LabsTastingDetail] Reveal next step failed", err);
+                        }
+                      }}
+                      className="labs-btn-primary"
+                      data-testid="rueckblick-host-reveal-next"
+                      style={{ fontSize: 12, padding: "6px 12px", display: "inline-flex", alignItems: "center", gap: 6, opacity: allRevealed ? 0.4 : 1 }}
+                    >
+                      <Glasses className="w-3.5 h-3.5" />
+                      {t("resultsUi.rueckblickRevealNext", "Nächsten Schritt enthüllen")}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={allRevealed}
+                      onClick={async () => {
+                        try {
+                          const total = whiskyCount;
+                          const res = await fetch(`/api/tastings/${tastingId}/blind-mode`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json", "x-participant-id": currentParticipant?.id || "" },
+                            body: JSON.stringify({ hostId: currentParticipant?.id, revealIndex: total - 1, revealStep: totalSteps }),
+                          });
+                          if (!res.ok) throw new Error(`reveal-all failed: ${res.status}`);
+                          queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+                        } catch (err) {
+                          console.error("[LabsTastingDetail] Reveal all failed", err);
+                        }
+                      }}
+                      className="labs-btn-ghost"
+                      data-testid="rueckblick-host-reveal-all"
+                      style={{ fontSize: 12, padding: "6px 12px", display: "inline-flex", alignItems: "center", gap: 6, opacity: allRevealed ? 0.4 : 1 }}
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      {t("resultsUi.rueckblickRevealAll", "Alle enthüllen")}
+                    </button>
+                  </>
+                )}
+              </div>
+            </header>
+
+            {isHost && isDraft && showAddWhisky && (
+              <div className="labs-card p-3 mb-3 flex gap-2" data-testid="labs-detail-add-whisky-form">
+                <input
+                  className="labs-input flex-1 text-sm"
+                  value={newWhiskyName}
+                  onChange={(e) => setNewWhiskyName(e.target.value)}
+                  placeholder={t("tastingDetail.whiskyNamePlaceholder")}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newWhiskyName.trim()) {
+                      addWhiskyMutation.mutate({ tastingId, name: newWhiskyName.trim(), sortOrder: whiskyCount });
+                    }
+                  }}
+                  data-testid="input-add-whisky-name"
+                  autoFocus
+                />
+                <button
+                  className="labs-btn-primary text-xs px-3"
+                  disabled={!newWhiskyName.trim() || addWhiskyMutation.isPending}
+                  onClick={() => {
+                    if (newWhiskyName.trim()) {
+                      addWhiskyMutation.mutate({ tastingId, name: newWhiskyName.trim(), sortOrder: whiskyCount });
+                    }
+                  }}
+                  data-testid="button-add-whisky"
+                >
+                  {addWhiskyMutation.isPending ? "..." : t("ui.add")}
+                </button>
+              </div>
             )}
-            <span
-              className="labs-btn-ghost"
-              style={{ padding: 4, display: "inline-flex" }}
-              aria-hidden
-            >
-              <ChevronDown
-                className="w-4 h-4 transition-transform"
-                style={{
-                  color: "var(--labs-text-muted)",
-                  transform: showWhiskies ? "rotate(180deg)" : "rotate(0deg)",
-                }}
-              />
-            </span>
-          </div>
-        </button>
 
-
-        {isHost && isDraft && showAddWhisky && (
-          <div className="labs-card p-3 mb-3 flex gap-2" data-testid="labs-detail-add-whisky-form">
-            <input
-              className="labs-input flex-1 text-sm"
-              value={newWhiskyName}
-              onChange={(e) => setNewWhiskyName(e.target.value)}
-              placeholder={t("tastingDetail.whiskyNamePlaceholder")}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && newWhiskyName.trim()) {
-                  addWhiskyMutation.mutate({ tastingId, name: newWhiskyName.trim(), sortOrder: whiskyCount });
-                }
-              }}
-              data-testid="input-add-whisky-name"
-            />
-            <button
-              className="labs-btn-primary text-xs px-3"
-              disabled={!newWhiskyName.trim() || addWhiskyMutation.isPending}
-              onClick={() => {
-                if (newWhiskyName.trim()) {
-                  addWhiskyMutation.mutate({ tastingId, name: newWhiskyName.trim(), sortOrder: whiskyCount });
-                }
-              }}
-              data-testid="button-add-whisky"
-            >
-              {addWhiskyMutation.isPending ? "..." : t("ui.add")}
-            </button>
-          </div>
-        )}
-
-        {showWhiskies && (
-          <>
             {whiskyCount === 0 ? (
               <div className="labs-card p-6 text-center" data-testid="labs-detail-whiskies-empty">
                 <Wine className="w-8 h-8 mx-auto mb-2" style={{ color: "var(--labs-text-muted)", opacity: 0.5 }} />
-                <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>No whiskies added yet</p>
+                <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
+                  {t("tastingDetail.whiskiesEmpty", "Noch keine Whiskys hinzugefügt")}
+                </p>
               </div>
             ) : (
-              <div className="labs-card overflow-hidden" data-testid="labs-detail-whiskies-list">
-                {(whiskies || []).map((w: Record<string, unknown>, idx: number) => {
-                  if (editingWhiskyId === w.id) {
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+                  gap: 10,
+                }}
+                data-testid="labs-detail-rueckblick-grid"
+              >
+                {(whiskies || []).map((w: Record<string, unknown>, i: number) => {
+                  const wid = w.id as string;
+                  if (isHost && isDraft && editingWhiskyId === wid) {
                     return (
-                      <div key={w.id as string} style={{ borderBottom: idx < whiskyCount - 1 ? "1px solid var(--labs-border)" : "none" }}>
+                      <div
+                        key={wid}
+                        className="labs-card"
+                        style={{ padding: 12, gridColumn: "1 / -1" }}
+                        data-testid={`labs-detail-whisky-edit-${wid}`}
+                      >
                         <InlineWhiskyEdit
                           whisky={w}
-                          onSave={(data) => updateWhiskyMutation.mutate({ id: w.id as string, data })}
+                          onSave={(data) => updateWhiskyMutation.mutate({ id: wid, data })}
                           onCancel={() => setEditingWhiskyId(null)}
                         />
                       </div>
                     );
                   }
 
+                  const fields = getRevealedFieldsFor(i);
+                  const nameRevealed = !tasting.blindMode || showAllForHost || fields.has("name") || isCompletedPhase || (isReveal && i < revealIdx);
+                  const imgRevealed = !tasting.blindMode || showAllForHost || fields.has("image") || isCompletedPhase || (isReveal && i < revealIdx);
+                  const fullyRevealed = isCompletedPhase || showAllForHost || (i < revealIdx) || (i === revealIdx && revealStp >= totalSteps);
+                  const partiallyRevealed = !fullyRevealed && (nameRevealed || imgRevealed || fields.size > 0);
+                  const wName = (w.name as string) || "";
+                  const displayName = nameRevealed ? (wName || `#${i + 1}`) : `Sample ${String.fromCharCode(65 + i)}`;
+                  const meta: { label: string; value: string }[] = [];
+                  if (fields.has("distillery") && w.distillery) meta.push({ label: t("taxonomy.distillery", "Distillery"), value: String(w.distillery) });
+                  if (fields.has("region") && w.region) meta.push({ label: t("taxonomy.region", "Region"), value: String(w.region) });
+                  if (fields.has("country") && w.country) meta.push({ label: t("taxonomy.country", "Country"), value: String(w.country) });
+                  if (fields.has("age") && w.age) meta.push({ label: t("taxonomy.age", "Age"), value: `${w.age}y` });
+                  if (fields.has("abv") && w.abv) meta.push({ label: t("taxonomy.abv", "ABV"), value: `${w.abv}%` });
+                  if (fields.has("caskType") && w.caskType) meta.push({ label: t("taxonomy.cask", "Cask"), value: String(w.caskType) });
+                  if (fields.has("peatLevel") && w.peatLevel) meta.push({ label: t("taxonomy.peat", "Peat"), value: String(w.peatLevel) });
+
                   return (
                     <div
-                      key={w.id as string}
-                      className="px-4 py-2.5 flex items-center gap-3"
-                      style={{ borderBottom: idx < whiskyCount - 1 ? "1px solid var(--labs-border)" : "none" }}
-                      data-testid={`labs-detail-whisky-${w.id}`}
+                      key={wid}
+                      className="labs-card"
+                      data-testid={`labs-detail-rueckblick-card-${wid}`}
+                      style={{
+                        padding: 12,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        textAlign: "center",
+                        gap: 8,
+                        position: "relative",
+                      }}
                     >
-                      <span
-                        className="text-[11px] font-semibold flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
-                        style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
-                      >
-                        {idx + 1}
-                      </span>
-                      {(w.imageUrl as string) && !(tasting.blindMode && !isHost) && (
-                        <img
-                          src={w.imageUrl as string}
-                          alt=""
-                          className="rounded-lg object-cover flex-shrink-0"
-                          style={{ width: 56, height: 64, border: "1px solid var(--labs-border)" }}
-                          data-testid={`img-whisky-${w.id}`}
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)", margin: 0 }}>
-                          {tasting.blindMode && !isHost ? `Dram #${idx + 1}` : ((w.name as string) || `Dram #${idx + 1}`)}
-                        </p>
-                        {(w.distillery || w.country || w.age || w.abv || w.region) && (
-                          <p className="text-[11px] truncate" style={{ color: "var(--labs-text-muted)", margin: 0 }}>
-                            {[w.distillery, w.country, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.region].filter(Boolean).join(" · ")}
-                          </p>
-                        )}
-                      </div>
                       {isHost && isDraft && (
-                        <div className="flex items-center gap-0.5 flex-shrink-0">
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: 6,
+                            right: 6,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 2,
+                            background: "var(--labs-surface-elevated)",
+                            border: "1px solid var(--labs-border)",
+                            borderRadius: 8,
+                            padding: 2,
+                          }}
+                        >
                           <button
-                            className="labs-btn-ghost p-1"
-                            onClick={() => setEditingWhiskyId(w.id as string)}
-                            data-testid={`button-edit-whisky-${w.id}`}
+                            type="button"
+                            className="labs-btn-ghost"
+                            style={{ padding: 4, display: "inline-flex" }}
+                            onClick={() => setEditingWhiskyId(wid)}
+                            data-testid={`button-edit-whisky-${wid}`}
+                            aria-label={t("ui.edit", "Bearbeiten")}
                           >
                             <Pencil className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} />
                           </button>
-                          {deletingWhiskyId === w.id ? (
-                            <div className="flex items-center gap-0.5">
+                          {deletingWhiskyId === wid ? (
+                            <>
                               <button
-                                className="labs-btn-ghost p-1"
-                                onClick={() => deleteWhiskyMutation.mutate(w.id as string)}
-                                data-testid={`button-confirm-delete-whisky-${w.id}`}
+                                type="button"
+                                className="labs-btn-ghost"
+                                style={{ padding: 4, display: "inline-flex" }}
+                                onClick={() => deleteWhiskyMutation.mutate(wid)}
+                                data-testid={`button-confirm-delete-whisky-${wid}`}
+                                aria-label={t("ui.confirm", "Bestätigen")}
                               >
                                 <Check className="w-3 h-3" style={{ color: "var(--labs-danger, #e74c3c)" }} />
                               </button>
                               <button
-                                className="labs-btn-ghost p-1"
+                                type="button"
+                                className="labs-btn-ghost"
+                                style={{ padding: 4, display: "inline-flex" }}
                                 onClick={() => setDeletingWhiskyId(null)}
-                                data-testid={`button-cancel-delete-whisky-${w.id}`}
+                                data-testid={`button-cancel-delete-whisky-${wid}`}
+                                aria-label={t("ui.cancel", "Abbrechen")}
                               >
                                 <X className="w-3 h-3" />
                               </button>
-                            </div>
+                            </>
                           ) : (
                             <button
-                              className="labs-btn-ghost p-1"
-                              onClick={() => setDeletingWhiskyId(w.id as string)}
-                              data-testid={`button-delete-whisky-${w.id}`}
+                              type="button"
+                              className="labs-btn-ghost"
+                              style={{ padding: 4, display: "inline-flex" }}
+                              onClick={() => setDeletingWhiskyId(wid)}
+                              data-testid={`button-delete-whisky-${wid}`}
+                              aria-label={t("ui.delete", "Löschen")}
                             >
                               <Trash2 className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} />
                             </button>
                           )}
                         </div>
                       )}
+
+                      <span
+                        className="text-[11px] font-semibold flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                        style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                      >
+                        {i + 1}
+                      </span>
+
+                      <WhiskyImage
+                        imageUrl={imgRevealed ? (w.imageUrl as string | undefined) : undefined}
+                        name={displayName}
+                        size={64}
+                        height={78}
+                        whiskyId={wid}
+                        testId={`rueckblick-image-${wid}`}
+                      />
+
+                      <div style={{ minWidth: 0, width: "100%" }}>
+                        <p
+                          style={{
+                            fontSize: 12, fontWeight: 600, color: "var(--labs-text)",
+                            margin: 0, lineHeight: 1.25,
+                            overflow: "hidden", textOverflow: "ellipsis",
+                            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                          }}
+                          data-testid={`rueckblick-name-${wid}`}
+                        >
+                          {displayName}
+                        </p>
+                        {meta.length > 0 && (
+                          <div
+                            data-testid={`rueckblick-meta-${wid}`}
+                            style={{
+                              marginTop: 4, fontSize: 10, color: "var(--labs-text-muted)",
+                              lineHeight: 1.35, display: "flex", flexDirection: "column", gap: 1,
+                            }}
+                          >
+                            {meta.map((m, j) => (
+                              <span key={j} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                <span style={{ opacity: 0.7 }}>{m.label}:</span> {m.value}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {tasting.blindMode && !showAllForHost && (
+                        <span
+                          data-testid={`rueckblick-status-${wid}`}
+                          style={{
+                            fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
+                            padding: "2px 8px", borderRadius: 999,
+                            background: fullyRevealed ? "var(--labs-success-muted, rgba(74,222,128,0.12))"
+                              : partiallyRevealed ? "var(--labs-accent-muted, rgba(212,162,86,0.15))"
+                              : "var(--labs-surface-elevated)",
+                            color: fullyRevealed ? "var(--labs-success, #4ade80)"
+                              : partiallyRevealed ? "var(--labs-accent)"
+                              : "var(--labs-text-muted)",
+                            border: "1px solid var(--labs-border)",
+                            display: "inline-flex", alignItems: "center", gap: 4,
+                          }}
+                        >
+                          {fullyRevealed
+                            ? (<><Eye className="w-3 h-3" />{t("resultsUi.rueckblickStatusRevealed", "Enthüllt")}</>)
+                            : partiallyRevealed
+                            ? (<><Glasses className="w-3 h-3" />{t("resultsUi.rueckblickStatusPartial", "Teil-Reveal")}</>)
+                            : (<><EyeOff className="w-3 h-3" />{t("resultsUi.rueckblickStatusBlind", "Blind")}</>)}
+                        </span>
+                      )}
                     </div>
                   );
                 })}
               </div>
             )}
-          </>
-        )}
-      </div>
+          </section>
+        );
+      })()}
+
+      {(isReveal || isCompleted) && (() => {
+        const presentAvailable = aiAvailable;
+        const isAdmin = currentParticipant?.role === "admin";
+        const canEditStory = !!isHost || isAdmin;
+        const storyTileAvailable = storyAvailable || (canEditStory && aiAvailable);
+        if (!presentAvailable && !storyTileAvailable && !aiAvailable) return null;
+        const navigateAndScrollDownloads = () => {
+          setShowResultsDownloads(true);
+          setTimeout(() => {
+            document.querySelector('[data-testid="labs-detail-results-downloads"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 50);
+        };
+        return (
+          <section className="mb-8 labs-fade-in" data-testid="detail-section-praesentation">
+            <header style={{ marginBottom: 12 }}>
+              <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", margin: 0, letterSpacing: "0.02em" }}>
+                {t("resultsUi.sectionPraesentationTitle", "Ergebnis-Präsentation")}
+              </h2>
+              <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
+                {t("resultsUi.sectionPraesentationSubtitle", "Story, Live-Show und KI-Analyse")}
+              </p>
+            </header>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: 12,
+              }}
+            >
+              {presentAvailable && (
+                <div
+                  className="labs-card"
+                  data-testid="ergebnis-card-praesentation"
+                  style={{
+                    padding: 14, background: "var(--labs-surface-elevated)",
+                    border: "1px solid var(--labs-border)",
+                    display: "flex", flexDirection: "column", gap: 10,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                      background: "var(--labs-accent-muted)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <Monitor className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
+                        {t("resultsUi.ergebnisCardPresentTitle", "Ergebnis-Präsentation")}
+                      </p>
+                      <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
+                        {t("resultsUi.ergebnisCardPresentDesc", "Slideshow in deinem Tempo erneut ansehen")}
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <button
+                      type="button"
+                      className="labs-btn-secondary"
+                      onClick={() => navigate(`/labs/results/${tastingId}/present`)}
+                      data-testid="ergebnis-card-praesentation-open"
+                      style={{ fontSize: 12, padding: "6px 10px" }}
+                    >
+                      {isHost
+                        ? t("resultsUi.ergebnisCardPresentHostStart", "Ergebnis-Präsentation starten")
+                        : t("tastingDetail.viewPresentation", "Ergebnisse präsentieren")}
+                    </button>
+                    {getPresentationPdfAvailable(tasting) && (
+                      <button
+                        type="button"
+                        className="labs-btn-ghost"
+                        onClick={navigateAndScrollDownloads}
+                        data-testid="ergebnis-card-praesentation-download"
+                        style={{ fontSize: 11, padding: "4px 8px", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
+                      >
+                        <Download className="w-3 h-3" />
+                        {t("resultsUi.ergebnisCardPresentDownload", "Handout herunterladen")}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {storyTileAvailable && (
+                <div
+                  className="labs-card"
+                  data-testid="ergebnis-card-story"
+                  style={{
+                    padding: 14, background: "var(--labs-surface-elevated)",
+                    border: "1px solid var(--labs-border)",
+                    display: "flex", flexDirection: "column", gap: 10,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                      background: "var(--labs-accent-muted)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <BookOpen className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
+                        {t("resultsUi.ergebnisCardStoryTitle", "Tasting-Story")}
+                      </p>
+                      <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
+                        {t("resultsUi.ergebnisCardStoryDesc", "Magazin-Rückblick mit Fotos & Geschichten")}
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <button
+                      type="button"
+                      className="labs-btn-secondary"
+                      onClick={() => navigate(`/labs/results/${tastingId}/story`)}
+                      data-testid="ergebnis-card-story-open"
+                      style={{ fontSize: 12, padding: "6px 10px" }}
+                    >
+                      {t("tastingDetail.viewStory", "Story anzeigen")}
+                    </button>
+                    {storyAvailable && (
+                      <button
+                        type="button"
+                        className="labs-btn-ghost"
+                        onClick={navigateAndScrollDownloads}
+                        data-testid="ergebnis-card-story-download"
+                        style={{ fontSize: 11, padding: "4px 8px", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
+                      >
+                        <Download className="w-3 h-3" />
+                        {t("resultsUi.ergebnisCardStoryDownload", "Story-PDF herunterladen")}
+                      </button>
+                    )}
+                    {canEditStory && aiAvailable && (
+                      <button
+                        type="button"
+                        className="labs-btn-ghost"
+                        onClick={() => navigate(`/labs/tastings/${tastingId}/story-wizard`)}
+                        data-testid="ergebnis-card-story-edit"
+                        style={{ fontSize: 11, padding: "4px 8px", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
+                      >
+                        <Pencil className="w-3 h-3" />
+                        {t("resultsUi.ergebnisCardStoryHostEdit", "Story bearbeiten")}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {aiAvailable && (
+                <div
+                  className="labs-card"
+                  data-testid="ergebnis-card-ai"
+                  style={{
+                    padding: 14, background: "var(--labs-surface-elevated)",
+                    border: "1px solid var(--labs-border)",
+                    display: "flex", flexDirection: "column", gap: 10,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                      background: "var(--labs-accent-muted)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <Sparkles className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
+                        {t("resultsUi.ergebnisCardAiTitle", "KI-Tasting-Report")}
+                      </p>
+                      <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
+                        {t("resultsUi.ergebnisCardAiDesc", "Gruppen-Narrativ, Übereinstimmungen & persönliche Analyse")}
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <button
+                      type="button"
+                      className="labs-btn-secondary"
+                      onClick={() => navigate(`/labs/results/${tastingId}/report`)}
+                      data-testid="ergebnis-card-ai-open"
+                      style={{ fontSize: 12, padding: "6px 10px" }}
+                    >
+                      {t("resultsUi.actionAiTitle", "KI-Tasting-Report")}
+                    </button>
+                    <button
+                      type="button"
+                      className="labs-btn-ghost"
+                      onClick={navigateAndScrollDownloads}
+                      data-testid="ergebnis-card-ai-download"
+                      style={{ fontSize: 11, padding: "4px 8px", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
+                    >
+                      <Download className="w-3 h-3" />
+                      {t("resultsUi.ergebnisCardAiDownload", "KI-Report-PDF herunterladen")}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        );
+      })()}
+
+      {isHost && (
+        <section className="mb-8 labs-fade-in" data-testid="detail-section-host-aktionen">
+          <header style={{ marginBottom: 12 }}>
+            <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", margin: 0, letterSpacing: "0.02em" }}>
+              {t("resultsUi.hostFooterTitle", "Host-Aktionen")}
+            </h2>
+            <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
+              {t("resultsUi.hostFooterSubtitle", "Nur für dich als Host sichtbar")}
+            </p>
+          </header>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 12,
+            }}
+          >
+            <div
+              className="labs-card"
+              data-testid="host-action-manage-session"
+              style={{
+                padding: 14, background: "var(--labs-surface-elevated)",
+                border: "1px solid var(--labs-border)",
+                display: "flex", flexDirection: "column", gap: 10,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                  background: "var(--labs-accent-muted)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  {isCompleted ? (
+                    <RotateCcw className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                  ) : (
+                    <Settings className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                  )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
+                    {isCompleted ? t("tastingDetail.restartTasting") : t("tastingDetail.manageSession")}
+                  </p>
+                  <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
+                    {isCompleted
+                      ? t("tastingDetail.restartTastingSubtitle", "Status zurücksetzen oder neu öffnen")
+                      : t("tastingDetail.manageSessionSubtitle", "Reihenfolge, Reveal, Gäste-Status & Einstellungen")}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="labs-btn-secondary"
+                onClick={() => navigate(`/labs/host/${tastingId}`)}
+                data-testid="host-action-manage-session-open"
+                style={{ fontSize: 12, padding: "6px 10px" }}
+              >
+                {isCompleted ? t("tastingDetail.restartTasting") : t("tastingDetail.manageSession")}
+              </button>
+            </div>
+
+            <div
+              className="labs-card"
+              data-testid="host-action-manage-tasters"
+              style={{
+                padding: 14, background: "var(--labs-surface-elevated)",
+                border: "1px solid var(--labs-border)",
+                display: "flex", flexDirection: "column", gap: 10,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                  background: "var(--labs-accent-muted)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <Users className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
+                    {t("resultsUi.hostToolsManageTasters", "Taster verwalten")}
+                  </p>
+                  <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
+                    {t("resultsUi.hostToolsManageTastersDesc", "Teilnehmer hinzufügen, entfernen oder ausschließen")}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="labs-btn-secondary"
+                onClick={() => setShowManageTasters(true)}
+                data-testid="host-action-manage-tasters-open"
+                style={{ fontSize: 12, padding: "6px 10px" }}
+              >
+                {t("resultsUi.hostToolsManageTasters", "Taster verwalten")}
+              </button>
+            </div>
+
+            {(isLive || isReveal || isCompleted) && (
+              <div
+                className="labs-card"
+                data-testid="host-action-cockpit"
+                style={{
+                  padding: 14, background: "var(--labs-surface-elevated)",
+                  border: "1px solid var(--labs-border)",
+                  display: "flex", flexDirection: "column", gap: 10,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                    background: "var(--labs-accent-muted)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <Gauge className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
+                      {t("resultsUi.hostFooterCockpit", "Zum Cockpit")}
+                    </p>
+                    <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
+                      {t("resultsUi.hostFooterCockpitDesc", "Live-Steuerung & Reveal-Schritte")}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="labs-btn-secondary"
+                  onClick={() => navigate(`/labs/cockpit/${tastingId}`)}
+                  data-testid="host-action-cockpit-open"
+                  style={{ fontSize: 12, padding: "6px 10px" }}
+                >
+                  {t("resultsUi.hostFooterCockpit", "Zum Cockpit")}
+                </button>
+              </div>
+            )}
+
+            {isReveal && (
+              <div
+                className="labs-card"
+                data-testid="host-action-archive"
+                style={{
+                  padding: 14, background: "var(--labs-surface-elevated)",
+                  border: "1px solid var(--labs-border)",
+                  display: "flex", flexDirection: "column", gap: 10,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                    background: "var(--labs-accent-muted)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <Archive className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
+                      {t("resultsUi.hostToolsArchive", "Tasting archivieren")}
+                    </p>
+                    <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
+                      {t("resultsUi.hostToolsArchiveDesc", "Ergebnisse sperren, damit nichts mehr geändert werden kann")}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="labs-btn-secondary"
+                  onClick={() => setShowArchiveDialog(true)}
+                  data-testid="host-action-archive-open"
+                  style={{ fontSize: 12, padding: "6px 10px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  {t("resultsUi.hostToolsArchive", "Tasting archivieren")}
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {participants && participants.length > 0 && (
         <div className="mb-6 labs-stagger-5">
@@ -1721,7 +2218,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         const showResults = isResultDownloadsPhase(phase);
         const showPrintMaterials = !isHost && downloadsAvailable && !isResultDownloadsPhase(phase);
         return (
-          <div className="mb-6" data-testid={`labs-detail-downloads-${phase}`}>
+          <div id="downloads" className="mb-6" data-testid={`labs-detail-downloads-${phase}`}>
             {!showResults && (
               <p
                 className="text-xs mb-3"
@@ -1916,6 +2413,85 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {isHost && participants && (
+        <ManageTastersDialog
+          open={showManageTasters}
+          onClose={() => setShowManageTasters(false)}
+          tastingId={tastingId}
+          participants={(participants as unknown) as Parameters<typeof ManageTastersDialog>[0]["participants"]}
+          hostId={tasting?.hostId ?? null}
+        />
+      )}
+
+      {isHost && showArchiveDialog && createPortal(
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.6)" }}
+          onClick={() => !archiveMutation.isPending && setShowArchiveDialog(false)}
+          data-testid="archive-dialog-backdrop"
+        >
+          <div
+            className="w-full max-w-md rounded-2xl p-6 labs-fade-in"
+            style={{ background: "var(--labs-surface)", border: "1px solid var(--labs-border)", boxShadow: "0 20px 60px rgba(0,0,0,0.4)" }}
+            onClick={(e) => e.stopPropagation()}
+            data-testid="archive-dialog"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "var(--labs-accent-muted)" }}
+              >
+                <Archive className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
+              </div>
+              <h2 className="text-lg font-bold" style={{ color: "var(--labs-text)" }}>
+                {t("resultsUi.hostToolsArchive", "Tasting archivieren")}
+              </h2>
+            </div>
+            <p className="text-sm mb-2" style={{ color: "var(--labs-text)" }}>
+              {t("resultsUi.finalizeDesc", "Damit wird das Tasting abgeschlossen und unveränderlich.")}
+            </p>
+            <ul className="text-sm mb-4 space-y-1" style={{ color: "var(--labs-text-muted)" }}>
+              <li>{t("resultsUi.ratingsNoEdit", "Bewertungen, Whiskys und Ergebnisse können nicht mehr geändert werden")}</li>
+              <li>{t("resultsUi.tastingArchived", "Das Tasting erscheint im Archiv der historischen Tastings")}</li>
+              <li>{t("resultsUi.adminReopen", "Ein Admin kann es bei Bedarf wieder öffnen")}</li>
+            </ul>
+            {archiveMutation.isError && (
+              <p className="text-xs mb-3" style={{ color: "var(--labs-danger, #e74c3c)" }} data-testid="archive-dialog-error">
+                {(archiveMutation.error as Error)?.message ?? t("ui.error", "Fehler")}
+              </p>
+            )}
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                className="labs-btn-ghost text-sm px-4 py-2"
+                onClick={() => setShowArchiveDialog(false)}
+                disabled={archiveMutation.isPending}
+                data-testid="archive-dialog-cancel"
+              >
+                {t("ui.cancel", "Abbrechen")}
+              </button>
+              <button
+                type="button"
+                className="labs-btn-primary text-sm px-4 py-2 inline-flex items-center gap-2"
+                onClick={() => archiveMutation.mutate()}
+                disabled={archiveMutation.isPending}
+                data-testid="archive-dialog-confirm"
+              >
+                {archiveMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Archive className="w-4 h-4" />
+                )}
+                {archiveMutation.isPending
+                  ? t("ui.archiving", "Wird archiviert…")
+                  : t("resultsUi.hostToolsArchive", "Tasting archivieren")}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
       )}
 
     </div>
