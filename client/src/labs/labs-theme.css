@@ -2846,95 +2846,45 @@ a.labs-dram-item {
 }
 
 :root {
-  --labs-detail-section-scroll-margin: 104px;
+  --labs-detail-section-scroll-margin: 168px;
 }
 
 .labs-detail-section-anchor {
   scroll-margin-top: var(--labs-detail-section-scroll-margin);
 }
 
-/* ----- Sticky mini-header for tasting detail section navigation ----------
- * `top` here matches the global LabsLayout header height. Keep in sync with
- * LABS_HEADER_HEIGHT_PX in client/src/labs/pages/LabsTastingDetail.tsx.
+/* ----- Sticky tile menu for tasting detail section navigation ------------
+ * The tile row itself sticks to the top of the viewport once scrolled past.
+ * `top` matches the fixed global LabsLayout header height (52px).
  */
-.labs-detail-sticky-pills {
-  position: fixed;
+.labs-detail-section-menu {
+  position: sticky;
   top: 52px;
-  left: 0;
-  right: 0;
   z-index: 30;
   background: var(--labs-header-bg, var(--labs-bg));
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  margin-left: -1.25rem;
+  margin-right: -1.25rem;
+  padding: 8px 1.25rem;
   border-bottom: 1px solid var(--labs-border-subtle);
-  padding: 6px 0;
-}
-
-.labs-detail-sticky-pills-inner {
-  max-width: 672px;
-  margin: 0 auto;
-  padding: 0 12px;
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 6px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  scroll-padding-inline: 12px;
-  -webkit-overflow-scrolling: touch;
-}
-
-.labs-detail-sticky-pills-inner::-webkit-scrollbar {
-  display: none;
-}
-
-.labs-detail-sticky-pill {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  height: 32px;
-  border-radius: 999px;
-  background: var(--labs-surface);
-  border: 1px solid var(--labs-border);
-  color: var(--labs-text-secondary, var(--labs-text-muted));
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
-}
-
-.labs-detail-sticky-pill:hover {
-  background: var(--labs-surface-hover);
-  color: var(--labs-text);
-}
-
-.labs-detail-sticky-pill:active {
-  transform: scale(0.97);
-}
-
-.labs-detail-sticky-pill.is-active {
-  background: var(--labs-accent-muted);
-  border-color: var(--labs-accent);
-  color: var(--labs-accent);
 }
 
 @media (max-width: 390px) {
-  .labs-detail-sticky-pills {
-    padding: 5px 0;
+  :root {
+    --labs-detail-section-scroll-margin: 156px;
   }
-  .labs-detail-sticky-pills-inner {
-    padding: 0 10px;
-    gap: 5px;
+  .labs-detail-section-menu {
+    padding: 6px 1.25rem;
   }
-  .labs-detail-sticky-pill {
-    padding: 5px 10px;
-    height: 30px;
-    font-size: 11px;
+  .labs-detail-section-menu .labs-hub-tile-grid--single-row .labs-hub-tile,
+  .labs-detail-section-menu .labs-hub-tile-grid--four-row .labs-hub-tile {
+    min-height: 80px;
+    padding: 8px 6px;
+    gap: 6px;
+  }
+  .labs-detail-section-menu .labs-hub-tile-grid--single-row .labs-hub-tile-desc,
+  .labs-detail-section-menu .labs-hub-tile-grid--four-row .labs-hub-tile-desc {
+    display: none;
   }
 }
