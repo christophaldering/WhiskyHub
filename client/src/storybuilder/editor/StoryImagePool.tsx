@@ -750,33 +750,57 @@ export function StoryImagePool({
                         ))}
                       </div>
                       {participants.length > 0 ? (
-                        <select
-                          value=""
-                          onChange={(e) => {
-                            const pid = e.target.value;
-                            e.currentTarget.value = "";
-                            onParticipantToggle(pid);
-                          }}
-                          disabled={busy}
-                          style={cardSelectStyle}
-                          data-testid={`select-${testIdPrefix}-participants-${it.id}`}
-                          aria-label="Verkoster zuordnen oder entfernen"
-                        >
-                          <option value="">
-                            {it.participantIds.length === 0
-                              ? "Verkoster zuordnen…"
-                              : `Verkoster (${it.participantIds.length}) ändern…`}
-                          </option>
-                          {participants.map((p) => {
-                            const active = it.participantIds.includes(p.id);
-                            const label = p.displayName || p.name || p.id;
-                            return (
-                              <option key={p.id} value={p.id}>
-                                {active ? `✓ ${label}` : label}
-                              </option>
-                            );
-                          })}
-                        </select>
+                        <div style={participantPickerStyle}>
+                          {it.participantIds.length > 0 ? (
+                            <div style={participantChipsStyle}>
+                              {it.participantIds.map((pid) => {
+                                const p = participants.find((x) => x.id === pid);
+                                const label = p ? p.displayName || p.name || p.id : pid;
+                                return (
+                                  <button
+                                    key={pid}
+                                    type="button"
+                                    onClick={() => onParticipantToggle(pid)}
+                                    disabled={busy}
+                                    style={participantChipStyle}
+                                    title={`${label} entfernen`}
+                                    data-testid={`chip-${testIdPrefix}-participant-${it.id}-${pid}`}
+                                  >
+                                    <span>{label}</span>
+                                    <span style={chipRemoveStyle} aria-hidden="true">×</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ) : null}
+                          <select
+                            value=""
+                            onChange={(e) => {
+                              const pid = e.target.value;
+                              e.currentTarget.value = "";
+                              onParticipantToggle(pid);
+                            }}
+                            disabled={busy}
+                            style={cardSelectStyle}
+                            data-testid={`select-${testIdPrefix}-participants-${it.id}`}
+                            aria-label="Verkoster hinzufügen"
+                          >
+                            <option value="">
+                              {it.participantIds.length === 0
+                                ? "Verkoster zuordnen…"
+                                : "Weiteren Verkoster hinzufügen…"}
+                            </option>
+                            {participants.map((p) => {
+                              const active = it.participantIds.includes(p.id);
+                              const label = p.displayName || p.name || p.id;
+                              return (
+                                <option key={p.id} value={p.id}>
+                                  {active ? `${label} (entfernen)` : label}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </div>
                       ) : null}
                     </div>
                     {mode === "pick" && onPick ? (
@@ -1444,6 +1468,41 @@ const cardSelectStyle: React.CSSProperties = {
   outline: "none",
   width: "100%",
   cursor: "pointer",
+};
+
+const participantPickerStyle: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 3,
+  width: "100%",
+};
+
+const participantChipsStyle: React.CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 3,
+};
+
+const participantChipStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 4,
+  background: "rgba(201,169,97,0.18)",
+  border: "1px solid rgba(201,169,97,0.5)",
+  borderRadius: 999,
+  padding: "1px 6px 1px 8px",
+  color: "#F5EDE0",
+  fontFamily: "'Inter', system-ui, sans-serif",
+  fontSize: 10,
+  cursor: "pointer",
+  maxWidth: "100%",
+};
+
+const chipRemoveStyle: React.CSSProperties = {
+  color: "#C9A961",
+  fontWeight: 700,
+  fontSize: 12,
+  lineHeight: 1,
 };
 
 const pickBtn: React.CSSProperties = {
