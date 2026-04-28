@@ -300,6 +300,31 @@ function EditorPanel({ payload, onChange, tastingId }: BlockEditorPanelProps<Pay
   );
 }
 
+function Spinner({ testId }: { testId: string }) {
+  return (
+    <span
+      data-testid={testId}
+      style={{
+        display: "inline-block",
+        width: 10,
+        height: 10,
+        border: "1.5px solid rgba(201,169,97,0.35)",
+        borderTopColor: "#C9A961",
+        borderRadius: "50%",
+        animation: "whiskyGridSpin 0.8s linear infinite",
+      }}
+    />
+  );
+}
+
+const spinnerKeyframesId = "whisky-grid-spinner-keyframes";
+if (typeof document !== "undefined" && !document.getElementById(spinnerKeyframesId)) {
+  const style = document.createElement("style");
+  style.id = spinnerKeyframesId;
+  style.textContent = "@keyframes whiskyGridSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }";
+  document.head.appendChild(style);
+}
+
 type WhiskyOverrideRowProps = {
   whiskyId: string;
   whiskyName: string;
@@ -334,8 +359,6 @@ function WhiskyOverrideRow({
   const hasHandouts = Array.isArray(handoutsQuery.data) && handoutsQuery.data.length > 0;
   const aiDisabled = !tastingId || busyMode !== null;
   const extractDisabled = !tastingId || !hasHandouts || busyMode !== null;
-  const aiLabel = busyMode === "ai" ? "Generiere…" : "KI";
-  const extractLabel = busyMode === "extract" ? "Extrahiere…" : "Aus Handout";
   const extractTitle = !hasHandouts ? "Diesem Whisky ist kein Handout zugeordnet" : "Handout-Text aus PDF/Bild extrahieren und zusammenfassen";
   return (
     <div style={overrideRow}>
@@ -347,20 +370,22 @@ function WhiskyOverrideRow({
             onClick={onExtract}
             disabled={extractDisabled}
             title={extractTitle}
-            style={{ ...buttonStyle, opacity: extractDisabled ? 0.45 : 1, cursor: extractDisabled ? "not-allowed" : "pointer" }}
+            style={{ ...buttonStyle, opacity: extractDisabled ? 0.45 : 1, cursor: extractDisabled ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}
             data-testid={`button-handout-extract-${whiskyId}`}
           >
-            {extractLabel}
+            {busyMode === "extract" ? <Spinner testId={`spinner-handout-extract-${whiskyId}`} /> : null}
+            <span>{busyMode === "extract" ? "Extrahiere…" : "Aus Handout"}</span>
           </button>
           <button
             type="button"
             onClick={onAi}
             disabled={aiDisabled}
             title="Steckbrief mit KI neu generieren"
-            style={{ ...buttonStyle, opacity: aiDisabled ? 0.45 : 1, cursor: aiDisabled ? "not-allowed" : "pointer" }}
+            style={{ ...buttonStyle, opacity: aiDisabled ? 0.45 : 1, cursor: aiDisabled ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}
             data-testid={`button-handout-ai-${whiskyId}`}
           >
-            {aiLabel}
+            {busyMode === "ai" ? <Spinner testId={`spinner-handout-ai-${whiskyId}`} /> : null}
+            <span>{busyMode === "ai" ? "Generiere…" : "KI"}</span>
           </button>
         </div>
       </div>
