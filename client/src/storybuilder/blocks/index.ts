@@ -32,7 +32,7 @@ type RegisteredBlock = {
   defaultPayload: () => unknown;
   payloadSchema: z.ZodType<unknown>;
   Renderer: React.ComponentType<{ block: StoryBlock; payload: unknown; theme: StoryTheme; mode: RendererMode }>;
-  EditorPanel?: React.ComponentType<{ payload: unknown; onChange: (payload: unknown) => void }>;
+  EditorPanel?: React.ComponentType<{ payload: unknown; onChange: (payload: unknown) => void; tastingId?: string | null }>;
 };
 
 function categoryToScope(category: BlockDefinition["category"]): BlockScope {

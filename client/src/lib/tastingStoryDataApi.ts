@@ -309,3 +309,52 @@ export async function backfillTastingStoryImagePool(
   });
   return readJson<{ created: TastingStoryImageItem[]; createdCount: number }>(res, "Backfill fehlgeschlagen");
 }
+
+export type WhiskyHandoutTextResponse = {
+  handoutText: string;
+  sources?: number;
+};
+
+export async function aiGenerateWhiskyHandoutText(
+  tastingId: string,
+  whiskyId: string,
+  extras?: RegenerateExtras,
+): Promise<WhiskyHandoutTextResponse> {
+  const body: Record<string, unknown> = {};
+  const ci = extras?.customInstructions?.trim();
+  if (ci) body.customInstructions = ci;
+  if (extras?.stylePresets && extras.stylePresets.length > 0) body.stylePresets = extras.stylePresets;
+  if (extras?.lengthLevel) body.lengthLevel = extras.lengthLevel;
+  const res = await fetch(
+    `/api/tasting-stories/${encodeURIComponent(tastingId)}/whisky-handout-text/${encodeURIComponent(whiskyId)}/ai`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...pidHeaders() },
+      body: JSON.stringify(body),
+    },
+  );
+  return readJson<WhiskyHandoutTextResponse>(res, "KI-Generierung fehlgeschlagen");
+}
+
+export async function aiExtractWhiskyHandoutText(
+  tastingId: string,
+  whiskyId: string,
+  extras?: RegenerateExtras,
+): Promise<WhiskyHandoutTextResponse> {
+  const body: Record<string, unknown> = {};
+  const ci = extras?.customInstructions?.trim();
+  if (ci) body.customInstructions = ci;
+  if (extras?.stylePresets && extras.stylePresets.length > 0) body.stylePresets = extras.stylePresets;
+  if (extras?.lengthLevel) body.lengthLevel = extras.lengthLevel;
+  const res = await fetch(
+    `/api/tasting-stories/${encodeURIComponent(tastingId)}/whisky-handout-text/${encodeURIComponent(whiskyId)}/extract`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...pidHeaders() },
+      body: JSON.stringify(body),
+    },
+  );
+  return readJson<WhiskyHandoutTextResponse>(res, "Handout-Extraktion fehlgeschlagen");
+}

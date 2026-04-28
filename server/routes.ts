@@ -26146,6 +26146,144 @@ ${cleaned.slice(0, 60000)}`;
     }
   });
 
+  const whiskyHandoutTextOptionsSchema = z.object({
+    customInstructions: z.string().max(2000).optional(),
+    stylePresets: z.array(z.string().min(1).max(64)).max(8).optional(),
+    lengthLevel: z.enum(["compact", "default", "expanded", "epic"]).optional(),
+  });
+
+  const loadWhiskyHandoutsRawText = async (
+    whiskyId: string,
+    objectStorage: ObjectStorageService,
+  ): Promise<{ text: string; sources: number; hasHandouts: boolean }> => {
+    const handouts = await storage.listWhiskyHandouts(whiskyId);
+    if (handouts.length === 0) return { text: "", sources: 0, hasHandouts: false };
+    const parts: string[] = [];
+    let processed = 0;
+    for (const h of handouts) {
+      try {
+        const file = await objectStorage.getObjectEntityFile(h.fileUrl);
+        const [data] = await file.download();
+        const buffer = data as Buffer;
+        const ct = (h.contentType || "").toLowerCase();
+        const label = (h.title && h.title.trim().length > 0) ? h.title.trim() : "Handout";
+        if (ct === "application/pdf") {
+          const pages = await extractPagesText(buffer);
+          const joined = pages.filter((p) => p && p.trim().length > 0).join("\n\n").trim();
+          if (joined.length > 0) {
+            parts.push(`[${label}]\n${joined}`);
+            processed += 1;
+          }
+        } else if (ct.startsWith("image/")) {
+          const ext = ct === "image/png" ? "png" : ct === "image/webp" ? "webp" : "jpg";
+          const tmpPath = path.join(uploadsDir, `handout-extract-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`);
+          try {
+            fs.writeFileSync(tmpPath, buffer);
+            const text = await extractTextFromImage(tmpPath);
+            const cleaned = (text || "").trim();
+            if (cleaned.length > 0) {
+              parts.push(`[${label}]\n${cleaned}`);
+              processed += 1;
+            }
+          } finally {
+            try { fs.unlinkSync(tmpPath); } catch { void 0; }
+          }
+        }
+      } catch (err) {
+        console.warn("[whisky-handout-extract] failed for handout", h.id, err);
+      }
+    }
+    return { text: parts.join("\n\n"), sources: processed, hasHandouts: true };
+  };
+
+  app.post("/api/tasting-stories/:tastingId/whisky-handout-text/:whiskyId/ai", async (req: Request, res: Response) => {
+    try {
+      const tastingId = sanitizeTastingId(req.params.tastingId);
+      if (!tastingId) return res.status(400).json({ message: "tastingId fehlt" });
+      const whiskyId = (req.params.whiskyId || "").trim();
+      if (!whiskyId) return res.status(400).json({ message: "whiskyId fehlt" });
+      const access = await checkTastingStoryAccess(req, tastingId);
+      if (!access.ok) return res.status(access.status).json({ message: access.message });
+      const parsed = whiskyHandoutTextOptionsSchema.safeParse(req.body ?? {});
+      if (!parsed.success) return res.status(422).json({ message: "Ungueltiger Request-Body" });
+      const rate = checkStoryAiRate(`handout-ai:${access.participant.id}`);
+      if (!rate.allowed) {
+        return res.status(429).json({ message: `Zu viele Anfragen. Versuche es in ${rate.retryAfterSeconds ?? 30} Sekunden erneut.` });
+      }
+      const { aggregateTastingStoryData } = await import("./tastingStoryAggregate");
+      const data = await aggregateTastingStoryData(tastingId);
+      if (!data) return res.status(404).json({ message: "Verkostung nicht gefunden" });
+      if (!data.whiskies.find((w) => w.id === whiskyId)) {
+        return res.status(404).json({ message: "Whisky nicht gefunden" });
+      }
+      const aiResult = await getAIClient(access.participant.id, "storybuilder");
+      if (!aiResult.client) {
+        if (aiResult.error === "AI_LIMIT_EXCEEDED") return res.status(429).json({ message: "KI-Kontingent erreicht.", quotaInfo: aiResult.quotaInfo });
+        if (aiResult.error === "AI_DISABLED") return res.status(503).json({ message: "KI-Funktionen sind aktuell deaktiviert." });
+        return res.status(503).json({ message: "Kein KI-Anbieter verfuegbar." });
+      }
+      const { generateSingleWhiskyHandoutText } = await import("./tastingStoryRegen");
+      const text = await generateSingleWhiskyHandoutText(whiskyId, data, aiResult.client, {
+        customInstructions: parsed.data.customInstructions ?? null,
+        stylePresets: parsed.data.stylePresets ?? [],
+        lengthLevel: parsed.data.lengthLevel ?? null,
+      });
+      if (!text) return res.status(502).json({ message: "KI-Antwort war leer" });
+      return res.json({ handoutText: text });
+    } catch (e: unknown) {
+      console.error("[tasting-stories/whisky-handout-text/ai] error:", e);
+      const msg = e instanceof Error ? e.message : "Generierung fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  app.post("/api/tasting-stories/:tastingId/whisky-handout-text/:whiskyId/extract", async (req: Request, res: Response) => {
+    try {
+      const tastingId = sanitizeTastingId(req.params.tastingId);
+      if (!tastingId) return res.status(400).json({ message: "tastingId fehlt" });
+      const whiskyId = (req.params.whiskyId || "").trim();
+      if (!whiskyId) return res.status(400).json({ message: "whiskyId fehlt" });
+      const access = await checkTastingStoryAccess(req, tastingId);
+      if (!access.ok) return res.status(access.status).json({ message: access.message });
+      const parsed = whiskyHandoutTextOptionsSchema.safeParse(req.body ?? {});
+      if (!parsed.success) return res.status(422).json({ message: "Ungueltiger Request-Body" });
+      const rate = checkStoryAiRate(`handout-extract:${access.participant.id}`);
+      if (!rate.allowed) {
+        return res.status(429).json({ message: `Zu viele Anfragen. Versuche es in ${rate.retryAfterSeconds ?? 30} Sekunden erneut.` });
+      }
+      const whisky = await storage.getWhisky(whiskyId);
+      if (!whisky || whisky.tastingId !== tastingId) {
+        return res.status(404).json({ message: "Whisky nicht gefunden" });
+      }
+      const objectStorage = new ObjectStorageService();
+      const extracted = await loadWhiskyHandoutsRawText(whiskyId, objectStorage);
+      if (!extracted.hasHandouts) {
+        return res.status(404).json({ message: "Diesem Whisky ist kein Handout zugeordnet.", code: "NO_HANDOUTS" });
+      }
+      if (extracted.sources === 0 || extracted.text.length === 0) {
+        return res.status(422).json({ message: "Aus den Handouts konnte kein lesbarer Text extrahiert werden." });
+      }
+      const aiResult = await getAIClient(access.participant.id, "storybuilder");
+      if (!aiResult.client) {
+        if (aiResult.error === "AI_LIMIT_EXCEEDED") return res.status(429).json({ message: "KI-Kontingent erreicht.", quotaInfo: aiResult.quotaInfo });
+        if (aiResult.error === "AI_DISABLED") return res.status(503).json({ message: "KI-Funktionen sind aktuell deaktiviert." });
+        return res.status(503).json({ message: "Kein KI-Anbieter verfuegbar." });
+      }
+      const { summarizeWhiskyHandoutText } = await import("./tastingStoryRegen");
+      const summary = await summarizeWhiskyHandoutText(whisky.name, extracted.text, aiResult.client, {
+        customInstructions: parsed.data.customInstructions ?? null,
+        stylePresets: parsed.data.stylePresets ?? [],
+        lengthLevel: parsed.data.lengthLevel ?? null,
+      });
+      if (!summary) return res.status(502).json({ message: "KI-Antwort war leer" });
+      return res.json({ handoutText: summary, sources: extracted.sources });
+    } catch (e: unknown) {
+      console.error("[tasting-stories/whisky-handout-text/extract] error:", e);
+      const msg = e instanceof Error ? e.message : "Extraktion fehlgeschlagen";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
   // ===== Tasting Story Wizard (guided entry into the block editor) =====
   const wizardToneEnum = z.enum(["festive", "casual", "analytical", "poetic"]);
   const wizardGenerateSchema = z.object({

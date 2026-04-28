@@ -93,6 +93,7 @@ export type BlockRendererProps<TPayload = Record<string, unknown>> = {
 export type BlockEditorPanelProps<TPayload = Record<string, unknown>> = {
   payload: TPayload;
   onChange: (payload: TPayload) => void;
+  tastingId?: string | null;
 };
 
 export function createBlockId(): string {

@@ -1,7 +1,14 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import type { BlockDefinition, BlockEditorPanelProps, BlockRendererProps } from "../core/types";
 import { useTastingStoryData } from "../data/TastingStoryDataContext";
 import { ResponsiveImage } from "../renderer/ResponsiveImage";
+import { whiskyHandoutApi } from "@/lib/api";
+import {
+  aiExtractWhiskyHandoutText,
+  aiGenerateWhiskyHandoutText,
+} from "@/lib/tastingStoryDataApi";
 
 const overrideSchema = z.object({
   handoutText: z.string().optional().default(""),
@@ -197,15 +204,48 @@ function PlaceholderEmpty({ theme, testId, message }: { theme: BlockRendererProp
   );
 }
 
-function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
+function EditorPanel({ payload, onChange, tastingId }: BlockEditorPanelProps<Payload>) {
   const data = useTastingStoryData();
   const set = <K extends keyof Payload>(key: K, value: Payload[K]) => onChange({ ...payload, [key]: value });
   const allWhiskies = data?.whiskies ?? [];
+  const [busy, setBusy] = useState<Record<string, "ai" | "extract" | null>>({});
   const updateOverride = (whiskyId: string, patch: Partial<{ handoutText: string; scoreLabel: string }>) => {
     const cur = payload.overrides ?? {};
     const existing = cur[whiskyId] ?? { handoutText: "", scoreLabel: "" };
     const next = { ...cur, [whiskyId]: { ...existing, ...patch } };
     set("overrides", next);
+  };
+  const runAi = async (whiskyId: string) => {
+    if (!tastingId) {
+      window.alert("KI-Generierung benoetigt eine aktive Verkostung.");
+      return;
+    }
+    setBusy((s) => ({ ...s, [whiskyId]: "ai" }));
+    try {
+      const r = await aiGenerateWhiskyHandoutText(tastingId, whiskyId);
+      updateOverride(whiskyId, { handoutText: r.handoutText });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "KI-Generierung fehlgeschlagen";
+      window.alert(msg);
+    } finally {
+      setBusy((s) => ({ ...s, [whiskyId]: null }));
+    }
+  };
+  const runExtract = async (whiskyId: string) => {
+    if (!tastingId) {
+      window.alert("Handout-Extraktion benoetigt eine aktive Verkostung.");
+      return;
+    }
+    setBusy((s) => ({ ...s, [whiskyId]: "extract" }));
+    try {
+      const r = await aiExtractWhiskyHandoutText(tastingId, whiskyId);
+      updateOverride(whiskyId, { handoutText: r.handoutText });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Handout-Extraktion fehlgeschlagen";
+      window.alert(msg);
+    } finally {
+      setBusy((s) => ({ ...s, [whiskyId]: null }));
+    }
   };
   return (
     <div style={{ display: "grid", gap: 12 }}>
@@ -235,36 +275,112 @@ function EditorPanel({ payload, onChange }: BlockEditorPanelProps<Payload>) {
       ) : (
         <div style={{ display: "grid", gap: 10, marginTop: 8 }}>
           <div style={{ fontSize: 11, letterSpacing: ".2em", textTransform: "uppercase", color: "#A89A85" }}>Pro-Karte-Überschreibungen</div>
-          {allWhiskies.map((w) => {
-            const ov = payload.overrides?.[w.id] ?? { handoutText: "", scoreLabel: "" };
-            return (
-              <div key={w.id} style={overrideRow}>
-                <div style={{ fontSize: 12, color: "#F5EDE0", marginBottom: 4 }}>{w.name}</div>
-                <textarea
-                  placeholder={w.handoutExcerpt ?? "Handout-Text…"}
-                  value={ov.handoutText ?? ""}
-                  onChange={(e) => updateOverride(w.id, { handoutText: e.target.value })}
-                  style={{ ...inputStyle, minHeight: 50 }}
-                  data-testid={`input-whisky-grid-handout-${w.id}`}
-                />
-                <input
-                  type="text"
-                  placeholder={w.avgScore !== null ? `${w.avgScore.toFixed(1)} Punkte` : "Punktelabel"}
-                  value={ov.scoreLabel ?? ""}
-                  onChange={(e) => updateOverride(w.id, { scoreLabel: e.target.value })}
-                  style={inputStyle}
-                  data-testid={`input-whisky-grid-score-${w.id}`}
-                />
-              </div>
-            );
-          })}
+          {allWhiskies.map((w) => (
+            <WhiskyOverrideRow
+              key={w.id}
+              whiskyId={w.id}
+              whiskyName={w.name}
+              handoutExcerpt={w.handoutExcerpt}
+              avgScoreLabel={w.avgScore !== null ? `${w.avgScore.toFixed(1)} Punkte` : "Punktelabel"}
+              override={payload.overrides?.[w.id] ?? { handoutText: "", scoreLabel: "" }}
+              onUpdate={(patch) => updateOverride(w.id, patch)}
+              onAi={() => runAi(w.id)}
+              onExtract={() => runExtract(w.id)}
+              busyMode={busy[w.id] ?? null}
+              tastingId={tastingId ?? null}
+            />
+          ))}
         </div>
       )}
     </div>
   );
 }
 
+type WhiskyOverrideRowProps = {
+  whiskyId: string;
+  whiskyName: string;
+  handoutExcerpt: string | null;
+  avgScoreLabel: string;
+  override: { handoutText?: string; scoreLabel?: string };
+  onUpdate: (patch: Partial<{ handoutText: string; scoreLabel: string }>) => void;
+  onAi: () => void;
+  onExtract: () => void;
+  busyMode: "ai" | "extract" | null;
+  tastingId: string | null;
+};
+
+function WhiskyOverrideRow({
+  whiskyId,
+  whiskyName,
+  handoutExcerpt,
+  avgScoreLabel,
+  override,
+  onUpdate,
+  onAi,
+  onExtract,
+  busyMode,
+  tastingId,
+}: WhiskyOverrideRowProps) {
+  const handoutsQuery = useQuery<unknown[]>({
+    queryKey: ["whisky-handouts", whiskyId],
+    queryFn: () => whiskyHandoutApi.list(whiskyId),
+    enabled: !!whiskyId,
+    staleTime: 60_000,
+  });
+  const hasHandouts = Array.isArray(handoutsQuery.data) && handoutsQuery.data.length > 0;
+  const aiDisabled = !tastingId || busyMode !== null;
+  const extractDisabled = !tastingId || !hasHandouts || busyMode !== null;
+  const aiLabel = busyMode === "ai" ? "Generiere…" : "KI";
+  const extractLabel = busyMode === "extract" ? "Extrahiere…" : "Aus Handout";
+  const extractTitle = !hasHandouts ? "Diesem Whisky ist kein Handout zugeordnet" : "Handout-Text aus PDF/Bild extrahieren und zusammenfassen";
+  return (
+    <div style={overrideRow}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, gap: 8 }}>
+        <div style={{ fontSize: 12, color: "#F5EDE0" }}>{whiskyName}</div>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button
+            type="button"
+            onClick={onExtract}
+            disabled={extractDisabled}
+            title={extractTitle}
+            style={{ ...buttonStyle, opacity: extractDisabled ? 0.45 : 1, cursor: extractDisabled ? "not-allowed" : "pointer" }}
+            data-testid={`button-handout-extract-${whiskyId}`}
+          >
+            {extractLabel}
+          </button>
+          <button
+            type="button"
+            onClick={onAi}
+            disabled={aiDisabled}
+            title="Steckbrief mit KI neu generieren"
+            style={{ ...buttonStyle, opacity: aiDisabled ? 0.45 : 1, cursor: aiDisabled ? "not-allowed" : "pointer" }}
+            data-testid={`button-handout-ai-${whiskyId}`}
+          >
+            {aiLabel}
+          </button>
+        </div>
+      </div>
+      <textarea
+        placeholder={handoutExcerpt ?? "Handout-Text…"}
+        value={override.handoutText ?? ""}
+        onChange={(e) => onUpdate({ handoutText: e.target.value })}
+        style={{ ...inputStyle, minHeight: 50 }}
+        data-testid={`input-whisky-grid-handout-${whiskyId}`}
+      />
+      <input
+        type="text"
+        placeholder={avgScoreLabel}
+        value={override.scoreLabel ?? ""}
+        onChange={(e) => onUpdate({ scoreLabel: e.target.value })}
+        style={inputStyle}
+        data-testid={`input-whisky-grid-score-${whiskyId}`}
+      />
+    </div>
+  );
+}
+
 const labelStyle: React.CSSProperties = { display: "grid", gap: 4, fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: "#A89A85" };
+const buttonStyle: React.CSSProperties = { background: "rgba(201,169,97,0.12)", border: "1px solid rgba(201,169,97,0.4)", borderRadius: 4, padding: "4px 8px", color: "#C9A961", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 11, letterSpacing: ".05em" };
 const inputStyle: React.CSSProperties = { background: "rgba(201,169,97,0.06)", border: "1px solid rgba(201,169,97,0.25)", borderRadius: 4, padding: "8px 10px", color: "#F5EDE0", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, outline: "none" };
 const hintStyle: React.CSSProperties = { fontSize: 11, color: "#6B5F4F", padding: "8px 10px", background: "rgba(201,169,97,0.04)", border: "1px dashed rgba(201,169,97,0.15)", borderRadius: 4 };
 const overrideRow: React.CSSProperties = { display: "grid", gap: 6, padding: "10px", border: "1px solid rgba(201,169,97,0.12)", borderRadius: 4 };

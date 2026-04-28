@@ -1720,6 +1720,9 @@ function SelectedBlockEditor({
   const validation = validatePayload(block.type, block.payload);
   const aiFields = collectAiFields(block.type, validation.payload);
   const canRegen = !!onRegenerateBlock && TASTING_REGEN_TYPES.has(block.type);
+  const tastingIdForPanel = sourceContext?.sourceType === "tasting" && sourceContext?.sourceId
+    ? sourceContext.sourceId
+    : null;
   const handleRegen = async () => {
     if (!onRegenerateBlock || regenBusy) return;
     saveInstructionValue(sourceContext, instructionValue);
@@ -1870,6 +1873,7 @@ function SelectedBlockEditor({
       ) : null}
       <Panel
         payload={validation.payload}
+        tastingId={tastingIdForPanel}
         onChange={(p) => {
           const next = isPlainRecord(p) ? p : {};
           onChange(next);

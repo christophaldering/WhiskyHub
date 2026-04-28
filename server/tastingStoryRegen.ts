@@ -792,3 +792,57 @@ export async function regenerateBlockWithAi(
     default: return null;
   }
 }
+
+export async function generateSingleWhiskyHandoutText(
+  whiskyId: string,
+  data: AggregatedTastingStoryData,
+  openai: OpenAI,
+  options?: RegenOptions,
+): Promise<string | null> {
+  const w = data.whiskies.find((x) => x.id === whiskyId);
+  if (!w) return null;
+  const system = buildSystem(
+    "Du bist ein deutschsprachiger Whisky-Redakteur. Schreibe einen sinnlichen, kompakten Steckbrief-Text fuer das Tasting-Programm zu genau einem Whisky. Drei bis fuenf Saetze, reiner Text, kein Werbe-Tonfall, keine Anfuehrungszeichen, keine Listen. Antworte ausschliesslich mit dem Steckbrief-Text.",
+    options,
+  );
+  const desc = [
+    w.distillery,
+    w.region,
+    w.age ? `${w.age}J` : null,
+    w.caskType,
+    w.abv ? `${w.abv}%` : null,
+  ].filter(Boolean).join(" / ");
+  const note = w.handoutExcerpt ?? w.hostSummary ?? w.notes ?? "";
+  const userParts = [
+    `Tasting: ${data.meta.title}`,
+    `Whisky: ${w.name}`,
+    desc ? `Profil: ${desc}` : null,
+    note ? `Notiz: ${note.slice(0, 600)}` : null,
+  ].filter(Boolean).join("\n");
+  const raw = await callOpenAi(openai, system, userParts + buildUserExtras(options), false, options);
+  if (!raw) return null;
+  const cleaned = raw.replace(/^["“”']+|["“”']+$/g, "").trim();
+  if (cleaned.length === 0) return null;
+  return trimText(cleaned, lengthCapFor(options));
+}
+
+export async function summarizeWhiskyHandoutText(
+  whiskyName: string,
+  rawSourceText: string,
+  openai: OpenAI,
+  options?: RegenOptions,
+): Promise<string | null> {
+  const trimmed = rawSourceText.replace(/\s+/g, " ").trim();
+  if (trimmed.length === 0) return null;
+  const system = buildSystem(
+    "Du bist ein deutschsprachiger Whisky-Redakteur. Verdichte den uebergebenen Handout-Rohtext zu einem sinnlichen, kompakten Steckbrief von drei bis fuenf Saetzen. Reiner Text, keine Listen, keine Anfuehrungszeichen. Halte dich strikt an Informationen, die im Rohtext stehen, und erfinde nichts dazu. Antworte ausschliesslich mit dem Steckbrief-Text.",
+    options,
+  );
+  const truncated = trimmed.length > 8000 ? `${trimmed.slice(0, 8000)}…` : trimmed;
+  const user = `Whisky: ${whiskyName}\n\nHandout-Rohtext:\n${truncated}` + buildUserExtras(options);
+  const raw = await callOpenAi(openai, system, user, false, options);
+  if (!raw) return null;
+  const cleaned = raw.replace(/^["“”']+|["“”']+$/g, "").trim();
+  if (cleaned.length === 0) return null;
+  return trimText(cleaned, lengthCapFor(options));
+}
