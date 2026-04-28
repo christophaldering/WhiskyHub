@@ -1,10 +1,10 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { useLocation, Link } from "wouter";
+import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useLabsBack } from "@/labs/LabsLayout";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
-import { Wine, ChevronLeft, ChevronRight, ChevronDown, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, Monitor, Sparkles, Settings, Pencil, RotateCcw, Download, Library } from "lucide-react";
+import { Wine, ChevronLeft, ChevronRight, ChevronDown, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, Monitor, Sparkles, Settings, Pencil, RotateCcw, Download } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi, participantApi, participantUpdateApi } from "@/lib/api";
 import type { Participant } from "@shared/schema";
@@ -132,23 +132,6 @@ function LiveDownloadsSection({
         </div>
       )}
       {!showResults && !isHost && <LabsParticipantDownloads tasting={tasting as Tasting} />}
-      <Link
-        href="/labs/downloads"
-        data-testid={`link-${testIdPrefix}-hub`}
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 6,
-          padding: "6px 12px",
-          fontSize: 12,
-          color: "var(--labs-accent)",
-          textDecoration: "none",
-          borderBottom: "1px solid color-mix(in srgb, var(--labs-accent) 40%, transparent)",
-        }}
-      >
-        <Library style={{ width: 12, height: 12 }} />
-        {t("downloads.allDownloadsLink", "Alle Downloads anzeigen")}
-      </Link>
     </div>
   );
 }

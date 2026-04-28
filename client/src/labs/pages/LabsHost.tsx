@@ -13,7 +13,7 @@ import {
   MessageCircle, Video, FileText, FileSpreadsheet, Settings, Upload, Share2,
   Sparkles, RefreshCw, Camera, BookOpen, Heart, Pencil, Image, Image as ImageIcon,
   Download, ExternalLink, Lock, Printer, ScanLine, GripVertical, Layers, ArrowRightLeft, Archive, Info,
-  Crown, Scissors, RotateCcw, Library,
+  Crown, Scissors, RotateCcw,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
@@ -7495,25 +7495,6 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                     </div>
                   )}
                   {printMaterialsNode}
-                  <div className="mt-3">
-                    <Link
-                      href="/labs/downloads"
-                      data-testid="link-host-downloads-hub"
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 6,
-                        padding: "6px 12px",
-                        fontSize: 12,
-                        color: "var(--labs-accent)",
-                        textDecoration: "none",
-                        borderBottom: "1px solid color-mix(in srgb, var(--labs-accent) 40%, transparent)",
-                      }}
-                    >
-                      <Library style={{ width: 12, height: 12 }} />
-                      {t("downloads.allDownloadsLink", "Alle Downloads anzeigen")}
-                    </Link>
-                  </div>
                 </div>
               );
             })()}

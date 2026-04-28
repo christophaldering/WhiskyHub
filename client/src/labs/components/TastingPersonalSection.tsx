@@ -442,9 +442,6 @@ export default function TastingPersonalSection({
 
   const scrollToDownloads = (cardId?: string) => {
     window.dispatchEvent(new CustomEvent("labs-tasting-detail-set-section", { detail: "downloads" }));
-    if (cardId) {
-      window.dispatchEvent(new CustomEvent("labs-tasting-detail-expand-downloads"));
-    }
     window.setTimeout(() => {
       if (cardId) {
         let attempts = 0;

@@ -27,6 +27,7 @@ import LabsTasteDrams from "./LabsTasteDrams";
 import LabsTasteCollection from "./LabsTasteCollection";
 import LabsTasteWishlist from "./LabsTasteWishlist";
 import LabsHandoutLibrary from "./LabsHandoutLibrary";
+import LabsAiImages from "./LabsAiImages";
 import LabsConnoisseur from "./LabsConnoisseur";
 import LabsWhiskyDNA from "./LabsWhiskyDNA";
 import LabsRecommendations from "./LabsRecommendations";
@@ -379,6 +380,7 @@ export default function LabsTaste() {
               {activeCollectionTile === "labs-link-collection-hub-bottles" && <LabsTasteCollection />}
               {activeCollectionTile === "labs-link-collection-hub-wishlist" && <LabsTasteWishlist />}
               {activeCollectionTile === "labs-link-collection-hub-handouts" && <LabsHandoutLibrary mode="workspace" />}
+              {activeCollectionTile === "labs-link-collection-hub-ai-images" && <LabsAiImages />}
             </EmbeddedMeineWeltProvider>
           </HubTileCollapsible>
           {!activeCollectionTile && (

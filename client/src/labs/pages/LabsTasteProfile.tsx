@@ -4,11 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import ContextDownloadBar from "@/labs/components/ContextDownloadBar";
 import { downloadAnalyticsPdf, downloadXlsxFromSheets, safeFileSegment, type PdfSection } from "@/labs/utils/contextDownloads";
-import { Link } from "wouter";
 import { useSession } from "@/lib/session";
 import { flavorProfileApi } from "@/lib/api";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
-import { Library } from "lucide-react";
 import {
   Radar,
   RadarChart,
@@ -343,23 +341,6 @@ export default function LabsTasteProfile() {
               ]}
             />
           )}
-          <Link
-            href="/labs/downloads"
-            data-testid="link-profile-downloads-hub"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "4px 10px",
-              fontSize: 11,
-              color: "var(--labs-accent)",
-              textDecoration: "none",
-              borderBottom: "1px solid color-mix(in srgb, var(--labs-accent) 40%, transparent)",
-            }}
-          >
-            <Library style={{ width: 12, height: 12 }} />
-            {t("labs.profile.allDownloads", "Alle Downloads & Exporte")}
-          </Link>
         </div>
       </div>
 

@@ -1971,7 +1971,6 @@ const resources = {
         tastingResultsSection: "Tasting Analyses",
         tastingResultsSectionDesc: "Download analyses of your completed tastings",
         tastingResultsEmpty: "No completed tastings yet",
-        allDownloadsLink: "Show all downloads",
         resultsAvailableAfterReveal: "Result downloads (PDF, Excel, CSV, story, presentation, notes) become available after the reveal.",
       },
       dataExport: {
@@ -8947,8 +8946,6 @@ const resources = {
         viewResultsRevealSubtitle: "Charts, rankings & detailed per-whisky stats",
         manageSession: "Manage session",
         manageSessionSubtitle: "Order, reveal, guest status & settings",
-        downloadsToggleTitle: "Downloads & exports",
-        downloadsToggleDesc: "PDF, Excel, CSV, Story, Presentation, Notes",
         enterSession: "Enter Session",
         viewResults: "View Results",
         tastingRecap: "Tasting Recap",
@@ -11685,7 +11682,6 @@ const resources = {
         tastingResultsSection: "Tasting-Auswertungen",
         tastingResultsSectionDesc: "Lade Auswertungen deiner abgeschlossenen Tastings herunter",
         tastingResultsEmpty: "Noch keine abgeschlossenen Tastings",
-        allDownloadsLink: "Alle Downloads anzeigen",
         resultsAvailableAfterReveal: "Auswertungs-Downloads (PDF, Excel, CSV, Story, Präsentation, Notizen) sind nach dem Reveal verfügbar.",
       },
       dataExport: {
@@ -18665,8 +18661,6 @@ const resources = {
         viewResultsRevealSubtitle: "Charts, Rangliste und Detail-Statistiken pro Whisky",
         manageSession: "Session verwalten",
         manageSessionSubtitle: "Reihenfolge, Reveal, Gäste-Status & Einstellungen",
-        downloadsToggleTitle: "Downloads & Exporte",
-        downloadsToggleDesc: "PDF, Excel, CSV, Story, Präsentation, Notizen",
         enterSession: "Session betreten",
         viewResults: "Ergebnisse ansehen",
         tastingRecap: "Tasting-Rückblick",
