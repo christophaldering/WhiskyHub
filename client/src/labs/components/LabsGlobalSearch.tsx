@@ -275,7 +275,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
     const question = rawQuestion.trim();
     if (!question || isStreaming) return;
 
-    const historyForRequest = chatMessages.slice(-18).map((m) => ({ role: m.role, content: m.content }));
+    const historyForRequest = chatMessages.slice(-10).map((m) => ({ role: m.role, content: m.content }));
     const userMsg: ChatMessage = { role: "user", content: question };
     setChatMessages((prev) => [...prev, userMsg]);
     setQuery("");
