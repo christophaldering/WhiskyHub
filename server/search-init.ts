@@ -103,7 +103,7 @@ async function ensureColumns(): Promise<void> {
 async function ensureWhiskyTriggerOnTasting(): Promise<void> {
   const fnSql = `CREATE OR REPLACE FUNCTION whiskies_refresh_parent_tasting() RETURNS trigger AS $$
 DECLARE
-  target_id uuid;
+  target_id varchar;
 BEGIN
   IF (TG_OP = 'DELETE') THEN
     target_id := OLD.tasting_id;
