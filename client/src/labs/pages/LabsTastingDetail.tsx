@@ -1257,7 +1257,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                   {t("resultsUi.sectionRueckblickTitle", "Rückblick")} ({whiskyCount})
                 </h2>
                 <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
-                  {t("resultsUi.sectionRueckblickSubtitle", "Whisky für Whisky — was war heute Abend dabei")}
+                  {t("resultsUi.sectionRueckblickSubtitle", "Whisky für Whisky — was dabei war")}
                 </p>
               </div>
               <div style={{ display: "flex", gap: 6, flexShrink: 0, flexWrap: "wrap" }}>
