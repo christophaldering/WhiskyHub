@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { sql, and, eq, notInArray } from "drizzle-orm";
 import { db } from "./db";
 import { lexicon } from "@shared/schema";
 import { lexiconData } from "../client/src/labs/data/lexiconData";
@@ -160,9 +160,6 @@ async function backfillSearchVectors(): Promise<void> {
 }
 
 async function seedLexicon(): Promise<void> {
-  const existing = await db.select({ id: lexicon.id }).from(lexicon).limit(1);
-  if (existing.length > 0) return;
-
   const rows: { locale: string; category: string; term: string; definition: string; sortOrder: number }[] = [];
   for (const locale of Object.keys(lexiconData)) {
     const categories = lexiconData[locale];
@@ -180,8 +177,52 @@ async function seedLexicon(): Promise<void> {
     }
   }
   if (rows.length === 0) return;
-  await db.insert(lexicon).values(rows).onConflictDoNothing();
-  console.log(`[search-init] seeded lexicon with ${rows.length} entries`);
+
+  const beforeCounts = await db.execute(sql.raw(`SELECT locale, count(*)::int AS n FROM lexicon GROUP BY locale`));
+  const beforeMap = new Map<string, number>();
+  for (const r of beforeCounts.rows as { locale: string; n: number }[]) {
+    beforeMap.set(r.locale, r.n);
+  }
+
+  const BATCH = 100;
+  let inserted = 0;
+  for (let i = 0; i < rows.length; i += BATCH) {
+    const slice = rows.slice(i, i + BATCH);
+    const result = await db.insert(lexicon)
+      .values(slice)
+      .onConflictDoUpdate({
+        target: [lexicon.locale, lexicon.term],
+        set: {
+          category: sql`EXCLUDED.category`,
+          definition: sql`EXCLUDED.definition`,
+          sortOrder: sql`EXCLUDED.sort_order`,
+        },
+      });
+    inserted += slice.length;
+    void result;
+  }
+
+  const keepByLocale = new Map<string, string[]>();
+  for (const row of rows) {
+    const list = keepByLocale.get(row.locale) ?? [];
+    list.push(row.term);
+    keepByLocale.set(row.locale, list);
+  }
+  let deleted = 0;
+  for (const [loc, terms] of keepByLocale.entries()) {
+    const delResult = await db.delete(lexicon).where(
+      and(eq(lexicon.locale, loc), notInArray(lexicon.term, terms)),
+    );
+    deleted += delResult.rowCount ?? 0;
+  }
+
+  const afterCounts = await db.execute(sql.raw(`SELECT locale, count(*)::int AS n FROM lexicon GROUP BY locale`));
+  const summary: string[] = [];
+  for (const r of afterCounts.rows as { locale: string; n: number }[]) {
+    const delta = r.n - (beforeMap.get(r.locale) ?? 0);
+    summary.push(`${r.locale}=${r.n} (+${delta})`);
+  }
+  console.log(`[search-init] lexicon upserted ${inserted}, removed ${deleted} stale rows | per-locale ${summary.join(", ")}`);
 }
 
 let initialized = false;

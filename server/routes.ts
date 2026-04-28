@@ -16969,7 +16969,7 @@ Key CaskSense Features:
 - Friend activity feed and participant leaderboard
 - Distillery encyclopedia with 100+ entries and interactive map
 - Independent bottlers encyclopedia (20+ entries)
-- Whisky lexicon with 53 bilingual entries
+- Whisky lexicon with 340+ bilingual entries
 - Smart whisky pairing suggestions
 - Tasting curation wizard for planning flights
 - QR code invitations for sessions
