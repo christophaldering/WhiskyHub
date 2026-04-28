@@ -197,6 +197,33 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
   const saveChainRef = useRef<Promise<void>>(Promise.resolve());
   const pendingSnapshotRef = useRef<StoryDocument | null>(null);
   const isMountedRef = useRef<boolean>(true);
+  const previewContainerRef = useRef<HTMLElement | null>(null);
+
+  const scrollPreviewToBlock = useCallback((blockId: string) => {
+    const container = previewContainerRef.current;
+    if (!container) return;
+    const target = container.querySelector<HTMLElement>(`[data-block-id="${blockId}"]`);
+    if (!target) return;
+    const reduceMotion =
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const desiredTop =
+      targetRect.top - containerRect.top + container.scrollTop - (container.clientHeight - target.clientHeight) / 2;
+    const maxTop = Math.max(0, container.scrollHeight - container.clientHeight);
+    const top = Math.max(0, Math.min(maxTop, desiredTop));
+    container.scrollTo({ top, behavior: reduceMotion ? "auto" : "smooth" });
+  }, []);
+
+  const handleSelectBlock = useCallback(
+    (blockId: string) => {
+      setSelectedId(blockId);
+      requestAnimationFrame(() => scrollPreviewToBlock(blockId));
+    },
+    [scrollPreviewToBlock],
+  );
 
   const theme = getTheme(doc.theme);
   const selectedBlock = useMemo(() => doc.blocks.find((b) => b.id === selectedId) ?? null, [doc.blocks, selectedId]);
@@ -831,7 +858,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
                   block={block}
                   index={idx}
                   isSelected={block.id === selectedId}
-                  onSelect={() => setSelectedId(block.id)}
+                  onSelect={() => handleSelectBlock(block.id)}
                   onMoveUp={() => moveBlock(block.id, -1)}
                   onMoveDown={() => moveBlock(block.id, 1)}
                   onDuplicate={() => duplicateBlock(block.id)}
@@ -847,6 +874,7 @@ export function StoryEditor({ initialDocument, onChange, onSave, onManualSnapsho
       ) : null}
 
       <main
+        ref={previewContainerRef}
         data-testid="editor-canvas"
         style={{
           overflowY: "auto",
