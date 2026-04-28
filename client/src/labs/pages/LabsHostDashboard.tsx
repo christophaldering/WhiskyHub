@@ -205,7 +205,7 @@ function LabsDashboardCalendar() {
       {selectedDay && selectedEvents.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: SP.xs }}>
           {selectedEvents.map((ev) => (
-            <Link key={ev.id} href={ev.status === "closed" || ev.status === "archived" ? `/labs/results/${ev.id}` : `/labs/host/${ev.id}`}>
+            <Link key={ev.id} href={ev.status === "closed" || ev.status === "archived" ? `/labs/tastings/${ev.id}` : `/labs/host/${ev.id}`}>
               <div
                 style={{
                   display: "flex",

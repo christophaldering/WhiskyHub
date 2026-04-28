@@ -218,14 +218,14 @@ export const DEFAULT_TASTING_KINDS: DownloadKind[] = [
 export function buildSourceHref(contentType: DownloadContentType, tastingId: string): string {
   switch (contentType) {
     case "tasting-results":
-      return `/labs/results/${tastingId}`;
+      return `/labs/tastings/${tastingId}`;
     case "tasting-story":
       return `/labs/results/${tastingId}/story`;
     case "tasting-presentation":
       return `/labs/results/${tastingId}/present`;
     case "tasting-notes":
-      return `/labs/results/${tastingId}`;
+      return `/labs/tastings/${tastingId}`;
     default:
-      return `/labs/results/${tastingId}`;
+      return `/labs/tastings/${tastingId}`;
   }
 }

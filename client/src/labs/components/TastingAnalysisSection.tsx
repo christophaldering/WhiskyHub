@@ -608,7 +608,7 @@ export default function TastingAnalysisSection({
   const toggleExpand = (id: string) => setExpandedWhisky((prev) => (prev === id ? null : id));
 
   return (
-    <section className="mb-8 labs-fade-in" data-testid="detail-section-auswertung">
+    <section id="section-auswertung" className="mb-8 labs-fade-in" data-testid="detail-section-auswertung" style={{ scrollMarginTop: 80 }}>
       <header
         style={{
           display: "flex",

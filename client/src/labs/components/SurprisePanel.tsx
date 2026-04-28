@@ -23,7 +23,7 @@ function describeSurprise(s: Surprise, t: TFunction): SurpriseDescription {
           ? t("surprises.individualBody", "Vom Tasting „{{title}}“. Wirf einen Blick rein.", { title: s.tastingTitle })
           : t("surprises.individualBodyNoTitle", "Eine neue persönliche KI-Analyse wartet auf dich."),
         cta: t("surprises.individualCta", "Jetzt ansehen"),
-        href: `/labs/results/${s.tastingId}/ai-report`,
+        href: `/labs/results/${s.tastingId}/report`,
       };
   }
 }

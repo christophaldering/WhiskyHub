@@ -319,7 +319,7 @@ export function selectGroupInsights(input: GroupEngineInput): Insight[] {
       subline: t("insights.groupRecap.personalAligned.subline", "Your score matched the group within {{d}} pts.", { d: Math.abs(myAligned.myDelta || 0).toFixed(1) }),
       visual: { kind: "icon", iconName: "target" },
       score: 0.5,
-      deepLink: `/labs/results/${tastingId}`,
+      deepLink: `/labs/tastings/${tastingId}`,
       testId: "insight-group-personal-aligned",
       tone: "success",
     });

@@ -71,7 +71,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function getTastingRoute(ev: CalendarEvent, participantId?: string): string {
   if (ev.status === "draft" && ev.hostId === participantId) return `/labs/host/${ev.id}`;
-  if (ev.status === "closed" || ev.status === "archived") return `/labs/results/${ev.id}`;
+  if (ev.status === "closed" || ev.status === "archived") return `/labs/tastings/${ev.id}`;
   return `/labs/tastings/${ev.id}`;
 }
 

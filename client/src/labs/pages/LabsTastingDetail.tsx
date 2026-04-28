@@ -55,6 +55,7 @@ import { selectDescriptors } from "@/labs/utils/downloadMatrix";
 import TastingDownloadGrid from "@/labs/components/TastingDownloadGrid";
 import ManageTastersDialog from "@/labs/components/ManageTastersDialog";
 import TastingAnalysisSection from "@/labs/components/TastingAnalysisSection";
+import TastingPersonalSection from "@/labs/components/TastingPersonalSection";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { getTastingPhase, isResultDownloadsPhase, RESULT_DOWNLOAD_KINDS } from "@/labs/utils/tastingPhase";
 import type { Tasting, WhiskyFriend } from "@shared/schema";
@@ -736,22 +737,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
           </div>
         )}
 
-        {isReveal && (
-          <div>
-            <button
-              className="labs-btn-primary w-full flex items-center justify-center gap-2 py-3 text-base font-semibold"
-              onClick={() => navigate(`/labs/results/${tastingId}`)}
-              data-testid="labs-detail-open-results"
-            >
-              <BarChart3 className="w-5 h-5" />
-              {t("tastingDetail.openResults", "Auswertungen und Ergebnisse öffnen")}
-            </button>
-            <p className="text-xs mt-1 text-center" style={{ color: "var(--labs-text-muted)" }} data-testid="text-open-results-subtitle">
-              {t("tastingDetail.openResultsSubtitle", "Rückblick, Statistiken, Story, KI-Report und Downloads")}
-            </p>
-          </div>
-        )}
-
         {isLive && (() => {
           const label = isHost
             ? t("tastingDetail.enterLiveSession", "Live-Tasting als Host öffnen")
@@ -787,16 +772,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
           </button>
         )}
 
-        {isCompleted && (
-          <button
-            className="labs-btn-primary w-full flex items-center justify-center gap-2 py-3 text-base font-semibold"
-            onClick={() => navigate(`/labs/results/${tastingId}`)}
-            data-testid="labs-detail-open-results"
-          >
-            <BarChart3 className="w-5 h-5" />
-            {t("tastingDetail.openResults", "Auswertungen und Ergebnisse öffnen")}
-          </button>
-        )}
       </div>
 
       {/* Mini status bar (live/reveal/completed) — replaces the three big stat cards. */}
@@ -831,31 +806,80 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         </div>
       )}
 
-      {/* Secondary actions (live/reveal/completed) — small row items below the hero. */}
-      {(isLive || isReveal || isCompleted) && (
+      {/* Secondary actions (completed only) — small row items below the hero. */}
+      {isCompleted && (
         <div className="mb-4 labs-stagger-3" data-testid="detail-secondary-actions">
           <div className="labs-card overflow-hidden">
-            {isLive && (
-              <SecondaryRowAction
-                icon={BarChart3}
-                title={t("tastingDetail.viewResultsReveal", "Auswertung & Statistiken")}
-                subtitle={t("tastingDetail.viewResultsRevealSubtitle", "Charts, Rangliste und Detail-Statistiken pro Whisky")}
-                onClick={() => navigate(`/labs/results/${tastingId}`)}
-                testId="detail-secondary-results"
-              />
-            )}
-            {isCompleted && (
-              <SecondaryRowAction
-                icon={Trophy}
-                title={t("tastingDetail.tastingRecap")}
-                subtitle={t("tastingDetail.tastingRecapSubtitle", "Höhepunkte und Übersicht der Runde")}
-                onClick={() => navigate(`/labs/tastings/${tastingId}/recap`)}
-                testId="detail-secondary-recap"
-              />
-            )}
+            <SecondaryRowAction
+              icon={Trophy}
+              title={t("tastingDetail.tastingRecap")}
+              subtitle={t("tastingDetail.tastingRecapSubtitle", "Höhepunkte und Übersicht der Runde")}
+              onClick={() => navigate(`/labs/tastings/${tastingId}/recap`)}
+              testId="detail-secondary-recap"
+            />
           </div>
         </div>
       )}
+
+      {(isReveal || isCompleted) && (() => {
+        const jumpItems: Array<{ key: string; label: string; targetId: string; testId: string }> = [
+          { key: "rueckblick", label: t("resultsUi.jumpbarRueckblick", "Rückblick"), targetId: "section-rueckblick", testId: "detail-jump-rueckblick" },
+          { key: "praesentation", label: t("resultsUi.jumpbarPraesentation", "Präsentation"), targetId: "section-praesentation", testId: "detail-jump-praesentation" },
+          { key: "auswertung", label: t("resultsUi.jumpbarAuswertung", "Auswertung"), targetId: "section-auswertung", testId: "detail-jump-auswertung" },
+          { key: "persoenlich", label: t("resultsUi.jumpbarPersoenlich", "Persönlich"), targetId: "section-persoenlich", testId: "detail-jump-persoenlich" },
+          ...(isHost ? [{ key: "host-aktionen", label: t("resultsUi.jumpbarHostAktionen", "Host-Aktionen"), targetId: "section-host-aktionen", testId: "detail-jump-host-aktionen" }] : []),
+          { key: "downloads", label: t("resultsUi.jumpbarDownloads", "Downloads"), targetId: "section-downloads", testId: "detail-jump-downloads" },
+        ];
+        return (
+          <div className="mb-4 labs-fade-in" data-testid="detail-jump-bar">
+            <div
+              className="labs-card"
+              style={{
+                padding: 8,
+                display: "flex",
+                gap: 6,
+                overflowX: "auto",
+                alignItems: "center",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "var(--labs-text-muted)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  paddingLeft: 4,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {t("resultsUi.jumpbarTitle", "Springen zu")}
+              </span>
+              {jumpItems.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  data-testid={item.testId}
+                  onClick={() => {
+                    const el = document.getElementById(item.targetId);
+                    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                  className="labs-btn-ghost"
+                  style={{
+                    fontSize: 12,
+                    padding: "6px 10px",
+                    whiteSpace: "nowrap",
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                  }}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {isHost && isDraft && (
         <div className="mb-6 labs-stagger-2" data-testid="labs-detail-session-settings">
@@ -1161,7 +1185,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         const allRevealed = revealIdx >= whiskyCount - 1 && revealStp >= totalSteps;
 
         return (
-          <section className="mb-8 labs-stagger-4 labs-fade-in" data-testid="detail-section-rueckblick">
+          <section id="section-rueckblick" className="mb-8 labs-stagger-4 labs-fade-in" data-testid="detail-section-rueckblick" style={{ scrollMarginTop: 80 }}>
             <header style={{ marginBottom: 12, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
               <div>
                 <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", margin: 0, letterSpacing: "0.02em" }}>
@@ -1487,7 +1511,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
           }, 50);
         };
         return (
-          <section className="mb-8 labs-fade-in" data-testid="detail-section-praesentation">
+          <section id="section-praesentation" className="mb-8 labs-fade-in" data-testid="detail-section-praesentation" style={{ scrollMarginTop: 80 }}>
             <header style={{ marginBottom: 12 }}>
               <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", margin: 0, letterSpacing: "0.02em" }}>
                 {t("resultsUi.sectionPraesentationTitle", "Ergebnis-Präsentation")}
@@ -1686,8 +1710,16 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         />
       )}
 
+      {(isReveal || isCompleted) && (
+        <TastingPersonalSection
+          tastingId={tastingId}
+          isHost={!!isHost}
+          currentParticipant={currentParticipant}
+        />
+      )}
+
       {isHost && (
-        <section className="mb-8 labs-fade-in" data-testid="detail-section-host-aktionen">
+        <section id="section-host-aktionen" className="mb-8 labs-fade-in" data-testid="detail-section-host-aktionen" style={{ scrollMarginTop: 80 }}>
           <header style={{ marginBottom: 12 }}>
             <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", margin: 0, letterSpacing: "0.02em" }}>
               {t("resultsUi.hostFooterTitle", "Host-Aktionen")}
@@ -2227,7 +2259,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         const showResults = isResultDownloadsPhase(phase);
         const showPrintMaterials = !isHost && downloadsAvailable && !isResultDownloadsPhase(phase);
         return (
-          <div id="downloads" className="mb-6" data-testid={`labs-detail-downloads-${phase}`}>
+          <div id="section-downloads" className="mb-6" style={{ scrollMarginTop: 80 }} data-testid={`labs-detail-downloads-${phase}`}>
             {!showResults && (
               <p
                 className="text-xs mb-3"

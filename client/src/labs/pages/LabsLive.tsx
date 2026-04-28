@@ -76,7 +76,7 @@ function PresentationLiveBanner({ tastingId }: { tastingId: string }) {
         background: "rgba(212, 162, 86, 0.12)", border: "1px solid rgba(212, 162, 86, 0.25)",
         marginBottom: 16, cursor: "pointer",
       }}
-      onClick={() => navigate(`/labs/results/${tastingId}`)}
+      onClick={() => navigate(`/labs/tastings/${tastingId}`)}
       data-testid="live-presentation-banner"
     >
       <div style={{ width: 10, height: 10, borderRadius: 5, background: "var(--labs-accent)", animation: "pulse 2s infinite" }} />
@@ -184,7 +184,7 @@ function GuidedComplete({ tastingId, presentationActive }: { tastingId: string; 
 
         <button
           className="labs-btn-primary"
-          onClick={() => navigate(`/labs/results/${tastingId}`)}
+          onClick={() => navigate(`/labs/tastings/${tastingId}`)}
           data-testid="guided-complete-results"
         >
           <Eye className="w-4 h-4 inline mr-1.5" />
@@ -1022,7 +1022,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
   const isHost = currentParticipant?.id === tasting?.hostId;
   useEffect(() => {
     if (presentationSlideVal != null && !isHost && tastingId) {
-      navigate(`/labs/results/${tastingId}`);
+      navigate(`/labs/tastings/${tastingId}`);
     }
   }, [presentationSlideVal, isHost, tastingId, navigate]);
 
@@ -1798,7 +1798,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                   </p>
                   <button
                     className="labs-btn-secondary"
-                    onClick={() => navigate(`/labs/results/${tastingId}`)}
+                    onClick={() => navigate(`/labs/tastings/${tastingId}`)}
                     data-testid="labs-live-view-results"
                   >
                     <Eye className="w-4 h-4 inline mr-1.5" />

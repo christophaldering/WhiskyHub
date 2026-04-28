@@ -973,7 +973,7 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
     }
-    navigate(`/labs/results/${tastingId}`);
+    navigate(`/labs/tastings/${tastingId}`);
   }, [navigate, tastingId, hostId, replayMode]);
 
   const toggleFullscreen = useCallback(async () => {
@@ -1053,7 +1053,7 @@ export default function LabsResultsPresent({ params }: LabsResultsPresentProps) 
       <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "#0B0906", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
         <Wine style={{ width: 40, height: 40, color: "var(--labs-text-muted)" }} />
         <p style={{ color: "var(--labs-text-muted)" }}>{!tasting ? t("m2.results.tastingNotFound") : t("m2.results.notAvailableYet")}</p>
-        <button className="labs-btn-secondary" onClick={() => navigate(`/labs/results/${tastingId}`)} data-testid="present-back-btn">{t("m2.results.backToResults")}</button>
+        <button className="labs-btn-secondary" onClick={() => navigate(`/labs/tastings/${tastingId}`)} data-testid="present-back-btn">{t("m2.results.backToResults")}</button>
       </div>
     );
   }

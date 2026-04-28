@@ -241,7 +241,7 @@ function IndividualReportBody({ report, participantName, t }: { report: any; par
 export default function LabsGroupReport({ params }: LabsGroupReportProps) {
   const tastingId = params.id;
   const { currentParticipant } = useAppStore();
-  const goBack = useLabsBack(`/labs/results/${tastingId}`);
+  const goBack = useLabsBack(`/labs/tastings/${tastingId}`);
   const { t } = useTranslation();
   const qc = useQueryClient();
   const pid = getParticipantId();

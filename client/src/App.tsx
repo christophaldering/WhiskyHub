@@ -71,7 +71,6 @@ const LabsTastingStoryWizard = lazy(() => import("@/pages/labs-tasting-story-wiz
 const LabsTastingStoryView = lazy(() => import("@/pages/labs-tasting-story-view"));
 const LabsLive = lazy(() => import("@/labs/pages/LabsLive"));
 const LabsHost = lazy(() => import("@/labs/pages/LabsHost"));
-const LabsResults = lazy(() => import("@/labs/pages/LabsResults"));
 const LabsTaste = lazy(() => import("@/labs/pages/LabsTaste"));
 const LabsTasteProfile = lazy(() => import("@/labs/pages/LabsTasteProfile"));
 const LabsTasteAnalytics = lazy(() => import("@/labs/pages/LabsTasteAnalytics"));
@@ -587,7 +586,7 @@ function Router() {
         </Route>
 
         {/* ── Archived M2/V2/lab-dark → redirect to Labs ── */}
-        <Route path="/m2/tastings/session/:id/results">{({ id }: { id: string }) => <Redirect to={`/labs/results/${id}`} />}</Route>
+        <Route path="/m2/tastings/session/:id/results">{({ id }: { id: string }) => <Redirect to={`/labs/tastings/${id}`} />}</Route>
         <Route path="/m2/tastings/session/:id/dashboard">{({ id }: { id: string }) => <Redirect to={`/labs/host/${id}`} />}</Route>
         <Route path="/m2/tastings/session/:id/host">{({ id }: { id: string }) => <Redirect to={`/labs/host/${id}`} />}</Route>
         <Route path="/m2/tastings/session/:id/recap">{({ id }: { id: string }) => <Redirect to={`/labs/tastings/${id}/recap`} />}</Route>
@@ -717,7 +716,9 @@ function Router() {
               <Route path="/labs/tastings/:id" component={LabsTastingDetail} />
               <Route path="/labs/tastings" component={LabsTastings} />
               <Route path="/labs/live/:id" component={LabsLive} />
-              <Route path="/labs/results/:id" component={LabsResults} />
+              <Route path="/labs/results/:id">
+                {({ id }: { id: string }) => <Redirect to={`/labs/tastings/${id}`} />}
+              </Route>
               <Route path="/labs/explore/bottles/:id" component={LabsBottleDetail} />
               <Route path="/labs/explore" component={LabsEntdecken} />
               <Route path="/labs/bibliothek/insights">{() => <RedirectWithQuery to="/labs/circle" query="tab=stats" />}</Route>

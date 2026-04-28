@@ -2162,7 +2162,7 @@ function MobileCompanion({
         {isEnded && (
           <button
             className="labs-btn-primary flex items-center justify-center gap-2 w-full"
-            onClick={() => navigate(`/labs/results/${tastingId}`)}
+            onClick={() => navigate(`/labs/tastings/${tastingId}`)}
             style={{ minHeight: 48, fontSize: 15, fontWeight: 600, borderRadius: 14 }}
             data-testid="mobile-view-results"
           >
@@ -7426,7 +7426,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       <div className="flex gap-3 mb-6">
         <button
           className="labs-btn-secondary flex items-center gap-2 flex-1"
-          onClick={() => navigate(`/labs/results/${tastingId}`)}
+          onClick={() => navigate(`/labs/tastings/${tastingId}`)}
           data-testid="labs-host-view-results"
         >
           <BarChart3 className="w-4 h-4" />

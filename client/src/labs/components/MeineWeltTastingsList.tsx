@@ -347,7 +347,7 @@ export default function MeineWeltTastingsList({ filter, searchQuery = "" }: Prop
               filter === "completed"
                 ? isRevealOrClosed
                   ? `/labs/tastings/${tasting.id}`
-                  : `/labs/results/${tasting.id}?from=my-tastings`
+                  : `/labs/tastings/${tasting.id}?from=my-tastings`
                 : `/labs/tastings/${tasting.id}`;
             const isLastViewed = filter === "completed" && lastViewedId === tasting.id;
 
