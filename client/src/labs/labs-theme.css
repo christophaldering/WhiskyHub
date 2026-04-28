@@ -1640,19 +1640,6 @@ a.labs-dram-item {
   overflow-wrap: break-word;
   word-break: normal;
   hyphens: none;
-}
-
-.labs-action-bar--meine-welt .labs-action-bar-item {
-  justify-content: flex-start;
-}
-
-.labs-action-bar--meine-welt .labs-action-bar-label {
-  height: calc(1.15em * 2);
-  min-height: calc(1.15em * 2);
-}
-
-.labs-action-bar--meine-welt .labs-action-bar-sublabel {
-  height: calc(1.25em * 2);
   min-height: calc(1.25em * 2);
 }
 

@@ -113,11 +113,21 @@
           | "alpha"
           | "flavourMap";
 
-        const WHISKY_PILLS: { preset: WhiskyHubPreset; view: string; icon: typeof Wine; labelKey: string; labelFb: string }[] = [
-          { preset: "topRated", view: "top-rated", icon: Star, labelKey: "explore.hub.topTitle", labelFb: "Top Rated" },
-          { preset: "mostTasted", view: "most-tasted", icon: Activity, labelKey: "explore.hub.mostTitle", labelFb: "Most Tasted" },
-          { preset: "alpha", view: "a-z", icon: List, labelKey: "discover.sortAlpha", labelFb: "A-Z" },
-          { preset: "flavourMap", view: "flavour-map", icon: Compass, labelKey: "explore.hub.flavourTitle", labelFb: "Flavour Map" },
+        const WHISKY_PILLS: {
+          preset: WhiskyHubPreset;
+          view: string;
+          icon: typeof Wine;
+          labelKey: string;
+          labelFb: string;
+          subKey: string;
+          subFb: string;
+          iconVariant: "accent" | "surface" | "success";
+          iconColor: string;
+        }[] = [
+          { preset: "topRated", view: "top-rated", icon: Star, labelKey: "explore.hub.topTitle", labelFb: "Top Rated", subKey: "explore.hub.topDesc", subFb: "Highest avg scores", iconVariant: "accent", iconColor: "var(--labs-accent)" },
+          { preset: "mostTasted", view: "most-tasted", icon: Activity, labelKey: "explore.hub.mostTitle", labelFb: "Most Tasted", subKey: "explore.hub.mostDesc", subFb: "What the community pours often", iconVariant: "accent", iconColor: "var(--labs-accent)" },
+          { preset: "alpha", view: "a-z", icon: List, labelKey: "discover.sortAlpha", labelFb: "A-Z", subKey: "explore.hub.distilleryDesc", subFb: "All distilleries A\u2013Z", iconVariant: "surface", iconColor: "var(--labs-text-secondary)" },
+          { preset: "flavourMap", view: "flavour-map", icon: Compass, labelKey: "explore.hub.flavourTitle", labelFb: "Flavour Map", subKey: "explore.hub.flavourDesc", subFb: "Flavour profiles visualised", iconVariant: "success", iconColor: "var(--labs-success, #4ade80)" },
         ];
 
         type DistilleryGroup = {
@@ -785,14 +795,6 @@
               <div className="labs-fade-in labs-stagger-2" style={{ marginBottom: 32 }}>
                 <div data-testid="explore-whiskies-pills" style={{ marginBottom: 14 }}>
                   {(() => {
-                    const whiskyTiles: HubTileDef[] = WHISKY_PILLS.map((pill) => ({
-                      icon: pill.icon,
-                      labelKey: pill.labelKey,
-                      labelFallback: pill.labelFb,
-                      descKey: "",
-                      descFallback: "",
-                      testId: `pill-explore-whiskies-${pill.view}`,
-                    }));
                     const activePillView = whiskyView === "flavour-map"
                       ? "flavour-map"
                       : sort === "most"
@@ -800,27 +802,35 @@
                         : sort === "alpha"
                           ? "a-z"
                           : "top-rated";
-                    const activeTestId = `pill-explore-whiskies-${activePillView}`;
                     return (
-                      <HubTileGrid
-                        tiles={whiskyTiles}
-                        t={t}
-                        variant="single-row"
-                        role="filter"
-                        activeTestId={activeTestId}
-                        onTileClick={(tile) => {
-                          const pill = WHISKY_PILLS.find(
-                            (p) => `pill-explore-whiskies-${p.view}` === tile.testId,
+                      <div className="labs-action-bar">
+                        {WHISKY_PILLS.map((pill) => {
+                          const isActive = pill.view === activePillView;
+                          const PillIcon = pill.icon;
+                          return (
+                            <button
+                              key={pill.view}
+                              type="button"
+                              onClick={() => {
+                                if (isActive) {
+                                  applyWhiskyHubPreset("topRated");
+                                } else {
+                                  applyWhiskyHubPreset(pill.preset);
+                                }
+                              }}
+                              className={`labs-action-bar-item labs-action-bar-item--button${isActive ? " labs-action-bar-item--active" : ""}`}
+                              data-testid={`pill-explore-whiskies-${pill.view}`}
+                              aria-pressed={isActive}
+                            >
+                              <div className={`labs-action-bar-icon labs-action-bar-icon--${pill.iconVariant}`}>
+                                <PillIcon className="w-5 h-5" style={{ color: pill.iconColor }} strokeWidth={1.8} />
+                              </div>
+                              <span className="labs-action-bar-label">{t(pill.labelKey, pill.labelFb)}</span>
+                              <span className="labs-action-bar-sublabel">{t(pill.subKey, pill.subFb)}</span>
+                            </button>
                           );
-                          if (!pill) return;
-                          // Role C: re-click on the active pill resets to default ("Top Rated")
-                          if (`pill-explore-whiskies-${pill.view}` === activeTestId) {
-                            applyWhiskyHubPreset("topRated");
-                          } else {
-                            applyWhiskyHubPreset(pill.preset);
-                          }
-                        }}
-                      />
+                        })}
+                      </div>
                     );
                   })()}
                 </div>
