@@ -706,12 +706,19 @@ export function StoryImagePool({
                 const visibleCategories = it.categories.filter((c) => c !== AUTO_DETECTED_CATEGORY);
                 const onParticipantToggle = (pid: string) => {
                   if (!pid) return;
-                  const nextIds = it.participantIds.includes(pid)
-                    ? it.participantIds.filter((x) => x !== pid)
-                    : [...it.participantIds, pid];
-                  const nextCategories = it.categories.filter((c) => c !== AUTO_DETECTED_CATEGORY);
+                  const isAdding = !it.participantIds.includes(pid);
+                  const nextIds = isAdding
+                    ? [...it.participantIds, pid]
+                    : it.participantIds.filter((x) => x !== pid);
+                  let nextCategories = it.categories.filter((c) => c !== AUTO_DETECTED_CATEGORY);
+                  if (isAdding && !nextCategories.includes(PARTICIPANT_CATEGORY)) {
+                    nextCategories = [...nextCategories, PARTICIPANT_CATEGORY];
+                  }
                   const patch: ImagePoolMetadataPatch = { participantIds: nextIds };
-                  if (nextCategories.length !== it.categories.length) {
+                  if (
+                    nextCategories.length !== it.categories.length ||
+                    nextCategories.some((c, i) => c !== it.categories[i])
+                  ) {
                     patch.categories = nextCategories;
                   }
                   void updateItem(it.id, patch);
