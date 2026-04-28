@@ -874,10 +874,10 @@ export function StoryImagePool({
                           }}
                           style={pickMarkBtn(isSelected)}
                           aria-pressed={isSelected}
-                          title="Im Inspektor anzeigen, ohne direkt zu übernehmen"
+                          title="Bild rechts in der Vorschau anzeigen (ohne zu übernehmen)"
                           data-testid={`button-${testIdPrefix}-mark-${it.id}`}
                         >
-                          {isSelected ? "Markiert (Vorschau rechts)" : "Nur Vorschau"}
+                          {isSelected ? "In Vorschau" : "Vorschau rechts"}
                         </button>
                       </div>
                     ) : null}
