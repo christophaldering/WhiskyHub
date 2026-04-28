@@ -405,7 +405,7 @@ export default function TastingPersonalSection({
   };
 
   const scrollToDownloads = () => {
-    const el = document.getElementById("downloads");
+    const el = document.getElementById("section-downloads") || document.getElementById("downloads");
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
