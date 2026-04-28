@@ -134,6 +134,7 @@ interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   sources?: AskSource[];
+  truncated?: boolean;
 }
 
 type SearchMode = "search" | "ask";
@@ -264,6 +265,12 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
     }
   }, [chatMessages, streamingText]);
 
+  useEffect(() => {
+    if (mode !== "ask") {
+      askAbortRef.current?.abort();
+    }
+  }, [mode]);
+
   const sendAsk = useCallback(async (rawQuestion: string) => {
     const question = rawQuestion.trim();
     if (!question || isStreaming) return;
@@ -346,12 +353,19 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
         throw new Error(streamErr);
       }
 
-      setChatMessages((prev) => [...prev, { role: "assistant", content: accumulated, sources: finalSources }]);
+      const truncated = streamErr !== null;
+      setChatMessages((prev) => [...prev, { role: "assistant", content: accumulated, sources: finalSources, truncated }]);
       setStreamingText("");
+      if (truncated && streamErr) {
+        setStreamError(streamErr);
+      }
       triggerHaptic("medium");
     } catch (err) {
       const error = err as { name?: string; message?: string };
-      if (error.name === "AbortError") return;
+      if (error.name === "AbortError") {
+        setStreamingText("");
+        return;
+      }
       setStreamError(error.message ?? (isDe ? "Unbekannter Fehler." : "Unknown error."));
       setStreamingText("");
     } finally {
@@ -932,6 +946,23 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
               >
                 {msg.content}
               </div>
+              {msg.role === "assistant" && msg.truncated && (
+                <div
+                  data-testid={`chat-truncated-${idx}`}
+                  style={{
+                    fontSize: 11,
+                    color: "rgba(220, 120, 80, 0.95)",
+                    background: "rgba(220, 120, 80, 0.08)",
+                    border: "1px solid rgba(220, 120, 80, 0.25)",
+                    padding: "3px 8px",
+                    borderRadius: 999,
+                    fontWeight: 600,
+                    letterSpacing: 0.2,
+                  }}
+                >
+                  {isDe ? "Antwort unvollstaendig" : "Response incomplete"}
+                </div>
+              )}
               {msg.role === "assistant" && msg.sources && msg.sources.length > 0 && (
                 <div
                   style={{ display: "flex", flexWrap: "wrap", gap: 6, maxWidth: "85%" }}
