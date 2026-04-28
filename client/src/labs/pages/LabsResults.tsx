@@ -2618,40 +2618,28 @@ export default function LabsResults({ params }: LabsResultsProps) {
       {/* /Section 3 Auswertung */}
 
       {sorted.length > 0 && (
-        <section className="mb-6 labs-fade-in" data-testid="results-section-downloads">
+        <div
+          className="mb-6 labs-fade-in"
+          data-testid="results-section-downloads"
+          style={{ display: "flex", justifyContent: "center" }}
+        >
           <button
             type="button"
             onClick={() => navigate(`/labs/tastings/${tastingId}#downloads`)}
-            className="labs-card"
             data-testid="results-section-downloads-redirect"
             style={{
-              width: "100%", padding: "14px 16px",
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              background: "var(--labs-surface-elevated)",
-              border: "1px solid var(--labs-border)",
-              cursor: "pointer", fontFamily: "inherit",
+              display: "inline-flex", alignItems: "center", gap: 6,
+              padding: "8px 14px", border: "none", background: "transparent",
+              color: "var(--labs-text-muted)", fontSize: 12, fontFamily: "inherit",
+              cursor: "pointer", textDecoration: "underline",
+              textUnderlineOffset: 3,
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{
-                width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                background: "var(--labs-accent-muted)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <Download className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-              </div>
-              <div style={{ textAlign: "left" }}>
-                <p style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", margin: 0 }}>
-                  {t("resultsUi.sectionDownloadsTitle", "Downloads")}
-                </p>
-                <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "2px 0 0" }}>
-                  {t("resultsUi.downloadsRedirectDesc", "Alle Formate sind auf der Tasting-Detailseite gebündelt")}
-                </p>
-              </div>
-            </div>
-            <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
+            <Download className="w-3.5 h-3.5" />
+            {t("resultsUi.downloadsRedirectButton", "Alle Downloads auf der Tasting-Übersicht ansehen")}
+            <ChevronRight className="w-3.5 h-3.5" />
           </button>
-        </section>
+        </div>
       )}
 
       {/* === HOST FOOTER === */}

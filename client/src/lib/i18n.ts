@@ -9348,6 +9348,7 @@ const resources = {
           continued: "continued",
         },
         downloadsRedirectDesc: "All formats are bundled on the tasting detail page",
+        downloadsRedirectButton: "View all downloads on the tasting overview",
       },
       liveUi: {
         blindTasting: "Blind Tasting",
@@ -19029,6 +19030,7 @@ const resources = {
           continued: "Fortsetzung",
         },
         downloadsRedirectDesc: "Alle Formate sind auf der Tasting-Detailseite gebündelt",
+        downloadsRedirectButton: "Alle Downloads auf der Tasting-Übersicht ansehen",
       },
       liveUi: {
         blindTasting: "Blindverkostung",
