@@ -33,6 +33,8 @@ type Props = {
 };
 
 const COMMON_CATEGORIES = ["Hero", "Galerie", "Teilnehmer", "Gruppenbild", "Szene & Stimmung", "Whisky/Setup"];
+const AUTO_DETECTED_CATEGORY = "AutoErkannt";
+const PARTICIPANT_CATEGORY = "Teilnehmer";
 
 export function StoryImagePool({
   tastingId,
@@ -138,8 +140,8 @@ export function StoryImagePool({
         if (match && !created.participantIds.includes(match.participantId)) {
           const nextParticipantIds = [...created.participantIds, match.participantId];
           const nextCategories = [...created.categories];
-          if (!nextCategories.includes("Teilnehmer")) nextCategories.push("Teilnehmer");
-          if (!nextCategories.includes("AutoErkannt")) nextCategories.push("AutoErkannt");
+          if (!nextCategories.includes(PARTICIPANT_CATEGORY)) nextCategories.push(PARTICIPANT_CATEGORY);
+          if (!nextCategories.includes(AUTO_DETECTED_CATEGORY)) nextCategories.push(AUTO_DETECTED_CATEGORY);
           try {
             const patched = await updateTastingStoryImagePoolEntry(tastingId, created.id, {
               participantIds: nextParticipantIds,
@@ -689,7 +691,7 @@ export function StoryImagePool({
               filtered.map((it) => {
                 const isSelected = selectedId === it.id;
                 const isAutoDetected =
-                  it.categories.includes("AutoErkannt") && it.participantIds.length === 1;
+                  it.categories.includes(AUTO_DETECTED_CATEGORY) && it.participantIds.length === 1;
                 const detectedParticipant = isAutoDetected
                   ? participants.find((p) => p.id === it.participantIds[0]) ?? null
                   : null;
@@ -699,13 +701,13 @@ export function StoryImagePool({
                       .trim()
                       .split(/\s+/)[0]
                   : null;
-                const visibleCategories = it.categories.filter((c) => c !== "AutoErkannt");
+                const visibleCategories = it.categories.filter((c) => c !== AUTO_DETECTED_CATEGORY);
                 const onParticipantToggle = (pid: string) => {
                   if (!pid) return;
                   const nextIds = it.participantIds.includes(pid)
                     ? it.participantIds.filter((x) => x !== pid)
                     : [...it.participantIds, pid];
-                  const nextCategories = it.categories.filter((c) => c !== "AutoErkannt");
+                  const nextCategories = it.categories.filter((c) => c !== AUTO_DETECTED_CATEGORY);
                   const patch: ImagePoolMetadataPatch = { participantIds: nextIds };
                   if (nextCategories.length !== it.categories.length) {
                     patch.categories = nextCategories;
@@ -1044,8 +1046,8 @@ function ImageInspector({
     (next: string[]) => {
       setParticipantIds(next);
       const patch: ImagePoolMetadataPatch = { participantIds: next };
-      if (categories.includes("AutoErkannt")) {
-        const nextCategories = categories.filter((c) => c !== "AutoErkannt");
+      if (categories.includes(AUTO_DETECTED_CATEGORY)) {
+        const nextCategories = categories.filter((c) => c !== AUTO_DETECTED_CATEGORY);
         setCategories(nextCategories);
         patch.categories = nextCategories;
       }
@@ -1233,7 +1235,7 @@ function ImageInspector({
             );
           })}
           {categories
-            .filter((c) => !COMMON_CATEGORIES.includes(c) && c !== "AutoErkannt")
+            .filter((c) => !COMMON_CATEGORIES.includes(c) && c !== AUTO_DETECTED_CATEGORY)
             .map((c) => (
               <button
                 key={c}
