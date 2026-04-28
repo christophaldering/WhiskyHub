@@ -9,6 +9,7 @@ import {
   aiExtractWhiskyHandoutText,
   aiGenerateWhiskyHandoutText,
 } from "@/lib/tastingStoryDataApi";
+import { useToast } from "@/hooks/use-toast";
 
 const overrideSchema = z.object({
   handoutText: z.string().optional().default(""),
@@ -206,6 +207,7 @@ function PlaceholderEmpty({ theme, testId, message }: { theme: BlockRendererProp
 
 function EditorPanel({ payload, onChange, tastingId }: BlockEditorPanelProps<Payload>) {
   const data = useTastingStoryData();
+  const { toast } = useToast();
   const set = <K extends keyof Payload>(key: K, value: Payload[K]) => onChange({ ...payload, [key]: value });
   const allWhiskies = data?.whiskies ?? [];
   const [busy, setBusy] = useState<Record<string, "ai" | "extract" | null>>({});
@@ -217,32 +219,34 @@ function EditorPanel({ payload, onChange, tastingId }: BlockEditorPanelProps<Pay
   };
   const runAi = async (whiskyId: string) => {
     if (!tastingId) {
-      window.alert("KI-Generierung benoetigt eine aktive Verkostung.");
+      toast({ title: "Keine Verkostung", description: "KI-Generierung benoetigt eine aktive Verkostung.", variant: "destructive" });
       return;
     }
     setBusy((s) => ({ ...s, [whiskyId]: "ai" }));
     try {
       const r = await aiGenerateWhiskyHandoutText(tastingId, whiskyId);
       updateOverride(whiskyId, { handoutText: r.handoutText });
+      toast({ title: "Steckbrief generiert", description: "Der KI-Vorschlag wurde uebernommen." });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "KI-Generierung fehlgeschlagen";
-      window.alert(msg);
+      toast({ title: "KI-Generierung fehlgeschlagen", description: msg, variant: "destructive" });
     } finally {
       setBusy((s) => ({ ...s, [whiskyId]: null }));
     }
   };
   const runExtract = async (whiskyId: string) => {
     if (!tastingId) {
-      window.alert("Handout-Extraktion benoetigt eine aktive Verkostung.");
+      toast({ title: "Keine Verkostung", description: "Handout-Extraktion benoetigt eine aktive Verkostung.", variant: "destructive" });
       return;
     }
     setBusy((s) => ({ ...s, [whiskyId]: "extract" }));
     try {
       const r = await aiExtractWhiskyHandoutText(tastingId, whiskyId);
       updateOverride(whiskyId, { handoutText: r.handoutText });
+      toast({ title: "Handout-Text uebernommen", description: r.sources ? `Quellen verarbeitet: ${r.sources}` : undefined });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Handout-Extraktion fehlgeschlagen";
-      window.alert(msg);
+      toast({ title: "Handout-Extraktion fehlgeschlagen", description: msg, variant: "destructive" });
     } finally {
       setBusy((s) => ({ ...s, [whiskyId]: null }));
     }
@@ -361,10 +365,11 @@ function WhiskyOverrideRow({
         </div>
       </div>
       <textarea
-        placeholder={handoutExcerpt ?? "Handout-Text…"}
+        placeholder={busyMode === "ai" ? "Steckbrief wird generiert…" : busyMode === "extract" ? "Handout wird ausgelesen…" : (handoutExcerpt ?? "Handout-Text…")}
         value={override.handoutText ?? ""}
         onChange={(e) => onUpdate({ handoutText: e.target.value })}
-        style={{ ...inputStyle, minHeight: 50 }}
+        disabled={busyMode !== null}
+        style={{ ...inputStyle, minHeight: 50, opacity: busyMode !== null ? 0.6 : 1, cursor: busyMode !== null ? "wait" : "text" }}
         data-testid={`input-whisky-grid-handout-${whiskyId}`}
       />
       <input
@@ -372,7 +377,8 @@ function WhiskyOverrideRow({
         placeholder={avgScoreLabel}
         value={override.scoreLabel ?? ""}
         onChange={(e) => onUpdate({ scoreLabel: e.target.value })}
-        style={inputStyle}
+        disabled={busyMode !== null}
+        style={{ ...inputStyle, opacity: busyMode !== null ? 0.6 : 1, cursor: busyMode !== null ? "wait" : "text" }}
         data-testid={`input-whisky-grid-score-${whiskyId}`}
       />
     </div>
