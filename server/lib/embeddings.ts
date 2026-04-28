@@ -111,30 +111,78 @@ export function vectorLiteral(vec: number[]): string {
   return `[${vec.map((v) => Number.isFinite(v) ? v.toFixed(6) : "0").join(",")}]`;
 }
 
+type EmbeddableRow = Record<string, unknown>;
+
 interface TableConfig {
   table: string;
-  build: (row: any) => string;
-  selectExtra?: string;
+  build: (row: EmbeddableRow) => string;
+}
+
+function asString(value: unknown): string | null {
+  return typeof value === "string" ? value : null;
 }
 
 const TABLE_CONFIGS: Record<string, TableConfig> = {
   whiskies: {
     table: "whiskies",
-    build: (r) => buildWhiskyText(r),
+    build: (r) => buildWhiskyText({
+      name: asString(r.name),
+      distillery: asString(r.distillery),
+      region: asString(r.region),
+      country: asString(r.country),
+      category: asString(r.category),
+      type: asString(r.type),
+      age: asString(r.age),
+      ageBand: asString(r.age_band),
+      caskType: asString(r.cask_type),
+      peatLevel: asString(r.peat_level),
+      bottler: asString(r.bottler),
+      notes: asString(r.notes),
+      hostNotes: asString(r.host_notes),
+      hostSummary: asString(r.host_summary),
+      flavorProfile: asString(r.flavor_profile),
+    }),
   },
   tastings: {
     table: "tastings",
-    build: (r) => buildTastingText(r),
+    build: (r) => buildTastingText({
+      title: asString(r.title),
+      location: asString(r.location),
+      hostReflection: asString(r.host_reflection),
+      aiNarrative: asString(r.ai_narrative),
+    }),
   },
   distilleries: {
     table: "distilleries",
-    build: (r) => buildDistilleryText(r),
+    build: (r) => buildDistilleryText({
+      name: asString(r.name),
+      region: asString(r.region),
+      country: asString(r.country),
+      description: asString(r.description),
+      feature: asString(r.feature),
+    }),
   },
   lexicon: {
     table: "lexicon",
-    build: (r) => buildLexiconText(r),
+    build: (r) => buildLexiconText({
+      term: asString(r.term),
+      definition: asString(r.definition),
+      category: asString(r.category),
+    }),
   },
 };
+
+interface ExecResult {
+  rows?: EmbeddableRow[];
+}
+
+function extractRows(result: unknown): EmbeddableRow[] {
+  if (Array.isArray(result)) return result as EmbeddableRow[];
+  if (result && typeof result === "object" && Array.isArray((result as ExecResult).rows)) {
+    return (result as ExecResult).rows as EmbeddableRow[];
+  }
+  return [];
+}
 
 export async function embedRowAsync(tableKey: keyof typeof TABLE_CONFIGS, id: string): Promise<void> {
   const config = TABLE_CONFIGS[tableKey];
@@ -142,15 +190,16 @@ export async function embedRowAsync(tableKey: keyof typeof TABLE_CONFIGS, id: st
   const client = getEmbeddingClient();
   if (!client) return;
   try {
-    const rows = await db.execute(sql.raw(`SELECT * FROM "${config.table}" WHERE id = '${id.replace(/'/g, "''")}' LIMIT 1`));
-    const row = (rows as any).rows?.[0] || (rows as any)[0];
+    const result = await db.execute(sql`SELECT * FROM ${sql.raw(`"${config.table}"`)} WHERE id = ${id} LIMIT 1`);
+    const rows = extractRows(result);
+    const row = rows[0];
     if (!row) return;
     const text = config.build(row);
     if (!text) return;
     const vec = await embedSingle(text);
     if (!vec || vec.length !== EMBED_DIM) return;
     const literal = vectorLiteral(vec);
-    await db.execute(sql.raw(`UPDATE "${config.table}" SET embedding = '${literal}'::vector WHERE id = '${id.replace(/'/g, "''")}'`));
+    await db.execute(sql`UPDATE ${sql.raw(`"${config.table}"`)} SET embedding = ${literal}::vector WHERE id = ${id}`);
   } catch (e) {
     console.warn(`[embeddings] embedRowAsync(${tableKey}, ${id}) failed:`, e instanceof Error ? e.message : e);
   }

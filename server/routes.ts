@@ -23261,12 +23261,18 @@ Rules:
         };
       });
 
-      if (search) {
-        results = results.filter(w =>
-          (w.name || "").toLowerCase().includes(search) ||
-          (w.distillery || "").toLowerCase().includes(search) ||
-          (w.region || "").toLowerCase().includes(search)
+      if (search && search.length >= 2) {
+        const { pool: pgPool2 } = await import("./db");
+        const matchResult = await pgPool2.query<{ id: string }>(
+          `SELECT id FROM whiskies
+           WHERE search_vector @@ websearch_to_tsquery('simple', unaccent($1))
+              OR unaccent(coalesce(name,'')) %> unaccent($1)
+              OR unaccent(coalesce(distillery,'')) %> unaccent($1)
+              OR unaccent(coalesce(region,'')) %> unaccent($1)`,
+          [search],
         );
+        const matchIds = new Set(matchResult.rows.map((r) => r.id));
+        results = results.filter((w) => matchIds.has(w.id));
       }
 
       if (region) {
