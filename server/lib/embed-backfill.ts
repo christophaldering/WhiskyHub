@@ -185,7 +185,7 @@ export async function backfillTable(key: BackfillTableKey, options: BackfillOpti
 
 export async function backfillAll(options: BackfillOptions = {}): Promise<BackfillResult[]> {
   if (!isEmbeddingAvailable()) {
-    throw new Error("No OpenAI key available (OPENAI_API_KEY or AI_INTEGRATIONS_OPENAI_API_KEY).");
+    throw new Error("OpenAI embeddings unavailable (OPENAI_API_KEY missing or quota exhausted).");
   }
   const results: BackfillResult[] = [];
   for (const key of BACKFILL_TABLE_KEYS) {

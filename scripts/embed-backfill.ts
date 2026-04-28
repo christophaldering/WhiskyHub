@@ -3,7 +3,7 @@ import { isEmbeddingAvailable } from "../server/lib/embeddings";
 
 async function main(): Promise<void> {
   if (!isEmbeddingAvailable()) {
-    console.error("[backfill] No OpenAI key available (OPENAI_API_KEY or AI_INTEGRATIONS_OPENAI_API_KEY).");
+    console.error("[backfill] OpenAI embeddings unavailable (OPENAI_API_KEY missing or quota exhausted).");
     process.exit(1);
   }
 
