@@ -27558,6 +27558,7 @@ ${cleaned.slice(0, 60000)}`;
           role: z.enum(["user", "assistant"]),
           content: z.string().max(8000),
         })).max(20).optional(),
+        tastingId: z.string().trim().min(1).max(80).optional(),
         tastingContext: z.object({
           tastingId: z.string().trim().min(1).max(80),
           tastingTitle: z.string().trim().max(200).optional(),
@@ -27571,9 +27572,10 @@ ${cleaned.slice(0, 60000)}`;
       const conversationHistory = parsed.data.conversationHistory ?? [];
       const locale = (parsed.data.locale ?? "en").toLowerCase().startsWith("de") ? "de" : "en";
 
+      const askedTastingId = parsed.data.tastingContext?.tastingId ?? parsed.data.tastingId ?? null;
       let tastingContext: { tastingId: string; tastingTitle: string | null } | null = null;
-      if (parsed.data.tastingContext) {
-        const access = await verifyTastingAccess(participantId, parsed.data.tastingContext.tastingId);
+      if (askedTastingId) {
+        const access = await verifyTastingAccess(participantId, askedTastingId);
         if (!access.ok || !access.tasting) {
           return res.status(403).json({
             message: locale === "de"
