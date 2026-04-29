@@ -24,6 +24,7 @@ import { addConnection, broadcastToTasting } from "./sse";
 import { getCachedWhiskyDna, setCachedWhiskyDna } from "./whiskyDnaCache";
 import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES, getAIFreeQuota, setAIFreeQuota, getAIUsageOverview, checkAIQuota } from "./ai-settings";
 import { getAIClient, getAIStatus } from "./ai-client";
+import { labsAskToolMap, buildOpenAIToolList, type AnswerMode, type LabsToolSource } from "./labs-ask-tools";
 import { hashPassword, verifyPassword } from "./lib/auth";
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, AlignmentType, WidthType, BorderStyle } from "docx";
 import sharp from "sharp";
@@ -27823,8 +27824,24 @@ ${cleaned.slice(0, 60000)}`;
 
       const sources: Source[] = [...retrievedSources, ...userContextSources];
 
-      const sysDe = `Du bist „CaskSense", ein hilfreicher Whisky-Assistent. Du bekommst zwei Kontextbloecke: (1) „Verfuegbare Quellen" sind die Treffer der Stichwortsuche zur konkreten Frage, (2) „Nutzerkontext" enthaelt die zuletzt verkosteten Whiskys und Tastings des Users. Du darfst beide Bloecke verwenden, um die Frage zu beantworten. Erfinde nichts ausserhalb dieser Quellen. Wenn der User nach einem Whisky/Tasting fragt, das in keinem der Bloecke vorkommt, sag ehrlich, dass du dazu keine Daten hast, und nenne kurz, was er stattdessen verkostet hat. Bei Uebersichtsfragen („was habe ich getrunken?", „zeig meine Tastings", „mein bestes Tasting?") nutze den Nutzerkontext und liste die Eintraege konkret auf. Antworte freundlich, klar und in vollstaendigen deutschen Saetzen. Nenne nie technische IDs.`;
-      const sysEn = `You are "CaskSense", a helpful whisky assistant. You receive two context blocks: (1) "Available sources" are keyword-search hits for the specific question, (2) "User context" contains the user's most recent whiskies and tastings. Use both blocks to answer. Do not invent facts beyond these sources. If the user asks about a whisky/tasting not present in either block, say honestly that you have no data on it and briefly mention what they did taste instead. For overview questions ("what have I drunk?", "show my tastings", "what was my best tasting?") rely on the user context and list the entries concretely. Reply in friendly, clear, complete English sentences. Never mention raw IDs.`;
+      const sysDe = `Du bist „CaskSense", ein hilfreicher Whisky-Assistent. Du bekommst zwei Kontextbloecke: (1) „Verfuegbare Quellen" sind die Treffer der Stichwortsuche zur konkreten Frage, (2) „Nutzerkontext" enthaelt die zuletzt verkosteten Whiskys und Tastings des Users.
+
+Werkzeuge: Du hast Zugriff auf Statistik-Werkzeuge, die nutzerbezogene Daten genau berechnen (z. B. beste Whiskys, bestes Tasting, Anzahl pro Region, Gesamtdurchschnitt, letzte Bewertungen, Host-vs-Gast-Aufteilung). Wenn die Frage konkrete Zahlen, Bestenlisten oder Auswertungen zu den eigenen Daten des Users verlangt, rufe das passende Werkzeug auf, anstatt aus dem Nutzerkontext zu schaetzen.
+
+Antwort-Quelle (Pflicht): Bevor du die finale Antwort schreibst, rufe genau einmal das Werkzeug set_answer_mode auf: user_data wenn die Antwort aus den Quellen, dem Nutzerkontext oder Werkzeug-Ergebnissen stammt; general wenn die Antwort aus deinem allgemeinen Whisky-Wissen stammt (nicht aus den Daten des Users); mixed wenn beides kombiniert wird.
+
+Allgemeinwissen-Fallback: Wenn die Frage allgemeines Whisky-Wissen verlangt (Geschichte, Destilliertechnik, Regionsmerkmale, Gesetze) und in den Quellen / Werkzeug-Ergebnissen nichts dazu steht, darfst du aus deinem allgemeinen Wissen antworten. Beginne dann mit einem kurzen Hinweis wie „Allgemeines Whisky-Wissen:" und setze set_answer_mode auf general. Wenn die Frage spezifisch zu eigenen Daten des Users gehoert (z. B. „mein bestes Tasting", „wie viele Islay habe ich") und die Werkzeuge / Quellen leer bleiben, sag ehrlich, dass dazu keine Daten vorliegen, statt zu raten.
+
+Erfinde keine konkreten Bewertungen, Tasting-Namen oder Verkostungs-Ereignisse, die nicht in den Quellen oder Werkzeug-Ergebnissen vorkommen. Antworte freundlich, klar und in vollstaendigen deutschen Saetzen. Nenne nie technische IDs.`;
+      const sysEn = `You are "CaskSense", a helpful whisky assistant. You receive two context blocks: (1) "Available sources" are keyword-search hits for the specific question, (2) "User context" contains the user's most recent whiskies and tastings.
+
+Tools: You have access to statistics tools that compute user-specific data exactly (e.g. top whiskies, best tasting, counts by region, overall averages, recent ratings, host-vs-guest split). When the question demands concrete numbers, rankings or summaries about the user's own data, call the appropriate tool instead of estimating from the user context block.
+
+Answer source (mandatory): Before producing the final answer, call the tool set_answer_mode exactly once: user_data when the answer comes from the sources, user context or tool results; general when the answer comes from your general whisky knowledge (not from this user's data); mixed when both are combined.
+
+General-knowledge fallback: If the question is about general whisky knowledge (history, distillation, region characteristics, regulations) and nothing relevant is in the sources or tool results, you may answer from your general knowledge. Prefix it briefly with "General whisky knowledge:" and set set_answer_mode to general. If the question is specific to the user's own data (e.g. "my best tasting", "how many Islay have I tasted") and tools / sources stay empty, say honestly that no data is available rather than guessing.
+
+Do not invent specific ratings, tasting names or events that are not in the sources or tool results. Reply in friendly, clear, complete English sentences. Never mention raw IDs.`;
 
       const formatBlock = (items: Source[], prefix: string): string => items.map((s, i) => {
         const label = s.type === "whisky" ? "WHISKY"
@@ -27867,26 +27884,134 @@ ${cleaned.slice(0, 60000)}`;
       req.on("close", onClientClose);
 
       try {
-        const stream = await aiResult.client.chat.completions.create(
-          {
-            model: "gpt-4o-mini",
-            messages,
-            stream: true,
-            temperature: 0.4,
-            max_tokens: 800,
-          },
-          { signal: upstreamAbort.signal },
-        );
+        const openaiTools = buildOpenAIToolList();
+        const toolMessages: Array<Record<string, unknown>> = messages.map((m) => ({ ...m }));
+        const collectedToolSources: LabsToolSource[] = [];
+        let answerMode: AnswerMode | null = null;
+        let earlyContent: string | null = null;
+        const MAX_TOOL_ROUNDS = 2;
+        let toolRound = 0;
 
-        for await (const chunk of stream) {
+        type AssistantToolCall = { id: string; type: "function"; function: { name: string; arguments: string } };
+        type AssistantMessage = { role: "assistant"; content: string | null; tool_calls?: AssistantToolCall[] };
+
+        while (toolRound < MAX_TOOL_ROUNDS) {
           if (clientClosed) break;
-          const delta = chunk.choices[0]?.delta?.content ?? "";
-          if (delta) {
-            res.write(`data: ${JSON.stringify({ delta })}\n\n`);
+          const completion = await aiResult.client.chat.completions.create(
+            {
+              model: "gpt-4o-mini",
+              messages: toolMessages as unknown as Parameters<typeof aiResult.client.chat.completions.create>[0]["messages"],
+              tools: openaiTools,
+              tool_choice: "auto",
+              temperature: 0.4,
+              max_tokens: 800,
+            },
+            { signal: upstreamAbort.signal },
+          );
+          const choice = completion.choices[0];
+          const assistantMsg = choice?.message as AssistantMessage | undefined;
+          if (!assistantMsg) {
+            earlyContent = "";
+            break;
           }
+          const toolCalls = assistantMsg.tool_calls ?? [];
+          toolMessages.push({
+            role: "assistant",
+            content: assistantMsg.content,
+            tool_calls: toolCalls.length > 0 ? toolCalls : undefined,
+          });
+          if (toolCalls.length === 0) {
+            earlyContent = assistantMsg.content ?? "";
+            break;
+          }
+          for (const tc of toolCalls) {
+            const fnName = tc.function?.name ?? "";
+            let parsedArgs: unknown = {};
+            try {
+              parsedArgs = tc.function?.arguments ? JSON.parse(tc.function.arguments) : {};
+            } catch {
+              parsedArgs = {};
+            }
+            if (fnName === "set_answer_mode") {
+              const modeVal = (parsedArgs as { mode?: string })?.mode;
+              if (modeVal === "user_data" || modeVal === "general" || modeVal === "mixed") {
+                answerMode = modeVal;
+              }
+              toolMessages.push({
+                role: "tool",
+                tool_call_id: tc.id,
+                content: JSON.stringify({ ok: true, mode: answerMode }),
+              });
+              continue;
+            }
+            const tool = labsAskToolMap.get(fnName);
+            if (!tool) {
+              toolMessages.push({
+                role: "tool",
+                tool_call_id: tc.id,
+                content: JSON.stringify({ error: `Unknown tool: ${fnName}` }),
+              });
+              continue;
+            }
+            try {
+              const toolResult = await tool.handler(participantId, parsedArgs, locale);
+              for (const s of toolResult.sources) collectedToolSources.push(s);
+              toolMessages.push({
+                role: "tool",
+                tool_call_id: tc.id,
+                content: JSON.stringify(toolResult.data),
+              });
+            } catch (toolErr: unknown) {
+              const tmsg = toolErr instanceof Error ? toolErr.message : "Tool execution failed";
+              console.warn(`[labs/ask] tool ${fnName} failed:`, tmsg);
+              toolMessages.push({
+                role: "tool",
+                tool_call_id: tc.id,
+                content: JSON.stringify({ error: tmsg }),
+              });
+            }
+          }
+          toolRound += 1;
         }
+
+        if (!clientClosed && earlyContent === null) {
+          const finalStream = await aiResult.client.chat.completions.create(
+            {
+              model: "gpt-4o-mini",
+              messages: toolMessages as unknown as Parameters<typeof aiResult.client.chat.completions.create>[0]["messages"],
+              stream: true,
+              temperature: 0.4,
+              max_tokens: 800,
+            },
+            { signal: upstreamAbort.signal },
+          );
+          for await (const chunk of finalStream) {
+            if (clientClosed) break;
+            const delta = chunk.choices[0]?.delta?.content ?? "";
+            if (delta) {
+              res.write(`data: ${JSON.stringify({ delta })}\n\n`);
+            }
+          }
+        } else if (!clientClosed && earlyContent) {
+          res.write(`data: ${JSON.stringify({ delta: earlyContent })}\n\n`);
+        }
+
         if (!clientClosed) {
-          res.write(`data: ${JSON.stringify({ done: true, sources })}\n\n`);
+          const seen = new Set<string>();
+          const finalSources: Source[] = [];
+          for (const s of collectedToolSources) {
+            const key = `${s.type}:${s.id}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            finalSources.push(s as Source);
+          }
+          for (const s of sources) {
+            const key = `${s.type}:${s.id}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            finalSources.push(s);
+          }
+          res.write(`data: ${JSON.stringify({ done: true, sources: finalSources, knowledgeMode: answerMode ?? "user_data" })}\n\n`);
           res.end();
         }
       } catch (aiErr: unknown) {

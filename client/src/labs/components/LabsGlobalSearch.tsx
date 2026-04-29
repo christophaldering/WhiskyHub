@@ -130,11 +130,14 @@ interface AskSource {
   route: string;
 }
 
+type KnowledgeMode = "user_data" | "general" | "mixed";
+
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   sources?: AskSource[];
   truncated?: boolean;
+  knowledgeMode?: KnowledgeMode;
 }
 
 type SearchMode = "search" | "ask";
@@ -320,6 +323,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
       let buffer = "";
       let accumulated = "";
       let finalSources: AskSource[] | undefined;
+      let finalKnowledgeMode: KnowledgeMode | undefined;
       let streamErr: string | null = null;
 
       while (true) {
@@ -334,12 +338,15 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
           const payload = trimmed.slice(5).trim();
           if (!payload) continue;
           try {
-            const evt = JSON.parse(payload) as { delta?: string; done?: boolean; sources?: AskSource[]; error?: string };
+            const evt = JSON.parse(payload) as { delta?: string; done?: boolean; sources?: AskSource[]; knowledgeMode?: string; error?: string };
             if (typeof evt.delta === "string") {
               accumulated += evt.delta;
               setStreamingText(accumulated);
             } else if (evt.done) {
               if (Array.isArray(evt.sources)) finalSources = evt.sources;
+              if (evt.knowledgeMode === "user_data" || evt.knowledgeMode === "general" || evt.knowledgeMode === "mixed") {
+                finalKnowledgeMode = evt.knowledgeMode;
+              }
             } else if (evt.error) {
               streamErr = String(evt.error);
             }
@@ -354,7 +361,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
       }
 
       const truncated = streamErr !== null;
-      setChatMessages((prev) => [...prev, { role: "assistant", content: accumulated, sources: finalSources, truncated }]);
+      setChatMessages((prev) => [...prev, { role: "assistant", content: accumulated, sources: finalSources, truncated, knowledgeMode: finalKnowledgeMode }]);
       setStreamingText("");
       if (truncated && streamErr) {
         setStreamError(streamErr);
@@ -884,8 +891,8 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
               </div>
               <div style={{ fontSize: 14, lineHeight: 1.5, maxWidth: 380 }}>
                 {isDe
-                  ? "Anders als ChatGPT oder Claude antwortet CaskSense nur auf Basis deiner eigenen Whisky-Daten und unseres Lexikons \u2014 nicht aus dem allgemeinen Internet."
-                  : "Unlike ChatGPT or Claude, CaskSense answers only from your own whisky data and our lexicon \u2014 not from the open internet."}
+                  ? "CaskSense st\u00fctzt sich zuerst auf deine eigenen Whisky-Daten und unser Lexikon. F\u00fcr allgemeines Whisky-Wissen darf es zus\u00e4tzlich aus seinem Hintergrundwissen antworten \u2014 das wird dann markiert."
+                  : "CaskSense relies first on your own whisky data and our lexicon. For general whisky knowledge it may also answer from its background knowledge \u2014 this will be flagged."}
               </div>
               <div
                 style={{
@@ -919,11 +926,13 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
                       ? [
                           "Konkrete Whiskys, Brennereien oder Begriffe (z. B. \u201eErz\u00e4hl mir was \u00fcber Lagavulin\u201c).",
                           "Deine eigenen Whiskys und Tastings (\u201ewelche Whiskys habe ich verkostet?\u201c).",
+                          "Statistiken zu deinen Bewertungen (\u201ebestes Tasting\u201c, \u201eTop 3 Islay\u201c, \u201eDurchschnittsnote\u201c).",
                           "Erkl\u00e4rungen aus dem Lexikon (\u201ewas ist ein Octave?\u201c, \u201eFirst-Fill-Sherry?\u201c).",
                         ]
                       : [
                           "Specific whiskies, distilleries or terms (\u201cTell me about Lagavulin\u201d).",
                           "Your own whiskies and tastings (\u201cwhich whiskies have I tasted?\u201d).",
+                          "Statistics across your ratings (\u201cbest tasting\u201d, \u201ctop 3 Islay\u201d, \u201caverage score\u201d).",
                           "Lexicon explanations (\u201cwhat is an Octave?\u201d, \u201cFirst-fill sherry?\u201d).",
                         ]
                     ).map((line) => (
@@ -949,14 +958,12 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
                   <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.55, color: "var(--labs-text-secondary)" }}>
                     {(isDe
                       ? [
-                          "Ranglisten oder Statistiken \u00fcber deine Bewertungen.",
                           "Aktuelle Marktpreise, Verf\u00fcgbarkeit oder Auktionen.",
-                          "Allgemeines Wissen au\u00dferhalb deiner Daten und unseres Lexikons.",
+                          "Pers\u00f6nliche Empfehlungen mit Kaufgarantie.",
                         ]
                       : [
-                          "Rankings or statistics across your ratings.",
                           "Current market prices, availability or auctions.",
-                          "General knowledge outside your data and our lexicon.",
+                          "Personal purchase recommendations with any guarantee.",
                         ]
                     ).map((line) => (
                       <li key={line}>{line}</li>
@@ -969,8 +976,8 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
                 {(isDe
-                  ? ["Welche Whiskys habe ich verkostet?", "Was ist ein Octave?", "Erz\u00e4hl mir kurz etwas \u00fcber Lagavulin"]
-                  : ["Which whiskies have I tasted?", "What is an Octave?", "Tell me briefly about Lagavulin"]
+                  ? ["Was war mein bestes Tasting?", "Was ist ein Octave?", "Erz\u00e4hl mir kurz etwas \u00fcber Lagavulin"]
+                  : ["What was my best tasting?", "What is an Octave?", "Tell me briefly about Lagavulin"]
                 ).map((suggestion, idx) => (
                   <button
                     key={suggestion}
@@ -1026,21 +1033,61 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
               >
                 {msg.content}
               </div>
-              {msg.role === "assistant" && msg.truncated && (
-                <div
-                  data-testid={`chat-truncated-${idx}`}
-                  style={{
-                    fontSize: 11,
-                    color: "rgba(220, 120, 80, 0.95)",
-                    background: "rgba(220, 120, 80, 0.08)",
-                    border: "1px solid rgba(220, 120, 80, 0.25)",
-                    padding: "3px 8px",
-                    borderRadius: 999,
-                    fontWeight: 600,
-                    letterSpacing: 0.2,
-                  }}
-                >
-                  {isDe ? "Antwort unvollstaendig" : "Response incomplete"}
+              {msg.role === "assistant" && (msg.truncated || (msg.knowledgeMode && msg.knowledgeMode !== "user_data")) && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                  {msg.truncated && (
+                    <div
+                      data-testid={`chat-truncated-${idx}`}
+                      style={{
+                        fontSize: 11,
+                        color: "rgba(220, 120, 80, 0.95)",
+                        background: "rgba(220, 120, 80, 0.08)",
+                        border: "1px solid rgba(220, 120, 80, 0.25)",
+                        padding: "3px 8px",
+                        borderRadius: 999,
+                        fontWeight: 600,
+                        letterSpacing: 0.2,
+                      }}
+                    >
+                      {isDe ? "Antwort unvollstaendig" : "Response incomplete"}
+                    </div>
+                  )}
+                  {msg.knowledgeMode === "general" && (
+                    <div
+                      data-testid={`chat-knowledge-mode-${idx}`}
+                      title={isDe ? "Allgemeines Whisky-Wissen, nicht aus deinen Daten" : "General whisky knowledge, not from your data"}
+                      style={{
+                        fontSize: 11,
+                        color: "var(--labs-accent)",
+                        background: "var(--labs-accent-muted)",
+                        border: "1px solid rgba(201, 169, 97, 0.4)",
+                        padding: "3px 8px",
+                        borderRadius: 999,
+                        fontWeight: 600,
+                        letterSpacing: 0.2,
+                      }}
+                    >
+                      {isDe ? "Allgemeines Wissen" : "General knowledge"}
+                    </div>
+                  )}
+                  {msg.knowledgeMode === "mixed" && (
+                    <div
+                      data-testid={`chat-knowledge-mode-${idx}`}
+                      title={isDe ? "Mischung aus deinen Daten und allgemeinem Whisky-Wissen" : "Mix of your data and general whisky knowledge"}
+                      style={{
+                        fontSize: 11,
+                        color: "var(--labs-text-secondary)",
+                        background: "var(--labs-surface)",
+                        border: "1px solid var(--labs-border)",
+                        padding: "3px 8px",
+                        borderRadius: 999,
+                        fontWeight: 600,
+                        letterSpacing: 0.2,
+                      }}
+                    >
+                      {isDe ? "Deine Daten + Allgemeinwissen" : "Your data + general"}
+                    </div>
+                  )}
                 </div>
               )}
               {msg.role === "assistant" && msg.sources && msg.sources.length > 0 && (
