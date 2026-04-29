@@ -27582,6 +27582,38 @@ ${cleaned.slice(0, 60000)}`;
       const userTastings = await storage.getTastingsForParticipant(participantId);
       const userTastingIds = userTastings.map((t) => t.id);
 
+      const askStopwords = new Set<string>([
+        "welche","welcher","welches","welchen","welchem","was","wie","wer","wen","wem","wo","warum","wann","woher","wohin",
+        "der","die","das","den","dem","des","ein","eine","einer","einem","einen","eines","kein","keine","keinen","keinem",
+        "ich","du","er","sie","es","wir","ihr","mir","dir","mein","meine","meinen","meinem","meiner","meines","dein","deine","deinen","sein","seine",
+        "in","auf","mit","von","zu","fuer","fur","bei","an","ueber","uber","unter","aus","nach","ohne","durch","um","gegen","seit","bis",
+        "ist","sind","war","waren","wird","werden","wurde","wurden","sei","seien","gewesen","sein",
+        "hat","habe","hast","haben","hatte","hatten","gehabt",
+        "und","oder","aber","doch","denn","auch","nur","schon","mal","jemals","einmal","je","etwa","etwas",
+        "nicht","alle","alles","viele","viel","wenig","mehr","weniger","am","im","beim","zum","zur","vom","ans","ins","aufs",
+        "getrunken","bewertet","probiert","verkostet","getestet","mag","liebe","kenne","gibt","sage","sagen","zeig","zeigen","zeigst","gib","geben","erzaehl","erzaehle","erzaehlst","erzaehlen",
+        "whisky","whiskys","whiskies","whiskey","whiskeys","tasting","tastings","verkostung","verkostungen","drink","drinks","flasche","flaschen","bottle","bottles",
+        "what","which","who","whom","whose","where","why","when","how","whence","whither",
+        "the","a","an","of","in","on","at","with","for","to","from","by","about","as","into","onto","over","under",
+        "my","mine","your","yours","his","her","hers","its","our","ours","their","theirs","me","you","they","them","we","us","he","she","it","i",
+        "is","are","was","were","be","been","being","am","has","have","had","having",
+        "do","does","did","done","doing","will","would","can","could","should","shall","may","might","must","ought",
+        "and","or","but","not","no","nor","none","some","any","all","more","less","much","many","few","several",
+        "ever","just","also","only","still","yet","already","again","always","never","sometimes",
+        "drunk","drank","drink","drinking","tried","tasted","taste","tastes","rated","rate","rates","like","liked","love","loved","know","knew","tell","told","show","shown","give","gave","please",
+      ]);
+
+      const askTokens = Array.from(new Set(
+        question
+          .toLowerCase()
+          .replace(/[\u2018\u2019\u201c\u201d\u00b4`'"]/g, " ")
+          .replace(/[^\p{L}\p{N}\s\-]/gu, " ")
+          .split(/\s+/)
+          .map((t) => t.trim())
+          .filter((t) => t.length >= 2 && !askStopwords.has(t)),
+      )).slice(0, 8);
+      const ftsQueryInput = askTokens.length > 0 ? askTokens.join(" OR ") : "";
+
       const { pool: pgPool } = await import("./db");
       const { getQueryEmbedding, vectorLiteral, isEmbeddingAvailable } = await import("./lib/embeddings");
 
@@ -27612,7 +27644,12 @@ ${cleaned.slice(0, 60000)}`;
         buildRoute: (id: string, title: string) => string,
         limit: number,
       ): Promise<Source[]> => {
-        const params: unknown[] = [question, ...extraParams];
+        const params: unknown[] = [ftsQueryInput, ...extraParams];
+        const trgmTokens = askTokens.length > 0 ? askTokens : [];
+        const tokenStartIdx = params.length;
+        for (const tk of trgmTokens) params.push(tk);
+        const tokenIdxs = trgmTokens.map((_, i) => tokenStartIdx + 1 + i);
+
         const semParamIdx = queryVecLiteral ? params.push(queryVecLiteral) : 0;
         const semExpr = queryVecLiteral
           ? `COALESCE(GREATEST(0, 1 - (${table}.embedding <=> $${semParamIdx}::vector)), 0)`
@@ -27620,11 +27657,22 @@ ${cleaned.slice(0, 60000)}`;
         const semWhereOr = queryVecLiteral
           ? ` OR (${table}.embedding IS NOT NULL AND (${table}.embedding <=> $${semParamIdx}::vector) < 0.45)`
           : ``;
-        const trgmCombined = trgmCols.map((c) => `similarity(unaccent(coalesce(${c},'')), unaccent($1))`).join(" + ");
-        const trgmCount = trgmCols.length || 1;
-        const trgmWhere = trgmCols.map((c) => `unaccent(coalesce(${c},'')) %> unaccent($1)`).join(" OR ");
+
+        const trgmSimList: string[] = [];
+        const trgmWhereList: string[] = [];
+        for (const c of trgmCols) {
+          for (const idx of tokenIdxs) {
+            trgmSimList.push(`similarity(unaccent(coalesce(${c},'')), unaccent($${idx}))`);
+            trgmWhereList.push(`unaccent(coalesce(${c},'')) %> unaccent($${idx})`);
+          }
+        }
+        const trgmGreatest = trgmSimList.length > 0 ? `GREATEST(${trgmSimList.join(", ")})` : `0`;
+        const trgmWhere = trgmWhereList.length > 0 ? `(${trgmWhereList.join(" OR ")})` : `FALSE`;
+        const ftsClause = ftsQueryInput.length > 0
+          ? `${table}.search_vector @@ websearch_to_tsquery('simple', unaccent($1))`
+          : `FALSE`;
+
         const sqlText = `
-          WITH q AS (SELECT websearch_to_tsquery('simple', unaccent($1)) AS tsq)
           SELECT
             ${table}.id AS id,
             ${titleExpr} AS title,
@@ -27632,12 +27680,15 @@ ${cleaned.slice(0, 60000)}`;
             ${snippetExpr} AS snippet,
             (
               0.6 * GREATEST(
-                COALESCE(ts_rank(${table}.search_vector, (SELECT tsq FROM q)), 0) * 4,
-                ((${trgmCombined}) / ${trgmCount})
+                CASE WHEN ${ftsQueryInput.length > 0 ? "TRUE" : "FALSE"}
+                  THEN COALESCE(ts_rank(${table}.search_vector, websearch_to_tsquery('simple', unaccent($1))), 0) * 4
+                  ELSE 0
+                END,
+                ${trgmGreatest}
               ) + 0.4 * ${semExpr}
             ) AS score
           FROM ${table}
-          WHERE (${table}.search_vector @@ (SELECT tsq FROM q) OR ${trgmWhere}${semWhereOr})
+          WHERE (${ftsClause} OR ${trgmWhere}${semWhereOr})
           ${extraFilter}
           ORDER BY score DESC
           LIMIT ${Math.max(1, Math.floor(limit))}
@@ -27710,26 +27761,93 @@ ${cleaned.slice(0, 60000)}`;
       ));
 
       const branchResults = await Promise.all(branches);
-      const sources: Source[] = branchResults.flat();
+      const retrievedSources: Source[] = branchResults.flat();
 
-      const sysDe = `Du bist „CaskSense", ein hilfreicher Whisky-Assistent. Antworte ausschliesslich auf Basis der unten genannten Quellen. Erfinde nichts. Wenn die Quellen die Frage nicht beantworten, sag ehrlich, dass du es nicht weisst, und schlage vor, die Suche zu nutzen. Antworte freundlich, klar und in vollstaendigen deutschen Saetzen. Verweise im Text natuerlich auf Whiskys, Tastings oder Begriffe; nenne keine technischen IDs.`;
-      const sysEn = `You are "CaskSense", a helpful whisky assistant. Answer strictly based on the sources below. Do not invent facts. If the sources do not contain the answer, say honestly that you don't know and suggest using the search instead. Reply in friendly, clear, complete English sentences. Reference whiskies, tastings, or terms naturally; never mention raw IDs.`;
+      const userContextSources: Source[] = [];
+      if (userTastingIds.length > 0) {
+        const seenWhiskyIds = new Set(retrievedSources.filter((s) => s.type === "whisky").map((s) => s.id));
+        const seenTastingIds = new Set(retrievedSources.filter((s) => s.type === "tasting").map((s) => s.id));
+        try {
+          const recentWhiskies = await pgPool.query(
+            `SELECT w.id, w.name, w.distillery, w.region, w.age,
+                    left(coalesce(w.notes, w.host_summary, w.host_notes, ''), 200) AS snippet
+             FROM whiskies w
+             LEFT JOIN tastings t2 ON t2.id = w.tasting_id
+             WHERE w.tasting_id = ANY($1::varchar[])
+             ORDER BY t2.date DESC NULLS LAST, w.sort_order ASC NULLS LAST
+             LIMIT 12`,
+            [userTastingIds],
+          );
+          let addedW = 0;
+          for (const r of recentWhiskies.rows as Array<{ id: string; name: string | null; distillery: string | null; region: string | null; age: string | null; snippet: string | null }>) {
+            if (addedW >= 5) break;
+            if (seenWhiskyIds.has(String(r.id))) continue;
+            const subtitle = [r.distillery, r.region, r.age].filter(Boolean).join(" \u2022 ");
+            userContextSources.push({
+              type: "whisky",
+              id: String(r.id),
+              title: String(r.name ?? ""),
+              subtitle: subtitle || undefined,
+              snippet: r.snippet ?? undefined,
+              route: `/labs/explore/bottles/${r.id}`,
+            });
+            addedW += 1;
+          }
 
-      const sourcesBlock = sources.length === 0
-        ? (locale === "de" ? "Keine relevanten Quellen aus den Daten des Users gefunden." : "No relevant sources found in the user's data.")
-        : sources.map((s, i) => {
-            const label = s.type === "whisky" ? "WHISKY"
-              : s.type === "tasting" ? "TASTING"
-              : s.type === "distillery" ? "DISTILLERY"
-              : "LEXICON";
-            const head = `[${i + 1}] (${label}) ${s.title}${s.subtitle ? " — " + s.subtitle : ""}`;
-            return s.snippet ? `${head}\n    ${s.snippet}` : head;
-          }).join("\n");
+          const recentUserTastings = await pgPool.query(
+            `SELECT id, title, location, date::text AS date, status
+             FROM tastings
+             WHERE id = ANY($1::varchar[])
+             ORDER BY date DESC NULLS LAST
+             LIMIT 6`,
+            [userTastingIds],
+          );
+          let addedT = 0;
+          for (const r of recentUserTastings.rows as Array<{ id: string; title: string | null; location: string | null; date: string | null; status: string | null }>) {
+            if (addedT >= 3) break;
+            if (seenTastingIds.has(String(r.id))) continue;
+            const subtitle = [r.location, r.date, r.status].filter(Boolean).join(" \u2022 ");
+            userContextSources.push({
+              type: "tasting",
+              id: String(r.id),
+              title: String(r.title ?? ""),
+              subtitle: subtitle || undefined,
+              route: `/labs/tastings/${r.id}?section=praesentation`,
+            });
+            addedT += 1;
+          }
+        } catch (e) {
+          console.warn("[labs/ask] user context fetch failed:", e instanceof Error ? e.message : e);
+        }
+      }
+
+      const sources: Source[] = [...retrievedSources, ...userContextSources];
+
+      const sysDe = `Du bist „CaskSense", ein hilfreicher Whisky-Assistent. Du bekommst zwei Kontextbloecke: (1) „Verfuegbare Quellen" sind die Treffer der Stichwortsuche zur konkreten Frage, (2) „Nutzerkontext" enthaelt die zuletzt verkosteten Whiskys und Tastings des Users. Du darfst beide Bloecke verwenden, um die Frage zu beantworten. Erfinde nichts ausserhalb dieser Quellen. Wenn der User nach einem Whisky/Tasting fragt, das in keinem der Bloecke vorkommt, sag ehrlich, dass du dazu keine Daten hast, und nenne kurz, was er stattdessen verkostet hat. Bei Uebersichtsfragen („was habe ich getrunken?", „zeig meine Tastings", „mein bestes Tasting?") nutze den Nutzerkontext und liste die Eintraege konkret auf. Antworte freundlich, klar und in vollstaendigen deutschen Saetzen. Nenne nie technische IDs.`;
+      const sysEn = `You are "CaskSense", a helpful whisky assistant. You receive two context blocks: (1) "Available sources" are keyword-search hits for the specific question, (2) "User context" contains the user's most recent whiskies and tastings. Use both blocks to answer. Do not invent facts beyond these sources. If the user asks about a whisky/tasting not present in either block, say honestly that you have no data on it and briefly mention what they did taste instead. For overview questions ("what have I drunk?", "show my tastings", "what was my best tasting?") rely on the user context and list the entries concretely. Reply in friendly, clear, complete English sentences. Never mention raw IDs.`;
+
+      const formatBlock = (items: Source[], prefix: string): string => items.map((s, i) => {
+        const label = s.type === "whisky" ? "WHISKY"
+          : s.type === "tasting" ? "TASTING"
+          : s.type === "distillery" ? "DISTILLERY"
+          : "LEXICON";
+        const head = `[${prefix}${i + 1}] (${label}) ${s.title}${s.subtitle ? " \u2014 " + s.subtitle : ""}`;
+        return s.snippet ? `${head}\n    ${s.snippet}` : head;
+      }).join("\n");
+
+      const sourcesBlock = retrievedSources.length === 0
+        ? (locale === "de" ? "Keine direkten Treffer fuer die konkrete Frage." : "No direct hits for the specific question.")
+        : formatBlock(retrievedSources, "");
+
+      const userContextBlock = userContextSources.length === 0
+        ? (locale === "de" ? "Der User hat noch keine eigenen Whiskys oder Tastings." : "The user has no whiskies or tastings yet.")
+        : formatBlock(userContextSources, "u");
 
       const trimmedHistory = conversationHistory.slice(-10);
       const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
         { role: "system", content: locale === "de" ? sysDe : sysEn },
         { role: "system", content: (locale === "de" ? "Verfuegbare Quellen:\n" : "Available sources:\n") + sourcesBlock },
+        { role: "system", content: (locale === "de" ? "Nutzerkontext (zuletzt verkostet):\n" : "User context (recently tasted):\n") + userContextBlock },
         ...trimmedHistory,
         { role: "user", content: question },
       ];
