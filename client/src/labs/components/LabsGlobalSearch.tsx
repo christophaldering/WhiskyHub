@@ -167,7 +167,6 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
 
   const [mode, setMode] = useState<SearchMode>("search");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [streamingText, setStreamingText] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamError, setStreamError] = useState<string | null>(null);
   const askAbortRef = useRef<AbortController | null>(null);
@@ -188,7 +187,6 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
       setRecentSearches(getRecent());
       setMode("search");
       setChatMessages([]);
-      setStreamingText("");
       setStreamError(null);
       setIsStreaming(false);
       askAbortRef.current?.abort();
@@ -288,8 +286,14 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
     const grew = newCount > prevCount;
     if (!grew) return;
 
-    const last = chatMessages[newCount - 1];
-    if (last.role !== "user") return;
+    let lastUserIdx = -1;
+    for (let i = newCount - 1; i >= 0; i--) {
+      if (chatMessages[i].role === "user") {
+        lastUserIdx = i;
+        break;
+      }
+    }
+    if (lastUserIdx === -1 || lastUserIdx < prevCount) return;
 
     const node = lastUserMsgRef.current;
     if (!node) return;
@@ -315,9 +319,10 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
 
     const historyForRequest = chatMessages.slice(-10).map((m) => ({ role: m.role, content: m.content }));
     const userMsg: ChatMessage = { role: "user", content: question };
-    setChatMessages((prev) => [...prev, userMsg]);
+    const assistantPlaceholder: ChatMessage = { role: "assistant", content: "" };
+    const assistantIdx = chatMessages.length + 1;
+    setChatMessages((prev) => [...prev, userMsg, assistantPlaceholder]);
     setQuery("");
-    setStreamingText("");
     setStreamError(null);
     setIsStreaming(true);
     triggerHaptic("light");
@@ -325,6 +330,17 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
     askAbortRef.current?.abort();
     const controller = new AbortController();
     askAbortRef.current = controller;
+
+    const removePlaceholderIfEmpty = () => {
+      setChatMessages((prev) => {
+        if (assistantIdx >= prev.length) return prev;
+        const candidate = prev[assistantIdx];
+        if (!candidate || candidate.role !== "assistant" || candidate.content) return prev;
+        const next = [...prev];
+        next.splice(assistantIdx, 1);
+        return next;
+      });
+    };
 
     const pid = sessionStorage.getItem("session_pid") || localStorage.getItem("casksense_participant_id");
     const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -377,7 +393,15 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
             const evt = JSON.parse(payload) as { delta?: string; done?: boolean; sources?: AskSource[]; knowledgeMode?: string; toolPayloads?: StatsToolPayload[]; error?: string };
             if (typeof evt.delta === "string") {
               accumulated += evt.delta;
-              setStreamingText(accumulated);
+              const snapshot = accumulated;
+              setChatMessages((prev) => {
+                if (assistantIdx >= prev.length) return prev;
+                const candidate = prev[assistantIdx];
+                if (!candidate || candidate.role !== "assistant") return prev;
+                const next = [...prev];
+                next[assistantIdx] = { ...candidate, content: snapshot };
+                return next;
+              });
             } else if (evt.done) {
               if (Array.isArray(evt.sources)) finalSources = evt.sources;
               if (evt.knowledgeMode === "user_data" || evt.knowledgeMode === "general" || evt.knowledgeMode === "mixed") {
@@ -403,8 +427,21 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
       }
 
       const truncated = streamErr !== null;
-      setChatMessages((prev) => [...prev, { role: "assistant", content: accumulated, sources: finalSources, truncated, knowledgeMode: finalKnowledgeMode, toolPayloads: finalToolPayloads }]);
-      setStreamingText("");
+      setChatMessages((prev) => {
+        if (assistantIdx >= prev.length) return prev;
+        const candidate = prev[assistantIdx];
+        if (!candidate || candidate.role !== "assistant") return prev;
+        const next = [...prev];
+        next[assistantIdx] = {
+          role: "assistant",
+          content: accumulated,
+          sources: finalSources,
+          truncated,
+          knowledgeMode: finalKnowledgeMode,
+          toolPayloads: finalToolPayloads,
+        };
+        return next;
+      });
       if (truncated && streamErr) {
         setStreamError(streamErr);
       }
@@ -412,11 +449,11 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
     } catch (err) {
       const error = err as { name?: string; message?: string };
       if (error.name === "AbortError") {
-        setStreamingText("");
+        removePlaceholderIfEmpty();
         return;
       }
       setStreamError(error.message ?? (isDe ? "Unbekannter Fehler." : "Unknown error."));
-      setStreamingText("");
+      removePlaceholderIfEmpty();
     } finally {
       setIsStreaming(false);
     }
@@ -1073,11 +1110,25 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
             </div>
           )}
 
-          {chatMessages.map((msg, idx) => (
+          {(() => {
+            let lastUserIdx = -1;
+            for (let i = chatMessages.length - 1; i >= 0; i--) {
+              if (chatMessages[i].role === "user") {
+                lastUserIdx = i;
+                break;
+              }
+            }
+            return chatMessages.map((msg, idx) => {
+              const isStreamingPlaceholder =
+                msg.role === "assistant" &&
+                isStreaming &&
+                idx === chatMessages.length - 1 &&
+                !msg.content;
+              return (
             <div
               key={`msg-${idx}`}
-              ref={msg.role === "user" && idx === chatMessages.length - 1 ? lastUserMsgRef : undefined}
-              data-testid={`chat-message-${idx}`}
+              ref={msg.role === "user" && idx === lastUserIdx ? lastUserMsgRef : undefined}
+              data-testid={msg.role === "assistant" && idx === chatMessages.length - 1 && isStreaming ? "chat-streaming" : `chat-message-${idx}`}
               style={{
                 display: "flex",
                 flexDirection: "column",
@@ -1097,9 +1148,17 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
                   lineHeight: 1.55,
                   whiteSpace: "pre-wrap",
                   wordBreak: "break-word",
+                  minHeight: msg.role === "assistant" ? 24 : undefined,
                 }}
               >
-                {msg.content}
+                {isStreamingPlaceholder ? (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--labs-text-muted)" }}>
+                    <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} />
+                    {isDe ? "Denkt nach..." : "Thinking..."}
+                  </span>
+                ) : (
+                  msg.content
+                )}
               </div>
               {msg.role === "assistant" && msg.toolPayloads && msg.toolPayloads.length > 0 && (
                 <div
@@ -1222,42 +1281,9 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
                 </div>
               )}
             </div>
-          ))}
-
-          {isStreaming && (
-            <div
-              data-testid="chat-streaming"
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                gap: 8,
-              }}
-            >
-              <div
-                style={{
-                  maxWidth: "85%",
-                  padding: "12px 16px",
-                  borderRadius: "18px 18px 18px 4px",
-                  background: "var(--labs-surface)",
-                  color: "var(--labs-text)",
-                  border: "1px solid var(--labs-border)",
-                  fontSize: 15,
-                  lineHeight: 1.55,
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                  minHeight: 24,
-                }}
-              >
-                {streamingText || (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--labs-text-muted)" }}>
-                    <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} />
-                    {isDe ? "Denkt nach..." : "Thinking..."}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
+              );
+            });
+          })()}
 
           {streamError && (
             <div
