@@ -172,6 +172,8 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
   const [streamError, setStreamError] = useState<string | null>(null);
   const askAbortRef = useRef<AbortController | null>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
+  const lastUserMsgRef = useRef<HTMLDivElement | null>(null);
+  const prevMsgCountRef = useRef(0);
 
   const lang = i18n.language?.startsWith("de") ? "de" : "en";
   const isDe = lang === "de";
@@ -265,10 +267,41 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
   }, [debouncedQuery, lang, mode]);
 
   useEffect(() => {
-    if (chatScrollRef.current) {
-      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    const prevCount = prevMsgCountRef.current;
+    const newCount = chatMessages.length;
+    prevMsgCountRef.current = newCount;
+
+    if (newCount === 0) {
+      return;
     }
-  }, [chatMessages, streamingText]);
+
+    const container = chatScrollRef.current;
+    if (!container) return;
+
+    if (prevCount === 0 && newCount > 0) {
+      requestAnimationFrame(() => {
+        container.scrollTop = container.scrollHeight;
+      });
+      return;
+    }
+
+    const grew = newCount > prevCount;
+    if (!grew) return;
+
+    const last = chatMessages[newCount - 1];
+    if (last.role !== "user") return;
+
+    const node = lastUserMsgRef.current;
+    if (!node) return;
+
+    requestAnimationFrame(() => {
+      const containerRect = container.getBoundingClientRect();
+      const nodeRect = node.getBoundingClientRect();
+      const offset = nodeRect.top - containerRect.top + container.scrollTop - 12;
+      const target = Math.max(0, offset);
+      container.scrollTo({ top: target, behavior: "smooth" });
+    });
+  }, [chatMessages]);
 
   useEffect(() => {
     if (mode !== "ask") {
@@ -1043,6 +1076,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
           {chatMessages.map((msg, idx) => (
             <div
               key={`msg-${idx}`}
+              ref={msg.role === "user" && idx === chatMessages.length - 1 ? lastUserMsgRef : undefined}
               data-testid={`chat-message-${idx}`}
               style={{
                 display: "flex",
