@@ -9,6 +9,7 @@ import {
   ArrowRight, MessageCircle, Loader2, Check, Minus,
 } from "lucide-react";
 import { triggerHaptic } from "@/labs/hooks/useHaptic";
+import StatsChartCard, { type StatsToolPayload } from "./StatsChartCard";
 
 interface SearchResult {
   id: string;
@@ -138,6 +139,7 @@ interface ChatMessage {
   sources?: AskSource[];
   truncated?: boolean;
   knowledgeMode?: KnowledgeMode;
+  toolPayloads?: StatsToolPayload[];
 }
 
 type SearchMode = "search" | "ask";
@@ -324,6 +326,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
       let accumulated = "";
       let finalSources: AskSource[] | undefined;
       let finalKnowledgeMode: KnowledgeMode | undefined;
+      let finalToolPayloads: StatsToolPayload[] | undefined;
       let streamErr: string | null = null;
 
       while (true) {
@@ -338,7 +341,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
           const payload = trimmed.slice(5).trim();
           if (!payload) continue;
           try {
-            const evt = JSON.parse(payload) as { delta?: string; done?: boolean; sources?: AskSource[]; knowledgeMode?: string; error?: string };
+            const evt = JSON.parse(payload) as { delta?: string; done?: boolean; sources?: AskSource[]; knowledgeMode?: string; toolPayloads?: StatsToolPayload[]; error?: string };
             if (typeof evt.delta === "string") {
               accumulated += evt.delta;
               setStreamingText(accumulated);
@@ -346,6 +349,12 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
               if (Array.isArray(evt.sources)) finalSources = evt.sources;
               if (evt.knowledgeMode === "user_data" || evt.knowledgeMode === "general" || evt.knowledgeMode === "mixed") {
                 finalKnowledgeMode = evt.knowledgeMode;
+              }
+              if (Array.isArray(evt.toolPayloads)) {
+                finalToolPayloads = evt.toolPayloads.filter(
+                  (p): p is StatsToolPayload =>
+                    !!p && typeof p === "object" && typeof (p as StatsToolPayload).name === "string",
+                );
               }
             } else if (evt.error) {
               streamErr = String(evt.error);
@@ -361,7 +370,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
       }
 
       const truncated = streamErr !== null;
-      setChatMessages((prev) => [...prev, { role: "assistant", content: accumulated, sources: finalSources, truncated, knowledgeMode: finalKnowledgeMode }]);
+      setChatMessages((prev) => [...prev, { role: "assistant", content: accumulated, sources: finalSources, truncated, knowledgeMode: finalKnowledgeMode, toolPayloads: finalToolPayloads }]);
       setStreamingText("");
       if (truncated && streamErr) {
         setStreamError(streamErr);
@@ -1058,6 +1067,21 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
               >
                 {msg.content}
               </div>
+              {msg.role === "assistant" && msg.toolPayloads && msg.toolPayloads.length > 0 && (
+                <div
+                  data-testid={`chat-stats-charts-${idx}`}
+                  style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}
+                >
+                  {msg.toolPayloads.map((payload, pIdx) => (
+                    <StatsChartCard
+                      key={`${payload.name}-${pIdx}`}
+                      payload={payload}
+                      isDe={isDe}
+                      testId={`stats-chart-${msg.toolPayloads && msg.toolPayloads.length > 1 ? `${payload.name}-${pIdx}` : payload.name}`}
+                    />
+                  ))}
+                </div>
+              )}
               {msg.role === "assistant" && (msg.truncated || (msg.knowledgeMode && msg.knowledgeMode !== "user_data")) && (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
                   {msg.truncated && (

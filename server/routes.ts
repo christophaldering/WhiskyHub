@@ -27530,6 +27530,14 @@ ${cleaned.slice(0, 60000)}`;
   const askRateLimitMap: Map<string, number[]> = new Map();
   const ASK_RATE_LIMIT_PER_HOUR = 30;
   const ASK_RATE_WINDOW_MS = 60 * 60 * 1000;
+  const STATS_CHART_TOOL_NAMES = new Set<string>([
+    "get_user_top_whiskies",
+    "get_user_top_tastings",
+    "get_user_overview_stats",
+    "count_user_whiskies",
+    "get_user_recent_ratings",
+    "get_user_tastings_role_breakdown",
+  ]);
 
   app.post("/api/labs/ask", async (req: Request, res: Response) => {
     try {
@@ -27898,6 +27906,7 @@ Do not invent specific ratings, tasting names or events that are not in the sour
         const openaiTools = buildOpenAIToolList();
         const toolMessages: Array<Record<string, unknown>> = messages.map((m) => ({ ...m }));
         const collectedToolSources: LabsToolSource[] = [];
+        const collectedToolPayloads: Array<{ name: string; data: unknown }> = [];
         let answerMode: AnswerMode | null = null;
         let answerModeCallCount = 0;
         let madeAnyToolCall = false;
@@ -27991,6 +28000,9 @@ Do not invent specific ratings, tasting names or events that are not in the sour
               const toolResult = await tool.handler(participantId, parsedArgs, locale);
               usedDataTool = true;
               for (const s of toolResult.sources) collectedToolSources.push(s);
+              if (STATS_CHART_TOOL_NAMES.has(fnName)) {
+                collectedToolPayloads.push({ name: fnName, data: toolResult.data });
+              }
               toolMessages.push({
                 role: "tool",
                 tool_call_id: tc.id,
@@ -28076,7 +28088,12 @@ Do not invent specific ratings, tasting names or events that are not in the sour
             seen.add(key);
             finalSources.push(s);
           }
-          res.write(`data: ${JSON.stringify({ done: true, sources: finalSources, knowledgeMode: resolvedMode })}\n\n`);
+          const latestPayloadByName = new Map<string, { name: string; data: unknown }>();
+          for (const p of collectedToolPayloads) {
+            latestPayloadByName.set(p.name, p);
+          }
+          const dedupedToolPayloads = Array.from(latestPayloadByName.values());
+          res.write(`data: ${JSON.stringify({ done: true, sources: finalSources, knowledgeMode: resolvedMode, toolPayloads: dedupedToolPayloads })}\n\n`);
           res.end();
         }
       } catch (aiErr: unknown) {
