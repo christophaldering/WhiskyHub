@@ -7,6 +7,7 @@ import {
   CheckCircle, RefreshCw, User, Zap, Activity, Sliders,
 } from "lucide-react";
 import ManageTastersDialog from "@/labs/components/ManageTastersDialog";
+import EmbeddedAskBar from "@/labs/components/EmbeddedAskBar";
 import React, { useState, useMemo, useEffect } from "react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi, getParticipantId, pidHeaders } from "@/lib/api";
@@ -939,6 +940,13 @@ export default function LabsGroupReport({ params }: LabsGroupReportProps) {
             )}
           </>
         )}
+
+        <EmbeddedAskBar
+          tastingId={tastingId}
+          tastingTitle={tasting?.title ?? null}
+          isParticipant={Boolean(pid) && (isHost || activeParticipants.some((p: { participantId?: string | null; participant?: { id?: string | null } | null; id?: string | null }) => (p.participantId ?? p.participant?.id ?? p.id) === pid))}
+          testIdPrefix="report-ask"
+        />
       </div>
     </div>
   );

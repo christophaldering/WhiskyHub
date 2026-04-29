@@ -24,7 +24,13 @@ import { addConnection, broadcastToTasting } from "./sse";
 import { getCachedWhiskyDna, setCachedWhiskyDna } from "./whiskyDnaCache";
 import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES, getAIFreeQuota, setAIFreeQuota, getAIUsageOverview, checkAIQuota } from "./ai-settings";
 import { getAIClient, getAIStatus } from "./ai-client";
-import { labsAskToolMap, buildOpenAIToolList, type AnswerMode, type LabsToolSource } from "./labs-ask-tools";
+import { labsAskToolMap, buildOpenAIToolList, type AnswerMode, type LabsToolSource, type LabsToolDefinition } from "./labs-ask-tools";
+import {
+  labsTastingAskTools,
+  labsTastingAskToolMap,
+  TASTING_STATS_CHART_TOOL_NAMES,
+  verifyTastingAccess,
+} from "./labs-tasting-ask-tools";
 import { hashPassword, verifyPassword } from "./lib/auth";
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, AlignmentType, WidthType, BorderStyle } from "docx";
 import sharp from "sharp";
@@ -27530,7 +27536,7 @@ ${cleaned.slice(0, 60000)}`;
   const askRateLimitMap: Map<string, number[]> = new Map();
   const ASK_RATE_LIMIT_PER_HOUR = 30;
   const ASK_RATE_WINDOW_MS = 60 * 60 * 1000;
-  const STATS_CHART_TOOL_NAMES = new Set<string>([
+  const STATS_CHART_TOOL_NAMES_BASE = new Set<string>([
     "get_user_top_whiskies",
     "get_user_top_tastings",
     "get_user_overview_stats",
@@ -27552,6 +27558,10 @@ ${cleaned.slice(0, 60000)}`;
           role: z.enum(["user", "assistant"]),
           content: z.string().max(8000),
         })).max(20).optional(),
+        tastingContext: z.object({
+          tastingId: z.string().trim().min(1).max(80),
+          tastingTitle: z.string().trim().max(200).optional(),
+        }).optional(),
       });
       const parsed = askBodySchema.safeParse(req.body);
       if (!parsed.success) {
@@ -27560,6 +27570,22 @@ ${cleaned.slice(0, 60000)}`;
       const question = parsed.data.question.trim();
       const conversationHistory = parsed.data.conversationHistory ?? [];
       const locale = (parsed.data.locale ?? "en").toLowerCase().startsWith("de") ? "de" : "en";
+
+      let tastingContext: { tastingId: string; tastingTitle: string | null } | null = null;
+      if (parsed.data.tastingContext) {
+        const access = await verifyTastingAccess(participantId, parsed.data.tastingContext.tastingId);
+        if (!access.ok || !access.tasting) {
+          return res.status(403).json({
+            message: locale === "de"
+              ? "Du hast keinen Zugriff auf dieses Tasting."
+              : "You do not have access to this tasting.",
+          });
+        }
+        tastingContext = {
+          tastingId: access.tasting.id,
+          tastingTitle: access.tasting.title ?? null,
+        };
+      }
       if (question.length < 2) {
         return res.status(400).json({
           message: locale === "de"
@@ -27839,6 +27865,13 @@ ${cleaned.slice(0, 60000)}`;
 
       const sources: Source[] = [...retrievedSources, ...userContextSources];
 
+      const tastingHintDe = tastingContext
+        ? `\n\nTasting-Kontext: Du beantwortest eine Frage zum Tasting „${tastingContext.tastingTitle ?? "(ohne Titel)"}" (tasting_id: ${tastingContext.tastingId}). Bevorzuge die Werkzeuge get_tasting_summary, get_per_dram_stats, get_taster_agreement_matrix, get_user_consistency und get_reveal_timeline. Uebergib bei jedem Aufruf tasting_id="${tastingContext.tastingId}". Beziehe dich in der Antwort konkret auf dieses Tasting (z. B. „In ${tastingContext.tastingTitle ?? "diesem Tasting"} ..."). Antworte nur zu diesem Tasting; benutze die globalen get_user_*-Tools nur, wenn die Frage explizit ueber dieses Tasting hinausgeht.`
+        : "";
+      const tastingHintEn = tastingContext
+        ? `\n\nTasting context: You are answering a question about the tasting "${tastingContext.tastingTitle ?? "(untitled)"}" (tasting_id: ${tastingContext.tastingId}). Prefer the tools get_tasting_summary, get_per_dram_stats, get_taster_agreement_matrix, get_user_consistency and get_reveal_timeline. Pass tasting_id="${tastingContext.tastingId}" on every call. Refer concretely to this tasting in the answer (e.g. "In ${tastingContext.tastingTitle ?? "this tasting"} ..."). Answer only about this tasting; only use the global get_user_* tools if the question explicitly goes beyond this tasting.`
+        : "";
+
       const sysDe = `Du bist „CaskSense", ein hilfreicher Whisky-Assistent. Du bekommst zwei Kontextbloecke: (1) „Verfuegbare Quellen" sind die Treffer der Stichwortsuche zur konkreten Frage, (2) „Nutzerkontext" enthaelt die zuletzt verkosteten Whiskys und Tastings des Users.
 
 Werkzeuge: Du hast Zugriff auf Statistik-Werkzeuge, die nutzerbezogene Daten genau berechnen (z. B. beste Whiskys, bestes Tasting, Anzahl pro Region, Gesamtdurchschnitt, letzte Bewertungen, Host-vs-Gast-Aufteilung). Wenn die Frage konkrete Zahlen, Bestenlisten oder Auswertungen zu den eigenen Daten des Users verlangt, rufe das passende Werkzeug auf, anstatt aus dem Nutzerkontext zu schaetzen.
@@ -27880,8 +27913,9 @@ Do not invent specific ratings, tasting names or events that are not in the sour
         : formatBlock(userContextSources, "u");
 
       const trimmedHistory = conversationHistory.slice(-10);
+      const baseSys = (locale === "de" ? sysDe : sysEn) + (locale === "de" ? tastingHintDe : tastingHintEn);
       const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
-        { role: "system", content: locale === "de" ? sysDe : sysEn },
+        { role: "system", content: baseSys },
         { role: "system", content: (locale === "de" ? "Verfuegbare Quellen:\n" : "Available sources:\n") + sourcesBlock },
         { role: "system", content: (locale === "de" ? "Nutzerkontext (zuletzt verkostet):\n" : "User context (recently tasted):\n") + userContextBlock },
         ...trimmedHistory,
@@ -27903,7 +27937,11 @@ Do not invent specific ratings, tasting names or events that are not in the sour
       req.on("close", onClientClose);
 
       try {
-        const openaiTools = buildOpenAIToolList();
+        const extraTools: LabsToolDefinition[] = tastingContext ? labsTastingAskTools : [];
+        const openaiTools = buildOpenAIToolList(extraTools);
+        const STATS_CHART_TOOL_NAMES = tastingContext
+          ? new Set<string>([...STATS_CHART_TOOL_NAMES_BASE, ...TASTING_STATS_CHART_TOOL_NAMES])
+          : STATS_CHART_TOOL_NAMES_BASE;
         const toolMessages: Array<Record<string, unknown>> = messages.map((m) => ({ ...m }));
         const collectedToolSources: LabsToolSource[] = [];
         const collectedToolPayloads: Array<{ name: string; data: unknown }> = [];
@@ -27987,7 +28025,7 @@ Do not invent specific ratings, tasting names or events that are not in the sour
               });
               continue;
             }
-            const tool = labsAskToolMap.get(fnName);
+            const tool = labsAskToolMap.get(fnName) ?? (tastingContext ? labsTastingAskToolMap.get(fnName) : undefined);
             if (!tool) {
               toolMessages.push({
                 role: "tool",

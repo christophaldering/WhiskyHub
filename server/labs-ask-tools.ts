@@ -663,8 +663,11 @@ export type AnswerMode = "user_data" | "general" | "mixed";
 
 export const answerModeSchema = z.object({ mode: z.enum(["user_data", "general", "mixed"]) });
 
-export function buildOpenAIToolList(): Array<{ type: "function"; function: { name: string; description: string; parameters: Record<string, unknown> } }> {
-  const list = labsAskTools.map((t) => ({
+export function buildOpenAIToolList(
+  extraTools: LabsToolDefinition[] = [],
+): Array<{ type: "function"; function: { name: string; description: string; parameters: Record<string, unknown> } }> {
+  const combined = [...labsAskTools, ...extraTools];
+  const list = combined.map((t) => ({
     type: "function" as const,
     function: {
       name: t.name,
