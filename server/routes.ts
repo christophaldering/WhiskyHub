@@ -7524,6 +7524,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can set a pause" });
       const minutesNum = Number(minutes);
       if (!Number.isFinite(minutesNum)) return res.status(400).json({ message: "minutes must be a number" });
+      if (minutesNum < 0) return res.status(400).json({ message: "minutes must be >= 0 (use 0 to clear pause)" });
       if (minutesNum > 120) return res.status(400).json({ message: "Pause too long (max 120 minutes)" });
       let pauseUntil: Date | null = null;
       if (minutesNum > 0) {
