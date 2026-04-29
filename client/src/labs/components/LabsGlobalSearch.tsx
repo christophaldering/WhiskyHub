@@ -603,7 +603,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
     if (touchStartY.current === null) return;
     const deltaY = e.changedTouches[0].clientY - touchStartY.current;
     touchStartY.current = null;
-    if (deltaY > 80) {
+    if (deltaY > 120) {
       handleClose();
     }
   }, [handleClose]);
