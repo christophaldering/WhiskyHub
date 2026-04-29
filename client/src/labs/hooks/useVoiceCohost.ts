@@ -79,7 +79,8 @@ export function useVoiceCohost(opts: UseVoiceCohostOptions): UseVoiceCohostRetur
   const speakingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const Ctor = getRecognitionCtor()
-  const supported = Ctor !== null && typeof window !== "undefined" && "speechSynthesis" in window
+  const supported = Ctor !== null
+  const ttsSupported = typeof window !== "undefined" && "speechSynthesis" in window
 
   useEffect(() => {
     if (!Ctor) {
