@@ -6546,7 +6546,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       data-testid={tasting.status === "open" ? "labs-host-reveal-mode" : "labs-host-enter-reveal"}
                     >
                       <Eye className="w-4 h-4" />
-                      Enter Reveal
+                      Enter Showtime
                     </button>
                   )}
                   {tasting.status === "reveal" && whiskyCount > 0 && (
@@ -7468,7 +7468,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       style={{ color: "var(--labs-text-muted)", fontStyle: "italic" }}
                       data-testid="labs-host-results-after-reveal-hint"
                     >
-                      {t("downloads.resultsAvailableAfterReveal", "Auswertungs-Downloads (PDF, Excel, CSV, Story, Präsentation, Notizen) sind nach dem Reveal verfügbar.")}
+                      {t("downloads.resultsAvailableAfterReveal", "Auswertungs-Downloads (PDF, Excel, CSV, Story, Präsentation, Notizen) sind nach dem Start der Auswertung verfügbar.")}
                     </p>
                   )}
                   {showResultDownloads && (

@@ -2248,7 +2248,7 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
                     <FileText style={{ width: 12, height: 12, color: "var(--labs-accent)" }} />
                     {activeWhisky.handoutTitle || "Handout"}
                     <span style={{ fontSize: 9, color: "var(--labs-text-muted)" }}>
-                      · {activeWhisky.handoutVisibility === "after_reveal" ? "nach Reveal" : "immer sichtbar"}
+                      · {activeWhisky.handoutVisibility === "after_reveal" ? "nach Auswertung" : "immer sichtbar"}
                     </span>
                   </a>
                 )}
@@ -2261,7 +2261,7 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, padding: "8px 10px", borderRadius: 8, background: "var(--labs-surface-elevated)" }}>
                         <LockKeyhole style={{ width: 12, height: 12, color: "var(--labs-text-muted)" }} />
                         <span style={{ fontSize: 11, color: "var(--labs-text-muted)", fontWeight: 500 }}>
-                          {t("cockpit.scoresAfterReveal", "Group scores visible after full reveal")}
+                          {t("cockpit.scoresAfterReveal", "Group scores visible after Showtime is complete")}
                         </span>
                       </div>
                     );
@@ -2542,13 +2542,13 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
           const allDramsDone = guidedIdx >= whiskies.length - 1 && (!isBlind || guidedRevealStep >= (rv?.maxSteps ?? 0));
           let guidedBtnLabel = t("cockpit.nextDram", "Next Dram");
           if (guidedIdx < 0) {
-            guidedBtnLabel = t("cockpit.revealStart", "Start Reveal");
+            guidedBtnLabel = t("cockpit.revealStart", "Start Showtime");
           } else if (allDramsDone) {
-            guidedBtnLabel = t("cockpit.revealDone", "All Drams Done");
+            guidedBtnLabel = t("cockpit.revealDone", "All Whiskies Presented");
           } else if (isBlind && rv) {
             if (guidedRevealStep < rv.maxSteps) {
               const lbl = rv.stepLabels[guidedRevealStep];
-              guidedBtnLabel = lbl ? t("cockpit.revealNext", "Next: {{stage}}", { stage: lbl }) : t("cockpit.revealNextGeneric", "Reveal Next");
+              guidedBtnLabel = lbl ? t("cockpit.revealNext", "Next: {{stage}}", { stage: lbl }) : t("cockpit.revealNextGeneric", "Next Whisky");
             } else {
               guidedBtnLabel = t("cockpit.allRevealed", "All info revealed");
             }

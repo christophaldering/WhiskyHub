@@ -30,7 +30,7 @@ export const TASTING_STATUS_CONFIG: Record<string, StatusConfig> = {
   },
   reveal: {
     labelKey: "tastingStatus.reveal",
-    fallbackLabel: "Reveal",
+    fallbackLabel: "Showtime",
     cssClass: "labs-status-chip labs-status-chip--reveal",
     color: "var(--labs-accent)",
     bg: "var(--labs-accent-muted)",
