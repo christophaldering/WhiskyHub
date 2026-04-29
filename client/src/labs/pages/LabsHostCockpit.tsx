@@ -415,6 +415,7 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
 
   const [voiceTranscript, setVoiceTranscript] = useState<Array<{ id: string; text: string; reply: string; ok: boolean; ts: number }>>([]);
   const [voiceLastReply, setVoiceLastReply] = useState<string>("");
+  const voiceLastCmdRef = useRef<{ key: string; ts: number } | null>(null);
   const [voiceMuted, setVoiceMuted] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem("labs-voice-muted") === "true";
@@ -591,6 +592,13 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
   const voiceHandleTranscript = useCallback(async (text: string) => {
     if (!tastingId || !pid) return;
     const cmd = parseVoiceCommand(text);
+    const dedupeKey = `${cmd.kind}|${cmd.name ?? ""}|${cmd.minutes ?? ""}`;
+    const now = Date.now();
+    const last = voiceLastCmdRef.current;
+    if (last && last.key === dedupeKey && now - last.ts < 2500) {
+      return;
+    }
+    voiceLastCmdRef.current = { key: dedupeKey, ts: now };
     const result = await executeVoiceCommand(cmd, {
       tastingId,
       hostId: pid,
