@@ -10,6 +10,7 @@ export interface VoiceToolDeps {
   isGuided:     boolean
   isBlind:      boolean
   guidedIdx:    number
+  revealIndex:  number
   whiskies:     Array<{ id: string; name?: string | null }>
   participants: Array<{ id: string; name: string }>
   ratings:      Array<{ participantId: string; whiskyId: string }>
@@ -139,7 +140,8 @@ function fuzzyMatchParticipant(
 
 function activeWhiskyIndex(deps: VoiceToolDeps): number {
   if (deps.isGuided) return Math.max(0, deps.guidedIdx)
-  return 0
+  if (deps.isBlind)  return Math.max(0, deps.revealIndex)
+  return Math.max(0, deps.revealIndex)
 }
 
 function ratersForWhisky(whiskyId: string, ratings: VoiceToolDeps["ratings"]): Set<string> {

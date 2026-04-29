@@ -600,6 +600,7 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
       return;
     }
     voiceLastCmdRef.current = { key: dedupeKey, ts: now };
+    const currentRevealIndex = tasting?.revealIndex ?? 0;
     const result = await executeVoiceCommand(cmd, {
       tastingId,
       hostId: pid,
@@ -607,6 +608,7 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
       isGuided,
       isBlind,
       guidedIdx,
+      revealIndex: currentRevealIndex,
       whiskies: voiceWhiskies,
       participants: voiceParticipantsList,
       ratings: voiceRatings,
