@@ -217,22 +217,37 @@ export function useVoiceCohost(opts: UseVoiceCohostOptions): UseVoiceCohostRetur
       utter.rate = 1.05
       utter.pitch = 1
       utter.volume = 1
+      const wasListening = wantListeningRef.current
+      if (wasListening && recognitionRef.current) {
+        try { recognitionRef.current.abort() } catch {}
+      }
+      const resumeListening = () => {
+        if (wasListening) {
+          if (restartTimerRef.current) clearTimeout(restartTimerRef.current)
+          restartTimerRef.current = setTimeout(() => {
+            if (wantListeningRef.current && !recognitionRef.current) startInternal()
+          }, 350)
+        }
+      }
       utter.onstart = () => setStatus("speaking")
       utter.onend = () => {
         setStatus(() => (wantListeningRef.current ? "listening" : "idle"))
+        resumeListening()
       }
       utter.onerror = () => {
         setStatus(() => (wantListeningRef.current ? "listening" : "idle"))
+        resumeListening()
       }
       synth.speak(utter)
       if (speakingTimeoutRef.current) clearTimeout(speakingTimeoutRef.current)
       speakingTimeoutRef.current = setTimeout(() => {
         setStatus(() => (wantListeningRef.current ? "listening" : "idle"))
+        resumeListening()
       }, Math.max(2500, text.length * 90))
     } catch {
       setStatus(() => (wantListeningRef.current ? "listening" : "idle"))
     }
-  }, [language, speechMuted])
+  }, [language, speechMuted, startInternal])
 
   useEffect(() => {
     return () => {

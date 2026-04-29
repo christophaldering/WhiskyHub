@@ -68,6 +68,8 @@ function checkEmailVerification(participant: Participant): { blocked: boolean; m
 const identifyRateLimit = new Map<string, { count: number; resetAt: number }>();
 const IDENTIFY_RATE_LIMIT = 10;
 const IDENTIFY_RATE_WINDOW_MS = 3 * 60 * 1000;
+const nudgeCooldownMap = new Map<string, number>();
+const NUDGE_COOLDOWN_MS = 30 * 1000;
 function checkIdentifyRateLimit(key: string): { allowed: boolean; retryAfterSeconds?: number } {
   const now = Date.now();
   const entry = identifyRateLimit.get(key);
@@ -7550,6 +7552,14 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const tastingMembers = await storage.getTastingParticipants(req.params.id);
       const isMember = tastingMembers.some((tp) => tp.participantId === recipientId);
       if (!isMember) return res.status(403).json({ message: "Recipient is not a participant of this tasting" });
+      const cooldownKey = `${req.params.id}:${hostId}:${recipientId}`;
+      const lastNudge = nudgeCooldownMap.get(cooldownKey) ?? 0;
+      const now = Date.now();
+      if (now - lastNudge < NUDGE_COOLDOWN_MS) {
+        const remaining = Math.ceil((NUDGE_COOLDOWN_MS - (now - lastNudge)) / 1000);
+        return res.status(429).json({ message: `Bitte warte ${remaining}s, bevor du die gleiche Person erneut anstupst. / Please wait ${remaining}s before nudging the same person again.` });
+      }
+      nudgeCooldownMap.set(cooldownKey, now);
       const host = await storage.getParticipant(hostId);
       const hostName = host?.name || "Host";
       const trimmed = (message ?? "").toString().trim().slice(0, 280);
