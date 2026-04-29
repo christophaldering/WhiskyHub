@@ -230,8 +230,8 @@ const getUserOverviewStats: LabsToolDefinition = {
     properties: {},
     additionalProperties: false,
   },
-  handler: async (participantId) => {
-    overviewStatsSchema.parse(undefined);
+  handler: async (participantId, rawArgs) => {
+    overviewStatsSchema.parse(rawArgs === undefined ? undefined : emptyArgs(rawArgs));
     const totalsSql = `
       WITH user_ratings AS (
         SELECT * FROM ratings WHERE participant_id = $1
@@ -457,8 +457,8 @@ const getUserTastingsRoleBreakdown: LabsToolDefinition = {
     properties: {},
     additionalProperties: false,
   },
-  handler: async (participantId) => {
-    tastingsRoleSchema.parse(undefined);
+  handler: async (participantId, rawArgs) => {
+    tastingsRoleSchema.parse(rawArgs === undefined ? undefined : emptyArgs(rawArgs));
     const sql = `
       SELECT
         COUNT(DISTINCT CASE WHEN t.host_id = $1 THEN t.id END)::int AS as_host,

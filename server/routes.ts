@@ -27888,6 +27888,7 @@ Do not invent specific ratings, tasting names or events that are not in the sour
         const toolMessages: Array<Record<string, unknown>> = messages.map((m) => ({ ...m }));
         const collectedToolSources: LabsToolSource[] = [];
         let answerMode: AnswerMode | null = null;
+        let answerModeCallCount = 0;
         let madeAnyToolCall = false;
         let usedDataTool = false;
         let earlyContent: string | null = null;
@@ -27937,15 +27938,32 @@ Do not invent specific ratings, tasting names or events that are not in the sour
               parsedArgs = {};
             }
             if (fnName === "set_answer_mode") {
+              answerModeCallCount += 1;
+              if (answerModeCallCount > 1) {
+                console.warn(`[labs/ask] set_answer_mode called ${answerModeCallCount}x; ignoring extra call (first value retained)`);
+                toolMessages.push({
+                  role: "tool",
+                  tool_call_id: tc.id,
+                  content: JSON.stringify({ ok: false, error: "set_answer_mode may only be called once per request", mode: answerMode }),
+                });
+                continue;
+              }
               const modeVal = (parsedArgs as { mode?: string })?.mode;
               if (modeVal === "user_data" || modeVal === "general" || modeVal === "mixed") {
                 answerMode = modeVal;
+                toolMessages.push({
+                  role: "tool",
+                  tool_call_id: tc.id,
+                  content: JSON.stringify({ ok: true, mode: answerMode }),
+                });
+              } else {
+                console.warn(`[labs/ask] set_answer_mode received invalid mode: ${String(modeVal)}`);
+                toolMessages.push({
+                  role: "tool",
+                  tool_call_id: tc.id,
+                  content: JSON.stringify({ ok: false, error: "mode must be one of: user_data, general, mixed" }),
+                });
               }
-              toolMessages.push({
-                role: "tool",
-                tool_call_id: tc.id,
-                content: JSON.stringify({ ok: true, mode: answerMode }),
-              });
               continue;
             }
             const tool = labsAskToolMap.get(fnName);
