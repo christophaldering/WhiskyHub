@@ -614,6 +614,144 @@ function renderRoleBreakdown(data: unknown, isDe: boolean): React.ReactNode {
   );
 }
 
+function renderPerDramStats(data: unknown, isDe: boolean): React.ReactNode {
+  const obj = (data ?? {}) as Record<string, unknown>;
+  const drams = asArray(obj.drams)
+    .map((d) => d as Record<string, unknown>)
+    .filter((d) => asNumber(d.avg_overall) > 0);
+  if (drams.length === 0) return null;
+  const polarising = (obj.most_polarising_dram ?? null) as Record<string, unknown> | null;
+  const polarisingId = polarising ? asString(polarising.whisky_id) : "";
+  const items: BarRowItem[] = drams.map((d) => {
+    const avg = asNumber(d.avg_overall);
+    const std = asNumber(d.stddev_overall);
+    const isPolarising = polarisingId && asString(d.whisky_id) === polarisingId;
+    const subParts = [asString(d.distillery), asString(d.region)].filter(Boolean).join(" \u2022 ");
+    const stdLabel = std > 0
+      ? (isDe ? `\u03c3 ${std.toFixed(2)}` : `\u03c3 ${std.toFixed(2)}`)
+      : "";
+    const polarisingLabel = isPolarising
+      ? (isDe ? "polarisierend" : "polarising")
+      : "";
+    const sub = [subParts, stdLabel, polarisingLabel].filter(Boolean).join(" \u2022 ");
+    return {
+      label: asString(d.name, isDe ? "Unbekannt" : "Unknown"),
+      value: avg,
+      display: `${avg.toFixed(1)} / 100`,
+      sub: sub || undefined,
+    };
+  });
+  return (
+    <CardShell
+      testId="stats-chart-per-dram"
+      title={isDe ? "Pro-Dram-Statistik" : "Per-dram statistics"}
+      subtitle={isDe ? "\u00d8 Score \u2022 \u03c3 = Streuung" : "Avg score \u2022 \u03c3 = spread"}
+    >
+      <HorizontalBarList
+        items={items}
+        maxValue={100}
+        testIdPrefix="stats-bar-per-dram"
+      />
+    </CardShell>
+  );
+}
+
+function renderUserConsistency(data: unknown, isDe: boolean): React.ReactNode {
+  const obj = (data ?? {}) as Record<string, unknown>;
+  const ranked = asArray(obj.ranked_by_consistency)
+    .map((r) => r as Record<string, unknown>);
+  if (ranked.length === 0) return null;
+  const maxDev = ranked.reduce((m, r) => Math.max(m, asNumber(r.avg_deviation)), 0);
+  const items: BarRowItem[] = ranked.map((r) => {
+    const dev = asNumber(r.avg_deviation);
+    const isUser = r.is_user === true;
+    const name = asString(r.participant_name, isDe ? "Unbekannt" : "Unknown");
+    const ratingCount = asNumber(r.rating_count);
+    const sub = isUser
+      ? (isDe ? `du \u2022 ${ratingCount} Bewertungen` : `you \u2022 ${ratingCount} ratings`)
+      : (isDe ? `${ratingCount} Bewertungen` : `${ratingCount} ratings`);
+    return {
+      label: name,
+      value: dev,
+      display: dev > 0 ? `\u00d8 ${dev.toFixed(1)}` : "\u2014",
+      sub,
+    };
+  });
+  return (
+    <CardShell
+      testId="stats-chart-consistency"
+      title={isDe ? "Konsistenz vs. Gruppen-Schnitt" : "Consistency vs. group average"}
+      subtitle={isDe ? "Niedriger = naeher am Gruppenschnitt" : "Lower = closer to group"}
+    >
+      <HorizontalBarList
+        items={items}
+        maxValue={maxDev > 0 ? maxDev : 1}
+        testIdPrefix="stats-bar-consistency"
+      />
+    </CardShell>
+  );
+}
+
+function renderRevealTimeline(data: unknown, isDe: boolean): React.ReactNode {
+  const obj = (data ?? {}) as Record<string, unknown>;
+  if (obj.has_reveal_data === false) return null;
+  const drams = asArray(obj.drams)
+    .map((d) => d as Record<string, unknown>)
+    .filter((d) => d.group_delta_avg !== null || d.user_delta !== null);
+  if (drams.length === 0) return null;
+  const accent = "var(--labs-accent)";
+  const muted = "rgba(201, 169, 97, 0.45)";
+  const chartData = drams.map((d) => ({
+    name: asString(d.name, isDe ? "Unbekannt" : "Unknown"),
+    group: asNumber(d.group_delta_avg),
+    user: asNumber(d.user_delta),
+  }));
+  return (
+    <CardShell
+      testId="stats-chart-reveal"
+      title={isDe ? "Reveal-Effekt pro Dram" : "Reveal effect per dram"}
+      subtitle={isDe ? "Score-Veraenderung nach Enthuellung" : "Score change after reveal"}
+    >
+      <div style={{ width: "100%", height: 180 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={chartData}
+            margin={{ top: 4, right: 4, bottom: 0, left: -16 }}
+          >
+            <XAxis
+              dataKey="name"
+              tick={{ fill: "var(--labs-text-muted)", fontSize: 10 }}
+              axisLine={{ stroke: "var(--labs-border)" }}
+              tickLine={false}
+              tickFormatter={(v: string) => truncateLabel(v, 10)}
+              interval={0}
+            />
+            <YAxis
+              tick={{ fill: "var(--labs-text-muted)", fontSize: 11 }}
+              axisLine={{ stroke: "var(--labs-border)" }}
+              tickLine={false}
+              width={28}
+            />
+            <Tooltip
+              cursor={{ fill: "rgba(201, 169, 97, 0.08)" }}
+              contentStyle={{
+                background: "var(--labs-surface)",
+                border: "1px solid var(--labs-border)",
+                borderRadius: 8,
+                fontSize: 12,
+                color: "var(--labs-text)",
+              }}
+              labelStyle={{ color: "var(--labs-text-muted)" }}
+            />
+            <Bar dataKey="group" name={isDe ? "Gruppe" : "Group"} fill={muted} radius={[3, 3, 0, 0]} />
+            <Bar dataKey="user" name={isDe ? "Du" : "You"} fill={accent} radius={[3, 3, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </CardShell>
+  );
+}
+
 export default function StatsChartCard({ payload, isDe, testId }: StatsChartCardProps) {
   const node = useMemo(() => {
     switch (payload.name) {
@@ -629,6 +767,12 @@ export default function StatsChartCard({ payload, isDe, testId }: StatsChartCard
         return renderRecentRatings(payload.data, isDe);
       case "get_user_tastings_role_breakdown":
         return renderRoleBreakdown(payload.data, isDe);
+      case "get_per_dram_stats":
+        return renderPerDramStats(payload.data, isDe);
+      case "get_user_consistency":
+        return renderUserConsistency(payload.data, isDe);
+      case "get_reveal_timeline":
+        return renderRevealTimeline(payload.data, isDe);
       default:
         return null;
     }
