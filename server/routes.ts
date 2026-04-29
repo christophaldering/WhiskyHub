@@ -27890,6 +27890,7 @@ Do not invent specific ratings, tasting names or events that are not in the sour
         let answerMode: AnswerMode | null = null;
         let madeAnyToolCall = false;
         let usedDataTool = false;
+        let earlyContent: string | null = null;
         const MAX_TOOL_ROUNDS = 2;
         let toolRound = 0;
 
@@ -27916,6 +27917,9 @@ Do not invent specific ratings, tasting names or events that are not in the sour
           }
           const toolCalls = assistantMsg.tool_calls ?? [];
           if (toolCalls.length === 0) {
+            if (!madeAnyToolCall) {
+              earlyContent = assistantMsg.content ?? "";
+            }
             break;
           }
           madeAnyToolCall = true;
@@ -27976,22 +27980,21 @@ Do not invent specific ratings, tasting names or events that are not in the sour
         }
 
         let accumulatedAnswer = "";
-        if (!clientClosed) {
-          const streamMessages = madeAnyToolCall
-            ? toolMessages
-            : [
-                ...toolMessages,
-                {
-                  role: "system",
-                  content: locale === "de"
-                    ? "Beantworte jetzt die Nutzerfrage in einer einzigen, vollstaendigen Antwort."
-                    : "Now produce a single, complete answer to the user question.",
-                },
-              ];
+        if (!clientClosed && !madeAnyToolCall && earlyContent !== null) {
+          const text = earlyContent;
+          const chunkSize = 32;
+          for (let i = 0; i < text.length; i += chunkSize) {
+            if (clientClosed) break;
+            const delta = text.slice(i, i + chunkSize);
+            accumulatedAnswer += delta;
+            res.write(`data: ${JSON.stringify({ delta })}\n\n`);
+            await new Promise((resolve) => setTimeout(resolve, 8));
+          }
+        } else if (!clientClosed) {
           const finalStream = await aiResult.client.chat.completions.create(
             {
               model: "gpt-4o-mini",
-              messages: streamMessages as unknown as Parameters<typeof aiResult.client.chat.completions.create>[0]["messages"],
+              messages: toolMessages as unknown as Parameters<typeof aiResult.client.chat.completions.create>[0]["messages"],
               stream: true,
               temperature: 0.4,
               max_tokens: 800,
