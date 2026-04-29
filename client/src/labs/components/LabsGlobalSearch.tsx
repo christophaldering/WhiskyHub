@@ -586,15 +586,24 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
     triggerHaptic("light");
   }, []);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+  const handleHeaderTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length !== 1) {
+      touchStartY.current = null;
+      return;
+    }
+    const target = e.target as HTMLElement | null;
+    if (target && target.closest('input, textarea, button, [role="button"]')) {
+      touchStartY.current = null;
+      return;
+    }
     touchStartY.current = e.touches[0].clientY;
   }, []);
 
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+  const handleHeaderTouchEnd = useCallback((e: React.TouchEvent) => {
     if (touchStartY.current === null) return;
     const deltaY = e.changedTouches[0].clientY - touchStartY.current;
     touchStartY.current = null;
-    if (deltaY > 100) {
+    if (deltaY > 80) {
       handleClose();
     }
   }, [handleClose]);
@@ -629,11 +638,18 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
 
   return (
     <div
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
+      ref={(el) => {
+        if (el) {
+          el.style.setProperty("height", "100dvh");
+        }
+      }}
       style={{
         position: "fixed",
-        inset: 0,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height: "100vh",
         zIndex: 60,
         background: "var(--labs-bg)",
         opacity: exiting ? 0 : 1,
@@ -643,10 +659,16 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
+        overscrollBehavior: "contain",
       }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={t("labs.search.dialogLabel", "CaskSense Suche")}
       data-testid="labs-global-search-overlay"
     >
       <div
+        onTouchStart={handleHeaderTouchStart}
+        onTouchEnd={handleHeaderTouchEnd}
         style={{
           position: "sticky",
           top: 0,
@@ -656,6 +678,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
           WebkitBackdropFilter: "blur(16px)",
           borderBottom: "1px solid var(--labs-border-subtle)",
           padding: "12px 16px",
+          flexShrink: 0,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -849,8 +872,10 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
           ref={chatScrollRef}
           style={{
             flex: 1,
+            minHeight: 0,
             overflowY: "auto",
             overflowX: "hidden",
+            overscrollBehavior: "contain",
             WebkitOverflowScrolling: "touch",
             padding: "16px 16px 24px",
             display: "flex",
@@ -1197,8 +1222,10 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
       <div
         style={{
           flex: 1,
+          minHeight: 0,
           overflowY: "auto",
           overflowX: "hidden",
+          overscrollBehavior: "contain",
           WebkitOverflowScrolling: "touch",
           padding: "8px 16px 32px",
         }}
