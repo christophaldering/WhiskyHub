@@ -171,6 +171,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
   const [streamError, setStreamError] = useState<string | null>(null);
   const askAbortRef = useRef<AbortController | null>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
+  const chatSpacerRef = useRef<HTMLDivElement | null>(null);
   const lastUserMsgRef = useRef<HTMLDivElement | null>(null);
   const prevMsgCountRef = useRef(0);
 
@@ -270,6 +271,9 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
     prevMsgCountRef.current = newCount;
 
     if (newCount === 0) {
+      if (chatSpacerRef.current) {
+        chatSpacerRef.current.style.minHeight = "0px";
+      }
       return;
     }
 
@@ -283,9 +287,6 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
       return;
     }
 
-    const grew = newCount > prevCount;
-    if (!grew) return;
-
     let lastUserIdx = -1;
     for (let i = newCount - 1; i >= 0; i--) {
       if (chatMessages[i].role === "user") {
@@ -293,16 +294,44 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
         break;
       }
     }
-    if (lastUserIdx === -1 || lastUserIdx < prevCount) return;
 
     const node = lastUserMsgRef.current;
-    if (!node) return;
+    const grew = newCount > prevCount;
+    const isNewUserAnchor = grew && lastUserIdx !== -1 && lastUserIdx >= prevCount;
 
     requestAnimationFrame(() => {
       const containerRect = container.getBoundingClientRect();
-      const nodeRect = node.getBoundingClientRect();
-      const offset = nodeRect.top - containerRect.top + container.scrollTop - 12;
-      const target = Math.max(0, offset);
+      const visibleHeight = container.clientHeight;
+      const topPadding = 12;
+      const spacer = chatSpacerRef.current;
+
+      let isTallBubble = false;
+      let nodeTopInContainer = 0;
+      let nodeBottomInContainer = 0;
+      if (node) {
+        const nodeRect = node.getBoundingClientRect();
+        nodeTopInContainer = nodeRect.top - containerRect.top + container.scrollTop;
+        nodeBottomInContainer = nodeRect.bottom - containerRect.top + container.scrollTop;
+        isTallBubble = visibleHeight > 0 && nodeRect.height > visibleHeight * 0.5;
+      }
+
+      if (spacer && node && visibleHeight > 0) {
+        const anchorBottom = isTallBubble ? nodeBottomInContainer : nodeTopInContainer;
+        const contentBelowAnchor = container.scrollHeight - anchorBottom;
+        const requiredBelow = visibleHeight - topPadding;
+        const currentSpacerHeight = spacer.getBoundingClientRect().height;
+        const needed = requiredBelow - (contentBelowAnchor - currentSpacerHeight);
+        spacer.style.minHeight = `${Math.max(0, needed)}px`;
+      }
+
+      if (!isNewUserAnchor || !node) return;
+
+      const desiredOffset = isTallBubble
+        ? nodeBottomInContainer - topPadding
+        : nodeTopInContainer - topPadding;
+
+      const maxScroll = Math.max(0, container.scrollHeight - visibleHeight);
+      const target = Math.min(maxScroll, Math.max(0, desiredOffset));
       container.scrollTo({ top: target, behavior: "smooth" });
     });
   }, [chatMessages]);
@@ -1301,6 +1330,12 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
               {streamError}
             </div>
           )}
+          <div
+            ref={chatSpacerRef}
+            aria-hidden="true"
+            data-testid="chat-spacer"
+            style={{ flexShrink: 0, minHeight: 0 }}
+          />
         </div>
       ) : (
       <div
