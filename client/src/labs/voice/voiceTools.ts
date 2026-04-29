@@ -1,4 +1,4 @@
-import { tastingApi, blindModeApi, guidedApi } from "@/lib/api"
+import { tastingApi, blindModeApi, guidedApi, whiskyApi, ratingApi } from "@/lib/api"
 import type { ParsedVoiceCommand } from "./voiceCommands"
 
 export type VoiceLang = "de" | "en"
@@ -73,6 +73,44 @@ function tokens(s: string): string[] {
   return s.toLowerCase().normalize("NFKD").replace(/[^a-z0-9äöüß ]/g, "").split(/\s+/).filter(Boolean)
 }
 
+interface LiveSnapshot {
+  participants: Array<{ id: string; name: string }>
+  whiskies:     Array<{ id: string; name?: string | null }>
+  ratings:      Array<{ participantId: string; whiskyId: string }>
+}
+
+async function fetchLiveSnapshot(tastingId: string): Promise<LiveSnapshot> {
+  try {
+    const [pRaw, wRaw, rRaw] = await Promise.all([
+      tastingApi.getParticipants(tastingId),
+      whiskyApi.getForTasting(tastingId),
+      ratingApi.getForTasting(tastingId),
+    ])
+    const pArr = Array.isArray(pRaw) ? pRaw : []
+    const wArr = Array.isArray(wRaw) ? wRaw : []
+    const rArr = Array.isArray(rRaw) ? rRaw : []
+    const participants = pArr
+      .map((row: Record<string, unknown>) => {
+        const inner = row.participant as Record<string, unknown> | undefined
+        const id = (inner?.id as string | undefined) ?? (row.participantId as string | undefined) ?? (row.id as string | undefined)
+        const name = (inner?.name as string | undefined) ?? (row.name as string | undefined) ?? ""
+        return id ? { id, name } : null
+      })
+      .filter((x): x is { id: string; name: string } => x !== null)
+    const whiskies = wArr.map((w: Record<string, unknown>) => ({
+      id:   String(w.id ?? ""),
+      name: (w.name as string | null | undefined) ?? null,
+    }))
+    const ratings = rArr.map((r: Record<string, unknown>) => ({
+      participantId: String(r.participantId ?? ""),
+      whiskyId:      String(r.whiskyId ?? ""),
+    }))
+    return { participants, whiskies, ratings }
+  } catch {
+    return { participants: [], whiskies: [], ratings: [] }
+  }
+}
+
 function fuzzyMatchParticipant(
   query: string,
   participants: Array<{ id: string; name: string }>,
@@ -132,29 +170,37 @@ export async function executeVoiceCommand(
       }
 
       case "next_dram": {
+        const currentIdx = activeWhiskyIndex(deps)
+        const targetIdx = currentIdx + 1
+        if (targetIdx >= deps.whiskies.length) {
+          return { ok: true, speech: t.advancedFinal, uiMessage: t.advancedFinal, needsRefresh: true }
+        }
         if (deps.isGuided) {
-          await guidedApi.advance(deps.tastingId, deps.hostId)
+          await guidedApi.goTo(deps.tastingId, deps.hostId, targetIdx, 0)
         } else if (deps.isBlind) {
-          await blindModeApi.revealNext(deps.tastingId, deps.hostId)
+          let safety = 0
+          while (safety++ < 20) {
+            const r = await blindModeApi.revealNext(deps.tastingId, deps.hostId) as { revealIndex?: number; allRevealed?: boolean }
+            if (r?.allRevealed) break
+            if (typeof r?.revealIndex === "number" && r.revealIndex >= targetIdx) break
+          }
         } else {
           return { ok: false, speech: t.failed, uiMessage: deps.language === "de" ? "Nur in Guided/Blind verfügbar." : "Only available in guided or blind mode." }
         }
-        const nextIdx = activeWhiskyIndex(deps) + 1
-        const nextWhisky = deps.whiskies[nextIdx]
-        const speech = nextWhisky
-          ? t.advancedTo(nextWhisky.name || `#${nextIdx + 1}`)
-          : t.advancedFinal
+        const nextWhisky = deps.whiskies[targetIdx]
+        const speech = nextWhisky ? t.advancedTo(nextWhisky.name || `#${targetIdx + 1}`) : t.advancedFinal
         return { ok: true, speech, uiMessage: speech, needsRefresh: true }
       }
 
       case "who_is_missing": {
+        const fresh = await fetchLiveSnapshot(deps.tastingId)
         const idx = activeWhiskyIndex(deps)
-        const w = deps.whiskies[idx]
+        const w = fresh.whiskies[idx] ?? deps.whiskies[idx]
         if (!w) {
           return { ok: true, speech: t.nobodyMissing, uiMessage: t.nobodyMissing }
         }
-        const haveRated = ratersForWhisky(w.id, deps.ratings)
-        const missing = deps.participants.filter((p) => !haveRated.has(p.id)).map((p) => p.name)
+        const haveRated = ratersForWhisky(w.id, fresh.ratings)
+        const missing = fresh.participants.filter((p) => !haveRated.has(p.id)).map((p) => p.name)
         if (missing.length === 0) {
           return { ok: true, speech: t.nobodyMissing, uiMessage: t.nobodyMissing }
         }
@@ -194,19 +240,20 @@ export async function executeVoiceCommand(
       }
 
       case "status": {
-        const totalWhiskies = deps.whiskies.length
-        const totalParts = deps.participants.length
+        const fresh = await fetchLiveSnapshot(deps.tastingId)
+        const totalWhiskies = fresh.whiskies.length || deps.whiskies.length
+        const totalParts = fresh.participants.length || deps.participants.length
         if (deps.isGuided) {
           const idx = activeWhiskyIndex(deps)
-          const w = deps.whiskies[idx]
-          const have = w ? ratersForWhisky(w.id, deps.ratings).size : 0
+          const w = fresh.whiskies[idx] ?? deps.whiskies[idx]
+          const have = w ? ratersForWhisky(w.id, fresh.ratings).size : 0
           return {
             ok: true,
             speech:    t.statusGuided(idx + 1, totalWhiskies, have, totalParts),
             uiMessage: t.statusGuided(idx + 1, totalWhiskies, have, totalParts),
           }
         }
-        const totalRatings = deps.ratings.length
+        const totalRatings = fresh.ratings.length
         return {
           ok: true,
           speech:    t.statusFree(totalRatings, totalParts, totalWhiskies),
