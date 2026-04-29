@@ -2715,13 +2715,16 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
         )}
         {!voice.supported && (
           <div data-testid="voice-cohost-unsupported" style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
-            {(typeof navigator !== "undefined" && /^((?!chrome|android).)*safari/i.test(navigator.userAgent))
-              ? t("voice.safariHint", voiceLanguage === "de"
-                  ? "Safari unterstützt die Spracherkennung nur eingeschränkt. Für volle Funktion empfehlen wir Chrome oder Edge."
-                  : "Safari has limited speech recognition. For full voice support please use Chrome or Edge.")
-              : t("voice.unsupportedHint", voiceLanguage === "de"
-                  ? "Diesem Browser fehlt die Sprach-Unterstützung. Versuche Chrome oder Edge."
-                  : "This browser lacks speech support. Try Chrome or Edge.")}
+            {t("voice.unsupportedHint", voiceLanguage === "de"
+              ? "Diesem Browser fehlt die Sprach-Unterstützung. Versuche Chrome oder Edge."
+              : "This browser lacks speech support. Try Chrome or Edge.")}
+          </div>
+        )}
+        {voice.supported && typeof navigator !== "undefined" && /^((?!chrome|android).)*safari/i.test(navigator.userAgent) && (
+          <div data-testid="voice-cohost-safari-hint" style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+            {t("voice.safariHint", voiceLanguage === "de"
+              ? "Safari unterstützt die Spracherkennung nur eingeschränkt. Für volle Funktion empfehlen wir Chrome oder Edge."
+              : "Safari has limited speech recognition. For full voice support please use Chrome or Edge.")}
           </div>
         )}
         {voiceLastReply && (

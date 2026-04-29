@@ -80,7 +80,6 @@ export function useVoiceCohost(opts: UseVoiceCohostOptions): UseVoiceCohostRetur
 
   const Ctor = getRecognitionCtor()
   const supported = Ctor !== null
-  const ttsSupported = typeof window !== "undefined" && "speechSynthesis" in window
 
   useEffect(() => {
     if (!Ctor) {
@@ -206,7 +205,7 @@ export function useVoiceCohost(opts: UseVoiceCohostOptions): UseVoiceCohostRetur
 
   const speak = useCallback((text: string) => {
     if (!text || speechMuted) {
-      setStatus((s) => (s === "speaking" ? "listening" : s))
+      setStatus(() => (wantListeningRef.current ? "listening" : "idle"))
       return
     }
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return
