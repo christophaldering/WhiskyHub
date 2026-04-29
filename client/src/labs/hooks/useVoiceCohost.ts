@@ -208,7 +208,10 @@ export function useVoiceCohost(opts: UseVoiceCohostOptions): UseVoiceCohostRetur
       setStatus(() => (wantListeningRef.current ? "listening" : "idle"))
       return
     }
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      setStatus(() => (wantListeningRef.current ? "listening" : "idle"))
+      return
+    }
     try {
       const synth = window.speechSynthesis
       synth.cancel()
