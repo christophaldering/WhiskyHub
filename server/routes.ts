@@ -7514,6 +7514,64 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
     }
   });
 
+  app.post("/api/tastings/:id/pause", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const { hostId, minutes } = req.body as { hostId?: string; minutes?: number };
+      if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can set a pause" });
+      const minutesNum = Number(minutes);
+      if (!Number.isFinite(minutesNum)) return res.status(400).json({ message: "minutes must be a number" });
+      if (minutesNum > 120) return res.status(400).json({ message: "Pause too long (max 120 minutes)" });
+      let pauseUntil: Date | null = null;
+      if (minutesNum > 0) {
+        pauseUntil = new Date(Date.now() + Math.floor(minutesNum * 60_000));
+      }
+      const updated = await storage.updateTastingBlindMode(req.params.id, { pauseUntil });
+      const pauseUntilIso = pauseUntil ? pauseUntil.toISOString() : null;
+      console.log(`[LABS] Pause set: minutes=${minutesNum} until=${pauseUntilIso} tasting=${req.params.id}`);
+      broadcastToTasting(req.params.id, { type: "pause_changed", data: { pauseUntil: pauseUntilIso, minutes: minutesNum } });
+      res.json({ ...updated, pauseUntil: pauseUntilIso });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Unknown error";
+      res.status(500).json({ message });
+    }
+  });
+
+  app.post("/api/tastings/:id/nudge", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const { hostId, recipientId, message } = req.body as { hostId?: string; recipientId?: string; message?: string };
+      if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can nudge guests" });
+      if (!recipientId) return res.status(400).json({ message: "recipientId required" });
+      const recipient = await storage.getParticipant(recipientId);
+      if (!recipient) return res.status(404).json({ message: "Recipient not found" });
+      const tastingMembers = await storage.getTastingParticipants(req.params.id);
+      const isMember = tastingMembers.some((tp) => tp.participantId === recipientId);
+      if (!isMember) return res.status(403).json({ message: "Recipient is not a participant of this tasting" });
+      const host = await storage.getParticipant(hostId);
+      const hostName = host?.name || "Host";
+      const trimmed = (message ?? "").toString().trim().slice(0, 280);
+      const finalText = trimmed || `${hostName} möchte deine Aufmerksamkeit für den nächsten Dram. / ${hostName} wants your attention for the next dram.`;
+      const notif = await storage.createNotification({
+        recipientId,
+        type: "host_nudge",
+        title: `${hostName} stupst dich an / nudges you`,
+        message: finalText,
+        linkUrl: `/labs/live/${req.params.id}`,
+        tastingId: req.params.id,
+        isGlobal: false,
+      });
+      console.log(`[LABS] Nudge sent: tasting=${req.params.id} from=${hostId} to=${recipientId}`);
+      broadcastToTasting(req.params.id, { type: "nudge_sent", data: { recipientId, hostName, notificationId: notif.id } });
+      res.status(201).json(notif);
+    } catch (e: unknown) {
+      const errMessage = e instanceof Error ? e.message : "Unknown error";
+      res.status(500).json({ message: errMessage });
+    }
+  });
+
   app.post("/api/tastings/:id/guided-goto", async (req, res) => {
     try {
       const tasting = await storage.getTasting(req.params.id);

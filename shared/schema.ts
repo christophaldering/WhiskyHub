@@ -76,6 +76,7 @@ export const tastings = pgTable("tastings", {
   videoLink: text("video_link"),
   dramStartedAt: timestamp("dram_started_at"),
   dramTimers: text("dram_timers"), // JSON: { [whiskyId]: accumulatedSeconds }
+  pauseUntil: timestamp("pause_until"),
   ratingPrompt: text("rating_prompt"), // null | "rate" | "final" — host prompt to submit ratings
   ratingScale: integer("rating_scale").notNull().default(100), // 5 | 10 | 20 | 100
   activeWhiskyId: varchar("active_whisky_id"), // tracks which whisky is currently being discussed

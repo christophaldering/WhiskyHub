@@ -19,6 +19,7 @@ import FlavourStudioSheet from "@/labs/components/FlavourStudioSheet";
 import { type DimKey } from "@/labs/components/LabsRatingPanel";
 import { useRatingScale } from "@/labs/hooks/useRatingScale";
 import { CompactDownloadButton, LabsParticipantDownloads } from "@/components/ParticipantDownloads";
+import PauseBanner from "@/labs/components/PauseBanner";
 import TastingDownloadGrid from "@/labs/components/TastingDownloadGrid";
 import { getTastingPhase, isResultDownloadsPhase, RESULT_DOWNLOAD_KINDS } from "@/labs/utils/tastingPhase";
 import { getStoryPdfAvailable, getPresentationPdfAvailable, getNotesDocxAvailable } from "@/labs/utils/labsExports";
@@ -900,6 +901,9 @@ export default function LabsLive({ params }: LabsLiveProps) {
       flashTimerRef.current = setTimeout(() => setRevealFlash(false), 180);
       try { navigator.vibrate?.(80); } catch {}
     }, []),
+    onPauseChanged: useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+    }, [tastingId]),
   });
 
   useEffect(() => {
@@ -1233,6 +1237,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
         </div>
 
         {isPresentationLive && <PresentationLiveBanner tastingId={tastingId} />}
+        <PauseBanner pauseUntil={tasting.pauseUntil ?? null} />
 
         {isSessionComplete ? (
           <GuidedComplete tastingId={tastingId} presentationActive={tasting.presentationSlide != null} />
@@ -1389,6 +1394,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
       </div>
 
       {isPresentationLive && <PresentationLiveBanner tastingId={tastingId} />}
+      <PauseBanner pauseUntil={tasting.pauseUntil ?? null} />
 
       <div className="mb-5">
         <div className="flex items-center gap-3 mb-2">

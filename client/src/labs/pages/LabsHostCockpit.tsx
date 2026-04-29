@@ -6,8 +6,12 @@ import {
   Play, Lock, Eye, EyeOff, SkipForward, Users, Wine, Star,
   BarChart3, CheckCircle2, Clock, ChevronLeft, Loader2,
   Monitor, Smartphone, FileText, Radio, X, LockKeyhole, Unlock, ImageOff, Sliders, RotateCcw, AlertTriangle,
-  ChevronDown, Layers, Archive,
+  ChevronDown, Layers, Archive, Mic, MicOff, VolumeX, Volume2, Coffee,
 } from "lucide-react";
+import { useVoiceCohost } from "@/labs/hooks/useVoiceCohost";
+import { parseVoiceCommand, commandHelpHint } from "@/labs/voice/voiceCommands";
+import { executeVoiceCommand, type VoiceLang } from "@/labs/voice/voiceTools";
+import PauseBanner from "@/labs/components/PauseBanner";
 import ModalPortal from "@/labs/components/ModalPortal";
 import ManageTastersDialog, { invalidateTastingAggregates } from "@/labs/components/ManageTastersDialog";
 import WhiskyImage from "@/labs/components/WhiskyImage";
@@ -218,7 +222,7 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
   const [showInviteSection, setShowInviteSection] = useState(false);
   const [showSettingsSection, setShowSettingsSection] = useState(false);
 
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [revealConfirmed, setRevealConfirmed] = useState(false);
   const revealConfirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [revealFlash, setRevealFlash] = useState(false);
@@ -404,7 +408,38 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
         setLocalRevealStep(0);
       }
     }, []),
+    onPauseChanged: useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+    }, [tastingId]),
   });
+
+  const [voiceTranscript, setVoiceTranscript] = useState<Array<{ id: string; text: string; reply: string; ok: boolean; ts: number }>>([]);
+  const [voiceLastReply, setVoiceLastReply] = useState<string>("");
+  const [voiceMuted, setVoiceMuted] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("labs-voice-muted") === "true";
+  });
+  const [voiceHelpOpen, setVoiceHelpOpen] = useState(false);
+  const voiceLanguage: VoiceLang = (i18n.language || "de").toLowerCase().startsWith("de") ? "de" : "en";
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("labs-voice-muted", voiceMuted ? "true" : "false");
+  }, [voiceMuted]);
+
+  const voiceParticipantsList = useMemo(() => {
+    return participants
+      .map((p: any) => ({ id: pId(p), name: pName(p) }))
+      .filter((p: { id: string; name: string }) => p.id && p.id !== pid);
+  }, [participants, pid]);
+
+  const voiceWhiskies = useMemo(() => {
+    return whiskies.map((w: any) => ({ id: w.id as string, name: (w.name as string | null | undefined) ?? null }));
+  }, [whiskies]);
+
+  const voiceRatings = useMemo(() => {
+    return ratings.map((r: any) => ({ participantId: r.participantId as string, whiskyId: r.whiskyId as string }));
+  }, [ratings]);
 
   useEffect(() => {
     return () => { if (revealConfirmTimerRef.current) clearTimeout(revealConfirmTimerRef.current); };
@@ -552,6 +587,39 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
   const scaleDefault = ratingScale === 100 ? 75 : Math.round((ratingScale * 0.75) / cockpitScale.step) * cockpitScale.step;
   const isLive = status === "open" || status === "reveal";
   const isDraft = status === "draft";
+
+  const voiceHandleTranscript = useCallback(async (text: string) => {
+    if (!tastingId || !pid) return;
+    const cmd = parseVoiceCommand(text);
+    const result = await executeVoiceCommand(cmd, {
+      tastingId,
+      hostId: pid,
+      language: voiceLanguage,
+      isGuided,
+      isBlind,
+      guidedIdx,
+      whiskies: voiceWhiskies,
+      participants: voiceParticipantsList,
+      ratings: voiceRatings,
+    });
+    setVoiceLastReply(result.uiMessage || result.speech);
+    setVoiceTranscript((prev) => {
+      const entry = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, text, reply: result.uiMessage || result.speech, ok: result.ok, ts: Date.now() };
+      const next = [...prev, entry];
+      return next.slice(-5);
+    });
+    if (result.needsRefresh) {
+      queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+      queryClient.invalidateQueries({ queryKey: ["tasting-ratings", tastingId] });
+    }
+    voice.speak(result.speech);
+  }, [tastingId, pid, voiceLanguage, isGuided, isBlind, guidedIdx, voiceWhiskies, voiceParticipantsList, voiceRatings, queryClient]);
+
+  const voice = useVoiceCohost({
+    language: voiceLanguage,
+    onTranscript: voiceHandleTranscript,
+    speechMuted: voiceMuted,
+  });
 
   const rv = isBlind && tasting ? getRevealState(tasting, whiskies.length, t) : null;
   const optimisticTasting = useMemo(() => {
@@ -2524,8 +2592,147 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
   }
 
   function renderControls(inline: boolean) {
+    const showVoicePanel = isLive;
+    const voiceStatusLabelMap: Record<string, string> = {
+      idle:        t("voice.statusIdle", voiceLanguage === "de" ? "Mikrofon aus" : "Mic off"),
+      listening:   t("voice.statusListening", voiceLanguage === "de" ? "Höre zu…" : "Listening…"),
+      processing:  t("voice.statusProcessing", voiceLanguage === "de" ? "Verarbeite…" : "Processing…"),
+      speaking:    t("voice.statusSpeaking", voiceLanguage === "de" ? "Antworte…" : "Speaking…"),
+      denied:      t("voice.statusDenied", voiceLanguage === "de" ? "Mikrofon blockiert" : "Mic blocked"),
+      unsupported: t("voice.statusUnsupported", voiceLanguage === "de" ? "Browser unterstützt keine Sprache" : "Voice not supported"),
+      error:       t("voice.statusError", voiceLanguage === "de" ? "Fehler" : "Error"),
+    };
+    const statusColor = voice.status === "listening"
+      ? "var(--labs-accent)"
+      : voice.status === "speaking"
+        ? "var(--labs-success, #2f9e44)"
+        : voice.status === "denied" || voice.status === "error"
+          ? "var(--labs-danger, #e53e3e)"
+          : "var(--labs-text-muted)";
+    const helpHints = commandHelpHint(voiceLanguage);
+    const voicePanel = showVoicePanel ? (
+      <div
+        data-testid="voice-cohost-panel"
+        style={{
+          padding: 10,
+          borderRadius: "var(--labs-radius, 12px)",
+          background: "color-mix(in srgb, var(--labs-accent, #C9A961) 6%, transparent)",
+          border: "1px solid color-mix(in srgb, var(--labs-accent, #C9A961) 25%, transparent)",
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+        }}
+      >
+        <PauseBanner pauseUntil={tasting?.pauseUntil ?? null} />
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            type="button"
+            onClick={voice.toggle}
+            disabled={!voice.supported}
+            data-testid="voice-cohost-mic"
+            aria-pressed={voice.isListening}
+            aria-label={voice.isListening
+              ? t("voice.stopAria", voiceLanguage === "de" ? "Mikrofon stoppen" : "Stop microphone")
+              : t("voice.startAria", voiceLanguage === "de" ? "Mikrofon starten" : "Start microphone")}
+            style={{
+              width: 38, height: 38, borderRadius: "50%",
+              border: "1px solid color-mix(in srgb, var(--labs-accent, #C9A961) 50%, transparent)",
+              background: voice.isListening
+                ? "color-mix(in srgb, var(--labs-accent, #C9A961) 28%, transparent)"
+                : "transparent",
+              color: voice.isListening ? "var(--labs-accent, #C9A961)" : "var(--labs-text)",
+              cursor: voice.supported ? "pointer" : "not-allowed",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: voice.status === "listening" ? "0 0 0 4px color-mix(in srgb, var(--labs-accent, #C9A961) 18%, transparent)" : undefined,
+              transition: "box-shadow 200ms ease, background 200ms ease",
+            }}
+          >
+            {voice.isListening
+              ? <Mic style={{ width: 18, height: 18 }} />
+              : <MicOff style={{ width: 18, height: 18 }} />}
+          </button>
+          <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text)" }}>
+              {t("voice.title", voiceLanguage === "de" ? "Voice Co-Host" : "Voice co-host")}
+            </span>
+            <span data-testid="voice-cohost-status" style={{ fontSize: 11, color: statusColor, fontWeight: 500 }}>
+              {voiceStatusLabelMap[voice.status] || voice.status}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => { setVoiceMuted((m) => !m); voice.cancelSpeech(); }}
+            data-testid="voice-cohost-mute"
+            aria-pressed={voiceMuted}
+            title={voiceMuted
+              ? t("voice.unmuteTitle", voiceLanguage === "de" ? "Antwortton an" : "Unmute replies")
+              : t("voice.muteTitle", voiceLanguage === "de" ? "Antwortton aus" : "Mute replies")}
+            style={{
+              width: 30, height: 30, borderRadius: 8,
+              border: "1px solid color-mix(in srgb, var(--labs-accent, #C9A961) 25%, transparent)",
+              background: "transparent", color: "var(--labs-text-muted)", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            {voiceMuted
+              ? <VolumeX style={{ width: 14, height: 14 }} />
+              : <Volume2 style={{ width: 14, height: 14 }} />}
+          </button>
+          <button
+            type="button"
+            onClick={() => setVoiceHelpOpen((v) => !v)}
+            data-testid="voice-cohost-help-toggle"
+            aria-expanded={voiceHelpOpen}
+            style={{
+              width: 30, height: 30, borderRadius: 8,
+              border: "1px solid color-mix(in srgb, var(--labs-accent, #C9A961) 25%, transparent)",
+              background: "transparent", color: "var(--labs-text-muted)", cursor: "pointer",
+              fontSize: 13, fontWeight: 700,
+            }}
+          >
+            ?
+          </button>
+        </div>
+        {voice.errorMessage && (
+          <div data-testid="voice-cohost-error" style={{ fontSize: 11, color: "var(--labs-danger, #e53e3e)" }}>
+            {voice.errorMessage}
+          </div>
+        )}
+        {!voice.supported && (
+          <div data-testid="voice-cohost-unsupported" style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+            {t("voice.unsupportedHint", voiceLanguage === "de"
+              ? "Diesem Browser fehlt die Sprach-Unterstützung. Versuche Chrome oder Edge."
+              : "This browser lacks speech support. Try Chrome or Edge.")}
+          </div>
+        )}
+        {voiceLastReply && (
+          <div data-testid="voice-cohost-reply" style={{ fontSize: 12, color: "var(--labs-text)", lineHeight: 1.4 }}>
+            {voiceLastReply}
+          </div>
+        )}
+        {voiceTranscript.length > 0 && (
+          <div data-testid="voice-cohost-transcript" style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 130, overflowY: "auto", borderTop: "1px dashed color-mix(in srgb, var(--labs-accent, #C9A961) 25%, transparent)", paddingTop: 6 }}>
+            {voiceTranscript.slice().reverse().map((entry) => (
+              <div key={entry.id} data-testid={`voice-cohost-transcript-${entry.id}`} style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "flex", flexDirection: "column", gap: 1 }}>
+                <span style={{ fontStyle: "italic" }}>“{entry.text}”</span>
+                <span style={{ color: entry.ok ? "var(--labs-text)" : "var(--labs-danger, #e53e3e)" }}>↳ {entry.reply}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {voiceHelpOpen && (
+          <div data-testid="voice-cohost-help" style={{ fontSize: 11, color: "var(--labs-text-muted)", display: "flex", flexDirection: "column", gap: 2, borderTop: "1px dashed color-mix(in srgb, var(--labs-accent, #C9A961) 25%, transparent)", paddingTop: 6 }}>
+            {helpHints.map((hint, idx) => (
+              <span key={idx}>• {hint}</span>
+            ))}
+          </div>
+        )}
+      </div>
+    ) : null;
+
     const controlButtons = (
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {voicePanel}
         {isDraft && (
           <button
             onClick={handleStartSession}

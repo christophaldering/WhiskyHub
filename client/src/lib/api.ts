@@ -115,6 +115,10 @@ export const tastingApi = {
     fetchJSON(`/tastings/${id}/transfer-host`, { method: "POST", body: JSON.stringify({ hostId, newHostId }) }),
   toggleCoverImageReveal: (id: string, hostId: string, revealed: boolean) =>
     fetchJSON(`/tastings/${id}/cover-image-reveal`, { method: "PATCH", body: JSON.stringify({ hostId, revealed }) }),
+  pause: (id: string, hostId: string, minutes: number) =>
+    fetchJSON(`/tastings/${id}/pause`, { method: "POST", body: JSON.stringify({ hostId, minutes }) }),
+  nudge: (id: string, hostId: string, recipientId: string, message?: string) =>
+    fetchJSON(`/tastings/${id}/nudge`, { method: "POST", body: JSON.stringify({ hostId, recipientId, message }) }),
   aiImport: async (files: File[], text: string, hostId: string) => {
     const formData = new FormData();
     formData.append("hostId", hostId);

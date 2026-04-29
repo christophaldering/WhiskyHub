@@ -5,6 +5,8 @@ export type SSEEventType =
   | "status_changed"
   | "presentation_changed"
   | "dram_advanced"
+  | "pause_changed"
+  | "nudge_sent"
   | "heartbeat";
 
 export interface SSEEvent {
