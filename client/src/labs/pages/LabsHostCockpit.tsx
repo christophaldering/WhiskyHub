@@ -416,6 +416,7 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
   const [voiceTranscript, setVoiceTranscript] = useState<Array<{ id: string; text: string; reply: string; ok: boolean; ts: number }>>([]);
   const [voiceLastReply, setVoiceLastReply] = useState<string>("");
   const voiceLastCmdRef = useRef<{ key: string; ts: number } | null>(null);
+  const voiceSpeakRef = useRef<(text: string) => void>(() => {});
   const [voiceMuted, setVoiceMuted] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem("labs-voice-muted") === "true";
@@ -620,7 +621,7 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
       queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
       queryClient.invalidateQueries({ queryKey: ["tasting-ratings", tastingId] });
     }
-    voice.speak(result.speech);
+    voiceSpeakRef.current(result.speech);
   }, [tastingId, pid, voiceLanguage, isGuided, isBlind, guidedIdx, voiceWhiskies, voiceParticipantsList, voiceRatings, queryClient]);
 
   const voice = useVoiceCohost({
@@ -628,6 +629,10 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
     onTranscript: voiceHandleTranscript,
     speechMuted: voiceMuted,
   });
+
+  useEffect(() => {
+    voiceSpeakRef.current = voice.speak;
+  }, [voice.speak]);
 
   const rv = isBlind && tasting ? getRevealState(tasting, whiskies.length, t) : null;
   const optimisticTasting = useMemo(() => {
