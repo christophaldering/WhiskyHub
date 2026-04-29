@@ -27888,7 +27888,7 @@ Do not invent specific ratings, tasting names or events that are not in the sour
         const toolMessages: Array<Record<string, unknown>> = messages.map((m) => ({ ...m }));
         const collectedToolSources: LabsToolSource[] = [];
         let answerMode: AnswerMode | null = null;
-        let earlyContent: string | null = null;
+        let madeAnyToolCall = false;
         const MAX_TOOL_ROUNDS = 2;
         let toolRound = 0;
 
@@ -27911,19 +27911,18 @@ Do not invent specific ratings, tasting names or events that are not in the sour
           const choice = completion.choices[0];
           const assistantMsg = choice?.message as AssistantMessage | undefined;
           if (!assistantMsg) {
-            earlyContent = "";
             break;
           }
           const toolCalls = assistantMsg.tool_calls ?? [];
+          if (toolCalls.length === 0) {
+            break;
+          }
+          madeAnyToolCall = true;
           toolMessages.push({
             role: "assistant",
             content: assistantMsg.content,
-            tool_calls: toolCalls.length > 0 ? toolCalls : undefined,
+            tool_calls: toolCalls,
           });
-          if (toolCalls.length === 0) {
-            earlyContent = assistantMsg.content ?? "";
-            break;
-          }
           for (const tc of toolCalls) {
             const fnName = tc.function?.name ?? "";
             let parsedArgs: unknown = {};
@@ -27974,11 +27973,23 @@ Do not invent specific ratings, tasting names or events that are not in the sour
           toolRound += 1;
         }
 
-        if (!clientClosed && earlyContent === null) {
+        let accumulatedAnswer = "";
+        if (!clientClosed) {
+          const streamMessages = madeAnyToolCall
+            ? toolMessages
+            : [
+                ...toolMessages,
+                {
+                  role: "system",
+                  content: locale === "de"
+                    ? "Beantworte jetzt die Nutzerfrage in einer einzigen, vollstaendigen Antwort."
+                    : "Now produce a single, complete answer to the user question.",
+                },
+              ];
           const finalStream = await aiResult.client.chat.completions.create(
             {
               model: "gpt-4o-mini",
-              messages: toolMessages as unknown as Parameters<typeof aiResult.client.chat.completions.create>[0]["messages"],
+              messages: streamMessages as unknown as Parameters<typeof aiResult.client.chat.completions.create>[0]["messages"],
               stream: true,
               temperature: 0.4,
               max_tokens: 800,
@@ -27989,14 +28000,23 @@ Do not invent specific ratings, tasting names or events that are not in the sour
             if (clientClosed) break;
             const delta = chunk.choices[0]?.delta?.content ?? "";
             if (delta) {
+              accumulatedAnswer += delta;
               res.write(`data: ${JSON.stringify({ delta })}\n\n`);
             }
           }
-        } else if (!clientClosed && earlyContent) {
-          res.write(`data: ${JSON.stringify({ delta: earlyContent })}\n\n`);
         }
 
         if (!clientClosed) {
+          const generalPrefixDe = "allgemeines whisky-wissen";
+          const generalPrefixEn = "general whisky knowledge";
+          const head = accumulatedAnswer.trimStart().slice(0, 80).toLowerCase();
+          const looksGeneral = head.startsWith(generalPrefixDe) || head.startsWith(generalPrefixEn);
+          let resolvedMode: AnswerMode = answerMode ?? "user_data";
+          if (looksGeneral && resolvedMode === "user_data") {
+            console.warn("[labs/ask] knowledgeMode auto-corrected to general (model omitted set_answer_mode but used general-knowledge prefix)");
+            resolvedMode = "general";
+          }
+
           const seen = new Set<string>();
           const finalSources: Source[] = [];
           for (const s of collectedToolSources) {
@@ -28011,7 +28031,7 @@ Do not invent specific ratings, tasting names or events that are not in the sour
             seen.add(key);
             finalSources.push(s);
           }
-          res.write(`data: ${JSON.stringify({ done: true, sources: finalSources, knowledgeMode: answerMode ?? "user_data" })}\n\n`);
+          res.write(`data: ${JSON.stringify({ done: true, sources: finalSources, knowledgeMode: resolvedMode })}\n\n`);
           res.end();
         }
       } catch (aiErr: unknown) {
