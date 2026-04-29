@@ -6,7 +6,7 @@ import {
   Wine, Building2, Star, MapPin, Sparkles, BarChart3, FlameKindling,
   Download, Settings, Heart, Mic, Layers, FileText, Map, Beaker,
   GraduationCap, Calendar, History, Activity, Info, Gift, Shield, Lock,
-  ArrowRight, MessageCircle, Loader2,
+  ArrowRight, MessageCircle, Loader2, Check, Minus,
 } from "lucide-react";
 import { triggerHaptic } from "@/labs/hooks/useHaptic";
 
@@ -882,15 +882,95 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
               <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 22, color: "var(--labs-text)" }}>
                 {isDe ? "Frag CaskSense" : "Ask CaskSense"}
               </div>
-              <div style={{ fontSize: 14, lineHeight: 1.5, maxWidth: 360 }}>
+              <div style={{ fontSize: 14, lineHeight: 1.5, maxWidth: 380 }}>
                 {isDe
-                  ? "Stelle Fragen zu deinen Whiskys, Tastings und Notizen. Antworten basieren ausschliesslich auf deinen Daten und dem Lexikon."
-                  : "Ask about your whiskies, tastings, and notes. Answers are grounded only in your own data and the lexicon."}
+                  ? "Anders als ChatGPT oder Claude antwortet CaskSense nur auf Basis deiner eigenen Whisky-Daten und unseres Lexikons \u2014 nicht aus dem allgemeinen Internet."
+                  : "Unlike ChatGPT or Claude, CaskSense answers only from your own whisky data and our lexicon \u2014 not from the open internet."}
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 8 }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                  width: "100%",
+                  maxWidth: 380,
+                  marginTop: 4,
+                  textAlign: "left",
+                }}
+                data-testid="chat-capabilities"
+              >
+                <div
+                  style={{
+                    border: "1px solid var(--labs-border)",
+                    borderRadius: 12,
+                    padding: "12px 14px",
+                    background: "var(--labs-surface)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "var(--labs-accent)", textTransform: "uppercase", letterSpacing: 0.4 }}>
+                    <Check style={{ width: 14, height: 14 }} />
+                    {isDe ? "Geht gut" : "Works well"}
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.55, color: "var(--labs-text)" }}>
+                    {(isDe
+                      ? [
+                          "Konkrete Whiskys, Brennereien oder Begriffe (z. B. \u201eErz\u00e4hl mir was \u00fcber Lagavulin\u201c).",
+                          "Deine eigenen Whiskys und Tastings (\u201ewelche Whiskys habe ich verkostet?\u201c).",
+                          "Erkl\u00e4rungen aus dem Lexikon (\u201ewas ist ein Octave?\u201c, \u201eFirst-Fill-Sherry?\u201c).",
+                        ]
+                      : [
+                          "Specific whiskies, distilleries or terms (\u201cTell me about Lagavulin\u201d).",
+                          "Your own whiskies and tastings (\u201cwhich whiskies have I tasted?\u201d).",
+                          "Lexicon explanations (\u201cwhat is an Octave?\u201d, \u201cFirst-fill sherry?\u201d).",
+                        ]
+                    ).map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div
+                  style={{
+                    border: "1px solid var(--labs-border)",
+                    borderRadius: 12,
+                    padding: "12px 14px",
+                    background: "var(--labs-surface)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "var(--labs-text-secondary)", textTransform: "uppercase", letterSpacing: 0.4 }}>
+                    <Minus style={{ width: 14, height: 14 }} />
+                    {isDe ? "Geht (noch) nicht" : "Not (yet) supported"}
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.55, color: "var(--labs-text-secondary)" }}>
+                    {(isDe
+                      ? [
+                          "Ranglisten oder Statistiken \u00fcber deine Bewertungen.",
+                          "Aktuelle Marktpreise, Verf\u00fcgbarkeit oder Auktionen.",
+                          "Allgemeines Wissen au\u00dferhalb deiner Daten und unseres Lexikons.",
+                        ]
+                      : [
+                          "Rankings or statistics across your ratings.",
+                          "Current market prices, availability or auctions.",
+                          "General knowledge outside your data and our lexicon.",
+                        ]
+                    ).map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+              <div style={{ fontSize: 12, color: "var(--labs-text-secondary)", marginTop: 4 }}>
+                {isDe ? "Beispielfragen:" : "Try one:"}
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
                 {(isDe
-                  ? ["Welche Whiskys habe ich getrunken?", "Was ist ein Octave?", "Top 3 Tastings nach Bewertung"]
-                  : ["Which whiskies have I tried?", "What is an Octave?", "Top 3 tastings by rating"]
+                  ? ["Welche Whiskys habe ich verkostet?", "Was ist ein Octave?", "Erz\u00e4hl mir kurz etwas \u00fcber Lagavulin"]
+                  : ["Which whiskies have I tasted?", "What is an Octave?", "Tell me briefly about Lagavulin"]
                 ).map((suggestion, idx) => (
                   <button
                     key={suggestion}
