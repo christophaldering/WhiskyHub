@@ -959,11 +959,11 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
                     {(isDe
                       ? [
                           "Aktuelle Marktpreise, Verf\u00fcgbarkeit oder Auktionen.",
-                          "Pers\u00f6nliche Empfehlungen mit Kaufgarantie.",
+                          "Live-Recherche im Web, tagesaktuelle News oder Ger\u00fcchte.",
                         ]
                       : [
                           "Current market prices, availability or auctions.",
-                          "Personal purchase recommendations with any guarantee.",
+                          "Live web lookups, current news or rumors.",
                         ]
                     ).map((line) => (
                       <li key={line}>{line}</li>

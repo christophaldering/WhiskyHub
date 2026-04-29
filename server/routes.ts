@@ -27889,6 +27889,7 @@ Do not invent specific ratings, tasting names or events that are not in the sour
         const collectedToolSources: LabsToolSource[] = [];
         let answerMode: AnswerMode | null = null;
         let madeAnyToolCall = false;
+        let usedDataTool = false;
         const MAX_TOOL_ROUNDS = 2;
         let toolRound = 0;
 
@@ -27954,6 +27955,7 @@ Do not invent specific ratings, tasting names or events that are not in the sour
             }
             try {
               const toolResult = await tool.handler(participantId, parsedArgs, locale);
+              usedDataTool = true;
               for (const s of toolResult.sources) collectedToolSources.push(s);
               toolMessages.push({
                 role: "tool",
@@ -28011,10 +28013,20 @@ Do not invent specific ratings, tasting names or events that are not in the sour
           const generalPrefixEn = "general whisky knowledge";
           const head = accumulatedAnswer.trimStart().slice(0, 80).toLowerCase();
           const looksGeneral = head.startsWith(generalPrefixDe) || head.startsWith(generalPrefixEn);
-          let resolvedMode: AnswerMode = answerMode ?? "user_data";
-          if (looksGeneral && resolvedMode === "user_data") {
-            console.warn("[labs/ask] knowledgeMode auto-corrected to general (model omitted set_answer_mode but used general-knowledge prefix)");
+          let resolvedMode: AnswerMode;
+          if (answerMode !== null) {
+            resolvedMode = answerMode;
+          } else if (usedDataTool && looksGeneral) {
+            resolvedMode = "mixed";
+            console.warn("[labs/ask] knowledgeMode derived as mixed (model omitted set_answer_mode; data tools used + general prefix detected)");
+          } else if (usedDataTool) {
+            resolvedMode = "user_data";
+            console.warn("[labs/ask] knowledgeMode derived as user_data (model omitted set_answer_mode; data tools used)");
+          } else if (looksGeneral) {
             resolvedMode = "general";
+            console.warn("[labs/ask] knowledgeMode derived as general (model omitted set_answer_mode; general prefix detected)");
+          } else {
+            resolvedMode = "user_data";
           }
 
           const seen = new Set<string>();
