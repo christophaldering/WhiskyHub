@@ -40,11 +40,11 @@ const topWhiskiesSchema = z.object({
   region: optionalString,
   peat_level: peatLevelSchema,
   distillery: optionalString,
-});
+}).strict();
 
 const topTastingsSchema = z.object({
   limit: limitSchema,
-});
+}).strict();
 
 const overviewStatsSchema = z.object({}).strict().optional();
 
@@ -54,11 +54,11 @@ const countWhiskiesSchema = z.object({
   distillery: optionalString,
   min_score: scoreSchema,
   max_score: scoreSchema,
-});
+}).strict();
 
 const recentRatingsSchema = z.object({
   limit: limitSchema,
-});
+}).strict();
 
 const tastingsRoleSchema = z.object({}).strict().optional();
 

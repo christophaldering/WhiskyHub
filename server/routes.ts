@@ -27938,9 +27938,19 @@ Do not invent specific ratings, tasting names or events that are not in the sour
               parsedArgs = {};
             }
             if (fnName === "set_answer_mode") {
-              answerModeCallCount += 1;
-              if (answerModeCallCount > 1) {
-                console.warn(`[labs/ask] set_answer_mode called ${answerModeCallCount}x; ignoring extra call (first value retained)`);
+              const modeVal = (parsedArgs as { mode?: string })?.mode;
+              const isValidMode = modeVal === "user_data" || modeVal === "general" || modeVal === "mixed";
+              if (!isValidMode) {
+                console.warn(`[labs/ask] set_answer_mode received invalid mode: ${String(modeVal)}`);
+                toolMessages.push({
+                  role: "tool",
+                  tool_call_id: tc.id,
+                  content: JSON.stringify({ ok: false, error: "mode must be one of: user_data, general, mixed" }),
+                });
+                continue;
+              }
+              if (answerModeCallCount >= 1) {
+                console.warn(`[labs/ask] set_answer_mode called more than once; ignoring extra call (first value retained)`);
                 toolMessages.push({
                   role: "tool",
                   tool_call_id: tc.id,
@@ -27948,22 +27958,13 @@ Do not invent specific ratings, tasting names or events that are not in the sour
                 });
                 continue;
               }
-              const modeVal = (parsedArgs as { mode?: string })?.mode;
-              if (modeVal === "user_data" || modeVal === "general" || modeVal === "mixed") {
-                answerMode = modeVal;
-                toolMessages.push({
-                  role: "tool",
-                  tool_call_id: tc.id,
-                  content: JSON.stringify({ ok: true, mode: answerMode }),
-                });
-              } else {
-                console.warn(`[labs/ask] set_answer_mode received invalid mode: ${String(modeVal)}`);
-                toolMessages.push({
-                  role: "tool",
-                  tool_call_id: tc.id,
-                  content: JSON.stringify({ ok: false, error: "mode must be one of: user_data, general, mixed" }),
-                });
-              }
+              answerModeCallCount += 1;
+              answerMode = modeVal;
+              toolMessages.push({
+                role: "tool",
+                tool_call_id: tc.id,
+                content: JSON.stringify({ ok: true, mode: answerMode }),
+              });
               continue;
             }
             const tool = labsAskToolMap.get(fnName);
