@@ -579,6 +579,7 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       await dbJournal.execute(sqlJ`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS online_toast_level text DEFAULT 'all'`);
       await dbJournal.execute(sqlJ`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS cheers_enabled boolean DEFAULT true`);
       await dbJournal.execute(sqlJ`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS tasting_invite_enabled boolean DEFAULT true`);
+      await dbJournal.execute(sqlJ`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS share_stats_for_benchmarks boolean DEFAULT false`);
       log("Ensured profiles has all schema columns", "startup");
 
       await dbJournal.execute(sqlJ`ALTER TABLE tastings ADD COLUMN IF NOT EXISTS cover_image_upload_url text`);

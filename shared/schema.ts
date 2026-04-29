@@ -363,6 +363,7 @@ export const profiles = pgTable("profiles", {
   onlineToastLevel: text("online_toast_level").default("all"),
   cheersEnabled: boolean("cheers_enabled").default(true),
   tastingInviteEnabled: boolean("tasting_invite_enabled").default(true),
+  shareStatsForBenchmarks: boolean("share_stats_for_benchmarks").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

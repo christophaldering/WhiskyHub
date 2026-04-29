@@ -6553,6 +6553,8 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
 
   app.put("/api/profiles/:participantId", async (req, res) => {
     try {
+      const authz = await requireOwnerOrAdmin(req, req.params.participantId);
+      if (!authz.authorized) return res.status(authz.status).json({ message: authz.message });
       const existing = await storage.getProfile(req.params.participantId);
       const data: any = {
         participantId: req.params.participantId,
@@ -6593,6 +6595,11 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         data.tastingInviteEnabled = !!req.body.tastingInviteEnabled;
       } else if (existing) {
         data.tastingInviteEnabled = existing.tastingInviteEnabled;
+      }
+      if ("shareStatsForBenchmarks" in req.body) {
+        data.shareStatsForBenchmarks = !!req.body.shareStatsForBenchmarks;
+      } else if (existing) {
+        data.shareStatsForBenchmarks = existing.shareStatsForBenchmarks;
       }
       const profile = await storage.upsertProfile(data);
       res.json(profile);
@@ -27828,6 +27835,8 @@ ${cleaned.slice(0, 60000)}`;
 
 Werkzeuge: Du hast Zugriff auf Statistik-Werkzeuge, die nutzerbezogene Daten genau berechnen (z. B. beste Whiskys, bestes Tasting, Anzahl pro Region, Gesamtdurchschnitt, letzte Bewertungen, Host-vs-Gast-Aufteilung). Wenn die Frage konkrete Zahlen, Bestenlisten oder Auswertungen zu den eigenen Daten des Users verlangt, rufe das passende Werkzeug auf, anstatt aus dem Nutzerkontext zu schaetzen.
 
+Vergleichs-Werkzeug: Wenn der User wissen will, wie seine Werte im Vergleich zur CaskSense-Community stehen (z. B. „liege ich ueber dem Schnitt", „wie hoch ist der Islay-Durchschnitt der anderen", „was bewerten andere bei Lagavulin"), rufe zusaetzlich get_benchmark_stats mit denselben Filtern auf wie das passende Eigen-Statistik-Werkzeug. Es liefert anonyme Aggregate ueber alle Nutzer, die Stat-Sharing aktiviert haben. Phrasiere die Vergleiche dann konkret, z. B. „Du liegst 4 Punkte ueber dem CaskSense-Schnitt" oder „Dein Islay-Schnitt (84) ist hoeher als der Community-Schnitt (79)". Wenn das Werkzeug sufficient: false liefert (zu wenige zustimmende Nutzer fuer den Filter), sag ehrlich, dass derzeit kein Vergleich moeglich ist, statt zu raten.
+
 Antwort-Quelle (Pflicht): Bevor du die finale Antwort schreibst, rufe genau einmal das Werkzeug set_answer_mode auf: user_data wenn die Antwort aus den Quellen, dem Nutzerkontext oder Werkzeug-Ergebnissen stammt; general wenn die Antwort aus deinem allgemeinen Whisky-Wissen stammt (nicht aus den Daten des Users); mixed wenn beides kombiniert wird.
 
 Allgemeinwissen-Fallback: Wenn die Frage allgemeines Whisky-Wissen verlangt (Geschichte, Destilliertechnik, Regionsmerkmale, Gesetze) und in den Quellen / Werkzeug-Ergebnissen nichts dazu steht, darfst du aus deinem allgemeinen Wissen antworten. Beginne dann mit einem kurzen Hinweis wie „Allgemeines Whisky-Wissen:" und setze set_answer_mode auf general. Wenn die Frage spezifisch zu eigenen Daten des Users gehoert (z. B. „mein bestes Tasting", „wie viele Islay habe ich") und die Werkzeuge / Quellen leer bleiben, sag ehrlich, dass dazu keine Daten vorliegen, statt zu raten.
@@ -27836,6 +27845,8 @@ Erfinde keine konkreten Bewertungen, Tasting-Namen oder Verkostungs-Ereignisse, 
       const sysEn = `You are "CaskSense", a helpful whisky assistant. You receive two context blocks: (1) "Available sources" are keyword-search hits for the specific question, (2) "User context" contains the user's most recent whiskies and tastings.
 
 Tools: You have access to statistics tools that compute user-specific data exactly (e.g. top whiskies, best tasting, counts by region, overall averages, recent ratings, host-vs-guest split). When the question demands concrete numbers, rankings or summaries about the user's own data, call the appropriate tool instead of estimating from the user context block.
+
+Comparison tool: When the user asks how their numbers compare to the wider CaskSense community (e.g. "am I above average", "what's the average Islay score for everyone else", "how do others rate Lagavulin"), additionally call get_benchmark_stats with the same filters as the matching personal-stats tool. It returns anonymous aggregates across all users who opted into stat sharing. Phrase the comparison concretely, e.g. "You're 4 points above the CaskSense average" or "Your Islay average (84) is higher than the community average (79)". If the tool returns sufficient: false (too few consenting users for that filter), say honestly that no benchmark is available right now rather than guessing.
 
 Answer source (mandatory): Before producing the final answer, call the tool set_answer_mode exactly once: user_data when the answer comes from the sources, user context or tool results; general when the answer comes from your general whisky knowledge (not from this user's data); mixed when both are combined.
 

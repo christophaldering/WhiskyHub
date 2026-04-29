@@ -62,6 +62,16 @@ const recentRatingsSchema = z.object({
 
 const tastingsRoleSchema = z.object({}).strict().optional();
 
+const benchmarkStatsSchema = z.object({
+  region: optionalString,
+  peat_level: peatLevelSchema,
+  distillery: optionalString,
+  min_score: scoreSchema,
+  max_score: scoreSchema,
+}).strict();
+
+const MIN_BENCHMARK_USERS = 3;
+
 function emptyArgs(value: unknown): Record<string, unknown> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return {};
   return value as Record<string, unknown>;
@@ -480,6 +490,143 @@ const getUserTastingsRoleBreakdown: LabsToolDefinition = {
   },
 };
 
+const getBenchmarkStats: LabsToolDefinition = {
+  name: "get_benchmark_stats",
+  description:
+    "Return aggregate, anonymous benchmark statistics across ALL CaskSense users who opted into stat sharing (profiles.share_stats_for_benchmarks = true). Useful to compare the user's own numbers against the community (e.g. 'how does my Islay average compare to others'). Accepts the same filter set as count_user_whiskies (region, peat_level, distillery, min_score, max_score) so the comparison is apples-to-apples. Returns null fields when fewer than 3 consenting users match the filter (k-anonymity floor). Does NOT return any user IDs, names or per-user data.",
+  parameters: {
+    type: "object",
+    properties: {
+      region: { type: "string", description: "Optional region filter (substring match)." },
+      peat_level: {
+        type: "string",
+        description: "Optional peat level filter.",
+        enum: ["none", "light", "medium", "heavy"],
+      },
+      distillery: { type: "string", description: "Optional distillery substring filter." },
+      min_score: { type: "number", description: "Minimum personal overall score (0-100) used by each contributing user." },
+      max_score: { type: "number", description: "Maximum personal overall score (0-100) used by each contributing user." },
+    },
+    additionalProperties: false,
+  },
+  handler: async (_participantId, rawArgs) => {
+    const args = benchmarkStatsSchema.parse(emptyArgs(rawArgs));
+    const params: unknown[] = [];
+    const conditions: string[] = [
+      `EXISTS (SELECT 1 FROM profiles p WHERE p.participant_id = r.participant_id AND p.share_stats_for_benchmarks = true)`,
+    ];
+    if (args.region) {
+      params.push(args.region);
+      conditions.push(`unaccent(coalesce(w.region, '')) ILIKE '%' || unaccent($${params.length}) || '%'`);
+    }
+    if (args.peat_level) {
+      params.push(args.peat_level);
+      conditions.push(`lower(coalesce(w.peat_level, '')) = lower($${params.length})`);
+    }
+    if (args.distillery) {
+      params.push(args.distillery);
+      conditions.push(`unaccent(coalesce(w.distillery, '')) ILIKE '%' || unaccent($${params.length}) || '%'`);
+    }
+    if (typeof args.min_score === "number") {
+      params.push(args.min_score);
+      conditions.push(`r.overall >= $${params.length}`);
+    }
+    if (typeof args.max_score === "number") {
+      params.push(args.max_score);
+      conditions.push(`r.overall <= $${params.length}`);
+    }
+    const whereClause = `WHERE ${conditions.join(" AND ")}`;
+
+    const aggSql = `
+      SELECT
+        COUNT(*)::int AS rating_count,
+        COUNT(DISTINCT r.participant_id)::int AS contributing_users,
+        COUNT(DISTINCT r.whisky_id)::int AS distinct_whiskies,
+        AVG(r.overall) AS avg_score,
+        MIN(r.overall) AS min_score,
+        MAX(r.overall) AS max_score
+      FROM ratings r
+      JOIN whiskies w ON w.id = r.whisky_id
+      ${whereClause}
+    `;
+    const aggResult = await pool.query(aggSql, params);
+    const row = aggResult.rows[0] as {
+      rating_count: number | null;
+      contributing_users: number | null;
+      distinct_whiskies: number | null;
+      avg_score: string | null;
+      min_score: string | null;
+      max_score: string | null;
+    } | undefined;
+
+    const contributingUsers = row?.contributing_users ?? 0;
+    const sufficient = contributingUsers >= MIN_BENCHMARK_USERS;
+
+    if (!sufficient) {
+      return {
+        data: {
+          sufficient: false,
+          contributing_users: contributingUsers,
+          min_required_users: MIN_BENCHMARK_USERS,
+          message:
+            "Not enough consenting CaskSense users matched these filters to build an anonymous benchmark. Suggest a broader filter set or note that no benchmark is available yet.",
+          applied_filters: {
+            region: args.region ?? null,
+            peat_level: args.peat_level ?? null,
+            distillery: args.distillery ?? null,
+            min_score: args.min_score ?? null,
+            max_score: args.max_score ?? null,
+          },
+        },
+        sources: [],
+      };
+    }
+
+    const topRegionsSql = `
+      SELECT coalesce(w.region, 'Unknown') AS region,
+             AVG(r.overall) AS avg_score,
+             COUNT(*)::int AS rating_count
+      FROM ratings r
+      JOIN whiskies w ON w.id = r.whisky_id
+      ${whereClause}
+      GROUP BY coalesce(w.region, 'Unknown')
+      HAVING COUNT(DISTINCT r.participant_id) >= ${MIN_BENCHMARK_USERS}
+      ORDER BY avg_score DESC NULLS LAST
+      LIMIT 5
+    `;
+    const topRegionsResult = await pool.query(topRegionsSql, params);
+    const topRegions = (topRegionsResult.rows as Array<{ region: string; avg_score: string | null; rating_count: number }>).map((r) => ({
+      region: r.region,
+      avg_score: fmtScore(Number(r.avg_score)),
+      rating_count: r.rating_count,
+    }));
+
+    return {
+      data: {
+        sufficient: true,
+        contributing_users: contributingUsers,
+        min_required_users: MIN_BENCHMARK_USERS,
+        rating_count: row?.rating_count ?? 0,
+        distinct_whiskies: row?.distinct_whiskies ?? 0,
+        avg_score: fmtScore(Number(row?.avg_score)),
+        min_score: fmtScore(Number(row?.min_score)),
+        max_score: fmtScore(Number(row?.max_score)),
+        top_regions_by_avg: topRegions,
+        applied_filters: {
+          region: args.region ?? null,
+          peat_level: args.peat_level ?? null,
+          distillery: args.distillery ?? null,
+          min_score: args.min_score ?? null,
+          max_score: args.max_score ?? null,
+        },
+        notes:
+          "Aggregate across all consenting CaskSense users. No individual user data is returned. Compare against count_user_whiskies / get_user_top_whiskies for the same filter set to phrase the delta.",
+      },
+      sources: [],
+    };
+  },
+};
+
 export const labsAskTools: LabsToolDefinition[] = [
   getUserTopWhiskies,
   getUserTopTastings,
@@ -487,6 +634,7 @@ export const labsAskTools: LabsToolDefinition[] = [
   countUserWhiskies,
   getUserRecentRatings,
   getUserTastingsRoleBreakdown,
+  getBenchmarkStats,
 ];
 
 export const labsAskToolMap: Map<string, LabsToolDefinition> = new Map(

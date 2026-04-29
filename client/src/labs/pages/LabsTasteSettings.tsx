@@ -15,7 +15,7 @@ import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import ScaleBadge from "@/labs/components/ScaleBadge";
 import {
   ChevronLeft, User, Settings, Shield, Sparkles, Trash2, LogOut,
-  Loader2, Eye, EyeOff, Camera, ExternalLink, Bell,
+  Loader2, Eye, EyeOff, Camera, ExternalLink, Bell, BarChart3,
 } from "lucide-react";
 
 const REGIONS = ["Speyside", "Highlands", "Islay", "Lowlands", "Campbeltown", "Islands", "Ireland", "Japan", "USA", "Taiwan", "Other"];
@@ -52,7 +52,9 @@ export default function LabsTasteSettings() {
   const [onlineToastLevel, setOnlineToastLevel] = useState("all");
   const [cheersEnabled, setCheersEnabled] = useState(true);
   const [tastingInviteEnabled, setTastingInviteEnabled] = useState(true);
+  const [shareStatsForBenchmarks, setShareStatsForBenchmarks] = useState(false);
   const [notifSaving, setNotifSaving] = useState(false);
+  const [privacySaving, setPrivacySaving] = useState(false);
   const [preferredRatingScale, setPreferredRatingScale] = useState<number | null>(null);
   const [preferredRatingMode, setPreferredRatingMode] = useState<"guided" | "compact" | "quick" | null>(null);
   const activeScale = useRatingScale();
@@ -87,6 +89,7 @@ export default function LabsTasteSettings() {
       setOnlineToastLevel(profile.onlineToastLevel || "all");
       setCheersEnabled(profile.cheersEnabled !== false);
       setTastingInviteEnabled(profile.tastingInviteEnabled !== false);
+      setShareStatsForBenchmarks(profile.shareStatsForBenchmarks === true);
     }
   }, [profile]);
 
@@ -112,6 +115,19 @@ export default function LabsTasteSettings() {
       toast({ title: "Failed to save notification preference", variant: "destructive" });
     } finally {
       setNotifSaving(false);
+    }
+  }, [currentParticipant, pid, queryClient, toast]);
+
+  const savePrivacyPref = useCallback(async (prefs: { shareStatsForBenchmarks?: boolean }) => {
+    if (!currentParticipant) return;
+    setPrivacySaving(true);
+    try {
+      await profileApi.update(currentParticipant.id, prefs);
+      queryClient.invalidateQueries({ queryKey: ["profile", pid] });
+    } catch {
+      toast({ title: "Failed to save privacy preference", variant: "destructive" });
+    } finally {
+      setPrivacySaving(false);
     }
   }, [currentParticipant, pid, queryClient, toast]);
 
@@ -418,6 +434,31 @@ export default function LabsTasteSettings() {
               </div>
             </div>
           )}
+
+          <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 14 }}>
+            <div className="flex items-center gap-2 mb-3">
+              <BarChart3 className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
+              <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>Privacy</label>
+            </div>
+            <div className="flex flex-col gap-3">
+              {privacySaving && <div className="text-xs" style={{ color: "var(--labs-accent)" }}>Saving...</div>}
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={shareStatsForBenchmarks}
+                  onChange={(e) => { const v = e.target.checked; setShareStatsForBenchmarks(v); savePrivacyPref({ shareStatsForBenchmarks: v }); }}
+                  style={{ marginTop: 2, accentColor: "var(--labs-accent)" }}
+                  data-testid="checkbox-labs-share-stats-benchmarks"
+                />
+                <div>
+                  <div className="text-sm" style={{ color: "var(--labs-text)" }}>Share my stats for community benchmarks</div>
+                  <div className="text-xs mt-0.5" style={{ color: "var(--labs-text-muted)" }}>
+                    Lets the CaskSense assistant include your anonymous ratings in community averages (e.g. "the Islay average across CaskSense"). Only aggregated numbers are shared — never your name, notes or individual ratings, and only when at least 3 users match the filter.
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 
