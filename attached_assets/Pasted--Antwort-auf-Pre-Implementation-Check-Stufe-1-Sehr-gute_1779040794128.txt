@@ -1,0 +1,108 @@
+# Antwort auf Pre-Implementation-Check Stufe 1
+
+Sehr guter Fund, dass `whiskybase_collection.whiskyId` nicht existiert.
+Aber: die Brücke gibt es trotzdem — du hast `whiskybaseId` übersehen.
+
+## Befund nach Rückprüfung
+
+Beide Tabellen führen das Feld `whiskybaseId` (Whiskybase-Katalognummer):
+- `whiskies.whiskybaseId` (text, nullable) — shared/schema.ts L201
+- `whiskybase_collection.whiskybaseId` (text, notNull) — shared/schema.ts L639
+
+Die kanonische Brücke ist im Code bereits etabliert:
+- `server/storage.ts L162`: `buildCommunityWhiskyKey()` bevorzugt
+  `wb:${whiskybaseId}` als Primary Key, fällt auf name+distillery zurück
+- `server/storage.ts L439, L1736`: `findWhiskiesByWhiskybaseIdForHost()`
+  ist exakt der Lookup-Pattern, den wir hier auch brauchen
+
+Damit ist Variante (α) Name-Match unterlegen — sie ist nur der Fallback,
+nicht die Primary Strategy.
+
+## Entscheidung: Variante (δ) — whiskybaseId-Primary mit Name-Fallback
+
+Implementiere `inCollection` so:
+
+```typescript
+const collectionItems = await storage.getWhiskybaseCollection(participantId);
+
+// Primary: match by whiskybaseId (robust, no false positives)
+let matchedItem: WhiskybaseCollectionItem | undefined;
+if (whisky.whiskybaseId) {
+  matchedItem = collectionItems.find(it => it.whiskybaseId === whisky.whiskybaseId);
+}
+
+// Fallback: name + distillery match (only if no whiskybaseId on whisky)
+if (!matchedItem && !whisky.whiskybaseId) {
+  const normName = (whisky.name || "").toLowerCase().trim();
+  const normDist = (whisky.distillery || "").toLowerCase().trim();
+  matchedItem = collectionItems.find(it =>
+    (it.name || "").toLowerCase().trim() === normName &&
+    (it.distillery || "").toLowerCase().trim() === normDist
+  );
+}
+
+const inCollection = !!matchedItem;
+const collectionSince = matchedItem?.addedAt ?? matchedItem?.createdAt?.toISOString() ?? null;
+```
+
+Wichtig: Fallback NUR wenn `whisky.whiskybaseId` null/leer ist.
+Wenn whisky.whiskybaseId existiert UND kein Match: ehrlich `false`,
+NICHT auf Name-Fallback ausweichen (würde false-positive geben).
+
+## collectionSince — Datums-Handling
+
+`addedAt` ist text (z.B. ISO-String aus Whiskybase-Import), `createdAt`
+ist timestamp. Liefere `addedAt` bevorzugt als String, sonst
+`createdAt.toISOString()` als String. Frontend bekommt einheitlich String
+(oder null). Kein Datums-Parsing im Backend.
+
+## Konsequenzen für die Spec
+
+- Collection-Check ist Teil von Stufe 1 (nicht deferred)
+- Keine neue Storage-Methode, keine Schema-Änderung
+- Performance: O(n) über User-Collection (typisch < 200 Items) ist
+  vertretbar in Stufe 1; bei Bedarf später durch direkten DB-Query
+  ersetzen
+
+## Über alles andere im Pre-Implementation-Plan
+
+Wishlist via `getWishlistEntries(pid).find(e => e.whiskyId === whiskyId)`:
+- KURZ VERIFIZIEREN, ob Wishlist tatsächlich ein `whiskyId`-Feld hat
+  oder ob es dort dieselbe Brücken-Problematik gibt
+  (`grep -A3 "wishlist.*pgTable\|wishlistEntries.*pgTable" shared/schema.ts`).
+- Falls auch dort `whiskybaseId` statt `whiskyId`: gleiches Pattern wie
+  bei Collection anwenden (whiskybaseId-Primary, Name-Fallback).
+- Falls Wishlist normal über `whiskyId` läuft: wie ursprünglich.
+- BITTE MELDEN, was du findest, BEVOR du Wishlist implementierst.
+
+MyRatings via `getRatingsForWhisky(whiskyId).filter(r => r.participantId === pid)`:
+- Hier vermutlich unproblematisch, weil Ratings im Tasting-Kontext
+  zur tasting_whiskies-Zwischentabelle gehören. Kurz verifizieren.
+
+## checkLimit.ts: noch nicht angelegt
+
+Der Auto-Checkpoint-Commit b1c7ce79 enthielt NUR das Hard-Prompt-Attachment,
+keinen Code (irreführende Commit-Message). Bitte:
+1. `server/lib/checkLimit.ts` anlegen wie ursprünglich spezifiziert
+2. Einbau in /api/whisky/identify als Anonymous-Pre-Check (VOR dem
+   bestehenden identifyRateLimit-Aufruf)
+
+## Stufe-1-Implementierungsfreigabe (vollständig)
+
+Mit den Klärungen oben hast du jetzt grünes Licht für:
+
+1. Anlage `server/lib/checkLimit.ts`
+2. Anonymous-Pre-Check in /api/whisky/identify
+3. Neuer Endpoint `/api/check/lookup/:whiskyId` mit:
+   - storage.getWhisky(whiskyId) — 404 wenn null
+   - Community via getRatingsForWhisky(whiskyId), K-Anonymity-Floor 3
+   - Personal (nur logged-in):
+     - inCollection: whiskybaseId-Primary mit Name-Fallback (siehe oben)
+     - inWishlist: erst Wishlist-Schema verifizieren, dann implementieren
+     - myRatings: filter über getRatingsForWhisky
+
+Verifikation wie ursprünglich (curl-Tests). Kein Commit, kein Push.
+
+Bitte einmal kurz pausieren NACH Wishlist-Schema-Check und VOR Wishlist-
+Implementierung — kann sein, dass ich noch eine Entscheidung treffen muss
+analog zum Collection-Fund.
