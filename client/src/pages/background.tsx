@@ -109,7 +109,7 @@ export default function Background() {
                 <p className="text-xs text-amber-600 font-medium">{t("background.dimensions.tagline")}</p>
               </div>
             </div>
-            <Link href="/labs/discover/method" className="block bg-card border border-amber-500/30 rounded-lg p-4 hover:border-amber-500/60 transition-colors" data-testid="link-dimensions-method">
+            <Link href="/labs/explore?tab=bibliothek&section=tasting-wissen&sub=profilberechnung" className="block bg-card border border-amber-500/30 rounded-lg p-4 hover:border-amber-500/60 transition-colors" data-testid="link-dimensions-method">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center flex-shrink-0">
                   <SlidersHorizontal className="w-4 h-4" />
