@@ -1,0 +1,105 @@
+# Mini-Fix: DiscoverActionBar aus LabsBenchmark entfernen
+
+## Zweck
+Die DiscoverActionBar in LabsBenchmark zeigt "Whiskies/Bibliothek"-Buttons,
+die in den Entdecken-Tab springen. Benchmark lebt aber in "Meine Welt" —
+das ist eine konzeptionell falsche Brücke zwischen zwei separaten Bereichen.
+
+Variante A: Komponente einfach entfernen. Benchmark bleibt strukturell in
+Meine Welt, ohne Tab-übergreifende Navigation aufzubringen.
+
+## ABSOLUTE SAFETY RULES
+- ❌ KEINE Änderung an DiscoverActionBar.tsx selbst (wird in Entdecken weiter genutzt)
+- ❌ KEINE Änderung am useIsEmbeddedInExplore-Hook
+- ❌ KEIN Verschieben von Benchmark in Entdecken (wäre Variante C, separate Diskussion)
+- ❌ KEINE Änderungen außerhalb LabsBenchmark.tsx
+- ❌ KEIN Commit, KEIN Push (Replit Auto-Checkpoint macht das)
+
+## Schritt 0 — Diagnose
+
+```bash
+git log -1 --format="%H %s"
+grep -n "DiscoverActionBar\|HubHeader" client/src/labs/pages/LabsBenchmark.tsx
+```
+
+Erwartet: Import (vermutlich Zeile 3) + 1-2 Render-Stellen. Zusätzlich
+sichtbar machen, ob HubHeader separat importiert ist oder durch
+DiscoverActionBar mitgeschleppt wird (showHubHeader-Prop).
+
+Berichte den Output und WARTE auf "Go".
+
+## Schritt 1 — NACH meinem "Go": Änderungen
+
+### 1.1 Import entfernen
+```tsx
+// ALT
+import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
+
+// NEU: Zeile komplett entfernen
+```
+
+### 1.2 Render-Stelle(n) entfernen
+Alle Vorkommen von `<DiscoverActionBar ... />` in der Datei entfernen.
+
+### 1.3 Falls dadurch der Seiten-Header fehlt
+DiscoverActionBar rendert intern einen HubHeader (sichtbar im Code:
+`{showHubHeader && <HubHeader kind="discover" />}`). Wenn dadurch
+am Seitenanfang ein Header fehlt:
+- HubHeader direkt importieren: `import HubHeader from "@/labs/components/HubHeader";`
+- An gleicher Stelle einfügen: `<HubHeader kind="taste" />` ODER passende Variante,
+  je nach was in anderen Meine-Welt-Subseiten verwendet wird
+
+Falls Benchmark schon einen eigenen Header hat (z.B. h1 mit "Benchmark"):
+keine Header-Ergänzung nötig, einfach DiscoverActionBar ersatzlos streichen.
+
+## Schritt 2 — Verifikation
+
+```bash
+# DiscoverActionBar ist raus
+grep -n "DiscoverActionBar" client/src/labs/pages/LabsBenchmark.tsx
+# Erwartet: leer
+
+# TypeScript-Check
+npx tsc --noEmit 2>&1 | head -15
+# Erwartet: keine neuen Fehler
+
+# DiscoverActionBar.tsx existiert weiterhin (für Entdecken)
+ls -la client/src/labs/components/DiscoverActionBar.tsx
+# Erwartet: Datei da, unverändert
+
+# Benchmark wird woanders genutzt? Andere Verwendungen prüfen
+grep -rn "LabsBenchmark\|labs-link-analytics-hub-benchmark" client/src/labs/ --include="*.tsx" | grep -v node_modules
+# Berichten, damit sicher ist, dass die Komponente korrekt eingebunden bleibt
+```
+
+## Manuelle UI-Prüfung (erwartet von Christoph)
+- Meine Welt → Benchmark-Kachel aufklappen
+- KEINE "Whiskies/Bibliothek"-Buttons mehr sichtbar
+- Stattdessen direkt der Benchmark-Content (Import, Tastingnotizen, Auswertungen, Artikel, Sonstiges)
+- Falls Header fehlt: melden, ich entscheide
+- Keine sonstigen visuellen Regressionen in Meine Welt
+
+## Bericht-Format
+
+```
+Schritt 0:
+  HEAD: ...
+  grep DiscoverActionBar in LabsBenchmark.tsx: ...
+  HubHeader-Setup: ...
+
+[Go warten]
+
+Schritt 1: 
+  1.1 Import entfernt: Done / Failed
+  1.2 Render-Stellen entfernt: Done / Failed (Anzahl: X)
+  1.3 Header-Anpassung: Nicht nötig / Hinzugefügt mit ... 
+
+Schritt 2 Verifikation:
+  DiscoverActionBar weg: ...
+  TypeScript: ...
+  Datei existiert weiter: ...
+  Andere Verwendungen: ...
+
+Status: <Bewertung>
+Manuelle UI-Prüfung: erwartet von Christoph
+```
