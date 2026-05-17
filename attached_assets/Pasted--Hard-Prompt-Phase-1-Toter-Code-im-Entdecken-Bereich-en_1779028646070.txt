@@ -1,0 +1,115 @@
+# Hard Prompt: Phase 1 — Toter Code im Entdecken-Bereich entfernen
+
+## Zweck
+Zwei tote Code-Artefakte entfernen:
+1. Den ungenutzten lazy-Import von `LabsBibliothek` in `client/src/App.tsx`
+2. Die Datei `client/src/labs/pages/LabsDiscover.tsx` (orphan, nirgends gerendert)
+
+## ABSOLUTE SAFETY RULES
+- ❌ KEINE Änderungen außerhalb dieser 2 Targets
+- ❌ `server/`, `shared/schema.ts`, `.env`, `package.json` NICHT anfassen
+- ❌ Kein `git commit`, kein `git push` — nur Datei-Edits / Datei-Löschung
+- ❌ KEIN ungefragtes Aufräumen anderer „verdächtiger“ Stellen
+- ✅ Nur die 2 unten spezifizierten Edits durchführen
+
+## Schritt 0 — Pflicht-Diagnose vor JEDER Änderung
+
+Führe ALLE diese Befehle aus und berichte JEDEN Output exakt:
+
+### 0.1 — Aktueller Stand
+```bash
+git log -1 --format="%H %s"
+git tag -l "pre-entdecken*"
+git status --short
+```
+
+### 0.2 — Verifikation Bug 1: Wird `LabsBibliothek` wirklich nirgends als Route benutzt?
+```bash
+grep -rn "LabsBibliothek" client/src/ --include="*.tsx" --include="*.ts"
+```
+Erwartung: Genau 1 Treffer in `client/src/App.tsx` (der lazy-Import), KEINE `<Route ... component={LabsBibliothek}>` oder ähnliche Verwendung.
+Wenn mehr Treffer als der Import auftauchen: **STOP, melden, nichts ändern**.
+
+### 0.3 — Verifikation Bug 2: Wird `LabsDiscover` wirklich nirgends importiert?
+```bash
+grep -rn "import.*LabsDiscover\b" client/src/ --include="*.tsx" --include="*.ts"
+grep -rn "LabsDiscover\b" client/src/ --include="*.tsx" --include="*.ts" | grep -v "LabsDiscoverActivity\|LabsDistilleries\|LabsDiscover\.tsx:"
+```
+Erwartung: Erster Befehl liefert KEINE Treffer (kein Import irgendwo). Zweiter Befehl listet nur Eigenreferenzen innerhalb der LabsDiscover.tsx selbst.
+Wenn ein Import außerhalb der Datei selbst gefunden wird: **STOP, melden, nichts ändern**.
+
+### 0.4 — Plan vorlegen
+Berichte mir den Output aller obigen Befehle und WARTE auf mein "Go", bevor du irgendwas änderst.
+
+## Änderung 1: lazy-Import in App.tsx entfernen
+
+Datei: `client/src/App.tsx`, Zeile 111
+
+ALT:
+```tsx
+const LabsBibliothek = lazy(() => import("@/labs/pages/LabsBibliothek"));
+```
+
+NEU:
+(Zeile komplett entfernen — also leere Zeile zurücklassen oder die Lücke schließen, je nach umgebendem Stil)
+
+## Änderung 2: Datei LabsDiscover.tsx löschen
+
+Befehl:
+```bash
+rm client/src/labs/pages/LabsDiscover.tsx
+```
+
+## Verifikation nach Änderungen (Pflicht)
+
+```bash
+# 1. lazy-Import muss weg sein
+grep -n "LabsBibliothek" client/src/App.tsx
+# Erwartet: leer (keine Treffer)
+
+# 2. LabsDiscover.tsx existiert nicht mehr
+ls -la client/src/labs/pages/LabsDiscover.tsx 2>&1
+# Erwartet: "No such file or directory" oder Fehler
+
+# 3. TypeScript-Check: gibt es jetzt Build-Fehler?
+npx tsc --noEmit 2>&1 | head -30
+# Erwartet: kein Fehler bezogen auf LabsBibliothek oder LabsDiscover.
+# Falls Fehler erscheinen, die diese Identifier nennen: melden und STOP.
+
+# 4. Sicherheitsnetz: ist die Datei `LabsBibliothek.tsx` noch da (soll bleiben, nur Import weg)?
+ls -la client/src/labs/pages/LabsBibliothek.tsx
+# Erwartet: Datei existiert noch (die löschen wir NICHT in dieser Phase, weil sie als Referenz später noch verglichen werden könnte).
+```
+
+## Bericht-Format
+
+```
+Schritt 0 Diagnose:
+  HEAD: <output>
+  Tag: <output>
+  Working Tree: <output>
+  0.2 LabsBibliothek-Treffer:
+    <vollständiger grep-Output>
+  0.3 LabsDiscover-Imports:
+    Import-Suche: <output>
+    Eigenreferenzen: <output>
+  
+[Hier warten auf "Go" — NICHT ohne Bestätigung weitermachen]
+
+Änderung 1 (lazy-Import entfernt): <Done / Failed + Grund>
+Änderung 2 (LabsDiscover.tsx gelöscht): <Done / Failed + Grund>
+
+Verifikation:
+  Grep 1 (LabsBibliothek in App.tsx): <output>
+  Grep 2 (LabsDiscover.tsx Existenz): <output>
+  TypeScript-Check: <output, Bewertung>
+  LabsBibliothek.tsx Datei: <output>
+
+Status: <"Beide Änderungen erfolgreich, kein TS-Fehler" oder konkrete Abweichung>
+```
+
+## Was du NICHT machen sollst
+- KEINEN Commit, KEINEN Push
+- Keine weiteren „toten“ Imports suchen oder entfernen
+- `LabsBibliothek.tsx` NICHT löschen (Datei bleibt vorerst, nur Import weg)
+- Keine Redirects in App.tsx anfassen (das ist Phase 2)
