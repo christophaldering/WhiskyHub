@@ -1,0 +1,105 @@
+# Antwort auf Wishlist-Schema-Check
+
+Vielen Dank — beides sind echte Produktentscheidungen, kein Technik-Detail.
+
+## Entscheidung 1: Wishlist-Match-Strategie → Variante (ε), mit kleiner Korrektur
+
+Variante (ε) ist richtig, weil die Wishlist semantisch ein Notizzettel ist.
+"Lagavulin 16" auf der Liste = Absicht, nicht Sub-Cask-Genauigkeit. False-
+Positives sind hier feature-passend, nicht Bug.
+
+ABER: Deine Code-Skizze hat eine zu großzügige Stelle:
+
+```typescript
+((e.distillery || "").toLowerCase().trim() === nDist || !e.distillery)
+```
+
+Das matcht einen Wishlist-Eintrag OHNE Distillery auf JEDEN Whisky. Wenn
+jemand nur "Cask Strength Bourbon" notiert hat, sollte das nicht für einen
+Lagavulin matchen.
+
+Korrigierte Match-Logik:
+
+```typescript
+const wl = await storage.getWishlistEntries(participantId);
+const nName = (whisky.name || "").toLowerCase().trim();
+const nDist = (whisky.distillery || "").toLowerCase().trim();
+
+const matchedWishlist = wl.find(e => {
+  const eName = (e.name || "").toLowerCase().trim();
+  const eDist = (e.distillery || "").toLowerCase().trim();
+  
+  // Name MUSS matchen
+  if (eName !== nName) return false;
+  
+  // Distillery: wenn beide gesetzt, müssen sie matchen
+  // Wenn Wishlist-Eintrag KEINE Distillery hat, reicht Name-Match
+  // (User hat es absichtlich offen gelassen)
+  if (eDist && nDist) return eDist === nDist;
+  
+  // Mindestens eine Seite hat keine Distillery → Name-Match reicht
+  return true;
+});
+
+const inWishlist = !!matchedWishlist;
+```
+
+## Entscheidung 2: wishlistPriority mitliefern → JA
+
+Praktisch kostenlos im selben Find-Call, hoher UI-Wert. Im Glance-Use-Case
+(User steht vor Flasche) ist Priorität die entscheidende Handlungs-
+information: "Hohe Priorität, kaufen!" vs "Niedrige Priorität, war eh nur
+Pflichtnotiz".
+
+Im Personal-Layer ergänzen:
+
+```typescript
+wishlistPriority: matchedWishlist?.priority ?? null  // "low" | "medium" | "high" | null
+```
+
+`null` wenn nicht auf Wishlist. Default-Schema-Wert "medium" sorgt dafür,
+dass bei Match fast immer ein Wert da ist.
+
+## Zusammenfassung Personal-Layer-Output (Stufe 1, alle drei Sub-Bereiche)
+
+```typescript
+personal: {
+  // Collection (Variante δ, whiskybaseId-Primary + Name-Fallback)
+  inCollection: boolean,
+  collectionSince: string | null,  // ISO-Date-String oder null
+  
+  // Wishlist (Variante ε, Name+Distillery-Match, korrigierte Logik)
+  inWishlist: boolean,
+  wishlistPriority: "low" | "medium" | "high" | null,
+  
+  // MyRatings (direct FK, getRatingsForWhisky-Filter)
+  myRatingCount: number,
+  myAvgOverall: number | null,
+  lastRatedAt: string | null,  // ISO-Date-String oder null
+}
+```
+
+Bei `auth.authenticated === false`: `personal: null` (komplett).
+
+## Implementierungs-Go — vollständig
+
+Du hast jetzt grünes Licht für die komplette Stufe 1:
+
+1. `server/lib/checkLimit.ts` anlegen
+2. Anonymous-Pre-Check in /api/whisky/identify (vor dem bestehenden Limiter)
+3. Neuer Endpoint `/api/check/lookup/:whiskyId`:
+   - storage.getWhisky(whiskyId) — 404 wenn null
+   - Community via getRatingsForWhisky(whiskyId), K-Anonymity-Floor 3
+   - Personal-Layer wie oben spezifiziert (Collection-δ, Wishlist-ε, Ratings)
+   - Bei !auth.authenticated: personal = null
+
+Verifikation wie ursprünglich gefordert (alle curl-Tests inkl. Rate-Limit-Sequenz).
+
+Kein Commit, kein Push. Wenn alle Tests durch sind, melde dich mit dem
+vollständigen Verifikations-Output und ich gebe dann separat das Go zum
+Commit.
+
+## Zum replit.md-Hinweis
+
+Berechtigter Punkt, aber genau richtig — kein Druck. Wir machen das, wenn
+wir einen ruhigen Moment haben. Stufe 1 hat Vorrang.

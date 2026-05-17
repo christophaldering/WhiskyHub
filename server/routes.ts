@@ -5201,6 +5201,18 @@ Respond with JSON exactly in this shape (one entry per item, in the same order):
   app.post("/api/whisky/identify", scanUpload.single("photo"), async (req: any, res: Response) => {
     const startMs = Date.now();
     try {
+      const anonymousParticipantId = req.headers["x-participant-id"] as string | undefined;
+      if (!anonymousParticipantId) {
+        const { checkIdentifyLimit } = await import("./lib/checkLimit.js");
+        const anonymousIp = (req.headers["x-forwarded-for"] as string)?.split(",")[0].trim() || req.ip || req.socket.remoteAddress || "unknown";
+        const anonymousLimit = checkIdentifyLimit(anonymousIp);
+        if (!anonymousLimit.allowed) {
+          return res.status(429).json({
+            message: "Too many anonymous lookups. Please log in or try again later.",
+            retryAfterSec: anonymousLimit.retryAfterSec,
+          });
+        }
+      }
       const rateLimitKey = (req.headers["x-participant-id"] as string) || (req.ip || req.headers["x-forwarded-for"] || "unknown") as string;
       const rateCheck = checkIdentifyRateLimit(rateLimitKey);
       if (!rateCheck.allowed) {
@@ -23650,6 +23662,123 @@ Rules:
     } catch (e: any) {
       console.error("Labs explore whisky detail error:", e);
       res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/check/lookup/:whiskyId", async (req: Request, res: Response) => {
+    try {
+      const whiskyId = req.params.whiskyId;
+      if (!whiskyId) return res.status(400).json({ message: "whiskyId required" });
+
+      const whisky = await storage.getWhisky(whiskyId);
+      if (!whisky) return res.status(404).json({ message: "Whisky not found" });
+
+      const allRatings = await storage.getRatingsForWhisky(whiskyId);
+      const COMMUNITY_MIN = 3;
+      let community: {
+        ratingCount: number;
+        avgOverall: number | null;
+        avgNose: number | null;
+        avgTaste: number | null;
+        avgFinish: number | null;
+      } | null = null;
+      if (allRatings.length >= COMMUNITY_MIN) {
+        const avg = (vals: Array<number | null | undefined>): number | null => {
+          const nums = vals.filter((v): v is number => typeof v === "number" && !Number.isNaN(v));
+          if (nums.length === 0) return null;
+          return Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 10) / 10;
+        };
+        community = {
+          ratingCount: allRatings.length,
+          avgOverall: avg(allRatings.map(r => r.normalizedScore ?? r.overall)),
+          avgNose: avg(allRatings.map(r => r.normalizedNose ?? r.nose)),
+          avgTaste: avg(allRatings.map(r => r.normalizedTaste ?? r.taste)),
+          avgFinish: avg(allRatings.map(r => r.normalizedFinish ?? r.finish)),
+        };
+      }
+
+      let personal: {
+        inCollection: boolean;
+        collectionSince: string | null;
+        inWishlist: boolean;
+        wishlistPriority: string | null;
+        myRatingCount: number;
+        myAvgOverall: number | null;
+        lastRatedAt: string | null;
+      } | null = null;
+
+      const auth = await requireAuth(req);
+      if (auth.authenticated) {
+        const pid = auth.participant.id;
+
+        const collectionItems = await storage.getWhiskybaseCollection(pid);
+        let matchedCollection: typeof collectionItems[number] | undefined;
+        if (whisky.whiskybaseId) {
+          matchedCollection = collectionItems.find(it => it.whiskybaseId === whisky.whiskybaseId);
+        }
+        if (!matchedCollection && !whisky.whiskybaseId) {
+          const nName = (whisky.name || "").toLowerCase().trim();
+          const nDist = (whisky.distillery || "").toLowerCase().trim();
+          matchedCollection = collectionItems.find(it =>
+            (it.name || "").toLowerCase().trim() === nName &&
+            (it.distillery || "").toLowerCase().trim() === nDist
+          );
+        }
+        const collectionSince = matchedCollection?.addedAt
+          ?? (matchedCollection?.createdAt ? matchedCollection.createdAt.toISOString() : null);
+
+        const wishlist = await storage.getWishlistEntries(pid);
+        const nName = (whisky.name || "").toLowerCase().trim();
+        const nDist = (whisky.distillery || "").toLowerCase().trim();
+        const matchedWishlist = wishlist.find(e => {
+          const eName = (e.name || "").toLowerCase().trim();
+          const eDist = (e.distillery || "").toLowerCase().trim();
+          if (eName !== nName) return false;
+          if (eDist && nDist) return eDist === nDist;
+          return true;
+        });
+
+        const myRatings = allRatings.filter(r => r.participantId === pid);
+        const myOveralls = myRatings
+          .map(r => r.normalizedScore ?? r.overall)
+          .filter((v): v is number => typeof v === "number" && !Number.isNaN(v));
+        const myAvgOverall = myOveralls.length > 0
+          ? Math.round((myOveralls.reduce((a, b) => a + b, 0) / myOveralls.length) * 10) / 10
+          : null;
+        const sortedDates = myRatings
+          .map(r => r.updatedAt ?? r.createdAt)
+          .filter((d): d is Date => d instanceof Date)
+          .sort((a, b) => b.getTime() - a.getTime());
+        const lastRatedAt = sortedDates.length > 0 ? sortedDates[0].toISOString() : null;
+
+        personal = {
+          inCollection: !!matchedCollection,
+          collectionSince,
+          inWishlist: !!matchedWishlist,
+          wishlistPriority: matchedWishlist?.priority ?? null,
+          myRatingCount: myRatings.length,
+          myAvgOverall,
+          lastRatedAt,
+        };
+      }
+
+      return res.json({
+        whisky: {
+          id: whisky.id,
+          name: whisky.name,
+          distillery: whisky.distillery,
+          region: whisky.region,
+          abv: whisky.abv,
+          age: whisky.age,
+          imageUrl: whisky.imageUrl,
+          whiskybaseId: whisky.whiskybaseId,
+        },
+        community,
+        personal,
+      });
+    } catch (err: any) {
+      console.error("[CHECK_LOOKUP]", err);
+      return res.status(500).json({ message: "Lookup failed" });
     }
   });
 
