@@ -1,0 +1,75 @@
+Go mit folgenden 6 Korrekturen:
+
+(a) CheckLookupResponse.community an Server-Realität angleichen:
+    {
+      ratingCount: number;
+      avgOverall: number | null;
+      avgNose: number | null;
+      avgTaste: number | null;
+      avgFinish: number | null;
+    } | null
+    
+    In CheckResultCard: Community-Card zeigt Mini-Breakdown Nase/Geschmack/Abgang
+    als Subtitle unter dem Overall-Wert. Beispiel:
+      Title: "Community"
+      Value: "Ø 82.3 · 14 Bewertungen"
+      Subtitle: "Nase 83 · Geschmack 84 · Abgang 80"
+    
+    distribution[] und tastingCount aus dem Type entfernen (gibt's nicht auf Server).
+
+(b) Rate-Limit-Feld defensiv lesen:
+    const retryAfterSec = data.retryAfterSec ?? data.retryAfter ?? 60;
+
+(c) RateLimitError-Klasse einführen, kein "as any":
+    export class RateLimitError extends Error {
+      readonly code = "rate_limited" as const;
+      constructor(public readonly retryAfterSec: number) {
+        super("rate_limited");
+        this.name = "RateLimitError";
+      }
+    }
+    
+    In identifyByPhoto(): throw new RateLimitError(retryAfterSec)
+    In CheckSheet handleFile(): if (err instanceof RateLimitError) { ... }
+
+(d) Fonts wie im Plan beibehalten:
+    - Playfair Display für Sheet-Titel und Whisky-Name in Result-Card
+    - Cormorant Garamond für Pickup-Hint und Ambiguous-Hint
+    - DM Sans für UI-Buttons und kleine Labels
+    
+    Quelle der Wahrheit: client/src/labs/components/rating/theme.ts:9
+    (FONT-Konstante). Plan ist konsistent damit. NICHT auf EB Garamond/Inter
+    umstellen — das ist veraltete Doku.
+    
+    Optional, falls möglich: FONT-Konstante importieren statt die Strings
+    inline zu duplizieren:
+      import { FONT } from "@/labs/components/rating/theme";
+      ... fontFamily: FONT.display ...
+    Wenn das den Diff klein hält: gerne. Wenn es Komplikationen gibt
+    (z.B. Import-Path-Probleme): inline-Strings sind akzeptabel.
+
+(e) getParticipantId() aus @/lib/api nutzen statt eigenes localStorage:
+    import { getParticipantId, pidHeaders } from "@/lib/api";
+    
+    Den lokalen getPid()-Helper in checkApi.ts entfernen.
+
+(f) pidHeaders() direkt nutzen:
+    const res = await fetch("/api/whisky/identify", {
+      method: "POST",
+      body: form,
+      headers: pidHeaders(),
+    });
+    
+    Analog für /api/check/lookup.
+
+(g) Wenn dir Teile des Original-Hard-Prompts fehlen (insb. CheckResultCard.tsx),
+    melde welche und ich schicke sie separat nach. Sonst: Originalplan mit
+    obigen 6 Korrekturen umsetzen.
+
+Reihenfolge der Umsetzung wie im Plan:
+1. checkApi.ts (mit RateLimitError-Klasse, korrigierter Community-Shape, getParticipantId/pidHeaders)
+2. CheckSheet.tsx (mit RateLimitError-Check, FONT-Import falls möglich)
+3. CheckResultCard.tsx (mit Mini-Breakdown Nase/Geschmack/Abgang in Community-Card)
+
+Nach Abschluss bitte den Verifikations-Block aus dem Original-Plan durchführen
+und Status melden. KEIN Commit, KEIN Push, KEINE Änderungen an LabsLayout.tsx.
