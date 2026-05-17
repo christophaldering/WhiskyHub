@@ -1,0 +1,77 @@
+# Antworten auf Pre-Implementation-Plan
+
+Vielen Dank für die gründliche Diagnose, besonders für den Hinweis auf den
+bestehenden Limiter und die Storage-Methoden-Lücken.
+
+## Entscheidungen:
+
+### 1. Rate-Limit: Variante A (zweistufig, sauber getrennt)
+
+- Bestehender Limiter `identifyRateLimit` (10/3min) bleibt UNVERÄNDERT
+  als Burst-Schutz für alle 4 Identify-Routen
+- NEU: `checkIdentifyLimit` (10/Stunde, IP-basiert) als ZUSÄTZLICHE Quota-
+  Schicht, NUR für anonyme Calls, NUR auf /api/whisky/identify
+- Reihenfolge im Handler: Erst neuer Anonymous-Check (kann früh ablehnen),
+  dann bestehender Burst-Check
+- Konzeptionelle Begründung: alter Limiter schützt vor Burst-Attacken
+  (Sekunden-Spam), neuer Limiter schützt Vision-API-Kosten (Stundenquota
+  für Anonyme)
+- Das ist effektiv deine Variante A, aber mit klarer konzeptioneller
+  Trennung — keine Lücken in der Burst-Abwehr
+
+### 3. Collection-Check: IST machbar mit bestehender Methode
+
+Du hast eine Storage-Methode übersehen: `storage.getWhiskybaseCollection(pid)`
+liefert alle Collection-Items eines Users (siehe server/routes.ts L10451,
+verwendet im Endpoint /api/collection/:participantId).
+
+Für inCollection bitte verwenden:
+- `const items = await storage.getWhiskybaseCollection(pid);`
+- `const entry = items.find(it => it.whiskyId === whiskyId);`
+- `inCollection: !!entry, collectionSince: entry?.acquiredAt ?? entry?.createdAt`
+
+Falls in den Item-Objekten das passende Datumsfeld einen anderen Namen
+hat, bitte VOR der Implementierung melden, welche Felder verfügbar sind
+(z.B. via `grep "interface WhiskybaseCollectionItem" shared/schema.ts`
+oder analog).
+
+### 2. Wishlist und MyRatings: Wie vorgeschlagen — List-Filter in der Route
+
+- `storage.getWishlistEntries(pid).find(e => e.whiskyId === whiskyId)`
+- `storage.getRatingsForWhisky(whiskyId).filter(r => r.participantId === pid)`
+
+Keine neuen Storage-Methoden anlegen.
+
+## K-Anonymity bleibt verpflichtend
+
+`community: null` wenn `ratingCount < 3`. Frontend rendert dann
+"Noch nicht genügend Daten". KEIN Leak von Einzelratings.
+
+## Stale-Datei (Punkt 5): zur Kenntnis
+
+Mein eigener Sandbox-Klon zeigt nach git pull jetzt 28331 Zeilen, also
+ist die Datei auf GitHub korrekt aktuell. Deine read-Tool-Anomalie
+(21790 Zeilen) ist vermutlich ein Replit-Reader-Cache-Issue, kein
+echter Drift. Wenn das edit-Tool auf dem echten Inhalt matcht, gibt es
+kein Problem für Stufe 1.
+
+## Go für die Implementierung
+
+Du hast jetzt Go für:
+1. Anlage von server/lib/checkLimit.ts (wie ursprünglich spezifiziert)
+2. Einbau in /api/whisky/identify als ANONYMOUS-Pre-Check
+   (vor dem bestehenden identifyRateLimit-Aufruf)
+3. Neuer Endpoint /api/check/lookup/:whiskyId mit:
+   - Whisky-Lookup via storage.getWhisky(whiskyId)
+   - Community-Aggregat mit K-Anonymity-Floor 3
+   - Personal Layer (nur bei requireAuth=authenticated):
+     - inCollection via getWhiskybaseCollection-Filter
+     - inWishlist via getWishlistEntries-Filter
+     - myRatings via getRatingsForWhisky-Filter
+
+Bevor du den Personal Layer baust: bitte EINMAL kurz die Felder von
+WhiskybaseCollectionItem reporten (Name des Datums-Felds), damit
+"collectionSince" das richtige Feld bekommt.
+
+Verifikation und Bericht wie im ursprünglichen Hard-Prompt
+spezifiziert. Kein Commit, kein Push.
