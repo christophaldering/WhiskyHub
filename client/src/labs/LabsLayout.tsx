@@ -1,7 +1,8 @@
 import { ReactNode, useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { User, Bell, Download, X, Search, AlertTriangle, Sun, Moon } from "lucide-react";
+import { User, Bell, Download, X, Search, AlertTriangle, Sun, Moon, ScanSearch } from "lucide-react";
+import CheckSheet from "@/labs/check/CheckSheet";
 import { useAppStore } from "@/lib/store";
 import { participantApi, pidHeaders, profileApi } from "@/lib/api";
 import { getSession, tryAutoResume, syncStoreParticipant } from "@/lib/session";
@@ -683,6 +684,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
   ], [t, i18n.language]);
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [checkSheetOpen, setCheckSheetOpen] = useState(false);
   const { currentParticipant, setParticipant, openAuthDialog } = useAppStore();
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
 
@@ -730,10 +732,6 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
   useIncomingNotificationPolling();
   const { theme, toggle: toggleTheme } = useLabsTheme();
 
-  const handleLang = (lang: 'de' | 'en') => {
-    i18n.changeLanguage(lang);
-    localStorage.setItem('casksense-language', lang);
-  };
   const vb = useVerificationBanner();
   const [autoResumeChecked, setAutoResumeChecked] = useState(() => getSession().signedIn);
 
@@ -843,42 +841,27 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
           >
             <Search className="w-4 h-4" />
           </button>
-          <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <button
-              onClick={() => handleLang('de')}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontSize: 12,
-                fontWeight: i18n.language.startsWith('de') ? 600 : 400,
-                opacity: i18n.language.startsWith('de') ? 1 : 0.5,
-                color: "var(--labs-text-secondary)",
-                padding: "4px 6px",
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-              data-testid="labs-lang-de"
-            >
-              DE
-            </button>
-            <button
-              onClick={() => handleLang('en')}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontSize: 12,
-                fontWeight: i18n.language.startsWith('en') ? 600 : 400,
-                opacity: i18n.language.startsWith('en') ? 1 : 0.5,
-                color: "var(--labs-text-secondary)",
-                padding: "4px 6px",
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-              data-testid="labs-lang-en"
-            >
-              EN
-            </button>
-          </div>
+          <button
+            onClick={() => { setCheckSheetOpen(true); triggerHaptic("light"); }}
+            className="flex items-center gap-1.5 rounded-full transition-all"
+            style={{
+              height: 36,
+              padding: "0 14px",
+              background: "var(--labs-accent)",
+              border: "1px solid var(--labs-accent)",
+              color: "var(--labs-bg)",
+              cursor: "pointer",
+              fontSize: 13,
+              fontWeight: 600,
+              fontFamily: "'DM Sans', sans-serif",
+              flexShrink: 0,
+            }}
+            data-testid="labs-check-btn"
+            aria-label={t("check.openLabel", "Whisky Check öffnen")}
+          >
+            <ScanSearch className="w-4 h-4" />
+            <span>{t("check.label", "Check")}</span>
+          </button>
           <button
             onClick={() => { toggleTheme(); triggerHaptic("light"); }}
             className="flex items-center justify-center rounded-full transition-all"
@@ -1199,6 +1182,9 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
       )}
       <LabsErrorBoundary>
         <LabsGlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
+      </LabsErrorBoundary>
+      <LabsErrorBoundary>
+        <CheckSheet open={checkSheetOpen} onClose={() => setCheckSheetOpen(false)} />
       </LabsErrorBoundary>
       <LabsAuthDialog />
     </div>
