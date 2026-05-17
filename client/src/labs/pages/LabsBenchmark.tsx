@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 import { useSession } from "@/lib/session";
 import { useAIStatus } from "@/hooks/use-ai-status";
 import { benchmarkApi, tastingApi } from "@/lib/api";
@@ -247,8 +246,6 @@ export default function LabsBenchmark() {
 
   return (
     <div className="labs-page" data-testid="labs-benchmark">
-      <DiscoverActionBar active="bibliothek" />
-
       <div className="mb-5 labs-fade-in">
         <div className="flex items-center gap-3 mb-1">
           <Brain className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
