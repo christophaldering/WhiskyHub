@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, real, doublePrecision, timestamp, boolean, jsonb, date, index, uniqueIndex, customType } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, real, doublePrecision, timestamp, boolean, jsonb, date, index, uniqueIndex, customType, serial } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -1643,6 +1643,18 @@ export const storyTemplates = pgTable("story_templates", {
 export const insertStoryTemplateSchema = createInsertSchema(storyTemplates).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertStoryTemplate = z.infer<typeof insertStoryTemplateSchema>;
 export type StoryTemplate = typeof storyTemplates.$inferSelect;
+
+// --- Data Guard Snapshot ---
+// Externally managed table containing periodic row-count snapshots of critical
+// tables. Read-only from application code (see server/index.ts startup check).
+// Listed here ONLY to prevent Drizzle from generating spurious DROP TABLE migrations.
+// Intentionally no insertSchema / type exports — this table is not written from app code.
+export const dataGuardSnapshots = pgTable("_data_guard_snapshots", {
+  id: serial("id").primaryKey(),
+  snapshotTime: timestamp("snapshot_time", { withTimezone: true }).defaultNow().notNull(),
+  tableCounts: jsonb("table_counts").notNull(),
+  buildSha: text("build_sha"),
+});
 
 export const AUTO_HANDOUT_CHAPTER_TYPES = {
   distillery: [
