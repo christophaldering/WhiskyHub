@@ -102,7 +102,8 @@ export default function LabsLexicon({ forceTab }: { forceTab?: TabId } = {}) {
   const switchTab = useCallback((tab: TabId) => {
     setActiveTab(tab);
     const query = tab === "dictionary" ? "" : `?tab=${tab}`;
-    navigate(`/labs/discover/lexicon${query}`, { replace: true });
+    const base = "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=lexikon";
+    navigate(`${base}${query.startsWith("?") ? "&" + query.slice(1) : query}`, { replace: true });
   }, [navigate]);
 
   const tabs: { id: TabId; label: string }[] = [

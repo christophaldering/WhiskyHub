@@ -121,7 +121,7 @@ export default function LabsBackground() {
         <section id="dimensions" style={{ scrollMarginTop: 80 }}>
           <SectionHero src={conceptQualityCriteria} alt={t("background.dimensions.title")} />
           <SectionHeader icon={Star} title={t("background.dimensions.title")} tagline={t("background.dimensions.tagline")} color="var(--labs-accent)" />
-          <Link href="/labs/discover/method" style={{ textDecoration: "none" }}>
+          <Link href="/labs/explore?tab=bibliothek&section=tasting-wissen&sub=profilberechnung" style={{ textDecoration: "none" }}>
             <div
               className="labs-card"
               data-testid="link-dimensions-method"

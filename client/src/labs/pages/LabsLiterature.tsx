@@ -22,7 +22,7 @@ export default function LabsLiterature() {
     <div className="px-5 py-6 mx-auto" style={{ maxWidth: 700 }} data-testid="labs-discover-literature-page">
       {!embedded && <DiscoverActionBar active="bibliothek" />}
       {!embedded && (
-        <BackLink href="/labs/discover/research" style={{ textDecoration: "none" }}>
+        <BackLink href="/labs/explore?tab=bibliothek&section=tasting-wissen&sub=research" style={{ textDecoration: "none" }}>
           <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-literature">
             <ChevronLeft className="w-4 h-4" /> {t("research.title", "Research")}
           </button>

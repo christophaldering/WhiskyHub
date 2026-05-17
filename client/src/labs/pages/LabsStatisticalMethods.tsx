@@ -119,7 +119,7 @@ export default function LabsStatisticalMethods() {
     <div className="labs-page labs-fade-in" data-testid="labs-statistical-methods-page">
       {!embedded && <DiscoverActionBar active="bibliothek" />}
       {!embedded && (
-        <BackLink href="/labs/discover/research" style={{ textDecoration: "none" }}>
+        <BackLink href="/labs/explore?tab=bibliothek&section=tasting-wissen&sub=research" style={{ textDecoration: "none" }}>
           <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-statistical-methods">
             <ChevronLeft className="w-4 h-4" /> {t("research.title", "Research")}
           </button>

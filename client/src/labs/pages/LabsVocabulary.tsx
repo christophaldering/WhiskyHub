@@ -752,7 +752,7 @@ export default function LabsVocabulary() {
 
   return (
     <div className="labs-page" data-testid="labs-flavour-map-page">
-      <BackLink href="/labs/discover/lexicon" style={{ textDecoration: "none" }}>
+      <BackLink href="/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=lexikon" style={{ textDecoration: "none" }}>
         <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-flavour-map">
           <ChevronLeft className="w-4 h-4" /> {t("discover.lexicon", "Lexicon")}
         </button>
