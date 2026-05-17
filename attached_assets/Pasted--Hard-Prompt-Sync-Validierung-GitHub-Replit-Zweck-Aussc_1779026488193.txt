@@ -1,0 +1,85 @@
+# Hard Prompt: Sync-Validierung GitHub ↔ Replit
+
+## Zweck
+Ausschließlich Diagnose. **Keine Datei wird geändert, kein Befehl außer Lese-Operationen ausgeführt.** Ziel: Bestätigen, ob der GitHub-Stand (Commit `dc77f21c2fafca566d4cd967ef07436582949ec7` vom 29.04.2026, "Published your App") identisch mit dem aktuellen Replit-Arbeitsstand ist.
+
+## ABSOLUTE SAFETY RULES
+- ❌ KEINE Datei-Modifikationen (kein Edit, kein Create, kein Delete)
+- ❌ KEINE Git-Operationen (kein commit, push, pull, checkout, reset)
+- ❌ KEIN Server-Restart, kein Neubau, kein `npm install`
+- ❌ Keine Änderungen an `server/`, `shared/schema.ts`, `.env`, `package.json`, `drizzle.config.ts`
+- ✅ Nur `git log`, `git status`, `git diff --stat`, `cat`, `grep`, `find`, `ls`, `wc`
+
+## Schritt 0: Plan vorlegen
+Bevor du IRGENDETWAS ausführst: Liste die genauen Befehle auf, die du laufen lassen willst, und warte auf mein "Go".
+
+## Aufgabe: Beantworte diese 7 Fragen mit konkreten Belegen
+
+### Frage 1: Git-Stand
+Was sagt `git log -1 --format="%H %ad %s"` im Replit-Workspace?
+- Erwartet: `dc77f21c2fafca566d4cd967ef07436582949ec7 Wed Apr 29 17:18:08 2026 +0000 Published your App`
+- Berichte: Den tatsächlichen Output.
+
+### Frage 2: Uncommitted Changes
+Was sagt `git status --short`?
+- Erwartet: Leer (clean working tree) oder nur unbedeutende Dateien.
+- Berichte: Vollständige Liste aller geänderten/neuen/gelöschten Dateien. Falls Änderungen vorhanden: `git diff --stat` zusätzlich.
+
+### Frage 3: Discover-Verzeichnis
+Existiert `client/src/labs/pages/discover/`?
+- Befehl: `find client/src/labs/pages -type d -name "discover"`
+- Erwartet: Leer (existiert nicht).
+- Berichte: Output exakt.
+
+### Frage 4: Konsistenz-Reste in der UI
+Wo kommt der Begriff "Konsistenz" noch vor?
+- Befehl: `grep -rn "Konsistenz" client/src/labs/ --include="*.tsx" --include="*.ts"`
+- Erwartet: Genau 4 Treffer in 3 Dateien:
+  - `client/src/labs/components/StatsChartCard.tsx:683` (Chart-Titel "Konsistenz vs. Gruppen-Schnitt")
+  - `client/src/labs/pages/LabsAIInsights.tsx:51` (Hilfetext)
+  - `client/src/labs/data/lexiconData.ts` (3× legitime Definitionstexte: Blended Scotch Whisky Act, Sauerteig, Kleinserie)
+- Berichte: Vollständige grep-Ausgabe.
+
+### Frage 5: Balance-Dimension restlos entfernt?
+Befehl: `grep -rn -i "balance" shared/schema.ts`
+- Erwartet: Leer.
+- Berichte: Output exakt.
+
+### Frage 6: Capacitor-Config
+Was steht in `capacitor.config.ts` als `server.url`?
+- Befehl: `grep -n "url:" capacitor.config.ts`
+- Erwartet: `url: 'https://casksense.com'`
+- Berichte: Output exakt.
+
+### Frage 7: Voice Co-Host vorhanden?
+Existieren diese 4 Dateien?
+- `client/src/labs/hooks/useVoiceCohost.ts`
+- `client/src/labs/voice/voiceCommands.ts`
+- `client/src/labs/voice/voiceTools.ts`
+- `client/src/labs/components/PauseBanner.tsx`
+- Befehl: `ls -la client/src/labs/hooks/useVoiceCohost.ts client/src/labs/voice/ client/src/labs/components/PauseBanner.tsx`
+- Berichte: Output exakt.
+
+## Bericht-Format
+Antworte streng in dieser Struktur, ohne Fließtext-Ausschweifungen:
+
+```
+Frage 1: <Match / Mismatch / Detail>
+  Output: <exakter Befehlsoutput>
+
+Frage 2: <Clean / Dirty>
+  Output: <exakter Befehlsoutput>
+
+... usw. ...
+
+ZUSAMMENFASSUNG:
+- Übereinstimmungen: X/7
+- Abweichungen: <Liste, falls vorhanden>
+- Empfehlung: <"GitHub-Stand identisch mit Replit" ODER "Push erforderlich, weil ..." ODER "Manuelle Klärung nötig bei Frage N">
+```
+
+## Was du NICHT machen sollst
+- Keine Erklärungen, was die Treffer "bedeuten"
+- Keine Vorschläge für Fixes
+- Keine "Soll ich das gleich beheben?"-Fragen
+- Keine zusätzlichen Greps oder Erkundungen, die nicht auf dieser Liste stehen
