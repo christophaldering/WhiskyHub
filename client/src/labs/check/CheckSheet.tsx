@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { X, Camera, Image as ImageIcon, Type, ScanLine, Loader2, type LucideIcon } from "lucide-react";
 import ModalPortal from "@/labs/components/ModalPortal";
 import { FONT } from "@/labs/components/rating/theme";
+import { getParticipantId } from "@/lib/api";
 import {
   identifyByPhoto,
   lookupWhisky,
@@ -11,6 +12,7 @@ import {
   type CheckLookupResponse,
 } from "./checkApi";
 import CheckResultCard from "./CheckResultCard";
+import CheckRecognizedCard from "./CheckRecognizedCard";
 
 type CheckSheetProps = {
   open: boolean;
@@ -21,6 +23,7 @@ type Phase =
   | { kind: "pickup" }
   | { kind: "loading"; step: "identifying" | "looking-up" }
   | { kind: "result"; data: CheckLookupResponse }
+  | { kind: "recognized"; candidate: CheckIdentifyCandidate }
   | { kind: "ambiguous"; candidates: CheckIdentifyCandidate[] }
   | { kind: "no-match" }
   | { kind: "rate-limited"; retryAfterSec: number }
@@ -62,6 +65,11 @@ export default function CheckSheet({ open, onClose }: CheckSheetProps) {
           const msg = lookupErr instanceof Error ? lookupErr.message : "Lookup failed";
           setPhase({ kind: "error", message: msg });
         }
+        return;
+      }
+
+      if (!top.whiskyId && top.confidence >= 0.7 && top.name) {
+        setPhase({ kind: "recognized", candidate: top });
         return;
       }
 
@@ -184,7 +192,10 @@ export default function CheckSheet({ open, onClose }: CheckSheetProps) {
             <CheckPickup onCamera={handleCameraClick} onGallery={handleGalleryClick} />
           )}
           {phase.kind === "loading" && <CheckLoading step={phase.step} />}
-          {phase.kind === "result" && <CheckResultCard data={phase.data} />}
+          {phase.kind === "result" && <CheckResultCard data={phase.data} pid={getParticipantId()} />}
+          {phase.kind === "recognized" && (
+            <CheckRecognizedCard candidate={phase.candidate} pid={getParticipantId()} onReset={resetToPickup} />
+          )}
           {phase.kind === "ambiguous" && (
             <CheckAmbiguous
               candidates={phase.candidates}

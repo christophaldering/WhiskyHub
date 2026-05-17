@@ -2,10 +2,24 @@ import { useTranslation } from "react-i18next";
 import { Wine, Users, BookOpen, Heart, ShoppingBag } from "lucide-react";
 import { FONT } from "@/labs/components/rating/theme";
 import type { CheckLookupResponse } from "./checkApi";
+import CheckActionCard from "./CheckActionCard";
+import type { CheckCandidateMeta } from "./checkActions";
 
-export default function CheckResultCard({ data }: { data: CheckLookupResponse }) {
+export default function CheckResultCard({ data, pid }: { data: CheckLookupResponse; pid: string | null }) {
   const { t } = useTranslation();
   const { whisky, community, personal } = data;
+
+  const meta: CheckCandidateMeta = {
+    whiskyId: whisky.id,
+    name: whisky.name,
+    distillery: whisky.distillery ?? null,
+    region: whisky.region ?? null,
+    age: typeof whisky.age === "number" ? String(whisky.age) : null,
+    abv: typeof whisky.abv === "number" ? whisky.abv : null,
+    caskType: null,
+    imageUrl: whisky.imageUrl ?? null,
+    whiskybaseId: whisky.whiskybaseId ?? null,
+  };
 
   const subtitleParts: string[] = [];
   if (whisky.distillery) subtitleParts.push(whisky.distillery);
@@ -92,6 +106,7 @@ export default function CheckResultCard({ data }: { data: CheckLookupResponse })
 
       <CommunityCard community={community} />
       <PersonalCard personal={personal} />
+      <CheckActionCard pid={pid} meta={meta} />
     </div>
   );
 }
