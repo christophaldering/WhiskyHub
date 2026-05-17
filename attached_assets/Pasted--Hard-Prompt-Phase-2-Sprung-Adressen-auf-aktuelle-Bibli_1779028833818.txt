@@ -1,0 +1,192 @@
+# Hard Prompt: Phase 2 — Sprung-Adressen auf aktuelle Bibliothek-URLs umstellen
+
+## Zweck
+Alle aktiven Komponenten, die noch auf die alten `/labs/discover/*`-Routen springen, direkt auf die aktuellen `/labs/explore?tab=bibliothek&section=...&sub=...`-URLs umstellen. Damit entfällt der mehrstufige Redirect-Stack und der Back-Button funktioniert sauber.
+
+Voraussetzung: Phase 1 (toter Code) ist abgeschlossen.
+
+## ABSOLUTE SAFETY RULES
+- ❌ Keine Änderungen an `server/`, `shared/schema.ts`, `.env`, `package.json`
+- ❌ Die Redirect-Routen in `App.tsx` bleiben unberührt (Sicherheitsnetz für externe Lesezeichen / Old-Links)
+- ❌ Kein `git commit`, kein `git push` — nur Datei-Edits
+- ❌ KEIN Aufräumen über die unten genannten Dateien hinaus
+- ❌ KEINE Änderungen an der Sub-Route `/labs/discover/research/grundlagen` etc. (das ist Phase 4)
+- ✅ Nur die unten spezifizierten Edits durchführen
+
+## Schritt 0 — Pflicht-Diagnose
+
+### 0.1 — Aktueller Stand
+```bash
+git log -1 --format="%H %s"
+git tag -l "pre-entdecken*"
+git status --short
+```
+
+### 0.2 — Quelldatei-Verifikation
+Bestätige, dass diese 7 Dateien existieren und die alten Pfade enthalten:
+```bash
+grep -l "labs/discover/" client/src/labs/components/LabsGlobalSearch.tsx client/src/labs/pages/LabsLexicon.tsx client/src/labs/pages/LabsBackground.tsx client/src/labs/pages/LabsTestTheory.tsx client/src/labs/pages/LabsLiterature.tsx client/src/labs/pages/LabsStatisticalMethods.tsx client/src/labs/pages/LabsIdeaBehindNumbers.tsx client/src/labs/pages/LabsVocabulary.tsx client/src/labs/pages/LabsTemplates.tsx
+```
+
+### 0.3 — Plan vorlegen
+Berichte den Output und WARTE auf mein "Go".
+
+## Mapping-Tabelle (Referenz für alle Änderungen)
+
+| Alter Pfad | Neuer Pfad |
+|---|---|
+| `/labs/discover/lexicon` | `/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=lexikon` |
+| `/labs/discover/distilleries` | `/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=destillerien` |
+| `/labs/discover/bottlers` | `/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=bottlers` |
+| `/labs/discover/flavour-map` | `/labs/explore?tab=whiskies&view=flavour-map` |
+| `/labs/discover/guide` | `/labs/explore?tab=bibliothek&section=tasting-wissen&sub=guide` |
+| `/labs/discover/templates` | `/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=lexikon` *(siehe Anmerkung A)* |
+| `/labs/discover/rabbit-hole/themenspeicher` | `/labs/explore?tab=bibliothek&section=rabbit-hole&sub=themenspeicher` |
+| `/labs/discover/research` | `/labs/explore?tab=bibliothek&section=tasting-wissen&sub=research` |
+| `/labs/discover/method` | `/labs/explore?tab=bibliothek&section=tasting-wissen&sub=profilberechnung` |
+| `/labs/discover/background` | `/labs/explore?tab=bibliothek&section=tasting-wissen&sub=hintergrund` |
+
+**Anmerkung A:** Templates landen vorerst auf Lexikon ohne weiteren Subparameter — das ist bewusst so, weil der `tab=templates`-Parameter in der aktuellen Bibliothek-Struktur nicht mehr existiert. Ist Bug #5 aus der Analyse, separate Phase.
+
+## Änderung 1: `client/src/labs/components/LabsGlobalSearch.tsx`
+
+Suchpattern: in den `route:`-Feldern der Pages-Registry (ca. Zeilen 86–93) und in den dynamischen Routen weiter unten (Zeilen 573, 593).
+
+Statische Ersetzungen mit `str_replace` (alle 1:1):
+
+```
+"/labs/discover/lexicon"            → "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=lexikon"
+"/labs/discover/distilleries"       → "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=destillerien"
+"/labs/discover/bottlers"           → "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=bottlers"
+"/labs/discover/flavour-map"        → "/labs/explore?tab=whiskies&view=flavour-map"
+"/labs/discover/guide"              → "/labs/explore?tab=bibliothek&section=tasting-wissen&sub=guide"
+"/labs/discover/templates"          → "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=lexikon"
+"/labs/discover/rabbit-hole/themenspeicher" → "/labs/explore?tab=bibliothek&section=rabbit-hole&sub=themenspeicher"
+"/labs/discover/research"           → "/labs/explore?tab=bibliothek&section=tasting-wissen&sub=research"
+```
+
+Für die zwei dynamischen Routen (Template-Literal):
+```
+`/labs/discover/distilleries?focus=${encodeURIComponent(String(h.title ?? ""))}`
+→ `/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=destillerien&focus=${encodeURIComponent(String(h.title ?? ""))}`
+
+`/labs/discover/lexicon?term=${encodeURIComponent(String(h.title ?? ""))}`
+→ `/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=lexikon&term=${encodeURIComponent(String(h.title ?? ""))}`
+```
+
+## Änderung 2: `client/src/labs/pages/LabsLexicon.tsx` Zeile ~105
+
+ALT:
+```tsx
+    navigate(`/labs/discover/lexicon${query}`, { replace: true });
+```
+
+NEU:
+```tsx
+    navigate(`/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=lexikon${query.startsWith("?") ? "&" + query.slice(1) : query}`, { replace: true });
+```
+
+**WICHTIG:** Diese Änderung ist die einzige, die nicht 1:1 mappt — der bestehende `query`-String kann mit `?` beginnen, was kollidiert, wenn die neue URL bereits Query-Parameter hat. Die ternary-Ersetzung handhabt beide Fälle.
+
+## Änderung 3: BackLinks in Detail-Pages
+
+Sieben Dateien, jeweils ein BackLink. Verwende `str_replace` für jeden einzelnen:
+
+### 3.1 `client/src/labs/pages/LabsBackground.tsx` Zeile ~124
+```
+href="/labs/discover/method"
+→ href="/labs/explore?tab=bibliothek&section=tasting-wissen&sub=profilberechnung"
+```
+
+### 3.2 `client/src/labs/pages/LabsTestTheory.tsx` Zeile ~120
+```
+href="/labs/discover/research"
+→ href="/labs/explore?tab=bibliothek&section=tasting-wissen&sub=research"
+```
+
+### 3.3 `client/src/labs/pages/LabsLiterature.tsx` Zeile ~25
+```
+href="/labs/discover/research"
+→ href="/labs/explore?tab=bibliothek&section=tasting-wissen&sub=research"
+```
+
+### 3.4 `client/src/labs/pages/LabsStatisticalMethods.tsx` Zeile ~122
+```
+href="/labs/discover/research"
+→ href="/labs/explore?tab=bibliothek&section=tasting-wissen&sub=research"
+```
+
+### 3.5 `client/src/labs/pages/LabsIdeaBehindNumbers.tsx` Zeile ~124
+```
+href="/labs/discover/research"
+→ href="/labs/explore?tab=bibliothek&section=tasting-wissen&sub=research"
+```
+
+### 3.6 `client/src/labs/pages/LabsVocabulary.tsx` Zeile ~755
+```
+href="/labs/discover/lexicon"
+→ href="/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=lexikon"
+```
+
+### 3.7 `client/src/labs/pages/LabsTemplates.tsx` Zeile ~89
+```
+href="/labs/discover/lexicon"
+→ href="/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=lexikon"
+```
+
+## Verifikation nach Änderungen (Pflicht)
+
+```bash
+# 1. Aktive Code-Referenzen auf alte Pfade — sollten weg sein (außer in App.tsx Redirects)
+grep -rn "labs/discover/" client/src/ --include="*.tsx" --include="*.ts" | grep -v "App.tsx" | grep -v "// "
+# Erwartet: KEINE Treffer mehr (außer evtl. die research/grundlagen-Subpfade in LabsResearch — die bleiben in Phase 2)
+
+# 2. App.tsx Redirects sind unberührt — Sanity-Check
+grep -c "labs/discover" client/src/App.tsx
+# Erwartet: Zahl identisch zu vor der Änderung (Redirects unverändert)
+
+# 3. TypeScript-Check
+npx tsc --noEmit 2>&1 | head -30
+# Erwartet: keine neuen Fehler
+
+# 4. Zähle die neuen explore?tab=bibliothek-Verweise — sollten massiv zugenommen haben
+grep -rn "labs/explore?tab=bibliothek" client/src/labs/ --include="*.tsx" --include="*.ts" | wc -l
+# Erwartet: deutlich mehr als 0
+```
+
+## Bericht-Format
+
+```
+Schritt 0 Diagnose:
+  HEAD: <output>
+  Tag: <output>
+  Working Tree: <output>
+  Quelldatei-Bestätigung: <output>
+
+[Hier auf "Go" warten]
+
+Änderung 1 (LabsGlobalSearch.tsx): <Anzahl Treffer ersetzt, Status>
+Änderung 2 (LabsLexicon.tsx): <Done / Failed>
+Änderung 3.1 LabsBackground: <Done / Failed>
+Änderung 3.2 LabsTestTheory: <Done / Failed>
+Änderung 3.3 LabsLiterature: <Done / Failed>
+Änderung 3.4 LabsStatisticalMethods: <Done / Failed>
+Änderung 3.5 LabsIdeaBehindNumbers: <Done / Failed>
+Änderung 3.6 LabsVocabulary: <Done / Failed>
+Änderung 3.7 LabsTemplates: <Done / Failed>
+
+Verifikation:
+  Restliche labs/discover-Referenzen außerhalb App.tsx: <output>
+  App.tsx Redirects unverändert (Sanity): <Zahl vorher / nachher>
+  TypeScript-Check: <output>
+  Neue explore?tab=bibliothek-Verweise: <Anzahl>
+
+Status: <Gesamtbewertung>
+```
+
+## Was du NICHT machen sollst
+- KEINEN Commit, KEINEN Push
+- KEINE Änderungen an Redirects in App.tsx (auch wenn du sie für „doppelt“ hältst)
+- KEINE Änderungen an `LabsBibliothek.tsx` (das ist tote-Komponenten-Bereinigung in Phase 1, falls nicht schon abgeschlossen)
+- KEINE Änderung an `/labs/discover/research/grundlagen`-Subpfaden (Phase 4)
+- KEIN automatisches „auch noch das hier“ ohne Rückfrage
