@@ -1,0 +1,140 @@
+# Hard Prompt: Drizzle-Snapshot für _data_guard_snapshots erzeugen (dauerhafter Fix)
+
+## Zweck
+Den Drizzle-Migration-Snapshot um die Tabelle `_data_guard_snapshots` erweitern,
+damit beim nächsten Publishing kein DROP TABLE mehr generiert wird. Dauerhafter
+Fix für das Problem aus dem heutigen Publishing.
+
+Vorgehen:
+1. `drizzle-kit generate` ausführen → erzeugt 0017_xxx.sql + 0017_snapshot.json
+2. Die generierte SQL-Datei manuell zu `CREATE TABLE IF NOT EXISTS` ändern
+3. Snapshot-File und Journal-File bleiben unverändert (= Drizzle weiß: Tabelle ist Teil des Schemas)
+
+## ABSOLUTE SAFETY RULES
+- ❌ KEINE Änderungen an `shared/schema.ts` (Eintrag ist schon korrekt drin)
+- ❌ KEINE Änderungen an existierenden Migration-Dateien (0000-0019)
+- ❌ KEIN `npm run db:push`, KEIN Migration gegen Production ausführen
+- ❌ KEIN Commit, KEIN Push (Replit Auto-Checkpoint macht das ohnehin)
+- ✅ NUR `drizzle-kit generate` + manuelle Anpassung der NEUEN .sql-Datei
+- ✅ Snapshot-JSON-Files bleiben so wie drizzle-kit sie erzeugt
+
+## Schritt 0 — Diagnose
+
+```bash
+git log -1 --format="%H %s"
+git status --short
+ls -lat migrations/ | head -10
+ls -lat migrations/meta/ | head -5
+echo "---"
+echo "Letzte 5 Zeilen aus _journal.json:"
+tail -20 migrations/meta/_journal.json
+```
+
+Berichte alle Outputs und WARTE auf "Go", bevor du `drizzle-kit generate` ausführst.
+
+## Schritt 1 — Drizzle generieren lassen
+
+```bash
+npx drizzle-kit generate
+```
+
+Erwartet als Output (oder Ähnliches):
+- "0017_xxx.sql" neu erzeugt in migrations/
+- "0017_snapshot.json" neu erzeugt in migrations/meta/
+- "_journal.json" um neuen Eintrag erweitert
+
+Wenn drizzle-kit fehlschlägt oder mehrere Tabellen anfasst: **STOP, melden**.
+
+Direkt nach dem Generate:
+
+```bash
+ls -lat migrations/ | head -5
+ls -lat migrations/meta/ | head -5
+cat migrations/$(ls -t migrations/*.sql 2>/dev/null | head -1)
+```
+
+Berichte den vollständigen Inhalt der neuen .sql-Datei. **STOP, melden**.
+
+Erwartet (oder ähnlich): Ein `CREATE TABLE "_data_guard_snapshots" (...)` und NICHTS ANDERES.
+Falls dort weitere Tabellen-Operationen drin sind: STOP, Inhalt vollständig melden, ich entscheide.
+
+## Schritt 2 — NACH meinem "Go": SQL-Datei anpassen
+
+Die neu erzeugte SQL-Datei wird so umgeschrieben:
+
+ALT (typischerweise):
+```sql
+CREATE TABLE "_data_guard_snapshots" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "snapshot_time" timestamp with time zone DEFAULT now() NOT NULL,
+  "table_counts" jsonb NOT NULL,
+  "build_sha" text
+);
+```
+
+NEU (mit IF NOT EXISTS):
+```sql
+CREATE TABLE IF NOT EXISTS "_data_guard_snapshots" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "snapshot_time" timestamp with time zone DEFAULT now() NOT NULL,
+  "table_counts" jsonb NOT NULL,
+  "build_sha" text
+);
+```
+
+WICHTIG: Falls die generierte SQL eine andere Spaltenstruktur enthält als oben
+(z.B. anderer Default für snapshot_time, andere Typ-Reihenfolge), melden und
+NICHT ändern bis ich es freigegeben habe.
+
+## Schritt 3 — Verifikation
+
+```bash
+# 1. Neue .sql existiert und enthält IF NOT EXISTS
+cat migrations/$(ls -t migrations/*.sql 2>/dev/null | head -1)
+
+# 2. Neuer Snapshot enthält _data_guard_snapshots
+ls -t migrations/meta/0*.json | head -1
+cat $(ls -t migrations/meta/0*.json | head -1) | python3 -c "import json,sys; d=json.load(sys.stdin); tables=d.get('tables',{}); print('Tables count:', len(tables)); print('Has _data_guard_snapshots:', '_data_guard_snapshots' in [k.split('.')[-1].strip('\"') for k in tables.keys()] or any('data_guard' in k for k in tables.keys()))"
+
+# 3. _journal.json wurde aktualisiert
+tail -10 migrations/meta/_journal.json
+
+# 4. shared/schema.ts unverändert
+git diff shared/schema.ts
+# Erwartet: leer
+```
+
+## Bericht-Format
+
+```
+Schritt 0:
+  HEAD: ...
+  Working Tree: ...
+  Migrations vorher: ...
+
+[Go warten]
+
+Schritt 1 drizzle-kit generate:
+  Output: ...
+  Neue .sql-Datei: <Name>
+  Inhalt: <vollständig>
+
+[Go warten]
+
+Schritt 2 SQL anpassen: Done / Failed
+
+Schritt 3 Verifikation:
+  1. .sql mit IF NOT EXISTS: ...
+  2. Snapshot enthält data_guard: ...
+  3. _journal.json: ...
+  4. schema.ts unverändert: ...
+
+Status: <Bewertung>
+```
+
+## Was du NICHT machen sollst
+- KEIN db:push, KEIN drizzle-kit push, KEIN direktes SQL gegen Production
+- KEINE Änderung an shared/schema.ts
+- KEIN Aufräumen alter Migrations
+- KEINE Inhaltsänderung am Snapshot-JSON (nur die SQL-Datei wird angepasst)
+- KEIN Commit, KEIN Push (Auto-Checkpoint macht das)
