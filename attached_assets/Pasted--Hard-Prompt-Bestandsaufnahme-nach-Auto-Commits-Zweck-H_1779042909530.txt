@@ -1,0 +1,66 @@
+# Hard Prompt: Bestandsaufnahme nach Auto-Commits
+
+## Zweck
+Heutige Arbeit ist mehrfach durch Auto-Checkpoints committet worden, ohne
+dass alle Verifikations-Schritte durchlaufen wurden. Wir machen jetzt eine
+saubere Bestandsaufnahme, bevor irgendwas neu gebaut oder publishet wird.
+
+KEINE Änderungen, nur Diagnose.
+
+## Aufgaben
+
+### 1. Lokaler Stand
+```bash
+git log -1 --format="%H %s"
+git status --short
+git tag -l "pre-*"
+```
+
+### 2. Commits seit gestern, in chronologischer Reihenfolge
+```bash
+git log --since="2026-05-17 00:00:00" --format="%h | %ad | %s" --date=format:"%H:%M" --reverse
+```
+
+### 3. Sind die heutigen Schema- und Code-Commits sinngemäß zusammengehörig?
+Bitte für jeden heutigen Commit Stat-Diff zeigen:
+```bash
+for h in acd176d6 f3f2705b b1c7ce79 f687e00e cc898006 cfdf9a4d 8973d79d dce365f7; do
+  echo "=== $h ==="
+  git show $h --stat | tail -15
+  echo ""
+done
+```
+
+### 4. Verifikation Check-Feature Stufe 1 — wurden die curl-Tests durchgeführt?
+Falls nicht: jetzt nachholen. Server-URL bitte einsetzen.
+```bash
+# a) Anonymous lookup auf existierende whiskyId (eine echte aus DB nehmen)
+curl -i "http://localhost:5000/api/check/lookup/<ECHTE-WHISKY-ID>" 2>&1 | head -30
+
+# b) Mit Auth-Header
+curl -i -H "x-participant-id: <DEINE-PID>" "http://localhost:5000/api/check/lookup/<WHISKY-ID>" 2>&1 | head -30
+
+# c) 404 bei unbekannter ID
+curl -i "http://localhost:5000/api/check/lookup/nonexistent-id-12345" 2>&1 | head -10
+
+# d) Rate-Limit-Sequenz
+for i in {1..12}; do
+  curl -s -o /dev/null -w "%{http_code}\n" -X POST "http://localhost:5000/api/whisky/identify"
+done
+```
+
+### 5. Pending Publishing — Stand?
+Schau im Replit-UI nach: Ist das pending Publishing aus 3h zurück noch
+da? Oder wurde es durch die seitdem entstandenen Auto-Commits ersetzt /
+neu generiert?
+
+## Bericht
+Strukturiert alle 5 Outputs. Keine Bewertung, keine Empfehlungen — nur
+Fakten.
+
+## Was du NICHT machen sollst
+- KEINE Code-Änderungen
+- KEIN neues Publishing starten
+- KEIN Push (die Commits sind bereits auf origin, da gibt's nichts mehr
+  zu pushen)
+- KEIN Tag-Aufräumen
