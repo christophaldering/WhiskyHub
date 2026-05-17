@@ -1,0 +1,89 @@
+# Hard Prompt: 2 Konsistenz-Reste in UI fixen
+
+## Zweck
+"Konsistenz" durch "Sensorische Signatur" / "Sensory Signature" ersetzen — an genau 2 Stellen in der UI. Die 3 Treffer in `lexiconData.ts` BLEIBEN UNVERÄNDERT (legitime Definitionstexte über Whisky-Produktion, nicht der Tasting-Begriff).
+
+## ABSOLUTE SAFETY RULES
+- ❌ KEINE Änderungen außerhalb der 2 unten genannten Dateien
+- ❌ `server/`, `shared/schema.ts`, `.env`, `package.json`, `drizzle.config.ts` NICHT anfassen
+- ❌ `client/src/labs/data/lexiconData.ts` NICHT anfassen
+- ❌ Kein `git commit`, kein `git push` — nur Datei-Edits
+- ✅ Nur die 2 unten spezifizierten Stellen ändern
+
+## Schritt 0: Diagnose-First (Pflicht)
+Bevor du irgendetwas änderst:
+1. `git log -1 --format="%H %s"` — bestätige aktueller HEAD
+2. `git tag -l "pre-konsistenz*"` — bestätige Safety-Tag existiert
+3. `sed -n '683p' client/src/labs/components/StatsChartCard.tsx`
+4. `sed -n '51p' client/src/labs/pages/LabsAIInsights.tsx`
+
+Wenn alle 4 Outputs vorliegen: präsentiere mir den Plan (welche Strings genau ersetzt werden) und WARTE auf mein "Go", bevor du editierst.
+
+## Änderung 1: `client/src/labs/components/StatsChartCard.tsx` Zeile 683
+
+ALT:
+```tsx
+      title={isDe ? "Konsistenz vs. Gruppen-Schnitt" : "Consistency vs. group average"}
+```
+
+NEU:
+```tsx
+      title={isDe ? "Sensorische Signatur vs. Gruppen-Schnitt" : "Sensory Signature vs. group average"}
+```
+
+## Änderung 2: `client/src/labs/pages/LabsAIInsights.tsx` Zeile 51
+
+ALT:
+```tsx
+    ? "Waehle oben ein Tasting, dann kannst du frei Fragen dazu stellen \u2014 Lieblingsdram, polarisierende Drams, Konsistenz, Reveal-Effekt und mehr."
+```
+
+NEU:
+```tsx
+    ? "Waehle oben ein Tasting, dann kannst du frei Fragen dazu stellen \u2014 Lieblingsdram, polarisierende Drams, sensorische Signatur, Reveal-Effekt und mehr."
+```
+
+**Hinweis zur Klein-/Großschreibung**: Hier in der Aufzählung ("Lieblingsdram, polarisierende Drams, ...") ist Kleinschreibung im Fließtext korrekt, deshalb "sensorische Signatur" — anders als der Chart-Titel oben, der als eigenständige Überschrift Großschreibung trägt.
+
+## Verifikation nach Änderungen (Pflicht-Checklist)
+
+```bash
+# 1. Genau 3 Treffer dürfen übrig sein (alle in lexiconData.ts)
+grep -rn "Konsistenz" client/src/labs/ --include="*.tsx" --include="*.ts"
+# Erwartet: nur lexiconData.ts:560, lexiconData.ts:608, lexiconData.ts:695
+
+# 2. Sensorische Signatur muss jetzt in 2 neuen Stellen vorkommen
+grep -rn "Sensorische Signatur\|sensorische Signatur\|Sensory Signature" client/src/labs/components/StatsChartCard.tsx client/src/labs/pages/LabsAIInsights.tsx
+
+# 3. Englisches "Consistency" nur noch dort, wo es nicht der Tasting-Begriff ist
+grep -rn "Consistency" client/src/labs/ --include="*.tsx" --include="*.ts"
+# Erwartet: keine UI-Reste mehr (oder nur in produktbezogenem Kontext, manuell prüfen)
+```
+
+## Bericht-Format
+
+```
+Schritt 0 Diagnose:
+  HEAD: <output>
+  Tag: <output>
+  StatsChartCard:683: <output>
+  LabsAIInsights:51: <output>
+
+[Hier auf "Go" warten]
+
+Änderung 1: <Done / Failed + Grund>
+Änderung 2: <Done / Failed + Grund>
+
+Verifikation:
+  Grep 1 (Konsistenz-Reste): <output, Erwartung: 3 Treffer in lexiconData.ts>
+  Grep 2 (neue Sensorische-Signatur-Stellen): <output>
+  Grep 3 (Consistency): <output, Bewertung>
+
+Status: <"Beide Änderungen erfolgreich, keine ungewollten Reste" oder konkrete Abweichung>
+```
+
+## Was du NICHT machen sollst
+- Keinen Commit, keinen Push
+- Keine "Soll ich auch noch X anpassen?"-Fragen
+- Keine weiteren Konsistenz-Stellen suchen außerhalb des spezifizierten Greps
+- `lexiconData.ts` NICHT anfassen (auch wenn dort Treffer sind)

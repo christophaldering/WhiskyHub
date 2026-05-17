@@ -680,7 +680,7 @@ function renderUserConsistency(data: unknown, isDe: boolean): React.ReactNode {
   return (
     <CardShell
       testId="stats-chart-consistency"
-      title={isDe ? "Konsistenz vs. Gruppen-Schnitt" : "Consistency vs. group average"}
+      title={isDe ? "Sensorische Signatur vs. Gruppen-Schnitt" : "Sensory Signature vs. group average"}
       subtitle={isDe ? "Niedriger = naeher am Gruppenschnitt" : "Lower = closer to group"}
     >
       <HorizontalBarList

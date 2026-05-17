@@ -48,7 +48,7 @@ export default function LabsAIInsights() {
     ? "Du bist noch nicht Host oder Teilnehmer eines Tastings. Tritt einem Tasting bei oder erstelle eines, um Fragen dazu stellen zu koennen."
     : "You are not host or participant of any tasting yet. Join or create a tasting to ask questions about it.";
   const pendingHint = isDe
-    ? "Waehle oben ein Tasting, dann kannst du frei Fragen dazu stellen \u2014 Lieblingsdram, polarisierende Drams, Konsistenz, Reveal-Effekt und mehr."
+    ? "Waehle oben ein Tasting, dann kannst du frei Fragen dazu stellen \u2014 Lieblingsdram, polarisierende Drams, sensorische Signatur, Reveal-Effekt und mehr."
     : "Pick a tasting above, then ask anything about it \u2014 favourite dram, polarising drams, consistency, reveal effect and more.";
 
   return (
