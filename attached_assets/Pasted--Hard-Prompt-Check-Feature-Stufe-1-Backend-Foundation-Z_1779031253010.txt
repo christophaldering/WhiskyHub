@@ -1,0 +1,277 @@
+# Hard Prompt: Check-Feature Stufe 1 — Backend Foundation
+
+## Zweck
+Backend-Vorarbeit für das neue Check-Feature ("Whisky-Lookup per Foto/Barcode/Name"):
+1. Neuer Endpoint `GET /api/check/lookup/:whiskyId` (optional auth, liefert aggregierten Status: Community + ggf. persönliche Daten)
+2. IP-basiertes Rate-Limit für anonyme `/api/whisky/identify`-Calls (10/Stunde/IP)
+3. Eingeloggte User: KEIN neues Limit auf `/api/whisky/identify`
+
+Frontend-Arbeit kommt in späteren Stufen.
+
+## ABSOLUTE SAFETY RULES
+- ❌ KEINE Änderungen außerhalb von `server/routes.ts` und ggf. einem neuen File `server/lib/checkLimit.ts`
+- ❌ KEINE Schema-Änderungen, kein `shared/schema.ts` anfassen
+- ❌ KEINE Frontend-Änderungen
+- ❌ Bestehender `/api/labs/ask`-Rate-Limit-Code bleibt UNBERÜHRT (wir teilen das Pattern, nicht den Code — siehe Anmerkung)
+- ❌ KEIN `git commit`, KEIN `git push`
+- ✅ Nur die unten spezifizierten Änderungen
+
+## Schritt 0 — Pflicht-Diagnose
+
+### 0.1 — Aktueller Stand
+```bash
+git log -1 --format="%H %s"
+git status --short
+```
+
+### 0.2 — Bestehende Rate-Limit-Infrastruktur lokalisieren
+```bash
+grep -n "rate.limit\|rateLimit\|/api/labs/ask" server/routes.ts | head -20
+grep -n "Map<.*number\[\]>\|Map<string, number" server/routes.ts | head -10
+```
+Erwartet: Treffer rund um die `/api/labs/ask`-Implementierung mit der In-Memory-Map. Berichte den Output, damit wir das Pattern bestätigen können.
+
+### 0.3 — `/api/whisky/identify` lokalisieren
+```bash
+grep -n "app.post.*\"/api/whisky/identify\"" server/routes.ts
+```
+Erwartet: Genau ein Treffer (Hauptendpoint), plus evtl. `/api/whisky/identify-text` und `/api/whisky/identify-online`. Wir limitieren NUR den Hauptendpoint (`/api/whisky/identify`), nicht die anderen.
+
+### 0.4 — `/api/labs/explore/whiskies/:id` als Vorlage prüfen
+```bash
+grep -n "app.get.*\"/api/labs/explore/whiskies/:id\"" server/routes.ts
+```
+Erwartet: Genau ein Treffer. Diese Route ist die strukturelle Vorlage für unseren neuen Lookup-Endpoint (public, optional auth via `x-participant-id`).
+
+### 0.5 — Plan vorlegen
+Berichte alle Outputs und WARTE auf mein "Go".
+
+## Anmerkung zum Code-Sharing
+Das `/api/labs/ask`-Rate-Limit lebt als In-Memory-Map direkt in der Route-Handler-Closure. Wir extrahieren es NICHT in eine geteilte Datei für diese Stufe (das wäre größerer Refactor-Scope). Stattdessen: gleiches Pattern, neues File `server/lib/checkLimit.ts`, identischer Stil. Falls später ein dritter Endpoint dasselbe braucht, ist das der natürliche Zeitpunkt zum Konsolidieren.
+
+## Änderung 1: Neue Datei `server/lib/checkLimit.ts`
+
+**Zweck:** IP-basiertes Rate-Limiting für anonyme Identify-Calls.
+
+```typescript
+// server/lib/checkLimit.ts
+// Rate limiting for anonymous Vision-based whisky identification.
+// Pattern mirrors the in-memory limit used in /api/labs/ask.
+
+const WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const MAX_PER_WINDOW = 10;
+
+const buckets = new Map<string, number[]>();
+
+export function checkIdentifyLimit(ip: string): { allowed: true } | { allowed: false; retryAfterSec: number } {
+  const now = Date.now();
+  const cutoff = now - WINDOW_MS;
+  const existing = (buckets.get(ip) || []).filter((t) => t > cutoff);
+
+  if (existing.length >= MAX_PER_WINDOW) {
+    const oldest = existing[0];
+    const retryAfterSec = Math.max(1, Math.ceil((oldest + WINDOW_MS - now) / 1000));
+    buckets.set(ip, existing);
+    return { allowed: false, retryAfterSec };
+  }
+
+  existing.push(now);
+  buckets.set(ip, existing);
+  return { allowed: true };
+}
+
+// Optional: periodic cleanup of empty buckets (memory hygiene)
+setInterval(() => {
+  const cutoff = Date.now() - WINDOW_MS;
+  for (const [ip, timestamps] of buckets.entries()) {
+    const filtered = timestamps.filter((t) => t > cutoff);
+    if (filtered.length === 0) buckets.delete(ip);
+    else buckets.set(ip, filtered);
+  }
+}, 10 * 60 * 1000).unref?.();
+```
+
+## Änderung 2: Limit in `/api/whisky/identify` einbauen
+
+Datei: `server/routes.ts`, im Handler-Block des bestehenden `app.post("/api/whisky/identify", scanUpload.single("photo"), …)`.
+
+**Vorgehen:**
+1. Am Anfang des Handlers (nach Multipart-Parsing, vor dem eigentlichen Identify-Aufruf): IP ermitteln und Limit prüfen
+2. NUR für anonyme Calls (kein `x-participant-id`-Header)
+3. Bei Block: HTTP 429 mit `retryAfterSec`-Body
+
+**Genauer Edit-Punkt (str_replace):**
+
+Suche im Handler die erste Stelle nach `req.file`-Validierung und vor dem `identifyCache.get(hash)`-Aufruf, und füge dort ein:
+
+```typescript
+      // Rate limit anonymous calls (logged-in users have no limit)
+      const participantId = req.header("x-participant-id");
+      if (!participantId) {
+        const { checkIdentifyLimit } = await import("./lib/checkLimit.js");
+        const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0].trim() || req.ip || req.socket.remoteAddress || "unknown";
+        const limit = checkIdentifyLimit(ip);
+        if (!limit.allowed) {
+          return res.status(429).json({
+            message: "Too many anonymous lookups. Please log in or try again later.",
+            retryAfterSec: limit.retryAfterSec,
+          });
+        }
+      }
+```
+
+**WICHTIG:** Bevor du das einbaust, zeige mir den GENAUEN bestehenden Code-Block (Zeilen 5201–5230 ungefähr) per `sed -n '5200,5235p' server/routes.ts`. Ich will den exakten Einbau-Punkt auf der echten Datei bestätigen, bevor du `str_replace` aufrufst.
+
+## Änderung 3: Neuer Endpoint `GET /api/check/lookup/:whiskyId`
+
+**Ort:** in `server/routes.ts`, direkt NACH dem bestehenden `app.get("/api/labs/explore/whiskies/:id", …)` (= strukturelle Vorlage).
+
+**Zweck:** Ein Lookup-Result, das je nach Auth-Status mehr oder weniger persönliche Daten enthält.
+
+**Spec:**
+
+```typescript
+app.get("/api/check/lookup/:whiskyId", async (req: Request, res: Response) => {
+  try {
+    const whiskyId = req.params.whiskyId;
+    if (!whiskyId) return res.status(400).json({ message: "whiskyId required" });
+
+    const whisky = await storage.getWhisky(whiskyId);
+    if (!whisky) return res.status(404).json({ message: "Whisky not found" });
+
+    // Community-Aggregat: Reuse existing logic from /api/labs/explore/whiskies/:id
+    // (Achtung: in der Vorlage steckt das schon, beim Übernehmen sicherstellen, dass wir
+    //  K-Anonymity-Floor respektieren — community = null wenn ratingCount < 3)
+    // ...
+
+    // Personal layer (only if authenticated)
+    let personal: any = null;
+    const auth = await requireAuth(req);
+    if (auth.authenticated) {
+      const pid = auth.participant.id;
+      // - inCollection / collectionSince: storage.getCollectionEntry(pid, whiskyId)
+      // - inWishlist: storage.getWishlistEntry(pid, whiskyId)
+      // - myRatings: storage.getMyRatingsForWhisky(pid, whiskyId) → count, avg, lastRatedAt
+      personal = {
+        inCollection: ...,
+        collectionSince: ...,
+        inWishlist: ...,
+        myRatingCount: ...,
+        myAvgOverall: ...,
+        lastRatedAt: ...,
+      };
+    }
+
+    return res.json({
+      whisky: {
+        id: whisky.id,
+        name: whisky.name,
+        distillery: whisky.distillery,
+        region: whisky.region,
+        abv: whisky.abv,
+        age: whisky.age,
+        imageUrl: whisky.imageUrl,
+      },
+      community: communityOrNull,
+      personal,
+    });
+  } catch (err: any) {
+    console.error("[CHECK_LOOKUP]", err);
+    return res.status(500).json({ message: "Lookup failed" });
+  }
+});
+```
+
+**WICHTIG:** Die exakten Storage-Methoden (Collection/Wishlist/MyRatings) musst du aus dem bestehenden Code ableiten. Bevor du irgendwas implementierst:
+
+```bash
+# 1. Wie holt die Vorlage Community-Aggregate?
+sed -n '<Zeile-der-Vorlage>,<+50>p' server/routes.ts
+
+# 2. Welche Storage-Methoden existieren für Collection/Wishlist/MyRatings?
+grep -n "getCollection\|getWishlist\|getMyRating\|getRatingsForWhisky" server/storage.ts | head -20
+```
+
+Berichte mir den Output und schlage VOR der Implementierung vor, welche bestehenden Methoden du wiederverwenden willst. Erst NACH meinem "Go" bauen.
+
+## K-Anonymity bei Community-Daten
+Wie beim `get_benchmark_stats`-Tool: **community = null** wenn `ratingCount < 3`. Statt Zahlen zu zeigen, soll das Frontend dann einen "Noch nicht genügend Daten"-Hinweis rendern. KEIN Leak von Einzelratings.
+
+## Verifikation (Pflicht nach allen Änderungen)
+
+```bash
+# 1. Datei existiert
+ls -la server/lib/checkLimit.ts
+
+# 2. Rate-Limit in identify-Route eingebaut
+grep -n "checkIdentifyLimit" server/routes.ts
+# Erwartet: 1 Treffer (Aufruf in identify-Handler)
+
+# 3. Neuer Endpoint existiert
+grep -n "app.get.*\"/api/check/lookup/:whiskyId\"" server/routes.ts
+# Erwartet: 1 Treffer
+
+# 4. TypeScript-Check
+npx tsc --noEmit 2>&1 | head -30
+# Erwartet: keine neuen Fehler in den geänderten Dateien
+
+# 5. Live curl-Test (Dev-Server läuft):
+#    a) Anonymer Lookup auf existierende whiskyId
+curl -i "http://localhost:5000/api/check/lookup/<EINE-ECHTE-WHISKY-ID>" 2>&1 | head -30
+
+#    b) Mit Auth-Header:
+curl -i -H "x-participant-id: <DEINE-PARTICIPANT-ID>" "http://localhost:5000/api/check/lookup/<EINE-ECHTE-WHISKY-ID>" 2>&1 | head -30
+
+#    c) 404 bei unbekannter ID:
+curl -i "http://localhost:5000/api/check/lookup/nonexistent-id-12345" 2>&1 | head -10
+
+#    d) 11. anonymer Identify-Call ohne Foto sollte schon vorher fehlschlagen (zumindest mit 400), aber wir prüfen, ob das 429-Limit greift:
+for i in {1..12}; do
+  curl -s -o /dev/null -w "%{http_code}\n" -X POST "http://localhost:5000/api/whisky/identify"
+done
+# Erwartet: 10× 400 (kein Foto), dann 429 (Rate-Limit)
+```
+
+## Bericht-Format
+
+```
+Schritt 0 Diagnose:
+  HEAD: <output>
+  Working Tree: <output>
+  Rate-Limit-Vorlage: <output>
+  Identify-Endpoint Position: <output>
+  Explore-Whisky-Endpoint Position: <output>
+
+[Hier auf "Go" warten]
+
+Pre-Implementation:
+  Bestehende Community-Aggregate-Logik (sed-Output): <output>
+  Vorhandene Storage-Methoden für Collection/Wishlist/MyRatings: <output>
+  Mein Implementierungs-Plan: <Liste der Storage-Calls, die ich nutzen will>
+
+[Hier auf zweites "Go" warten]
+
+Änderung 1 (checkLimit.ts): <Done / Failed + Grund>
+Änderung 2 (Rate-Limit in identify): <Done / Failed + exakter Diff>
+Änderung 3 (neuer Lookup-Endpoint): <Done / Failed + Code-Snippet>
+
+Verifikation:
+  Datei existiert: <output>
+  checkIdentifyLimit-Aufrufe: <output>
+  Neuer Endpoint: <output>
+  TypeScript-Check: <output>
+  curl a) Anonymous: <Status + Body-Snippet>
+  curl b) Logged-In: <Status + Body-Snippet>
+  curl c) 404: <Status>
+  curl d) Rate-Limit-Sequenz: <Liste der Status-Codes>
+
+Status: <Gesamtbewertung>
+```
+
+## Was du NICHT machen sollst
+- KEINEN Commit, KEINEN Push
+- KEINE Frontend-Änderungen
+- KEINEN bestehenden `/api/labs/ask`-Rate-Limit refactoren
+- KEINE Limits auf `/api/whisky/identify-text` oder `/api/whisky/identify-online` (nur Hauptendpoint)
+- KEINE Schema-Changes
+- KEIN "ich räume bei der Gelegenheit auch noch X auf"
