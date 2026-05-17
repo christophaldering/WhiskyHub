@@ -6,9 +6,11 @@ import { FONT } from "@/labs/components/rating/theme";
 import { getParticipantId } from "@/lib/api";
 import {
   identifyByPhoto,
+  identifyByText,
   lookupWhisky,
   RateLimitError,
   type CheckIdentifyCandidate,
+  type CheckIdentifyResponse,
   type CheckLookupResponse,
 } from "./checkApi";
 import CheckResultCard from "./CheckResultCard";
@@ -21,6 +23,7 @@ type CheckSheetProps = {
 
 type Phase =
   | { kind: "pickup" }
+  | { kind: "text-input" }
   | { kind: "loading"; step: "identifying" | "looking-up" }
   | { kind: "result"; data: CheckLookupResponse }
   | { kind: "recognized"; candidate: CheckIdentifyCandidate }
@@ -41,39 +44,61 @@ export default function CheckSheet({ open, onClose }: CheckSheetProps) {
     }
   }, [open]);
 
+  const handleIdentifyResult = async (identifyRes: CheckIdentifyResponse) => {
+    const candidates = identifyRes.candidates || [];
+
+    if (candidates.length === 0) {
+      setPhase({ kind: "no-match" });
+      return;
+    }
+
+    const top = candidates[0];
+
+    if (top.whiskyId && top.confidence >= 0.4) {
+      setPhase({ kind: "loading", step: "looking-up" });
+      try {
+        const lookupRes = await lookupWhisky(top.whiskyId);
+        setPhase({ kind: "result", data: lookupRes });
+      } catch (lookupErr) {
+        const msg = lookupErr instanceof Error ? lookupErr.message : "Lookup failed";
+        setPhase({ kind: "error", message: msg });
+      }
+      return;
+    }
+
+    if (!top.whiskyId && top.confidence >= 0.7 && top.name) {
+      setPhase({ kind: "recognized", candidate: top });
+      return;
+    }
+
+    setPhase({ kind: "ambiguous", candidates: candidates.slice(0, 3) });
+  };
+
   const handleFile = async (file: File) => {
     if (!file) return;
     setPhase({ kind: "loading", step: "identifying" });
 
     try {
       const identifyRes = await identifyByPhoto(file);
-      const candidates = identifyRes.candidates || [];
-
-      if (candidates.length === 0) {
-        setPhase({ kind: "no-match" });
+      await handleIdentifyResult(identifyRes);
+    } catch (err) {
+      if (err instanceof RateLimitError) {
+        setPhase({ kind: "rate-limited", retryAfterSec: err.retryAfterSec });
         return;
       }
+      const msg = err instanceof Error ? err.message : "Identifikation fehlgeschlagen";
+      setPhase({ kind: "error", message: msg });
+    }
+  };
 
-      const top = candidates[0];
+  const handleTextQuery = async (query: string) => {
+    const trimmed = query.trim();
+    if (trimmed.length < 2) return;
+    setPhase({ kind: "loading", step: "identifying" });
 
-      if (top.whiskyId && top.confidence >= 0.4) {
-        setPhase({ kind: "loading", step: "looking-up" });
-        try {
-          const lookupRes = await lookupWhisky(top.whiskyId);
-          setPhase({ kind: "result", data: lookupRes });
-        } catch (lookupErr) {
-          const msg = lookupErr instanceof Error ? lookupErr.message : "Lookup failed";
-          setPhase({ kind: "error", message: msg });
-        }
-        return;
-      }
-
-      if (!top.whiskyId && top.confidence >= 0.7 && top.name) {
-        setPhase({ kind: "recognized", candidate: top });
-        return;
-      }
-
-      setPhase({ kind: "ambiguous", candidates: candidates.slice(0, 3) });
+    try {
+      const identifyRes = await identifyByText(trimmed);
+      await handleIdentifyResult(identifyRes);
     } catch (err) {
       if (err instanceof RateLimitError) {
         setPhase({ kind: "rate-limited", retryAfterSec: err.retryAfterSec });
@@ -189,7 +214,14 @@ export default function CheckSheet({ open, onClose }: CheckSheetProps) {
           />
 
           {phase.kind === "pickup" && (
-            <CheckPickup onCamera={handleCameraClick} onGallery={handleGalleryClick} />
+            <CheckPickup
+              onCamera={handleCameraClick}
+              onGallery={handleGalleryClick}
+              onText={() => setPhase({ kind: "text-input" })}
+            />
+          )}
+          {phase.kind === "text-input" && (
+            <CheckTextInput onSubmit={handleTextQuery} onCancel={resetToPickup} />
           )}
           {phase.kind === "loading" && <CheckLoading step={phase.step} />}
           {phase.kind === "result" && <CheckResultCard data={phase.data} pid={getParticipantId()} />}
@@ -215,7 +247,15 @@ export default function CheckSheet({ open, onClose }: CheckSheetProps) {
   );
 }
 
-function CheckPickup({ onCamera, onGallery }: { onCamera: () => void; onGallery: () => void }) {
+function CheckPickup({
+  onCamera,
+  onGallery,
+  onText,
+}: {
+  onCamera: () => void;
+  onGallery: () => void;
+  onText: () => void;
+}) {
   const { t } = useTranslation();
   return (
     <div>
@@ -245,18 +285,118 @@ function CheckPickup({ onCamera, onGallery }: { onCamera: () => void; onGallery:
         />
         <PickupButton
           icon={Type}
-          label={t("check.pickup.name", "Name eingeben (bald)")}
-          onClick={() => {}}
+          label={t("check.pickup.name", "Name eingeben")}
+          onClick={onText}
           testid="check-pickup-name"
-          disabled
         />
         <PickupButton
           icon={ScanLine}
-          label={t("check.pickup.barcode", "Barcode (bald)")}
+          label={t("check.pickup.barcode", "Barcode (in Arbeit)")}
           onClick={() => {}}
           testid="check-pickup-barcode"
           disabled
         />
+      </div>
+    </div>
+  );
+}
+
+function CheckTextInput({
+  onSubmit,
+  onCancel,
+}: {
+  onSubmit: (query: string) => void;
+  onCancel: () => void;
+}) {
+  const { t } = useTranslation();
+  const [value, setValue] = useState("");
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const trimmed = value.trim();
+  const canSubmit = trimmed.length >= 2;
+
+  useEffect(() => {
+    const id = window.setTimeout(() => inputRef.current?.focus(), 60);
+    return () => window.clearTimeout(id);
+  }, []);
+
+  const submit = () => {
+    if (canSubmit) onSubmit(trimmed);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <p
+        style={{
+          fontFamily: FONT.serif,
+          fontSize: 16,
+          color: "var(--labs-text-secondary)",
+          margin: 0,
+        }}
+        data-testid="check-text-hint"
+      >
+        {t("check.text.hint", "Name oder kurze Beschreibung eingeben")}
+      </p>
+      <input
+        ref={inputRef}
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") submit();
+        }}
+        placeholder={t("check.text.placeholder", "z.B. Lagavulin 16 Jahre")}
+        maxLength={200}
+        style={{
+          width: "100%",
+          padding: "14px 16px",
+          borderRadius: 12,
+          border: "1px solid var(--labs-border)",
+          background: "var(--labs-surface-elevated)",
+          color: "var(--labs-text)",
+          fontFamily: FONT.body,
+          fontSize: 15,
+          outline: "none",
+        }}
+        data-testid="check-text-input"
+      />
+      <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            padding: "10px 16px",
+            borderRadius: 10,
+            border: "1px solid var(--labs-border)",
+            background: "transparent",
+            color: "var(--labs-text-secondary)",
+            fontFamily: FONT.body,
+            fontSize: 14,
+            cursor: "pointer",
+          }}
+          data-testid="check-text-cancel"
+        >
+          {t("ui.cancel", "Abbrechen")}
+        </button>
+        <button
+          type="button"
+          onClick={submit}
+          disabled={!canSubmit}
+          style={{
+            padding: "10px 18px",
+            borderRadius: 10,
+            border: "none",
+            background: canSubmit ? "var(--labs-accent)" : "var(--labs-surface-elevated)",
+            color: canSubmit ? "#1a1410" : "var(--labs-text-muted)",
+            fontFamily: FONT.body,
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: canSubmit ? "pointer" : "not-allowed",
+            opacity: canSubmit ? 1 : 0.6,
+          }}
+          data-testid="check-text-submit"
+        >
+          {t("check.text.submit", "Identifizieren")}
+        </button>
       </div>
     </div>
   );

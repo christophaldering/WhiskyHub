@@ -83,6 +83,27 @@ export async function identifyByPhoto(file: File): Promise<CheckIdentifyResponse
   return res.json();
 }
 
+export async function identifyByText(query: string): Promise<CheckIdentifyResponse> {
+  const res = await fetch("/api/whisky/identify-text", {
+    method: "POST",
+    body: JSON.stringify({ query }),
+    headers: { "Content-Type": "application/json", ...pidHeaders() },
+  });
+
+  if (res.status === 429) {
+    const data = await res.json().catch(() => ({}));
+    const retryAfterSec = data.retryAfterSec ?? data.retryAfter ?? 60;
+    throw new RateLimitError(retryAfterSec);
+  }
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || `HTTP ${res.status}`);
+  }
+
+  return res.json();
+}
+
 export async function lookupWhisky(whiskyId: string): Promise<CheckLookupResponse> {
   const res = await fetch(`/api/check/lookup/${encodeURIComponent(whiskyId)}`, {
     method: "GET",
