@@ -1,0 +1,1016 @@
+# Hard Prompt: Check-Feature Stufe 2b — Foto-Pipeline + API-Verdrahtung
+
+## Zweck
+Funktionalität in das CheckSheet einbauen:
+1. Foto-Eingabe-Handler (Camera-Button und Gallery-Button im Pickup-State)
+2. Upload an /api/whisky/identify (Vision API mit lokalem Index-Match)
+3. Bei whiskyId-Match: Folge-Call an /api/check/lookup/:whiskyId
+4. CheckResultCard mit echten Status-Karten (Community + Personal-Layer)
+5. Loading-State (echter Spinner statt Platzhalter)
+6. Error-States (kein Match, Netzwerkfehler, Rate-Limit-429)
+7. Dev-Switcher entfernen (war nur Stufe-2a-Preview)
+
+## ABSOLUTE SAFETY RULES
+- ❌ KEINE Änderungen an `server/`, `shared/schema.ts`, `.env`, `package.json`
+- ❌ KEINE Änderungen außerhalb `client/src/labs/check/` (Sheet-Datei + neue Komponenten)
+- ❌ KEINE Text-Suche / Name-Eingabe implementieren (das ist Stufe 2c)
+- ❌ KEIN Barcode-Scanner implementieren (bleibt disabled)
+- ❌ KEINE Aktions-Buttons "+Wishlist", "+Sammlung", "Bewerten" (das ist Stufe 2c)
+- ❌ KEIN Aufräumen anderer Komponenten
+- ✅ NUR Foto-Path: Camera/Gallery → Identify → Lookup → Result-Card
+
+## Schritt 0 — Pflicht-Diagnose
+
+### 0.1 — Aktueller Stand
+```bash
+git log -1 --format="%H %s"
+git status --short
+ls -la client/src/labs/check/
+```
+
+### 0.2 — Bestehende Vorlage: Identify-Pattern in SoloCaptureScreen
+```bash
+sed -n '68,115p' client/src/labs/pages/solo/SoloCaptureScreen.tsx
+```
+Berichten, damit wir das Pattern (FormData, fetch, Error-Handling) konsistent wiederverwenden.
+
+### 0.3 — pidHeaders/api.ts: wie hole ich den x-participant-id-Header?
+```bash
+grep -n "pidHeaders\|x-participant-id\|getParticipantId" client/src/lib/api.ts | head -10
+```
+
+### 0.4 — Plan vorlegen
+Berichte die Outputs und WARTE auf mein "Go", bevor du editierst.
+
+## Implementierung (NACH meinem "Go")
+
+### Änderung 1: API-Helper-Modul `client/src/labs/check/checkApi.ts` (NEU)
+
+```typescript
+// Type-Definitionen für Check-Feature
+export type CheckIdentifyCandidate = {
+  whiskyId?: string;
+  name?: string;
+  distillery?: string;
+  region?: string;
+  age?: string | number;
+  abv?: string | number;
+  confidence: number;
+};
+
+export type CheckIdentifyResponse = {
+  candidates: CheckIdentifyCandidate[];
+  photoUrl?: string;
+  debug?: { ocrText?: string; tookMs?: number };
+};
+
+export type CheckLookupResponse = {
+  whisky: {
+    id: string;
+    name: string;
+    distillery: string;
+    region?: string | null;
+    abv?: number | null;
+    age?: number | null;
+    imageUrl?: string | null;
+  };
+  community: {
+    ratingCount: number;
+    avgOverall: number | null;
+    distribution: number[];
+    tastingCount: number;
+  } | null;
+  personal: {
+    inCollection: boolean;
+    collectionSince: string | null;
+    inWishlist: boolean;
+    wishlistPriority: "low" | "medium" | "high" | null;
+    myRatingCount: number;
+    myAvgOverall: number | null;
+    lastRatedAt: string | null;
+  } | null;
+};
+
+const getPid = (): string | null => {
+  try {
+    return localStorage.getItem("casksense-participant-id");
+  } catch {
+    return null;
+  }
+};
+
+export async function identifyByPhoto(file: File): Promise<CheckIdentifyResponse> {
+  const form = new FormData();
+  form.append("photo", file);
+
+  const headers: Record<string, string> = {};
+  const pid = getPid();
+  if (pid) headers["x-participant-id"] = pid;
+
+  const res = await fetch("/api/whisky/identify", {
+    method: "POST",
+    body: form,
+    headers,
+  });
+
+  if (res.status === 429) {
+    const data = await res.json().catch(() => ({}));
+    const retryAfterSec = data.retryAfterSec ?? 60;
+    const err = new Error("rate_limited");
+    (err as any).code = "rate_limited";
+    (err as any).retryAfterSec = retryAfterSec;
+    throw err;
+  }
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || `HTTP ${res.status}`);
+  }
+
+  return res.json();
+}
+
+export async function lookupWhisky(whiskyId: string): Promise<CheckLookupResponse> {
+  const headers: Record<string, string> = {};
+  const pid = getPid();
+  if (pid) headers["x-participant-id"] = pid;
+
+  const res = await fetch(`/api/check/lookup/${encodeURIComponent(whiskyId)}`, {
+    method: "GET",
+    headers,
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || `HTTP ${res.status}`);
+  }
+
+  return res.json();
+}
+```
+
+### Änderung 2: CheckSheet.tsx grundlegend überarbeiten
+
+Bestehende Datei `client/src/labs/check/CheckSheet.tsx` wird ersetzt. Wichtige Änderungen gegenüber Stufe 2a:
+- Dev-Switcher unten **raus**
+- Phase-Steuerung jetzt API-getrieben statt manuell wählbar
+- File-Input-Refs für Camera + Gallery
+- Echte API-Calls
+- CheckResultCard-Komponente bekommt die Daten
+
+```tsx
+import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { X, Camera, Image as ImageIcon, Type, ScanLine, Loader2 } from "lucide-react";
+import ModalPortal from "@/labs/components/ModalPortal";
+import { identifyByPhoto, lookupWhisky, type CheckLookupResponse, type CheckIdentifyCandidate } from "./checkApi";
+import CheckResultCard from "./CheckResultCard";
+
+type CheckSheetProps = {
+  open: boolean;
+  onClose: () => void;
+};
+
+type Phase = 
+  | { kind: "pickup" }
+  | { kind: "loading"; step: "identifying" | "looking-up" }
+  | { kind: "result"; data: CheckLookupResponse }
+  | { kind: "ambiguous"; candidates: CheckIdentifyCandidate[] }
+  | { kind: "no-match" }
+  | { kind: "rate-limited"; retryAfterSec: number }
+  | { kind: "error"; message: string };
+
+export default function CheckSheet({ open, onClose }: CheckSheetProps) {
+  const { t } = useTranslation();
+  const [phase, setPhase] = useState<Phase>({ kind: "pickup" });
+  const cameraRef = useRef<HTMLInputElement | null>(null);
+  const galleryRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setPhase({ kind: "pickup" });
+    }
+  }, [open]);
+
+  const handleFile = async (file: File) => {
+    if (!file) return;
+    setPhase({ kind: "loading", step: "identifying" });
+
+    try {
+      const identifyRes = await identifyByPhoto(file);
+      const candidates = identifyRes.candidates || [];
+
+      // No candidates at all
+      if (candidates.length === 0) {
+        setPhase({ kind: "no-match" });
+        return;
+      }
+
+      const top = candidates[0];
+
+      // Got a local match with high confidence → lookup
+      if (top.whiskyId && top.confidence >= 0.4) {
+        setPhase({ kind: "loading", step: "looking-up" });
+        try {
+          const lookupRes = await lookupWhisky(top.whiskyId);
+          setPhase({ kind: "result", data: lookupRes });
+        } catch (lookupErr) {
+          const msg = lookupErr instanceof Error ? lookupErr.message : "Lookup failed";
+          setPhase({ kind: "error", message: msg });
+        }
+        return;
+      }
+
+      // Low confidence or no local whiskyId → show ambiguous candidates
+      setPhase({ kind: "ambiguous", candidates: candidates.slice(0, 3) });
+    } catch (err) {
+      if (err instanceof Error && (err as any).code === "rate_limited") {
+        setPhase({ kind: "rate-limited", retryAfterSec: (err as any).retryAfterSec });
+        return;
+      }
+      const msg = err instanceof Error ? err.message : "Identifikation fehlgeschlagen";
+      setPhase({ kind: "error", message: msg });
+    }
+  };
+
+  const handleCameraClick = () => cameraRef.current?.click();
+  const handleGalleryClick = () => galleryRef.current?.click();
+
+  const onCameraChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+    if (cameraRef.current) cameraRef.current.value = "";
+  };
+  const onGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+    if (galleryRef.current) galleryRef.current.value = "";
+  };
+
+  const handleSelectCandidate = async (candidate: CheckIdentifyCandidate) => {
+    if (!candidate.whiskyId) return;
+    setPhase({ kind: "loading", step: "looking-up" });
+    try {
+      const lookupRes = await lookupWhisky(candidate.whiskyId);
+      setPhase({ kind: "result", data: lookupRes });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Lookup failed";
+      setPhase({ kind: "error", message: msg });
+    }
+  };
+
+  const resetToPickup = () => setPhase({ kind: "pickup" });
+
+  if (!open) return null;
+
+  return (
+    <ModalPortal>
+      <div
+        onClick={onClose}
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0, 0, 0, 0.55)",
+          backdropFilter: "blur(4px)",
+          zIndex: 1000,
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "center",
+        }}
+        data-testid="check-sheet-backdrop"
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            background: "var(--labs-surface)",
+            width: "100%",
+            maxWidth: 640,
+            maxHeight: "80vh",
+            borderRadius: "20px 20px 0 0",
+            padding: 24,
+            display: "flex",
+            flexDirection: "column",
+            gap: 20,
+            overflow: "auto",
+            animation: "checkSheetSlideUp 240ms cubic-bezier(0.22, 1, 0.36, 1)",
+          }}
+          data-testid="check-sheet-panel"
+        >
+          {/* Header */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <h2
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: 22,
+                fontWeight: 600,
+                color: "var(--labs-text)",
+                margin: 0,
+              }}
+              data-testid="check-sheet-title"
+            >
+              {t("check.title", "Whisky-Check")}
+            </h2>
+            <button
+              onClick={onClose}
+              style={{
+                background: "var(--labs-surface-elevated)",
+                border: "1px solid var(--labs-border)",
+                borderRadius: "50%",
+                width: 36,
+                height: 36,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                color: "var(--labs-text-secondary)",
+              }}
+              aria-label={t("ui.close", "Schließen")}
+              data-testid="check-sheet-close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Hidden file inputs */}
+          <input
+            ref={cameraRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            style={{ display: "none" }}
+            onChange={onCameraChange}
+            data-testid="check-camera-input"
+          />
+          <input
+            ref={galleryRef}
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={onGalleryChange}
+            data-testid="check-gallery-input"
+          />
+
+          {/* Phase-Content */}
+          {phase.kind === "pickup" && (
+            <CheckPickup onCamera={handleCameraClick} onGallery={handleGalleryClick} />
+          )}
+          {phase.kind === "loading" && <CheckLoading step={phase.step} />}
+          {phase.kind === "result" && <CheckResultCard data={phase.data} />}
+          {phase.kind === "ambiguous" && (
+            <CheckAmbiguous
+              candidates={phase.candidates}
+              onSelect={handleSelectCandidate}
+              onReset={resetToPickup}
+            />
+          )}
+          {phase.kind === "no-match" && <CheckNoMatch onReset={resetToPickup} />}
+          {phase.kind === "rate-limited" && (
+            <CheckRateLimited retryAfterSec={phase.retryAfterSec} onClose={onClose} />
+          )}
+          {phase.kind === "error" && (
+            <CheckError message={phase.message} onReset={resetToPickup} />
+          )}
+        </div>
+      </div>
+    </ModalPortal>
+  );
+}
+
+function CheckPickup({ onCamera, onGallery }: { onCamera: () => void; onGallery: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <div>
+      <p
+        style={{
+          fontFamily: "'Cormorant Garamond', serif",
+          fontSize: 16,
+          color: "var(--labs-text-secondary)",
+          marginBottom: 16,
+        }}
+        data-testid="check-pickup-hint"
+      >
+        {t("check.pickup.hint", "Wie möchtest du den Whisky identifizieren?")}
+      </p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <PickupButton
+          icon={Camera}
+          label={t("check.pickup.photo", "Foto aufnehmen")}
+          onClick={onCamera}
+          testid="check-pickup-photo"
+        />
+        <PickupButton
+          icon={ImageIcon}
+          label={t("check.pickup.gallery", "Foto auswählen")}
+          onClick={onGallery}
+          testid="check-pickup-gallery"
+        />
+        <PickupButton
+          icon={Type}
+          label={t("check.pickup.name", "Name (bald)")}
+          onClick={() => {}}
+          testid="check-pickup-name"
+          disabled
+        />
+        <PickupButton
+          icon={ScanLine}
+          label={t("check.pickup.barcode", "Barcode (bald)")}
+          onClick={() => {}}
+          testid="check-pickup-barcode"
+          disabled
+        />
+      </div>
+    </div>
+  );
+}
+
+function PickupButton({
+  icon: Icon,
+  label,
+  onClick,
+  testid,
+  disabled,
+}: {
+  icon: any;
+  label: string;
+  onClick: () => void;
+  testid: string;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        padding: "20px 12px",
+        borderRadius: 16,
+        border: "1px solid var(--labs-border)",
+        background: "var(--labs-surface-elevated)",
+        color: disabled ? "var(--labs-text-muted)" : "var(--labs-text)",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.5 : 1,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 8,
+        fontSize: 13,
+        fontWeight: 500,
+        fontFamily: "'DM Sans', sans-serif",
+        transition: "transform 120ms ease",
+      }}
+      data-testid={testid}
+    >
+      <Icon className="w-6 h-6" style={{ color: "var(--labs-accent)" }} />
+      <span>{label}</span>
+    </button>
+  );
+}
+
+function CheckLoading({ step }: { step: "identifying" | "looking-up" }) {
+  const { t } = useTranslation();
+  const label =
+    step === "identifying"
+      ? t("check.loading.identifying", "Identifiziere Whisky…")
+      : t("check.loading.lookingUp", "Lade Daten…");
+  return (
+    <div
+      style={{
+        padding: "48px 24px",
+        textAlign: "center",
+        color: "var(--labs-text-secondary)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 16,
+      }}
+      data-testid="check-loading"
+    >
+      <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--labs-accent)" }} />
+      <p style={{ fontSize: 14 }}>{label}</p>
+    </div>
+  );
+}
+
+function CheckAmbiguous({
+  candidates,
+  onSelect,
+  onReset,
+}: {
+  candidates: CheckIdentifyCandidate[];
+  onSelect: (c: CheckIdentifyCandidate) => void;
+  onReset: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div>
+      <p
+        style={{
+          fontFamily: "'Cormorant Garamond', serif",
+          fontSize: 16,
+          color: "var(--labs-text-secondary)",
+          marginBottom: 16,
+        }}
+        data-testid="check-ambiguous-hint"
+      >
+        {t("check.ambiguous.hint", "Mehrere mögliche Treffer. Welcher passt?")}
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {candidates.map((c, idx) => (
+          <button
+            key={idx}
+            onClick={() => onSelect(c)}
+            disabled={!c.whiskyId}
+            style={{
+              padding: "14px 16px",
+              borderRadius: 12,
+              border: "1px solid var(--labs-border)",
+              background: "var(--labs-surface-elevated)",
+              color: !c.whiskyId ? "var(--labs-text-muted)" : "var(--labs-text)",
+              cursor: !c.whiskyId ? "not-allowed" : "pointer",
+              opacity: !c.whiskyId ? 0.6 : 1,
+              textAlign: "left",
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+            data-testid={`check-ambiguous-candidate-${idx}`}
+          >
+            <div style={{ fontSize: 14, fontWeight: 600 }}>
+              {c.name || t("check.unknownWhisky", "Unbekannter Whisky")}
+            </div>
+            <div style={{ fontSize: 12, color: "var(--labs-text-secondary)", marginTop: 4 }}>
+              {c.distillery || "—"} {c.confidence ? `· ${Math.round(c.confidence * 100)}% Konfidenz` : ""}
+            </div>
+          </button>
+        ))}
+      </div>
+      <button
+        onClick={onReset}
+        style={{
+          marginTop: 16,
+          padding: "10px 16px",
+          background: "transparent",
+          border: "1px solid var(--labs-border)",
+          borderRadius: 8,
+          color: "var(--labs-text-secondary)",
+          cursor: "pointer",
+          fontSize: 13,
+          fontFamily: "'DM Sans', sans-serif",
+        }}
+        data-testid="check-ambiguous-reset"
+      >
+        {t("check.tryAgain", "Erneut versuchen")}
+      </button>
+    </div>
+  );
+}
+
+function CheckNoMatch({ onReset }: { onReset: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <div
+      style={{
+        padding: "32px 16px",
+        textAlign: "center",
+        color: "var(--labs-text-secondary)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 16,
+      }}
+      data-testid="check-no-match"
+    >
+      <p style={{ fontSize: 15 }}>
+        {t("check.noMatch", "Keine eindeutige Identifikation.")}
+      </p>
+      <p style={{ fontSize: 13, opacity: 0.7, maxWidth: 320 }}>
+        {t(
+          "check.noMatchHint",
+          "Versuche ein klareres Foto des Labels oder gib den Namen manuell ein (bald verfügbar)."
+        )}
+      </p>
+      <button
+        onClick={onReset}
+        style={{
+          padding: "10px 20px",
+          background: "var(--labs-accent)",
+          border: "none",
+          borderRadius: 8,
+          color: "var(--labs-bg)",
+          cursor: "pointer",
+          fontSize: 13,
+          fontWeight: 600,
+          fontFamily: "'DM Sans', sans-serif",
+        }}
+        data-testid="check-no-match-reset"
+      >
+        {t("check.tryAgain", "Erneut versuchen")}
+      </button>
+    </div>
+  );
+}
+
+function CheckRateLimited({ retryAfterSec, onClose }: { retryAfterSec: number; onClose: () => void }) {
+  const { t } = useTranslation();
+  const minutes = Math.ceil(retryAfterSec / 60);
+  return (
+    <div
+      style={{
+        padding: "32px 16px",
+        textAlign: "center",
+        color: "var(--labs-text-secondary)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 16,
+      }}
+      data-testid="check-rate-limited"
+    >
+      <p style={{ fontSize: 15 }}>
+        {t("check.rateLimited", "Zu viele Anfragen.")}
+      </p>
+      <p style={{ fontSize: 13, opacity: 0.7, maxWidth: 320 }}>
+        {t("check.rateLimitedHint", "Bitte in ca. {{min}} Minute(n) erneut versuchen oder anmelden.", { min: minutes })}
+      </p>
+      <button
+        onClick={onClose}
+        style={{
+          padding: "10px 20px",
+          background: "var(--labs-surface-elevated)",
+          border: "1px solid var(--labs-border)",
+          borderRadius: 8,
+          color: "var(--labs-text-secondary)",
+          cursor: "pointer",
+          fontSize: 13,
+          fontFamily: "'DM Sans', sans-serif",
+        }}
+        data-testid="check-rate-limited-close"
+      >
+        {t("ui.close", "Schließen")}
+      </button>
+    </div>
+  );
+}
+
+function CheckError({ message, onReset }: { message: string; onReset: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <div
+      style={{
+        padding: "32px 16px",
+        textAlign: "center",
+        color: "var(--labs-text-secondary)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 16,
+      }}
+      data-testid="check-error"
+    >
+      <p style={{ fontSize: 15, color: "var(--labs-text)" }}>
+        {t("check.error", "Etwas ist schiefgegangen.")}
+      </p>
+      <p style={{ fontSize: 12, opacity: 0.6, maxWidth: 320 }}>
+        {message}
+      </p>
+      <button
+        onClick={onReset}
+        style={{
+          padding: "10px 20px",
+          background: "var(--labs-accent)",
+          border: "none",
+          borderRadius: 8,
+          color: "var(--labs-bg)",
+          cursor: "pointer",
+          fontSize: 13,
+          fontWeight: 600,
+          fontFamily: "'DM Sans', sans-serif",
+        }}
+        data-testid="check-error-reset"
+      >
+        {t("check.tryAgain", "Erneut versuchen")}
+      </button>
+    </div>
+  );
+}
+```
+
+### Änderung 3: Neue Datei `client/src/labs/check/CheckResultCard.tsx`
+
+```tsx
+import { useTranslation } from "react-i18next";
+import { Users, Package, Star } from "lucide-react";
+import type { CheckLookupResponse } from "./checkApi";
+
+type Props = {
+  data: CheckLookupResponse;
+};
+
+export default function CheckResultCard({ data }: Props) {
+  const { t } = useTranslation();
+  const { whisky, community, personal } = data;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }} data-testid="check-result">
+      {/* Whisky-Header */}
+      <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+        <div
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 8,
+            background: "var(--labs-surface-elevated)",
+            border: "1px solid var(--labs-border)",
+            flexShrink: 0,
+            overflow: "hidden",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {whisky.imageUrl ? (
+            <img
+              src={whisky.imageUrl}
+              alt={whisky.name}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          ) : (
+            <span style={{ fontSize: 20, color: "var(--labs-text-muted)" }}>🥃</span>
+          )}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h3
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: 18,
+              fontWeight: 600,
+              color: "var(--labs-text)",
+              margin: 0,
+              lineHeight: 1.2,
+            }}
+            data-testid="check-result-name"
+          >
+            {whisky.name}
+          </h3>
+          <p
+            style={{
+              fontSize: 13,
+              color: "var(--labs-text-secondary)",
+              margin: "4px 0 0 0",
+            }}
+            data-testid="check-result-meta"
+          >
+            {[whisky.distillery, whisky.region, whisky.abv ? `${whisky.abv}%` : null, whisky.age ? `${whisky.age}y` : null]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+        </div>
+      </div>
+
+      {/* Status-Karten */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {/* Personal: in Sammlung */}
+        {personal && (
+          <StatusCard
+            icon={Package}
+            title={t("check.card.collection", "Deine Sammlung")}
+            value={
+              personal.inCollection
+                ? t("check.card.inCollection", "In Sammlung")
+                : t("check.card.notInCollection", "Noch nicht in Sammlung")
+            }
+            subtitle={
+              personal.inCollection && personal.collectionSince
+                ? t("check.card.since", "Seit {{date}}", {
+                    date: formatDate(personal.collectionSince),
+                  })
+                : undefined
+            }
+            active={personal.inCollection}
+            testid="check-card-collection"
+          />
+        )}
+
+        {/* Personal: Deine Bewertungen */}
+        {personal && (
+          <StatusCard
+            icon={Star}
+            title={t("check.card.myRatings", "Deine Bewertungen")}
+            value={
+              personal.myRatingCount > 0
+                ? t("check.card.ratingsCount", "{{count}}× verkostet · Ø {{score}}", {
+                    count: personal.myRatingCount,
+                    score: personal.myAvgOverall != null ? personal.myAvgOverall.toFixed(1) : "—",
+                  })
+                : t("check.card.noRatings", "Noch nicht verkostet")
+            }
+            subtitle={
+              personal.lastRatedAt
+                ? t("check.card.lastRated", "Zuletzt: {{date}}", {
+                    date: formatDate(personal.lastRatedAt),
+                  })
+                : undefined
+            }
+            active={personal.myRatingCount > 0}
+            testid="check-card-my-ratings"
+          />
+        )}
+
+        {/* Community */}
+        <StatusCard
+          icon={Users}
+          title={t("check.card.community", "Community")}
+          value={
+            community
+              ? t("check.card.communityValue", "Ø {{score}} · {{count}} Bewertungen", {
+                  score: community.avgOverall != null ? community.avgOverall.toFixed(1) : "—",
+                  count: community.ratingCount,
+                })
+              : t("check.card.communityTooFew", "Noch nicht genügend Daten")
+          }
+          subtitle={
+            community && community.tastingCount > 0
+              ? t("check.card.tastings", "In {{n}} Tastings", { n: community.tastingCount })
+              : undefined
+          }
+          active={!!community}
+          testid="check-card-community"
+        />
+
+        {/* CTA für nicht eingeloggte User */}
+        {!personal && (
+          <div
+            style={{
+              padding: "14px 16px",
+              borderRadius: 12,
+              background: "var(--labs-accent-muted)",
+              border: "1px solid var(--labs-accent)",
+              fontSize: 13,
+              color: "var(--labs-text)",
+              textAlign: "center",
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+            data-testid="check-result-login-cta"
+          >
+            {t("check.loginForPersonal", "Anmelden, um persönliche Daten zu sehen (Sammlung, Bewertungen)")}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StatusCard({
+  icon: Icon,
+  title,
+  value,
+  subtitle,
+  active,
+  testid,
+}: {
+  icon: any;
+  title: string;
+  value: string;
+  subtitle?: string;
+  active?: boolean;
+  testid: string;
+}) {
+  return (
+    <div
+      style={{
+        padding: "14px 16px",
+        borderRadius: 12,
+        background: "var(--labs-surface-elevated)",
+        border: `1px solid ${active ? "var(--labs-accent)" : "var(--labs-border)"}`,
+        display: "flex",
+        gap: 12,
+        alignItems: "flex-start",
+      }}
+      data-testid={testid}
+    >
+      <Icon
+        className="w-5 h-5"
+        style={{
+          color: active ? "var(--labs-accent)" : "var(--labs-text-muted)",
+          marginTop: 2,
+          flexShrink: 0,
+        }}
+      />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontSize: 11,
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            color: "var(--labs-text-muted)",
+            fontWeight: 600,
+            fontFamily: "'DM Sans', sans-serif",
+          }}
+        >
+          {title}
+        </div>
+        <div
+          style={{
+            fontSize: 14,
+            color: "var(--labs-text)",
+            marginTop: 4,
+            fontFamily: "'DM Sans', sans-serif",
+            fontWeight: 500,
+          }}
+        >
+          {value}
+        </div>
+        {subtitle && (
+          <div
+            style={{
+              fontSize: 12,
+              color: "var(--labs-text-secondary)",
+              marginTop: 2,
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
+            {subtitle}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function formatDate(iso: string): string {
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
+  } catch {
+    return iso;
+  }
+}
+```
+
+## Verifikation
+
+```bash
+# 1. Neue Dateien existieren
+ls -la client/src/labs/check/checkApi.ts client/src/labs/check/CheckResultCard.tsx
+
+# 2. Dev-Switcher ist raus aus CheckSheet.tsx
+grep -n "check-sheet-dev-switcher\|Dev-Preview" client/src/labs/check/CheckSheet.tsx
+# Erwartet: leer
+
+# 3. File-Inputs sind drin
+grep -n "type=\"file\"\|capture=\"environment\"" client/src/labs/check/CheckSheet.tsx
+# Erwartet: 2 Treffer (camera + gallery)
+
+# 4. API-Calls sind drin
+grep -n "identifyByPhoto\|lookupWhisky" client/src/labs/check/CheckSheet.tsx
+# Erwartet: jeweils mind. 1 Treffer
+
+# 5. TypeScript-Check
+npx tsc --noEmit 2>&1 | head -30
+# Erwartet: keine neuen Fehler in client/src/labs/check/
+
+# 6. Manuelle UI-Prüfung (Christoph):
+#    - Check-Button im Header klicken → Sheet öffnet sich (wie Stufe 2a)
+#    - Dev-Switcher ist NICHT mehr da
+#    - Klick "Foto aufnehmen" → Camera-Picker öffnet sich (Mobile) oder File-Picker (Desktop)
+#    - Foto eines bekannten Whiskys (aus deiner DB) auswählen
+#    - Loading "Identifiziere…" → "Lade Daten…"
+#    - Result-Card mit Status-Karten erscheint
+#    - Bei eingeloggt: 3 Karten (Sammlung, Bewertungen, Community)
+#    - Bei nicht eingeloggt: 1 Karte (Community) + Login-CTA
+#    - Test mit Müll-Foto (z.B. Foto von einer Wand): "Keine eindeutige Identifikation"
+#    - Test ratelimit: 11× hintereinander auslösen → "Zu viele Anfragen"
+```
+
+## Bericht-Format
+
+```
+Schritt 0 Diagnose:
+  HEAD: <output>
+  Working Tree: <output>
+  check-Ordner: <output>
+  Identify-Pattern aus SoloCaptureScreen: <output>
+  pidHeaders-Quelle: <output>
+
+[Hier auf "Go" warten]
+
+Änderung 1 (checkApi.ts): <Done / Failed>
+Änderung 2 (CheckSheet.tsx überarbeitet): <Done / Failed>
+Änderung 3 (CheckResultCard.tsx): <Done / Failed>
+
+Verifikation:
+  1. Dateien: <output>
+  2. Dev-Switcher raus: <output>
+  3. File-Inputs: <output>
+  4. API-Calls: <output>
+  5. TypeScript: <output>
+
+Status: <Bewertung>
+Manuelle UI-Prüfung: erwartet von Christoph
+```
+
+## Was du NICHT machen sollst
+- KEINE Text-Suche / Name-Eingabe implementieren
+- KEINEN Barcode-Scanner aktivieren
+- KEINE Aktions-Buttons "+Wishlist", "+Sammlung", "Bewerten" einbauen
+- KEINE Änderungen an LabsLayout.tsx (außer falls TypeScript einen Import vermisst — dann nur den Import-Fix)
+- KEIN Aufräumen an i18n-Files (Translation-Keys werden über `t()`-Defaults bedient, vollständige Übersetzung ist Stufe 2c)
+- KEIN Commit, KEIN Push (Replit-Auto-Checkpoint macht das)
