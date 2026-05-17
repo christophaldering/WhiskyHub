@@ -1,0 +1,307 @@
+// ============================================================
+// FONT-Konstante importieren (oben in CheckSheet.tsx)
+// ============================================================
+import { FONT } from "@/labs/components/rating/theme";
+
+// ============================================================
+// PickupButton — Helper für Camera/Gallery/Name/Barcode-Buttons
+// ============================================================
+function PickupButton({
+  icon: Icon,
+  label,
+  onClick,
+  testid,
+  disabled,
+}: {
+  icon: any;
+  label: string;
+  onClick: () => void;
+  testid: string;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        padding: "20px 12px",
+        borderRadius: 16,
+        border: "1px solid var(--labs-border)",
+        background: "var(--labs-surface-elevated)",
+        color: disabled ? "var(--labs-text-muted)" : "var(--labs-text)",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.5 : 1,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 8,
+        fontSize: 13,
+        fontWeight: 500,
+        fontFamily: FONT.body,
+        transition: "transform 120ms ease",
+      }}
+      data-testid={testid}
+    >
+      <Icon className="w-6 h-6" style={{ color: "var(--labs-accent)" }} />
+      <span>{label}</span>
+    </button>
+  );
+}
+
+// ============================================================
+// CheckLoading — Spinner mit Step-Label
+// ============================================================
+function CheckLoading({ step }: { step: "identifying" | "looking-up" }) {
+  const { t } = useTranslation();
+  const label =
+    step === "identifying"
+      ? t("check.loading.identifying", "Identifiziere Whisky…")
+      : t("check.loading.lookingUp", "Lade Daten…");
+  return (
+    <div
+      style={{
+        padding: "48px 24px",
+        textAlign: "center",
+        color: "var(--labs-text-secondary)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 16,
+        fontFamily: FONT.body,
+      }}
+      data-testid="check-loading"
+    >
+      <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--labs-accent)" }} />
+      <p style={{ fontSize: 14 }}>{label}</p>
+    </div>
+  );
+}
+
+// ============================================================
+// CheckAmbiguous — Top-3-Kandidaten-Liste
+// ============================================================
+function CheckAmbiguous({
+  candidates,
+  onSelect,
+  onReset,
+}: {
+  candidates: CheckIdentifyCandidate[];
+  onSelect: (c: CheckIdentifyCandidate) => void;
+  onReset: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div data-testid="check-ambiguous">
+      <p
+        style={{
+          fontFamily: FONT.serif,
+          fontSize: 16,
+          color: "var(--labs-text-secondary)",
+          marginBottom: 16,
+        }}
+        data-testid="check-ambiguous-hint"
+      >
+        {t("check.ambiguous.hint", "Mehrere mögliche Treffer. Welcher passt?")}
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {candidates.map((c, idx) => (
+          <button
+            key={idx}
+            onClick={() => onSelect(c)}
+            disabled={!c.whiskyId}
+            style={{
+              padding: "14px 16px",
+              borderRadius: 12,
+              border: "1px solid var(--labs-border)",
+              background: "var(--labs-surface-elevated)",
+              color: !c.whiskyId ? "var(--labs-text-muted)" : "var(--labs-text)",
+              cursor: !c.whiskyId ? "not-allowed" : "pointer",
+              opacity: !c.whiskyId ? 0.6 : 1,
+              textAlign: "left",
+              fontFamily: FONT.body,
+            }}
+            data-testid={`check-ambiguous-candidate-${idx}`}
+          >
+            <div style={{ fontSize: 14, fontWeight: 600 }}>
+              {c.name || t("check.unknownWhisky", "Unbekannter Whisky")}
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                color: "var(--labs-text-secondary)",
+                marginTop: 4,
+              }}
+            >
+              {c.distillery || "—"}
+              {c.confidence ? ` · ${Math.round(c.confidence * 100)}% Konfidenz` : ""}
+            </div>
+          </button>
+        ))}
+      </div>
+      <button
+        onClick={onReset}
+        style={{
+          marginTop: 16,
+          padding: "10px 16px",
+          background: "transparent",
+          border: "1px solid var(--labs-border)",
+          borderRadius: 8,
+          color: "var(--labs-text-secondary)",
+          cursor: "pointer",
+          fontSize: 13,
+          fontFamily: FONT.body,
+        }}
+        data-testid="check-ambiguous-reset"
+      >
+        {t("check.tryAgain", "Erneut versuchen")}
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// CheckNoMatch — Empty-State
+// ============================================================
+function CheckNoMatch({ onReset }: { onReset: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <div
+      style={{
+        padding: "32px 16px",
+        textAlign: "center",
+        color: "var(--labs-text-secondary)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 16,
+        fontFamily: FONT.body,
+      }}
+      data-testid="check-no-match"
+    >
+      <p style={{ fontSize: 15 }}>
+        {t("check.noMatch", "Keine eindeutige Identifikation.")}
+      </p>
+      <p style={{ fontSize: 13, opacity: 0.7, maxWidth: 320 }}>
+        {t(
+          "check.noMatchHint",
+          "Versuche ein klareres Foto des Labels oder gib den Namen manuell ein (bald verfügbar)."
+        )}
+      </p>
+      <button
+        onClick={onReset}
+        style={{
+          padding: "10px 20px",
+          background: "var(--labs-accent)",
+          border: "none",
+          borderRadius: 8,
+          color: "var(--labs-bg)",
+          cursor: "pointer",
+          fontSize: 13,
+          fontWeight: 600,
+          fontFamily: FONT.body,
+        }}
+        data-testid="check-no-match-reset"
+      >
+        {t("check.tryAgain", "Erneut versuchen")}
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// CheckRateLimited — Hinweis bei 429
+// ============================================================
+function CheckRateLimited({
+  retryAfterSec,
+  onClose,
+}: {
+  retryAfterSec: number;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const minutes = Math.ceil(retryAfterSec / 60);
+  return (
+    <div
+      style={{
+        padding: "32px 16px",
+        textAlign: "center",
+        color: "var(--labs-text-secondary)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 16,
+        fontFamily: FONT.body,
+      }}
+      data-testid="check-rate-limited"
+    >
+      <p style={{ fontSize: 15 }}>{t("check.rateLimited", "Zu viele Anfragen.")}</p>
+      <p style={{ fontSize: 13, opacity: 0.7, maxWidth: 320 }}>
+        {t(
+          "check.rateLimitedHint",
+          "Bitte in ca. {{min}} Minute(n) erneut versuchen oder anmelden.",
+          { min: minutes }
+        )}
+      </p>
+      <button
+        onClick={onClose}
+        style={{
+          padding: "10px 20px",
+          background: "var(--labs-surface-elevated)",
+          border: "1px solid var(--labs-border)",
+          borderRadius: 8,
+          color: "var(--labs-text-secondary)",
+          cursor: "pointer",
+          fontSize: 13,
+          fontFamily: FONT.body,
+        }}
+        data-testid="check-rate-limited-close"
+      >
+        {t("ui.close", "Schließen")}
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// CheckError — generischer Fehler
+// ============================================================
+function CheckError({ message, onReset }: { message: string; onReset: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <div
+      style={{
+        padding: "32px 16px",
+        textAlign: "center",
+        color: "var(--labs-text-secondary)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 16,
+        fontFamily: FONT.body,
+      }}
+      data-testid="check-error"
+    >
+      <p style={{ fontSize: 15, color: "var(--labs-text)" }}>
+        {t("check.error", "Etwas ist schiefgegangen.")}
+      </p>
+      <p style={{ fontSize: 12, opacity: 0.6, maxWidth: 320 }}>{message}</p>
+      <button
+        onClick={onReset}
+        style={{
+          padding: "10px 20px",
+          background: "var(--labs-accent)",
+          border: "none",
+          borderRadius: 8,
+          color: "var(--labs-bg)",
+          cursor: "pointer",
+          fontSize: 13,
+          fontWeight: 600,
+          fontFamily: FONT.body,
+        }}
+        data-testid="check-error-reset"
+      >
+        {t("check.tryAgain", "Erneut versuchen")}
+      </button>
+    </div>
+  );
+}
