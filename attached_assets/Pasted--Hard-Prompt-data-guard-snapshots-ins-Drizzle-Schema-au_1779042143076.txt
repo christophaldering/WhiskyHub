@@ -1,0 +1,106 @@
+# Hard Prompt: _data_guard_snapshots ins Drizzle-Schema aufnehmen
+
+## Zweck
+Drizzle generiert beim Publishing aktuell ein `DROP TABLE "_data_guard_snapshots" CASCADE`, weil die Tabelle in Production existiert (mit 3 Items), aber nicht im Drizzle-Schema steht. Wir wollen die Tabelle erhalten, ohne den eigentlichen Code zu ändern.
+
+Lösung: Schema-Eintrag in `shared/schema.ts` hinzufügen, der die Tabelle als bekannt markiert. Drizzle wird dann keine DROP-Migration mehr generieren.
+
+## ABSOLUTE SAFETY RULES
+- ❌ KEINE Änderungen an `server/`, `client/`, `.env`, `package.json`, `drizzle.config.ts`
+- ❌ KEINE Änderungen an existierenden Tabellen-Definitionen in `shared/schema.ts`
+- ❌ Kein `git commit`, kein `git push`
+- ❌ Kein `npm run db:push`, kein direkter Migration-Run
+- ✅ NUR Erweiterung von `shared/schema.ts` um eine neue Tabellen-Definition
+
+## Schritt 0 — Pflicht-Diagnose
+
+### 0.1 — Aktueller Stand
+```bash
+git log -1 --format="%H %s"
+git status --short
+```
+
+### 0.2 — Tabellen-Struktur in Production verifizieren
+Bitte einmal versuchen, die echte Struktur aus der Production-DB zu lesen. Falls die Workspace-Shell keinen direkten Zugriff hat, das hier in Replit über das DB-Tool ausführen:
+```sql
+\d _data_guard_snapshots
+```
+oder als reine SQL-Query:
+```sql
+SELECT column_name, data_type, is_nullable, column_default
+FROM information_schema.columns
+WHERE table_name = '_data_guard_snapshots'
+ORDER BY ordinal_position;
+```
+
+Berichte den Output. Erwartete Spalten:
+- `id` — vermutlich serial/integer oder uuid (Sortier-Schlüssel für `ORDER BY id DESC`)
+- `table_counts` — text oder jsonb (Code macht JSON.parse falls string)
+- Optional: `created_at` oder ähnlich (würde sich anbieten, ist aber nicht zwingend)
+
+### 0.3 — Wo in shared/schema.ts einfügen?
+```bash
+grep -n "^export const \|^// ---" shared/schema.ts | tail -20
+```
+Suche das Ende der pgTable-Definitionen. Neuer Eintrag soll dort hinzu, vor den createInsertSchema-Exporten.
+
+### 0.4 — Plan vorlegen
+Berichte den Output der drei Diagnose-Befehle und WARTE auf mein "Go" mit dem konkreten Schema-Eintrag, BEVOR du editierst. Ich entscheide anhand der tatsächlichen Production-Struktur, ob `table_counts` als `text` oder `jsonb` definiert wird.
+
+## Implementierung (NACH meinem "Go" mit der Spec)
+
+Ich liefere dir den exakten str_replace nach der Diagnose. Vorab als Skizze (kann sich je nach Production-Struktur ändern):
+
+```typescript
+// --- Data Guard Snapshot (managed externally, kept in schema to prevent DROP) ---
+export const dataGuardSnapshots = pgTable("_data_guard_snapshots", {
+  id: serial("id").primaryKey(),
+  tableCounts: jsonb("table_counts").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+```
+
+## Verifikation nach Änderung
+
+```bash
+# 1. Schema-Eintrag existiert
+grep -n "_data_guard_snapshots\|dataGuardSnapshots" shared/schema.ts
+
+# 2. TypeScript-Check
+npx tsc --noEmit 2>&1 | head -20
+
+# 3. Drizzle-Diff NEU generieren (Vorsicht: das schreibt eine neue Migration-Datei!)
+#    NICHT ausführen, sondern nur prüfen, was es generieren WÜRDE.
+#    Falls Replit ein "Generate migration"-Tool hat, das auch im Trockenlauf möglich ist,
+#    den nutzen. Falls nicht: mir Bescheid geben, dann entscheiden wir gemeinsam.
+
+# Für jetzt: kein db:push, kein generate. Nur das Schema-File ist geändert.
+```
+
+## Bericht-Format
+```
+Schritt 0 Diagnose:
+  HEAD: <output>
+  Working Tree: <output>
+  Production-Tabellen-Struktur:
+    <SQL-Output>
+  Einfügeposition in shared/schema.ts:
+    <Zeile + Kontext>
+
+[Hier auf "Go" mit konkreter Spec warten]
+
+Änderung: <Done / Failed>
+
+Verifikation:
+  Schema-Treffer: <output>
+  TypeScript-Check: <output>
+
+Status: <Bewertung>
+```
+
+## Was du NICHT machen sollst
+- KEIN Drizzle-Migration generieren (`drizzle-kit generate`)
+- KEIN `npm run db:push`
+- KEIN Commit, kein Push
+- KEINE Änderungen am Code in server/index.ts
+- KEIN "ich räume bei der Gelegenheit auch noch ..."
