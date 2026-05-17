@@ -108,7 +108,6 @@ const LabsBottleSplit = lazy(() => import("@/labs/pages/LabsBottleSplit"));
 const LabsBottleSplitDetail = lazy(() => import("@/labs/pages/LabsBottleSplitDetail"));
 const LabsInvite = lazy(() => import("@/labs/pages/LabsInvite"));
 const LabsEntdecken = lazy(() => import("@/labs/pages/LabsEntdecken"));
-const LabsBibliothek = lazy(() => import("@/labs/pages/LabsBibliothek"));
 const LabsBatchImport = lazy(() => import("@/labs/pages/LabsBatchImport"));
 const LabsLexicon = lazy(() => import("@/labs/pages/LabsLexicon"));
 const LabsDistilleries = lazy(() => import("@/labs/pages/LabsDistilleries"));
