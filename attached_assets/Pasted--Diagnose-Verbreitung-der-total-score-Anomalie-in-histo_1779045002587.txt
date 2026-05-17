@@ -1,0 +1,123 @@
+# Diagnose: Verbreitung der total_score-Anomalie in historical_tasting_entries
+
+Nur LESEN, keine Änderungen.
+
+## Frage 1: Wie viele Entries haben das Problem?
+
+```sql
+-- Klassifiziere ALLE Entries nach Verhältnis total_score zu (nose+taste+finish)/3
+WITH entries_with_calc AS (
+  SELECT 
+    id,
+    whisky_name_raw,
+    distillery_raw,
+    nose_score, taste_score, finish_score, total_score,
+    CASE 
+      WHEN nose_score IS NULL OR taste_score IS NULL OR finish_score IS NULL THEN NULL
+      ELSE (nose_score + taste_score + finish_score) / 3.0 
+    END AS expected_avg
+  FROM historical_tasting_entries
+)
+SELECT
+  COUNT(*) AS total_entries,
+  COUNT(*) FILTER (WHERE total_score IS NULL) AS total_null,
+  COUNT(*) FILTER (WHERE expected_avg IS NULL) AS dimensions_incomplete,
+  COUNT(*) FILTER (WHERE total_score IS NOT NULL AND expected_avg IS NOT NULL 
+                   AND ABS(total_score - expected_avg) < 0.5) AS consistent_with_avg,
+  COUNT(*) FILTER (WHERE total_score IS NOT NULL AND expected_avg IS NOT NULL 
+                   AND ABS(total_score - expected_avg) >= 0.5) AS inconsistent_with_avg
+FROM entries_with_calc;
+```
+
+## Frage 2: Wie sieht die Verteilung der inkonsistenten Fälle aus?
+
+```sql
+WITH entries_with_calc AS (
+  SELECT 
+    id,
+    whisky_name_raw,
+    distillery_raw,
+    nose_score, taste_score, finish_score, total_score,
+    (nose_score + taste_score + finish_score) / 3.0 AS expected_avg,
+    total_score / NULLIF((nose_score + taste_score + finish_score) / 3.0, 0) AS ratio
+  FROM historical_tasting_entries
+  WHERE total_score IS NOT NULL 
+    AND nose_score IS NOT NULL 
+    AND taste_score IS NOT NULL 
+    AND finish_score IS NOT NULL
+)
+SELECT
+  CASE 
+    WHEN ratio < 0.15 THEN 'a) total < 15% of avg (extreme Anomalie wie 1.67)'
+    WHEN ratio < 0.3  THEN 'b) total 15-30% of avg'
+    WHEN ratio < 0.5  THEN 'c) total 30-50% of avg'
+    WHEN ratio < 0.9  THEN 'd) total 50-90% of avg'
+    WHEN ratio < 1.1  THEN 'e) total ≈ avg (konsistent, ±10%)'
+    WHEN ratio < 1.5  THEN 'f) total 110-150% of avg'
+    ELSE 'g) total > 150% of avg'
+  END AS bucket,
+  COUNT(*) AS count,
+  ROUND(AVG(ratio)::numeric, 3) AS avg_ratio_in_bucket,
+  ROUND(MIN(ratio)::numeric, 3) AS min_ratio,
+  ROUND(MAX(ratio)::numeric, 3) AS max_ratio
+FROM entries_with_calc
+GROUP BY 1
+ORDER BY 1;
+```
+
+## Frage 3: Konkrete Beispiele aus dem extremsten Bucket (Bug-Verständnis)
+
+```sql
+WITH entries_with_calc AS (
+  SELECT 
+    id, whisky_name_raw, distillery_raw,
+    nose_score, taste_score, finish_score, total_score,
+    (nose_score + taste_score + finish_score) / 3.0 AS expected_avg,
+    total_score / NULLIF((nose_score + taste_score + finish_score) / 3.0, 0) AS ratio
+  FROM historical_tasting_entries
+  WHERE total_score IS NOT NULL 
+    AND nose_score IS NOT NULL 
+    AND taste_score IS NOT NULL 
+    AND finish_score IS NOT NULL
+)
+SELECT 
+  whisky_name_raw, distillery_raw,
+  nose_score, taste_score, finish_score, total_score,
+  ROUND(expected_avg::numeric, 2) AS expected_avg,
+  ROUND(ratio::numeric, 3) AS ratio
+FROM entries_with_calc
+WHERE ratio < 0.5
+ORDER BY ratio
+LIMIT 10;
+```
+
+## Frage 4: Zugehörige historische Tastings — kommen die Anomalien aus bestimmten Tastings?
+
+```sql
+WITH entries_with_calc AS (
+  SELECT 
+    historical_tasting_id,
+    total_score / NULLIF((nose_score + taste_score + finish_score) / 3.0, 0) AS ratio
+  FROM historical_tasting_entries
+  WHERE total_score IS NOT NULL 
+    AND nose_score IS NOT NULL 
+    AND taste_score IS NOT NULL 
+    AND finish_score IS NOT NULL
+)
+SELECT 
+  ht.tasting_number,
+  ht.title_de,
+  ht.tasting_date,
+  ht.source_file_name,
+  COUNT(e.*) AS entries_total,
+  COUNT(e.*) FILTER (WHERE e.ratio < 0.5) AS entries_anomalous,
+  ROUND(AVG(e.ratio)::numeric, 3) AS avg_ratio
+FROM historical_tastings ht
+JOIN entries_with_calc e ON e.historical_tasting_id = ht.id
+GROUP BY ht.id, ht.tasting_number, ht.title_de, ht.tasting_date, ht.source_file_name
+ORDER BY ht.tasting_number;
+```
+
+## Bericht
+
+Strukturiert alle vier Outputs. Keine Bewertung, keine Aktion — nur Fakten.
