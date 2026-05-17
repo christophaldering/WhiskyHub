@@ -271,8 +271,9 @@ export default function LabsBenchmark() {
             onClick={() => setActiveTab(key)}
             data-testid={`tab-${key}`}
             style={{
-              display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: activeTab === key ? 600 : 500,
+              display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, fontSize: 13, fontWeight: activeTab === key ? 600 : 500,
               cursor: "pointer", whiteSpace: "nowrap", fontFamily: "inherit",
+              flexShrink: 0,
               background: activeTab === key ? "var(--labs-accent)" : "transparent",
               color: activeTab === key ? "var(--labs-bg)" : "var(--labs-text-muted)",
               border: "none",
