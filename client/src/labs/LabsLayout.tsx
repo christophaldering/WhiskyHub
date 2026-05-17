@@ -820,7 +820,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
             style={{ color: "var(--labs-accent)" }}
             data-testid="labs-logo"
           >
-            CaskSense <span style={{ fontWeight: 400, opacity: 0.75 }}>Labs</span>
+            CaskSense
           </span>
         </Link>
 
