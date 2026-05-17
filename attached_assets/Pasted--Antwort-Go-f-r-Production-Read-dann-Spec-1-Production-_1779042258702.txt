@@ -1,0 +1,64 @@
+# Antwort: Go für Production-Read, dann Spec
+
+## 1. Production-Read: JA
+
+Bitte führe per database-Skill (environment: "production") aus:
+
+```sql
+SELECT column_name, data_type, is_nullable, column_default,
+       character_maximum_length
+FROM information_schema.columns
+WHERE table_name = '_data_guard_snapshots'
+ORDER BY ordinal_position;
+```
+
+Zusätzlich:
+
+```sql
+SELECT indexname, indexdef
+FROM pg_indexes
+WHERE tablename = '_data_guard_snapshots';
+```
+
+Und zur Sicherheit, was wirklich in den 3 Items drin ist (nur Strukturkontrolle,
+keine sensitive Datenexposition — table_counts ist nur Row-Count-Zahlen):
+
+```sql
+SELECT id, table_counts, pg_typeof(table_counts) AS counts_type
+FROM _data_guard_snapshots
+ORDER BY id DESC
+LIMIT 3;
+```
+
+Alles read-only, kein DDL, kein DML. Berichte die kompletten Outputs.
+
+## 2. Finale Spec liefere ich NACH dem Production-Read
+
+Sobald du die echten Spalten-Typen + Index-Definitionen siehst,
+schreibe ich dir den exakten str_replace für shared/schema.ts.
+
+Mein Vorab-Bauchgefühl (für deine Abschätzung):
+- id: vermutlich serial primary key (integer)
+- table_counts: könnte text ODER jsonb sein — Code macht
+  "typeof row.table_counts === 'string' ? JSON.parse(...) : row.table_counts"
+  → unterstützt beide Varianten, weshalb wir aus der Code-Logik
+  keinen Schluss ziehen können. Production sagt's uns.
+- created_at: timestamp, sehr wahrscheinlich vorhanden (sonst wäre
+  ORDER BY id DESC die einzige zeitliche Sortierung — denkbar, aber
+  unüblich für Snapshot-Tabellen)
+
+## 3. Keine Aktion am Schema-File bisher
+
+Du wartest mit dem Edit auf meine explizite Spec NACH dem Production-Read.
+
+## Zum replit.md-Hinweis
+
+Notiert und absolut einverstanden. Nach Abschluss von:
+- Entdecken-Routing-Aufräumarbeit (Phase 1+2 Commit + background.tsx)
+- Check-Feature Stufe 1 (vollständig durch inkl. Tests)
+- Schema-Drift-Fix (dieser Strang)
+- Schließlich: Neues, sauberes Publishing
+
+machen wir den replit.md-Archiv-Cut als eigene Aufgabe. Empfehlung von dir
+(Cutoff 25.04.2026, nur letzte 4-5 Checkpoints + Brand-Directives behalten)
+klingt richtig. Notiere ich mir als Folge-Aufgabe.
