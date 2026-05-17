@@ -1,0 +1,503 @@
+# Hard Prompt: Check-Feature Stufe 2a — Header-Integration & leeres Sheet
+
+## Zweck
+Frontend-Skelett für das neue Check-Feature ("Whisky-Check"):
+1. DE/EN-Sprachbuttons aus dem LabsLayout-Header entfernen (sind redundant — Sprachauswahl existiert bereits in LabsTasteSettings.tsx:302)
+2. Neuen Check-Pill-Button im Header hinzufügen (Gold-Akzent, prominent, ScanSearch-Icon + "Check"-Label)
+3. CheckSheet-Komponente als leeres Bottom-Sheet anlegen (basierend auf AutoStorySheet-Pattern)
+4. Skelett-States: Pickup (4 Eingabe-Buttons), Loading, Result, Error — alle als sichtbare aber funktional leere Platzhalter
+5. Open/Close-State-Verdrahtung
+
+Funktionalität (Foto-Pipeline, API-Calls, echte Result-Card) kommt in Stufe 2b.
+
+## ABSOLUTE SAFETY RULES
+- ❌ KEINE Änderungen an `server/`, `shared/schema.ts`, `.env`, `package.json`, `drizzle.config.ts`
+- ❌ KEINE Änderungen außerhalb der unten genannten Dateien
+- ❌ KEINE Bottom-Sheet-Bibliothek installieren — nur das bestehende ModalPortal-Pattern nutzen
+- ❌ KEINE Verbindung zum /api/check/lookup-Endpoint (das ist Stufe 2b)
+- ❌ KEINE Echte API-Calls, kein Foto-Upload
+- ✅ NUR Skelett-UI mit sichtbaren Platzhaltern
+
+## Schritt 0 — Pflicht-Diagnose
+
+### 0.1 — Aktueller Stand
+```bash
+git log -1 --format="%H %s"
+git status --short
+```
+
+### 0.2 — Vorhandene Sprachauswahl in Settings verifizieren
+```bash
+sed -n '298,315p' client/src/labs/pages/LabsTasteSettings.tsx
+```
+Erwartet: DE/EN-Toggle mit `i18n.changeLanguage()` und `participantApi.setLanguage()`. Wenn die Logik dort nicht (mehr) existiert, **STOPP und melden** — dann müssten wir Sprachauswahl erst dort sicherstellen.
+
+### 0.3 — Aktuelle Header-Zeile lokalisieren
+```bash
+sed -n '820,895p' client/src/labs/LabsLayout.tsx
+```
+Erwartet: Logo + NotificationBell + Search-Button + DE/EN-Buttons + Theme-Toggle + Avatar-Button.
+
+### 0.4 — Bottom-Sheet-Pattern-Referenz
+```bash
+sed -n '1,50p' client/src/labs/components/AutoStorySheet.tsx
+```
+Erwartet: ModalPortal-Import, useState-basierte Phase-States, Open/Close-Props.
+
+### 0.5 — Existieren bereits relevante i18n-Keys?
+```bash
+grep -rn "\"check\"\|\"whiskyCheck\"\|\"scan\"" client/src/lib/translations/ 2>/dev/null | head -10
+```
+
+### 0.6 — Plan vorlegen
+Berichte die Outputs der fünf Diagnose-Schritte und WARTE auf mein "Go", bevor du editierst.
+
+## Implementierung (NACH meinem "Go")
+
+### Änderung 1: DE/EN-Buttons aus LabsLayout.tsx entfernen
+
+Datei: `client/src/labs/LabsLayout.tsx`, Zeilen ca. 847–882 (der gesamte `<div>` mit den zwei Lang-Buttons).
+
+ALT (das gesamte `<div>` mit den DE/EN-Buttons):
+```tsx
+          <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <button
+              onClick={() => handleLang('de')}
+              ...
+              data-testid="labs-lang-de"
+            >
+              DE
+            </button>
+            <button
+              onClick={() => handleLang('en')}
+              ...
+              data-testid="labs-lang-en"
+            >
+              EN
+            </button>
+          </div>
+```
+
+NEU: komplett entfernen. Stattdessen dort der neue Check-Pill-Button (siehe Änderung 2).
+
+WICHTIG: `handleLang` ist eine lokal definierte Funktion (vermutlich Zeile ~734). Diese bleibt VORERST drin, falls sie woanders genutzt wird. Bei TypeScript-Warnung "unused" am Ende: dann entfernen, sonst stehenlassen.
+
+### Änderung 2: Check-Pill-Button im Header einfügen
+
+Genau an der Stelle, wo die DE/EN-Buttons rausgenommen wurden, kommt:
+
+```tsx
+          <button
+            onClick={() => { setCheckSheetOpen(true); triggerHaptic("light"); }}
+            className="flex items-center gap-1.5 rounded-full transition-all"
+            style={{
+              height: 36,
+              padding: "0 14px",
+              background: "var(--labs-accent)",
+              border: "1px solid var(--labs-accent)",
+              color: "var(--labs-bg)",
+              cursor: "pointer",
+              fontSize: 13,
+              fontWeight: 600,
+              fontFamily: "'DM Sans', sans-serif",
+              flexShrink: 0,
+            }}
+            data-testid="labs-check-btn"
+            aria-label={t("check.openLabel", "Whisky Check öffnen")}
+          >
+            <ScanSearch className="w-4 h-4" />
+            <span>{t("check.label", "Check")}</span>
+          </button>
+```
+
+WICHTIG: `ScanSearch` muss aus `lucide-react` importiert werden. Suche dazu im oberen Import-Block von LabsLayout.tsx den bestehenden `lucide-react`-Import und ergänze ScanSearch. Falls Import nicht klar: dort wo Search, User, Bell etc. importiert werden — gleicher Import-Block.
+
+### Änderung 3: Open/Close-State für CheckSheet
+
+In LabsLayout.tsx, in der Nähe der anderen useState-Calls (z.B. `setSearchOpen`):
+
+```tsx
+const [checkSheetOpen, setCheckSheetOpen] = useState(false);
+```
+
+Plus den entsprechenden Import von CheckSheet:
+```tsx
+import CheckSheet from "@/labs/check/CheckSheet";
+```
+
+Plus das Sheet-Element direkt vor dem schließenden `</>` oder dem Root-Element (analog zu wie AutoStorySheet eingebaut wird, falls bestehend; sonst am Ende der Render-Funktion):
+
+```tsx
+<CheckSheet open={checkSheetOpen} onClose={() => setCheckSheetOpen(false)} />
+```
+
+### Änderung 4: Neue Datei `client/src/labs/check/CheckSheet.tsx`
+
+```tsx
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { X, Camera, Image as ImageIcon, Type, ScanLine } from "lucide-react";
+import ModalPortal from "@/labs/components/ModalPortal";
+
+type CheckSheetProps = {
+  open: boolean;
+  onClose: () => void;
+};
+
+type Phase = "pickup" | "loading" | "result" | "error";
+
+export default function CheckSheet({ open, onClose }: CheckSheetProps) {
+  const { t } = useTranslation();
+  const [phase, setPhase] = useState<Phase>("pickup");
+
+  // Reset state when sheet opens
+  useEffect(() => {
+    if (open) {
+      setPhase("pickup");
+    }
+  }, [open]);
+
+  if (!open) return null;
+
+  return (
+    <ModalPortal>
+      <div
+        onClick={onClose}
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0, 0, 0, 0.55)",
+          backdropFilter: "blur(4px)",
+          zIndex: 1000,
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "center",
+        }}
+        data-testid="check-sheet-backdrop"
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            background: "var(--labs-surface)",
+            width: "100%",
+            maxWidth: 640,
+            maxHeight: "80vh",
+            borderRadius: "20px 20px 0 0",
+            padding: 24,
+            display: "flex",
+            flexDirection: "column",
+            gap: 20,
+            overflow: "auto",
+            animation: "checkSheetSlideUp 240ms cubic-bezier(0.22, 1, 0.36, 1)",
+          }}
+          data-testid="check-sheet-panel"
+        >
+          {/* Header */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <h2
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: 22,
+                fontWeight: 600,
+                color: "var(--labs-text)",
+                margin: 0,
+              }}
+              data-testid="check-sheet-title"
+            >
+              {t("check.title", "Whisky-Check")}
+            </h2>
+            <button
+              onClick={onClose}
+              style={{
+                background: "var(--labs-surface-elevated)",
+                border: "1px solid var(--labs-border)",
+                borderRadius: "50%",
+                width: 36,
+                height: 36,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                color: "var(--labs-text-secondary)",
+              }}
+              aria-label={t("ui.close", "Schließen")}
+              data-testid="check-sheet-close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Phase-Content */}
+          {phase === "pickup" && <CheckPickup />}
+          {phase === "loading" && <CheckLoading />}
+          {phase === "result" && <CheckResultPlaceholder />}
+          {phase === "error" && <CheckErrorPlaceholder />}
+
+          {/* Dev-Notice: Phase-Switcher (NUR für Stufe 2a sichtbar, in 2b raus) */}
+          <div
+            style={{
+              marginTop: "auto",
+              paddingTop: 12,
+              borderTop: "1px dashed var(--labs-border)",
+              display: "flex",
+              gap: 6,
+              flexWrap: "wrap",
+              fontSize: 11,
+              color: "var(--labs-text-muted)",
+            }}
+            data-testid="check-sheet-dev-switcher"
+          >
+            <span style={{ alignSelf: "center" }}>Dev-Preview:</span>
+            {(["pickup", "loading", "result", "error"] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPhase(p)}
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: 12,
+                  border: "1px solid var(--labs-border)",
+                  background: phase === p ? "var(--labs-accent-muted)" : "transparent",
+                  color: "var(--labs-text-secondary)",
+                  cursor: "pointer",
+                  fontSize: 11,
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+                data-testid={`check-phase-${p}`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </ModalPortal>
+  );
+}
+
+function CheckPickup() {
+  const { t } = useTranslation();
+  const buttons = [
+    { icon: Camera, label: t("check.pickup.photo", "Foto aufnehmen"), testid: "check-pickup-photo" },
+    { icon: ImageIcon, label: t("check.pickup.gallery", "Foto auswählen"), testid: "check-pickup-gallery" },
+    { icon: Type, label: t("check.pickup.name", "Name eingeben"), testid: "check-pickup-name" },
+    { icon: ScanLine, label: t("check.pickup.barcode", "Barcode (bald)"), testid: "check-pickup-barcode", disabled: true },
+  ];
+  return (
+    <div>
+      <p
+        style={{
+          fontFamily: "'Cormorant Garamond', serif",
+          fontSize: 16,
+          color: "var(--labs-text-secondary)",
+          marginBottom: 16,
+        }}
+        data-testid="check-pickup-hint"
+      >
+        {t("check.pickup.hint", "Wie möchtest du den Whisky identifizieren?")}
+      </p>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 12,
+        }}
+      >
+        {buttons.map(({ icon: Icon, label, testid, disabled }) => (
+          <button
+            key={testid}
+            disabled={disabled}
+            style={{
+              padding: "20px 12px",
+              borderRadius: 16,
+              border: "1px solid var(--labs-border)",
+              background: disabled ? "var(--labs-surface-elevated)" : "var(--labs-surface-elevated)",
+              color: disabled ? "var(--labs-text-muted)" : "var(--labs-text)",
+              cursor: disabled ? "not-allowed" : "pointer",
+              opacity: disabled ? 0.5 : 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 8,
+              fontSize: 13,
+              fontWeight: 500,
+              fontFamily: "'DM Sans', sans-serif",
+              transition: "transform 120ms ease",
+            }}
+            data-testid={testid}
+          >
+            <Icon className="w-6 h-6" style={{ color: "var(--labs-accent)" }} />
+            <span>{label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CheckLoading() {
+  const { t } = useTranslation();
+  return (
+    <div
+      style={{
+        padding: "48px 24px",
+        textAlign: "center",
+        color: "var(--labs-text-secondary)",
+      }}
+      data-testid="check-loading"
+    >
+      <p style={{ fontSize: 14 }}>{t("check.loading", "Identifiziere…")}</p>
+      <p style={{ fontSize: 12, marginTop: 8, opacity: 0.6 }}>
+        (Skelett-Platzhalter, kommt in Stufe 2b)
+      </p>
+    </div>
+  );
+}
+
+function CheckResultPlaceholder() {
+  const { t } = useTranslation();
+  return (
+    <div
+      style={{
+        padding: "24px 0",
+        color: "var(--labs-text-secondary)",
+      }}
+      data-testid="check-result-placeholder"
+    >
+      <p style={{ fontSize: 14, marginBottom: 16 }}>
+        {t("check.resultPlaceholder", "Hier erscheinen die Status-Karten:")}
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {["👥 Community", "✓ Deine Sammlung", "⭐ Deine Bewertungen"].map((label) => (
+          <div
+            key={label}
+            style={{
+              padding: "14px 16px",
+              borderRadius: 12,
+              border: "1px dashed var(--labs-border)",
+              background: "var(--labs-surface-elevated)",
+              fontSize: 13,
+              color: "var(--labs-text-muted)",
+            }}
+          >
+            {label} <span style={{ opacity: 0.5 }}>(Platzhalter)</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CheckErrorPlaceholder() {
+  const { t } = useTranslation();
+  return (
+    <div
+      style={{
+        padding: "48px 24px",
+        textAlign: "center",
+        color: "var(--labs-text-secondary)",
+      }}
+      data-testid="check-error-placeholder"
+    >
+      <p style={{ fontSize: 14 }}>
+        {t("check.errorPlaceholder", "Keine eindeutige Identifikation.")}
+      </p>
+      <p style={{ fontSize: 12, marginTop: 8, opacity: 0.6 }}>
+        (Skelett-Platzhalter, kommt in Stufe 2b)
+      </p>
+    </div>
+  );
+}
+```
+
+### Änderung 5: CSS-Keyframe für Slide-Up-Animation
+
+Falls noch nicht vorhanden, in einer global eingebundenen CSS-Datei (z.B. `client/src/labs/theme/labs.css` oder wo immer Labs-globale CSS lebt). Such die Datei mit:
+```bash
+grep -rn "labs-pull-indicator\|@keyframes" client/src/labs/theme/ client/src/index.css 2>/dev/null | head -5
+```
+
+Füge dort hinzu (am Ende der Datei):
+```css
+@keyframes checkSheetSlideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+```
+
+Falls keine passende globale CSS-Datei gefunden wird: inline-Style ohne Animation lassen (entspricht Verzicht auf den `animation`-Property im CheckSheet-Panel). Melden, wenn das der Fall ist.
+
+## Verifikation
+
+```bash
+# 1. Neue Datei existiert
+ls -la client/src/labs/check/CheckSheet.tsx
+
+# 2. DE/EN-Buttons in LabsLayout sind weg
+grep -n "labs-lang-de\|labs-lang-en\|>DE<\|>EN<" client/src/labs/LabsLayout.tsx
+# Erwartet: leer (oder nur "DE/EN" in unrelated Kontexten)
+
+# 3. Check-Button im Header existiert
+grep -n "labs-check-btn\|ScanSearch" client/src/labs/LabsLayout.tsx
+# Erwartet: 2+ Treffer (Import + Button)
+
+# 4. CheckSheet im Render-Tree
+grep -n "CheckSheet\|checkSheetOpen" client/src/labs/LabsLayout.tsx
+# Erwartet: Import + State + Render
+
+# 5. TypeScript-Check
+npx tsc --noEmit 2>&1 | head -30
+# Erwartet: keine neuen Fehler im Bereich LabsLayout.tsx, CheckSheet.tsx
+
+# 6. Manuell im UI prüfen (NICHT automatisierbar — Christoph macht das):
+#    - Header zeigt: Logo, Bell, Search, [GOLD-PILL "✨ Check"], Theme, Avatar
+#    - DE/EN ist NICHT mehr im Header
+#    - Klick auf Check öffnet Bottom-Sheet von unten
+#    - Sheet zeigt Phase "pickup" mit 4 Buttons
+#    - Dev-Switcher unten lässt zwischen Pickup/Loading/Result/Error wechseln
+#    - Klick auf X oder Backdrop schließt Sheet
+#    - Sprachwechsel in LabsTasteSettings (Profile → Settings) funktioniert weiterhin
+```
+
+## Bericht-Format
+
+```
+Schritt 0 Diagnose:
+  HEAD: <output>
+  Working Tree: <output>
+  Sprachauswahl in Settings (verifiziert vorhanden): <output>
+  Header-Block: <output>
+  AutoStorySheet-Pattern: <output>
+  i18n-Keys vorhanden: <output>
+
+[Hier auf "Go" warten]
+
+Änderung 1 (DE/EN-Buttons entfernt): <Done / Failed>
+Änderung 2 (Check-Pill-Button): <Done / Failed>
+Änderung 3 (State + Sheet im Render): <Done / Failed>
+Änderung 4 (CheckSheet.tsx neu): <Done / Failed>
+Änderung 5 (CSS-Keyframe): <Done / Failed / "keine passende CSS-Datei gefunden">
+
+Verifikation:
+  1. Datei: <output>
+  2. DE/EN weg: <output>
+  3. Check-Button: <output>
+  4. CheckSheet im Layout: <output>
+  5. TypeScript: <output>
+
+Status: <Bewertung>
+Manuelle UI-Prüfung: erwartet von Christoph
+```
+
+## Was du NICHT machen sollst
+- KEINEN echten API-Call zu /api/check/lookup oder /api/whisky/identify einbauen
+- KEINEN Foto-Upload-Handler bauen
+- KEINE Sprachauswahl in LabsTasteSettings ÄNDERN — die ist schon da, lass sie unangetastet
+- KEINE Änderung am `handleLang`-Funktion in LabsLayout (kann unbenutzt werden — wenn TS warnt, dann entfernen, sonst stehenlassen)
+- KEIN Aufräumen anderer Header-Buttons (Notifications, Search, Theme, Avatar bleiben unverändert)
+- KEIN Commit, KEIN Push (Replit Auto-Checkpoint macht das ohnehin)
