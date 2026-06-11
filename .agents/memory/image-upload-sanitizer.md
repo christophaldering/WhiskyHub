@@ -5,9 +5,13 @@ description: How/where uploaded images are stripped of metadata, and the rules t
 
 # Image upload sanitizer
 
-All uploaded images flow through ONE chokepoint in `server/routes.ts`:
-`uploadBufferToObjectStorage()` → `maybeCompressImage()`. The sharp
-re-encode to webp (rotate → resize → webp) is what strips EXIF/GPS.
+All uploaded images flow through ONE chokepoint, now in its own module
+`server/image-sanitize.ts` (`maybeCompressImage` / `sanitizeImageToWebp` /
+`sniffImageType`), called from `uploadBufferToObjectStorage()` in
+`server/routes.ts`. The sharp re-encode to webp (rotate → resize → webp)
+is what strips EXIF/GPS. Regression-tested in
+`tests/unit/image-sanitize.test.ts` (vitest, `// @vitest-environment node`
+because exifr can't parse buffers under jsdom; fixtures in `tests/fixtures/`).
 
 **Rule:** any change to image-upload handling must keep the sanitizer
 universal and fail-closed.
