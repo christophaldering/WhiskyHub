@@ -10,6 +10,7 @@
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
     "db:push": "drizzle-kit push",
+    "db:backup": "tsx script/db-backup.ts",
     "db:seed:test": "tsx server/seed-test.ts",
     "test:unit": "vitest run --config vitest.config.ts",
     "test:api": "vitest run --config vitest.config.api.ts",
