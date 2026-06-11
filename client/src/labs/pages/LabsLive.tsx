@@ -32,6 +32,7 @@ import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import type { RatingFlowDraftState } from "@/labs/components/rating/RatingFlowV2";
 import type { RatingData } from "@/labs/components/rating/types";
 import DramCarousel from "@/labs/components/DramCarousel";
+import DeinAbendRecap from "@/labs/components/DeinAbendRecap";
 import { ResumeOrSkipBanner } from "@/labs/components/ResumeRatingBanner";
 import ScaleBadge from "@/labs/components/ScaleBadge";
 import type { Tasting } from "@shared/schema";
@@ -1241,7 +1242,16 @@ export default function LabsLive({ params }: LabsLiveProps) {
         <PauseBanner pauseUntil={tasting.pauseUntil ?? null} />
 
         {isSessionComplete ? (
-          <GuidedComplete tastingId={tastingId} presentationActive={tasting.presentationSlide != null} />
+          <>
+            <DeinAbendRecap
+              tasting={tasting}
+              whiskies={whiskies || []}
+              ratings={allTastingRatings || []}
+              participants={Array.isArray(participants) ? participants : []}
+              currentParticipant={currentParticipant}
+            />
+            <GuidedComplete tastingId={tastingId} presentationActive={tasting.presentationSlide != null} />
+          </>
         ) : isLobby ? (
           <GuidedLobby tasting={tasting} participantCount={participantCount} />
         ) : guidedWhisky && tasting.status === "open" ? (
