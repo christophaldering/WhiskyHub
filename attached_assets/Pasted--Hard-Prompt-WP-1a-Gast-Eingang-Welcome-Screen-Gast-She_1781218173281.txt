@@ -1,0 +1,685 @@
+# Hard Prompt: WP 1a — Gast-Eingang (Welcome-Screen, Gast-Shell, QR, Mittendrin-Banner)
+
+**Datum:** 12.06.2026 · **Priorität:** HOCH (Gast-Schleife / Fahrplan WP 1)
+**Art:** Frontend + 2 kleine Server-Ergänzungen (1 neuer Public-Endpoint, 3 Funnel-Whitelist-Events). KEIN Schema, KEINE Migration.
+
+---
+
+## Worum es geht
+
+Der Weg des eingeladenen Gastes wird radikal verkürzt: Der Einladungs-QR landet auf einer warmen, chromelosen Welcome-Seite (`/welcome/:id`) — Tasting-Titel, Gastgeber, Termin, EIN Namensfeld, EIN Goldknopf, "Kein Konto nötig". Nach dem Beitritt sieht der Gast Lobby und Live-Tasting OHNE Header-Werkzeuge und OHNE Bottom-Tabs (Gast-Shell). Zusätzlich: Wer ein laufendes Tasting hat, bekommt im Tastings-Tab ein "Du bist mittendrin → Weiter"-Banner als oberstes Element. Drei neue Funnel-Events machen die Schleife messbar.
+
+**Messlatte:** Zwischen QR-Scan und erstem Tisch-Tap liegen genau zwei Screens und null Menüs.
+
+**Charakter dieses Auftrags — WORTGETREUE ÜBERTRAGUNG:** Der gesamte Code liegt fertig vor und wurde extern gegen exakt diesen Repo-Stand entwickelt und typgeprüft (tsc-Baseline-Diff: 500 → 500, keine neuen Fehler). Deine Aufgabe: zeichengenau übertragen, verifizieren, berichten. Keine Design-Entscheidungen, keine Verbesserungen.
+
+---
+
+## Abweichungs-Protokoll (gilt für den GESAMTEN Auftrag)
+
+1. Vor JEDER Änderung: prüfe, dass der ALT-Block **genau einmal** in der Zieldatei vorkommt.
+2. Kommt er nicht oder mehrfach vor → **STOPP. Nichts ändern, nichts improvisieren.** Bericht: Datei, erwarteter ALT-Block, tatsächlicher Befund. Auf Anweisung warten.
+3. Auffälligkeiten, die diese Spezifikation nicht berücksichtigt → im Abschlussbericht unter "Beobachtungen" auflisten, NICHT eigenmächtig beheben.
+
+---
+
+## Schritt 0 — Diagnose (NUR LESEN)
+
+```bash
+git tag pre-wp1a-gast-eingang-2026-06-12
+```
+
+1. Die Datei `client/src/pages/guest-welcome.tsx` existiert NICHT (wird neu angelegt). Falls doch: STOPP.
+2. `grep -c "guestWelcome: {" client/src/lib/i18n.ts` → erwartet **0**. Falls >0: STOPP.
+3. TypeScript-Baseline: `NODE_OPTIONS=--max-old-space-size=6144 npx tsc --noEmit 2>&1 | grep -c "error TS"` → Zahl notieren (Stand 12.06.: 500). **WICHTIG: ohne die NODE_OPTIONS-Heap-Erhöhung stürzt tsc mit OOM ab und meldet fälschlich 0.**
+4. `npx vitest run tests/unit/tisch-anchors.test.ts tests/unit/image-sanitize.test.ts` → 11/11 grün (Umgebungs-Sanity).
+
+**Plan bestätigen lassen, dann erst Schritt 1.**
+
+---
+
+## Schritt 1 — Neue Datei anlegen (Inhalt WÖRTLICH)
+
+### Neue Datei: `client/src/pages/guest-welcome.tsx`
+
+```tsx
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useParams } from "wouter";
+import { useTranslation } from "react-i18next";
+import { tastingApi } from "@/lib/api";
+import { getSession, setGuestSession } from "@/lib/session";
+import { trackEvent } from "@/lib/funnelTracker";
+
+// Gast-Eingang nach QR-Scan / Einladungslink.
+// Messlatte (Fahrplan WP 1): zwei Screens zwischen Scan und erstem Tisch-Tap, null Menüs.
+// Diese Seite ist Screen 1; Screen 2 ist die chromelose Lobby (LabsLayout-Gast-Zweig).
+
+interface WelcomeData {
+  id: string;
+  title: string;
+  date: string | null;
+  location: string | null;
+  status: string;
+  guestMode: string;
+  hostName: string | null;
+  code?: string;
+}
+
+const FONT_DISPLAY = "'Playfair Display', Georgia, serif";
+const FONT_SERIF = "'Cormorant Garamond', Georgia, serif";
+const FONT_BODY = "'DM Sans', system-ui, -apple-system, sans-serif";
+
+export default function GuestWelcome() {
+  const params = useParams<{ id: string }>();
+  const tastingId = params.id || "";
+  const [, navigate] = useLocation();
+  const { t, i18n } = useTranslation();
+
+  const [data, setData] = useState<WelcomeData | null>(null);
+  const [loadState, setLoadState] = useState<"loading" | "ready" | "notfound">("loading");
+  const [name, setName] = useState("");
+  const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState("");
+  const viewTracked = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!tastingId) {
+      setLoadState("notfound");
+      return;
+    }
+    fetch(`/api/tastings/${tastingId}/welcome`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d: WelcomeData) => {
+        if (cancelled) return;
+        setData(d);
+        setLoadState("ready");
+      })
+      .catch(() => {
+        if (!cancelled) setLoadState("notfound");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tastingId]);
+
+  // Angemeldete Nutzer (z.B. der Host scannt den eigenen QR) gehen direkt zur Detailseite.
+  useEffect(() => {
+    try {
+      if (getSession().signedIn && tastingId) {
+        navigate(`/labs/tastings/${tastingId}`, { replace: true });
+      }
+    } catch {}
+  }, [tastingId, navigate]);
+
+  useEffect(() => {
+    if (loadState === "ready" && !viewTracked.current) {
+      viewTracked.current = true;
+      trackEvent("guest_welcome_view", { page: `/welcome/${tastingId}` });
+    }
+  }, [loadState, tastingId]);
+
+  const formattedDate = (() => {
+    if (!data?.date) return null;
+    try {
+      const d = new Date(data.date);
+      if (isNaN(d.getTime())) return data.date;
+      return d.toLocaleDateString(i18n.language === "de" ? "de-DE" : "en-GB", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+      });
+    } catch {
+      return data.date;
+    }
+  })();
+
+  const canGuestJoin = data?.guestMode === "ultra" && !!data?.code && data?.status !== "archived" && data?.status !== "deleted";
+
+  const handleJoin = async () => {
+    if (!data || !canGuestJoin || joining) return;
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setJoinError(t("guestWelcome.nameRequired", "Bitte gib deinen Namen ein."));
+      return;
+    }
+    setJoinError("");
+    setJoining(true);
+    try {
+      const result = await tastingApi.guestJoin(data.id, trimmed, data.code!);
+      setGuestSession(result.id, result.name);
+      try {
+        sessionStorage.setItem("cs_guest_shell", "1");
+      } catch {}
+      try {
+        let rejoinCode = result.rejoinCode;
+        if (!rejoinCode) {
+          const fallback = await tastingApi.getMyRejoinCode(data.id).catch(() => null);
+          rejoinCode = fallback?.rejoinCode ?? null;
+        }
+        if (rejoinCode) localStorage.setItem(`cs_guest_rejoin_${data.id}`, rejoinCode);
+      } catch {}
+      trackEvent("guest_join_success", { page: `/welcome/${tastingId}` });
+      navigate(`/labs/live/${data.id}`);
+    } catch (e: unknown) {
+      const msg = (e as Error)?.message || "";
+      setJoinError(msg || t("guestWelcome.joinFailed", "Beitritt nicht möglich. Bitte versuche es erneut."));
+      setJoining(false);
+    }
+  };
+
+  const shell = (inner: React.ReactNode) => (
+    <div
+      style={{
+        minHeight: "100dvh",
+        background: "#0B0906",
+        color: "#F5EDE0",
+        fontFamily: FONT_BODY,
+        display: "flex",
+        flexDirection: "column",
+        padding: "max(28px, env(safe-area-inset-top)) 24px max(28px, env(safe-area-inset-bottom))",
+      }}
+      data-testid="guest-welcome-page"
+    >
+      <div style={{ fontFamily: FONT_DISPLAY, fontSize: 16, textAlign: "center" }}>
+        Cask<span style={{ color: "#D4A847" }}>Sense</span>
+      </div>
+      {inner}
+    </div>
+  );
+
+  if (loadState === "loading") {
+    return shell(
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ fontFamily: FONT_SERIF, fontStyle: "italic", color: "rgba(245,237,224,0.5)" }} data-testid="guest-welcome-loading">
+          {t("guestWelcome.loading", "Einen Moment …")}
+        </div>
+      </div>
+    );
+  }
+
+  if (loadState === "notfound" || !data) {
+    return shell(
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: 12 }}>
+        <div style={{ fontFamily: FONT_DISPLAY, fontSize: 22 }} data-testid="guest-welcome-notfound">
+          {t("guestWelcome.notFoundTitle", "Diese Einladung kennen wir nicht.")}
+        </div>
+        <div style={{ fontFamily: FONT_SERIF, fontStyle: "italic", fontSize: 15, color: "rgba(245,237,224,0.55)" }}>
+          {t("guestWelcome.notFoundSub", "Frag deinen Gastgeber nach einem neuen Link oder Code.")}
+        </div>
+        <button
+          onClick={() => navigate("/labs/join")}
+          style={{
+            marginTop: 16,
+            minHeight: 44,
+            padding: "0 22px",
+            borderRadius: 999,
+            border: "1px solid #D4A847",
+            background: "none",
+            color: "#D4A847",
+            fontFamily: FONT_BODY,
+            fontSize: 14,
+            cursor: "pointer",
+          }}
+          data-testid="guest-welcome-to-join"
+        >
+          {t("guestWelcome.enterCode", "Code eingeben")}
+        </button>
+      </div>
+    );
+  }
+
+  return shell(
+    <>
+      <div style={{ marginTop: 44, textAlign: "center" }}>
+        <div style={{ fontSize: 11, letterSpacing: "0.26em", textTransform: "uppercase", color: "#D4A847" }} data-testid="guest-welcome-eyebrow">
+          {t("guestWelcome.invited", "Du bist eingeladen")}
+        </div>
+        <h1
+          style={{ fontFamily: FONT_DISPLAY, fontWeight: 600, fontSize: "clamp(26px, 7vw, 34px)", lineHeight: 1.2, margin: "12px 0 0" }}
+          data-testid="guest-welcome-title"
+        >
+          {data.title}
+        </h1>
+        <div style={{ fontFamily: FONT_SERIF, fontStyle: "italic", fontSize: 15, color: "rgba(245,237,224,0.6)", marginTop: 8 }} data-testid="guest-welcome-meta">
+          {[
+            data.hostName ? t("guestWelcome.hostedBy", "Gastgeber: {{name}}", { name: data.hostName }) : null,
+            formattedDate,
+            data.location,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        </div>
+      </div>
+
+      <div style={{ flex: 1 }} />
+
+      {canGuestJoin ? (
+        <div style={{ width: "100%", maxWidth: 420, margin: "0 auto" }}>
+          <label
+            htmlFor="guest-welcome-name"
+            style={{ display: "block", fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(245,237,224,0.45)", marginBottom: 8 }}
+          >
+            {t("guestWelcome.yourName", "Dein Name")}
+          </label>
+          <input
+            id="guest-welcome-name"
+            data-testid="guest-welcome-name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleJoin();
+            }}
+            autoComplete="given-name"
+            enterKeyHint="go"
+            style={{
+              width: "100%",
+              height: 48,
+              borderRadius: 12,
+              border: "1px solid rgba(245,237,224,0.28)",
+              background: "rgba(255,255,255,0.04)",
+              color: "#F5EDE0",
+              fontFamily: FONT_SERIF,
+              fontStyle: "italic",
+              fontSize: 18,
+              padding: "0 14px",
+              outline: "none",
+              boxSizing: "border-box",
+            }}
+          />
+          {joinError && (
+            <div style={{ marginTop: 10, fontSize: 13, color: "#e8a3a3" }} data-testid="guest-welcome-error">
+              {joinError}
+            </div>
+          )}
+          <button
+            onClick={handleJoin}
+            disabled={joining}
+            data-testid="guest-welcome-join"
+            style={{
+              width: "100%",
+              height: 52,
+              marginTop: 14,
+              borderRadius: 12,
+              border: "none",
+              background: "#D4A847",
+              color: "#0B0906",
+              fontFamily: FONT_BODY,
+              fontSize: 16,
+              fontWeight: 700,
+              cursor: joining ? "wait" : "pointer",
+              opacity: joining ? 0.7 : 1,
+            }}
+          >
+            {joining ? t("guestWelcome.joining", "Einen Moment …") : t("guestWelcome.toTable", "An den Tisch")}
+          </button>
+          <div style={{ textAlign: "center", fontSize: 12, color: "rgba(245,237,224,0.4)", marginTop: 14 }} data-testid="guest-welcome-noaccount">
+            {t("guestWelcome.noAccount", "Kein Konto nötig")}
+          </div>
+        </div>
+      ) : (
+        <div style={{ width: "100%", maxWidth: 420, margin: "0 auto", textAlign: "center" }}>
+          <div style={{ fontFamily: FONT_SERIF, fontStyle: "italic", fontSize: 15, color: "rgba(245,237,224,0.6)", marginBottom: 14 }} data-testid="guest-welcome-signin-hint">
+            {t("guestWelcome.signinRequired", "Für dieses Tasting bittet dich dein Gastgeber, dich kurz anzumelden.")}
+          </div>
+          <button
+            onClick={() => navigate(`/labs/join/${data.code || ""}`)}
+            data-testid="guest-welcome-signin"
+            style={{
+              width: "100%",
+              height: 52,
+              borderRadius: 12,
+              border: "1px solid #D4A847",
+              background: "none",
+              color: "#D4A847",
+              fontFamily: FONT_BODY,
+              fontSize: 15,
+              fontWeight: 500,
+              cursor: "pointer",
+            }}
+          >
+            {t("guestWelcome.continueSignin", "Weiter zur Anmeldung")}
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+```
+
+---
+
+## Schritt 2 — 10 exakte Edits in 7 bestehenden Dateien
+
+Jeder Edit ist ein ALT→NEU-Paar. ALT muss exakt einmal vorkommen (Abweichungs-Protokoll!). Reihenfolge einhalten.
+
+
+### Datei: `server/routes.ts`
+
+
+**Edit 1**
+
+ALT:
+```
+      res.json({ id: tasting.id, status: tasting.status, guestMode: tasting.guestMode || "standard" });
+    }
+  });
+```
+
+NEU:
+```
+      res.json({ id: tasting.id, status: tasting.status, guestMode: tasting.guestMode || "standard" });
+    }
+  });
+
+  // Öffentlicher Welcome-Endpunkt für den Gast-Eingang (/welcome/:id).
+  // Liefert nur einladungssichere Felder; der Join-Code wird ausschließlich
+  // im Ultra-Gast-Modus mitgegeben (der QR-Besitzer kennt ihn ohnehin).
+  app.get("/api/tastings/:id/welcome", async (req, res) => {
+    const tasting = await storage.getTasting(req.params.id);
+    if (!tasting || tasting.status === "deleted") return res.status(404).json({ message: "Not found" });
+    let hostName: string | null = null;
+    try {
+      const host = await storage.getParticipant(tasting.hostId);
+      hostName = host?.name ?? null;
+    } catch {}
+    const guestMode = tasting.guestMode || "standard";
+    res.json({
+      id: tasting.id,
+      title: tasting.title,
+      date: tasting.date ?? null,
+      location: tasting.location ?? null,
+      status: tasting.status,
+      guestMode,
+      hostName,
+      ...(guestMode === "ultra" && tasting.code ? { code: tasting.code } : {}),
+    });
+  });
+```
+
+
+### Datei: `server/funnel-store.ts`
+
+
+**Edit 2**
+
+ALT:
+```
+  "page_view",
+]);
+```
+
+NEU:
+```
+  "page_view",
+  "guest_welcome_view", "guest_join_success", "recap_viewed",
+]);
+```
+
+
+### Datei: `client/src/App.tsx`
+
+
+**Edit 3**
+
+ALT:
+```
+const LabsResultsPresent = lazy(() => import("@/labs/pages/LabsResultsPresent"));
+```
+
+NEU:
+```
+const LabsResultsPresent = lazy(() => import("@/labs/pages/LabsResultsPresent"));
+const GuestWelcome = lazy(() => import("@/pages/guest-welcome"));
+```
+
+
+**Edit 4**
+
+ALT:
+```
+        <Route path="/landing-v2" component={LandingV2} />
+```
+
+NEU:
+```
+        <Route path="/landing-v2" component={LandingV2} />
+        <Route path="/welcome/:id" component={GuestWelcome} />
+```
+
+
+### Datei: `client/src/labs/LabsLayout.tsx`
+
+
+**Edit 5**
+
+ALT:
+```
+  if (isOnboarding) {
+    return (
+      <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`} lang={htmlLang}>
+        {children}
+      </div>
+    );
+  }
+```
+
+NEU:
+```
+  if (isOnboarding) {
+    return (
+      <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`} lang={htmlLang}>
+        {children}
+      </div>
+    );
+  }
+
+  // Gast-Modus (WP 1): Gäste aus dem QR-Eingang sehen Lobby/Live ohne Header und Tabs.
+  let guestShell = false;
+  try { guestShell = sessionStorage.getItem("cs_guest_shell") === "1"; } catch {}
+  if (guestShell && location.startsWith("/labs/live/")) {
+    return (
+      <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`} lang={htmlLang}>
+        {children}
+      </div>
+    );
+  }
+```
+
+
+### Datei: `client/src/components/invite-panel.tsx`
+
+
+**Edit 6**
+
+ALT:
+```
+  const tastingJoinUrl = `${window.location.origin}/tasting/${tastingId}`;
+```
+
+NEU:
+```
+  const tastingJoinUrl = `${window.location.origin}/welcome/${tastingId}`;
+```
+
+
+### Datei: `client/src/labs/pages/LabsTastings.tsx`
+
+
+**Edit 7**
+
+ALT:
+```
+  const liveCount = useMemo(() => {
+    if (!tastings) return 0;
+    return tastings.filter((t: any) => !t.isTestData && t.status === "open").length;
+  }, [tastings]);
+```
+
+NEU:
+```
+  const liveCount = useMemo(() => {
+    if (!tastings) return 0;
+    return tastings.filter((t: any) => !t.isTestData && t.status === "open").length;
+  }, [tastings]);
+
+  const liveMine = useMemo(() => {
+    if (!tastings) return null;
+    return tastings.find((t: any) => !t.isTestData && t.status === "open") ?? null;
+  }, [tastings]);
+```
+
+
+**Edit 8**
+
+ALT:
+```
+      </div>
+
+      <div className="labs-action-bar labs-fade-in labs-stagger-1 labs-tastings-actions" data-testid="labs-tastings-actions">
+```
+
+NEU:
+```
+      </div>
+
+      {liveMine && (
+        <button
+          type="button"
+          onClick={() => navigate(`/labs/live/${liveMine.id}`)}
+          className="labs-card labs-fade-in"
+          data-testid="labs-tastings-mid-banner"
+          style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "14px 16px", marginBottom: 16, border: "1px solid var(--labs-accent)", borderRadius: 14, background: "var(--labs-accent-muted)", cursor: "pointer" }}
+        >
+          <span style={{ minWidth: 0 }}>
+            <span style={{ display: "block", fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--labs-accent)", fontWeight: 600 }}>
+              {t("guestWelcome.midBannerEyebrow", "Du bist mittendrin")}
+            </span>
+            <span style={{ display: "block", fontFamily: "'Playfair Display', Georgia, serif", fontSize: 17, color: "var(--labs-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {liveMine.title}
+            </span>
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--labs-accent)", fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
+            {t("guestWelcome.midBannerCta", "Weiter")} →
+          </span>
+        </button>
+      )}
+
+      <div className="labs-action-bar labs-fade-in labs-stagger-1 labs-tastings-actions" data-testid="labs-tastings-actions">
+```
+
+
+### Datei: `client/src/lib/i18n.ts`
+
+
+**Edit 9**
+
+ALT:
+```
+  en: {
+    translation: {
+```
+
+NEU:
+```
+  en: {
+    translation: {
+      guestWelcome: {
+        invited: "You're invited",
+        hostedBy: "Hosted by {{name}}",
+        yourName: "Your name",
+        toTable: "To the table",
+        joining: "One moment …",
+        noAccount: "No account needed",
+        nameRequired: "Please enter your name.",
+        joinFailed: "Could not join. Please try again.",
+        loading: "One moment …",
+        notFoundTitle: "We don't know this invitation.",
+        notFoundSub: "Ask your host for a fresh link or code.",
+        enterCode: "Enter code",
+        signinRequired: "Your host asks you to sign in for this tasting.",
+        continueSignin: "Continue to sign-in",
+        midBannerEyebrow: "You're mid-tasting",
+        midBannerCta: "Continue",
+      },
+```
+
+
+**Edit 10**
+
+ALT:
+```
+  de: {
+    translation: {
+```
+
+NEU:
+```
+  de: {
+    translation: {
+      guestWelcome: {
+        invited: "Du bist eingeladen",
+        hostedBy: "Gastgeber: {{name}}",
+        yourName: "Dein Name",
+        toTable: "An den Tisch",
+        joining: "Einen Moment …",
+        noAccount: "Kein Konto nötig",
+        nameRequired: "Bitte gib deinen Namen ein.",
+        joinFailed: "Beitritt nicht möglich. Bitte versuche es erneut.",
+        loading: "Einen Moment …",
+        notFoundTitle: "Diese Einladung kennen wir nicht.",
+        notFoundSub: "Frag deinen Gastgeber nach einem neuen Link oder Code.",
+        enterCode: "Code eingeben",
+        signinRequired: "Für dieses Tasting bittet dich dein Gastgeber, dich kurz anzumelden.",
+        continueSignin: "Weiter zur Anmeldung",
+        midBannerEyebrow: "Du bist mittendrin",
+        midBannerCta: "Weiter",
+      },
+```
+
+
+---
+
+## Sicherheitsregeln (zwingend)
+
+- `shared/schema.ts` NICHT anfassen. Keine Migrationen, kein drizzle-kit.
+- Server-Änderungen NUR die zwei spezifizierten (routes.ts Welcome-Endpoint, funnel-store.ts Whitelist).
+- Außer der 1 neuen Datei und den 7 gelisteten Dateien wird NICHTS verändert.
+- KEINE Commits. Keine "Verbesserungen", kein Umformatieren — auch nicht bei vorbestehenden TS-Fehlern.
+
+---
+
+## Schritt 3 — Verifikation (Ergebnisse als Output vorlegen)
+
+1. **Typprüfung:** `NODE_OPTIONS=--max-old-space-size=6144 npx tsc --noEmit 2>&1 | grep -c "error TS"` → identisch zur Schritt-0-Baseline. Kein Fehler darf `guest-welcome`, `LabsLayout`, `LabsTastings`, `invite-panel` oder `funnel-store` als NEUE Quelle nennen (Zeilenverschiebungen vorbestehender Fehler sind OK).
+2. **Smoke-Test** (Dev-Server, abgemeldeter Browser/Inkognito):
+   a. Host-seitig ein Test-Tasting mit Gast-Modus "ultra" anlegen (oder vorhandenes nutzen), Invite-Panel öffnen → QR-URL endet jetzt auf `/welcome/{tastingId}`.
+   b. `/welcome/{tastingId}` abgemeldet öffnen → Welcome-Seite: Eyebrow "Du bist eingeladen", Titel, "Gastgeber: …", Namensfeld, Goldknopf "An den Tisch", "Kein Konto nötig". KEINE Tabs, KEIN Header.
+   c. Namen eingeben → "An den Tisch" → landet auf `/labs/live/{id}` — Lobby/Live OHNE Header-Icons und OHNE Bottom-Navigation.
+   d. Gleiches Tasting mit Gast-Modus "standard": Welcome zeigt den Anmelde-Hinweis + "Weiter zur Anmeldung" (kein Namensfeld).
+   e. ANGEMELDET `/welcome/{id}` öffnen → sofortiger Redirect auf `/labs/tastings/{id}` (Host scannt eigenen QR).
+   f. Ungültige ID `/welcome/xyz` → "Diese Einladung kennen wir nicht" + "Code eingeben"-Button.
+   g. Als angemeldeter Nutzer mit laufendem (status=open) Tasting den Tastings-Tab öffnen → Banner "Du bist mittendrin · {Titel} · Weiter" als oberstes Element; Tap führt zu `/labs/live/{id}`. Ohne laufendes Tasting: kein Banner.
+   h. `GET /api/tastings/{id}/welcome` abgemeldet via curl: enthält title/hostName/date; `code` NUR bei guestMode=ultra; 404 bei unbekannter ID.
+   i. Funnel: nach b+c erscheinen `guest_welcome_view` und `guest_join_success` im Admin-Funnel-Live (`/admin/funnel-live`) bzw. in den funnel_counters.
+3. **Regression:** Der bestehende Weg `/labs/join/:code` funktioniert unverändert (Code-Eingabe, Rejoin-Code-Screen).
+4. `grep -c "guestWelcome: {" client/src/lib/i18n.ts` → **2** (EN+DE).
+
+---
+
+## Schritt 4 — Abschlussbericht (Pflicht)
+
+1. Schritt-0-Befunde (inkl. tsc-Baseline-Zahl)
+2. 1 angelegte Datei + 7 editierte Dateien mit Edit-Anzahl (10)
+3. Verifikationsergebnisse 1–4 mit Original-Output
+4. **Beobachtungen** (Pflichtrubrik; "Keine" nur nach echter Prüfung)
+5. Bestätigung: keine Commits, kein Schema berührt
+
+---
+
+## Bewusst NICHT Teil dieses Auftrags
+
+- WP 1b "Dein Abend" (persönliche Abschluss-Karte + recap_viewed-Aufruf) — folgt als eigener Hard Prompt. Das Event ist in der Whitelist bereits vorbereitet.
+- Änderungen an LabsJoin.tsx (bestehender Code-Eingabe-Weg bleibt unangetastet).
+- Der Gast-Shell-Zustand endet bewusst mit der Browser-Session (sessionStorage) — ein Gast, der später wiederkommt, sieht die normale App; das ist Teil des Konto-Claim-Konzepts (WP 3).
