@@ -1,0 +1,168 @@
+# Hard Prompt — CaskSense: On-Demand Datenbank-Backup (`npm run db:backup`)
+
+**Ziel:** Ein manuell ausführbares pg_dump-Skript, das einen komprimierten, restore-fähigen
+Datenbank-Dump nach `backups/` schreibt — damit eine Sicherung **außerhalb von Replit/Neon**
+existiert. Kein bestehendes Verhalten wird verändert. Reines Hinzufügen.
+
+---
+
+## ⚠️ Sicherheitsregeln (gelten für die GESAMTE Aufgabe)
+
+- **KEINE Commits** — weder zwischendurch noch am Ende. Nicht `git commit`, nicht `git push`. Ich committe selbst.
+- `shared/schema.ts` wird **nicht** angefasst.
+- **Keine** Migrationen: kein `drizzle-kit generate`, kein `drizzle-kit push`, kein `db:push`.
+- Keine bestehenden Routen, Dateien oder Skripte löschen oder umbauen.
+- In der `.gitignore` wird **ausschließlich** die Zeile `backups/` ergänzt.
+  **Niemals** `*.sql` ignorieren — die 36 getrackten Migrationsdateien unter `migrations/` müssen getrackt bleiben.
+- Vor der ersten Änderung Safety-Tag setzen: `git tag pre-db-backup-2026-06-11`
+
+---
+
+## Schritt 0 — Diagnose (NUR lesen, noch nichts ändern)
+
+Führe aus und gib die Outputs aus:
+
+```bash
+which pg_dump && pg_dump --version          # ist pg_dump vorhanden, welche Version?
+node -e "console.log(!!process.env.DATABASE_URL)"   # ist DATABASE_URL gesetzt? (nur true/false, KEINEN Wert ausgeben)
+psql "$DATABASE_URL" -t -c "select version();" 2>&1 | head -1   # Server-Version
+git ls-files backups | head                  # ist backups/ schon getrackt? (sollte leer sein)
+grep -n "backups" .gitignore || echo "backups noch nicht in .gitignore"
+grep -n '"db:push"' package.json             # Anker für die neue Script-Zeile
+```
+
+**Bewertung dieser Outputs (bitte explizit beantworten):**
+- Ist `pg_dump` vorhanden? Wenn **nein**, NICHT weiterarbeiten — melde es zurück
+  (pg_dump gehört zum `postgresql`-Paket; auf Replit muss es ggf. über die System-Dependencies
+  ergänzt werden). Erst nach meiner Freigabe fortfahren.
+- Ist die `pg_dump`-Version **≥** der Server-Version? Wenn die Server-Version höher ist,
+  meldet pg_dump beim Lauf einen Versionsfehler — dann ebenfalls zurückmelden statt zu raten.
+- `DATABASE_URL` muss `true` sein.
+
+**Danach: Plan in 3–5 Sätzen vorlegen und auf meine Bestätigung warten, bevor irgendeine Datei geschrieben wird.**
+
+---
+
+## Schritt 1 — Backup-Skript anlegen
+
+Neue Datei `script/db-backup.ts` mit exakt diesem Inhalt:
+
+```ts
+/**
+ * CaskSense – On-Demand Datenbank-Backup
+ * Erzeugt einen komprimierten pg_dump (custom format) unter backups/.
+ * Aufruf:  npm run db:backup
+ * Restore: pg_restore -d "$DATABASE_URL" --clean --if-exists backups/<datei>.dump
+ */
+import { spawn } from "node:child_process";
+import { mkdirSync, readdirSync, statSync, unlinkSync } from "node:fs";
+import { join } from "node:path";
+
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) {
+  console.error("[db:backup] DATABASE_URL must be set");
+  process.exit(1);
+}
+
+const RETENTION = 10;        // wie viele lokale Dumps behalten
+const BACKUP_DIR = "backups";
+
+function berlinStamp(): string {
+  const parts = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Europe/Berlin",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(new Date());
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
+  return `${get("year")}-${get("month")}-${get("day")}_${get("hour")}${get("minute")}`;
+}
+
+mkdirSync(BACKUP_DIR, { recursive: true });
+const outFile = join(BACKUP_DIR, `casksense-${berlinStamp()}.dump`);
+
+console.log(`[db:backup] Starte pg_dump → ${outFile}`);
+
+const dump = spawn(
+  "pg_dump",
+  ["--format=custom", "--no-owner", "--no-privileges", "--file", outFile, DATABASE_URL],
+  { stdio: ["ignore", "inherit", "inherit"] },
+);
+
+dump.on("error", (err) => {
+  console.error(`[db:backup] pg_dump konnte nicht gestartet werden: ${err.message}`);
+  console.error(`[db:backup] Prüfe: which pg_dump`);
+  process.exit(1);
+});
+
+dump.on("close", (code) => {
+  if (code !== 0) {
+    console.error(`[db:backup] pg_dump fehlgeschlagen (exit ${code})`);
+    process.exit(code ?? 1);
+  }
+  const sizeMb = (statSync(outFile).size / 1024 / 1024).toFixed(2);
+  console.log(`[db:backup] OK – ${outFile} (${sizeMb} MB)`);
+
+  // Retention: nur die neuesten RETENTION .dump-Dateien behalten
+  const dumps = readdirSync(BACKUP_DIR)
+    .filter((f) => f.endsWith(".dump"))
+    .map((f) => ({ f, t: statSync(join(BACKUP_DIR, f)).mtimeMs }))
+    .sort((a, b) => b.t - a.t);
+  for (const old of dumps.slice(RETENTION)) {
+    unlinkSync(join(BACKUP_DIR, old.f));
+    console.log(`[db:backup] Alte Sicherung entfernt: ${old.f}`);
+  }
+});
+```
+
+---
+
+## Schritt 2 — npm-Script ergänzen
+
+In `package.json`, im `"scripts"`-Block, **direkt nach** der `"db:push"`-Zeile eine neue Zeile einfügen:
+
+```json
+"db:backup": "tsx script/db-backup.ts",
+```
+
+Keine anderen Scripts verändern. Achte auf gültiges JSON (Komma am Zeilenende).
+
+---
+
+## Schritt 3 — .gitignore härten (kritisch)
+
+Ans Ende der `.gitignore` **eine** Zeile anhängen:
+
+```
+backups/
+```
+
+**Nur diese Zeile.** Kein `*.sql`, kein `*.dump` global — das würde getrackte Migrationsdateien gefährden.
+Der `backups/`-Ordner enthält Voll-Dumps mit allen User-Daten und darf niemals ins (öffentliche) Repo gelangen.
+
+---
+
+## Verifikation (Outputs zeigen, NICHT committen)
+
+```bash
+# 1) Skript & Script-Eintrag vorhanden
+ls -la script/db-backup.ts
+grep -n '"db:backup"' package.json
+
+# 2) .gitignore korrekt – backups/ ignoriert, *.sql NICHT ergänzt
+tail -5 .gitignore
+git check-ignore backups/test.dump            # erwartet: backups/test.dump (= wird ignoriert)
+git ls-files '*.sql' | wc -l                   # erwartet: 36 (Migrationen weiterhin getrackt)
+
+# 3) Probelauf
+npm run db:backup
+ls -la backups/                                # erwartet: eine casksense-*.dump Datei mit >0 MB
+
+# 4) Backup darf NICHT als untracked im git-Status auftauchen
+git status --porcelain backups/                # erwartet: KEINE Ausgabe
+```
+
+**Erwartetes Gesamtergebnis:** `db-backup.ts` existiert, `npm run db:backup` erzeugt eine `.dump`-Datei,
+`git check-ignore` bestätigt das Ignorieren, die 36 Migrationen sind weiterhin getrackt, und der git-Status
+zeigt den `backups/`-Ordner **nicht** an.
+
+**Abschluss:** Fasse zusammen, was geändert wurde, und **warte auf mich** — committe nichts.
