@@ -1,0 +1,406 @@
+# Hard Prompt: WP 1b — "Dein Abend" (persönliche Abschluss-Karte)
+
+**Datum:** 12.06.2026 · **Priorität:** HOCH (Gast-Schleife / Fahrplan WP 1, Teil c)
+**Art:** Reines Frontend (1 neue Komponente, 2 Edits in LabsTastingDetail, 2 i18n-Blöcke). KEIN Server, KEIN Schema, KEINE Migration.
+
+**ABHÄNGIGKEIT: Dieser Auftrag setzt voraus, dass WP 1a (Gast-Eingang) bereits umgesetzt ist.** Schritt 0 prüft das. Falls WP 1a fehlt: STOPP.
+
+---
+
+## Worum es geht
+
+Nach dem Tasting endet der Abend für Teilnehmer heute im Nichts. Diese Karte ändert das: Auf der Tasting-Detailseite erscheint für abgeschlossene Tastings (Status reveal/closed/archiviert) ganz oben "Dein Abend" — die eigene Bewertungskurve über die Drams als Sparkline, der persönliche Top-Dram, der eigene Schnitt und (nur ab 3 Verkostern, K-Anonymität wie beim Community-Benchmark) der Vergleich mit der Runde. Die Karte rendert nichts, wenn keine eigenen Bewertungen vorliegen. Beim ersten Anzeigen feuert das Funnel-Event `recap_viewed` (Whitelist-Eintrag existiert seit WP 1a).
+
+**Charakter dieses Auftrags — WORTGETREUE ÜBERTRAGUNG:** Der gesamte Code liegt fertig vor und wurde extern gegen den Stand nach WP 1a entwickelt und typgeprüft (tsc-Baseline-Diff: 500 → 500, keine neuen Fehler). Deine Aufgabe: zeichengenau übertragen, verifizieren, berichten. Keine Design-Entscheidungen, keine Verbesserungen.
+
+**Hintergrund einer bewussten Benennung:** Der i18n-Block heißt `eveningRecap` (nicht `recap`), weil `recap:` in der i18n bereits dreimal für ein Legacy-Feature existiert — eine Kollision würde TS1117-Duplikatfehler erzeugen. NICHT umbenennen.
+
+---
+
+## Abweichungs-Protokoll (gilt für den GESAMTEN Auftrag)
+
+1. Vor JEDER Änderung: prüfe, dass der ALT-Block **genau einmal** in der Zieldatei vorkommt.
+2. Kommt er nicht oder mehrfach vor → **STOPP. Nichts ändern, nichts improvisieren.** Bericht: Datei, erwarteter ALT-Block, tatsächlicher Befund. Auf Anweisung warten.
+3. Auffälligkeiten, die diese Spezifikation nicht berücksichtigt → im Abschlussbericht unter "Beobachtungen" auflisten, NICHT eigenmächtig beheben.
+
+---
+
+## Schritt 0 — Diagnose (NUR LESEN)
+
+```bash
+git tag pre-wp1b-dein-abend-2026-06-12
+```
+
+1. **WP-1a-Abhängigkeit:** `grep -c "guestWelcome: {" client/src/lib/i18n.ts` → erwartet **2**. Und `grep -c "guest_join_success" server/funnel-store.ts` → erwartet **1** (recap_viewed steht in derselben Zeile). Falls nicht: STOPP — erst WP 1a umsetzen.
+2. Die Datei `client/src/labs/components/RecapCard.tsx` existiert NICHT (wird neu angelegt). Falls doch: STOPP.
+3. `grep -c "eveningRecap: {" client/src/lib/i18n.ts` → erwartet **0**.
+4. TypeScript-Baseline: `NODE_OPTIONS=--max-old-space-size=6144 npx tsc --noEmit 2>&1 | grep -c "error TS"` → Zahl notieren (Stand 12.06.: 500). **WICHTIG: ohne die NODE_OPTIONS-Heap-Erhöhung stürzt tsc mit OOM ab und meldet fälschlich 0.**
+
+**Plan bestätigen lassen, dann erst Schritt 1.**
+
+---
+
+## Schritt 1 — Neue Datei anlegen (Inhalt WÖRTLICH)
+
+### Neue Datei: `client/src/labs/components/RecapCard.tsx`
+
+```tsx
+import { useEffect, useMemo, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { ratingApi } from "@/lib/api";
+import { trackEvent } from "@/lib/funnelTracker";
+
+// "Dein Abend" (WP 1b): persönliche Abschluss-Karte nach dem Tasting.
+// Zeigt die eigene Kurve über die Drams, den Top-Dram und — ab 3 Verkostern
+// (K-Anonymität, gleicher Floor wie das Community-Benchmark-Tool) — die
+// Position relativ zur Runde. Rendert nichts, solange keine eigenen
+// Bewertungen vorliegen.
+
+interface RecapWhisky {
+  id: string;
+  name?: string | null;
+  sortOrder?: number | null;
+}
+
+interface RecapRating {
+  participantId: string;
+  whiskyId: string;
+  overall: number | null;
+}
+
+interface RecapCardProps {
+  tastingId: string;
+  whiskies: RecapWhisky[];
+  participantId: string;
+}
+
+const FONT_DISPLAY = "'Playfair Display', Georgia, serif";
+const FONT_SERIF = "'Cormorant Garamond', Georgia, serif";
+
+const MIN_GROUP_RATERS = 3;
+
+function fmt(v: number): string {
+  const r = Math.round(v * 10) / 10;
+  return Number.isInteger(r) ? String(r) : r.toFixed(1);
+}
+
+export default function RecapCard({ tastingId, whiskies, participantId }: RecapCardProps) {
+  const { t } = useTranslation();
+  const trackedRef = useRef(false);
+
+  const { data: ratings } = useQuery<RecapRating[]>({
+    queryKey: ["recap-ratings", tastingId],
+    queryFn: () => ratingApi.getForTasting(tastingId),
+    enabled: !!tastingId && !!participantId,
+    staleTime: 60 * 1000,
+  });
+
+  const recap = useMemo(() => {
+    if (!ratings || !whiskies || whiskies.length === 0) return null;
+    const ordered = [...whiskies].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    const mine = new Map<string, number>();
+    const allValues: number[] = [];
+    const raters = new Set<string>();
+    for (const r of ratings) {
+      if (typeof r.overall !== "number") continue;
+      raters.add(r.participantId);
+      allValues.push(r.overall);
+      if (r.participantId === participantId) mine.set(r.whiskyId, r.overall);
+    }
+    const points = ordered
+      .map((w, idx) => ({ idx, id: w.id, name: w.name || `Dram ${idx + 1}`, value: mine.get(w.id) }))
+      .filter((p): p is { idx: number; id: string; name: string; value: number } => typeof p.value === "number");
+    if (points.length === 0) return null;
+
+    let top = points[0];
+    for (const p of points) if (p.value > top.value) top = p;
+
+    const myAvg = points.reduce((s, p) => s + p.value, 0) / points.length;
+    const groupOk = raters.size >= MIN_GROUP_RATERS && allValues.length > 0;
+    const groupAvg = groupOk ? allValues.reduce((s, v) => s + v, 0) / allValues.length : null;
+
+    return { points, top, myAvg, groupAvg, raterCount: raters.size, dramCount: ordered.length };
+  }, [ratings, whiskies, participantId]);
+
+  useEffect(() => {
+    if (recap && !trackedRef.current) {
+      trackedRef.current = true;
+      trackEvent("recap_viewed", { page: `/labs/tastings/${tastingId}` });
+    }
+  }, [recap, tastingId]);
+
+  if (!recap) return null;
+
+  // Sparkline-Geometrie (festes ViewBox, Stroke bleibt formtreu)
+  const W = 280;
+  const H = 56;
+  const PAD = 8;
+  const values = recap.points.map((p) => p.value);
+  const vMin = Math.min(...values);
+  const vMax = Math.max(...values);
+  const span = vMax - vMin || 1;
+  const x = (i: number) =>
+    recap.points.length === 1 ? W / 2 : PAD + (i * (W - 2 * PAD)) / (recap.points.length - 1);
+  const y = (v: number) => H - PAD - ((v - vMin) / span) * (H - 2 * PAD);
+  const linePoints = recap.points.map((p, i) => `${x(i)},${y(p.value)}`).join(" ");
+
+  const delta = recap.groupAvg != null ? recap.myAvg - recap.groupAvg : null;
+  const deltaText =
+    delta == null
+      ? null
+      : Math.abs(delta) < 0.5
+        ? t("eveningRecap.groupLevel", "Du liegst gleichauf mit der Runde.")
+        : delta > 0
+          ? t("eveningRecap.groupAbove", "Du liegst {{n}} Punkte über dem Schnitt der Runde.", { n: fmt(Math.abs(delta)) })
+          : t("eveningRecap.groupBelow", "Du liegst {{n}} Punkte unter dem Schnitt der Runde.", { n: fmt(Math.abs(delta)) });
+
+  return (
+    <div
+      className="labs-card labs-fade-in"
+      data-testid="recap-card"
+      style={{
+        padding: "18px 18px 16px",
+        marginBottom: 20,
+        border: "1px solid var(--labs-accent)",
+        borderRadius: 16,
+      }}
+    >
+      <div style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--labs-accent)", fontWeight: 600 }} data-testid="recap-eyebrow">
+        {t("eveningRecap.eyebrow", "Dein Abend")}
+      </div>
+
+      <div style={{ marginTop: 12 }}>
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          width="100%"
+          height={H}
+          role="img"
+          aria-label={t("eveningRecap.curveAria", "Deine Bewertungen im Verlauf des Abends")}
+          data-testid="recap-sparkline"
+        >
+          {recap.points.length > 1 && (
+            <polyline
+              points={linePoints}
+              fill="none"
+              stroke="var(--labs-accent)"
+              strokeWidth="1.5"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+          )}
+          {recap.points.map((p, i) => (
+            <circle
+              key={p.id}
+              cx={x(i)}
+              cy={y(p.value)}
+              r={p.id === recap.top.id ? 4 : 2.5}
+              fill={p.id === recap.top.id ? "var(--labs-accent)" : "var(--labs-text-muted)"}
+            />
+          ))}
+        </svg>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--labs-text-muted)", marginTop: 2 }}>
+          <span>{t("eveningRecap.curveStart", "Dram 1")}</span>
+          <span>{t("eveningRecap.curveEnd", "Dram {{n}}", { n: recap.dramCount })}</span>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginTop: 14 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{t("eveningRecap.topDram", "Dein Top-Dram")}</div>
+          <div
+            style={{ fontFamily: FONT_DISPLAY, fontSize: 17, color: "var(--labs-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 220 }}
+            data-testid="recap-top-dram"
+          >
+            {recap.top.name}
+          </div>
+          <div style={{ fontFamily: FONT_SERIF, fontStyle: "italic", fontSize: 14, color: "var(--labs-accent)" }}>
+            {fmt(recap.top.value)} {t("eveningRecap.points", "Punkte")}
+          </div>
+        </div>
+        <div>
+          <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{t("eveningRecap.yourAvg", "Dein Schnitt")}</div>
+          <div style={{ fontFamily: FONT_DISPLAY, fontSize: 17, color: "var(--labs-text)" }} data-testid="recap-my-avg">
+            {fmt(recap.myAvg)}
+          </div>
+        </div>
+        {recap.groupAvg != null && (
+          <div>
+            <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{t("eveningRecap.groupAvg", "Runde")}</div>
+            <div style={{ fontFamily: FONT_DISPLAY, fontSize: 17, color: "var(--labs-text)" }} data-testid="recap-group-avg">
+              {fmt(recap.groupAvg)}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {deltaText && (
+        <div
+          style={{ fontFamily: FONT_SERIF, fontStyle: "italic", fontSize: 14, color: "var(--labs-text-secondary)", marginTop: 12 }}
+          data-testid="recap-group-line"
+        >
+          {deltaText}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+## Schritt 2 — 4 exakte Edits in 2 bestehenden Dateien
+
+Jeder Edit ist ein ALT→NEU-Paar. ALT muss exakt einmal vorkommen (Abweichungs-Protokoll!). Reihenfolge einhalten.
+
+
+### Datei: `client/src/labs/pages/LabsTastingDetail.tsx`
+
+
+**Edit 1**
+
+ALT:
+```
+import { useTranslation } from "react-i18next";
+```
+
+NEU:
+```
+import { useTranslation } from "react-i18next";
+import RecapCard from "@/labs/components/RecapCard";
+```
+
+
+**Edit 2**
+
+ALT:
+```
+        <ChevronLeft className="w-4 h-4" />
+        {t("ui.tastings")}
+      </button>
+
+      <div className="mb-5">
+```
+
+NEU:
+```
+        <ChevronLeft className="w-4 h-4" />
+        {t("ui.tastings")}
+      </button>
+
+      {(isCompleted || isReveal) && currentParticipant && tasting && (
+        <RecapCard
+          tastingId={tastingId}
+          whiskies={(whiskies as any[]) || []}
+          participantId={currentParticipant.id}
+        />
+      )}
+
+      <div className="mb-5">
+```
+
+
+### Datei: `client/src/lib/i18n.ts`
+
+
+**Edit 3**
+
+ALT:
+```
+        midBannerEyebrow: "You're mid-tasting",
+        midBannerCta: "Continue",
+      },
+```
+
+NEU:
+```
+        midBannerEyebrow: "You're mid-tasting",
+        midBannerCta: "Continue",
+      },
+      eveningRecap: {
+        eyebrow: "Your evening",
+        topDram: "Your top dram",
+        points: "points",
+        yourAvg: "Your average",
+        groupAvg: "The table",
+        groupAbove: "You're {{n}} points above the table's average.",
+        groupBelow: "You're {{n}} points below the table's average.",
+        groupLevel: "You're right in line with the table.",
+        curveStart: "Dram 1",
+        curveEnd: "Dram {{n}}",
+        curveAria: "Your ratings across the evening",
+      },
+```
+
+
+**Edit 4**
+
+ALT:
+```
+        midBannerEyebrow: "Du bist mittendrin",
+        midBannerCta: "Weiter",
+      },
+```
+
+NEU:
+```
+        midBannerEyebrow: "Du bist mittendrin",
+        midBannerCta: "Weiter",
+      },
+      eveningRecap: {
+        eyebrow: "Dein Abend",
+        topDram: "Dein Top-Dram",
+        points: "Punkte",
+        yourAvg: "Dein Schnitt",
+        groupAvg: "Runde",
+        groupAbove: "Du liegst {{n}} Punkte über dem Schnitt der Runde.",
+        groupBelow: "Du liegst {{n}} Punkte unter dem Schnitt der Runde.",
+        groupLevel: "Du liegst gleichauf mit der Runde.",
+        curveStart: "Dram 1",
+        curveEnd: "Dram {{n}}",
+        curveAria: "Deine Bewertungen im Verlauf des Abends",
+      },
+```
+
+
+---
+
+## Sicherheitsregeln (zwingend)
+
+- `shared/schema.ts` NICHT anfassen. Keine Migrationen, kein drizzle-kit. KEINE Server-Dateien.
+- Außer der 1 neuen Datei und den 2 gelisteten Dateien wird NICHTS verändert.
+- KEINE Commits. Keine "Verbesserungen", kein Umformatieren — auch nicht bei vorbestehenden TS-Fehlern.
+- Den Block-Namen `eveningRecap` NICHT in `recap` "korrigieren" (siehe Hintergrund oben).
+
+---
+
+## Schritt 3 — Verifikation (Ergebnisse als Output vorlegen)
+
+1. **Typprüfung:** `NODE_OPTIONS=--max-old-space-size=6144 npx tsc --noEmit 2>&1 | grep -c "error TS"` → identisch zur Schritt-0-Baseline. Kein Fehler darf `RecapCard` oder `eveningRecap` nennen.
+2. `grep -c "eveningRecap: {" client/src/lib/i18n.ts` → **2** (EN+DE).
+3. **Smoke-Test** (Dev-Server):
+   a. Ein abgeschlossenes Tasting (Status reveal/closed/archiviert) als Teilnehmer MIT eigenen Bewertungen öffnen → ganz oben unter dem Zurück-Button erscheint die Karte "Dein Abend": Sparkline, Top-Dram mit Namen und Punktzahl, "Dein Schnitt". Gold-Akzent-Rahmen.
+   b. Hat das Tasting **mindestens 3 Verkoster** mit Bewertungen → zusätzlich Spalte "Runde" + Vergleichszeile ("Du liegst … über/unter dem Schnitt der Runde." bzw. "gleichauf"). Bei **weniger als 3 Verkostern** → KEINE Runden-Spalte, KEINE Vergleichszeile (K-Anonymität).
+   c. Gleiche Seite als Teilnehmer OHNE eigene Bewertungen → KEINE Karte (kein leerer Rahmen).
+   d. Laufendes (open) oder Draft-Tasting → KEINE Karte.
+   e. Funnel: Nach a erscheint `recap_viewed` im Admin-Funnel-Live bzw. in den funnel_counters (einmal pro Seitenaufruf, nicht mehrfach).
+   f. Historisches Tasting #29 "Auszeit!" NICHT als Testfall verwenden (bekannte Score-Anomalie; die Karte zeigt dort korrekt die gespeicherten — falschen — Werte).
+4. **Regression:** Detailseite eines Draft-Tastings als Host: Meta-Bearbeitung, Whisky-Liste, Invite-Panel unverändert funktionsfähig.
+
+---
+
+## Schritt 4 — Abschlussbericht (Pflicht)
+
+1. Schritt-0-Befunde (inkl. WP-1a-Abhängigkeitscheck und tsc-Baseline-Zahl)
+2. 1 angelegte Datei + 2 editierte Dateien mit Edit-Anzahl (4)
+3. Verifikationsergebnisse 1–4 mit Original-Output
+4. **Beobachtungen** (Pflichtrubrik; "Keine" nur nach echter Prüfung)
+5. Bestätigung: keine Commits, kein Schema, kein Server berührt
+
+---
+
+## Bewusst NICHT Teil dieses Auftrags
+
+- Sharing der Karte / Story-Verknüpfung (WP 2) und Konto-Claim-CTA auf der Karte (WP 3) — die Karte ist bewusst noch ohne Call-to-Action.
+- Anzeige für Tastings mit Score-Anomalien reparieren (Tasting #29 — separat geparkt).
+- Reihenfolge-Logik jenseits von `sortOrder` (z.B. tatsächliche Verkostungsreihenfolge bei freien Tastings).
