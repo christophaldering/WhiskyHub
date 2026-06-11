@@ -798,6 +798,10 @@ const resources = {
         band75: "Good",
         band70: "Solid",
         band0: "Simple",
+        ratingTisch: "Table",
+        ratingTischD: "All four dimensions as steps — one tap each, made for the table.",
+        ratingTischH: "When the conversation matters more.",
+        tischTapHint: "One tap per phase — details can wait until later.",
         back: "Back",
         recognition: {
           title: "Recognized Whisky",
@@ -10536,6 +10540,10 @@ const resources = {
         band75: "Gut",
         band70: "Solide",
         band0: "Einfach",
+        ratingTisch: "Tisch",
+        ratingTischD: "Alle vier Dimensionen als Stufen — ein Tap pro Phase, gemacht für den Tisch.",
+        ratingTischH: "Wenn das Gespräch wichtiger ist.",
+        tischTapHint: "Ein Tap pro Phase — Details kannst du später ergänzen.",
         back: "Zur\u00fcck",
         recognition: {
           title: "Erkannter Whisky",

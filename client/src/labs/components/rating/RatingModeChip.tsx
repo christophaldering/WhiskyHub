@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { SP, FONT, RADIUS } from "./theme";
 
-type Mode = "guided" | "compact" | "quick";
+type Mode = "guided" | "compact" | "quick" | "tisch";
 
 interface ChipLabels {
   current: string;
@@ -9,6 +9,7 @@ interface ChipLabels {
   guided: string;
   compact: string;
   quick: string;
+  tisch: string;
   setDefault: string;
   cancel: string;
 }
@@ -16,12 +17,13 @@ interface ChipLabels {
 interface RatingModeChipProps {
   mode: Mode;
   hideQuick?: boolean;
+  showTisch?: boolean;
   labels: ChipLabels;
   allowSetDefault: boolean;
   onSwitch: (next: Mode, makeDefault?: boolean) => void;
 }
 
-export default function RatingModeChip({ mode, hideQuick, labels, allowSetDefault, onSwitch }: RatingModeChipProps) {
+export default function RatingModeChip({ mode, hideQuick, showTisch, labels, allowSetDefault, onSwitch }: RatingModeChipProps) {
   const [open, setOpen] = useState(false);
   const [makeDefault, setMakeDefault] = useState(false);
   const popoverRef = useRef<HTMLDivElement | null>(null);
@@ -47,10 +49,12 @@ export default function RatingModeChip({ mode, hideQuick, labels, allowSetDefaul
   const labelFor = (m: Mode): string => {
     if (m === "guided") return labels.guided;
     if (m === "compact") return labels.compact;
+    if (m === "tisch") return labels.tisch;
     return labels.quick;
   };
 
-  const allModes: Mode[] = hideQuick ? ["guided", "compact"] : ["guided", "compact", "quick"];
+  const baseModes: Mode[] = hideQuick ? ["guided", "compact"] : ["guided", "compact", "quick"];
+  const allModes: Mode[] = showTisch ? ["tisch", ...baseModes] : baseModes;
 
   const handlePick = (m: Mode) => {
     setOpen(false);

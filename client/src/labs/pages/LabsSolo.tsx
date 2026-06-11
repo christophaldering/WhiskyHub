@@ -131,7 +131,7 @@ export default function LabsSolo() {
 
   const [soloImageFile, setSoloImageFile] = useState<File | null>(null);
   const [resumeDraft, setResumeDraft] = useState(() => loadSoloDraft());
-  const [ratingMode, setRatingMode] = useState<"guided" | "compact" | "quick" | null>(null);
+  const [ratingMode, setRatingMode] = useState<"guided" | "compact" | "quick" | "tisch" | null>(null);
   const [ratingPhaseIndex, setRatingPhaseIndex] = useState(0);
   const [ratingInitialData, setRatingInitialData] = useState<RatingData | undefined>(undefined);
 
@@ -147,7 +147,7 @@ export default function LabsSolo() {
     rawPreferred === "guided" || rawPreferred === "compact" || rawPreferred === "quick" ? rawPreferred : null;
 
   const { toast: soloToast } = useToast();
-  const handleSetPreferredMode = useCallback(async (mode: "guided" | "compact" | "quick" | null) => {
+  const handleSetPreferredMode = useCallback(async (mode: "guided" | "compact" | "quick" | "tisch" | null) => {
     if (!participantId) return;
     try {
       await participantUpdateApi.update(participantId, { preferredRatingMode: mode });

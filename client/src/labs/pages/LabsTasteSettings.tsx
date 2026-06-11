@@ -56,7 +56,7 @@ export default function LabsTasteSettings() {
   const [notifSaving, setNotifSaving] = useState(false);
   const [privacySaving, setPrivacySaving] = useState(false);
   const [preferredRatingScale, setPreferredRatingScale] = useState<number | null>(null);
-  const [preferredRatingMode, setPreferredRatingMode] = useState<"guided" | "compact" | "quick" | null>(null);
+  const [preferredRatingMode, setPreferredRatingMode] = useState<"guided" | "compact" | "quick" | "tisch" | null>(null);
   const activeScale = useRatingScale();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deletePin, setDeletePin] = useState("");
@@ -100,7 +100,7 @@ export default function LabsTasteSettings() {
       setNewsletterOptIn(participant.newsletterOptIn || false);
       setPreferredRatingScale(participant.preferredRatingScale ?? null);
       const m = participant.preferredRatingMode;
-      setPreferredRatingMode(m === "guided" || m === "compact" || m === "quick" ? m : null);
+      setPreferredRatingMode(m === "guided" || m === "compact" || m === "quick" || m === "tisch" ? m : null);
     }
   }, [participant]);
 
@@ -335,7 +335,7 @@ export default function LabsTasteSettings() {
             <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: "var(--labs-text-muted)" }}>{t("m2.taste.settings.ratingMode", "Bewertungsform")}</label>
             <p className="text-[11px] mb-2" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }}>{t("m2.taste.settings.ratingModeHint", "Deine Standard-Form. „Auto“ fragt jedes Mal.")}</p>
             <div className="flex gap-2" data-testid="select-preferred-rating-mode">
-              {(([null, "guided", "compact", "quick"] as const)).map(m => {
+              {(([null, "guided", "compact", "quick", "tisch"] as const)).map(m => {
                 const active = preferredRatingMode === m;
                 const label = m === null
                   ? t("m2.taste.settings.modeAuto", "Jedes Mal fragen")
@@ -343,7 +343,9 @@ export default function LabsTasteSettings() {
                     ? t("v2.ratingGuided", "Geführt")
                     : m === "compact"
                       ? t("v2.ratingCompact", "Kompakt")
-                      : t("v2.ratingQuick", "Quick");
+                      : m === "quick"
+                        ? t("v2.ratingQuick", "Quick")
+                        : t("v2.ratingTisch", "Tisch");
                 return (
                   <button key={String(m)} onClick={() => setPreferredRatingMode(m)}
                     style={{ flex: 1, padding: "10px 4px", borderRadius: 10, border: active ? "2px solid var(--labs-accent)" : "1px solid var(--labs-border)", background: active ? "var(--labs-accent-muted)" : "transparent", color: active ? "var(--labs-accent)" : "var(--labs-text)", fontSize: 13, fontWeight: active ? 600 : 400, cursor: "pointer", fontFamily: "inherit" }}

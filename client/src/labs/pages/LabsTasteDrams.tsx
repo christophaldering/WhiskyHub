@@ -212,7 +212,7 @@ export default function LabsTasteDrams() {
     rawPreferred === "guided" || rawPreferred === "compact" || rawPreferred === "quick" ? rawPreferred : null;
 
   const { toast: dramsToast } = useToast();
-  const handleSetPreferredMode = useCallback(async (mode: "guided" | "compact" | "quick" | null) => {
+  const handleSetPreferredMode = useCallback(async (mode: "guided" | "compact" | "quick" | "tisch" | null) => {
     if (!session.pid) return;
     try {
       await participantUpdateApi.update(session.pid, { preferredRatingMode: mode });

@@ -368,11 +368,11 @@ function GuidedStepView({
   });
 
   const rawPreferred = participantData?.preferredRatingMode;
-  const preferredRatingModeFromProfile: "guided" | "compact" | "quick" | null =
-    rawPreferred === "guided" || rawPreferred === "compact" || rawPreferred === "quick" ? rawPreferred : null;
+  const preferredRatingModeFromProfile: "guided" | "compact" | "quick" | "tisch" | null =
+    rawPreferred === "guided" || rawPreferred === "compact" || rawPreferred === "quick" || rawPreferred === "tisch" ? rawPreferred : null;
 
   const { toast: liveToast } = useToast();
-  const handleSetPreferredMode = useCallback(async (m: "guided" | "compact" | "quick" | null) => {
+  const handleSetPreferredMode = useCallback(async (m: "guided" | "compact" | "quick" | "tisch" | null) => {
     if (!currentParticipant?.id) return;
     try {
       await participantUpdateApi.update(currentParticipant.id, { preferredRatingMode: m });
@@ -663,6 +663,7 @@ function GuidedStepView({
             onChange={handleGuidedDraftChange}
             preferredMode={preferredRatingModeFromProfile}
             onSetPreferredMode={handleSetPreferredMode}
+            showTisch={true}
           />
 
           {flowSaved && viewingHostDram && (

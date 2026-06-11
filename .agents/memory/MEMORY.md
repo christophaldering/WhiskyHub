@@ -1,3 +1,4 @@
 - [Publish security scan](publish-security-scan.md) — clearing critical/high dep vulns to unblock Publish: direct bumps + package.json overrides for transitive; xlsx→exceljs.
 - [Autoscale health probe vs domain redirect](autoscale-redirect-healthcheck.md) — replit.app→custom-domain 301 on GET / fails Cloud Run promote probe; gate redirect on Accept: text/html.
 - [Image upload sanitizer](image-upload-sanitizer.md) — all uploads strip EXIF via one chokepoint; keep multer allowlist in sync with sanitizer, fail-closed for images.
+- [tsc baseline OOM](tsc-baseline-oom.md) — `tsc --noEmit` prints a fake "0 errors" on OOM; use NODE_OPTIONS=--max-old-space-size=6144 for the real ~500 baseline.

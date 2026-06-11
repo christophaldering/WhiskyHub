@@ -15,27 +15,32 @@ interface RatingLabels {
   quick?: string;
   quickD?: string;
   quickH?: string;
+  tisch?: string;
+  tischD?: string;
+  tischH?: string;
   back: string;
   rememberDefault?: string;
 }
 
 interface RatingModeSelectProps {
   labels: RatingLabels;
-  onSelect: (mode: "guided" | "compact" | "quick", remember?: boolean) => void;
+  onSelect: (mode: "guided" | "compact" | "quick" | "tisch", remember?: boolean) => void;
   onBack: () => void;
   hideQuick?: boolean;
+  showTisch?: boolean;
   showRememberToggle?: boolean;
 }
 
-export default function RatingModeSelect({ labels, onSelect, onBack, hideQuick, showRememberToggle }: RatingModeSelectProps) {
+export default function RatingModeSelect({ labels, onSelect, onBack, hideQuick, showTisch, showRememberToggle }: RatingModeSelectProps) {
   const [remember, setRemember] = useState(false);
   const allCards: Array<{
-    mode: "guided" | "compact" | "quick";
+    mode: "guided" | "compact" | "quick" | "tisch";
     title: string;
     desc: string;
     hint: string;
-    phaseId: "nose" | "palate" | "overall";
+    phaseId: "nose" | "palate" | "finish" | "overall";
   }> = [
+    ...(showTisch ? [{ mode: "tisch" as const, title: labels.tisch || "Tisch", desc: labels.tischD || "Ein Tap pro Phase.", hint: labels.tischH || "", phaseId: "finish" as const }] : []),
     { mode: "guided", title: labels.guided, desc: labels.guidedD, hint: labels.guidedH, phaseId: "nose" },
     { mode: "compact", title: labels.compact, desc: labels.compactD, hint: labels.compactH, phaseId: "palate" },
     { mode: "quick", title: labels.quick || "Quick", desc: labels.quickD || "Overall score only — two taps and done.", hint: labels.quickH || "When time is short.", phaseId: "overall" },

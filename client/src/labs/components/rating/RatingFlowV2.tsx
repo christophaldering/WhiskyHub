@@ -7,9 +7,10 @@ import RatingModeChip from "./RatingModeChip";
 import GuidedRating from "./GuidedRating";
 import CompactRating from "./CompactRating";
 import QuickRating from "./QuickRating";
+import TischRating from "./TischRating";
 
 export interface RatingFlowDraftState {
-  mode: "guided" | "compact" | "quick" | null;
+  mode: "guided" | "compact" | "quick" | "tisch" | null;
   phaseIndex: number;
   data: Partial<RatingData>;
 }
@@ -23,7 +24,7 @@ interface RatingFlowV2Props {
     flavorProfile?: string;
   };
   initialData?: RatingData;
-  initialMode?: "guided" | "compact" | "quick" | null;
+  initialMode?: "guided" | "compact" | "quick" | "tisch" | null;
   initialPhaseIndex?: number;
   onDone: (data: RatingData) => void;
   onBack: () => void;
@@ -31,8 +32,9 @@ interface RatingFlowV2Props {
   onSaveAsDraft?: (data: RatingData) => void;
   hideQuick?: boolean;
   scale?: RatingScale;
-  preferredMode?: "guided" | "compact" | "quick" | null;
-  onSetPreferredMode?: (mode: "guided" | "compact" | "quick" | null) => void;
+  preferredMode?: "guided" | "compact" | "quick" | "tisch" | null;
+  onSetPreferredMode?: (mode: "guided" | "compact" | "quick" | "tisch" | null) => void;
+  showTisch?: boolean;
 }
 
 type Step = "mode" | "rating";
@@ -50,18 +52,19 @@ export default function RatingFlowV2({
   scale,
   preferredMode,
   onSetPreferredMode,
+  showTisch,
 }: RatingFlowV2Props) {
   const { t } = useTranslation();
 
-  const resolvedInitialMode = useMemo<"guided" | "compact" | "quick" | null>(() => {
-    if (initialMode) return initialMode;
-    if (preferredMode && (preferredMode === "guided" || preferredMode === "compact" || (preferredMode === "quick" && !hideQuick))) {
+  const resolvedInitialMode = useMemo<"guided" | "compact" | "quick" | "tisch" | null>(() => {
+    if (initialMode && (initialMode !== "tisch" || showTisch)) return initialMode;
+    if (preferredMode && (preferredMode === "guided" || preferredMode === "compact" || (preferredMode === "quick" && !hideQuick) || (preferredMode === "tisch" && !!showTisch))) {
       return preferredMode;
     }
     return null;
-  }, [initialMode, preferredMode, hideQuick]);
+  }, [initialMode, preferredMode, hideQuick, showTisch]);
 
-  const [mode, setMode] = useState<"guided" | "compact" | "quick" | null>(resolvedInitialMode);
+  const [mode, setMode] = useState<"guided" | "compact" | "quick" | "tisch" | null>(resolvedInitialMode);
   const [step, setStep] = useState<Step>(resolvedInitialMode ? "rating" : "mode");
   const [liveData, setLiveData] = useState<RatingData | undefined>(initialData);
   const liveDataRef = useRef<RatingData | undefined>(initialData);
@@ -77,9 +80,10 @@ export default function RatingFlowV2({
     if (step !== "mode") return;
     if (!preferredMode) return;
     if (preferredMode === "quick" && hideQuick) return;
+    if (preferredMode === "tisch" && !showTisch) return;
     setMode(preferredMode);
     setStep("rating");
-  }, [preferredMode, initialMode, hideQuick, step]);
+  }, [preferredMode, initialMode, hideQuick, showTisch, step]);
 
   const modeLabels = useMemo(() => ({
     modeQ: t("v2.ratingModeQ", "Wie moechtest du bewerten?"),
@@ -93,6 +97,9 @@ export default function RatingFlowV2({
     quick: t("v2.ratingQuick", "Quick"),
     quickD: t("v2.ratingQuickD", "Nur Overall-Score -- zwei Taps und fertig."),
     quickH: t("v2.ratingQuickH", "Wenn es schnell gehen soll."),
+    tisch: t("v2.ratingTisch", "Tisch"),
+    tischD: t("v2.ratingTischD", "Alle vier Dimensionen als Stufen — ein Tap pro Phase."),
+    tischH: t("v2.ratingTischH", "Wenn das Gespräch wichtiger ist."),
     back: t("v2.back", "Zurueck"),
     rememberDefault: t("v2.ratingModeRemember", "Als meine Standard-Form merken"),
   }), [t]);
@@ -152,17 +159,38 @@ export default function RatingFlowV2({
     back: modeLabels.back,
   }), [t, guidedLabels, modeLabels.back]);
 
+  const tischLabels = useMemo(() => ({
+    tisch: modeLabels.tisch,
+    tischTapHint: t("v2.tischTapHint", "Ein Tap pro Phase — Details kannst du später ergänzen."),
+    band90: guidedLabels.band90,
+    band85: guidedLabels.band85,
+    band80: guidedLabels.band80,
+    band75: guidedLabels.band75,
+    band70: guidedLabels.band70,
+    band0: guidedLabels.band0,
+    nose: guidedLabels.nose,
+    palate: guidedLabels.palate,
+    finishLabel: guidedLabels.finishLabel,
+    overall: guidedLabels.overall,
+    qNose: guidedLabels.qNose,
+    qPalate: guidedLabels.qPalate,
+    qFinish: guidedLabels.qFinish,
+    qOverall: guidedLabels.qOverall,
+    back: modeLabels.back,
+  }), [t, guidedLabels, modeLabels]);
+
   const chipLabels = useMemo(() => ({
     current: t("v2.ratingModeChipCurrent", "Modus"),
     title: t("v2.ratingModeChipTitle", "Bewertungsform wechseln"),
     guided: modeLabels.guided,
     compact: modeLabels.compact,
     quick: modeLabels.quick,
+    tisch: modeLabels.tisch,
     setDefault: t("v2.ratingModeSetDefault", "Als Standard merken"),
     cancel: t("v2.back", "Zurueck"),
   }), [t, modeLabels]);
 
-  const handleModeSelect = useCallback((m: "guided" | "compact" | "quick", remember?: boolean) => {
+  const handleModeSelect = useCallback((m: "guided" | "compact" | "quick" | "tisch", remember?: boolean) => {
     setMode(m);
     setStep("rating");
     if (remember && onSetPreferredMode) {
@@ -198,7 +226,7 @@ export default function RatingFlowV2({
     }
   }, [onBack, onSaveAsDraft]);
 
-  const handleSwitchMode = useCallback((next: "guided" | "compact" | "quick", makeDefault?: boolean) => {
+  const handleSwitchMode = useCallback((next: "guided" | "compact" | "quick" | "tisch", makeDefault?: boolean) => {
     if (next === mode) return;
     if (makeDefault && onSetPreferredMode) {
       onSetPreferredMode(next);
@@ -214,6 +242,7 @@ export default function RatingFlowV2({
         onSelect={handleModeSelect}
         onBack={onBack}
         hideQuick={hideQuick}
+        showTisch={showTisch}
         showRememberToggle={!!onSetPreferredMode}
       />
     );
@@ -229,6 +258,7 @@ export default function RatingFlowV2({
           <RatingModeChip
             mode="guided"
             hideQuick={hideQuick}
+            showTisch={showTisch}
             labels={chipLabels}
             allowSetDefault={!!onSetPreferredMode}
             onSwitch={handleSwitchMode}
@@ -256,6 +286,7 @@ export default function RatingFlowV2({
           <RatingModeChip
             mode="compact"
             hideQuick={hideQuick}
+            showTisch={showTisch}
             labels={chipLabels}
             allowSetDefault={!!onSetPreferredMode}
             onSwitch={handleSwitchMode}
@@ -282,6 +313,7 @@ export default function RatingFlowV2({
           <RatingModeChip
             mode="quick"
             hideQuick={hideQuick}
+            showTisch={showTisch}
             labels={chipLabels}
             allowSetDefault={!!onSetPreferredMode}
             onSwitch={handleSwitchMode}
@@ -295,6 +327,32 @@ export default function RatingFlowV2({
           onBack={handleRatingBack}
           onChange={handleChange}
           onSaveAsDraft={onSaveAsDraft}
+          scale={scale}
+        />
+      </div>
+    );
+  }
+
+  if (step === "rating" && mode === "tisch") {
+    return (
+      <div style={{ position: "relative" }}>
+        {showChip && (
+          <RatingModeChip
+            mode="tisch"
+            hideQuick={hideQuick}
+            showTisch={showTisch}
+            labels={chipLabels}
+            allowSetDefault={!!onSetPreferredMode}
+            onSwitch={handleSwitchMode}
+          />
+        )}
+        <TischRating
+          labels={tischLabels}
+          whisky={{ ...whisky, blind: whisky.blind ?? false }}
+          initialData={subviewInitialData}
+          onDone={handleRatingDone}
+          onBack={handleRatingBack}
+          onChange={handleChange}
           scale={scale}
         />
       </div>

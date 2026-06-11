@@ -11,7 +11,7 @@ export interface SoloDraft {
   timestamp: number;
   step: "capture" | "form" | "rating" | "done";
   whisky: CapturedWhisky | null;
-  ratingMode: "guided" | "compact" | "quick" | null;
+  ratingMode: "guided" | "compact" | "quick" | "tisch" | null;
   ratingPhaseIndex: number;
   ratingData: Partial<RatingData>;
   fromCollection: boolean;
@@ -23,7 +23,7 @@ export interface GroupDraft {
   timestamp: number;
   tastingId: string;
   whiskyId: string;
-  ratingMode: "guided" | "compact" | "quick" | null;
+  ratingMode: "guided" | "compact" | "quick" | "tisch" | null;
   ratingPhaseIndex: number;
   ratingData: Partial<RatingData>;
 }
