@@ -1957,6 +1957,30 @@ export async function registerRoutes(
     }
   });
 
+  // Öffentlicher Welcome-Endpunkt für den Gast-Eingang (/welcome/:id).
+  // Liefert nur einladungssichere Felder; der Join-Code wird ausschließlich
+  // im Ultra-Gast-Modus mitgegeben (der QR-Besitzer kennt ihn ohnehin).
+  app.get("/api/tastings/:id/welcome", async (req, res) => {
+    const tasting = await storage.getTasting(req.params.id);
+    if (!tasting || tasting.status === "deleted") return res.status(404).json({ message: "Not found" });
+    let hostName: string | null = null;
+    try {
+      const host = await storage.getParticipant(tasting.hostId);
+      hostName = host?.name ?? null;
+    } catch {}
+    const guestMode = tasting.guestMode || "standard";
+    res.json({
+      id: tasting.id,
+      title: tasting.title,
+      date: tasting.date ?? null,
+      location: tasting.location ?? null,
+      status: tasting.status,
+      guestMode,
+      hostName,
+      ...(guestMode === "ultra" && tasting.code ? { code: tasting.code } : {}),
+    });
+  });
+
   app.post("/api/tastings", async (req, res) => {
     try {
       const sanitizedBody = sanitizeObject(req.body, ["title", "location"]);

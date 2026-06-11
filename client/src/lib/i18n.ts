@@ -10,6 +10,24 @@ import zh from './translations/zh';
 const resources = {
   en: {
     translation: {
+      guestWelcome: {
+        invited: "You're invited",
+        hostedBy: "Hosted by {{name}}",
+        yourName: "Your name",
+        toTable: "To the table",
+        joining: "One moment …",
+        noAccount: "No account needed",
+        nameRequired: "Please enter your name.",
+        joinFailed: "Could not join. Please try again.",
+        loading: "One moment …",
+        notFoundTitle: "We don't know this invitation.",
+        notFoundSub: "Ask your host for a fresh link or code.",
+        enterCode: "Enter code",
+        signinRequired: "Your host asks you to sign in for this tasting.",
+        continueSignin: "Continue to sign-in",
+        midBannerEyebrow: "You're mid-tasting",
+        midBannerCta: "Continue",
+      },
       app: {
         name: "CaskSense",
         tagline: "Where Tasting Becomes Reflection",
@@ -9766,6 +9784,24 @@ const resources = {
   },
   de: {
     translation: {
+      guestWelcome: {
+        invited: "Du bist eingeladen",
+        hostedBy: "Gastgeber: {{name}}",
+        yourName: "Dein Name",
+        toTable: "An den Tisch",
+        joining: "Einen Moment …",
+        noAccount: "Kein Konto nötig",
+        nameRequired: "Bitte gib deinen Namen ein.",
+        joinFailed: "Beitritt nicht möglich. Bitte versuche es erneut.",
+        loading: "Einen Moment …",
+        notFoundTitle: "Diese Einladung kennen wir nicht.",
+        notFoundSub: "Frag deinen Gastgeber nach einem neuen Link oder Code.",
+        enterCode: "Code eingeben",
+        signinRequired: "Für dieses Tasting bittet dich dein Gastgeber, dich kurz anzumelden.",
+        continueSignin: "Weiter zur Anmeldung",
+        midBannerEyebrow: "Du bist mittendrin",
+        midBannerCta: "Weiter",
+      },
       app: {
         name: "CaskSense",
         tagline: "Where Tasting Becomes Reflection",

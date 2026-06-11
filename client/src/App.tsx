@@ -132,6 +132,7 @@ const LabsMakingOf = lazy(() => import("@/labs/pages/LabsMakingOf"));
 const LabsAdmin = lazy(() => import("@/labs/pages/LabsAdmin"));
 const LabsOnboarding = lazy(() => import("@/labs/pages/LabsOnboarding"));
 const LabsResultsPresent = lazy(() => import("@/labs/pages/LabsResultsPresent"));
+const GuestWelcome = lazy(() => import("@/pages/guest-welcome"));
 const LabsGroupReport = lazy(() => import("@/labs/pages/LabsGroupReport"));
 const LabsAiImages = lazy(() => import("@/labs/pages/LabsAiImages"));
 
@@ -508,6 +509,7 @@ function Router() {
         <Route path="/landing-old" component={PublicLanding} />
         <Route path="/presentation" component={GuidedPresentation} />
         <Route path="/landing-v2" component={LandingV2} />
+        <Route path="/welcome/:id" component={GuestWelcome} />
         <Route path="/app-entry" component={Landing} />
         <Route path="/landing">{() => <Redirect to="/" />}</Route>
         <Route path="/start">{() => <Redirect to="/" />}</Route>

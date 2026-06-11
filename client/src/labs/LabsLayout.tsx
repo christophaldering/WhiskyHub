@@ -788,6 +788,17 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
     );
   }
 
+  // Gast-Modus (WP 1): Gäste aus dem QR-Eingang sehen Lobby/Live ohne Header und Tabs.
+  let guestShell = false;
+  try { guestShell = sessionStorage.getItem("cs_guest_shell") === "1"; } catch {}
+  if (guestShell && location.startsWith("/labs/live/")) {
+    return (
+      <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`} lang={htmlLang}>
+        {children}
+      </div>
+    );
+  }
+
   if (!autoResumeChecked || (!isPublicLabsRoute(location) && needsAuthRedirect)) {
     return (
       <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`} lang={htmlLang} />

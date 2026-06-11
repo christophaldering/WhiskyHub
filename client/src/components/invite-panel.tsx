@@ -133,7 +133,7 @@ export function InvitePanel({ tastingId }: InvitePanelProps) {
     }
   };
 
-  const tastingJoinUrl = `${window.location.origin}/tasting/${tastingId}`;
+  const tastingJoinUrl = `${window.location.origin}/welcome/${tastingId}`;
 
   useEffect(() => {
     if (open && tastingId) {

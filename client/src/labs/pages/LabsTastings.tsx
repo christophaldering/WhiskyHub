@@ -148,6 +148,11 @@ export default function LabsTastings() {
     return tastings.filter((t: any) => !t.isTestData && t.status === "open").length;
   }, [tastings]);
 
+  const liveMine = useMemo(() => {
+    if (!tastings) return null;
+    return tastings.find((t: any) => !t.isTestData && t.status === "open") ?? null;
+  }, [tastings]);
+
   useEffect(() => {
     if (!currentParticipant) {
       try {
@@ -316,6 +321,28 @@ export default function LabsTastings() {
           {t("tastings.pageSubtitle", "Taste, host and share")}
         </p>
       </div>
+
+      {liveMine && (
+        <button
+          type="button"
+          onClick={() => navigate(`/labs/live/${liveMine.id}`)}
+          className="labs-card labs-fade-in"
+          data-testid="labs-tastings-mid-banner"
+          style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "14px 16px", marginBottom: 16, border: "1px solid var(--labs-accent)", borderRadius: 14, background: "var(--labs-accent-muted)", cursor: "pointer" }}
+        >
+          <span style={{ minWidth: 0 }}>
+            <span style={{ display: "block", fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--labs-accent)", fontWeight: 600 }}>
+              {t("guestWelcome.midBannerEyebrow", "Du bist mittendrin")}
+            </span>
+            <span style={{ display: "block", fontFamily: "'Playfair Display', Georgia, serif", fontSize: 17, color: "var(--labs-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {liveMine.title}
+            </span>
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--labs-accent)", fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
+            {t("guestWelcome.midBannerCta", "Weiter")} →
+          </span>
+        </button>
+      )}
 
       <div className="labs-action-bar labs-fade-in labs-stagger-1 labs-tastings-actions" data-testid="labs-tastings-actions">
         <button
