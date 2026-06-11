@@ -1,1 +1,2 @@
 - [Publish security scan](publish-security-scan.md) — clearing critical/high dep vulns to unblock Publish: direct bumps + package.json overrides for transitive; xlsx→exceljs.
+- [Autoscale health probe vs domain redirect](autoscale-redirect-healthcheck.md) — replit.app→custom-domain 301 on GET / fails Cloud Run promote probe; gate redirect on Accept: text/html.

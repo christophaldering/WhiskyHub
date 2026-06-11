@@ -370,7 +370,8 @@ function handleRequest(req: IncomingMessage, res: ServerResponse) {
   }
 
   const host = req.headers.host || "";
-  if (process.env.NODE_ENV === "production" && host.includes("replit.app")) {
+  const acceptsHtml = (req.headers.accept || "").includes("text/html");
+  if (process.env.NODE_ENV === "production" && host.includes("replit.app") && acceptsHtml) {
     const target = "https://casksense.com" + url;
     res.writeHead(301, { Location: target, "Cache-Control": "public, max-age=86400" });
     res.end();
