@@ -63,6 +63,7 @@ import type { Tasting, WhiskyFriend } from "@shared/schema";
 import QRCode from "qrcode";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
 import { useTranslation } from "react-i18next";
+import RecapCard from "@/labs/components/RecapCard";
 
 interface LabsTastingDetailProps {
   params: { id: string };
@@ -722,6 +723,14 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
         <ChevronLeft className="w-4 h-4" />
         {t("ui.tastings")}
       </button>
+
+      {(isCompleted || isReveal) && currentParticipant && tasting && (
+        <RecapCard
+          tastingId={tastingId}
+          whiskies={(whiskies as any[]) || []}
+          participantId={currentParticipant.id}
+        />
+      )}
 
       <div className="mb-5">
         {editingMeta && isHost ? (
