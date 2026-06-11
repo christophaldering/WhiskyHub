@@ -1,0 +1,1191 @@
+# Hard Prompt: Tisch-Modus (Phase 1) — vierte Bewertungsform im geführten Gruppen-Tasting
+
+**Datum:** 11.06.2026 · **Priorität:** HOCH (Dirk-Feedback: „geniale Einfachheit")
+**Art:** Reines Frontend. KEIN Schema, KEINE Migration, KEIN Backend-Code.
+
+---
+
+## Worum es geht
+
+Eine vierte Bewertungsform „Tisch" neben Geführt/Kompakt/Quick: vier Phasen (Nase · Gaumen · Abgang · Gesamt), pro Phase sechs antippbare Wortstufen (bestehende Band-Sprache band0–band90), automatischer Phasenwechsel, vier Taps gesamt. Erscheint NUR im geführten Gruppen-Tasting (LabsLive); in Solo/Drams bewusst nicht. Werte werden auf die Tasting-Skala konvertiert und über die bestehende Rating-Mutation gespeichert — der Server merkt nichts von dem neuen Modus.
+
+**WICHTIG — Charakter dieses Auftrags:** Der gesamte Code liegt fertig vor und wurde extern gegen exakt diesen Repo-Stand entwickelt, typgeprüft (tsc, Baseline-Diff: 0 neue Fehler) und getestet (11/11 Tests grün). Deine Aufgabe ist ausschließlich: **wortgetreu übertragen, verifizieren, berichten.** Es gibt keine Design-Entscheidungen zu treffen. Jede Abweichung vom Wortlaut ist ein Fehler.
+
+---
+
+## Abweichungs-Protokoll (gilt für den GESAMTEN Auftrag)
+
+1. Vor JEDER Änderung: prüfe per exakter Textsuche, dass der jeweilige ALT-Block **genau einmal** in der Zieldatei vorkommt.
+2. Kommt ein ALT-Block nicht oder mehrfach vor → **STOPP. Nichts ändern. Nichts improvisieren.** Stattdessen einen Bericht ausgeben: Datei, erwarteter ALT-Block, tatsächlicher Befund (z.B. nächstähnliche Stelle). Dann auf Anweisung warten.
+3. Fällt dir während der Arbeit irgendetwas auf, das diese Spezifikation nicht berücksichtigt (weitere Verwendungsstellen, Lint-Fehler, abweichende Dateistände, Konflikte) → im Abschlussbericht unter „Beobachtungen" auflisten, aber **nicht eigenmächtig beheben**.
+
+---
+
+## Schritt 0 — Diagnose (NUR LESEN)
+
+```bash
+git tag pre-tisch-modus-phase1-2026-06-11
+```
+
+Dann prüfen und Ergebnis berichten:
+1. `grep -c '"guided" | "compact" | "quick"' client/src -r` → erwartet: **21** Vorkommen. Bei Abweichung: STOPP + Bericht.
+2. Diese Dateien existieren NICHT (werden neu angelegt): `client/src/labs/components/rating/TischRating.tsx`, `client/src/labs/components/rating/tischAnchors.ts`, `tests/unit/tisch-anchors.test.ts`. Falls doch vorhanden: STOPP + Bericht.
+3. `npx vitest run tests/unit/image-sanitize.test.ts` → muss grün sein (Umgebungs-Sanity).
+4. TypeScript-Baseline festhalten: `npx tsc --noEmit 2>&1 | grep -c "error TS"` → Zahl notieren (das Projekt hat vorbestehende Fehler; Stand 11.06.: 500). Diese Zahl ist die Referenz für die Abnahme.
+
+**Plan bestätigen lassen, dann erst Schritt 1.**
+
+---
+
+## Schritt 1 — Drei neue Dateien anlegen (Inhalt WÖRTLICH, Zeichen für Zeichen)
+
+
+### Neue Datei: `client/src/labs/components/rating/tischAnchors.ts`
+
+```ts
+// Tisch-Modus: Anker-Definitionen und Skalenkonvertierung.
+//
+// Die sechs Anker nutzen die bestehende Band-Sprache der App (v2.band0 .. v2.band90),
+// damit Tisch-Modus, ScoreInput-Bänder und Reports dieselben Worte sprechen.
+// Werte auf der 100er-Referenzskala, kalibriert auf das real genutzte
+// Whiskybase-Spektrum (Durchschnitt 76-82, >90 als Reserve).
+
+export type TischBandKey = "band90" | "band85" | "band80" | "band75" | "band70" | "band0";
+
+export interface TischAnchor {
+  bandKey: TischBandKey;
+  value100: number;
+}
+
+// Reihenfolge: beste Stufe oben (wie die Band-Anzeige im ScoreInput).
+export const TISCH_ANCHORS: TischAnchor[] = [
+  { bandKey: "band90", value100: 92 },
+  { bandKey: "band85", value100: 87 },
+  { bandKey: "band80", value100: 82 },
+  { bandKey: "band75", value100: 77 },
+  { bandKey: "band70", value100: 72 },
+  { bandKey: "band0", value100: 65 },
+];
+
+/** Konvertiert einen 100er-Ankerwert in die Nutzerskala des Tastings (5/10/20/100). */
+export function anchorToScale(value100: number, scaleMax: number, scaleStep: number): number {
+  if (scaleMax === 100) return value100;
+  const raw = (value100 / 100) * scaleMax;
+  const stepped = Math.round(raw / scaleStep) * scaleStep;
+  const clamped = Math.min(scaleMax, Math.max(scaleStep, stepped));
+  // Gleitkomma-Säuberung (z.B. 0.1-Schritte)
+  return Math.round(clamped * 1000) / 1000;
+}
+
+/** Findet den Anker-Index, der einem vorhandenen Score (in Nutzerskala) am nächsten liegt. */
+export function nearestAnchorIndex(score: number, scaleMax: number, scaleStep: number): number {
+  let best = 0;
+  let bestDist = Number.POSITIVE_INFINITY;
+  TISCH_ANCHORS.forEach((a, i) => {
+    const v = anchorToScale(a.value100, scaleMax, scaleStep);
+    const d = Math.abs(v - score);
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  });
+  return best;
+}
+```
+
+
+### Neue Datei: `client/src/labs/components/rating/TischRating.tsx`
+
+```tsx
+import { useMemo, useRef, useState } from "react";
+import { SP, FONT, RADIUS, TOUCH_MIN } from "./theme";
+import type { RatingData, PhaseId } from "./types";
+import type { RatingScale } from "@/labs/hooks/useRatingScale";
+import { BackIcon } from "./icons";
+import PhaseSignature from "./PhaseSignature";
+import { TISCH_ANCHORS, anchorToScale, nearestAnchorIndex } from "./tischAnchors";
+
+interface TischLabels {
+  tisch: string;
+  tischTapHint: string;
+  band90: string;
+  band85: string;
+  band80: string;
+  band75: string;
+  band70: string;
+  band0: string;
+  nose: string;
+  palate: string;
+  finishLabel: string;
+  overall: string;
+  qNose: string;
+  qPalate: string;
+  qFinish: string;
+  qOverall: string;
+  back: string;
+}
+
+interface TischRatingProps {
+  labels: TischLabels;
+  whisky: {
+    name?: string;
+    region?: string;
+    cask?: string;
+    blind?: boolean;
+  };
+  initialData?: RatingData;
+  onDone: (data: RatingData) => void;
+  onBack: () => void;
+  onChange?: (phaseIndex: number, data: Partial<RatingData>) => void;
+  scale?: RatingScale;
+}
+
+const PHASE_ORDER: PhaseId[] = ["nose", "palate", "finish", "overall"];
+
+export default function TischRating({ labels, whisky, initialData, onDone, onBack, onChange, scale }: TischRatingProps) {
+  const scaleMax = scale?.max ?? 100;
+  const scaleStep = scale?.step ?? 0.5;
+
+  const phaseMeta: Record<PhaseId, { name: string; question: string }> = {
+    nose: { name: labels.nose, question: labels.qNose },
+    palate: { name: labels.palate, question: labels.qPalate },
+    finish: { name: labels.finishLabel, question: labels.qFinish },
+    overall: { name: labels.overall, question: labels.qOverall },
+  };
+
+  const bandWord = (key: (typeof TISCH_ANCHORS)[number]["bandKey"]): string => labels[key];
+
+  // Bei Re-Rating: vorhandene Scores auf nächstliegende Anker abbilden.
+  const initialPicks = useMemo<(number | null)[]>(() => {
+    if (!initialData?.scores) return [null, null, null, null];
+    const s = initialData.scores;
+    const vals = [s.nose, s.palate, s.finish, s.overall];
+    return vals.map((v) => (typeof v === "number" && v > 0 ? nearestAnchorIndex(v, scaleMax, scaleStep) : null));
+  }, [initialData, scaleMax, scaleStep]);
+
+  const [picks, setPicks] = useState<(number | null)[]>(initialPicks);
+  const [phaseIdx, setPhaseIdx] = useState(0);
+  const [flashIdx, setFlashIdx] = useState<number | null>(null);
+  const transitioningRef = useRef(false);
+
+  const phaseId = PHASE_ORDER[phaseIdx];
+  const accent = `var(--labs-phase-${phaseId})`;
+
+  const buildData = (finalPicks: (number | null)[]): RatingData => {
+    const toScore = (idx: number | null): number =>
+      anchorToScale(TISCH_ANCHORS[idx ?? 2].value100, scaleMax, scaleStep);
+    return {
+      scores: {
+        nose: toScore(finalPicks[0]),
+        palate: toScore(finalPicks[1]),
+        finish: toScore(finalPicks[2]),
+        overall: toScore(finalPicks[3]),
+      },
+      tags: { nose: [], palate: [], finish: [], overall: [] },
+      notes: {
+        nose: initialData?.notes?.nose ?? "",
+        palate: initialData?.notes?.palate ?? "",
+        finish: initialData?.notes?.finish ?? "",
+        overall: initialData?.notes?.overall ?? "",
+      },
+      overallExplicit: true,
+    };
+  };
+
+  const handlePick = (anchorIdx: number) => {
+    if (transitioningRef.current) return;
+    transitioningRef.current = true;
+    const next = [...picks];
+    next[phaseIdx] = anchorIdx;
+    setPicks(next);
+    setFlashIdx(anchorIdx);
+    onChange?.(phaseIdx, { scores: buildData(next).scores });
+
+    window.setTimeout(() => {
+      setFlashIdx(null);
+      transitioningRef.current = false;
+      if (phaseIdx < PHASE_ORDER.length - 1) {
+        setPhaseIdx(phaseIdx + 1);
+      } else {
+        onDone(buildData(next));
+      }
+    }, 180);
+  };
+
+  const handleStepBack = () => {
+    if (transitioningRef.current) return;
+    if (phaseIdx === 0) {
+      onBack();
+    } else {
+      setPhaseIdx(phaseIdx - 1);
+    }
+  };
+
+  return (
+    <div className="labs-fade-in" style={{ padding: `${SP.lg}px ${SP.md}px`, paddingBottom: 96 }}>
+      <button
+        onClick={handleStepBack}
+        data-testid="tisch-rating-back"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: SP.sm,
+          minHeight: TOUCH_MIN,
+          background: "none",
+          border: "none",
+          color: "var(--labs-text)",
+          cursor: "pointer",
+          padding: 0,
+          fontFamily: FONT.body,
+          fontSize: 15,
+          marginBottom: SP.sm,
+        }}
+      >
+        <BackIcon color="var(--labs-text)" size={20} />
+        <span>{labels.back}</span>
+      </button>
+
+      {!whisky.blind && whisky.name && (
+        <div style={{ marginBottom: SP.sm }}>
+          <div style={{ fontFamily: FONT.serif, fontSize: 18, fontStyle: "italic", color: "var(--labs-text)" }}>
+            {whisky.name}
+          </div>
+          {whisky.region && (
+            <div style={{ fontSize: 12, color: "var(--labs-text-secondary)" }}>
+              {whisky.region}{whisky.cask ? ` · ${whisky.cask}` : ""}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div
+        data-testid="tisch-phase-dots"
+        style={{ display: "flex", gap: SP.xs + 2, marginBottom: SP.md }}
+      >
+        {PHASE_ORDER.map((p, i) => (
+          <div
+            key={p}
+            style={{
+              height: 3,
+              flex: 1,
+              borderRadius: 2,
+              background:
+                i < phaseIdx || picks[i] != null
+                  ? `var(--labs-phase-${p})`
+                  : i === phaseIdx
+                    ? `var(--labs-phase-${p})`
+                    : "var(--labs-border)",
+              opacity: i === phaseIdx ? 1 : i < phaseIdx || picks[i] != null ? 0.55 : 1,
+            }}
+          />
+        ))}
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.md }}>
+        <PhaseSignature phaseId={phaseId} size="large" />
+        <div>
+          <div style={{ fontFamily: FONT.display, fontSize: 24, color: "var(--labs-text)", lineHeight: 1.15 }} data-testid="tisch-phase-name">
+            {phaseMeta[phaseId].name}
+          </div>
+          <div style={{ fontSize: 13, color: "var(--labs-text-muted)", fontFamily: FONT.serif, fontStyle: "italic" }}>
+            {phaseMeta[phaseId].question}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: SP.sm }}>
+        {TISCH_ANCHORS.map((a, i) => {
+          const picked = picks[phaseIdx] === i;
+          const flashing = flashIdx === i;
+          const display = anchorToScale(a.value100, scaleMax, scaleStep);
+          return (
+            <button
+              key={a.bandKey}
+              data-testid={`tisch-anchor-${phaseId}-${a.bandKey}`}
+              onClick={() => handlePick(i)}
+              style={{
+                minHeight: TOUCH_MIN + 8,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: `0 ${SP.md}px`,
+                borderRadius: RADIUS.md,
+                cursor: "pointer",
+                background: flashing || picked ? "var(--labs-bg-hover, rgba(255,255,255,0.08))" : "var(--labs-surface)",
+                border: flashing || picked ? `2px solid ${accent}` : "1px solid var(--labs-border)",
+                color: "var(--labs-text)",
+                transition: "border-color 120ms ease, background 120ms ease",
+                fontFamily: FONT.serif,
+                fontSize: 19,
+                textAlign: "left",
+              }}
+            >
+              <span>{bandWord(a.bandKey)}</span>
+              <span style={{ fontFamily: FONT.body, fontSize: 12, color: flashing || picked ? accent : "var(--labs-text-muted)" }}>
+                ≈ {display}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ marginTop: SP.md, fontSize: 12, color: "var(--labs-text-muted)", textAlign: "center", fontFamily: FONT.body }} data-testid="tisch-tap-hint">
+        {labels.tischTapHint}
+      </div>
+    </div>
+  );
+}
+```
+
+
+### Neue Datei: `tests/unit/tisch-anchors.test.ts`
+
+```ts
+import { describe, it, expect } from "vitest";
+import { TISCH_ANCHORS, anchorToScale, nearestAnchorIndex } from "../../client/src/labs/components/rating/tischAnchors";
+
+describe("tischAnchors", () => {
+  it("hat sechs Anker in absteigender Reihenfolge (beste Stufe zuerst)", () => {
+    expect(TISCH_ANCHORS).toHaveLength(6);
+    for (let i = 1; i < TISCH_ANCHORS.length; i++) {
+      expect(TISCH_ANCHORS[i].value100).toBeLessThan(TISCH_ANCHORS[i - 1].value100);
+    }
+    expect(TISCH_ANCHORS[0]).toEqual({ bandKey: "band90", value100: 92 });
+    expect(TISCH_ANCHORS[5]).toEqual({ bandKey: "band0", value100: 65 });
+  });
+
+  it("ist auf der 100er-Skala identisch", () => {
+    for (const a of TISCH_ANCHORS) {
+      expect(anchorToScale(a.value100, 100, 0.5)).toBe(a.value100);
+    }
+  });
+
+  it("konvertiert korrekt auf die 20er-Skala (Schritt 0.5)", () => {
+    expect(anchorToScale(92, 20, 0.5)).toBe(18.5);
+    expect(anchorToScale(77, 20, 0.5)).toBe(15.5);
+    expect(anchorToScale(65, 20, 0.5)).toBe(13);
+  });
+
+  it("konvertiert korrekt auf die 10er-Skala (Schritt 0.5)", () => {
+    expect(anchorToScale(92, 10, 0.5)).toBe(9);
+    expect(anchorToScale(65, 10, 0.5)).toBe(6.5);
+  });
+
+  it("bleibt auf jeder Skala monoton (keine Rangvertauschung)", () => {
+    for (const [max, step] of [[100, 0.5], [20, 0.5], [10, 0.5], [5, 0.5]] as const) {
+      const vals = TISCH_ANCHORS.map((a) => anchorToScale(a.value100, max, step));
+      for (let i = 1; i < vals.length; i++) {
+        expect(vals[i]).toBeLessThanOrEqual(vals[i - 1]);
+      }
+      expect(vals.every((v) => v >= step && v <= max)).toBe(true);
+    }
+  });
+
+  it("findet beim Re-Rating den nächstliegenden Anker (Roundtrip auf 100er-Skala)", () => {
+    TISCH_ANCHORS.forEach((a, i) => {
+      expect(nearestAnchorIndex(a.value100, 100, 0.5)).toBe(i);
+    });
+    expect(nearestAnchorIndex(90, 100, 0.5)).toBe(0); // 90 liegt näher an 92 als an 87
+    expect(nearestAnchorIndex(50, 100, 0.5)).toBe(5); // alles Niedrige fällt auf band0
+  });
+});
+```
+
+
+---
+
+## Schritt 2 — Exakte Edits in 9 bestehenden Dateien
+
+Jeder Edit ist ein ALT→NEU-Paar. ALT muss exakt einmal vorkommen (Abweichungs-Protokoll!). Reihenfolge einhalten.
+
+
+### Datei: `client/src/labs/components/rating/RatingModeChip.tsx`
+
+
+**Edit 1**
+
+ALT:
+```
+type Mode = "guided" | "compact" | "quick";
+```
+
+NEU:
+```
+type Mode = "guided" | "compact" | "quick" | "tisch";
+```
+
+
+**Edit 2**
+
+ALT:
+```
+  quick: string;
+  setDefault: string;
+```
+
+NEU:
+```
+  quick: string;
+  tisch: string;
+  setDefault: string;
+```
+
+
+**Edit 3**
+
+ALT:
+```
+  mode: Mode;
+  hideQuick?: boolean;
+```
+
+NEU:
+```
+  mode: Mode;
+  hideQuick?: boolean;
+  showTisch?: boolean;
+```
+
+
+**Edit 4**
+
+ALT:
+```
+export default function RatingModeChip({ mode, hideQuick, labels, allowSetDefault, onSwitch }: RatingModeChipProps) {
+```
+
+NEU:
+```
+export default function RatingModeChip({ mode, hideQuick, showTisch, labels, allowSetDefault, onSwitch }: RatingModeChipProps) {
+```
+
+
+**Edit 5**
+
+ALT:
+```
+    if (m === "compact") return labels.compact;
+    return labels.quick;
+```
+
+NEU:
+```
+    if (m === "compact") return labels.compact;
+    if (m === "tisch") return labels.tisch;
+    return labels.quick;
+```
+
+
+**Edit 6**
+
+ALT:
+```
+const allModes: Mode[] = hideQuick ? ["guided", "compact"] : ["guided", "compact", "quick"];
+```
+
+NEU:
+```
+const baseModes: Mode[] = hideQuick ? ["guided", "compact"] : ["guided", "compact", "quick"];
+  const allModes: Mode[] = showTisch ? ["tisch", ...baseModes] : baseModes;
+```
+
+
+### Datei: `client/src/labs/components/rating/RatingModeSelect.tsx`
+
+
+**Edit 7**
+
+ALT:
+```
+  quick?: string;
+  quickD?: string;
+  quickH?: string;
+```
+
+NEU:
+```
+  quick?: string;
+  quickD?: string;
+  quickH?: string;
+  tisch?: string;
+  tischD?: string;
+  tischH?: string;
+```
+
+
+**Edit 8**
+
+ALT:
+```
+  onSelect: (mode: "guided" | "compact" | "quick", remember?: boolean) => void;
+  onBack: () => void;
+  hideQuick?: boolean;
+```
+
+NEU:
+```
+  onSelect: (mode: "guided" | "compact" | "quick" | "tisch", remember?: boolean) => void;
+  onBack: () => void;
+  hideQuick?: boolean;
+  showTisch?: boolean;
+```
+
+
+**Edit 9**
+
+ALT:
+```
+export default function RatingModeSelect({ labels, onSelect, onBack, hideQuick, showRememberToggle }: RatingModeSelectProps) {
+```
+
+NEU:
+```
+export default function RatingModeSelect({ labels, onSelect, onBack, hideQuick, showTisch, showRememberToggle }: RatingModeSelectProps) {
+```
+
+
+**Edit 10**
+
+ALT:
+```
+    mode: "guided" | "compact" | "quick";
+    title: string;
+    desc: string;
+    hint: string;
+    phaseId: "nose" | "palate" | "overall";
+  }> = [
+    { mode: "guided",
+```
+
+NEU:
+```
+    mode: "guided" | "compact" | "quick" | "tisch";
+    title: string;
+    desc: string;
+    hint: string;
+    phaseId: "nose" | "palate" | "finish" | "overall";
+  }> = [
+    ...(showTisch ? [{ mode: "tisch" as const, title: labels.tisch || "Tisch", desc: labels.tischD || "Ein Tap pro Phase.", hint: labels.tischH || "", phaseId: "finish" as const }] : []),
+    { mode: "guided",
+```
+
+
+### Datei: `client/src/labs/components/rating/RatingFlowV2.tsx`
+
+
+**Edit 11**
+
+ALT:
+```
+import QuickRating from "./QuickRating";
+```
+
+NEU:
+```
+import QuickRating from "./QuickRating";
+import TischRating from "./TischRating";
+```
+
+
+**Edit 12**
+
+ALT:
+```
+  mode: "guided" | "compact" | "quick" | null;
+  phaseIndex: number;
+```
+
+NEU:
+```
+  mode: "guided" | "compact" | "quick" | "tisch" | null;
+  phaseIndex: number;
+```
+
+
+**Edit 13**
+
+ALT:
+```
+  initialMode?: "guided" | "compact" | "quick" | null;
+```
+
+NEU:
+```
+  initialMode?: "guided" | "compact" | "quick" | "tisch" | null;
+```
+
+
+**Edit 14**
+
+ALT:
+```
+  preferredMode?: "guided" | "compact" | "quick" | null;
+  onSetPreferredMode?: (mode: "guided" | "compact" | "quick" | null) => void;
+```
+
+NEU:
+```
+  preferredMode?: "guided" | "compact" | "quick" | "tisch" | null;
+  onSetPreferredMode?: (mode: "guided" | "compact" | "quick" | "tisch" | null) => void;
+  showTisch?: boolean;
+```
+
+
+**Edit 15**
+
+ALT:
+```
+  hideQuick,
+  scale,
+  preferredMode,
+  onSetPreferredMode,
+}: RatingFlowV2Props) {
+```
+
+NEU:
+```
+  hideQuick,
+  scale,
+  preferredMode,
+  onSetPreferredMode,
+  showTisch,
+}: RatingFlowV2Props) {
+```
+
+
+**Edit 16**
+
+ALT:
+```
+  const resolvedInitialMode = useMemo<"guided" | "compact" | "quick" | null>(() => {
+    if (initialMode) return initialMode;
+    if (preferredMode && (preferredMode === "guided" || preferredMode === "compact" || (preferredMode === "quick" && !hideQuick))) {
+      return preferredMode;
+    }
+    return null;
+  }, [initialMode, preferredMode, hideQuick]);
+```
+
+NEU:
+```
+  const resolvedInitialMode = useMemo<"guided" | "compact" | "quick" | "tisch" | null>(() => {
+    if (initialMode && (initialMode !== "tisch" || showTisch)) return initialMode;
+    if (preferredMode && (preferredMode === "guided" || preferredMode === "compact" || (preferredMode === "quick" && !hideQuick) || (preferredMode === "tisch" && !!showTisch))) {
+      return preferredMode;
+    }
+    return null;
+  }, [initialMode, preferredMode, hideQuick, showTisch]);
+```
+
+
+**Edit 17**
+
+ALT:
+```
+  const [mode, setMode] = useState<"guided" | "compact" | "quick" | null>(resolvedInitialMode);
+```
+
+NEU:
+```
+  const [mode, setMode] = useState<"guided" | "compact" | "quick" | "tisch" | null>(resolvedInitialMode);
+```
+
+
+**Edit 18**
+
+ALT:
+```
+    if (preferredMode === "quick" && hideQuick) return;
+    setMode(preferredMode);
+```
+
+NEU:
+```
+    if (preferredMode === "quick" && hideQuick) return;
+    if (preferredMode === "tisch" && !showTisch) return;
+    setMode(preferredMode);
+```
+
+
+**Edit 19**
+
+ALT:
+```
+  }, [preferredMode, initialMode, hideQuick, step]);
+```
+
+NEU:
+```
+  }, [preferredMode, initialMode, hideQuick, showTisch, step]);
+```
+
+
+**Edit 20**
+
+ALT:
+```
+    quickH: t("v2.ratingQuickH", "Wenn es schnell gehen soll."),
+    back:
+```
+
+NEU:
+```
+    quickH: t("v2.ratingQuickH", "Wenn es schnell gehen soll."),
+    tisch: t("v2.ratingTisch", "Tisch"),
+    tischD: t("v2.ratingTischD", "Alle vier Dimensionen als Stufen — ein Tap pro Phase."),
+    tischH: t("v2.ratingTischH", "Wenn das Gespräch wichtiger ist."),
+    back:
+```
+
+
+**Edit 21**
+
+ALT:
+```
+    note: guidedLabels.note,
+    notePH: guidedLabels.notePH,
+    save: guidedLabels.save,
+    back: modeLabels.back,
+  }), [t, guidedLabels, modeLabels.back]);
+```
+
+NEU:
+```
+    note: guidedLabels.note,
+    notePH: guidedLabels.notePH,
+    save: guidedLabels.save,
+    back: modeLabels.back,
+  }), [t, guidedLabels, modeLabels.back]);
+
+  const tischLabels = useMemo(() => ({
+    tisch: modeLabels.tisch,
+    tischTapHint: t("v2.tischTapHint", "Ein Tap pro Phase — Details kannst du später ergänzen."),
+    band90: guidedLabels.band90,
+    band85: guidedLabels.band85,
+    band80: guidedLabels.band80,
+    band75: guidedLabels.band75,
+    band70: guidedLabels.band70,
+    band0: guidedLabels.band0,
+    nose: guidedLabels.nose,
+    palate: guidedLabels.palate,
+    finishLabel: guidedLabels.finishLabel,
+    overall: guidedLabels.overall,
+    qNose: guidedLabels.qNose,
+    qPalate: guidedLabels.qPalate,
+    qFinish: guidedLabels.qFinish,
+    qOverall: guidedLabels.qOverall,
+    back: modeLabels.back,
+  }), [t, guidedLabels, modeLabels]);
+```
+
+
+**Edit 22**
+
+ALT:
+```
+    quick: modeLabels.quick,
+    setDefault:
+```
+
+NEU:
+```
+    quick: modeLabels.quick,
+    tisch: modeLabels.tisch,
+    setDefault:
+```
+
+
+**Edit 23**
+
+ALT:
+```
+  const handleModeSelect = useCallback((m: "guided" | "compact" | "quick", remember?: boolean) => {
+```
+
+NEU:
+```
+  const handleModeSelect = useCallback((m: "guided" | "compact" | "quick" | "tisch", remember?: boolean) => {
+```
+
+
+**Edit 24**
+
+ALT:
+```
+  const handleSwitchMode = useCallback((next: "guided" | "compact" | "quick", makeDefault?: boolean) => {
+```
+
+NEU:
+```
+  const handleSwitchMode = useCallback((next: "guided" | "compact" | "quick" | "tisch", makeDefault?: boolean) => {
+```
+
+
+**Edit 25**
+
+ALT:
+```
+        onSelect={handleModeSelect}
+        onBack={onBack}
+        hideQuick={hideQuick}
+```
+
+NEU:
+```
+        onSelect={handleModeSelect}
+        onBack={onBack}
+        hideQuick={hideQuick}
+        showTisch={showTisch}
+```
+
+
+**Edit 26**
+
+ALT:
+```
+            mode="guided"
+            hideQuick={hideQuick}
+```
+
+NEU:
+```
+            mode="guided"
+            hideQuick={hideQuick}
+            showTisch={showTisch}
+```
+
+
+**Edit 27**
+
+ALT:
+```
+            mode="compact"
+            hideQuick={hideQuick}
+```
+
+NEU:
+```
+            mode="compact"
+            hideQuick={hideQuick}
+            showTisch={showTisch}
+```
+
+
+**Edit 28**
+
+ALT:
+```
+            mode="quick"
+            hideQuick={hideQuick}
+```
+
+NEU:
+```
+            mode="quick"
+            hideQuick={hideQuick}
+            showTisch={showTisch}
+```
+
+
+**Edit 29**
+
+ALT:
+```
+  return null;
+}
+```
+
+NEU:
+```
+  if (step === "rating" && mode === "tisch") {
+    return (
+      <div style={{ position: "relative" }}>
+        {showChip && (
+          <RatingModeChip
+            mode="tisch"
+            hideQuick={hideQuick}
+            showTisch={showTisch}
+            labels={chipLabels}
+            allowSetDefault={!!onSetPreferredMode}
+            onSwitch={handleSwitchMode}
+          />
+        )}
+        <TischRating
+          labels={tischLabels}
+          whisky={{ ...whisky, blind: whisky.blind ?? false }}
+          initialData={subviewInitialData}
+          onDone={handleRatingDone}
+          onBack={handleRatingBack}
+          onChange={handleChange}
+          scale={scale}
+        />
+      </div>
+    );
+  }
+
+  return null;
+}
+```
+
+
+### Datei: `client/src/lib/draftStorage.ts`
+
+
+**Edit 30 *(Hinweis: 2 Vorkommen, beide ersetzen)***
+
+ALT:
+```
+ratingMode: "guided" | "compact" | "quick" | null;
+```
+
+NEU:
+```
+ratingMode: "guided" | "compact" | "quick" | "tisch" | null;
+```
+
+
+### Datei: `client/src/labs/pages/LabsLive.tsx`
+
+
+**Edit 31**
+
+ALT:
+```
+  const preferredRatingModeFromProfile: "guided" | "compact" | "quick" | null =
+    rawPreferred === "guided" || rawPreferred === "compact" || rawPreferred === "quick" ? rawPreferred : null;
+```
+
+NEU:
+```
+  const preferredRatingModeFromProfile: "guided" | "compact" | "quick" | "tisch" | null =
+    rawPreferred === "guided" || rawPreferred === "compact" || rawPreferred === "quick" || rawPreferred === "tisch" ? rawPreferred : null;
+```
+
+
+**Edit 32**
+
+ALT:
+```
+  const handleSetPreferredMode = useCallback(async (m: "guided" | "compact" | "quick" | null) => {
+```
+
+NEU:
+```
+  const handleSetPreferredMode = useCallback(async (m: "guided" | "compact" | "quick" | "tisch" | null) => {
+```
+
+
+**Edit 33**
+
+ALT:
+```
+            preferredMode={preferredRatingModeFromProfile}
+            onSetPreferredMode={handleSetPreferredMode}
+          />
+```
+
+NEU:
+```
+            preferredMode={preferredRatingModeFromProfile}
+            onSetPreferredMode={handleSetPreferredMode}
+            showTisch={true}
+          />
+```
+
+
+### Datei: `client/src/labs/pages/LabsSolo.tsx`
+
+
+**Edit 34**
+
+ALT:
+```
+  const [ratingMode, setRatingMode] = useState<"guided" | "compact" | "quick" | null>(null);
+```
+
+NEU:
+```
+  const [ratingMode, setRatingMode] = useState<"guided" | "compact" | "quick" | "tisch" | null>(null);
+```
+
+
+**Edit 35**
+
+ALT:
+```
+  const handleSetPreferredMode = useCallback(async (mode: "guided" | "compact" | "quick" | null) => {
+```
+
+NEU:
+```
+  const handleSetPreferredMode = useCallback(async (mode: "guided" | "compact" | "quick" | "tisch" | null) => {
+```
+
+
+### Datei: `client/src/labs/pages/LabsTasteDrams.tsx`
+
+
+**Edit 36**
+
+ALT:
+```
+  const handleSetPreferredMode = useCallback(async (mode: "guided" | "compact" | "quick" | null) => {
+```
+
+NEU:
+```
+  const handleSetPreferredMode = useCallback(async (mode: "guided" | "compact" | "quick" | "tisch" | null) => {
+```
+
+
+### Datei: `client/src/labs/pages/LabsTasteSettings.tsx`
+
+
+**Edit 37**
+
+ALT:
+```
+  const [preferredRatingMode, setPreferredRatingMode] = useState<"guided" | "compact" | "quick" | null>(null);
+```
+
+NEU:
+```
+  const [preferredRatingMode, setPreferredRatingMode] = useState<"guided" | "compact" | "quick" | "tisch" | null>(null);
+```
+
+
+**Edit 38**
+
+ALT:
+```
+      setPreferredRatingMode(m === "guided" || m === "compact" || m === "quick" ? m : null);
+```
+
+NEU:
+```
+      setPreferredRatingMode(m === "guided" || m === "compact" || m === "quick" || m === "tisch" ? m : null);
+```
+
+
+**Edit 39**
+
+ALT:
+```
+{(([null, "guided", "compact", "quick"] as const)).map(m => {
+```
+
+NEU:
+```
+{(([null, "guided", "compact", "quick", "tisch"] as const)).map(m => {
+```
+
+
+**Edit 40**
+
+ALT:
+```
+                      : t("v2.ratingQuick", "Quick");
+```
+
+NEU:
+```
+                      : m === "quick"
+                        ? t("v2.ratingQuick", "Quick")
+                        : t("v2.ratingTisch", "Tisch");
+```
+
+
+### Datei: `client/src/lib/i18n.ts`
+
+
+**Edit 41**
+
+ALT:
+```
+        band90: "Outstanding",
+        band85: "Excellent",
+        band80: "Very good",
+        band75: "Good",
+        band70: "Solid",
+        band0: "Simple",
+```
+
+NEU:
+```
+        band90: "Outstanding",
+        band85: "Excellent",
+        band80: "Very good",
+        band75: "Good",
+        band70: "Solid",
+        band0: "Simple",
+        ratingTisch: "Table",
+        ratingTischD: "All four dimensions as steps — one tap each, made for the table.",
+        ratingTischH: "When the conversation matters more.",
+        tischTapHint: "One tap per phase — details can wait until later.",
+```
+
+
+**Edit 42**
+
+ALT:
+```
+        band90: "Herausragend",
+        band85: "Ausgezeichnet",
+        band80: "Sehr gut",
+        band75: "Gut",
+        band70: "Solide",
+        band0: "Einfach",
+```
+
+NEU:
+```
+        band90: "Herausragend",
+        band85: "Ausgezeichnet",
+        band80: "Sehr gut",
+        band75: "Gut",
+        band70: "Solide",
+        band0: "Einfach",
+        ratingTisch: "Tisch",
+        ratingTischD: "Alle vier Dimensionen als Stufen — ein Tap pro Phase, gemacht für den Tisch.",
+        ratingTischH: "Wenn das Gespräch wichtiger ist.",
+        tischTapHint: "Ein Tap pro Phase — Details kannst du später ergänzen.",
+```
+
+
+---
+
+## Sicherheitsregeln (zwingend)
+
+- `shared/schema.ts` NICHT anfassen. Keine Migrationen, kein drizzle-kit.
+- Keine Server-Dateien ändern. Keine Routen, keine API.
+- Außer den 3 neuen Dateien und den 9 oben gelisteten Dateien wird NICHTS verändert.
+- KEINE Commits — weder zwischendurch noch am Ende. Der Entwickler prüft und committed selbst.
+- Keine „Verbesserungen", kein Umformatieren, keine zusätzlichen Refactorings — auch nicht bei vorbestehenden TS-Fehlern in den berührten Dateien (die sind bekannt und bleiben).
+
+---
+
+## Schritt 3 — Verifikation (Ergebnisse als Output vorlegen)
+
+1. **Typprüfung (Baseline-Diff):** `npx tsc --noEmit 2>&1 | grep -c "error TS"` → Zahl muss **identisch** zur Schritt-0-Baseline sein. Zusätzlich: kein Fehler-Output darf `TischRating`, `tischAnchors`, `RatingModeSelect`, `RatingModeChip` oder `RatingFlowV2` als NEUE Fehlerquelle nennen (Zeilenverschiebungen vorbestehender Fehler in LabsLive/LabsTasteDrams sind erwartet und OK).
+2. **Unit-Tests:** `npx vitest run tests/unit/tisch-anchors.test.ts tests/unit/image-sanitize.test.ts` → 11/11 grün.
+3. **Manueller Smoke-Test** (Dev-Server, Seed-Daten PILOT1, PIN 1234):
+   a. Als Teilnehmer geführtem Tasting beitreten → Bewertungsform-Auswahl zeigt **vier** Karten, „Tisch" an erster Stelle.
+   b. Tisch wählen → Nase erscheint, 6 Stufen sichtbar, Tap → automatisch Gaumen → Abgang → Gesamt → nach 4. Tap speichert die Bewertung (bestehender Gespeichert-Zustand erscheint).
+   c. Datenprüfung: gespeicherte Werte entsprechen den Ankern (z.B. überall „Sehr gut" getippt auf 100er-Skala → nose/taste/finish/overall = 82).
+   d. Modus-Chip oben: Wechsel Tisch ↔ Geführt funktioniert in beide Richtungen.
+   e. „Als Standard merken" mit Tisch setzen → Seite neu laden → geführtes Tasting startet direkt im Tisch-Modus.
+   f. Einstellungen (Meine Welt → Settings): Bewertungsform zeigt 5 Optionen inkl. „Tisch", die gesetzte Präferenz ist aktiv markiert; Speichern der Settings löscht sie NICHT.
+   g. Solo-Dram öffnen: Tisch erscheint dort NICHT in der Auswahl; mit gesetzter Tisch-Präferenz zeigt Solo die normale Modus-Auswahl (kein Crash, kein Auto-Einstieg).
+   h. Blind-Modus: Whisky-Name bleibt im Tisch-Modus verborgen (Sample-Anzeige wie gewohnt).
+4. `grep -rc '"guided" | "compact" | "quick" | "tisch"' client/src` → erwartet: **21**.
+
+---
+
+## Schritt 4 — Abschlussbericht (Pflicht)
+
+Format:
+1. Schritt-0-Befunde (inkl. tsc-Baseline-Zahl)
+2. Angelegte Dateien (3) + editierte Dateien (9) mit Edit-Anzahl
+3. Verifikationsergebnisse 1–4 mit Original-Output
+4. **Beobachtungen:** alles, was diese Spezifikation nicht berücksichtigt hat oder was dir aufgefallen ist — auch wenn es klein wirkt. „Keine" ist eine zulässige Antwort, aber nur nach echter Prüfung.
+5. Bestätigung: keine Commits ausgeführt, kein Schema berührt.
