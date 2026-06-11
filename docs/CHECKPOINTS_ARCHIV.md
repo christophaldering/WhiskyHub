@@ -1,10 +1,16 @@
 # CaskSense — Checkpoint-Archiv
 
 Ausgelagert aus `replit.md` (mehrfach gepflegt). Letzte Erweiterung: 12.06.2026.
-Cutoff: alle Checkpoints **vor dem 05.05.2026** stehen hier.
+Cutoff: alle Checkpoints **vor dem 11.06.2026** stehen hier.
 Neuere Checkpoints bleiben in `replit.md`.
 
 ---
+
+## Checkpoint: "Check Feature Stufe 1 + 2c" (17.05.2026)
+Header-Pill "Check" öffnet ModalPortal-Bottom-Sheet. Foto-Pipeline: Camera/Gallery → `/api/whisky/identify` → `/api/check/lookup` → 3 Status-Karten mit Nase·Geschmack·Abgang-Mini-Breakdown. Stufe 2c weitgehend live: Namenssuche (`identify-text`), manuelle Eingabe, Online-Identify, `CheckActionCard` mit +Wunschliste / +Sammlung / Schnellnotiz inkl. Undo (Delete-Pfade). Dateien: `client/src/labs/check/{checkApi.ts, CheckSheet.tsx, CheckResultCard.tsx, CheckActionCard.tsx}`; Rate-Limiting `server/lib/checkLimit.ts`. Offen: Barcode-Scanner (nur Platzhalter "Barcode (in Arbeit)"). Gleichzeitig ältere Checkpoints nach `docs/CHECKPOINTS_ARCHIV.md` ausgelagert.
+
+## Checkpoint: "Laufendes System 5.5.0:33" (05.05.2026)
+Tasks #549-#563 abgeschlossen und deployed. i18n-Korrekturen (DE myTastePage, explore, Bottlers, Analytics, Compare, Downloads, Drams, Wishlist, Flavor Wheel Aroma-Namen). Bibliothek-Umbau (6 Sektionen, Unterseiten aufteilt, Literatur eigenstaendig). Benchmark+Pairings Back-Links auf /labs/bibliothek. Scroll-Position Restoration Fix. Filter-Panels Breitenbegrenzung. Profil-Indizes Auto-Neuberechnung nach Rating. .gitattributes fuer Binaerdateien. Production stable.
 
 ## Checkpoint: "Voice Co-Host fürs Host-Cockpit" (29.04.2026)
 Sprachsteuerung im Live-Tab des Host-Cockpits per Web Speech API (DE/EN). Mikrofon-Button mit Status-Pille, Mute-Toggle und Hilfe-Hint. Befehle werden regelbasiert geparst und auf bestehende API-Calls gemappt: Reveal, Nächster Dram, Wer fehlt (Live-Liste der nicht-bewertenden Gäste), Stups [Name] (fuzzy match auf Teilnehmernamen → Notification, recipient muss Tasting-Member sein), Pause N Minuten, Aktueller Stand. TTS-Antworten in der Sprache der UI. Live-Transkript der letzten 5 Befehle. Pause-Banner mit Countdown wird über SSE (`pause_changed`) an Cockpit + alle Gäste verteilt. Neue Endpunkte: `POST /api/tastings/:id/pause` (host-only, max 120 Min, 0 = Pause beenden) und `POST /api/tastings/:id/nudge` (host-only, recipient-membership-checked). Schema: `tastings.pauseUntil` timestamp. Neue Dateien: `client/src/labs/hooks/useVoiceCohost.ts`, `client/src/labs/voice/voiceCommands.ts`, `client/src/labs/voice/voiceTools.ts`, `client/src/labs/components/PauseBanner.tsx`. `useTastingEvents` umgestellt auf objektbasierte Form mit zusätzlichen Callbacks `onDramAdvanced`, `onPauseChanged`, `onNudge` (positionale Form bleibt rückwärtskompatibel).
