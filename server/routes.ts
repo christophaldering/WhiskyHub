@@ -18915,7 +18915,7 @@ If the user data includes a "hostContext" field, treat it as additional creative
       <p style="font-size:15px;line-height:1.6;margin:0 0 16px;color:#555;">
         Anbei findest du das Story-PDF der Verkostung <strong>${title}</strong>.
       </p>
-      <p style="font-size:13px;color:#a0aec0;margin:0;">CaskSense — Wo Verkostung zur Reflexion wird</p>
+      <p style="font-size:13px;color:#a0aec0;margin:0;">CaskSense — Where tasting becomes reflection.</p>
     </div>
   </div>
 </body>

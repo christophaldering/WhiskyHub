@@ -7,7 +7,7 @@ export function buildHomeSeedBlocks(): unknown[] {
       payload: {
         eyebrow: "",
         title: "CaskSense",
-        subtitle: "Wo Verkosten zur Reflexion wird.",
+        subtitle: "Where tasting becomes reflection.",
         meta: "Was die Community über jeden Whisky weiß. Was deine Bewertungen über dich verraten.",
         imageUrl: "/images/landing-hero-whisky.png",
         alignment: "center",
@@ -125,7 +125,7 @@ export function buildHomeSeedBlocks(): unknown[] {
       type: "text-section",
       payload: {
         eyebrow: "CaskSense",
-        heading: "Wo Verkosten zur Reflexion wird.",
+        heading: "Where tasting becomes reflection.",
         body: "<p>Eine unabhängige Plattform für ernsthafte Whisky-Verkostung — aus Edinburgh und Berlin.</p><p><a href=\"/impressum\">Impressum</a> · <a href=\"/privacy\">Datenschutz</a> · <a href=\"/terms\">AGB</a></p>",
         alignment: "center",
         variant: "default",

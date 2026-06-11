@@ -2,7 +2,7 @@ const fr = {
   translation: {
     app: {
       name: "CaskSense",
-      tagline: "Quand la Dégustation Devient Réflexion",
+      tagline: "Where tasting becomes reflection.",
       copyright: "© 2026 CaskSense. Tous droits réservés."
     },
     common: {
@@ -169,7 +169,7 @@ const fr = {
     },
     intro: {
       title: "CaskSense",
-      tagline: "Quand la Dégustation Devient Réflexion",
+      tagline: "Where tasting becomes reflection.",
       subline: "Ralentissez. Dégustez en profondeur. Réfléchissez ensemble.",
       discover: "Découvrir CaskSense",
       skip: "Passer pour le moment",

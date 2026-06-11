@@ -309,7 +309,7 @@ export function buildMagicLinkEmail(params: {
   const expiryNote = isDE
     ? `Dieser Link ist ${expiryMinutes} Minuten gültig und kann nur einmal verwendet werden. Wenn du diese E-Mail nicht erwartet hast, kannst du sie ignorieren.`
     : `This link expires in ${expiryMinutes} minutes and can only be used once. If you did not expect this email, you can safely ignore it.`;
-  const tagline = isDE ? "Wo Verkostung zur Reflexion wird" : "Where Tasting Becomes Reflection";
+  const tagline = isDE ? "Where tasting becomes reflection." : "Where Tasting Becomes Reflection";
 
   const html = `
 <!DOCTYPE html>
@@ -394,7 +394,7 @@ export function buildReminderEmail(params: {
       <p style="font-size:15px;color:#555;margin:16px 0 0;line-height:1.5;">${footer}</p>
     </div>
     <div style="padding:16px 32px;border-top:1px solid #e5e5e0;background:#fafaf8;">
-      <p style="margin:0;font-size:11px;color:#a0aec0;text-align:center;">CaskSense — ${isDE ? "Wo Verkostung zur Reflexion wird" : "Where Tasting Becomes Reflection"}</p>
+      <p style="margin:0;font-size:11px;color:#a0aec0;text-align:center;">CaskSense — ${isDE ? "Where tasting becomes reflection." : "Where Tasting Becomes Reflection"}</p>
     </div>
   </div>
 </body>
@@ -549,7 +549,7 @@ export function buildThankYouEmail(params: {
   const ctaHint = isDE
     ? "Auf der Ergebnisseite findest du das vollständige Ranking, Durchschnittswerte, Teilnehmer-Highlights und kannst alles als PDF herunterladen."
     : "On the results page you'll find the full ranking, averages, participant highlights, and you can download everything as a PDF.";
-  const footer = isDE ? "Wo Verkostung zur Reflexion wird" : "Where Tasting Becomes Reflection";
+  const footer = isDE ? "Where tasting becomes reflection." : "Where Tasting Becomes Reflection";
 
   const html = `
 <!DOCTYPE html>
@@ -610,7 +610,7 @@ export function buildFriendInviteEmail(params: {
     : `<strong>${adderName}</strong> has added you as a whisky friend on CaskSense. Together you can share tastings, compare flavor profiles, and document your whisky journey.`;
 
   const ctaText = isDE ? "CaskSense öffnen" : "Open CaskSense";
-  const footer = isDE ? "Wo Verkostung zur Reflexion wird" : "Where Tasting Becomes Reflection";
+  const footer = isDE ? "Where tasting becomes reflection." : "Where Tasting Becomes Reflection";
 
   const html = `
 <!DOCTYPE html>
@@ -669,7 +669,7 @@ export function buildCommunityInviteEmail(params: {
     : "";
 
   const ctaText = isDE ? "Einladung ansehen" : "View Invitation";
-  const footer = isDE ? "Wo Verkostung zur Reflexion wird" : "Where Tasting Becomes Reflection";
+  const footer = isDE ? "Where tasting becomes reflection." : "Where Tasting Becomes Reflection";
 
   const html = `
 <!DOCTYPE html>
