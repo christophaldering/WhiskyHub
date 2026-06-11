@@ -1,0 +1,48 @@
+# CaskSense — Fahrplan (Stand 12.06.2026)
+
+Eine Seite Wahrheit. Nordstern: **Der Weg vom eingeladenen Gast zum nächsten Host.**
+Arbeitsverfahren für alles Bauliche: Code extern fertig entwickelt + validiert, Hard Prompt mit null Freiheitsgraden, Abweichungs-Protokoll, Abnahme per Byte-Diff. Standard im Prompt ab sofort: `NODE_OPTIONS=--max-old-space-size=6144` für tsc.
+
+---
+
+## JETZT (Dein Daumen)
+
+**1. Smoke-Test Tisch-Modus auf Produktion** (nach Publish): eigenes Mini-Tasting als Host anlegen, per Handy als Gast beitreten, Punkte a–h. Kernchecks: 4× "Sehr gut" → 82/82/82/82 im Cockpit · Chip-Wechsel beidseitig · Standard-merken + Reload · Settings-Speichern löscht Präferenz nicht · Solo zeigt kein Tisch · Blind bleibt blind.
+**2. Im selben Aufwasch:** frisches iPhone-Foto hochladen → Log auf `[image-sanitize] ok type=image/heic` prüfen (EXIF-Praxistest). Und einmal casksense.com-Link-Vorschau in WhatsApp (opengraph.jpg, jetzt 32 KB).
+**3. Doku tilgen:** drei Checkpoint-Texte aus `replit-md_Checkpoints_Nachtrag.md` in replit.md einfügen (5 Minuten, Schuld seit 05.05. getilgt).
+
+→ Rückmeldung an Claude: "a–h grün / es hakt bei X" + HEIC-Log. Das ist die Freigabe für die Bauphase.
+
+---
+
+## DANACH (Bauen, in dieser Reihenfolge — eines nach dem anderen)
+
+**WP 1 · "Dein Abend"** — persönliche Abschluss-Karte beim Tasting-Ende (Kurve, Top-Dram, Position relativ zur Runde K-anonym ab 3). Größter Hebel, reine Frontend-Arbeit, Daten existieren. Inkl. Funnel-Event `recap_viewed`. *Dies IST zugleich Stufe 0 der progressiven Vereinfachung: Der Gast sieht nur den Abend.*
+**WP 2 · Story-Schleife** — Ein-Tap-Teilen (Web Share API), OG-Tags pro Story, persönlicher Gast-Deep-Link, "Hosted with CaskSense"-Zeile. Schließt den Riss. Events `story_shared`/`story_visit`. Beifang: Einladungs-QR landet auf Mini-Vorschau des Abends statt Formular.
+**WP 3 · Konto-Claim** — "Nimm deine Bewertungen mit": Gast-Teilnehmer → Account-Merge. Einziger Backend-Eingriff der Serie, bewusst isoliert. Event `guest_claim`.
+**WP 4 · "Werde Host"** — Erst-Tasting-Vorlage (4 Drams, Tisch-Modus voreingestellt, QR fertig), Einladung nach 2. Gast-Abend oder Claim. Nordstern-Event `first_hosted_tasting` (90 Tage).
+
+**Tisch-Modus Phase 2 + 3** (provisional-Flag + Danach-Phase/Verfeinerungsliste): nach WP 1, idealerweise informiert durch den ersten echten Tasting-Abend der Runde.
+
+---
+
+## GEPARKT (bewusst, mit Wiedervorlage-Trigger)
+
+- **Stufenmodell "App kristallisiert mit dir"** (volle progressive Disclosure, Reife-Stufen 1–3, Freischalt-Momente) → Trigger: Schleifen-Daten aus WP 1–3 zeigen, dass Gäste bleiben. Konzept-Skizze existiert in dieser Konversation.
+- **#1224 Tisch-Resume** → Trigger: Praxistest zeigt, dass Unterbrechungen real vorkommen. (Design-Hinweis: Draft füllt ungetippte Phasen mit Default 82 — Resume darf das nicht als echte Auswahl zeigen.)
+- **EXIF-Backfill Altbestand** → Trigger: HEIC-Praxistest grün, dann als nächster kleiner Hard Prompt.
+- **Seed-Hygiene** → PILOT-Tasting-Datum relativ zu heute statt fix 15.03.; Seeds optional env-gaten (laufen aktuell auch auf Produktion, @casksense.local / PIN 1234).
+- **Dirks Demo-Bugs** (Connoisseur-Einzelanalyse, Community-Handouts, Suche, Export) → kleiner Bug-Bash-Block, wenn ein Praxistasting sie reproduziert.
+- **Skalen-Anker im ScoreInput / Perzentil-Darstellung** ("Deine 80 ist nicht meine 80") → nach Tisch Phase 3; nutzt dieselben Bänder.
+
+---
+
+## STRATEGISCH (kein Code, aber Uhr läuft)
+
+- **Whiskybase**: Abhängigkeit wird mit Sichtbarkeit zum Risiko (Dirk). Optionen: eigene Stammdaten aufbauen / offizielle Partnerschaft ("CaskSense als deren Event-Schicht") sondieren. Trigger: erste Wachstumssignale aus der Schleife.
+- **DSGVO / KI-Anbieter**: OpenAI (US) wird bei Profi-Hosts zur Verkaufshürde → Azure OpenAI EU oder Mistral evaluieren. Hängt mit Hetzner/Coolify-Migration zusammen (pg_trgm, Object-Storage-URLs, Scheduler-TZ, Gmail-Ersatz).
+- **Erfolgsdefinition**: profitables Liebhaber-Produkt mit Profi-Host-Segment (Michael-Profil, Händler, Clubs) als realistischer Pfad; getränke-agnostische Architektur (Wein/Rum/Gin als Konfiguration) als Option offenhalten, nicht vorziehen.
+
+---
+
+*Regel für alles Neue, das auftaucht: Es landet zuerst hier in GEPARKT — nicht in der Bauschlange. Die Schlange hat immer genau ein aktives Element.*
