@@ -1,0 +1,131 @@
+# Hard Prompt: EXIF/GPS-Sanitizer für Bild-Uploads härten
+
+**Datum:** 11.06.2026 · **Priorität:** HOCH (Sicherheit, Dirk-Feedback 20.05.2026)
+**Betroffene Datei:** ausschließlich `server/routes.ts` (+ `package.json` für eine neue Dependency)
+
+---
+
+## Kontext & Ziel
+
+Nutzer-Fotos (Flaschen, Events, Profile) können GPS-/Standortdaten in den EXIF-Metadaten enthalten. Kombination „wertvolle Sammlung + Standort" ist ein reales Sicherheitsrisiko. Alle Bild-Uploads laufen durch den Chokepoint `uploadBufferToObjectStorage()` → `maybeCompressImage()` in `server/routes.ts`. Das dortige sharp-Re-Encoding strippt EXIF bereits implizit — **aber mit zwei Lücken, die geschlossen werden müssen:**
+
+1. **Fail-open:** Schlägt sharp fehl (Catch-Block), wird das Original **mit allen Metadaten** hochgeladen. Kritisch, weil vorgebaute sharp-Binaries HEIC/HEVC (iPhone-Standardformat) oft nicht dekodieren können — genau iPhone-Fotos würden dann roh durchrutschen.
+2. **Content-Type-Lücke:** Bilder mit `application/octet-stream`, leerem oder falschem Content-Type umgehen den Filter komplett (Passthrough mit Metadaten).
+
+**Ziel:** Kein Bild verlässt den Upload-Pfad mit EXIF-Metadaten. Fail-closed statt fail-open. Nicht-Bilder (PDF, Audio) bleiben unberührt.
+
+---
+
+## Schritt 0 — Diagnose (NUR LESEN, noch nichts ändern)
+
+Zuerst Safety-Tag setzen:
+
+```bash
+git tag pre-exif-sanitizer-fix-2026-06-11
+```
+
+Dann verifizieren und Ergebnisse berichten:
+
+1. `grep -n "function maybeCompressImage" server/routes.ts` — Funktion lokalisieren (Stand 11.06.: Zeile ~207).
+2. `grep -n "COMPRESSIBLE_IMAGE_TYPES" server/routes.ts` — Set prüfen (erwartet: jpeg/jpg/png/webp/heic/heif/tiff).
+3. **HEIC-Decode-Test:** Mit einem echten iPhone-HEIC-Foto (HEVC-komprimiert) prüfen, ob sharp es dekodieren kann:
+   ```bash
+   node -e "import('sharp').then(async s => { const fs = await import('fs'); try { const m = await s.default(fs.readFileSync('TESTBILD.heic')).metadata(); console.log('HEIC-Decode OK:', m.format); } catch(e) { console.log('HEIC-Decode FEHLGESCHLAGEN:', e.message); } })"
+   ```
+   Ergebnis dokumentieren — es bestimmt, ob der HEIC-Fallback (Schritt 2 im Plan) zwingend ist.
+4. `grep -c "uploadBufferToObjectStorage" server/routes.ts` — Anzahl Call-Sites notieren (Stand 11.06.: 27 inkl. Definition). **Es darf KEINE Call-Site einzeln angefasst werden** — der Fix passiert nur im Chokepoint.
+
+**Danach: Plan vorlegen und auf Bestätigung warten, bevor irgendeine Datei geändert wird.**
+
+---
+
+## Plan (nach Bestätigung umsetzen)
+
+### 1. Magic-Byte-Sniffing ergänzen
+
+Neue Hilfsfunktion direkt über `maybeCompressImage`:
+
+```typescript
+// Erkennt Bildformate an Magic Bytes — unabhängig vom (oft falschen) Content-Type.
+function sniffImageType(buffer: Buffer): string | null {
+  if (buffer.length < 12) return null;
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return "image/jpeg";
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) return "image/png";
+  if (buffer.toString("ascii", 0, 4) === "RIFF" && buffer.toString("ascii", 8, 12) === "WEBP") return "image/webp";
+  const ftypBrand = buffer.toString("ascii", 8, 12);
+  if (buffer.toString("ascii", 4, 8) === "ftyp" && ["heic", "heix", "hevc", "heif", "mif1", "msf1"].includes(ftypBrand)) return "image/heic";
+  if ((buffer[0] === 0x49 && buffer[1] === 0x49 && buffer[2] === 0x2a) || (buffer[0] === 0x4d && buffer[1] === 0x4d && buffer[2] === 0x2a)) return "image/tiff";
+  return null;
+}
+```
+
+In `maybeCompressImage` ganz am Anfang: Wenn der deklarierte Content-Type NICHT im `COMPRESSIBLE_IMAGE_TYPES`-Set ist, per `sniffImageType()` nachprüfen. Trifft das Sniffing ein Bildformat, mit dem gesnifften Typ weiterverarbeiten (statt Passthrough).
+
+### 2. HEIC-Fallback-Decoder
+
+Falls Schritt-0-Test ergab, dass sharp HEIC nicht dekodiert:
+
+```bash
+npm install heic-convert
+```
+
+In `maybeCompressImage`: Wenn der (deklarierte oder gesniffte) Typ `image/heic`/`image/heif` ist, **zuerst** `heic-convert` (Output: JPEG, quality 0.9) anwenden, dann den JPEG-Buffer wie gewohnt durch die bestehende sharp-Pipeline (`rotate → resize → webp`) schicken. `heic-convert` ist pure JS/WASM (libheif + libde265), keine nativen Build-Schritte.
+
+Import als dynamischer Import im Funktionskörper (wie sharp dort bereits gehandhabt wird), damit der Server-Start nicht belastet wird.
+
+### 3. Fail-closed für Bilder
+
+Den Catch-Block in `maybeCompressImage` ändern: Wenn der Input als Bild deklariert ODER gesnifft wurde und die Sanitierung fehlschlägt, **Error werfen** statt Original zurückgeben:
+
+```typescript
+throw new Error(`Bild-Sanitierung fehlgeschlagen (${effectiveType}): ${err instanceof Error ? err.message : err}`);
+```
+
+Nicht-Bilder (PDF, Audio, alles ohne Bild-Magic-Bytes) verhalten sich wie bisher: unveränderter Passthrough.
+
+**Begründung fail-closed:** Ein Bild, das weder sharp noch heic-convert lesen kann, ist mit hoher Wahrscheinlichkeit korrupt oder kein Bild — es zu speichern hat keinen Produktwert, aber das Metadaten-Risiko bliebe bestehen.
+
+### 4. Logging
+
+Eine Zeile pro sanitiertem Upload: `console.log("[image-sanitize]", effectiveType, "→ webp,", originalBytes, "→", outBytes)`. Beim Fail-closed-Throw: `console.error("[image-sanitize] REJECTED", ...)`.
+
+---
+
+## Sicherheitsregeln (zwingend)
+
+- **`shared/schema.ts` NICHT anfassen.** Keine Migrationen, kein `drizzle-kit push`, kein `drizzle-kit generate`.
+- **Keine bestehenden Routen löschen oder umbenennen.** Keine Call-Site von `uploadBufferToObjectStorage` ändern.
+- Außer `server/routes.ts` und `package.json`/`package-lock.json` keine Dateien ändern.
+- **KEINE Commits ausführen.** Weder zwischendurch noch am Ende. Der Stand wird vom Entwickler selbst geprüft und committed.
+
+---
+
+## Verifikation (Ergebnisse als grep-/Script-Output vorlegen)
+
+1. **GPS-Strip-Test JPEG:** Test-JPEG mit GPS-EXIF erzeugen und durch den Upload-Pfad schicken (oder `maybeCompressImage` direkt in einem Node-Script aufrufen). Danach prüfen:
+   ```bash
+   node -e "import('sharp').then(async s => { const fs = await import('fs'); const m = await s.default(fs.readFileSync('OUTPUT.webp')).metadata(); console.log('exif vorhanden:', !!m.exif); })"
+   ```
+   Erwartung: `exif vorhanden: false`.
+2. **HEIC-Test:** Echtes iPhone-HEIC durch den Pfad schicken → muss als WebP ohne EXIF herauskommen, kein Fehler.
+3. **Octet-Stream-Test:** Dasselbe JPEG mit Content-Type `application/octet-stream` → muss trotzdem sanitiert werden (Sniffing greift).
+4. **PDF-Passthrough-Test:** PDF-Upload (z.B. Handout) muss unverändert funktionieren.
+5. **Korruptes Bild:** 100 zufällige Bytes mit Content-Type `image/jpeg` → muss mit Fehler abgelehnt werden (fail-closed), Server darf nicht crashen (Route fängt den Error und antwortet 4xx/5xx).
+6. `grep -n "uploadBufferToObjectStorage" server/routes.ts | wc -l` — Anzahl identisch zu Schritt 0 (keine Call-Site verändert).
+
+---
+
+## Qualitätscheckliste
+
+- [ ] Schritt-0-Diagnose dokumentiert, inkl. HEIC-Decode-Testergebnis
+- [ ] Plan bestätigt vor erster Änderung
+- [ ] Nur Chokepoint geändert, keine Call-Sites
+- [ ] Fail-closed für Bilder, Passthrough für Nicht-Bilder
+- [ ] Alle 6 Verifikationspunkte mit Output belegt
+- [ ] Keine Commits, kein Schema, keine Migrationen
+
+---
+
+## Hinweis für später (NICHT Teil dieses Tasks)
+
+Bereits hochgeladene Fotos im Object Storage können noch EXIF/GPS enthalten (alles, was vor diesem Fix über den Fail-open-Pfad oder als HEIC/octet-stream hochkam). Ein separates Backfill-Script (Objekte listen → Bilder erkennen → re-encoden → zurückschreiben, URLs bleiben stabil) wäre der zweite Schritt — bitte hier nicht mit erledigen.
