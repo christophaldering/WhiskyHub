@@ -1,0 +1,1 @@
+- [Publish security scan](publish-security-scan.md) — clearing critical/high dep vulns to unblock Publish: direct bumps + package.json overrides for transitive; xlsx→exceljs.

@@ -55,7 +55,7 @@ import TastingDownloadGrid from "@/labs/components/TastingDownloadGrid";
 import { getStoryPdfAvailable, getPresentationPdfAvailable, getNotesDocxAvailable } from "@/labs/utils/labsExports";
 import { getTastingPhase, isResultDownloadsPhase, RESULT_DOWNLOAD_KINDS, type TastingPhase } from "@/labs/utils/tastingPhase";
 import QRCode from "qrcode";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 const EXCEL_MAX_SIZE = 5 * 1024 * 1024;
 const EXCEL_MAX_ROWS = 500;
@@ -104,8 +104,7 @@ function _parseStandardRows(rows: any[]): any[] {
     });
 }
 
-function _tryParseSheet(sheet: XLSX.WorkSheet): any[] | null {
-  const rawRows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+function _tryParseRows(rawRows: any[][]): any[] | null {
   if (rawRows.length === 0) return null;
 
   let headerRowIdx = -1;
@@ -173,40 +172,48 @@ function _tryParseSheet(sheet: XLSX.WorkSheet): any[] | null {
 
 const EXCEL_HELP_SHEET_RE = /^(instructions?|anleitung|hilfe|help|readme|tipps?|tips?|legend|legende|info|hinweise?|notes?)$/i;
 
-function parseExcelWhiskies(file: File): Promise<any[]> {
-  if (file.size > EXCEL_MAX_SIZE) {
-    return Promise.reject(new Error("Excel file too large (max 5 MB)."));
+function _excelCellToValue(value: any): any {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "object") {
+    if (value instanceof Date) return value;
+    if (Array.isArray(value.richText)) return value.richText.map((rt: any) => rt.text ?? "").join("");
+    if ("result" in value) return _excelCellToValue(value.result);
+    if ("text" in value) return value.text ?? "";
+    if ("hyperlink" in value) return value.text ?? value.hyperlink ?? "";
+    return "";
   }
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: "array" });
+  return value;
+}
 
-        let bestResult: any[] = [];
-        for (const sheetName of workbook.SheetNames) {
-          if (EXCEL_HELP_SHEET_RE.test(sheetName.trim())) continue;
-          const sheet = workbook.Sheets[sheetName];
-          if (!sheet) continue;
-          const result = _tryParseSheet(sheet);
-          if (result && result.length > bestResult.length) {
-            bestResult = result;
-          }
-        }
+async function parseExcelWhiskies(file: File): Promise<any[]> {
+  if (file.size > EXCEL_MAX_SIZE) {
+    throw new Error("Excel file too large (max 5 MB).");
+  }
+  const buffer = await file.arrayBuffer();
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer);
 
-        if (bestResult.length > EXCEL_MAX_ROWS) {
-          reject(new Error(`Too many rows (${bestResult.length}). Max ${EXCEL_MAX_ROWS} whiskies per import.`));
-          return;
-        }
-        resolve(bestResult);
-      } catch (err) {
-        reject(err);
-      }
-    };
-    reader.onerror = () => reject(new Error("Failed to read file"));
-    reader.readAsArrayBuffer(file);
+  let bestResult: any[] = [];
+  workbook.eachSheet((worksheet) => {
+    if (EXCEL_HELP_SHEET_RE.test(worksheet.name.trim())) return;
+    const rawRows: any[][] = [];
+    worksheet.eachRow({ includeEmpty: true }, (row) => {
+      const arr: any[] = [];
+      row.eachCell({ includeEmpty: true }, (cell) => {
+        arr.push(_excelCellToValue(cell.value));
+      });
+      rawRows.push(arr);
+    });
+    const result = _tryParseRows(rawRows);
+    if (result && result.length > bestResult.length) {
+      bestResult = result;
+    }
   });
+
+  if (bestResult.length > EXCEL_MAX_ROWS) {
+    throw new Error(`Too many rows (${bestResult.length}). Max ${EXCEL_MAX_ROWS} whiskies per import.`);
+  }
+  return bestResult;
 }
 
 function normalizeAbv(raw: any): number | null {

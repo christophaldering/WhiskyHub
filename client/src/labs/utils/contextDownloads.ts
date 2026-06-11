@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import jsPDF from "jspdf";
 import { saveJsPdf } from "@/lib/pdf";
 import { downloadBlob } from "@/lib/download";
@@ -47,14 +47,24 @@ export interface XlsxSheet {
 }
 
 export async function downloadXlsxFromSheets(filename: string, sheets: XlsxSheet[]): Promise<void> {
-  const wb = XLSX.utils.book_new();
+  const wb = new ExcelJS.Workbook();
   for (const s of sheets) {
-    const ws = XLSX.utils.json_to_sheet(s.rows.length > 0 ? s.rows : [{}]);
     const safeName = s.name.replace(/[\\/?*[\]]/g, "_").slice(0, 31) || "Sheet";
-    XLSX.utils.book_append_sheet(wb, ws, safeName);
+    const ws = wb.addWorksheet(safeName);
+    const headerSet = new Set<string>();
+    for (const row of s.rows) {
+      for (const k of Object.keys(row)) headerSet.add(k);
+    }
+    const headers = Array.from(headerSet);
+    if (headers.length > 0) {
+      ws.columns = headers.map((h) => ({ header: h, key: h }));
+      for (const row of s.rows) {
+        ws.addRow(headers.map((h) => row[h] ?? ""));
+      }
+    }
   }
-  const arrayBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-  const blob = new Blob([arrayBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   await downloadBlob(blob, filename);
 }
 
