@@ -51,6 +51,8 @@ export const participantApi = {
     fetchJSON(`/participants/${id}/language`, { method: "PATCH", body: JSON.stringify({ language }) }),
   verify: (id: string, code: string) =>
     fetchJSON(`/participants/${id}/verify`, { method: "POST", body: JSON.stringify({ code }) }),
+  claim: (id: string, email: string, pin: string) =>
+    fetchJSON(`/participants/${id}/claim`, { method: "POST", body: JSON.stringify({ email, pin }) }),
   resendVerification: (id: string) =>
     fetchJSON(`/participants/${id}/resend-verification`, { method: "POST", body: JSON.stringify({}) }),
   requestLoginLink: (email: string) =>

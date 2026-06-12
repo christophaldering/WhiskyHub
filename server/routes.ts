@@ -1099,6 +1099,54 @@ export async function registerRoutes(
     }
   });
 
+  // WP 3 — Konto-Claim: "Nimm deine Bewertungen mit".
+  // Ein Gast-Teilnehmer (experienceLevel "guest", ohne E-Mail) wird in place zu
+  // einem echten Konto: E-Mail + PIN werden gesetzt, der "#xxxx"-Gastsuffix
+  // entfernt und die übliche E-Mail-Verifikation angestoßen. Bewertungen,
+  // Tasting-Mitgliedschaften und Signatur-Startpunkt bleiben erhalten — es
+  // findet bewusst KEIN Merge zweier Teilnehmer statt (existiert die E-Mail
+  // bereits, lehnen wir ab; Zusammenführen wäre ein eigenes Paket).
+  app.post("/api/participants/:id/claim", async (req, res) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId || requesterId !== req.params.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      const participant = await storage.getParticipant(req.params.id);
+      if (!participant) return res.status(404).json({ message: "Not found" });
+      if (participant.experienceLevel !== "guest" || participant.email) {
+        return res.status(409).json({ message: "Only guest participants without an email can be claimed" });
+      }
+      const { email, pin } = req.body || {};
+      if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        return res.status(400).json({ message: "A valid email is required" });
+      }
+      if (!pin || typeof pin !== "string" || pin.trim().length < 4) {
+        return res.status(400).json({ message: "PIN must be at least 4 characters" });
+      }
+      const cleanEmail = email.trim();
+      const existing = await storage.getParticipantByEmail(cleanEmail);
+      if (existing) {
+        return res.status(409).json({ message: "Diese E-Mail hat bereits ein Konto. Bitte melde dich damit an.", code: "EMAIL_TAKEN" });
+      }
+      const cleanName = participant.name.replace(/ #[a-z0-9]{4}$/, "");
+      const hashed = await hashPassword(pin.trim());
+      await storage.updateParticipant(participant.id, { name: cleanName, email: cleanEmail, pin: hashed, experienceLevel: "explorer" });
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiry = new Date(Date.now() + 15 * 60 * 1000);
+      await storage.setVerificationCode(participant.id, code, expiry);
+      const emailContent = buildVerificationEmail({ name: cleanName, code });
+      sendEmail({ to: cleanEmail, ...emailContent }).catch(err =>
+        console.error("Failed to send claim verification email:", err)
+      );
+      console.log(`[LABS] Guest claim: participant=${participant.id} "${cleanName}" email=${cleanEmail}`);
+      const updated = await storage.getParticipant(participant.id);
+      res.json({ id: participant.id, name: cleanName, email: cleanEmail, verificationPending: true, emailVerified: updated?.emailVerified ?? false });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   app.post("/api/participants/demo-guest", async (req, res) => {
     try {
       const { name, privacyConsent } = req.body;
