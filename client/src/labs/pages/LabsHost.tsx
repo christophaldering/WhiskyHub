@@ -611,6 +611,7 @@ function HostRatingPanel({
 
         <RatingFlowV2
           key={currentWhisky.id}
+          showTisch={true}
           scale={hostScale}
           whisky={{
             name: blindMode ? `Dram ${activeIdx + 1}` : (currentWhisky.name || `Whisky ${activeIdx + 1}`),
