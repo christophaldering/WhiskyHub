@@ -1,0 +1,72 @@
+# Hard Prompt: Abend-Fix — Tisch-Modus im Host-Cockpit
+
+**Datum:** 12.06.2026 · **Priorität:** SOFORT (echtes Tasting heute Abend)
+**Art:** 1 Einzeiler-Edit. KEIN Schema, KEINE Migration, KEIN Server.
+
+---
+
+## Worum es geht
+
+Heute Abend findet ein echtes Tasting statt. Die My-Rating-Sektion des Host-Cockpits nutzt RatingFlowV2, bekam aber nie das `showTisch`-Flag — der Host kann die Tisch-Bewertungsform (4 Wort-Taps) nicht wählen, obwohl Teilnehmer sie haben. Dieser Edit reicht das Flag nach. Nebeneffekt: Mit Tisch umgeht der Host auch den bekannten Gesamt-Tab-Bug im Geführt-Modus (Beobachtung von heute Vormittag; dessen echte Ursache wird separat in der Cockpit-Konsolidierung behoben — heute NICHT anfassen).
+
+**Charakter: WORTGETREUE ÜBERTRAGUNG** (extern entwickelt und typgeprüft, tsc 500 → 500). Ein Edit, sonst NICHTS.
+
+---
+
+## Abweichungs-Protokoll
+
+ALT-Block muss **genau einmal** vorkommen. Sonst: STOPP + Bericht. Keine weiteren Änderungen, keine "Verbesserungen", insbesondere NICHT das Legacy-LabsRatingPanel oder den Modus-Chip anfassen.
+
+---
+
+## Schritt 0 — Diagnose (NUR LESEN)
+
+```bash
+git tag pre-abendfix-tisch-cockpit-2026-06-12
+```
+
+1. `grep -c "showTisch" client/src/labs/pages/LabsHostCockpit.tsx` → erwartet **0**.
+2. `grep -c "guest_claim" server/funnel-store.ts` → **1** (bestätigt: Kette WP1a–WP3 + 2.1 ist die Basis).
+3. tsc-Baseline mit `NODE_OPTIONS=--max-old-space-size=6144` notieren (Stand: 500; ohne Heap-Flag OOM-Falschmeldung 0).
+
+**Plan bestätigen lassen, dann erst Schritt 1.**
+
+---
+
+## Schritt 1 — 1 exakter Edit
+
+### Datei: `client/src/labs/pages/LabsHostCockpit.tsx`
+
+**Edit 1**
+
+ALT:
+```
+          {currentRatingWhisky ? (
+            <RatingFlowV2
+              key={currentRatingWhisky.id}
+              scale={cockpitScale}
+```
+
+NEU:
+```
+          {currentRatingWhisky ? (
+            <RatingFlowV2
+              key={currentRatingWhisky.id}
+              showTisch={true}
+              scale={cockpitScale}
+```
+
+---
+
+## Schritt 2 — Verifikation
+
+1. tsc → identisch zur Baseline (mit Heap-Flag!).
+2. `grep -c "showTisch={true}" client/src/labs/pages/LabsHostCockpit.tsx` → **1**.
+3. Smoke: Als Host ein laufendes Tasting im Cockpit öffnen → My Rating → Modus-Chip antippen → **"Tisch" erscheint als erste Option**; auswählen → vier Phasen mit je sechs Wortstufen, vier Taps ergeben eine Bewertung (4× "Sehr gut" → 82/82/82/82 in der Gäste-Ansicht/Teilnehmerliste).
+4. Regression: Geführt/Kompakt/Quick im Cockpit unverändert wählbar.
+
+---
+
+## Schritt 3 — Abschlussbericht (Pflicht)
+
+Schritt-0-Befunde, 1 Datei/1 Edit, Verifikations-Output, **Beobachtungen**, Bestätigung: keine Commits, kein Schema, nichts außer der einen Datei.

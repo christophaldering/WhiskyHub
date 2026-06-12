@@ -3596,6 +3596,7 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
           {currentRatingWhisky ? (
             <RatingFlowV2
               key={currentRatingWhisky.id}
+              showTisch={true}
               scale={cockpitScale}
               whisky={{
                 name: isBlind ? `Dram ${blindLabel(hostRatingIdx)}` : currentRatingWhisky.name || `Whisky ${hostRatingIdx + 1}`,
