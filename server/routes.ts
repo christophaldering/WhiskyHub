@@ -18359,23 +18359,54 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
     }
   });
 
+  // WP 2: Zustandsloser Share-Token für Tasting-Stories (kein Schema nötig).
+  // HMAC über die Tasting-ID; Secret aus vorhandener Server-Umgebung abgeleitet.
+  // Hinweis: Wechselt das Secret (z.B. neue DATABASE_URL), werden alte Links
+  // ungültig — Share-Links sind jederzeit neu erzeugbar.
+  const storyShareSecret = crypto
+    .createHash("sha256")
+    .update(process.env.SESSION_SECRET || process.env.DATABASE_URL || "casksense-story")
+    .digest();
+  const storyShareToken = (tastingId: string) =>
+    crypto.createHmac("sha256", storyShareSecret).update(`story:${tastingId}`).digest("hex").slice(0, 20);
+
+  // Host ODER Mitglied erhalten den teilbaren Link (Gäste teilen ihren Abend!).
+  app.get("/api/tastings/:id/story-share-link", async (req: Request, res: Response) => {
+    const auth = await requireAuth(req);
+    if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+    const tasting = await storage.getTasting(String(req.params.id));
+    if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+    const isHost = tasting.hostId === auth.participant.id;
+    if (!isHost) {
+      const isMember = await storage.isParticipantInTasting(String(req.params.id), auth.participant.id);
+      if (!isMember) return res.status(403).json({ message: "Access restricted to participants" });
+    }
+    if (!tasting.storyEnabled) return res.status(409).json({ message: "Story not enabled for this tasting" });
+    res.json({ url: `/tasting-story/${tasting.id}?s=${storyShareToken(tasting.id)}` });
+  });
+
   app.get("/api/tastings/:id/story", async (req: Request, res: Response) => {
     try {
       const auth = await requireAuth(req);
-      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const shareTokenParam = (req.query.s as string) || "";
+      const shareValid = !!shareTokenParam && shareTokenParam === storyShareToken(String(req.params.id));
+      if (!auth.authenticated && !shareValid) return res.status(auth.status).json({ message: auth.message });
+      const authedParticipant = auth.authenticated ? auth.participant : null;
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
       const participantId = (req.headers["x-participant-id"] as string) || (req.query.pid as string);
       // Use the server-trusted auth identity for host privilege checks (refresh, generation control).
       // Client-supplied participantId is still used for participant membership validation.
-      const isHost = tasting.hostId === auth.participant.id;
+      const isHost = !!authedParticipant && tasting.hostId === authedParticipant.id;
       if (!isHost) {
         if (!tasting.storyEnabled) {
           return res.json({ pending: true, reason: "not_enabled", isHost: false, tasting: { id: tasting.id, title: tasting.title } });
         }
-        if (!participantId) return res.status(403).json({ message: "Participant ID required" });
-        const isMember = await storage.isParticipantInTasting(req.params.id, participantId);
-        if (!isMember) return res.status(403).json({ message: "Access restricted to invited participants" });
+        if (!shareValid) {
+          if (!participantId) return res.status(403).json({ message: "Participant ID required" });
+          const isMember = await storage.isParticipantInTasting(req.params.id, participantId);
+          if (!isMember) return res.status(403).json({ message: "Access restricted to invited participants" });
+        }
       }
 
       // Gather all story data
@@ -18454,7 +18485,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       const currentRatingCount = allRatings.length;
       const refreshRequested = req.query.refresh === "true";
       if (refreshRequested && !isHost) {
-        console.warn(`[story] forceRefresh blocked: participantId=${auth.participant.id} is not the host (hostId=${tasting.hostId}) for tasting ${req.params.id}`);
+        console.warn(`[story] forceRefresh blocked: participantId=${authedParticipant?.id ?? "share-token"} is not the host (hostId=${tasting.hostId}) for tasting ${req.params.id}`);
         return res.status(403).json({ message: "Only the host can regenerate the story." });
       }
       const hasBlockStory = Array.isArray(tasting.storyBlocks) && (tasting.storyBlocks as unknown[]).length > 0;
@@ -27631,9 +27662,27 @@ ${cleaned.slice(0, 60000)}`;
   app.get("/tasting-story/:id", async (req: Request, res: Response) => {
     const safeId = req.params.id.replace(/[^a-zA-Z0-9_-]/g, "");
     const forceLegacy = req.query.legacy === "1";
+    // WP 2: Open-Graph-Tags serverseitig injizieren (Crawler führen kein JS aus).
+    let ogTasting: Awaited<ReturnType<typeof storage.getTasting>> | undefined;
+    try { ogTasting = safeId ? await storage.getTasting(safeId) : undefined; } catch {}
+    const ogTags = (() => {
+      if (!ogTasting) return "";
+      const esc = (v: string) => v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+      const base = `${req.protocol}://${req.get("host")}`;
+      const img = ogTasting.coverImageUrl && ogTasting.coverImageRevealed ? ogTasting.coverImageUrl : "/opengraph.jpg";
+      const imgAbs = img.startsWith("http") ? img : `${base}${img}`;
+      return [
+        '<meta property="og:type" content="article">',
+        `<meta property="og:title" content="${esc(ogTasting.title)} · CaskSense">`,
+        '<meta property="og:description" content="Ein Tasting-Abend, festgehalten mit CaskSense — Where Tasting becomes Reflection.">',
+        `<meta property="og:image" content="${esc(imgAbs)}">`,
+        `<meta property="og:url" content="${esc(`${base}/tasting-story/${safeId}`)}">`,
+        '<meta name="twitter:card" content="summary_large_image">',
+      ].join("\n");
+    })();
     if (!forceLegacy && safeId) {
       try {
-        const tasting = await storage.getTasting(safeId);
+        const tasting = ogTasting;
         const parsed = tasting ? tastingStoryBlocksSchema.safeParse(tasting.storyBlocks) : null;
         if (tasting && parsed && parsed.success && parsed.data.length > 0) {
           const indexCandidates = [
@@ -27642,7 +27691,8 @@ ${cleaned.slice(0, 60000)}`;
           ];
           const indexPath = indexCandidates.find((p) => fs.existsSync(p));
           if (indexPath) {
-            const html = fs.readFileSync(indexPath, "utf-8");
+            let html = fs.readFileSync(indexPath, "utf-8");
+            if (ogTags) html = html.replace("<head>", "<head>\n" + ogTags);
             res.setHeader("Content-Type", "text/html; charset=utf-8");
             res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
             return res.send(html);
@@ -27656,6 +27706,7 @@ ${cleaned.slice(0, 60000)}`;
     try {
       let html = fs.readFileSync(templatePath, "utf-8");
       html = html.replace("__TASTING_ID__", safeId);
+      if (ogTags) html = html.replace("<head>", "<head>\n" + ogTags);
       res.setHeader("Content-Type", "text/html; charset=utf-8");
       res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
       res.send(html);

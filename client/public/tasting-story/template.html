@@ -250,6 +250,7 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
   <div class="topnav__brand">Cask<strong>Sense</strong> <em>Story</em></div>
   <div style="display:flex;align-items:center;gap:.5rem;">
     <button class="topnav__pdf" id="pdfBtn" onclick="window.print()" style="display:none;" data-testid="button-save-pdf" title="Story als PDF speichern">↓ Als PDF speichern</button>
+    <button class="topnav__back" id="storyShareBtn" style="margin-right:1.25rem">Teilen</button>
     <button class="topnav__back" onclick="history.back()">← Zurück</button>
   </div>
 </nav>
@@ -1487,6 +1488,54 @@ section{padding:var(--section-pad) 2rem;max-width:var(--max-width);margin:0 auto
         }
       });
     }
+  });
+})();
+</script>
+<footer style="padding:3rem 2rem 4rem;text-align:center;font-family:var(--serif);font-style:italic;font-size:.95rem;color:var(--ink-dim);">
+  Hosted with <a href="https://casksense.com" style="color:var(--amber);text-decoration:none;border-bottom:1px solid var(--amber-dim);">CaskSense</a> · Where Tasting becomes Reflection
+</footer>
+<script>
+(function(){
+  // WP 2: cookiefreie Funnel-Beacons (story_view / story_shared)
+  window.__csTrack = function(event){
+    try {
+      var payload = JSON.stringify({ events: [{
+        event: event,
+        page: '/tasting-story',
+        utmSource: '', utmMedium: '', utmCampaign: '',
+        language: (document.documentElement.lang || '').slice(0, 2),
+        deviceType: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
+      }] });
+      fetch('/api/funnel/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(function(){});
+    } catch (e) {}
+  };
+  window.__csTrack('story_view');
+})();
+(function(){
+  var btn = document.getElementById('storyShareBtn');
+  if (!btn) return;
+  var meta = document.querySelector('meta[name="tasting-id"]');
+  var tid = meta ? meta.getAttribute('content') : '';
+  btn.addEventListener('click', function(){
+    var done = function(url){
+      try { if (window.__csTrack) window.__csTrack('story_shared'); } catch (e) {}
+      var payload = { title: document.title, url: url };
+      if (navigator.share) { navigator.share(payload).catch(function(){}); }
+      else if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(function(){
+          var old = btn.textContent; btn.textContent = 'Link kopiert';
+          setTimeout(function(){ btn.textContent = old; }, 2000);
+        }).catch(function(){});
+      }
+    };
+    var fallback = window.location.href;
+    if (!tid) return done(fallback);
+    var headers = {};
+    try { var p = localStorage.getItem('casksense_participant_id'); if (p) headers['x-participant-id'] = p; } catch(e){}
+    fetch('/api/tastings/' + tid + '/story-share-link', { headers: headers })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){ done(d && d.url ? new URL(d.url, window.location.origin).href : fallback); })
+      .catch(function(){ done(fallback); });
   });
 })();
 </script>

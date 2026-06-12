@@ -40,6 +40,7 @@ const resources = {
         curveStart: "Dram 1",
         curveEnd: "Dram {{n}}",
         curveAria: "Your ratings across the evening",
+        storyLink: "View the story of the evening",
       },
       app: {
         name: "CaskSense",
@@ -8986,6 +8987,7 @@ const resources = {
         tastingRecap: "Tasting Recap",
         restartTasting: "Restart Tasting",
         viewStory: "View story",
+        shareStory: "Share story",
         viewPresentation: "Present results",
         whiskies: "Whiskies",
         participants: "Participants",
@@ -9827,6 +9829,7 @@ const resources = {
         curveStart: "Dram 1",
         curveEnd: "Dram {{n}}",
         curveAria: "Deine Bewertungen im Verlauf des Abends",
+        storyLink: "Die Story des Abends ansehen",
       },
       app: {
         name: "CaskSense",
@@ -18749,6 +18752,7 @@ const resources = {
         tastingRecap: "Tasting-Rückblick",
         restartTasting: "Tasting neu starten",
         viewStory: "Story anzeigen",
+        shareStory: "Story teilen",
         viewPresentation: "Ergebnisse präsentieren",
         whiskies: "Whiskys",
         participants: "Teilnehmer",

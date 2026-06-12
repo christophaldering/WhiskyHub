@@ -69,6 +69,7 @@ export const tastingApi = {
   getHosted: (hostId: string) => fetchJSON(`/tastings?hostId=${encodeURIComponent(hostId)}`),
   get: (id: string) => fetchJSON(`/tastings/${id}`),
   getByCode: (code: string) => fetchJSON(`/tastings/code/${code}`),
+  getStoryShareLink: (id: string) => fetchJSON(`/tastings/${id}/story-share-link`),
   create: (data: any) => fetchJSON("/tastings", { method: "POST", body: JSON.stringify(data) }),
   updateStatus: (id: string, status: string, currentAct?: string, hostId?: string, clearRatings?: boolean) =>
     fetchJSON(`/tastings/${id}/status`, { method: "PATCH", body: JSON.stringify({ status, currentAct, hostId, clearRatings }) }),

@@ -64,6 +64,7 @@ import QRCode from "qrcode";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
 import { useTranslation } from "react-i18next";
 import RecapCard from "@/labs/components/RecapCard";
+import { trackEvent } from "@/lib/funnelTracker";
 
 interface LabsTastingDetailProps {
   params: { id: string };
@@ -1708,6 +1709,26 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                       style={{ fontSize: 12, padding: "6px 10px" }}
                     >
                       {t("tastingDetail.viewStory", "Story anzeigen")}
+                    </button>
+                    <button
+                      type="button"
+                      className="labs-btn-ghost"
+                      data-testid="ergebnis-card-story-share"
+                      style={{ fontSize: 11, padding: "4px 8px" }}
+                      onClick={async () => {
+                        try {
+                          const d = await tastingApi.getStoryShareLink(tastingId);
+                          const url = new URL(d.url, window.location.origin).toString();
+                          trackEvent("story_shared", { page: `/labs/tastings/${tastingId}` });
+                          if (navigator.share) {
+                            await navigator.share({ title: tasting?.title || "Tasting Story", url });
+                          } else {
+                            await navigator.clipboard.writeText(url);
+                          }
+                        } catch {}
+                      }}
+                    >
+                      {t("tastingDetail.shareStory", "Story teilen")}
                     </button>
                     {storyAvailable && (
                       <button

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { ratingApi } from "@/lib/api";
+import { ratingApi, tastingApi } from "@/lib/api";
 import { trackEvent } from "@/lib/funnelTracker";
 
 // "Dein Abend" (WP 1b): persönliche Abschluss-Karte nach dem Tasting.
@@ -47,6 +47,16 @@ export default function RecapCard({ tastingId, whiskies, participantId }: RecapC
     queryFn: () => ratingApi.getForTasting(tastingId),
     enabled: !!tastingId && !!participantId,
     staleTime: 60 * 1000,
+  });
+
+  // WP 2: Brücke zur Tasting-Story. 409 (Story nicht aktiviert) oder 403
+  // lassen die Query fehlschlagen — die Zeile bleibt dann einfach verborgen.
+  const { data: storyLink } = useQuery<{ url: string }>({
+    queryKey: ["recap-story-link", tastingId],
+    queryFn: () => tastingApi.getStoryShareLink(tastingId),
+    enabled: !!tastingId && !!participantId,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   const recap = useMemo(() => {
@@ -194,6 +204,19 @@ export default function RecapCard({ tastingId, whiskies, participantId }: RecapC
         >
           {deltaText}
         </div>
+      )}
+
+      {storyLink?.url && (
+        <a
+          href={storyLink.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => trackEvent("story_cta_click", { page: `/labs/tastings/${tastingId}` })}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 14, fontSize: 13, fontWeight: 600, color: "var(--labs-accent)", textDecoration: "none" }}
+          data-testid="recap-story-link"
+        >
+          {t("eveningRecap.storyLink", "Die Story des Abends ansehen")} →
+        </a>
       )}
     </div>
   );

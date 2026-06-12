@@ -24,7 +24,7 @@ const ALLOWED_EVENTS = new Set([
   "signup_validation_error", "signup_submit_attempt", "signup_submit_success",
   "tasting_step_view", "tasting_step_complete",
   "page_view",
-  "guest_welcome_view", "guest_join_success", "recap_viewed",
+  "guest_welcome_view", "guest_join_success", "recap_viewed", "story_shared", "story_shared",
 ]);
 
 // Histogram-only events: write to dimension buckets but skip core counter to avoid inflation.
