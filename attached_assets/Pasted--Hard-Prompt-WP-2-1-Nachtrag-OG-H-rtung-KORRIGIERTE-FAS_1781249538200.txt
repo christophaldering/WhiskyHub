@@ -1,0 +1,70 @@
+# Hard Prompt: WP 2.1 — Nachtrag (OG-Härtung) — KORRIGIERTE FASSUNG
+
+**Datum:** 12.06.2026 · **Priorität:** NORMAL · **Ersetzt die frühere WP-2.1-Fassung vollständig.**
+**Art:** 1 Einzeiler-Edit im Server. KEIN Schema, KEINE Migration.
+
+**Hinweis:** Die Whitelist-Dublette aus der früheren Fassung wurde bereits in WP 3 mitbereinigt (Option B der Agent-Rückfrage). Übrig bleibt nur die OG-Härtung.
+
+**ABHÄNGIGKEIT: Läuft NACH WP 3 (Konto-Claim).** Schritt 0 prüft das.
+
+---
+
+## Worum es geht
+
+Beobachtung aus dem WP-2-Abschlussbericht (Task #1227): Die OG-Tag-Injektion auf `GET /tasting-story/:id` gibt Titel/Cover für JEDE existierende Tasting-ID preis (UUIDs, also nicht erratbar — aber Defense-in-Depth ist ein Einzeiler). Künftig nur noch bei `storyEnabled === true`. Geteilte Links zeigen immer auf aktivierte Stories — WhatsApp-Vorschauen bleiben vollständig funktionsfähig.
+
+**Charakter: WORTGETREUE ÜBERTRAGUNG** (extern entwickelt und typgeprüft, tsc 500 → 500).
+
+---
+
+## Abweichungs-Protokoll
+
+ALT-Block muss **genau einmal** vorkommen. Sonst: STOPP + Bericht. Auffälligkeiten → "Beobachtungen".
+
+---
+
+## Schritt 0 — Diagnose (NUR LESEN)
+
+```bash
+git tag pre-wp21-og-haertung-2026-06-12
+```
+
+1. **Abhängigkeit WP 3:** `grep -c "guest_claim" server/funnel-store.ts` → **1**. Falls 0: STOPP.
+2. **Dublette bereits weg:** `grep -o "story_shared" server/funnel-store.ts | wc -l` → **1**. Falls 2: STOPP — dann lief WP 3 ohne Option B; melden.
+3. `grep -c "ogTasting.storyEnabled" server/routes.ts` → erwartet **0**.
+4. tsc-Baseline mit `NODE_OPTIONS=--max-old-space-size=6144` notieren (ohne Heap-Flag: OOM-Falschmeldung 0).
+
+**Plan bestätigen lassen, dann erst Schritt 1.**
+
+---
+
+## Schritt 1 — 1 exakter Edit
+
+### Datei: `server/routes.ts`
+
+**Edit 1**
+
+ALT:
+```
+    const ogTags = (() => {
+      if (!ogTasting) return "";
+```
+
+NEU:
+```
+    const ogTags = (() => {
+      // Härtung (Beobachtung Task #1227): OG-Daten nur für aktivierte Stories preisgeben.
+      // Geteilte Links zeigen immer auf aktivierte Stories — Crawler-Vorschauen bleiben vollständig.
+      if (!ogTasting || !ogTasting.storyEnabled) return "";
+```
+
+---
+
+## Schritt 2 — Verifikation
+
+1. tsc → identisch zur Baseline.
+2. Smoke: `curl -s http://localhost:5000/tasting-story/{id-mit-aktivierter-story} | grep og:title` → vorhanden. Gleiches mit `{id-OHNE-aktivierte-story}` → leer. Geteilter `?s=`-Link lädt unverändert.
+
+## Schritt 3 — Abschlussbericht (Pflicht)
+
+Schritt-0-Befunde, 1 Datei/1 Edit, Verifikations-Output, **Beobachtungen**, Bestätigung: keine Commits, kein Schema.
