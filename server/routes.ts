@@ -27714,7 +27714,9 @@ ${cleaned.slice(0, 60000)}`;
     let ogTasting: Awaited<ReturnType<typeof storage.getTasting>> | undefined;
     try { ogTasting = safeId ? await storage.getTasting(safeId) : undefined; } catch {}
     const ogTags = (() => {
-      if (!ogTasting) return "";
+      // Härtung (Beobachtung Task #1227): OG-Daten nur für aktivierte Stories preisgeben.
+      // Geteilte Links zeigen immer auf aktivierte Stories — Crawler-Vorschauen bleiben vollständig.
+      if (!ogTasting || !ogTasting.storyEnabled) return "";
       const esc = (v: string) => v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
       const base = `${req.protocol}://${req.get("host")}`;
       const img = ogTasting.coverImageUrl && ogTasting.coverImageRevealed ? ogTasting.coverImageUrl : "/opengraph.jpg";
