@@ -1,0 +1,475 @@
+# Hard Prompt: WP 3 — Konto-Claim ("Nimm deine Bewertungen mit")
+
+**Datum:** 12.06.2026 · **Priorität:** HOCH (Gast-Schleife / Fahrplan WP 3)
+**Art:** 1 neuer Server-Endpoint (in-place-Upgrade, KEIN Merge), 1 Whitelist-Wort, 1 api-Helfer, Claim-Dialog auf der "Dein Abend"-Karte, i18n. KEIN Schema, KEINE Migration.
+
+**ABHÄNGIGKEIT: Dieser Auftrag setzt voraus, dass WP 1a, WP 1b UND WP 2 bereits umgesetzt sind.** Schritt 0 prüft das. Falls eines fehlt: STOPP.
+
+---
+
+## Worum es geht
+
+Heute bleibt ein Gast für immer Gast — sein Abend ist datentechnisch verloren, sobald die Browser-Session endet. Dieses Paket baut die Konversion am emotionalen Hoch: Direkt auf der "Dein Abend"-Karte erscheint (NUR für echte Gäste: experienceLevel "guest", ohne E-Mail) der Block **"Nimm deine Bewertungen mit"** — E-Mail + selbstgewählte PIN, ein Tap, dann der 6-stellige Bestätigungscode aus der E-Mail direkt im selben Block. Danach ist der Gast ein vollwertiges Konto: gleiche Teilnehmer-ID, alle Bewertungen, Tasting-Mitgliedschaften und der Signatur-Startpunkt bleiben erhalten.
+
+**Drei bewusste Architektur-Entscheidungen (NICHT ändern):**
+1. **In-place-Upgrade statt Merge:** Der Gast-Teilnehmer BEKOMMT E-Mail+PIN (storage.updateParticipant); es werden keine zwei Teilnehmer zusammengeführt. Existiert die E-Mail bereits → 409 mit freundlicher Meldung (Merge wäre ein eigenes, separat geparktes Paket).
+2. **Code-Verifikation direkt in der Karte:** Die Grace-Period der E-Mail-Verifikation rechnet ab `createdAt` — und der Gast wurde womöglich Tage vor dem Claim angelegt. Würde nur eine Mail verschickt, wäre das Konto beim nächsten Login bereits gesperrt. Darum wird der Code sofort im Claim-Dialog abgefragt (bestehender /verify-Endpoint), und `emailVerified` ist gesetzt, bevor die Grace-Period je relevant wird.
+3. **PIN wird gehasht** (hashPassword/bcrypt, wie die Registrierung) — NICHT der Roh-PIN-Pfad des Legacy-Logins.
+
+Außerdem: Gast-Namenssuffix " #xxxx" wird entfernt, experienceLevel wird "explorer", Funnel-Event `guest_claim` (Whitelist ergänzt).
+
+**Charakter dieses Auftrags — WORTGETREUE ÜBERTRAGUNG:** Der gesamte Code liegt fertig vor und wurde extern gegen den Stand nach WP 1a+1b+2 entwickelt und typgeprüft (tsc-Baseline-Diff: 500 → 500). Deine Aufgabe: zeichengenau übertragen, verifizieren, berichten. Keine Design-Entscheidungen, keine Verbesserungen.
+
+---
+
+## Abweichungs-Protokoll (gilt für den GESAMTEN Auftrag)
+
+1. Vor JEDER Änderung: prüfe, dass der ALT-Block **genau einmal** in der Zieldatei vorkommt.
+2. Kommt er nicht oder mehrfach vor → **STOPP. Nichts ändern, nichts improvisieren.** Bericht: Datei, erwarteter ALT-Block, tatsächlicher Befund. Auf Anweisung warten.
+3. Auffälligkeiten → im Abschlussbericht unter "Beobachtungen", NICHT eigenmächtig beheben.
+4. **Innerhalb einer Datei die Edit-Reihenfolge strikt einhalten** (spätere Anker setzen frühere Edits voraus).
+
+---
+
+## Schritt 0 — Diagnose (NUR LESEN)
+
+```bash
+git tag pre-wp3-konto-claim-2026-06-12
+```
+
+1. **Abhängigkeiten:** `grep -c "guestWelcome: {" client/src/lib/i18n.ts` → **2** (WP 1a). `grep -c "eveningRecap: {" client/src/lib/i18n.ts` → **2** (WP 1b). `grep -c "storyShareBtn" client/public/tasting-story/template.html` → **mind. 2** (WP 2). `grep -c 'storyLink: "Die Story des Abends ansehen",' client/src/lib/i18n.ts` → **1** (WP 2, dient als i18n-Anker). Falls etwas fehlt: STOPP.
+2. `grep -c "/api/participants/:id/claim" server/routes.ts` → erwartet **0**.
+3. `grep -c "guest_claim" server/funnel-store.ts` → erwartet **0**.
+4. `grep -c "recap-claim" client/src/labs/components/RecapCard.tsx` → erwartet **0**.
+5. TypeScript-Baseline: `NODE_OPTIONS=--max-old-space-size=6144 npx tsc --noEmit 2>&1 | grep -c "error TS"` → Zahl notieren (Stand 12.06.: 500). **WICHTIG: ohne die NODE_OPTIONS-Heap-Erhöhung stürzt tsc mit OOM ab und meldet fälschlich 0.**
+
+**Plan bestätigen lassen, dann erst Schritt 1.**
+
+---
+
+## Schritt 1 — 9 exakte Edits in 5 bestehenden Dateien
+
+Keine neuen Dateien. Jeder Edit ist ein ALT→NEU-Paar. ALT muss exakt einmal vorkommen. Reihenfolge einhalten.
+
+
+### Datei: `server/routes.ts`
+
+
+**Edit 1**
+
+ALT:
+```
+  app.post("/api/participants/demo-guest", async (req, res) => {
+```
+
+NEU:
+```
+  // WP 3 — Konto-Claim: "Nimm deine Bewertungen mit".
+  // Ein Gast-Teilnehmer (experienceLevel "guest", ohne E-Mail) wird in place zu
+  // einem echten Konto: E-Mail + PIN werden gesetzt, der "#xxxx"-Gastsuffix
+  // entfernt und die übliche E-Mail-Verifikation angestoßen. Bewertungen,
+  // Tasting-Mitgliedschaften und Signatur-Startpunkt bleiben erhalten — es
+  // findet bewusst KEIN Merge zweier Teilnehmer statt (existiert die E-Mail
+  // bereits, lehnen wir ab; Zusammenführen wäre ein eigenes Paket).
+  app.post("/api/participants/:id/claim", async (req, res) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId || requesterId !== req.params.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      const participant = await storage.getParticipant(req.params.id);
+      if (!participant) return res.status(404).json({ message: "Not found" });
+      if (participant.experienceLevel !== "guest" || participant.email) {
+        return res.status(409).json({ message: "Only guest participants without an email can be claimed" });
+      }
+      const { email, pin } = req.body || {};
+      if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        return res.status(400).json({ message: "A valid email is required" });
+      }
+      if (!pin || typeof pin !== "string" || pin.trim().length < 4) {
+        return res.status(400).json({ message: "PIN must be at least 4 characters" });
+      }
+      const cleanEmail = email.trim();
+      const existing = await storage.getParticipantByEmail(cleanEmail);
+      if (existing) {
+        return res.status(409).json({ message: "Diese E-Mail hat bereits ein Konto. Bitte melde dich damit an.", code: "EMAIL_TAKEN" });
+      }
+      const cleanName = participant.name.replace(/ #[a-z0-9]{4}$/, "");
+      const hashed = await hashPassword(pin.trim());
+      await storage.updateParticipant(participant.id, { name: cleanName, email: cleanEmail, pin: hashed, experienceLevel: "explorer" });
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiry = new Date(Date.now() + 15 * 60 * 1000);
+      await storage.setVerificationCode(participant.id, code, expiry);
+      const emailContent = buildVerificationEmail({ name: cleanName, code });
+      sendEmail({ to: cleanEmail, ...emailContent }).catch(err =>
+        console.error("Failed to send claim verification email:", err)
+      );
+      console.log(`[LABS] Guest claim: participant=${participant.id} "${cleanName}" email=${cleanEmail}`);
+      const updated = await storage.getParticipant(participant.id);
+      res.json({ id: participant.id, name: cleanName, email: cleanEmail, verificationPending: true, emailVerified: updated?.emailVerified ?? false });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/participants/demo-guest", async (req, res) => {
+```
+
+
+### Datei: `server/funnel-store.ts`
+
+
+**Edit 2**
+
+ALT:
+```
+  "guest_welcome_view", "guest_join_success", "recap_viewed", "story_shared",
+```
+
+NEU:
+```
+  "guest_welcome_view", "guest_join_success", "recap_viewed", "story_shared", "guest_claim",
+```
+
+
+### Datei: `client/src/lib/api.ts`
+
+
+**Edit 3**
+
+ALT:
+```
+  verify: (id: string, code: string) =>
+    fetchJSON(`/participants/${id}/verify`, { method: "POST", body: JSON.stringify({ code }) }),
+```
+
+NEU:
+```
+  verify: (id: string, code: string) =>
+    fetchJSON(`/participants/${id}/verify`, { method: "POST", body: JSON.stringify({ code }) }),
+  claim: (id: string, email: string, pin: string) =>
+    fetchJSON(`/participants/${id}/claim`, { method: "POST", body: JSON.stringify({ email, pin }) }),
+```
+
+
+### Datei: `client/src/labs/components/RecapCard.tsx`
+
+
+**Edit 4**
+
+ALT:
+```
+import { useEffect, useMemo, useRef } from "react";
+```
+
+NEU:
+```
+import { useEffect, useMemo, useRef, useState } from "react";
+```
+
+
+**Edit 5**
+
+ALT:
+```
+import { ratingApi, tastingApi } from "@/lib/api";
+```
+
+NEU:
+```
+import { participantApi, ratingApi, tastingApi } from "@/lib/api";
+```
+
+
+**Edit 6**
+
+ALT:
+```
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+```
+
+NEU:
+```
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // WP 3 — Konto-Claim: nur echte Gäste (experienceLevel "guest", ohne E-Mail)
+  // sehen den Block "Nimm deine Bewertungen mit". Zweistufig: E-Mail + PIN
+  // anlegen, dann 6-stelligen Code aus der Mail direkt hier bestätigen —
+  // so greift die Verifikations-Grace-Period nie.
+  const { data: me } = useQuery<{ id: string; email?: string | null; experienceLevel?: string | null }>({
+    queryKey: ["recap-me", participantId],
+    queryFn: () => participantApi.get(participantId),
+    enabled: !!participantId,
+    staleTime: 60 * 1000,
+  });
+  const isGuest = !!me && me.experienceLevel === "guest" && !me.email;
+
+  const [claimStep, setClaimStep] = useState<"idle" | "code" | "done">("idle");
+  const [claimEmail, setClaimEmail] = useState("");
+  const [claimPin, setClaimPin] = useState("");
+  const [claimCode, setClaimCode] = useState("");
+  const [claimBusy, setClaimBusy] = useState(false);
+  const [claimError, setClaimError] = useState("");
+
+  const handleClaim = async () => {
+    if (claimBusy) return;
+    setClaimError("");
+    if (!claimEmail.trim() || claimPin.trim().length < 4) {
+      setClaimError(t("eveningRecap.claimMissing", "Bitte E-Mail und eine PIN (mind. 4 Zeichen) ausfüllen."));
+      return;
+    }
+    setClaimBusy(true);
+    try {
+      await participantApi.claim(participantId, claimEmail.trim(), claimPin.trim());
+      trackEvent("guest_claim", { page: `/labs/tastings/${tastingId}` });
+      setClaimStep("code");
+    } catch (e: unknown) {
+      setClaimError((e as Error)?.message || t("eveningRecap.claimFailed", "Das hat nicht geklappt. Bitte versuche es erneut."));
+    } finally {
+      setClaimBusy(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (claimBusy) return;
+    setClaimError("");
+    if (claimCode.trim().length !== 6) {
+      setClaimError(t("eveningRecap.codeInvalid", "Der Code hat 6 Ziffern."));
+      return;
+    }
+    setClaimBusy(true);
+    try {
+      await participantApi.verify(participantId, claimCode.trim());
+      setClaimStep("done");
+    } catch (e: unknown) {
+      setClaimError((e as Error)?.message || t("eveningRecap.codeFailed", "Code ungültig oder abgelaufen."));
+    } finally {
+      setClaimBusy(false);
+    }
+  };
+```
+
+
+**Edit 7**
+
+ALT:
+```
+          {t("eveningRecap.storyLink", "Die Story des Abends ansehen")} →
+        </a>
+      )}
+    </div>
+```
+
+NEU:
+```
+          {t("eveningRecap.storyLink", "Die Story des Abends ansehen")} →
+        </a>
+      )}
+
+      {isGuest && (
+        <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px dashed var(--labs-border-subtle)" }} data-testid="recap-claim">
+          {claimStep === "idle" && (
+            <>
+              <div style={{ fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--labs-accent)", fontWeight: 600 }}>
+                {t("eveningRecap.claimEyebrow", "Nimm deine Bewertungen mit")}
+              </div>
+              <div style={{ fontFamily: FONT_SERIF, fontStyle: "italic", fontSize: 14, color: "var(--labs-text-secondary)", margin: "6px 0 10px" }}>
+                {t("eveningRecap.claimText", "Mit E-Mail und PIN wird dieser Abend der Anfang deiner eigenen Sammlung.")}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 360 }}>
+                <input
+                  className="labs-input"
+                  type="email"
+                  autoComplete="email"
+                  placeholder={t("eveningRecap.claimEmail", "Deine E-Mail")}
+                  value={claimEmail}
+                  onChange={(e) => setClaimEmail(e.target.value)}
+                  data-testid="recap-claim-email"
+                />
+                <input
+                  className="labs-input"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder={t("eveningRecap.claimPin", "Wähle eine PIN (mind. 4 Zeichen)")}
+                  value={claimPin}
+                  onChange={(e) => setClaimPin(e.target.value)}
+                  data-testid="recap-claim-pin"
+                />
+                <button
+                  type="button"
+                  className="labs-btn-primary"
+                  disabled={claimBusy}
+                  onClick={handleClaim}
+                  style={{ minHeight: 44 }}
+                  data-testid="recap-claim-submit"
+                >
+                  {claimBusy ? t("eveningRecap.claimBusy", "Einen Moment …") : t("eveningRecap.claimCta", "Konto erstellen")}
+                </button>
+              </div>
+            </>
+          )}
+          {claimStep === "code" && (
+            <>
+              <div style={{ fontFamily: FONT_SERIF, fontStyle: "italic", fontSize: 14, color: "var(--labs-text-secondary)", marginBottom: 10 }}>
+                {t("eveningRecap.codeText", "Wir haben dir einen 6-stelligen Code geschickt. Gib ihn hier ein — dann gehört der Abend dir.")}
+              </div>
+              <div style={{ display: "flex", gap: 8, maxWidth: 360 }}>
+                <input
+                  className="labs-input"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder={t("eveningRecap.codeLabel", "Code")}
+                  value={claimCode}
+                  onChange={(e) => setClaimCode(e.target.value.replace(/[^0-9]/g, ""))}
+                  style={{ flex: 1, letterSpacing: "0.2em" }}
+                  data-testid="recap-claim-code"
+                />
+                <button
+                  type="button"
+                  className="labs-btn-primary"
+                  disabled={claimBusy}
+                  onClick={handleVerifyCode}
+                  style={{ minHeight: 44 }}
+                  data-testid="recap-claim-verify"
+                >
+                  {t("eveningRecap.codeCta", "Bestätigen")}
+                </button>
+              </div>
+              <button
+                type="button"
+                className="labs-btn-ghost"
+                style={{ marginTop: 8, fontSize: 12 }}
+                onClick={() => { participantApi.resendVerification(participantId).catch(() => {}); }}
+                data-testid="recap-claim-resend"
+              >
+                {t("eveningRecap.codeResend", "Code erneut senden")}
+              </button>
+            </>
+          )}
+          {claimStep === "done" && (
+            <div data-testid="recap-claim-done">
+              <div style={{ fontFamily: FONT_DISPLAY, fontSize: 17, color: "var(--labs-text)" }}>
+                {t("eveningRecap.doneTitle", "Dein Abend gehört jetzt dir.")}
+              </div>
+              <div style={{ fontFamily: FONT_SERIF, fontStyle: "italic", fontSize: 14, color: "var(--labs-text-secondary)", marginTop: 4 }}>
+                {t("eveningRecap.doneText", "Melde dich künftig mit E-Mail und PIN an — deine Bewertungen warten auf dich.")}
+              </div>
+            </div>
+          )}
+          {claimError && (
+            <div style={{ marginTop: 8, fontSize: 13, color: "var(--labs-danger, #e8a3a3)" }} data-testid="recap-claim-error">
+              {claimError}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+```
+
+
+### Datei: `client/src/lib/i18n.ts`
+
+
+**Edit 8**
+
+ALT:
+```
+        storyLink: "View the story of the evening",
+```
+
+NEU:
+```
+        storyLink: "View the story of the evening",
+        claimEyebrow: "Take your ratings with you",
+        claimText: "With an email and PIN, this evening becomes the start of your own collection.",
+        claimEmail: "Your email",
+        claimPin: "Choose a PIN (min. 4 characters)",
+        claimCta: "Create account",
+        claimBusy: "One moment …",
+        claimMissing: "Please fill in email and a PIN (min. 4 characters).",
+        claimFailed: "That didn't work. Please try again.",
+        codeText: "We sent you a 6-digit code. Enter it here — and the evening is yours.",
+        codeLabel: "Code",
+        codeCta: "Confirm",
+        codeInvalid: "The code has 6 digits.",
+        codeFailed: "Code invalid or expired.",
+        codeResend: "Resend code",
+        doneTitle: "This evening is yours now.",
+        doneText: "Sign in with email and PIN from now on — your ratings are waiting.",
+```
+
+
+**Edit 9**
+
+ALT:
+```
+        storyLink: "Die Story des Abends ansehen",
+```
+
+NEU:
+```
+        storyLink: "Die Story des Abends ansehen",
+        claimEyebrow: "Nimm deine Bewertungen mit",
+        claimText: "Mit E-Mail und PIN wird dieser Abend der Anfang deiner eigenen Sammlung.",
+        claimEmail: "Deine E-Mail",
+        claimPin: "Wähle eine PIN (mind. 4 Zeichen)",
+        claimCta: "Konto erstellen",
+        claimBusy: "Einen Moment …",
+        claimMissing: "Bitte E-Mail und eine PIN (mind. 4 Zeichen) ausfüllen.",
+        claimFailed: "Das hat nicht geklappt. Bitte versuche es erneut.",
+        codeText: "Wir haben dir einen 6-stelligen Code geschickt. Gib ihn hier ein — dann gehört der Abend dir.",
+        codeLabel: "Code",
+        codeCta: "Bestätigen",
+        codeInvalid: "Der Code hat 6 Ziffern.",
+        codeFailed: "Code ungültig oder abgelaufen.",
+        codeResend: "Code erneut senden",
+        doneTitle: "Dein Abend gehört jetzt dir.",
+        doneText: "Melde dich künftig mit E-Mail und PIN an — deine Bewertungen warten auf dich.",
+```
+
+
+---
+
+## Sicherheitsregeln (zwingend)
+
+- `shared/schema.ts` NICHT anfassen. Keine Migrationen, kein drizzle-kit.
+- Server-Änderungen NUR die gelisteten (routes.ts Claim-Endpoint, funnel-store.ts ein Wort).
+- Außer den 5 gelisteten Dateien wird NICHTS verändert. Die Architektur-Entscheidungen (in-place statt Merge, Code-in-der-Karte, Hashing) NICHT "verbessern".
+- KEINE Commits. Kein Umformatieren.
+
+---
+
+## Schritt 2 — Verifikation (Ergebnisse als Output vorlegen)
+
+1. **Typprüfung:** `NODE_OPTIONS=--max-old-space-size=6144 npx tsc --noEmit 2>&1 | grep -c "error TS"` → identisch zur Schritt-0-Baseline. Kein Fehler darf `RecapCard` oder `claim` nennen.
+2. **Smoke-Test** (Dev-Server):
+   a. Als Gast (über /welcome/{id} beigetreten) ein abgeschlossenes Tasting mit eigenen Bewertungen öffnen → auf der "Dein Abend"-Karte erscheint unten "Nimm deine Bewertungen mit" mit E-Mail- und PIN-Feld.
+   b. E-Mail + PIN absenden → Block wechselt zur Code-Eingabe; Server-Log zeigt `[LABS] Guest claim:`; Verifikations-E-Mail geht raus (Dev: Code ggf. aus DB/Log). Code eingeben → "Dein Abend gehört jetzt dir."
+   c. Abmelden, dann Login mit der neuen E-Mail + PIN → funktioniert; "Meine Tastings" enthält das Tasting; die Bewertungen sind da; der Name trägt KEINEN "#xxxx"-Suffix mehr.
+   d. Claim mit BEREITS VERGEBENER E-Mail → 409 mit Meldung "Diese E-Mail hat bereits ein Konto…", Karte zeigt den Fehler inline, nichts wurde verändert.
+   e. Als ANGEMELDETES Mitglied (kein Gast) dieselbe Karte → KEIN Claim-Block.
+   f. Sicherheits-Negativtest: `curl -X POST /api/participants/{fremde-id}/claim` mit anderer x-participant-id → 403.
+   g. Funnel: `guest_claim` erscheint im Admin-Funnel-Live.
+3. **Regression:** Normaler Gast-Rejoin (Rejoin-Code) und normale Registrierung funktionieren unverändert.
+
+---
+
+## Schritt 3 — Abschlussbericht (Pflicht)
+
+1. Schritt-0-Befunde (Abhängigkeits-Checks + tsc-Baseline)
+2. 5 editierte Dateien mit Edit-Anzahl (9)
+3. Verifikationsergebnisse 1–3 mit Original-Output
+4. **Beobachtungen** (Pflichtrubrik; "Keine" nur nach echter Prüfung)
+5. Bestätigung: keine Commits, kein Schema berührt
+
+---
+
+## Bewusst NICHT Teil dieses Auftrags
+
+- Merge zweier Teilnehmer bei bereits vergebener E-Mail (eigenes Paket, geparkt).
+- "Werde Host"-Einladung nach dem Claim (WP 4).
+- Migration des localStorage-Gast-Rejoin-Codes (nach dem Claim irrelevant — die Session ist jetzt ein Konto).
