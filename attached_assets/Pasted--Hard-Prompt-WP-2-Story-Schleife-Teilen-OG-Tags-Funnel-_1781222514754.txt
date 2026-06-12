@@ -1,0 +1,885 @@
+# Hard Prompt: WP 2 — Story-Schleife (Teilen, OG-Tags, Funnel, Brücken aus App und Karte)
+
+**Datum:** 12.06.2026 · **Priorität:** HOCH (Gast-Schleife / Fahrplan WP 2)
+**Art:** Template-HTML, Server-Routen (Story-Share-System + OG-Injection + Whitelist), Client (api, RecapCard, TastingDetail, i18n). KEIN Schema, KEINE Migration.
+
+**ABHÄNGIGKEIT: Dieser Auftrag setzt voraus, dass WP 1a UND WP 1b bereits umgesetzt sind.** Schritt 0 prüft das. Falls eines fehlt: STOPP.
+
+---
+
+## Worum es geht
+
+Die Tasting-Story ist visuell ein Juwel, aber heute eine Sackgasse: kein Teilen, keine aussagekräftige Link-Vorschau, keine Messung, kein Weg dorthin. Dieses Paket schließt die Schleife in sechs Zügen:
+
+1. **Teilen-Button** in der Story-Topnav: Web Share API (mobil) mit Clipboard-Fallback ("Link kopiert").
+2. **Token-gesichertes Teilen:** Neuer Endpoint `GET /api/tastings/:id/story-share-link` (Host ODER Mitglied — Gäste teilen ihren Abend!) liefert `/tasting-story/:id?s={token}`; der Story-Daten-Endpoint akzeptiert dieses HMAC-Token als dritten Zugangsweg. Empfänger brauchen kein Konto.
+3. **OG-Tags pro Story**, serverseitig injiziert (Crawler führen kein JS aus): Tasting-Titel, Beschreibung, Cover-Bild (Fallback opengraph.jpg) — WhatsApp-Vorschauen zeigen den Abend.
+4. **"Hosted with CaskSense"-Footer** in der Story, dezent, mit Link.
+5. **Messbarkeit:** Die Story sendet cookiefreie Beacons (`story_view` beim Laden, `story_shared` beim Teilen; Whitelist wird ergänzt).
+6. **Zwei Brücken hinein:** Die "Dein Abend"-Karte (WP 1b) bekommt "Die Story des Abends ansehen" (verborgen bei nicht aktivierter Story — 409/403 scheitern still), und die Ergebnis-Karte der Tasting-Detailseite bekommt einen "Story teilen"-Button für Host und Mitglieder.
+
+**Charakter dieses Auftrags — WORTGETREUE ÜBERTRAGUNG:** Der gesamte Code liegt fertig vor und wurde extern gegen den Stand nach WP 1a+1b entwickelt und geprüft (tsc-Baseline-Diff: 500 → 500; Template-JavaScript syntaktisch validiert; alle Hunk-Anker maschinell verifiziert). Deine Aufgabe: zeichengenau übertragen, verifizieren, berichten. Keine Design-Entscheidungen, keine Verbesserungen.
+
+---
+
+## Abweichungs-Protokoll (gilt für den GESAMTEN Auftrag)
+
+1. Vor JEDER Änderung: prüfe, dass der ALT-Block **genau einmal** in der Zieldatei vorkommt.
+2. Kommt er nicht oder mehrfach vor → **STOPP. Nichts ändern, nichts improvisieren.** Bericht: Datei, erwarteter ALT-Block, tatsächlicher Befund. Auf Anweisung warten.
+3. Auffälligkeiten, die diese Spezifikation nicht berücksichtigt → im Abschlussbericht unter "Beobachtungen" auflisten, NICHT eigenmächtig beheben.
+4. Die ALT-Blöcke sind bewusst lang (Kontextzeilen als Anker). Exakt so suchen, wie sie dastehen. **Innerhalb einer Datei die Edit-Reihenfolge strikt einhalten** (spätere Anker setzen frühere Edits voraus).
+
+---
+
+## Schritt 0 — Diagnose (NUR LESEN)
+
+```bash
+git tag pre-wp2-story-schleife-2026-06-12
+```
+
+1. **Abhängigkeiten:** `grep -c "guestWelcome: {" client/src/lib/i18n.ts` → **2** (WP 1a). `grep -c "eveningRecap: {" client/src/lib/i18n.ts` → **2** (WP 1b). Datei `client/src/labs/components/RecapCard.tsx` existiert. Falls nicht: STOPP — erst WP 1a/1b.
+2. `grep -c "storyShareBtn" client/public/tasting-story/template.html` → erwartet **0**.
+3. `grep -c "story-share-link" server/routes.ts` → erwartet **0**.
+4. `grep -c "story_shared" server/funnel-store.ts` → erwartet **0**.
+5. `grep -c "ergebnis-card-story-share" client/src/labs/pages/LabsTastingDetail.tsx` → erwartet **0**.
+6. TypeScript-Baseline: `NODE_OPTIONS=--max-old-space-size=6144 npx tsc --noEmit 2>&1 | grep -c "error TS"` → Zahl notieren (Stand 12.06.: 500). **WICHTIG: ohne die NODE_OPTIONS-Heap-Erhöhung stürzt tsc mit OOM ab und meldet fälschlich 0.**
+
+**Plan bestätigen lassen, dann erst Schritt 1.**
+
+---
+
+## Schritt 1 — 17 exakte Edits in 7 bestehenden Dateien
+
+Keine neuen Dateien. Jeder Edit ist ein ALT→NEU-Paar. ALT muss exakt einmal vorkommen. Reihenfolge einhalten.
+
+
+### Datei: `client/public/tasting-story/template.html`
+
+
+**Edit 1**
+
+ALT:
+```
+<div class="progress" id="progress"></div>
+
+<nav class="topnav">
+  <div class="topnav__brand">Cask<strong>Sense</strong> <em>Story</em></div>
+  <div style="display:flex;align-items:center;gap:.5rem;">
+    <button class="topnav__pdf" id="pdfBtn" onclick="window.print()" style="display:none;" data-testid="button-save-pdf" title="Story als PDF speichern">↓ Als PDF speichern</button>
+    <button class="topnav__back" onclick="history.back()">← Zurück</button>
+  </div>
+</nav>
+
+<nav class="act-nav" id="actNav" aria-label="Akte"></nav>
+
+```
+
+NEU:
+```
+<div class="progress" id="progress"></div>
+
+<nav class="topnav">
+  <div class="topnav__brand">Cask<strong>Sense</strong> <em>Story</em></div>
+  <div style="display:flex;align-items:center;gap:.5rem;">
+    <button class="topnav__pdf" id="pdfBtn" onclick="window.print()" style="display:none;" data-testid="button-save-pdf" title="Story als PDF speichern">↓ Als PDF speichern</button>
+    <button class="topnav__back" id="storyShareBtn" style="margin-right:1.25rem">Teilen</button>
+    <button class="topnav__back" onclick="history.back()">← Zurück</button>
+  </div>
+</nav>
+
+<nav class="act-nav" id="actNav" aria-label="Akte"></nav>
+
+```
+
+
+**Edit 2**
+
+ALT:
+```
+        }
+      });
+    }
+  });
+})();
+</script>
+</body>
+</html>
+```
+
+NEU:
+```
+        }
+      });
+    }
+  });
+})();
+</script>
+<footer style="padding:3rem 2rem 4rem;text-align:center;font-family:var(--serif);font-style:italic;font-size:.95rem;color:var(--ink-dim);">
+  Hosted with <a href="https://casksense.com" style="color:var(--amber);text-decoration:none;border-bottom:1px solid var(--amber-dim);">CaskSense</a> · Where Tasting becomes Reflection
+</footer>
+<script>
+(function(){
+  // WP 2: cookiefreie Funnel-Beacons (story_view / story_shared)
+  window.__csTrack = function(event){
+    try {
+      var payload = JSON.stringify({ events: [{
+        event: event,
+        page: '/tasting-story',
+        utmSource: '', utmMedium: '', utmCampaign: '',
+        language: (document.documentElement.lang || '').slice(0, 2),
+        deviceType: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
+      }] });
+      fetch('/api/funnel/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(function(){});
+    } catch (e) {}
+  };
+  window.__csTrack('story_view');
+})();
+(function(){
+  var btn = document.getElementById('storyShareBtn');
+  if (!btn) return;
+  var meta = document.querySelector('meta[name="tasting-id"]');
+  var tid = meta ? meta.getAttribute('content') : '';
+  btn.addEventListener('click', function(){
+    var done = function(url){
+      try { if (window.__csTrack) window.__csTrack('story_shared'); } catch (e) {}
+      var payload = { title: document.title, url: url };
+      if (navigator.share) { navigator.share(payload).catch(function(){}); }
+      else if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(function(){
+          var old = btn.textContent; btn.textContent = 'Link kopiert';
+          setTimeout(function(){ btn.textContent = old; }, 2000);
+        }).catch(function(){});
+      }
+    };
+    var fallback = window.location.href;
+    if (!tid) return done(fallback);
+    var headers = {};
+    try { var p = localStorage.getItem('casksense_participant_id'); if (p) headers['x-participant-id'] = p; } catch(e){}
+    fetch('/api/tastings/' + tid + '/story-share-link', { headers: headers })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){ done(d && d.url ? new URL(d.url, window.location.origin).href : fallback); })
+      .catch(function(){ done(fallback); });
+  });
+})();
+</script>
+</body>
+</html>
+```
+
+
+### Datei: `server/routes.ts`
+
+
+**Edit 3**
+
+ALT:
+```
+      }
+      res.json({ ok: true });
+    } catch (e: any) {
+      console.error("Story cache delete error:", e.message);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/tastings/:id/story", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const participantId = (req.headers["x-participant-id"] as string) || (req.query.pid as string);
+      // Use the server-trusted auth identity for host privilege checks (refresh, generation control).
+      // Client-supplied participantId is still used for participant membership validation.
+      const isHost = tasting.hostId === auth.participant.id;
+      if (!isHost) {
+        if (!tasting.storyEnabled) {
+          return res.json({ pending: true, reason: "not_enabled", isHost: false, tasting: { id: tasting.id, title: tasting.title } });
+        }
+        if (!participantId) return res.status(403).json({ message: "Participant ID required" });
+        const isMember = await storage.isParticipantInTasting(req.params.id, participantId);
+        if (!isMember) return res.status(403).json({ message: "Access restricted to invited participants" });
+      }
+
+      // Gather all story data
+      const [whiskyList, participantList, allRatings, eventPhotos] = await Promise.all([
+        storage.getWhiskiesForTasting(req.params.id),
+        storage.getTastingParticipants(req.params.id),
+        storage.getRatingsForTasting(req.params.id),
+        storage.getTastingEventPhotos(req.params.id),
+```
+
+NEU:
+```
+      }
+      res.json({ ok: true });
+    } catch (e: any) {
+      console.error("Story cache delete error:", e.message);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // WP 2: Zustandsloser Share-Token für Tasting-Stories (kein Schema nötig).
+  // HMAC über die Tasting-ID; Secret aus vorhandener Server-Umgebung abgeleitet.
+  // Hinweis: Wechselt das Secret (z.B. neue DATABASE_URL), werden alte Links
+  // ungültig — Share-Links sind jederzeit neu erzeugbar.
+  const storyShareSecret = crypto
+    .createHash("sha256")
+    .update(process.env.SESSION_SECRET || process.env.DATABASE_URL || "casksense-story")
+    .digest();
+  const storyShareToken = (tastingId: string) =>
+    crypto.createHmac("sha256", storyShareSecret).update(`story:${tastingId}`).digest("hex").slice(0, 20);
+
+  // Host ODER Mitglied erhalten den teilbaren Link (Gäste teilen ihren Abend!).
+  app.get("/api/tastings/:id/story-share-link", async (req: Request, res: Response) => {
+    const auth = await requireAuth(req);
+    if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+    const tasting = await storage.getTasting(String(req.params.id));
+    if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+    const isHost = tasting.hostId === auth.participant.id;
+    if (!isHost) {
+      const isMember = await storage.isParticipantInTasting(String(req.params.id), auth.participant.id);
+      if (!isMember) return res.status(403).json({ message: "Access restricted to participants" });
+    }
+    if (!tasting.storyEnabled) return res.status(409).json({ message: "Story not enabled for this tasting" });
+    res.json({ url: `/tasting-story/${tasting.id}?s=${storyShareToken(tasting.id)}` });
+  });
+
+  app.get("/api/tastings/:id/story", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      const shareTokenParam = (req.query.s as string) || "";
+      const shareValid = !!shareTokenParam && shareTokenParam === storyShareToken(String(req.params.id));
+      if (!auth.authenticated && !shareValid) return res.status(auth.status).json({ message: auth.message });
+      const authedParticipant = auth.authenticated ? auth.participant : null;
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const participantId = (req.headers["x-participant-id"] as string) || (req.query.pid as string);
+      // Use the server-trusted auth identity for host privilege checks (refresh, generation control).
+      // Client-supplied participantId is still used for participant membership validation.
+      const isHost = !!authedParticipant && tasting.hostId === authedParticipant.id;
+      if (!isHost) {
+        if (!tasting.storyEnabled) {
+          return res.json({ pending: true, reason: "not_enabled", isHost: false, tasting: { id: tasting.id, title: tasting.title } });
+        }
+        if (!shareValid) {
+          if (!participantId) return res.status(403).json({ message: "Participant ID required" });
+          const isMember = await storage.isParticipantInTasting(req.params.id, participantId);
+          if (!isMember) return res.status(403).json({ message: "Access restricted to invited participants" });
+        }
+      }
+
+      // Gather all story data
+      const [whiskyList, participantList, allRatings, eventPhotos] = await Promise.all([
+        storage.getWhiskiesForTasting(req.params.id),
+        storage.getTastingParticipants(req.params.id),
+        storage.getRatingsForTasting(req.params.id),
+        storage.getTastingEventPhotos(req.params.id),
+```
+
+
+**Edit 4**
+
+ALT:
+```
+      const defaultStoryStructure = tasting.blindMode
+        ? ["opening", "whiskies", "tasters", "discoveries", "blind", "winner", "photos", "finale"]
+        : ["opening", "whiskies", "tasters", "discoveries", "winner", "photos", "finale"];
+      const validActKeys = new Set(["opening", "whiskies", "tasters", "discoveries", "blind", "winner", "photos", "finale"]);
+
+      const currentRatingCount = allRatings.length;
+      const refreshRequested = req.query.refresh === "true";
+      if (refreshRequested && !isHost) {
+        console.warn(`[story] forceRefresh blocked: participantId=${auth.participant.id} is not the host (hostId=${tasting.hostId}) for tasting ${req.params.id}`);
+        return res.status(403).json({ message: "Only the host can regenerate the story." });
+      }
+      const hasBlockStory = Array.isArray(tasting.storyBlocks) && (tasting.storyBlocks as unknown[]).length > 0;
+      if (refreshRequested && hasBlockStory) {
+        console.warn(`[story] forceRefresh blocked: tasting ${req.params.id} has block-based story; legacy regeneration disabled.`);
+        return res.status(409).json({ message: "Diese Story wird im neuen Editor gepflegt. Bitte dort bearbeiten." });
+      }
+      const forceRefresh = isHost && refreshRequested;
+```
+
+NEU:
+```
+      const defaultStoryStructure = tasting.blindMode
+        ? ["opening", "whiskies", "tasters", "discoveries", "blind", "winner", "photos", "finale"]
+        : ["opening", "whiskies", "tasters", "discoveries", "winner", "photos", "finale"];
+      const validActKeys = new Set(["opening", "whiskies", "tasters", "discoveries", "blind", "winner", "photos", "finale"]);
+
+      const currentRatingCount = allRatings.length;
+      const refreshRequested = req.query.refresh === "true";
+      if (refreshRequested && !isHost) {
+        console.warn(`[story] forceRefresh blocked: participantId=${authedParticipant?.id ?? "share-token"} is not the host (hostId=${tasting.hostId}) for tasting ${req.params.id}`);
+        return res.status(403).json({ message: "Only the host can regenerate the story." });
+      }
+      const hasBlockStory = Array.isArray(tasting.storyBlocks) && (tasting.storyBlocks as unknown[]).length > 0;
+      if (refreshRequested && hasBlockStory) {
+        console.warn(`[story] forceRefresh blocked: tasting ${req.params.id} has block-based story; legacy regeneration disabled.`);
+        return res.status(409).json({ message: "Diese Story wird im neuen Editor gepflegt. Bitte dort bearbeiten." });
+      }
+      const forceRefresh = isHost && refreshRequested;
+```
+
+
+**Edit 5**
+
+ALT:
+```
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  // Serve the cinematic tasting story standalone page (block-renderer first, legacy template fallback)
+  app.get("/tasting-story/:id", async (req: Request, res: Response) => {
+    const safeId = req.params.id.replace(/[^a-zA-Z0-9_-]/g, "");
+    const forceLegacy = req.query.legacy === "1";
+    if (!forceLegacy && safeId) {
+      try {
+        const tasting = await storage.getTasting(safeId);
+        const parsed = tasting ? tastingStoryBlocksSchema.safeParse(tasting.storyBlocks) : null;
+        if (tasting && parsed && parsed.success && parsed.data.length > 0) {
+          const indexCandidates = [
+            path.resolve(process.cwd(), "dist", "public", "index.html"),
+            path.resolve(process.cwd(), "client", "index.html"),
+          ];
+          const indexPath = indexCandidates.find((p) => fs.existsSync(p));
+          if (indexPath) {
+            const html = fs.readFileSync(indexPath, "utf-8");
+            res.setHeader("Content-Type", "text/html; charset=utf-8");
+            res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+            return res.send(html);
+          }
+        }
+      } catch (preflightErr) {
+        console.warn("[tasting-story] preflight failed, falling back:", preflightErr);
+      }
+    }
+    const templatePath = path.join(process.cwd(), "client", "public", "tasting-story", "template.html");
+    try {
+      let html = fs.readFileSync(templatePath, "utf-8");
+      html = html.replace("__TASTING_ID__", safeId);
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      res.send(html);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("tasting-story template read error:", msg);
+      res.status(500).send("Story page template not found.");
+    }
+```
+
+NEU:
+```
+      return res.status(500).json({ message: msg });
+    }
+  });
+
+  // Serve the cinematic tasting story standalone page (block-renderer first, legacy template fallback)
+  app.get("/tasting-story/:id", async (req: Request, res: Response) => {
+    const safeId = req.params.id.replace(/[^a-zA-Z0-9_-]/g, "");
+    const forceLegacy = req.query.legacy === "1";
+    // WP 2: Open-Graph-Tags serverseitig injizieren (Crawler führen kein JS aus).
+    let ogTasting: Awaited<ReturnType<typeof storage.getTasting>> | undefined;
+    try { ogTasting = safeId ? await storage.getTasting(safeId) : undefined; } catch {}
+    const ogTags = (() => {
+      if (!ogTasting) return "";
+      const esc = (v: string) => v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+      const base = `${req.protocol}://${req.get("host")}`;
+      const img = ogTasting.coverImageUrl && ogTasting.coverImageRevealed ? ogTasting.coverImageUrl : "/opengraph.jpg";
+      const imgAbs = img.startsWith("http") ? img : `${base}${img}`;
+      return [
+        '<meta property="og:type" content="article">',
+        `<meta property="og:title" content="${esc(ogTasting.title)} · CaskSense">`,
+        '<meta property="og:description" content="Ein Tasting-Abend, festgehalten mit CaskSense — Where Tasting becomes Reflection.">',
+        `<meta property="og:image" content="${esc(imgAbs)}">`,
+        `<meta property="og:url" content="${esc(`${base}/tasting-story/${safeId}`)}">`,
+        '<meta name="twitter:card" content="summary_large_image">',
+      ].join("\n");
+    })();
+    if (!forceLegacy && safeId) {
+      try {
+        const tasting = ogTasting;
+        const parsed = tasting ? tastingStoryBlocksSchema.safeParse(tasting.storyBlocks) : null;
+        if (tasting && parsed && parsed.success && parsed.data.length > 0) {
+          const indexCandidates = [
+            path.resolve(process.cwd(), "dist", "public", "index.html"),
+            path.resolve(process.cwd(), "client", "index.html"),
+          ];
+          const indexPath = indexCandidates.find((p) => fs.existsSync(p));
+          if (indexPath) {
+            let html = fs.readFileSync(indexPath, "utf-8");
+            if (ogTags) html = html.replace("<head>", "<head>\n" + ogTags);
+            res.setHeader("Content-Type", "text/html; charset=utf-8");
+            res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+            return res.send(html);
+          }
+        }
+      } catch (preflightErr) {
+        console.warn("[tasting-story] preflight failed, falling back:", preflightErr);
+      }
+    }
+    const templatePath = path.join(process.cwd(), "client", "public", "tasting-story", "template.html");
+    try {
+      let html = fs.readFileSync(templatePath, "utf-8");
+      html = html.replace("__TASTING_ID__", safeId);
+      if (ogTags) html = html.replace("<head>", "<head>\n" + ogTags);
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      res.send(html);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("tasting-story template read error:", msg);
+      res.status(500).send("Story page template not found.");
+    }
+```
+
+
+### Datei: `client/src/lib/api.ts`
+
+
+**Edit 6**
+
+ALT:
+```
+// ===== Tastings =====
+export const tastingApi = {
+  getAll: (participantId?: string) => fetchJSON(participantId ? `/tastings?participantId=${participantId}` : "/tastings"),
+  getHosted: (hostId: string) => fetchJSON(`/tastings?hostId=${encodeURIComponent(hostId)}`),
+  get: (id: string) => fetchJSON(`/tastings/${id}`),
+  getByCode: (code: string) => fetchJSON(`/tastings/code/${code}`),
+  create: (data: any) => fetchJSON("/tastings", { method: "POST", body: JSON.stringify(data) }),
+  updateStatus: (id: string, status: string, currentAct?: string, hostId?: string, clearRatings?: boolean) =>
+    fetchJSON(`/tastings/${id}/status`, { method: "PATCH", body: JSON.stringify({ status, currentAct, hostId, clearRatings }) }),
+  updateReflection: (id: string, reflection: string) =>
+    fetchJSON(`/tastings/${id}/reflection`, { method: "PATCH", body: JSON.stringify({ reflection }) }),
+  hardDelete: (id: string, participantId: string) =>
+```
+
+NEU:
+```
+// ===== Tastings =====
+export const tastingApi = {
+  getAll: (participantId?: string) => fetchJSON(participantId ? `/tastings?participantId=${participantId}` : "/tastings"),
+  getHosted: (hostId: string) => fetchJSON(`/tastings?hostId=${encodeURIComponent(hostId)}`),
+  get: (id: string) => fetchJSON(`/tastings/${id}`),
+  getByCode: (code: string) => fetchJSON(`/tastings/code/${code}`),
+  getStoryShareLink: (id: string) => fetchJSON(`/tastings/${id}/story-share-link`),
+  create: (data: any) => fetchJSON("/tastings", { method: "POST", body: JSON.stringify(data) }),
+  updateStatus: (id: string, status: string, currentAct?: string, hostId?: string, clearRatings?: boolean) =>
+    fetchJSON(`/tastings/${id}/status`, { method: "PATCH", body: JSON.stringify({ status, currentAct, hostId, clearRatings }) }),
+  updateReflection: (id: string, reflection: string) =>
+    fetchJSON(`/tastings/${id}/reflection`, { method: "PATCH", body: JSON.stringify({ reflection }) }),
+  hardDelete: (id: string, participantId: string) =>
+```
+
+
+### Datei: `server/funnel-store.ts`
+
+
+**Edit 7**
+
+ALT:
+```
+  "guest_welcome_view", "guest_join_success", "recap_viewed",
+```
+
+NEU:
+```
+  "guest_welcome_view", "guest_join_success", "recap_viewed", "story_shared",
+```
+
+
+**Edit 8**
+
+ALT:
+```
+  "story_view", "story_section_view", "story_cta_click",
+  "story_blindtest_answer", "story_finished", "story_engaged",
+  "landing_view", "landing_section_view", "landing_cta_click",
+  "pdf_download",
+  "signup_view", "signup_field_first_focus", "signup_field_blur_empty",
+  "signup_validation_error", "signup_submit_attempt", "signup_submit_success",
+  "tasting_step_view", "tasting_step_complete",
+  "page_view",
+  "guest_welcome_view", "guest_join_success", "recap_viewed", "story_shared",
+]);
+
+// Histogram-only events: write to dimension buckets but skip core counter to avoid inflation.
+const HISTOGRAM_ONLY_EVENTS = new Set([
+  "page_view_histogram", "story_dwell_histogram",
+]);
+
+const ALLOWED_DIMENSIONS = new Set([
+```
+
+NEU:
+```
+  "story_view", "story_section_view", "story_cta_click",
+  "story_blindtest_answer", "story_finished", "story_engaged",
+  "landing_view", "landing_section_view", "landing_cta_click",
+  "pdf_download",
+  "signup_view", "signup_field_first_focus", "signup_field_blur_empty",
+  "signup_validation_error", "signup_submit_attempt", "signup_submit_success",
+  "tasting_step_view", "tasting_step_complete",
+  "page_view",
+  "guest_welcome_view", "guest_join_success", "recap_viewed", "story_shared", "story_shared",
+]);
+
+// Histogram-only events: write to dimension buckets but skip core counter to avoid inflation.
+const HISTOGRAM_ONLY_EVENTS = new Set([
+  "page_view_histogram", "story_dwell_histogram",
+]);
+
+const ALLOWED_DIMENSIONS = new Set([
+```
+
+
+### Datei: `client/src/labs/components/RecapCard.tsx`
+
+
+**Edit 9**
+
+ALT:
+```
+import { ratingApi } from "@/lib/api";
+```
+
+NEU:
+```
+import { ratingApi, tastingApi } from "@/lib/api";
+```
+
+
+**Edit 10**
+
+ALT:
+```
+    enabled: !!tastingId && !!participantId,
+    staleTime: 60 * 1000,
+  });
+```
+
+NEU:
+```
+    enabled: !!tastingId && !!participantId,
+    staleTime: 60 * 1000,
+  });
+
+  // WP 2: Brücke zur Tasting-Story. 409 (Story nicht aktiviert) oder 403
+  // lassen die Query fehlschlagen — die Zeile bleibt dann einfach verborgen.
+  const { data: storyLink } = useQuery<{ url: string }>({
+    queryKey: ["recap-story-link", tastingId],
+    queryFn: () => tastingApi.getStoryShareLink(tastingId),
+    enabled: !!tastingId && !!participantId,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+```
+
+
+**Edit 11**
+
+ALT:
+```
+          {deltaText}
+        </div>
+      )}
+    </div>
+```
+
+NEU:
+```
+          {deltaText}
+        </div>
+      )}
+
+      {storyLink?.url && (
+        <a
+          href={storyLink.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => trackEvent("story_cta_click", { page: `/labs/tastings/${tastingId}` })}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 14, fontSize: 13, fontWeight: 600, color: "var(--labs-accent)", textDecoration: "none" }}
+          data-testid="recap-story-link"
+        >
+          {t("eveningRecap.storyLink", "Die Story des Abends ansehen")} →
+        </a>
+      )}
+    </div>
+```
+
+
+### Datei: `client/src/lib/i18n.ts`
+
+
+**Edit 12**
+
+ALT:
+```
+        curveAria: "Your ratings across the evening",
+```
+
+NEU:
+```
+        curveAria: "Your ratings across the evening",
+        storyLink: "View the story of the evening",
+```
+
+
+**Edit 13**
+
+ALT:
+```
+        curveAria: "Deine Bewertungen im Verlauf des Abends",
+```
+
+NEU:
+```
+        curveAria: "Deine Bewertungen im Verlauf des Abends",
+        storyLink: "Die Story des Abends ansehen",
+```
+
+
+**Edit 14**
+
+ALT:
+```
+        viewResultsRevealSubtitle: "Charts, rankings & detailed per-whisky stats",
+        manageSession: "Manage session",
+        manageSessionSubtitle: "Order, presentation, guest status & settings",
+        enterSession: "Enter Session",
+        viewResults: "View Results",
+        tastingRecap: "Tasting Recap",
+        restartTasting: "Restart Tasting",
+        viewStory: "View story",
+        viewPresentation: "Present results",
+        whiskies: "Whiskies",
+        participants: "Participants",
+        whiskyNamePlaceholder: "Whisky name",
+        startTasting: "Start Tasting",
+        starting: "Starting...",
+        simple: "Simple",
+        classic: "Classic",
+```
+
+NEU:
+```
+        viewResultsRevealSubtitle: "Charts, rankings & detailed per-whisky stats",
+        manageSession: "Manage session",
+        manageSessionSubtitle: "Order, presentation, guest status & settings",
+        enterSession: "Enter Session",
+        viewResults: "View Results",
+        tastingRecap: "Tasting Recap",
+        restartTasting: "Restart Tasting",
+        viewStory: "View story",
+        shareStory: "Share story",
+        viewPresentation: "Present results",
+        whiskies: "Whiskies",
+        participants: "Participants",
+        whiskyNamePlaceholder: "Whisky name",
+        startTasting: "Start Tasting",
+        starting: "Starting...",
+        simple: "Simple",
+        classic: "Classic",
+```
+
+
+**Edit 15**
+
+ALT:
+```
+        viewResultsRevealSubtitle: "Charts, Rangliste und Detail-Statistiken pro Whisky",
+        manageSession: "Session verwalten",
+        manageSessionSubtitle: "Reihenfolge, Auswertung, Gäste-Status & Einstellungen",
+        enterSession: "Session betreten",
+        viewResults: "Ergebnisse ansehen",
+        tastingRecap: "Tasting-Rückblick",
+        restartTasting: "Tasting neu starten",
+        viewStory: "Story anzeigen",
+        viewPresentation: "Ergebnisse präsentieren",
+        whiskies: "Whiskys",
+        participants: "Teilnehmer",
+        whiskyNamePlaceholder: "Whisky-Name",
+        startTasting: "Tasting starten",
+        starting: "Startet...",
+        simple: "Einfach",
+        classic: "Klassisch",
+```
+
+NEU:
+```
+        viewResultsRevealSubtitle: "Charts, Rangliste und Detail-Statistiken pro Whisky",
+        manageSession: "Session verwalten",
+        manageSessionSubtitle: "Reihenfolge, Auswertung, Gäste-Status & Einstellungen",
+        enterSession: "Session betreten",
+        viewResults: "Ergebnisse ansehen",
+        tastingRecap: "Tasting-Rückblick",
+        restartTasting: "Tasting neu starten",
+        viewStory: "Story anzeigen",
+        shareStory: "Story teilen",
+        viewPresentation: "Ergebnisse präsentieren",
+        whiskies: "Whiskys",
+        participants: "Teilnehmer",
+        whiskyNamePlaceholder: "Whisky-Name",
+        startTasting: "Tasting starten",
+        starting: "Startet...",
+        simple: "Einfach",
+        classic: "Klassisch",
+```
+
+
+### Datei: `client/src/labs/pages/LabsTastingDetail.tsx`
+
+
+**Edit 16**
+
+ALT:
+```
+import TastingPersonalSection from "@/labs/components/TastingPersonalSection";
+import WhiskyImage from "@/labs/components/WhiskyImage";
+import { getTastingPhase, isResultDownloadsPhase, RESULT_DOWNLOAD_KINDS } from "@/labs/utils/tastingPhase";
+import type { Tasting, WhiskyFriend } from "@shared/schema";
+import QRCode from "qrcode";
+import { getStatusConfig } from "@/labs/utils/statusConfig";
+import { useTranslation } from "react-i18next";
+import RecapCard from "@/labs/components/RecapCard";
+
+interface LabsTastingDetailProps {
+  params: { id: string };
+}
+
+type DetailSectionKey =
+  | "rueckblick"
+  | "praesentation"
+```
+
+NEU:
+```
+import TastingPersonalSection from "@/labs/components/TastingPersonalSection";
+import WhiskyImage from "@/labs/components/WhiskyImage";
+import { getTastingPhase, isResultDownloadsPhase, RESULT_DOWNLOAD_KINDS } from "@/labs/utils/tastingPhase";
+import type { Tasting, WhiskyFriend } from "@shared/schema";
+import QRCode from "qrcode";
+import { getStatusConfig } from "@/labs/utils/statusConfig";
+import { useTranslation } from "react-i18next";
+import RecapCard from "@/labs/components/RecapCard";
+import { trackEvent } from "@/lib/funnelTracker";
+
+interface LabsTastingDetailProps {
+  params: { id: string };
+}
+
+type DetailSectionKey =
+  | "rueckblick"
+  | "praesentation"
+```
+
+
+**Edit 17**
+
+ALT:
+```
+                      type="button"
+                      className="labs-btn-secondary"
+                      onClick={() => navigate(`/labs/results/${tastingId}/story`)}
+                      data-testid="ergebnis-card-story-open"
+                      style={{ fontSize: 12, padding: "6px 10px" }}
+                    >
+                      {t("tastingDetail.viewStory", "Story anzeigen")}
+                    </button>
+                    {storyAvailable && (
+                      <button
+                        type="button"
+                        className="labs-btn-ghost"
+                        onClick={navigateAndScrollDownloads}
+                        data-testid="ergebnis-card-story-download"
+                        style={{ fontSize: 11, padding: "4px 8px", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
+                      >
+```
+
+NEU:
+```
+                      type="button"
+                      className="labs-btn-secondary"
+                      onClick={() => navigate(`/labs/results/${tastingId}/story`)}
+                      data-testid="ergebnis-card-story-open"
+                      style={{ fontSize: 12, padding: "6px 10px" }}
+                    >
+                      {t("tastingDetail.viewStory", "Story anzeigen")}
+                    </button>
+                    <button
+                      type="button"
+                      className="labs-btn-ghost"
+                      data-testid="ergebnis-card-story-share"
+                      style={{ fontSize: 11, padding: "4px 8px" }}
+                      onClick={async () => {
+                        try {
+                          const d = await tastingApi.getStoryShareLink(tastingId);
+                          const url = new URL(d.url, window.location.origin).toString();
+                          trackEvent("story_shared", { page: `/labs/tastings/${tastingId}` });
+                          if (navigator.share) {
+                            await navigator.share({ title: tasting?.title || "Tasting Story", url });
+                          } else {
+                            await navigator.clipboard.writeText(url);
+                          }
+                        } catch {}
+                      }}
+                    >
+                      {t("tastingDetail.shareStory", "Story teilen")}
+                    </button>
+                    {storyAvailable && (
+                      <button
+                        type="button"
+                        className="labs-btn-ghost"
+                        onClick={navigateAndScrollDownloads}
+                        data-testid="ergebnis-card-story-download"
+                        style={{ fontSize: 11, padding: "4px 8px", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
+                      >
+```
+
+
+---
+
+## Sicherheitsregeln (zwingend)
+
+- `shared/schema.ts` NICHT anfassen. Keine Migrationen, kein drizzle-kit.
+- Server-Änderungen NUR die gelisteten (routes.ts Story-Hunks, funnel-store.ts Whitelist).
+- Außer den 7 gelisteten Dateien wird NICHTS verändert.
+- KEINE Commits. Keine "Verbesserungen", kein Umformatieren.
+
+---
+
+## Schritt 2 — Verifikation (Ergebnisse als Output vorlegen)
+
+1. **Typprüfung:** `NODE_OPTIONS=--max-old-space-size=6144 npx tsc --noEmit 2>&1 | grep -c "error TS"` → identisch zur Schritt-0-Baseline. Kein Fehler darf `RecapCard`, `story-share-link`, `storyShareToken` oder `ergebnis-card-story-share` nennen.
+2. **Template-JS-Syntax:** `node -e "new Function(require('fs').readFileSync('client/public/tasting-story/template.html','utf8').split('<script>').pop().split('</'+'script>')[0]); console.log('OK')"` → OK.
+3. **Smoke-Test** (Dev-Server):
+   a. Abgeschlossenes Tasting mit aktivierter Story als Teilnehmer mit eigenen Bewertungen → "Dein Abend"-Karte zeigt "Die Story des Abends ansehen →"; Klick öffnet `/tasting-story/{id}?s=…` in neuem Tab.
+   b. Tasting-Detailseite, Ergebnis-Karte → "Story teilen"-Button vorhanden (Host UND Mitglied); liefert/teilt den `?s=`-Link.
+   c. Story-Seite: oben rechts "Teilen". Desktop → "Link kopiert"; Link enthält `?s=`. Netzwerk-Tab: beim Laden POST `/api/funnel/track` mit `story_view`, beim Teilen `story_shared`.
+   d. Den `?s=`-Link ABGEMELDET im Inkognito öffnen → Story lädt vollständig. Ohne `?s=` abgemeldet → Zugriff verweigert.
+   e. `curl -s http://localhost:5000/tasting-story/{id} | grep og:` → og:title mit Tasting-Titel, og:image, og:url.
+   f. Story-Footer: "Hosted with CaskSense · Where Tasting becomes Reflection" mit Link.
+   g. Tasting OHNE aktivierte Story: Karte ohne Story-Zeile; erwarteter 409 im Netzwerk-Tab, kein Crash.
+4. **Regression:** Story-Zugriff als Host/Mitglied ohne `?s=` wie bisher; Storybuilder-Block-Variante rendert weiterhin; Ergebnis-Karte zeigt PDF/Download-Funktionen unverändert.
+
+---
+
+## Schritt 3 — Abschlussbericht (Pflicht)
+
+1. Schritt-0-Befunde (Abhängigkeits-Checks + tsc-Baseline)
+2. 7 editierte Dateien mit Edit-Anzahl (17)
+3. Verifikationsergebnisse 1–4 mit Original-Output
+4. **Beobachtungen** (Pflichtrubrik; "Keine" nur nach echter Prüfung)
+5. Bestätigung: keine Commits, kein Schema berührt
+
+---
+
+## Bewusst NICHT Teil dieses Auftrags
+
+- Persönliche Kurve des Gastes INNERHALB der Story (geparkt — die persönliche Sicht lebt auf der "Dein Abend"-Karte, die in die Story verlinkt).
+- Story-Erzeugung/Aktivierung selbst (bestehende Host-Funktion, unverändert).
+- Konto-Claim-CTA in Story oder Karte (WP 3).
+- Widerruf/Rotation des Share-Tokens (HMAC pro Tasting stabil; Rotation wäre ein eigenes kleines Paket, falls je nötig).
