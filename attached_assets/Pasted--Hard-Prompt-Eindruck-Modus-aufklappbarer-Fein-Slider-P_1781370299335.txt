@@ -1,0 +1,459 @@
+# Hard Prompt — Eindruck-Modus: aufklappbarer Fein-Slider (Phase B, Teil 2)
+
+**Repo:** christophaldering/WhiskyHub · **Branch:** main
+**Voraussetzung:** Teil 1 (Umbenennung + Reihenfolge) ist bereits eingespielt.
+**Umfang:** 9 Edits in 3 Dateien — TischRating.tsx (6), RatingFlowV2.tsx (1), i18n.ts (2).
+
+-----
+
+## Schritt 0 — Diagnose (VOR jeder Änderung ausführen, Ausgabe zeigen)
+
+```bash
+grep -n 'const \[picks, setPicks\]' client/src/labs/components/rating/TischRating.tsx
+grep -n 'const picked = picks\[phaseIdx\] === i' client/src/labs/components/rating/TischRating.tsx
+grep -n 'data-testid="tisch-tap-hint"' client/src/labs/components/rating/TischRating.tsx
+grep -n 'const tischLabels = useMemo' client/src/labs/components/rating/RatingFlowV2.tsx
+grep -c 'import ScoreInput' client/src/labs/components/rating/TischRating.tsx
+```
+
+**Erwartung:** picks-State 1×, picked-Zeile 1×, tisch-tap-hint 1×, tischLabels 1×, ScoreInput-Import **0×** (wird mit Edit 1 hinzugefügt).
+
+**Abweichungs-Protokoll:** Wenn ein SUCHEN-Block unten **nicht exakt 1×** matcht → **STOPP, nichts ändern, melde mir den Befund.** Niemals einen Block „so ähnlich” ersetzen. Die Edits sind byte-exakt; sie müssen exakt passen.
+
+-----
+
+## Was passiert (fachlich)
+
+Der Eindruck-Modus bleibt im Kern, was er ist: **vier Wortstufen pro Phase, ein Tap, automatischer Sprung zur nächsten Phase** — schnell, tischtauglich. Neu kommt ein **dezenter Toggle „Genauer einstellen ▾”** unter den Stufen:
+
+- **Slider zu (Standard):** exakt wie heute — Tap auf eine Stufe setzt den Wert und springt nach 180 ms weiter.
+- **Slider auf:** ein Fein-Slider (`ScoreInput`, derselbe wie in Kompakt/Geführt) erscheint. **Auto-Advance pausiert** — Stufen-Tap *oder* Slider setzen den Wert, man bleibt in der Phase und geht per „Weiter”/„Fertig” selbst vor. Der Toggle ist **symmetrisch**: wieder zuklappen → Slider weg, schneller Tap-Fluss inkl. Auto-Advance sofort zurück. Werte bleiben in beiden Ansichten identisch.
+
+**Technischer Kern:** Der State wird von Anker-Indizes (`picks`) auf **feine Scores** (`scores`) umgestellt, damit Buttons und Slider in dasselbe Array schreiben. Welcher Button hervorgehoben ist, folgt dem feinen Score über `nearestAnchorIndex` (Funktion `activeAnchor`). Additiver `precise`-State steuert den Toggle. Vier neue i18n-Keys (DE/EN): `tischPreciseToggle`, `tischPreciseClose`, `tischNext`, `tischDone`.
+
+**Sicherheitsregeln:** `shared/schema.ts` NICHT anfassen. Keine Migrationen. Keine Routen löschen. Keine anderen Modi (Quick/Kompakt/Geführt) verändern — nur TischRating, die tischLabels in RatingFlowV2 und die vier i18n-Keys.
+
+-----
+
+## Edits
+
+### Edit 1 — `client/src/labs/components/rating/TischRating.tsx`
+
+**SUCHEN** (exakt, muss genau 1× vorkommen):
+
+```tsx
+import { TISCH_ANCHORS, anchorToScale, nearestAnchorIndex } from "./tischAnchors";
+```
+
+**ERSETZEN durch:**
+
+```tsx
+import { TISCH_ANCHORS, anchorToScale, nearestAnchorIndex } from "./tischAnchors";
+import ScoreInput from "./ScoreInput";
+```
+
+### Edit 2 — `client/src/labs/components/rating/TischRating.tsx`
+
+**SUCHEN** (exakt, muss genau 1× vorkommen):
+
+```tsx
+interface TischLabels {
+  tisch: string;
+  tischTapHint: string;
+  band90: string;
+```
+
+**ERSETZEN durch:**
+
+```tsx
+interface TischLabels {
+  tisch: string;
+  tischTapHint: string;
+  tapEdit: string;
+  of: string;
+  preciseToggle: string;
+  preciseToggleClose: string;
+  next: string;
+  done: string;
+  band90: string;
+```
+
+### Edit 3 — `client/src/labs/components/rating/TischRating.tsx`
+
+**SUCHEN** (exakt, muss genau 1× vorkommen):
+
+```tsx
+  const initialPicks = useMemo<(number | null)[]>(() => {
+    if (!initialData?.scores) return [null, null, null, null];
+    const s = initialData.scores;
+    const vals = [s.nose, s.palate, s.finish, s.overall];
+    return vals.map((v) => (typeof v === "number" && v > 0 ? nearestAnchorIndex(v, scaleMax, scaleStep) : null));
+  }, [initialData, scaleMax, scaleStep]);
+
+  const [picks, setPicks] = useState<(number | null)[]>(initialPicks);
+  const [phaseIdx, setPhaseIdx] = useState(0);
+  const [flashIdx, setFlashIdx] = useState<number | null>(null);
+  const transitioningRef = useRef(false);
+
+  const phaseId = PHASE_ORDER[phaseIdx];
+  const accent = `var(--labs-phase-${phaseId})`;
+
+  const buildData = (finalPicks: (number | null)[]): RatingData => {
+    const toScore = (idx: number | null): number =>
+      anchorToScale(TISCH_ANCHORS[idx ?? 2].value100, scaleMax, scaleStep);
+    return {
+      scores: {
+        nose: toScore(finalPicks[0]),
+        palate: toScore(finalPicks[1]),
+        finish: toScore(finalPicks[2]),
+        overall: toScore(finalPicks[3]),
+      },
+      tags: { nose: [], palate: [], finish: [], overall: [] },
+      notes: {
+        nose: initialData?.notes?.nose ?? "",
+        palate: initialData?.notes?.palate ?? "",
+        finish: initialData?.notes?.finish ?? "",
+        overall: initialData?.notes?.overall ?? "",
+      },
+      overallExplicit: true,
+    };
+  };
+
+  const handlePick = (anchorIdx: number) => {
+    if (transitioningRef.current) return;
+    transitioningRef.current = true;
+    const next = [...picks];
+    next[phaseIdx] = anchorIdx;
+    setPicks(next);
+    setFlashIdx(anchorIdx);
+    onChange?.(phaseIdx, { scores: buildData(next).scores });
+
+    window.setTimeout(() => {
+      setFlashIdx(null);
+      transitioningRef.current = false;
+      if (phaseIdx < PHASE_ORDER.length - 1) {
+        setPhaseIdx(phaseIdx + 1);
+      } else {
+        onDone(buildData(next));
+      }
+    }, 180);
+  };
+```
+
+**ERSETZEN durch:**
+
+```tsx
+  // Feine Scores pro Phase (null = noch nicht bewertet). Buttons und Slider schreiben in dasselbe Array.
+  const initialScores = useMemo<(number | null)[]>(() => {
+    if (!initialData?.scores) return [null, null, null, null];
+    const s = initialData.scores;
+    const vals = [s.nose, s.palate, s.finish, s.overall];
+    return vals.map((v) => (typeof v === "number" && v > 0 ? v : null));
+  }, [initialData]);
+
+  const [scores, setScores] = useState<(number | null)[]>(initialScores);
+  const [phaseIdx, setPhaseIdx] = useState(0);
+  const [flashIdx, setFlashIdx] = useState<number | null>(null);
+  const [precise, setPrecise] = useState(false);
+  const transitioningRef = useRef(false);
+
+  const phaseId = PHASE_ORDER[phaseIdx];
+  const accent = `var(--labs-phase-${phaseId})`;
+  const defaultScore = anchorToScale(TISCH_ANCHORS[2].value100, scaleMax, scaleStep);
+
+  // Welcher Anker-Button ist für eine Phase aktiv (Highlight folgt dem feinen Score).
+  const activeAnchor = (phase: number): number | null =>
+    scores[phase] != null ? nearestAnchorIndex(scores[phase] as number, scaleMax, scaleStep) : null;
+
+  const buildData = (finalScores: (number | null)[]): RatingData => {
+    const toScore = (v: number | null): number => v ?? defaultScore;
+    return {
+      scores: {
+        nose: toScore(finalScores[0]),
+        palate: toScore(finalScores[1]),
+        finish: toScore(finalScores[2]),
+        overall: toScore(finalScores[3]),
+      },
+      tags: { nose: [], palate: [], finish: [], overall: [] },
+      notes: {
+        nose: initialData?.notes?.nose ?? "",
+        palate: initialData?.notes?.palate ?? "",
+        finish: initialData?.notes?.finish ?? "",
+        overall: initialData?.notes?.overall ?? "",
+      },
+      overallExplicit: true,
+    };
+  };
+
+  const advance = (finalScores: (number | null)[]) => {
+    if (phaseIdx < PHASE_ORDER.length - 1) {
+      setPhaseIdx(phaseIdx + 1);
+    } else {
+      onDone(buildData(finalScores));
+    }
+  };
+
+  // Wortstufe antippen. Im schnellen Modus (precise=false) springt es nach kurzem Flash zur nächsten Phase.
+  const handlePick = (anchorIdx: number) => {
+    if (transitioningRef.current) return;
+    const score = anchorToScale(TISCH_ANCHORS[anchorIdx].value100, scaleMax, scaleStep);
+    const next = [...scores];
+    next[phaseIdx] = score;
+    setScores(next);
+    setFlashIdx(anchorIdx);
+    onChange?.(phaseIdx, { scores: buildData(next).scores });
+
+    if (precise) {
+      window.setTimeout(() => setFlashIdx(null), 180);
+    } else {
+      transitioningRef.current = true;
+      window.setTimeout(() => {
+        setFlashIdx(null);
+        transitioningRef.current = false;
+        advance(next);
+      }, 180);
+    }
+  };
+
+  // Slider-Feinjustage (nur im präzisen Modus sichtbar). Kein Auto-Advance.
+  const handleSlider = (v: number) => {
+    const next = [...scores];
+    next[phaseIdx] = v;
+    setScores(next);
+    onChange?.(phaseIdx, { scores: buildData(next).scores });
+  };
+
+  // Manuelles Weiter im präzisen Modus.
+  const handleNext = () => {
+    if (transitioningRef.current) return;
+    const next = scores[phaseIdx] == null ? (() => { const n = [...scores]; n[phaseIdx] = defaultScore; setScores(n); return n; })() : scores;
+    advance(next);
+  };
+```
+
+### Edit 4 — `client/src/labs/components/rating/TischRating.tsx`
+
+**SUCHEN** (exakt, muss genau 1× vorkommen):
+
+```tsx
+                i < phaseIdx || picks[i] != null
+                  ? `var(--labs-phase-${p})`
+                  : i === phaseIdx
+                    ? `var(--labs-phase-${p})`
+                    : "var(--labs-border)",
+              opacity: i === phaseIdx ? 1 : i < phaseIdx || picks[i] != null ? 0.55 : 1,
+```
+
+**ERSETZEN durch:**
+
+```tsx
+                i < phaseIdx || scores[i] != null
+                  ? `var(--labs-phase-${p})`
+                  : i === phaseIdx
+                    ? `var(--labs-phase-${p})`
+                    : "var(--labs-border)",
+              opacity: i === phaseIdx ? 1 : i < phaseIdx || scores[i] != null ? 0.55 : 1,
+```
+
+### Edit 5 — `client/src/labs/components/rating/TischRating.tsx`
+
+**SUCHEN** (exakt, muss genau 1× vorkommen):
+
+```tsx
+          const picked = picks[phaseIdx] === i;
+```
+
+**ERSETZEN durch:**
+
+```tsx
+          const picked = activeAnchor(phaseIdx) === i;
+```
+
+### Edit 6 — `client/src/labs/components/rating/TischRating.tsx`
+
+**SUCHEN** (exakt, muss genau 1× vorkommen):
+
+```tsx
+      </div>
+
+      <div style={{ marginTop: SP.md, fontSize: 12, color: "var(--labs-text-muted)", textAlign: "center", fontFamily: FONT.body }} data-testid="tisch-tap-hint">
+        {labels.tischTapHint}
+      </div>
+    </div>
+  );
+}
+```
+
+**ERSETZEN durch:**
+
+```tsx
+      </div>
+
+      <button
+        onClick={() => setPrecise((p) => !p)}
+        data-testid="tisch-precise-toggle"
+        style={{
+          marginTop: SP.md,
+          width: "100%",
+          minHeight: TOUCH_MIN,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: SP.xs,
+          background: "none",
+          border: "none",
+          color: "var(--labs-text-muted)",
+          cursor: "pointer",
+          fontFamily: FONT.body,
+          fontSize: 13,
+        }}
+      >
+        <span>{precise ? labels.preciseToggleClose : labels.preciseToggle}</span>
+        <span style={{ fontSize: 11 }}>{precise ? "▴" : "▾"}</span>
+      </button>
+
+      {precise && (
+        <div data-testid="tisch-precise-panel" style={{ marginTop: SP.sm }}>
+          <ScoreInput
+            value={scores[phaseIdx] ?? defaultScore}
+            onChange={handleSlider}
+            phaseId={phaseId}
+            labels={{
+              tapEdit: labels.tapEdit,
+              of: labels.of,
+              band90: labels.band90,
+              band85: labels.band85,
+              band80: labels.band80,
+              band75: labels.band75,
+              band70: labels.band70,
+              band0: labels.band0,
+            }}
+            scale={scale}
+          />
+          <button
+            onClick={handleNext}
+            data-testid="tisch-precise-next"
+            style={{
+              marginTop: SP.md,
+              width: "100%",
+              minHeight: TOUCH_MIN + 8,
+              borderRadius: RADIUS.md,
+              border: "none",
+              background: accent,
+              color: "var(--labs-bg, #0B0906)",
+              cursor: "pointer",
+              fontFamily: FONT.body,
+              fontSize: 16,
+              fontWeight: 600,
+            }}
+          >
+            {phaseIdx < PHASE_ORDER.length - 1 ? labels.next : labels.done}
+          </button>
+        </div>
+      )}
+
+      {!precise && (
+        <div style={{ marginTop: SP.md, fontSize: 12, color: "var(--labs-text-muted)", textAlign: "center", fontFamily: FONT.body }} data-testid="tisch-tap-hint">
+          {labels.tischTapHint}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Edit 7 — `client/src/labs/components/rating/RatingFlowV2.tsx`
+
+**SUCHEN** (exakt, muss genau 1× vorkommen):
+
+```tsx
+  const tischLabels = useMemo(() => ({
+    tisch: modeLabels.tisch,
+    tischTapHint: t("v2.tischTapHint", "Ein Tap pro Phase — Details kannst du später ergänzen."),
+    band90: guidedLabels.band90,
+```
+
+**ERSETZEN durch:**
+
+```tsx
+  const tischLabels = useMemo(() => ({
+    tisch: modeLabels.tisch,
+    tischTapHint: t("v2.tischTapHint", "Ein Tap pro Phase — Details kannst du später ergänzen."),
+    tapEdit: guidedLabels.tapEdit,
+    of: guidedLabels.of,
+    preciseToggle: t("v2.tischPreciseToggle", "Genauer einstellen"),
+    preciseToggleClose: t("v2.tischPreciseClose", "Schneller"),
+    next: t("v2.tischNext", "Weiter"),
+    done: t("v2.tischDone", "Fertig"),
+    band90: guidedLabels.band90,
+```
+
+### Edit 8 — `client/src/lib/i18n.ts`
+
+**SUCHEN** (exakt, muss genau 1× vorkommen):
+
+```tsx
+        tischTapHint: "One tap per phase — details can wait until later.",
+```
+
+**ERSETZEN durch:**
+
+```tsx
+        tischTapHint: "One tap per phase — details can wait until later.",
+        tischPreciseToggle: "Adjust precisely",
+        tischPreciseClose: "Faster",
+        tischNext: "Next",
+        tischDone: "Done",
+```
+
+### Edit 9 — `client/src/lib/i18n.ts`
+
+**SUCHEN** (exakt, muss genau 1× vorkommen):
+
+```tsx
+        tischTapHint: "Ein Tap pro Phase — Details kannst du später ergänzen.",
+```
+
+**ERSETZEN durch:**
+
+```tsx
+        tischTapHint: "Ein Tap pro Phase — Details kannst du später ergänzen.",
+        tischPreciseToggle: "Genauer einstellen",
+        tischPreciseClose: "Schneller",
+        tischNext: "Weiter",
+        tischDone: "Fertig",
+```
+
+-----
+
+## Verifikation (nach den Edits, Ausgabe zeigen)
+
+```bash
+# 1) Umbau vollständig — picks restlos durch scores ersetzt
+grep -c 'picks' client/src/labs/components/rating/TischRating.tsx                       # erwartet: 0
+grep -c 'const \[scores, setScores\]' client/src/labs/components/rating/TischRating.tsx # erwartet: 1
+grep -c 'const \[precise, setPrecise\]' client/src/labs/components/rating/TischRating.tsx # erwartet: 1
+grep -c '<ScoreInput' client/src/labs/components/rating/TischRating.tsx                 # erwartet: 1
+grep -c 'tisch-precise-toggle\|tisch-precise-next\|tisch-precise-panel' client/src/labs/components/rating/TischRating.tsx # erwartet: 3
+
+# 2) Labels durchgereicht + i18n-Keys in beiden Sprachen
+grep -c 'preciseToggle:\|preciseToggleClose:\|next:\|done:' client/src/labs/components/rating/RatingFlowV2.tsx  # >= 4
+grep -c 'tischPreciseToggle\|tischPreciseClose\|tischNext\|tischDone' client/src/lib/i18n.ts  # erwartet: 8 (4 Keys x 2 Sprachen)
+
+# 3) Typecheck — Baseline GENAU 500. Keine NEUEN Fehler.
+NODE_OPTIONS='--max-old-space-size=6144' npx tsc --noEmit 2>&1 | grep -c 'error TS'     # erwartet: 500
+NODE_OPTIONS='--max-old-space-size=6144' npx tsc --noEmit 2>&1 | grep -E 'TischRating|RatingFlowV2\.tsx|ScoreInput' || echo "OK: keine Fehler in den geaenderten Dateien"
+```
+
+**Smoke-Test (manuell):**
+
+1. Live-Tasting → Eindruck-Modus. Vier Stufen-Buttons pro Phase, darunter „Genauer einstellen ▾”. Tippen einer Stufe springt automatisch weiter (wie bisher).
+1. „Genauer einstellen ▾” tippen → Slider erscheint, „Weiter”-Button darunter. Stufe tippen springt **nicht** mehr weiter. Slider bewegen → der zur Position passende Stufen-Button wird hervorgehoben. „Weiter” geht zur nächsten Phase, in der letzten Phase steht „Fertig” und speichert.
+1. „Schneller ▴” tippen → Slider verschwindet, Auto-Advance ist zurück, gewählter Wert bleibt erhalten.
+1. Re-Rating eines bestehenden Eindruck-Datensatzes: die vorhandenen Werte highlighten die passenden Stufen.
+
+-----
+
+## ⛔ Commit-Verbot
+
+**NICHT committen. NICHT pushen. NICHT `git add`.** Keine eigenmächtigen Commits — auch nicht „zur Sicherheit”. Nach Edits + Verifikation: **anhalten, Verifikations-Ausgabe zeigen.** Ich nehme ab, committe und pushe selbst.
