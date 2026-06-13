@@ -788,10 +788,8 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
     );
   }
 
-  // Gast-Modus (WP 1): Gäste aus dem QR-Eingang sehen Lobby/Live ohne Header und Tabs.
-  let guestShell = false;
-  try { guestShell = sessionStorage.getItem("cs_guest_shell") === "1"; } catch {}
-  if (guestShell && location.startsWith("/labs/live/")) {
+  // Live-Modus (Fokus): alle Taster -- eingeloggt wie QR-Gast -- sehen Lobby/Live ohne Header und Bottom-Nav.
+  if (location.startsWith("/labs/live/")) {
     return (
       <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`} lang={htmlLang}>
         {children}

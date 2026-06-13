@@ -1207,6 +1207,10 @@ export default function LabsLive({ params }: LabsLiveProps) {
         {revealFlash && (
           <div className="labs-reveal-flash" data-testid="reveal-flash-overlay-guided" />
         )}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 4, gap: 6, marginBottom: 4 }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--labs-border)", opacity: 0.5 }} data-testid="labs-live-grabber-guided" />
+          <span className="labs-h3 tracking-tight" style={{ color: "var(--labs-accent)", fontSize: 15 }} data-testid="labs-live-wordmark-guided">CaskSense</span>
+        </div>
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => {
@@ -1379,6 +1383,10 @@ export default function LabsLive({ params }: LabsLiveProps) {
       {revealFlash && (
         <div className="labs-reveal-flash" data-testid="reveal-flash-overlay" />
       )}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 4, gap: 6, marginBottom: 4 }}>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--labs-border)", opacity: 0.5 }} data-testid="labs-live-grabber" />
+        <span className="labs-h3 tracking-tight" style={{ color: "var(--labs-accent)", fontSize: 15 }} data-testid="labs-live-wordmark">CaskSense</span>
+      </div>
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={goBack}
