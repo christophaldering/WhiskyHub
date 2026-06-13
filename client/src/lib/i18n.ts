@@ -9108,6 +9108,8 @@ const resources = {
         compact: "Compact",
         ratingNotAvailable: "Rating not available yet",
         startTastingToRate: "Start the tasting to begin rating.",
+        myRating: "My Rating",
+        noWhiskiesToRate: "No whiskies to rate yet.",
       },
       hostDashboardUi: {
         qrCode: "QR Code",
@@ -18894,6 +18896,8 @@ const resources = {
         compact: "Kompakt",
         ratingNotAvailable: "Bewertung noch nicht verfügbar",
         startTastingToRate: "Starte das Tasting, um mit der Bewertung zu beginnen.",
+        myRating: "Meine Bewertung",
+        noWhiskiesToRate: "Noch keine Whiskys zum Bewerten.",
       },
       hostDashboardUi: {
         qrCode: "QR-Code",

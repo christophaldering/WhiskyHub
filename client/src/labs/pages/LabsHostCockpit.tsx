@@ -3558,7 +3558,7 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
         <div className="cockpit-card-header">
           <div className="cockpit-card-title">
             <Star style={{ width: 13, height: 13, color: "var(--labs-accent)" }} />
-            My Rating
+            {t("cockpitUi.myRating", "My Rating")}
           </div>
           {!isDraft && (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -3657,7 +3657,7 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
             />
           ) : (
             <div style={{ padding: 16, textAlign: "center", color: "var(--labs-text-muted)", fontSize: 13 }}>
-              No whiskies to rate yet.
+              {t("cockpitUi.noWhiskiesToRate", "No whiskies to rate yet.")}
             </div>
           )}
           </>
