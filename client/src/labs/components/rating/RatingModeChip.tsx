@@ -53,8 +53,12 @@ export default function RatingModeChip({ mode, hideQuick, showTisch, labels, all
     return labels.quick;
   };
 
-  const baseModes: Mode[] = hideQuick ? ["guided", "compact"] : ["guided", "compact", "quick"];
-  const allModes: Mode[] = showTisch ? ["tisch", ...baseModes] : baseModes;
+  const allModes: Mode[] = [
+    ...(hideQuick ? [] : ["quick" as Mode]),
+    ...(showTisch ? ["tisch" as Mode] : []),
+    "compact",
+    "guided",
+  ];
 
   const handlePick = (m: Mode) => {
     setOpen(false);
@@ -65,10 +69,10 @@ export default function RatingModeChip({ mode, hideQuick, showTisch, labels, all
     <div
       ref={popoverRef}
       style={{
-        position: "absolute",
-        top: SP.md,
-        right: SP.md,
-        zIndex: 30,
+        position: "relative",
+        display: "flex",
+        justifyContent: "flex-end",
+        marginBottom: SP.sm,
       }}
     >
       <button

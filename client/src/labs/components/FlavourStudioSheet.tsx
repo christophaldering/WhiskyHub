@@ -115,7 +115,7 @@ const DIM_TO_SECTION: Record<string, TermSection> = {
 interface FlavourStudioSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  dimension: DimKey;
+  dimension: DimKey | "overall";
   existingChips: string[];
   onChipsChange: (chips: string[]) => void;
   disabled?: boolean;
@@ -141,17 +141,20 @@ function useVocabCategories(): VocabCategory[] {
   })), [t]);
 }
 
-function getAllTermsForSection(categories: VocabCategory[], section: TermSection): string[] {
+function getAllTermsForSection(categories: VocabCategory[], section: TermSection | "overall"): string[] {
   const terms = new Set<string>();
+  const sections: TermSection[] = section === "overall" ? ["nose", "palate", "finish"] : [section];
   for (const cat of categories) {
-    for (const term of cat[section]) {
-      terms.add(term);
+    for (const sec of sections) {
+      for (const term of cat[sec]) {
+        terms.add(term);
+      }
     }
   }
   return Array.from(terms);
 }
 
-function getQuickAddTerms(categories: VocabCategory[], section: TermSection): string[] {
+function getQuickAddTerms(categories: VocabCategory[], section: TermSection | "overall"): string[] {
   const popular = [
     "Vanilla", "Honey", "Caramel", "Oak", "Peat", "Apple", "Citrus",
     "Cinnamon", "Chocolate", "Smoke", "Sea Salt", "Dried Fruit",
@@ -2071,9 +2074,9 @@ export default function FlavourStudioSheet({
     setCustomInput("");
   }, [customInput, selectedTerms]);
 
-  const quickTerms = useMemo(() => getQuickAddTerms(categories, section), [categories, section]);
+  const quickTerms = useMemo(() => getQuickAddTerms(categories, dimension === "overall" ? "overall" : section), [categories, section, dimension]);
 
-  const dimLabel = dimension === "nose" ? (isDE ? "Nase" : "Nose") : dimension === "taste" ? (isDE ? "Gaumen" : "Palate") : (isDE ? "Abgang" : "Finish");
+  const dimLabel = dimension === "nose" ? (isDE ? "Nase" : "Nose") : dimension === "taste" ? (isDE ? "Gaumen" : "Palate") : dimension === "finish" ? (isDE ? "Abgang" : "Finish") : (isDE ? "Gesamt" : "Overall");
 
   return (
     <Drawer open={open} onOpenChange={(o) => { if (!o) handleClose(); else onOpenChange(o); }}>

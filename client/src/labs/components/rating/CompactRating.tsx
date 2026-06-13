@@ -319,7 +319,7 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
                     )}
                   </div>
                 )}
-                {pid !== "overall" && (
+                {(
                   <FlavorTags
                     phaseId={pid}
                     whiskyRegion={whisky.region}

@@ -261,8 +261,7 @@ export default function FlavorTags({
   }, [onToggle]);
 
   const dimension: DimKey | undefined = PHASE_TO_DIM[phaseId];
-
-  if (phaseId === "overall") return null;
+  const studioDimension: DimKey | "overall" = dimension ?? "overall";
 
   const studioViews: { id: StudioView; label: string; icon: string }[] = [
     { id: "guide", label: t("m2.taste.rating.toolGuide", "Guide"), icon: "📋" },
@@ -494,12 +493,12 @@ export default function FlavorTags({
         </div>
       </CollapsiblePanel>
 
-      {dimension && (
+      {(
         <Suspense fallback={null}>
           <FlavourStudioSheet
             open={studioOpen}
             onOpenChange={setStudioOpen}
-            dimension={dimension}
+            dimension={studioDimension}
             existingChips={selected}
             onChipsChange={handleStudioChipsChange}
             initialView={studioInitialView}

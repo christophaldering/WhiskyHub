@@ -451,7 +451,7 @@ export default function GuidedRating({ labels, whisky, initialData, initialPhase
           )}
         </div>
 
-        {currentPhase !== "overall" && (
+        {(
           <FlavorTags
             phaseId={currentPhase}
             whiskyRegion={whisky.region}
