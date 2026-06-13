@@ -934,6 +934,8 @@ export default function LabsLive({ params }: LabsLiveProps) {
   const [scores, setScores] = useState({ nose: mid2, taste: mid2, finish: mid2, overall: mid2 });
   const [notes, setNotes] = useState("");
   const [freeformMemo, setFreeformMemo] = useState<LabsVoiceMemoData | null>(null);
+  const [freeRatingMode, setFreeRatingMode] = useState<"guided" | "compact" | "quick" | "tisch" | null>("tisch");
+  const freeRatingDataRef = useRef<Partial<RatingData> | undefined>(undefined);
   const [overrideActive, setOverrideActive] = useState(false);
 
   const hasUnsavedLiveRef = useRef(false);
@@ -1051,6 +1053,44 @@ export default function LabsLive({ params }: LabsLiveProps) {
     },
     [currentParticipant, currentWhisky, tasting, tastingId]
   );
+
+  // Bewertung aus RatingFlowV2 (freier Zweig) ins Speicherformat uebersetzen + Sprachnotiz anhaengen.
+  const saveRatingData = useCallback((data: Partial<RatingData> | undefined, memo: LabsVoiceMemoData | null) => {
+    if (!data?.scores) return;
+    const sc = data.scores;
+    if (typeof sc.nose !== "number" || typeof sc.palate !== "number" || typeof sc.finish !== "number") return;
+    const inv = mainScale.step > 0 ? 1 / mainScale.step : 2;
+    const eff = (data.overallExplicit === true || (typeof sc.overall === "number" && sc.overall > 0))
+      ? (sc.overall as number)
+      : Math.max(mainScale.step, Math.round(((sc.nose + sc.palate + sc.finish) / 3) * inv) / inv);
+    const allNotes = (["nose", "palate", "finish", "overall"] as const)
+      .map((ph) => data.notes?.[ph]?.trim())
+      .filter(Boolean)
+      .join(" | ");
+    const tg = data.tags ?? { nose: [], palate: [], finish: [], overall: [] };
+    const chipStr = [...(tg.nose ?? []), ...(tg.palate ?? []), ...(tg.finish ?? []), ...(tg.overall ?? [])].filter(Boolean);
+    let combined = allNotes;
+    if (memo?.transcript) combined = combined ? `${combined}\n${memo.transcript}` : memo.transcript;
+    if (chipStr.length > 0) combined = combined ? `${combined}\n[FLAVOURS] ${chipStr.join(", ")} [/FLAVOURS]` : `[FLAVOURS] ${chipStr.join(", ")} [/FLAVOURS]`;
+    debouncedSave({ nose: sc.nose, taste: sc.palate, finish: sc.finish, overall: eff }, combined);
+  }, [mainScale, debouncedSave]);
+
+  // Vorhandene Bewertung -> RatingFlowV2-Format (Aromen aus [FLAVOURS] zuruecklesen).
+  const freeInitialData = useMemo<RatingData | undefined>(() => {
+    if (!myRating) return undefined;
+    const raw = myRating.notes || "";
+    const fmatch = raw.match(/\[FLAVOURS\]\s*([\s\S]*?)\s*\[\/FLAVOURS\]/);
+    const chips = fmatch ? fmatch[1].split(",").map((c: string) => c.trim()).filter(Boolean) : [];
+    const clean = fmatch ? raw.replace(/\n?\[FLAVOURS\][\s\S]*?\[\/FLAVOURS\]/, "").trim() : raw;
+    const fb = mainScale.max === 100 ? 75 : Math.round((mainScale.max * 0.75) / mainScale.step) * mainScale.step;
+    const toU = (v: number | null | undefined) => v == null ? fb : (mainScale.max !== 100 && v > mainScale.max ? Math.round((v / 100) * mainScale.max * 10) / 10 : v);
+    return {
+      scores: { nose: toU(myRating.nose), palate: toU(myRating.taste), finish: toU(myRating.finish), overall: toU(myRating.overall) },
+      tags: { nose: chips, palate: [], finish: [], overall: [] },
+      notes: { nose: clean, palate: "", finish: "", overall: "" },
+      overallExplicit: true,
+    };
+  }, [myRating, mainScale]);
 
   const computeAutoOverall = (s: typeof scores) =>
     Math.round(((s.nose + s.taste + s.finish) / 3) * 2) / 2;
@@ -1547,246 +1587,33 @@ export default function LabsLive({ params }: LabsLiveProps) {
 
           {canRate ? (
             <>
-              {(() => {
-                const allDimsScored = DIMENSIONS.every((d) => scores[d] > 0);
-                const ALL_LIVE_TABS: ActiveTab[] = [...DIMENSIONS, "overall"];
-                return (
-                  <div className="flex gap-0 mb-4 labs-fade-in labs-stagger-2" style={{ borderRadius: 8, overflow: "hidden", border: "1px solid var(--labs-border)" }}>
-                    {ALL_LIVE_TABS.map((tab) => {
-                      const isActive = activeDim === tab;
-                      const isOverall = tab === "overall";
-                      const tabDisabled = isOverall && !allDimsScored;
-                      const label = isOverall ? "Overall" : tab.charAt(0).toUpperCase() + tab.slice(1);
-                      return (
-                        <button
-                          key={tab}
-                          className="flex-1 transition-all"
-                          style={{
-                            padding: "10px 0",
-                            background: isActive ? "var(--labs-accent)" : "transparent",
-                            color: isActive ? "var(--labs-bg)" : "var(--labs-text-secondary)",
-                            border: "none",
-                            borderRight: tab !== "overall" ? "1px solid var(--labs-border)" : "none",
-                            fontSize: 12,
-                            fontWeight: isActive ? 700 : 500,
-                            fontFamily: "inherit",
-                            cursor: tabDisabled ? "default" : "pointer",
-                            opacity: tabDisabled ? 0.35 : 1,
-                          }}
-                          onClick={() => {
-                            if (tabDisabled) return;
-                            setActiveDim(tab);
-                            setFlavorExpanded(false);
-                          }}
-                          data-testid={`labs-live-dim-${tab}`}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
-
-              <div className="labs-card p-5 mb-4 labs-fade-in labs-stagger-3">
-                {activeDim === "overall" ? (
-                  <>
-                    <div style={{ display: "flex", justifyContent: "space-around", marginBottom: 16, paddingBottom: 14, borderBottom: "1px solid var(--labs-border-subtle)" }}>
-                      {DIMENSIONS.map((d) => (
-                        <div key={d} style={{ textAlign: "center" }}>
-                          <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--labs-text-muted)", marginBottom: 4 }}>
-                            {d.charAt(0).toUpperCase() + d.slice(1)}
-                          </div>
-                          <div
-                            className="tabular-nums font-bold"
-                            style={{ fontSize: 22, color: "var(--labs-accent)" }}
-                            data-testid={`labs-live-overall-dim-${d}`}
-                          >
-                            {scores[d]}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium" style={{ color: "var(--labs-text-secondary)" }}>Overall</span>
-                      <span
-                        className="text-xl font-bold tabular-nums"
-                        style={{ color: "var(--labs-accent)" }}
-                        data-testid="labs-live-overall"
-                      >
-                        {scores.overall}
-                      </span>
-                    </div>
-                    <div className="relative mb-5">
-                      <div className="labs-slider-track">
-                        <div className="labs-slider-fill" style={{ width: `${((scores.overall - scaleMin) / scaleRange) * 100}%` }} />
-                        <div className="labs-slider-thumb" style={{ left: `${((scores.overall - scaleMin) / scaleRange) * 100}%` }} />
-                      </div>
-                      <input
-                        type="range"
-                        min={scaleMin}
-                        max={scaleMax}
-                        step={mainScale.step}
-                        value={scores.overall}
-                        onChange={(e) => updateOverall(Number(e.target.value))}
-                        className="absolute inset-0 w-full opacity-0 cursor-pointer"
-                        style={{ height: 22, top: -8 }}
-                        data-testid="labs-live-overall-slider"
-                      />
-                    </div>
-                    <div className="flex justify-between text-[11px] px-0.5" style={{ color: "var(--labs-text-muted)" }}>
-                      <span>{scaleMin}</span>
-                      <span>{Math.round((scaleMin + scaleMax) / 2)}</span>
-                      <span>{scaleMax}</span>
-                    </div>
-                    {overrideActive && (
-                      <button
-                        type="button"
-                        onClick={resetOverride}
-                        data-testid="labs-live-reset-override"
-                        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--labs-accent)", fontSize: 11, fontWeight: 500, padding: "6px 0 0", fontFamily: "inherit", display: "block", margin: "0 auto" }}
-                      >
-                        Reset to suggested ({computeAutoOverall(scores)})
-                      </button>
-                    )}
-                    {saveError && (
-                      <div className="flex items-center gap-1.5 mt-3 text-xs" style={{ color: "var(--labs-danger, #ef4444)" }} data-testid="labs-live-save-error">
-                        <AlertTriangle className="w-3 h-3" />
-                        {saveError}
-                      </div>
-                    )}
-                    {!saveError && rateMutation.isSuccess && (
-                      <div className="flex items-center gap-1.5 mt-3 text-xs" style={{ color: "var(--labs-success)" }} data-testid="labs-live-saved">
-                        <Check className="w-3 h-3" />
-                        Saved
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-sm font-medium capitalize" style={{ color: "var(--labs-text-secondary)" }}>
-                        {activeDim}
-                      </span>
-                      <span
-                        className="text-xl font-bold tabular-nums"
-                        style={{ color: "var(--labs-accent)" }}
-                        data-testid={`labs-live-score-${activeDim}`}
-                      >
-                        {scores[activeDim]}
-                      </span>
-                    </div>
-
-                    <div className="relative mb-5">
-                      <div className="labs-slider-track">
-                        <div
-                          className="labs-slider-fill"
-                          style={{ width: `${((scores[activeDim] - scaleMin) / scaleRange) * 100}%` }}
-                        />
-                        <div
-                          className="labs-slider-thumb"
-                          style={{ left: `${((scores[activeDim] - scaleMin) / scaleRange) * 100}%` }}
-                        />
-                      </div>
-                      <input
-                        type="range"
-                        min={scaleMin}
-                        max={scaleMax}
-                        step={mainScale.step}
-                        value={scores[activeDim]}
-                        onChange={(e) => updateScore(activeDim as Dimension, Number(e.target.value))}
-                        className="absolute inset-0 w-full opacity-0 cursor-pointer"
-                        style={{ height: 22, top: -8 }}
-                        data-testid={`labs-live-slider-${activeDim}`}
-                      />
-                    </div>
-
-                    <div className="flex justify-between text-[11px] px-0.5" style={{ color: "var(--labs-text-muted)" }}>
-                      <span>{scaleMin}</span>
-                      <span>{Math.round((scaleMin + scaleMax) / 2)}</span>
-                      <span>{scaleMax}</span>
-                    </div>
-
-                    <div style={{ borderTop: "1px solid var(--labs-border)", marginTop: 12, paddingTop: 4 }}>
-                      <InlineFlavorTags
-                        notes={notes}
-                        onNotesChange={updateNotes}
-                        profileId={getEffectiveProfile(currentWhisky || {}, !!isBlind).profileId}
-                        phase={activeDim as "nose" | "taste" | "finish"}
-                        expanded={flavorExpanded}
-                        onToggle={() => setFlavorExpanded(!flavorExpanded)}
-                      />
-                      <button
-                        type="button"
-                        onClick={openStudio}
-                        style={{
-                          display: "flex", alignItems: "center", gap: 8, width: "100%",
-                          background: "linear-gradient(135deg, var(--labs-accent), color-mix(in srgb, var(--labs-accent) 80%, var(--labs-surface)))",
-                          border: "1px solid var(--labs-accent)",
-                          borderRadius: 12, cursor: "pointer",
-                          color: "var(--labs-bg)", fontSize: 13, fontFamily: "inherit",
-                          fontWeight: 700, padding: "10px 16px",
-                          transition: "all 0.2s ease",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                          marginTop: 8,
-                        }}
-                        data-testid="button-open-flavour-studio-live"
-                      >
-                        <Sparkles style={{ width: 16, height: 16 }} />
-                        Flavour Studio
-                        {activeChips.length > 0 && (
-                          <span style={{ fontSize: 11, background: "var(--labs-bg)", color: "var(--labs-accent)", padding: "2px 8px", borderRadius: 10, fontWeight: 700, marginLeft: 2 }}
-                            data-testid="studio-live-count-badge"
-                          >
-                            {activeChips.length}
-                          </span>
-                        )}
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {activeDim !== "overall" && <div className="labs-card p-5 mb-4 labs-fade-in labs-stagger-3">
-                <label
-                  className="text-xs font-medium mb-2 block"
-                  style={{ color: "var(--labs-text-muted)", letterSpacing: "0.03em" }}
-                >
-                  Tasting notes
-                </label>
-                <textarea
-                  className="labs-input"
-                  rows={3}
-                  placeholder={`Your ${activeDim} impressions…`}
-                  value={notes}
-                  onChange={(e) => updateNotes(e.target.value)}
-                  style={{ resize: "vertical" }}
-                  data-testid="labs-live-notes"
-                />
-                {VOICE_MEMOS_ENABLED && (
+              <RatingFlowV2
+                key={currentWhisky?.id}
+                scale={mainScale}
+                whisky={{ name: displayName, region: currentWhisky?.region || undefined, cask: currentWhisky?.caskType || undefined, blind: isBlind }}
+                initialData={freeInitialData}
+                preferredMode={freeRatingMode}
+                showTisch={true}
+                onChange={(draft) => {
+                  if (draft.mode) setFreeRatingMode(draft.mode);
+                  freeRatingDataRef.current = draft.data;
+                  saveRatingData(draft.data, freeformMemo);
+                }}
+                onDone={(data) => { saveRatingData(data, freeformMemo); }}
+                onBack={() => {}}
+              />
+              {VOICE_MEMOS_ENABLED && (
                 <div className="mt-3">
                   <LabsVoiceMemoRecorder
                     participantId={currentParticipant?.id || ""}
                     memo={freeformMemo}
                     onMemoChange={(memoData) => {
                       setFreeformMemo(memoData);
-                      if (memoData?.transcript) {
-                        const updated = notes ? `${notes}\n${memoData.transcript}` : memoData.transcript;
-                        updateNotes(updated);
-                      }
+                      saveRatingData(freeRatingDataRef.current, memoData);
                     }}
                   />
                 </div>
-                )}
-              </div>}
-
-              <FlavourStudioSheet
-                open={studioOpen}
-                onOpenChange={setStudioOpen}
-                dimension={activeDim as DimKey}
-                existingChips={activeChips}
-                onChipsChange={handleStudioChipsChange}
-              />
+              )}
             </>
           ) : (
             <div className="labs-card-elevated p-6 text-center labs-fade-in labs-stagger-2">
