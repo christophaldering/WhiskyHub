@@ -3059,6 +3059,7 @@ function CreateTastingForm() {
                 }}
               />
             )}
+            {sessionUiMode === "flow" && (
             <div className="mt-4">
               <LabsToggle
                 checked={guidedMode}
@@ -3074,6 +3075,7 @@ function CreateTastingForm() {
                 testId="labs-host-toggle-guided"
               />
             </div>
+            )}
           </div>
         )}
 
@@ -4813,6 +4815,7 @@ function TastingSetupSection({
             );
           })()}
 
+          {((tasting.sessionUiMode as string) || "flow") === "flow" && (
           <LabsToggle
             checked={!!tasting.guidedMode}
             onChange={async () => {
@@ -4828,6 +4831,7 @@ function TastingSetupSection({
             description={t("labs.host.hostControlsPaceDesc")}
             testId="labs-settings-toggle-guided"
           />
+          )}
 
           <div>
             <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>

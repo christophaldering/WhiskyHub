@@ -1,0 +1,138 @@
+# Hard Prompt: UX-Fix — Host-Tempo-Toggle nur bei "Frei"
+
+**Datum:** 13.06.2026 · **Priorität:** NORMAL
+**Art:** 2 Edits (Conditional Render, beide Orte). KEIN Schema, KEINE Migration.
+
+---
+
+## Worum es geht
+
+Das Toggle „Host steuert das Tempo" ist an **zwei Stellen sichtbar**, aber sinnvoll nur bei Tasting-Erlebnis „Frei" (sessionUiMode = "flow"). Bei „Einzeln" und „Dram" ist es redundant/verwirrend — dort steuert der Host ohnehin das Tempo (durch Serve-Logik bzw. Fokus-Struktur). Diese zwei Edits verstecken das Toggle bei den beiden anderen Modi.
+
+---
+
+## Abweichungs-Protokoll
+
+Beide ALT-Blöcke müssen **jeweils genau einmal** vorkommen. Sonst: STOPP + Bericht.
+
+---
+
+## Schritt 0 — Diagnose (NUR LESEN)
+
+```bash
+git tag pre-ux-tempo-toggle-2026-06-13
+```
+
+1. `grep -c "sessionUiMode === \"flow\"" client/src/labs/pages/LabsHost.tsx` → erwartet **0** (wird nach Edits **2**).
+2. tsc-Baseline mit `NODE_OPTIONS=--max-old-space-size=6144` notieren (Stand: 500).
+
+**Plan bestätigen lassen, dann erst Schritt 1.**
+
+---
+
+## Schritt 1 — 2 exakte Edits
+
+### Datei: `client/src/labs/pages/LabsHost.tsx`
+
+**Edit 1 — Setup-Sektion (Zeile ~3063)**
+
+ALT:
+```
+            <div className="mt-4">
+              <LabsToggle
+                checked={guidedMode}
+                onChange={(v: boolean) => {
+                  setGuidedMode(v);
+                  if (v && sessionUiMode === "flow") {
+                    setSessionUiMode("focus");
+                  }
+                }}
+                icon={<Compass className="w-5 h-5" style={{ color: guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+                label={t("labs.host.hostControlsPace")}
+                description={t("labs.host.hostControlsPaceDesc")}
+                testId="labs-host-toggle-guided"
+              />
+            </div>
+```
+
+NEU:
+```
+            {sessionUiMode === "flow" && (
+            <div className="mt-4">
+              <LabsToggle
+                checked={guidedMode}
+                onChange={(v: boolean) => {
+                  setGuidedMode(v);
+                  if (v && sessionUiMode === "flow") {
+                    setSessionUiMode("focus");
+                  }
+                }}
+                icon={<Compass className="w-5 h-5" style={{ color: guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+                label={t("labs.host.hostControlsPace")}
+                description={t("labs.host.hostControlsPaceDesc")}
+                testId="labs-host-toggle-guided"
+              />
+            </div>
+            )}
+```
+
+**Edit 2 — Settings-Sektion (Zeile ~4815)**
+
+ALT:
+```
+          <LabsToggle
+            checked={!!tasting.guidedMode}
+            onChange={async () => {
+              const newGuided = !tasting.guidedMode;
+              const patch: Record<string, unknown> = { guidedMode: newGuided };
+              if (newGuided && ((tasting.sessionUiMode as string) || "flow") === "flow") {
+                patch.sessionUiMode = "focus";
+              }
+              try { await patchDetails(patch); } catch {}
+            }}
+            icon={<Compass className="w-5 h-5" style={{ color: tasting.guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+            label={t("labs.host.hostControlsPace")}
+            description={t("labs.host.hostControlsPaceDesc")}
+            testId="labs-settings-toggle-guided"
+          />
+```
+
+NEU:
+```
+          {((tasting.sessionUiMode as string) || "flow") === "flow" && (
+          <LabsToggle
+            checked={!!tasting.guidedMode}
+            onChange={async () => {
+              const newGuided = !tasting.guidedMode;
+              const patch: Record<string, unknown> = { guidedMode: newGuided };
+              if (newGuided && ((tasting.sessionUiMode as string) || "flow") === "flow") {
+                patch.sessionUiMode = "focus";
+              }
+              try { await patchDetails(patch); } catch {}
+            }}
+            icon={<Compass className="w-5 h-5" style={{ color: tasting.guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+            label={t("labs.host.hostControlsPace")}
+            description={t("labs.host.hostControlsPaceDesc")}
+            testId="labs-settings-toggle-guided"
+          />
+          )}
+```
+
+---
+
+## Schritt 2 — Verifikation
+
+1. tsc → Baseline (500).
+2. Setup-Seite öffnen: 
+   - Wähle Experience „Frei" → Toggle „Host steuert das Tempo" **sichtbar** ✓
+   - Wähle Experience „Einzeln" → Toggle **versteckt** ✓
+   - Wähle Experience „Dram" → Toggle **versteckt** ✓
+3. Tasting starten, dann in Settings gehen und nochmal prüfen (Experience-Umschalter): 
+   - Experience „Frei" → Toggle sichtbar ✓
+   - Andere Modi → versteckt ✓
+
+---
+
+## Schritt 3 — Abschlussbericht (Pflicht)
+
+Schritt-0-Befunde, 2 Dateien/2 Edits, Verifikations-Output, Bestätigung: keine Commits, kein Schema.
