@@ -42,10 +42,10 @@ export default function RatingModeSelect({ labels, onSelect, onBack, hideQuick, 
     hint: string;
     phaseId: "nose" | "palate" | "finish" | "overall";
   }> = [
-    ...(showTisch ? [{ mode: "tisch" as const, title: labels.tisch || "Tisch", desc: labels.tischD || "Ein Tap pro Phase.", hint: labels.tischH || "", phaseId: "finish" as const }] : []),
-    { mode: "guided", title: labels.guided, desc: labels.guidedD, hint: labels.guidedH, phaseId: "nose" },
-    { mode: "compact", title: labels.compact, desc: labels.compactD, hint: labels.compactH, phaseId: "palate" },
     { mode: "quick", title: labels.quick || "Quick", desc: labels.quickD || "Overall score only — two taps and done.", hint: labels.quickH || "When time is short.", phaseId: "overall" },
+    ...(showTisch ? [{ mode: "tisch" as const, title: labels.tisch || "Tisch", desc: labels.tischD || "Ein Tap pro Phase.", hint: labels.tischH || "", phaseId: "finish" as const }] : []),
+    { mode: "compact", title: labels.compact, desc: labels.compactD, hint: labels.compactH, phaseId: "palate" },
+    { mode: "guided", title: labels.guided, desc: labels.guidedD, hint: labels.guidedH, phaseId: "nose" },
   ];
   const cards = hideQuick ? allCards.filter(c => c.mode !== "quick") : allCards;
 
