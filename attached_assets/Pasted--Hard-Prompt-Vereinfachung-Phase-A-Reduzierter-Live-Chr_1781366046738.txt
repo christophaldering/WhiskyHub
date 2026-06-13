@@ -1,0 +1,158 @@
+# Hard Prompt: Vereinfachung Phase A — Reduzierter Live-Chrome ("Fokus-Modus")
+
+**Datum:** 13.06.2026 · **Priorität:** NORMAL (UX) · **Basis:** origin/main `17466a8`
+**Art:** 3 Edits über 2 Dateien (1× LabsLayout, 2× LabsLive). KEIN Schema, KEINE Migration, KEINE neue Datei.
+
+---
+
+## Worum es geht
+
+Im Live-Modus (`/labs/live/:id`) sieht ein **eingeloggter Taster** heute die volle App-Chrome — Header mit Wortmarke/Glocke/Avatar **und die 4-Tab-Bottom-Nav** — zusätzlich zum internen "‹ Tasting"-Header. Ein **QR-Gast** dagegen sieht (über `cs_guest_shell`) bereits eine schlanke Shell. Zwei Taster am selben Tisch sehen also unterschiedlich viel Ablenkung.
+
+Diese Änderung vereinheitlicht das: **Jeder Live-Taster** — eingeloggt wie Gast, in geführtem wie freiem Modus — bekommt den schlanken Fokus-Modus. Header und Bottom-Nav verschwinden; stattdessen oben ein **Grabber** (Sheet-Indikator) und die **CaskSense-Wortmarke** als ruhiger Anker. Der bestehende "‹ Tasting"-Ausgang und die Leave-Confirm-Logik (Dialog nur bei ungespeicherten Änderungen) **bleiben unverändert** — sie sind schon da.
+
+**Bewusst NICHT in diesem Schritt:** echte Wisch-zum-Schließen-Geste (der Grabber ist vorerst nur sichtbarer Indikator; Schließen läuft über "‹ Tasting"). Host behält keine Sonderrolle — er kommt über den vorhandenen Cockpit-Button + "‹" zurück.
+
+---
+
+## Abweichungs-Protokoll
+
+Jeder der drei ALT-Blöcke muss **exakt einmal** in der genannten Datei vorkommen. Wenn ein Block 0× oder >1× gefunden wird: **STOPP**, nichts ändern, Befund melden (Datei, Block-Nr., gefundene Anzahl). Nicht "den ähnlichsten" Block raten.
+
+---
+
+## Schritt 0 — Diagnose (NUR LESEN, nichts ändern)
+
+**Safety-Tag von Hand setzen (Christoph):**
+```bash
+git tag pre-livechrome-fokus-2026-06-13
+```
+
+Dann verifizieren:
+1. `grep -c "guestShell" client/src/labs/LabsLayout.tsx` → erwartet **3** (wird nach Edit 1 zu **0**).
+2. `grep -c "reveal-flash-overlay" client/src/labs/pages/LabsLive.tsx` → erwartet **2** (zwei Live-Header: guided + standard).
+3. `grep -c "labs-live-wordmark" client/src/labs/pages/LabsLive.tsx` → erwartet **0** (wird nach Edits 2+3 zu **2**).
+4. tsc-Baseline mit Speicher-Flag:
+```bash
+NODE_OPTIONS=--max-old-space-size=6144 npx tsc --noEmit 2>&1 | grep -c 'error TS'
+```
+→ erwartet **500**.
+
+**Plan dem User bestätigen, dann erst Schritt 1.**
+
+---
+
+## Schritt 1 — Die 3 Edits (wörtlich, exakt)
+
+### Edit 1 — `client/src/labs/LabsLayout.tsx`
+Verallgemeinert die Gast-Branch auf alle Live-Taster und entfernt die dann ungenutzte `guestShell`-Variable.
+
+**ALT:**
+```tsx
+  // Gast-Modus (WP 1): Gäste aus dem QR-Eingang sehen Lobby/Live ohne Header und Tabs.
+  let guestShell = false;
+  try { guestShell = sessionStorage.getItem("cs_guest_shell") === "1"; } catch {}
+  if (guestShell && location.startsWith("/labs/live/")) {
+    return (
+      <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`} lang={htmlLang}>
+        {children}
+      </div>
+    );
+  }
+```
+
+**NEU:**
+```tsx
+  // Live-Modus (Fokus): alle Taster -- eingeloggt wie QR-Gast -- sehen Lobby/Live ohne Header und Bottom-Nav.
+  if (location.startsWith("/labs/live/")) {
+    return (
+      <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`} lang={htmlLang}>
+        {children}
+      </div>
+    );
+  }
+```
+
+---
+
+### Edit 2 — `client/src/labs/pages/LabsLive.tsx` (geführter Zweig, `if (tasting.guidedMode)`)
+Fügt Grabber + Wortmarke über dem geführten Live-Header ein. Der "‹ Tasting"-Button und die Leave-Confirm bleiben unberührt.
+
+**ALT:**
+```tsx
+        {revealFlash && (
+          <div className="labs-reveal-flash" data-testid="reveal-flash-overlay-guided" />
+        )}
+        <div className="flex items-center justify-between mb-4">
+```
+
+**NEU:**
+```tsx
+        {revealFlash && (
+          <div className="labs-reveal-flash" data-testid="reveal-flash-overlay-guided" />
+        )}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 4, gap: 6, marginBottom: 4 }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--labs-border)", opacity: 0.5 }} data-testid="labs-live-grabber-guided" />
+          <span className="labs-h3 tracking-tight" style={{ color: "var(--labs-accent)", fontSize: 15 }} data-testid="labs-live-wordmark-guided">CaskSense</span>
+        </div>
+        <div className="flex items-center justify-between mb-4">
+```
+
+---
+
+### Edit 3 — `client/src/labs/pages/LabsLive.tsx` (Standard-Zweig, freie Bewertung)
+Gleiche Grabber+Wortmarke-Ergänzung über dem Standard-Live-Header. (Andere Einrückung — 6 statt 8 Spaces — und testid ohne `-guided`-Suffix; deshalb ein separater, eindeutiger Block.)
+
+**ALT:**
+```tsx
+      {revealFlash && (
+        <div className="labs-reveal-flash" data-testid="reveal-flash-overlay" />
+      )}
+      <div className="flex items-center justify-between mb-4">
+```
+
+**NEU:**
+```tsx
+      {revealFlash && (
+        <div className="labs-reveal-flash" data-testid="reveal-flash-overlay" />
+      )}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 4, gap: 6, marginBottom: 4 }}>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--labs-border)", opacity: 0.5 }} data-testid="labs-live-grabber" />
+        <span className="labs-h3 tracking-tight" style={{ color: "var(--labs-accent)", fontSize: 15 }} data-testid="labs-live-wordmark">CaskSense</span>
+      </div>
+      <div className="flex items-center justify-between mb-4">
+```
+
+---
+
+## Schritt 2 — Verifikation (exakte Zahlen)
+
+1. tsc erneut:
+```bash
+NODE_OPTIONS=--max-old-space-size=6144 npx tsc --noEmit 2>&1 | grep -c 'error TS'
+```
+→ muss **500** sein (unverändert zur Baseline).
+
+2. Greps:
+   - `grep -c "guestShell" client/src/labs/LabsLayout.tsx` → **0**
+   - `grep -c "Live-Modus (Fokus)" client/src/labs/LabsLayout.tsx` → **1**
+   - `grep -c "labs-live-wordmark" client/src/labs/pages/LabsLive.tsx` → **2**
+   - `grep -c "labs-live-grabber" client/src/labs/pages/LabsLive.tsx` → **2**
+
+3. Smoke-Test (Browser, Handy-Breite):
+   - Als **eingeloggter Taster** ein Live-Tasting öffnen → **keine** Bottom-Nav (4 Tabs) mehr sichtbar, **keine** große Kopfleiste mit Glocke/Avatar. Stattdessen oben: schmaler Grabber-Strich mittig + "CaskSense" darunter, dann "‹ Tasting" links.
+   - **Geführter Modus** (Host steuert Tempo) und **freier Modus** beide prüfen → beide zeigen denselben schlanken Kopf.
+   - "‹ Tasting" mit ungespeicherter Bewertung → Leave-Confirm-Dialog erscheint weiterhin ("Verlassen / Weiter bewerten"). Ohne Änderung → direkt zurück.
+   - **Verlassen** → die normale App-Chrome (Tabs, Header) ist außerhalb von `/labs/live/` wieder da.
+   - Als **Host** im Live → "Cockpit"-Button rechts weiterhin vorhanden und führt ins Host-Cockpit.
+
+---
+
+## Schritt 3 — Abschlussbericht (Pflicht)
+
+- Schritt-0-Befunde (die vier erwarteten Zahlen: guestShell 3, reveal-flash-overlay 2, wordmark 0, tsc 500).
+- 2 Dateien / 3 Edits, alle Anker exakt 1× (oder dokumentierte Abweichung).
+- Verifikations-Output (tsc 500, die vier Greps, Smoke-Ergebnis).
+- Bestätigung: **keine Commits** gesetzt, **kein Schema** berührt, **keine** Migration, **keine** neue Datei.
+
+**WICHTIG:** Nicht committen. Kein `git add`/`git commit`. Christoph reviewt und committet selbst.
