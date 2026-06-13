@@ -56,13 +56,24 @@ export default function RatingFlowV2({
 }: RatingFlowV2Props) {
   const { t } = useTranslation();
 
+  const tischSeen = useMemo(() => {
+    try {
+      if (typeof localStorage === "undefined") return true;
+      return localStorage.getItem("labs_tisch_seen") === "1";
+    } catch {
+      return true;
+    }
+  }, []);
+  const forceTischDiscovery = !!showTisch && !tischSeen && !initialMode;
+
   const resolvedInitialMode = useMemo<"guided" | "compact" | "quick" | "tisch" | null>(() => {
+    if (forceTischDiscovery) return null;
     if (initialMode && (initialMode !== "tisch" || showTisch)) return initialMode;
     if (preferredMode && (preferredMode === "guided" || preferredMode === "compact" || (preferredMode === "quick" && !hideQuick) || (preferredMode === "tisch" && !!showTisch))) {
       return preferredMode;
     }
     return null;
-  }, [initialMode, preferredMode, hideQuick, showTisch]);
+  }, [initialMode, preferredMode, hideQuick, showTisch, forceTischDiscovery]);
 
   const [mode, setMode] = useState<"guided" | "compact" | "quick" | "tisch" | null>(resolvedInitialMode);
   const [step, setStep] = useState<Step>(resolvedInitialMode ? "rating" : "mode");
@@ -75,6 +86,7 @@ export default function RatingFlowV2({
   }, [liveData]);
 
   useEffect(() => {
+    if (forceTischDiscovery) return;
     if (userPickedModeRef.current) return;
     if (initialMode) return;
     if (step !== "mode") return;
@@ -83,7 +95,17 @@ export default function RatingFlowV2({
     if (preferredMode === "tisch" && !showTisch) return;
     setMode(preferredMode);
     setStep("rating");
-  }, [preferredMode, initialMode, hideQuick, showTisch, step]);
+  }, [preferredMode, initialMode, hideQuick, showTisch, step, forceTischDiscovery]);
+
+  useEffect(() => {
+    if (step === "mode" && showTisch && typeof localStorage !== "undefined") {
+      try {
+        localStorage.setItem("labs_tisch_seen", "1");
+      } catch {
+        /* ignore storage write failures (private mode / quota) */
+      }
+    }
+  }, [step, showTisch]);
 
   const modeLabels = useMemo(() => ({
     modeQ: t("v2.ratingModeQ", "Wie moechtest du bewerten?"),
@@ -98,6 +120,7 @@ export default function RatingFlowV2({
     quickD: t("v2.ratingQuickD", "Nur Overall-Score -- zwei Taps und fertig."),
     quickH: t("v2.ratingQuickH", "Wenn es schnell gehen soll."),
     tisch: t("v2.ratingTisch", "Tisch"),
+    tischNew: t("v2.ratingTischNew", "Neu"),
     tischD: t("v2.ratingTischD", "Alle vier Dimensionen als Stufen — ein Tap pro Phase."),
     tischH: t("v2.ratingTischH", "Wenn das Gespräch wichtiger ist."),
     back: t("v2.back", "Zurueck"),
@@ -243,6 +266,7 @@ export default function RatingFlowV2({
         onBack={onBack}
         hideQuick={hideQuick}
         showTisch={showTisch}
+        tischIsNew={!!showTisch && !tischSeen}
         showRememberToggle={!!onSetPreferredMode}
       />
     );

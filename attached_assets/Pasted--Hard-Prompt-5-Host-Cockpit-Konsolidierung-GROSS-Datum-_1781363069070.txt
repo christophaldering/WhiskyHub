@@ -1,0 +1,72 @@
+# Hard Prompt #5: Host-Cockpit-Konsolidierung (GROSS)
+
+**Datum:** 13.06.2026 · **Priorität:** HOCH
+**Art:** Architektur-Umbauten. 3–5 Edits, größere Implikationen.
+
+---
+
+## Worum es geht
+
+Das Legacy-`LabsRatingPanel` (hartcodiertes Englisch, Phasen-Tabs, Flavour Studio, kein Modus-System) wird **nur in LabsHostCockpit** gerendert. Dort gibt es **auch** eine RatingFlowV2-Instanz. Resultat: **Hosts bewerten anders als Teilnehmer** — kein Tisch, gebrochenes i18n, inkonsistent.
+
+**Lösung:** Cockpit-Bewertung auf RatingFlowV2 (mit `showTisch={true}`) vereinheitlichen. Legacy-Panel stilllegen.
+
+---
+
+## Schritt 0 — Diagnose
+
+```bash
+git tag pre-5-cockpit-konsolidierung-2026-06-13
+```
+
+1. LabsHostCockpit.tsx: Zwei Rating-Komponenten nebeneinander?
+   - Legacy `LabsRatingPanel` (Zeile ~2886)
+   - RatingFlowV2 (Zeile ~3597)
+2. Bedingung: welche wird gerendert?
+3. **Ziel:** Nur RatingFlowV2, `showTisch={true}`, vollständige i18n, Modus-Chip.
+
+---
+
+## Schritt 1 — Edits
+
+### Datei: `client/src/labs/pages/LabsHostCockpit.tsx`
+
+**Edit 1 — LabsRatingPanel-Render auskommentieren/entfernen**
+
+Finde die Stelle, wo LabsRatingPanel gerendert wird (Zeile ~2886). Entferne oder `{false && ( ... )}`.
+
+**Edit 2 — RatingFlowV2 als einzige Bewertungs-UI**
+
+Stelle sicher, dass RatingFlowV2 an Zeile ~3597 gerendert wird mit:
+```typescript
+<RatingFlowV2
+  showTisch={true}
+  scale={hostScale}
+  // ... rest
+/>
+```
+
+**Edit 3 — Englische Fallback-Komponente (optional)**
+
+Falls es noch andere englische Panels gibt (z.B. Flavour Studio), überprüfen und ggf. auf i18n-Keys umstellen.
+
+---
+
+## Schritt 2 — Verifikation
+
+1. tsc → ohne neue Fehler.
+2. Host-Cockpit öffnen:
+   - My Rating: RatingFlowV2 gerendert (Modus-Chip, DE-Text) ✓
+   - Modus-Chip: Tisch sollte erste Option sein ✓
+   - Kein Englisch sichtbar ✓
+3. Vergleich Gast vs. Host: Beide nutzen jetzt RatingFlowV2 ✓
+
+---
+
+## Schritt 3 — Abschlussbericht
+
+Schritt-0-Befunde, 2–3 Edits, Verifikations-Output, Bestätigung.
+
+**WICHTIG:** Das ist eine Breaking Change. Alle UI-Tests, die LabsHostCockpit verwenden, müssen überprüft werden.
+
+**Nebeneffekt:** Das alte LabsRatingPanel könnte jetzt ganz aus dem Projekt entfernt werden (aber nicht in diesem Prompt).

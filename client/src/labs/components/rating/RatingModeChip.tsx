@@ -68,7 +68,7 @@ export default function RatingModeChip({ mode, hideQuick, showTisch, labels, all
         position: "absolute",
         top: SP.md,
         right: SP.md,
-        zIndex: 12,
+        zIndex: 30,
       }}
     >
       <button
@@ -106,6 +106,7 @@ export default function RatingModeChip({ mode, hideQuick, showTisch, labels, all
             position: "absolute",
             top: "calc(100% + 6px)",
             right: 0,
+            zIndex: 31,
             minWidth: 220,
             background: "var(--labs-surface-elevated)",
             border: "1px solid var(--labs-border)",

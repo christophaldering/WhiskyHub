@@ -455,6 +455,17 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
     },
   });
 
+  const duplicateMutation = useMutation({
+    mutationFn: () => tastingApi.duplicate(tastingId, currentParticipant?.id || ""),
+    onSuccess: (created: any) => {
+      queryClient.invalidateQueries({ queryKey: ["tastings"] });
+      if (created?.id) navigate(`/labs/host/${created.id}`);
+    },
+    onError: (e: any) => {
+      window.alert(e?.message || t("tastingDetail.duplicateFailed", "Tasting konnte nicht dupliziert werden"));
+    },
+  });
+
   useEffect(() => {
     if (tasting?.code) {
       const joinUrl = `${window.location.origin}/labs/join?code=${tasting.code}`;
@@ -1935,6 +1946,47 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 style={{ fontSize: 12, padding: "6px 10px" }}
               >
                 {t("resultsUi.hostToolsManageTasters", "Taster verwalten")}
+              </button>
+            </div>
+
+            <div
+              className="labs-card"
+              data-testid="host-action-duplicate"
+              style={{
+                padding: 14, background: "var(--labs-surface-elevated)",
+                border: "1px solid var(--labs-border)",
+                display: "flex", flexDirection: "column", gap: 10,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                  background: "var(--labs-accent-muted)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <Copy className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>
+                    {t("tastingDetail.duplicate", "Tasting duplizieren")}
+                  </p>
+                  <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
+                    {t("tastingDetail.duplicateSubtitle", "Neue Kopie inkl. Lineup als Entwurf anlegen")}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="labs-btn-secondary"
+                onClick={() => duplicateMutation.mutate()}
+                disabled={duplicateMutation.isPending}
+                data-testid="host-action-duplicate-open"
+                style={{ fontSize: 12, padding: "6px 10px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+              >
+                {duplicateMutation.isPending
+                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  : <Copy className="w-3.5 h-3.5" />}
+                {t("tastingDetail.duplicate", "Tasting duplizieren")}
               </button>
             </div>
 

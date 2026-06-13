@@ -214,12 +214,6 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
   const [restartConfirmText, setRestartConfirmText] = useState("");
   const [isDeletingTasting, setIsDeletingTasting] = useState(false);
   const [hostRatingIdx, setHostRatingIdx] = useState(0);
-  const [cockpitWizard, setCockpitWizard] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("labs-cockpit-wizard-mode") === "true";
-    }
-    return false;
-  });
   const [showInviteSection, setShowInviteSection] = useState(false);
   const [showSettingsSection, setShowSettingsSection] = useState(false);
 
@@ -3568,26 +3562,6 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
           </div>
           {!isDraft && (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button
-              type="button"
-              onClick={() => {
-                const next = !cockpitWizard;
-                setCockpitWizard(next);
-                localStorage.setItem("labs-cockpit-wizard-mode", String(next));
-              }}
-              style={{
-                display: "flex", alignItems: "center", gap: 4,
-                padding: "3px 8px", borderRadius: 6,
-                border: "1px solid var(--labs-border)",
-                background: cockpitWizard ? "var(--labs-accent-muted)" : "transparent",
-                color: cockpitWizard ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-              }}
-              data-testid="cockpit-wizard-toggle"
-            >
-              <Sliders style={{ width: 10, height: 10 }} />
-              {cockpitWizard ? t("cockpitUi.wizard") : t("cockpitUi.compact")}
-            </button>
             {saving && (
               <span style={{ fontSize: 11, color: "var(--labs-accent)", display: "flex", alignItems: "center", gap: 4 }}>
                 <Loader2 style={{ width: 10, height: 10, animation: "spin 1s linear infinite" }} />

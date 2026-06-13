@@ -16,6 +16,7 @@ interface RatingLabels {
   quickD?: string;
   quickH?: string;
   tisch?: string;
+  tischNew?: string;
   tischD?: string;
   tischH?: string;
   back: string;
@@ -28,10 +29,11 @@ interface RatingModeSelectProps {
   onBack: () => void;
   hideQuick?: boolean;
   showTisch?: boolean;
+  tischIsNew?: boolean;
   showRememberToggle?: boolean;
 }
 
-export default function RatingModeSelect({ labels, onSelect, onBack, hideQuick, showTisch, showRememberToggle }: RatingModeSelectProps) {
+export default function RatingModeSelect({ labels, onSelect, onBack, hideQuick, showTisch, tischIsNew, showRememberToggle }: RatingModeSelectProps) {
   const [remember, setRemember] = useState(false);
   const allCards: Array<{
     mode: "guided" | "compact" | "quick" | "tisch";
@@ -127,13 +129,35 @@ export default function RatingModeSelect({ labels, onSelect, onBack, hideQuick, 
               <PhaseSignature phaseId={phaseId} size="large" />
               <div style={{ flex: 1 }}>
                 <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: SP.sm,
                   fontFamily: FONT.display,
                   fontSize: 20,
                   fontWeight: 600,
                   color: "var(--labs-text)",
                   marginBottom: SP.xs,
                 }}>
-                  {title}
+                  <span>{title}</span>
+                  {mode === "tisch" && tischIsNew && labels.tischNew && (
+                    <span
+                      data-testid="badge-tisch-new"
+                      style={{
+                        fontFamily: FONT.body,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        padding: "2px 7px",
+                        borderRadius: RADIUS.full,
+                        background: "var(--labs-accent-muted)",
+                        color: "var(--labs-accent)",
+                        border: "1px solid var(--labs-accent)",
+                      }}
+                    >
+                      {labels.tischNew}
+                    </span>
+                  )}
                 </div>
                 <div style={{
                   fontFamily: FONT.body,

@@ -1213,6 +1213,7 @@ function MobileCompanion({
   const [mobileAiLoading, setMobileAiLoading] = useState(false);
   const mobileAiLoadingRef = useRef(false);
   const [mobileAiResults, setMobileAiResults] = useState<any[]>([]);
+  const [mobileAiImageUrls, setMobileAiImageUrls] = useState<string[]>([]);
   const [mobileAiSelected, setMobileAiSelected] = useState<Set<number>>(new Set());
   const [mobileDragOver, setMobileDragOver] = useState(false);
   const [confirmEndSession, setConfirmEndSession] = useState(false);
@@ -1365,6 +1366,7 @@ function MobileCompanion({
       }
       if (parsedWhiskies && parsedWhiskies.length > 0) {
         setMobileAiResults(parsedWhiskies);
+        setMobileAiImageUrls([]);
         const existingList = (whiskies || []) as Array<Record<string, unknown>>;
         const nonDupeIndices = new Set(
           parsedWhiskies.map((_: any, i: number) => i).filter((i: number) =>
@@ -1378,6 +1380,7 @@ function MobileCompanion({
         const result = await tastingApi.aiImport(mobileAiFiles, mobileAiText.trim(), pid);
         if (result?.whiskies?.length) {
           setMobileAiResults(result.whiskies);
+          setMobileAiImageUrls(result.imageUrls || []);
           const existingList = (whiskies || []) as Array<Record<string, unknown>>;
           const nonDupeIndices = new Set(
             result.whiskies.map((_: any, i: number) => i).filter((i: number) =>
@@ -1412,6 +1415,10 @@ function MobileCompanion({
     const dupeIndices = getMobileDuplicateIndices();
     const duplicatesSkipped = Array.from(dupeIndices).filter(i => !mobileAiSelected.has(i)).length;
     const existingList = (whiskies || []) as Array<Record<string, unknown>>;
+    // Conservative single-bottle case: exactly one photo identified exactly one whisky.
+    const singlePhotoUrl = (mobileAiImageUrls.length === 1 && mobileAiResults.length === 1)
+      ? mobileAiImageUrls[0]
+      : null;
     for (const idx of Array.from(mobileAiSelected)) {
       const w = mobileAiResults[idx];
       if (w) {
@@ -1419,6 +1426,7 @@ function MobileCompanion({
         try {
           await whiskyApi.create({
             tastingId,
+            imageUrl: singlePhotoUrl || "",
             name: w.name || "",
             distillery: w.distillery || "",
             abv: normalizeAbv(w.abv),
@@ -1445,6 +1453,7 @@ function MobileCompanion({
     queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
     setMobileAiSummary({ added, duplicatesAdded: dupeAdded, duplicatesSkipped, failed: fail });
     setMobileAiResults([]);
+    setMobileAiImageUrls([]);
     setMobileAiSelected(new Set());
     if (fail === 0) {
       setMobileAiFiles([]);
@@ -1681,7 +1690,7 @@ function MobileCompanion({
               <div className="flex items-center gap-2 px-4 py-3" style={{ background: "color-mix(in srgb, var(--labs-accent) 8%, transparent)", borderBottom: "1px solid color-mix(in srgb, var(--labs-accent) 15%, transparent)" }}>
                 <Sparkles className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
                 <span className="text-sm font-semibold flex-1" style={{ color: "var(--labs-text)" }}>{t("hostUi.aiImport")}</span>
-                <button className="labs-btn-ghost text-xs" onClick={() => { setMobileAiImport(false); setMobileAiFiles([]); setMobileAiText(""); setMobileAiResults([]); setMobileAiError(""); }} style={{ padding: "2px 6px" }}>
+                <button className="labs-btn-ghost text-xs" onClick={() => { setMobileAiImport(false); setMobileAiFiles([]); setMobileAiText(""); setMobileAiResults([]); setMobileAiImageUrls([]); setMobileAiError(""); }} style={{ padding: "2px 6px" }}>
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -5160,6 +5169,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const [aiImportLoading, setAiImportLoading] = useState(false);
   const aiImportLoadingRef = useRef(false);
   const [aiImportResults, setAiImportResults] = useState<any[]>([]);
+  const [aiImportImageUrls, setAiImportImageUrls] = useState<string[]>([]);
   const [aiImportSelected, setAiImportSelected] = useState<Set<number>>(new Set());
   const [showCollectionImport, setShowCollectionImport] = useState(false);
   const [showWishlistImport, setShowWishlistImport] = useState(false);
@@ -5330,6 +5340,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       }
       if (parsedWhiskies && parsedWhiskies.length > 0) {
         setAiImportResults(parsedWhiskies);
+        setAiImportImageUrls([]);
         const existingList = (whiskies || []) as Array<Record<string, unknown>>;
         const nonDupeIndices = new Set(
           parsedWhiskies.map((_: any, i: number) => i).filter((i: number) =>
@@ -5343,6 +5354,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         const result = await tastingApi.aiImport(aiImportFiles, aiImportText.trim(), currentParticipant?.id || "");
         if (result?.whiskies?.length) {
           setAiImportResults(result.whiskies);
+          setAiImportImageUrls(Array.isArray(result.imageUrls) ? result.imageUrls : []);
           const existingList = (whiskies || []) as Array<Record<string, unknown>>;
           const nonDupeIndices = new Set(
             result.whiskies.map((_: any, i: number) => i).filter((i: number) =>
@@ -5377,6 +5389,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     const dupeIndices = getDesktopDuplicateIndices();
     const duplicatesSkipped = Array.from(dupeIndices).filter(i => !aiImportSelected.has(i)).length;
     const existingList = (whiskies || []) as Array<Record<string, unknown>>;
+    const singlePhotoUrl = (aiImportImageUrls.length === 1 && aiImportResults.length === 1) ? aiImportImageUrls[0] : "";
     for (const idx of Array.from(aiImportSelected)) {
       const w = aiImportResults[idx];
       if (w) {
@@ -5401,6 +5414,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             whiskybaseId: w.whiskybaseId || "",
             notes: w.notes || "",
             hostSummary: w.hostSummary || "",
+            imageUrl: singlePhotoUrl || "",
             sortOrder: w.sortOrder ? parseInt(w.sortOrder) || ((whiskies?.length || 0) + added + dupeAdded + 1) : ((whiskies?.length || 0) + added + dupeAdded + 1),
           });
           if (isDupe) dupeAdded++; else added++;
@@ -5412,6 +5426,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
     setAiImportSummary({ added, duplicatesAdded: dupeAdded, duplicatesSkipped, failed });
     setAiImportResults([]);
+    setAiImportImageUrls([]);
     setAiImportSelected(new Set());
     setAiImportFiles([]);
     setAiImportText("");
@@ -6852,7 +6867,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               data-testid="labs-ai-import-text"
             />
             <div className="flex gap-2 justify-end">
-              <button className="labs-btn-ghost text-sm" onClick={() => { setShowAiImport(false); setAiImportFiles([]); setAiImportText(""); setAiImportResults([]); setAiImportError(""); setAiImportSummary(null); }}>{t("m2.host.cancel")}</button>
+              <button className="labs-btn-ghost text-sm" onClick={() => { setShowAiImport(false); setAiImportFiles([]); setAiImportText(""); setAiImportResults([]); setAiImportImageUrls([]); setAiImportError(""); setAiImportSummary(null); }}>{t("m2.host.cancel")}</button>
               <button
                 className="labs-btn-primary text-sm flex items-center gap-1.5"
                 onClick={handleAiImport}

@@ -19549,6 +19549,7 @@ If the user data includes a "hostContext" field, treat it as additional creative
 
       let excelResult: { whiskies: any[]; tastingMeta: any; hostNotes: Record<number, string> } | null = null;
       const imageContents: { type: "image_url"; image_url: { url: string } }[] = [];
+      const uploadedImageUrls: string[] = [];
       let textContent = pastedText.trim();
 
       for (const file of files) {
@@ -19577,6 +19578,12 @@ If the user data includes a "hostContext" field, treat it as additional creative
             type: "image_url",
             image_url: { url: `data:${file.mimetype};base64,${base64}` },
           });
+          try {
+            const storedUrl = await uploadBufferToObjectStorage(objectStorage, file.buffer, file.mimetype);
+            if (storedUrl) uploadedImageUrls.push(storedUrl);
+          } catch (persistErr) {
+            console.warn("[ai-import] image persist failed", persistErr);
+          }
         } else if (ext === ".pdf" || file.mimetype === "application/pdf") {
           const { extractTextFromPdf } = await import("./pdf-utils");
           const pdfText = await extractTextFromPdf(file.buffer);
@@ -19709,6 +19716,7 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
       return res.json({
         whiskies: parsed.whiskies || [],
         tastingMeta: parsed.tastingMeta || {},
+        imageUrls: uploadedImageUrls,
         source: "ai",
       });
     } catch (e: any) {

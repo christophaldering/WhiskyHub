@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { SP, FONT } from "./theme";
 import type { PhaseId } from "./types";
 import type { RatingScale } from "@/labs/hooks/useRatingScale";
+import { TISCH_ANCHORS, anchorToScale } from "./tischAnchors";
 
 function getBandColor(score: number, scaleMax: number): string {
   const pctValue = scaleMax > 0 ? (score / scaleMax) * 100 : 0;
@@ -323,6 +324,59 @@ export default function ScoreInput({ value, onChange, phaseId, labels, scale }: 
             {formatScore(qp)}
           </button>
         ))}
+      </div>
+
+      <div
+        data-testid="score-band-legend"
+        style={{ display: "flex", gap: 4, marginTop: SP.sm }}
+      >
+        {[...TISCH_ANCHORS].reverse().map((a) => {
+          const target = anchorToScale(a.value100, cfg.max, cfg.step);
+          const isActive = Math.abs(target - value) < cfg.step / 2;
+          return (
+            <button
+              key={a.bandKey}
+              data-testid={`score-band-${a.bandKey}`}
+              onClick={() => onChange(target)}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                padding: "5px 2px",
+                borderRadius: 8,
+                cursor: "pointer",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 1,
+                lineHeight: 1.15,
+                border: isActive ? `1.5px solid ${accent}` : "1px solid var(--labs-border)",
+                background: isActive ? dim : "transparent",
+                transition: "all 0.15s",
+              }}
+            >
+              <span style={{
+                fontFamily: FONT.body,
+                fontSize: 10,
+                fontWeight: 600,
+                color: isActive ? accent : "var(--labs-text)",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                maxWidth: "100%",
+              }}>
+                {labels[a.bandKey]}
+              </span>
+              <span style={{
+                fontFamily: FONT.body,
+                fontSize: 9,
+                fontWeight: 500,
+                color: "var(--labs-text-secondary)",
+              }}>
+                {formatScore(target)}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
