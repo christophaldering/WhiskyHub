@@ -26,8 +26,9 @@ full empty objects = data loss.
 `handleChange` emitting the merged snapshot, (2) `TischRating.buildData` passing
 `initialData.tags` through instead of empty arrays.
 
-**How to apply / still open:** `QuickRating` still emits full empty `tags` + empty
-nose/palate/finish `notes` on both its `onChange` and `onDone`, so switching to Quick
-and saving can still wipe prior aromas/notes (latent pre-existing; also affects the
-guided branch). Fix QuickRating to preserve `initialData` fields before treating any
-rating-mode re-entry as safe.
+**How to apply:** every rating subview is now non-destructive — Tisch/Compact pass
+`initialData` through, and `QuickRating` builds its payload via `buildQuickData`, which
+keeps `initialData` scores/tags/detail-notes and only updates overall score + overall
+note. All four modes (Quick/Eindruck/Kompakt/Geführt) preserve data on re-rating. If a
+new rating subview is added, it MUST seed unowned fields from `initialData` rather than
+emitting empties, or the per-category merge + auto-save will wipe saved data.

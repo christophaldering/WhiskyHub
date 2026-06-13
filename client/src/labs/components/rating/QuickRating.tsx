@@ -46,13 +46,26 @@ export default function QuickRating({ labels, whisky, initialData, onDone, onBac
   const [score, setScore] = useState(initialData?.scores?.overall ?? defaultScore);
   const [note, setNote] = useState(initialData?.notes?.overall ?? "");
 
+  // Nicht-destruktiv: nur Gesamtnote + -notiz aktualisieren; vorhandene Detail-Scores, Aromen und Detail-Notizen aus initialData behalten.
+  const buildQuickData = (overallScore: number, overallNote: string): RatingData => ({
+    scores: {
+      nose: initialData?.scores?.nose ?? defaultScore,
+      palate: initialData?.scores?.palate ?? defaultScore,
+      finish: initialData?.scores?.finish ?? defaultScore,
+      overall: overallScore,
+    },
+    tags: initialData?.tags ?? { nose: [], palate: [], finish: [], overall: [] },
+    notes: {
+      nose: initialData?.notes?.nose ?? "",
+      palate: initialData?.notes?.palate ?? "",
+      finish: initialData?.notes?.finish ?? "",
+      overall: overallNote,
+    },
+    overallExplicit: true,
+  });
+
   const handleSave = () => {
-    onDone({
-      scores: { nose: defaultScore, palate: defaultScore, finish: defaultScore, overall: score },
-      tags: { nose: [], palate: [], finish: [], overall: [] },
-      notes: { nose: "", palate: "", finish: "", overall: note },
-      overallExplicit: true,
-    });
+    onDone(buildQuickData(score, note));
   };
 
   const accent = "var(--labs-phase-overall)";
@@ -117,7 +130,7 @@ export default function QuickRating({ labels, whisky, initialData, onDone, onBac
           value={score}
           onChange={(v) => {
             setScore(v);
-            onChange?.(0, { scores: { nose: defaultScore, palate: defaultScore, finish: defaultScore, overall: v }, notes: { nose: "", palate: "", finish: "", overall: note } });
+            onChange?.(0, buildQuickData(v, note));
           }}
           phaseId="overall"
           labels={labels}
@@ -135,7 +148,7 @@ export default function QuickRating({ labels, whisky, initialData, onDone, onBac
           value={note}
           onChange={(e) => {
             setNote(e.target.value);
-            onChange?.(0, { scores: { nose: defaultScore, palate: defaultScore, finish: defaultScore, overall: score }, notes: { nose: "", palate: "", finish: "", overall: e.target.value } });
+            onChange?.(0, buildQuickData(score, e.target.value));
           }}
           placeholder={labels.notePH}
           style={{

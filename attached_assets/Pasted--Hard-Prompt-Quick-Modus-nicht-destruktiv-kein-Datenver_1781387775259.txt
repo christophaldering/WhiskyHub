@@ -1,0 +1,117 @@
+# Hard Prompt — Quick-Modus nicht-destruktiv (kein Datenverlust beim Re-Rating)
+
+## Ziel
+Im **Quick-Modus** (`QuickRating.tsx`) überschreibt das Speichern bisher die Detail-Scores (Nase/Gaumen/Abgang) mit dem Default-Wert und setzt Aromen + Detail-Notizen auf leer — Quick erfasst ja nur die Gesamtnote. Beim **Re-Rating** eines bereits detailliert bewerteten Drams gehen dadurch die vorhandenen Detail-Daten verloren.
+
+**Entscheidung:** Quick wird **nicht-destruktiv**. Es aktualisiert nur die **Gesamtnote** und die **Gesamt-Notiz**; vorhandene Detail-Scores, Aromen und Detail-Notizen aus `initialData` bleiben unangetastet.
+
+**Nur eine Datei:** `client/src/labs/components/rating/QuickRating.tsx`. Umsetzung über einen kleinen Helfer `buildQuickData`, der an allen drei Stellen (1× `onDone`, 2× `onChange`) das bisherige Inline-Objekt ersetzt.
+
+> **Hinweis zu CompactRating:** bereits geprüft — **kein Handlungsbedarf**. Compact lädt Scores, Aromen und Notizen aus `initialData` und reicht sie durch; es ist schon nicht-destruktiv. Tisch wurde im vorigen Schritt gefixt. Damit sind nach diesem Prompt **alle vier Modi** (Quick/Eindruck/Kompakt/Geführt) datenerhaltend.
+
+---
+
+## Schritt 0 — Diagnose (vor jeder Änderung)
+```bash
+grep -n "nose: defaultScore, palate: defaultScore" client/src/labs/components/rating/QuickRating.tsx   # erwartet: 3 Treffer
+grep -n "buildQuickData" client/src/labs/components/rating/QuickRating.tsx                              # erwartet: 0
+grep -n "import type { RatingData }" client/src/labs/components/rating/QuickRating.tsx                  # erwartet: 1 (Typ vorhanden)
+```
+3 Überschreibungs-Stellen, noch kein `buildQuickData`, `RatingData` importiert. Sonst STOPP + melden.
+
+---
+
+## Edit 1 — Helfer `buildQuickData` einfügen
+**FIND:**
+```tsx
+  const [note, setNote] = useState(initialData?.notes?.overall ?? "");
+```
+**REPLACE:**
+```tsx
+  const [note, setNote] = useState(initialData?.notes?.overall ?? "");
+
+  // Nicht-destruktiv: nur Gesamtnote + -notiz aktualisieren; vorhandene Detail-Scores, Aromen und Detail-Notizen aus initialData behalten.
+  const buildQuickData = (overallScore: number, overallNote: string): RatingData => ({
+    scores: {
+      nose: initialData?.scores?.nose ?? defaultScore,
+      palate: initialData?.scores?.palate ?? defaultScore,
+      finish: initialData?.scores?.finish ?? defaultScore,
+      overall: overallScore,
+    },
+    tags: initialData?.tags ?? { nose: [], palate: [], finish: [], overall: [] },
+    notes: {
+      nose: initialData?.notes?.nose ?? "",
+      palate: initialData?.notes?.palate ?? "",
+      finish: initialData?.notes?.finish ?? "",
+      overall: overallNote,
+    },
+    overallExplicit: true,
+  });
+```
+
+## Edit 2 — `onDone` umstellen
+**FIND:**
+```tsx
+    onDone({
+      scores: { nose: defaultScore, palate: defaultScore, finish: defaultScore, overall: score },
+      tags: { nose: [], palate: [], finish: [], overall: [] },
+      notes: { nose: "", palate: "", finish: "", overall: note },
+      overallExplicit: true,
+    });
+```
+**REPLACE:**
+```tsx
+    onDone(buildQuickData(score, note));
+```
+
+## Edit 3 — `onChange` am Score-Slider umstellen
+**FIND:**
+```tsx
+            onChange?.(0, { scores: { nose: defaultScore, palate: defaultScore, finish: defaultScore, overall: v }, notes: { nose: "", palate: "", finish: "", overall: note } });
+```
+**REPLACE:**
+```tsx
+            onChange?.(0, buildQuickData(v, note));
+```
+
+## Edit 4 — `onChange` am Notiz-Feld umstellen
+**FIND:**
+```tsx
+            onChange?.(0, { scores: { nose: defaultScore, palate: defaultScore, finish: defaultScore, overall: score }, notes: { nose: "", palate: "", finish: "", overall: e.target.value } });
+```
+**REPLACE:**
+```tsx
+            onChange?.(0, buildQuickData(score, e.target.value));
+```
+
+---
+
+## Sicherheitsregeln
+- Nur `client/src/labs/components/rating/QuickRating.tsx`. Sonst nichts.
+- `shared/schema.ts` nicht berühren. Keine Migrationen. Keine Routen löschen.
+- CompactRating/TischRating/RatingFlowV2 **nicht** anfassen.
+
+---
+
+## Verifikation (ausführen + Ausgabe berichten)
+```bash
+grep -c "const buildQuickData" client/src/labs/components/rating/QuickRating.tsx        # 1
+grep -c "buildQuickData(" client/src/labs/components/rating/QuickRating.tsx             # 4 (1 Def + 3 Aufrufe)
+grep -c "nose: defaultScore, palate: defaultScore" client/src/labs/components/rating/QuickRating.tsx  # 0
+NODE_OPTIONS='--max-old-space-size=6144' npx tsc --noEmit 2>&1 | grep -E "QuickRating"  # leer (kein Fehler)
+```
+Erwartung: `buildQuickData` 1× definiert + 3× genutzt, keine `defaultScore`-Überschreibung mehr, **kein** tsc-Fehler in QuickRating.
+
+---
+
+## Smoke-Test (manuell) — Fokus Datenerhalt
+1. Ein Dram detailliert bewerten (Eindruck oder Kompakt): Nase/Gaumen/Abgang + Aromen + Notiz. Speichern.
+2. **Auf Quick wechseln** (Modus-Chip) und die **Gesamtnote ändern** → speichern.
+3. Zurück auf Eindruck/Kompakt (oder Reload): **Detail-Scores, Aromen und Notizen sind unverändert** erhalten, nur die Gesamtnote ist neu.
+4. Erst-Rating direkt im Quick-Modus (Dram ohne Vorbewertung) → funktioniert wie bisher (Detail-Scores auf Default, das ist korrekt).
+
+---
+
+## ⛔ Commit-Verbot
+- **NICHT committen, NICHT pushen.** Kein `git add/commit/push`, keine Tags.
+- Nach Abschluss nur Verifikations-Ausgaben berichten und auf Freigabe warten.
