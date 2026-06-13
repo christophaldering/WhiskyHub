@@ -266,6 +266,7 @@ function GuidedStepView({
 
   const handleGuidedDraftChange = useCallback((draft: RatingFlowDraftState) => {
     if (!activeWhisky?.id) return;
+    if (draft.mode) setSessionRatingMode(draft.mode);
     guidedDirtyRef.current = true;
     onUnsavedChange?.(true);
     saveGroupDraft({
@@ -371,6 +372,8 @@ function GuidedStepView({
   const rawPreferred = participantData?.preferredRatingMode;
   const preferredRatingModeFromProfile: "guided" | "compact" | "quick" | "tisch" | null =
     rawPreferred === "guided" || rawPreferred === "compact" || rawPreferred === "quick" || rawPreferred === "tisch" ? rawPreferred : null;
+
+  const [sessionRatingMode, setSessionRatingMode] = useState<"guided" | "compact" | "quick" | "tisch" | null>(null);
 
   const { toast: liveToast } = useToast();
   const handleSetPreferredMode = useCallback(async (m: "guided" | "compact" | "quick" | "tisch" | null) => {
@@ -662,7 +665,7 @@ function GuidedStepView({
               setDramTransitionKey(k => k + 1);
             }}
             onChange={handleGuidedDraftChange}
-            preferredMode={preferredRatingModeFromProfile}
+            preferredMode={sessionRatingMode ?? preferredRatingModeFromProfile}
             onSetPreferredMode={handleSetPreferredMode}
             showTisch={true}
           />

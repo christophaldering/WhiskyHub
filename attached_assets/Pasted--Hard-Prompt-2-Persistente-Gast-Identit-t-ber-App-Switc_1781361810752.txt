@@ -1,0 +1,86 @@
+# Hard Prompt #2: Persistente Gast-Identität über App-Switches
+
+**Datum:** 13.06.2026 · **Priorität:** NORMAL
+**Art:** LocalStorage + SessionStorage + URL-Fallback. 3–4 Edits.
+
+---
+
+## Worum es geht
+
+Praxisbefund (Angie, Penta-Circle): Gast loggt sich als ultra-Gast ein, wechselt zu anderen Apps, CaskSense wird aus RAM entfernt. Bei Rückkehr ist die Session weg (localStorage ist flüchtig über App-Switches). Gast meldet sich neu an → **Mehrfach-Account, alte Votings weg.**
+
+**Lösung:** Rejoin-Code persistenter speichern + Smart-Rückkehr-Dialog.
+
+---
+
+## Schritt 0 — Diagnose
+
+```bash
+git tag pre-2-gast-rejoin-2026-06-13
+```
+
+1. Aktueller Rejoin-Code: `cs_guest_rejoin_{tastingId}` in localStorage.
+2. localStorage ist **nicht persistent** über App-Wechsel/Browser-Kill auf iOS/Android.
+3. Neue Strategie: triple-redundancy:
+   - localStorage (schnell, wenn verfügbar)
+   - SessionStorage (länger persistent)
+   - URL-Parameter `?rejoin={code}` (Fallback, wenn URL geteilt/gescannt)
+
+---
+
+## Schritt 1 — Edits
+
+### Datei: `client/src/pages/guest-welcome.tsx` + `client/src/lib/useGuestSession.ts`
+
+**Edit 1 — guest-welcome.tsx: Bei Eintritt Rejoin-Code in URL speichern**
+
+```typescript
+const rejoinCode = new URLSearchParams(window.location.search).get("rejoin");
+if (rejoinCode && !userName) {
+  // Auto-Rejoin: Gast erkannt, Rückkehr-Dialog zeigen
+  setShowRejoinDialog(true);
+}
+```
+
+**Edit 2 — useGuestSession.ts: Rejoin-Code triple speichern**
+
+```typescript
+const saveRejoinCode = (code: string, tastingId: string) => {
+  localStorage.setItem(`cs_guest_rejoin_${tastingId}`, code);
+  sessionStorage.setItem(`cs_guest_rejoin_${tastingId}`, code);
+  // URL bei Beiritt: casksense.com/welcome/{id}?rejoin={code}
+};
+```
+
+**Edit 3 — guest-welcome.tsx: Rückkehr-Dialog**
+
+```typescript
+{showRejoinDialog && (
+  <div className="labs-card">
+    <h2>Du warst hier schon — weitermachen?</h2>
+    <p>Deine Bewertungen sind noch da.</p>
+    <button onClick={() => rejoinTasting(rejoinCode)}>Ja, weitermachen</button>
+    <button onClick={() => setShowRejoinDialog(false)}>Neu anfangen</button>
+  </div>
+)}
+```
+
+---
+
+## Schritt 2 — Verifikation
+
+1. tsc → 500.
+2. Gast-Flow:
+   - QR scannen → /welcome/{id} → Name eintragen → Lobby ✓
+   - **URL sollte jetzt ?rejoin={code} enthalten** ✓
+   - App-Wechsel: zu WhatsApp, zurück zu CaskSense ✓
+   - Dialog "Du warst hier schon?" erscheint ✓
+   - Antippen "Ja" → alte Votings sind da ✓
+
+---
+
+## Schritt 3 — Abschlussbericht
+
+Schritt-0-Befunde, 3 Edits, Verifikations-Output.
+
+**Nebeneffekt:** Mehrfach-Angies sind damit verhindert.

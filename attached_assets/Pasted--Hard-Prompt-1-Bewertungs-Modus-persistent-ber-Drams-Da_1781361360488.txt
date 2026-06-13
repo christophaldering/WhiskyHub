@@ -1,0 +1,79 @@
+# Hard Prompt #1: Bewertungs-Modus persistent über Drams
+
+**Datum:** 13.06.2026 · **Priorität:** NORMAL
+**Art:** Logik-Anpassung in RatingFlowV2. 2–3 Edits, TypeScript.
+
+---
+
+## Worum es geht
+
+Nach jedem Dram-Freischalten wird die Vier-Karten-Auswahl (Tisch/Geführt/Kompakt/Quick) erneut gezeigt, obwohl der Gast bereits einen Modus gewählt hat. Das ist UX-Reibung. Der Modus sollte gespeichert bleiben und nur beim **ersten Dram** oder **auf Wunsch** wechselbar sein.
+
+**Praxisbefund:** Penta-Circle-Tasting, 12 Drams, jeder Gast wurde 12× gefragt. Führt zu Ermüdung.
+
+---
+
+## Schritt 0 — Diagnose
+
+```bash
+git tag pre-1-modus-persistierung-2026-06-13
+```
+
+1. RatingFlowV2-Props: `initialMode` existiert und wird geladen (✓ bereits da).
+2. RatingModeChip wird gerendert, wenn `initialMode` **nicht** gespeichert ist → Karten zeigen.
+3. Wenn Gast einen Modus wählt, wird dieser in Draft gespeichert (via onChange-Handler).
+4. **Problem:** Beim nächsten Dram-Wechsel wird `initialMode` nicht geladen, sondern die Auswahl gezeigt.
+
+**Lösung:** `RatingFlowV2` prüft: wenn `initialMode` gespeichert (=nicht null/undefined), dann direkt in diesen Modus, Auswahl skip.
+
+**tsc-Baseline:** 500.
+
+---
+
+## Schritt 1 — Edits
+
+### Datei: `client/src/labs/components/rating/RatingFlowV2.tsx`
+
+**Edit 1 — Zeile ~50–80: initialMode-Logik verstärken**
+
+Alter Ablauf: `initialMode` wird gelesen, aber wenn nur Slug vorhanden (keine explizite Mode-Prop), zeigt Chip die Auswahl.
+
+Neuer Ablauf: Wenn `initialMode` != null und gültig (guided/compact/quick/tisch), **springe direkt in diesen Mode**, skip card selection.
+
+Konkret: In `useEffect` der `phaseIndex`-Logik prüfen:
+```typescript
+useEffect(() => {
+  if (initialMode && !cardSelectionDismissed) {
+    setPhaseIndex(0);
+    setMode(initialMode); // direkt laden
+    setCardSelectionDismissed(true); // Auswahl nicht zeigen
+  }
+}, [initialMode]);
+```
+
+**Edit 2 — Zeile ~XXX: Karten-Auswahl nur zeigen, wenn initialMode null UND keine Pref gespeichert**
+
+```typescript
+const shouldShowCardSelection = !initialMode && !preferredRatingMode;
+return shouldShowCardSelection ? <FourCards /> : <RatingFlow mode={...} />;
+```
+
+---
+
+## Schritt 2 — Verifikation
+
+1. tsc → 500.
+2. Setup-Test:
+   - Dram 1: Vier-Karten-Auswahl erscheint ✓
+   - Gast wählt „Tisch" ✓
+   - Dram 2: Direkt im Tisch-Modus, **kein Card-Selection-Screen** ✓
+   - Dram 3–12: Tisch bleibt, ohne Fragen ✓
+3. Chip am Flow: beim Antippen immer noch verfügbar zum Wechseln ✓
+
+---
+
+## Schritt 3 — Abschlussbericht
+
+Schritt-0-Befunde, 2 Edits, Verifikations-Output, Bestätigung.
+
+**WICHTIG:** Dieses Paket hängt von `initialMode` + Draft-Persistierung ab. Falls `initialMode` nach Dram-Wechsel null wird, müssen wir den Draft-Load-Pfad prüfen.
