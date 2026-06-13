@@ -1,0 +1,106 @@
+# HARD PROMPT — Gesamt-Parität: Modell-Term-Listen aus allen Sektionen
+# Einzige Datei: client/src/labs/components/FlavourStudioSheet.tsx
+
+ROLLE: Exakt diese Edits, null Freiheitsgrade. Reihenfolge ist ZWINGEND
+(Begründung steht dabei). Bei jeder Abweichung: STOPP, melden, warten.
+
+ABSOLUT VERBOTEN:
+- KEIN git commit/add/push. Ich committe selbst.
+- KEINE Änderung an shared/schema.ts, keine Migrationen, keine Routen-/Export-Löschung.
+- NUR die unten genannte Datei anfassen.
+
+----------------------------------------------------------------------
+SCHRITT 0 — DIAGNOSE (nur lesen)
+----------------------------------------------------------------------
+    git tag pre-overall-termlists-fix-2026-06-14
+    F=client/src/labs/components/FlavourStudioSheet.tsx
+
+Counts prüfen (Ausgabe zeigen). Erwartet:
+    grep -c 'cat\[section\]' $F                 # 8
+    grep -c 'focusedCat\[section\]' $F           # 1
+    grep -c 'selCat\[section\]' $F               # 2
+    grep -c '^  section: TermSection;$' $F       # 4
+    grep -c 'function secTerms' $F               # 0  (Helper existiert noch nicht)
+    grep -c 'DIM_TO_SECTION\[dimension\] || "nose"' $F   # 1
+Weicht ein Wert ab → STOPP. Danach PLAN ausgeben und auf mein "GO" warten.
+
+----------------------------------------------------------------------
+SCHRITT 1 (D2) — findTermCategory: lokale Schleifenvariable umbenennen
+ZUERST, damit der spätere globale cat[section]-Ersatz diese lokale Stelle
+NICHT trifft.
+str_replace:
+ALT:
+    for (const section of ["nose", "palate", "finish"] as TermSection[]) {
+      if (cat[section].some((t) => t.toLowerCase() === lower)) return cat.id;
+    }
+NEU:
+    for (const sec of ["nose", "palate", "finish"] as TermSection[]) {
+      if (cat[sec].some((t) => t.toLowerCase() === lower)) return cat.id;
+    }
+Assert: grep -c 'cat\[section\]' $F   # jetzt 7
+
+----------------------------------------------------------------------
+SCHRITT 2 (D5) — Index-Zugriffe auf den Helper umstellen
+ZWINGEND VOR dem Einfügen des Helpers (Schritt 3), sonst würde der globale
+Ersatz das spätere `return cat[section];` im Helper in eine Endlosrekursion
+verwandeln. Sicherung vor Ausführung:
+    test "$(grep -c 'function secTerms' $F)" = "0" || { echo "ABBRUCH: Helper existiert schon"; exit 1; }
+Dann (genau diese drei sed):
+    sed -i 's/focusedCat\[section\]/secTerms(focusedCat, section)/g' $F
+    sed -i 's/selCat\[section\]/secTerms(selCat, section)/g' $F
+    sed -i 's/cat\[section\]/secTerms(cat, section)/g' $F
+Assert:
+    grep -c 'cat\[section\]' $F                  # 0
+    grep -c 'secTerms(cat, section)' $F          # 7
+    grep -c 'secTerms(focusedCat, section)' $F   # 1
+    grep -c 'secTerms(selCat, section)' $F       # 2
+    grep -c 'cat\[sec\]' $F                      # 2  (getAllTermsForSection + findTermCategory)
+
+----------------------------------------------------------------------
+SCHRITT 3 (D1) — Helper secTerms einfügen (dedupliziert für "overall")
+str_replace (Anker = getQuickAddTerms-Signatur):
+ALT:
+function getQuickAddTerms(categories: VocabCategory[], section: TermSection | "overall"): string[] {
+NEU:
+function secTerms(cat: VocabCategory, section: TermSection | "overall"): string[] {
+  if (section === "overall") {
+    return Array.from(new Set([...cat.nose, ...cat.palate, ...cat.finish]));
+  }
+  return cat[section];
+}
+
+function getQuickAddTerms(categories: VocabCategory[], section: TermSection | "overall"): string[] {
+Assert: grep -c 'function secTerms' $F   # 1 ;  grep -c 'cat\[section\]' $F  # 1 (nur Helper)
+
+----------------------------------------------------------------------
+SCHRITT 4 (D3) — 4 Sub-View-Prop-Typen erweitern
+    sed -i 's/^  section: TermSection;$/  section: TermSection | "overall";/' $F
+Assert:
+    grep -c '^  section: TermSection;$' $F                 # 0
+    grep -c '^  section: TermSection | "overall";$' $F     # 4
+
+----------------------------------------------------------------------
+SCHRITT 5 (D4) — section-Initialisierung: "overall" durchreichen statt Nase-Fallback
+str_replace:
+ALT:
+  const section = DIM_TO_SECTION[dimension] || "nose";
+NEU:
+  const section: TermSection | "overall" = dimension === "overall" ? "overall" : (DIM_TO_SECTION[dimension] || "nose");
+Assert: grep -c 'const section: TermSection | "overall" = dimension === "overall"' $F   # 1
+
+----------------------------------------------------------------------
+VERIFIKATION (kein commit!)
+----------------------------------------------------------------------
+1) Build:  npm run build   → fehlerfrei.
+2) Schluss-Counts:
+    grep -c 'cat\[section\]' $F        # 1 (nur Helper-Fallback)
+    grep -c 'secTerms' $F              # 11 (1 Definition + 10 Aufrufe)
+    grep -c 'TermSection | "overall"'  $F   # 7 (getAllTerms, getQuickAdd, secTerms, 4 Props ... ) 
+       # Hinweis: Wert kann je nach Zählung 7 sein; entscheidend sind die Einzel-Asserts oben.
+3) Manuelle QA (Live-Tab, Phase "Gesamt"):
+    a) Modell öffnen (z. B. Wheel/Compass): die angebotenen Terme stammen aus ALLEN
+       Sektionen (Nase+Gaumen+Abgang gemischt), nicht mehr nur Nase.
+    b) Keine doppelten Chips / keine React-Key-Warnings in der Konsole (Dedup im Helper).
+    c) Gegencheck Nase/Gaumen/Abgang: jeweils unverändert nur ihre eigene Sektion.
+    d) Ausgewählte Terme landen in der Gesamt-Auswahl und bleiben nach Re-Rating erhalten.
+4) git diff --stat ausgeben, dann auf meine Byte-Diff-Abnahme warten. NICHT committen.
