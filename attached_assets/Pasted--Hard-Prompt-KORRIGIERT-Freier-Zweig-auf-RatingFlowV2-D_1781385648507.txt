@@ -1,0 +1,222 @@
+# Hard Prompt (KORRIGIERT) — Freier Zweig auf RatingFlowV2 + Datenverlust-Wurzelfix
+
+> **Diese Version ersetzt den vorherigen Prompt.** Der Replit-Agent hat zu Recht einen **Datenverlust-Bug** im ersten Entwurf gemeldet: Beim Re-Rating im Eindruck-Modus überschrieb das Auto-Save geladene Aromen/Notizen mit Leer. Ursache liegt nicht im LabsLive-Umbau selbst, sondern in zwei vorbestehenden Schwächen geteilter Komponenten, die der Umbau aufdeckt. Dieser Prompt behebt beides an der Wurzel.
+
+## Was passiert
+1. **LabsLive.tsx** — die alte Tab-Maske im freien Tasting wird durch `RatingFlowV2` ersetzt (Eindruck-Default, Wechsel über Modus-Chip). *(unverändert ggü. erstem Entwurf)*
+2. **RatingFlowV2.tsx** — `handleChange` gibt bei `onChange` künftig den vollständigen internen Stand (`liveDataRef`) statt nur des Teil-Updates der aktuellen Phase. *(1-Zeilen-Fix; macht es konsistent zu `handleSwitchMode`, das schon `liveDataRef.current` gibt)*
+3. **TischRating.tsx** — `buildData` reicht die geladenen Aromen aus `initialData` durch (so wie es die Notizen bereits tut), statt sie auf leere Listen zu setzen.
+
+**Warum die zwei Zusatz-Fixes:** Der freie Zweig speichert bei *jeder* Änderung in die DB (Auto-Save). Lieferte die Komponente dabei nur ein Teil-Update ohne Aromen, wurden vorhandene Aromen überschrieben. Fix 2 betrifft den Auto-Save-Pfad, Fix 3 den „Fertig"-Pfad. **Beide verbessern auch den geführten Zweig** (dort war derselbe Aromen-Verlust im Eindruck-Modus latent vorhanden) und brechen ihn nicht: der geführte Draft wird dadurch vollständiger, und der Speicher-Pfad (`chipStr` aus `data.tags`) erhält die Aromen statt sie zu verlieren.
+
+---
+
+## Schritt 0 — Diagnose (Pflicht, vor jeder Änderung)
+```bash
+grep -n "const allDimsScored = DIMENSIONS.every" client/src/labs/pages/LabsLive.tsx        # freier Zweig
+grep -n "<FlavourStudioSheet" client/src/labs/pages/LabsLive.tsx
+grep -n "onChange?.({ mode, phaseIndex, data });" client/src/labs/components/rating/RatingFlowV2.tsx
+grep -n "tags: { nose: \[\], palate: \[\], finish: \[\], overall: \[\] }," client/src/labs/components/rating/TischRating.tsx
+```
+Erwartung: jede Zeile genau **1** Treffer. Sonst STOPP + melden.
+
+---
+
+## DATEI 1 / 3 — `client/src/labs/pages/LabsLive.tsx`
+
+### Edit 1.1 — State ergänzen
+**FIND:**
+```tsx
+  const [freeformMemo, setFreeformMemo] = useState<LabsVoiceMemoData | null>(null);
+```
+**REPLACE:**
+```tsx
+  const [freeformMemo, setFreeformMemo] = useState<LabsVoiceMemoData | null>(null);
+  const [freeRatingMode, setFreeRatingMode] = useState<"guided" | "compact" | "quick" | "tisch" | null>("tisch");
+  const freeRatingDataRef = useRef<Partial<RatingData> | undefined>(undefined);
+```
+
+### Edit 1.2 — Helfer ergänzen
+**FIND:**
+```tsx
+    [currentParticipant, currentWhisky, tasting, tastingId]
+  );
+
+  const computeAutoOverall = (s: typeof scores) =>
+```
+**REPLACE:**
+```tsx
+    [currentParticipant, currentWhisky, tasting, tastingId]
+  );
+
+  // Bewertung aus RatingFlowV2 (freier Zweig) ins Speicherformat uebersetzen + Sprachnotiz anhaengen.
+  const saveRatingData = useCallback((data: Partial<RatingData> | undefined, memo: LabsVoiceMemoData | null) => {
+    if (!data?.scores) return;
+    const sc = data.scores;
+    if (typeof sc.nose !== "number" || typeof sc.palate !== "number" || typeof sc.finish !== "number") return;
+    const inv = mainScale.step > 0 ? 1 / mainScale.step : 2;
+    const eff = (data.overallExplicit === true || (typeof sc.overall === "number" && sc.overall > 0))
+      ? (sc.overall as number)
+      : Math.max(mainScale.step, Math.round(((sc.nose + sc.palate + sc.finish) / 3) * inv) / inv);
+    const allNotes = (["nose", "palate", "finish", "overall"] as const)
+      .map((ph) => data.notes?.[ph]?.trim())
+      .filter(Boolean)
+      .join(" | ");
+    const tg = data.tags ?? { nose: [], palate: [], finish: [], overall: [] };
+    const chipStr = [...(tg.nose ?? []), ...(tg.palate ?? []), ...(tg.finish ?? []), ...(tg.overall ?? [])].filter(Boolean);
+    let combined = allNotes;
+    if (memo?.transcript) combined = combined ? `${combined}\n${memo.transcript}` : memo.transcript;
+    if (chipStr.length > 0) combined = combined ? `${combined}\n[FLAVOURS] ${chipStr.join(", ")} [/FLAVOURS]` : `[FLAVOURS] ${chipStr.join(", ")} [/FLAVOURS]`;
+    debouncedSave({ nose: sc.nose, taste: sc.palate, finish: sc.finish, overall: eff }, combined);
+  }, [mainScale, debouncedSave]);
+
+  // Vorhandene Bewertung -> RatingFlowV2-Format (Aromen aus [FLAVOURS] zuruecklesen).
+  const freeInitialData = useMemo<RatingData | undefined>(() => {
+    if (!myRating) return undefined;
+    const raw = myRating.notes || "";
+    const fmatch = raw.match(/\[FLAVOURS\]\s*([\s\S]*?)\s*\[\/FLAVOURS\]/);
+    const chips = fmatch ? fmatch[1].split(",").map((c: string) => c.trim()).filter(Boolean) : [];
+    const clean = fmatch ? raw.replace(/\n?\[FLAVOURS\][\s\S]*?\[\/FLAVOURS\]/, "").trim() : raw;
+    const fb = mainScale.max === 100 ? 75 : Math.round((mainScale.max * 0.75) / mainScale.step) * mainScale.step;
+    const toU = (v: number | null | undefined) => v == null ? fb : (mainScale.max !== 100 && v > mainScale.max ? Math.round((v / 100) * mainScale.max * 10) / 10 : v);
+    return {
+      scores: { nose: toU(myRating.nose), palate: toU(myRating.taste), finish: toU(myRating.finish), overall: toU(myRating.overall) },
+      tags: { nose: chips, palate: [], finish: [], overall: [] },
+      notes: { nose: clean, palate: "", finish: "", overall: "" },
+      overallExplicit: true,
+    };
+  }, [myRating, mainScale]);
+
+  const computeAutoOverall = (s: typeof scores) =>
+```
+
+### Edit 1.3 — Tab-Maske durch RatingFlowV2 + Sprachnotiz ersetzen
+Im **freien Zweig** (Haupt-Body, **nicht** `GuidedStepView`): ersetze **alles vom START-Marker bis inklusive END-Marker** durch den neuen Block. Das umschließende `{canRate ? ( <> … </> ) : (` bleibt.
+
+**START-Marker:**
+```tsx
+              {(() => {
+                const allDimsScored = DIMENSIONS.every((d) => scores[d] > 0);
+```
+**END-Marker:**
+```tsx
+              <FlavourStudioSheet
+                open={studioOpen}
+                onOpenChange={setStudioOpen}
+                dimension={activeDim as DimKey}
+                existingChips={activeChips}
+                onChipsChange={handleStudioChipsChange}
+              />
+```
+**ERSETZE den gesamten Bereich (START bis END, beide einschließlich) durch:**
+```tsx
+              <RatingFlowV2
+                key={currentWhisky?.id}
+                scale={mainScale}
+                whisky={{ name: displayName, region: currentWhisky?.region || undefined, cask: currentWhisky?.caskType || undefined, blind: isBlind }}
+                initialData={freeInitialData}
+                preferredMode={freeRatingMode}
+                showTisch={true}
+                onChange={(draft) => {
+                  if (draft.mode) setFreeRatingMode(draft.mode);
+                  freeRatingDataRef.current = draft.data;
+                  saveRatingData(draft.data, freeformMemo);
+                }}
+                onDone={(data) => { saveRatingData(data, freeformMemo); }}
+                onBack={() => {}}
+              />
+              {VOICE_MEMOS_ENABLED && (
+                <div className="mt-3">
+                  <LabsVoiceMemoRecorder
+                    participantId={currentParticipant?.id || ""}
+                    memo={freeformMemo}
+                    onMemoChange={(memoData) => {
+                      setFreeformMemo(memoData);
+                      saveRatingData(freeRatingDataRef.current, memoData);
+                    }}
+                  />
+                </div>
+              )}
+```
+
+---
+
+## DATEI 2 / 3 — `client/src/labs/components/rating/RatingFlowV2.tsx`
+
+### Edit 2.1 — onChange gibt vollständigen Stand
+**FIND:**
+```tsx
+    onChange?.({ mode, phaseIndex, data });
+  }, [mode, onChange]);
+```
+**REPLACE:**
+```tsx
+    onChange?.({ mode, phaseIndex, data: liveDataRef.current ?? data });
+  }, [mode, onChange]);
+```
+
+---
+
+## DATEI 3 / 3 — `client/src/labs/components/rating/TischRating.tsx`
+
+### Edit 3.1 — buildData reicht Aromen durch
+**FIND:**
+```tsx
+      tags: { nose: [], palate: [], finish: [], overall: [] },
+      notes: {
+        nose: initialData?.notes?.nose ?? "",
+```
+**REPLACE:**
+```tsx
+      tags: {
+        nose: initialData?.tags?.nose ?? [],
+        palate: initialData?.tags?.palate ?? [],
+        finish: initialData?.tags?.finish ?? [],
+        overall: initialData?.tags?.overall ?? [],
+      },
+      notes: {
+        nose: initialData?.notes?.nose ?? "",
+```
+
+---
+
+## Sicherheitsregeln (strikt)
+- Nur diese **drei** Dateien. Sonst nichts.
+- `shared/schema.ts` nicht berühren. **Keine** Migrationen. **Keine** Routen löschen.
+- Alt-Maskencode in LabsLive (`updateScore`, `activeDim`, `studioOpen`, `computeAutoOverall`, `InlineFlavorTags`-Nutzung …) **nicht** entfernen — bleibt liegen (Aufräum-Prompt folgt).
+- Keine weiteren „Verbesserungen" an RatingFlowV2/TischRating — nur die zwei vorgegebenen Zeilen-Fixes.
+
+---
+
+## Verifikation (ausführen + Ausgabe berichten)
+```bash
+# LabsLive:
+grep -c "<RatingFlowV2" client/src/labs/pages/LabsLive.tsx          # erwartet: 2
+grep -c "const allDimsScored = DIMENSIONS.every" client/src/labs/pages/LabsLive.tsx  # 0
+grep -c "<FlavourStudioSheet" client/src/labs/pages/LabsLive.tsx     # 0
+grep -c "const saveRatingData\|const freeInitialData" client/src/labs/pages/LabsLive.tsx  # 2
+
+# RatingFlowV2 + TischRating:
+grep -c "data: liveDataRef.current ?? data" client/src/labs/components/rating/RatingFlowV2.tsx  # 1
+grep -c "nose: initialData?.tags?.nose ?? \[\]" client/src/labs/components/rating/TischRating.tsx  # 1
+
+# TypeScript: KEINE neuen Fehler. Erwartung: genau 1 LabsLive-Fehler (vorbestehend, activeChips/TS7053).
+NODE_OPTIONS='--max-old-space-size=6144' npx tsc --noEmit 2>&1 | grep -E "LabsLive|RatingFlowV2|TischRating"
+```
+Erwartete tsc-Ausgabe: **genau eine** Zeile (der vorbestehende `activeChips`-Fehler in LabsLive, TS7053). Taucht ein anderer/zusätzlicher Fehler auf: melden, nicht selbst reparieren.
+
+---
+
+## Smoke-Test (manuell) — Fokus Datenerhalt
+1. Frischer Gast, offenes Tasting → startet **direkt im Eindruck-Modus**, ohne Auswahl-Karten.
+2. Bewerten + **Aromen** wählen → automatisch gespeichert.
+3. **Re-Rating-Test (kritisch):** Tasting verlassen, erneut öffnen, **einen Score ändern** → die zuvor gewählten **Aromen UND Notizen bleiben erhalten** (kein Verlust). Reload bestätigt.
+4. Über Modus-Chip auf Quick / Kompakt / Geführt wechseln → Aromen bleiben erhalten.
+5. **Sprachnotiz** aufnehmen → Transkript landet in den Notizen.
+6. Geführtes Tasting kurz gegentesten (ein Dram bewerten + speichern) → unverändert funktionsfähig.
+
+---
+
+## ⛔ Commit-Verbot
+- **NICHT committen, NICHT pushen.** Kein `git add/commit/push`. Keine Tags.
+- Nach Abschluss nur Verifikations-Ausgaben berichten und auf Freigabe warten.
