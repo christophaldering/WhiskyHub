@@ -1,0 +1,222 @@
+# HARD PROMPT — Bewertungsfluss: Modus-Chip, Gesamt-Modelle, Modus-Reihenfolge, Quick-Add
+
+ROLLE: Du führst exakt die unten spezifizierten Änderungen aus. Null Freiheitsgrade.
+Keine zusätzlichen "Verbesserungen", kein Refactoring, keine Umbenennungen außerhalb
+dieser Liste. Bei jeder Abweichung zwischen erwartetem und tatsächlichem Code: STOPP,
+melde die Abweichung, warte auf Anweisung.
+
+ABSOLUT VERBOTEN:
+- KEIN git commit, KEIN git add, KEIN git push — unter keinen Umständen, auch nicht
+  "zur Sicherheit". Ich committe selbst.
+- KEINE Änderung an shared/schema.ts.
+- KEINE Migrationen (kein drizzle-kit generate/push).
+- KEINE Löschung oder Umbenennung bestehender Routen, Dateien oder Exports.
+- KEINE neuen Emojis/Icons; bestehende studioViews-Icons bleiben unverändert.
+
+----------------------------------------------------------------------
+SCHRITT 0 — DIAGNOSE (vor jeder Änderung; nur lesen, nichts schreiben)
+----------------------------------------------------------------------
+Setze zuerst einen Rollback-Tag:
+    git tag pre-rating-ui-fix-2026-06-14
+
+Verifiziere, dass die folgenden Strings EXAKT existieren (grep, Ausgabe zeigen).
+Wenn auch nur einer fehlt oder mehrfach vorkommt → STOPP.
+
+  A) client/src/labs/components/rating/RatingModeChip.tsx
+     grep -n 'position: "absolute",' RatingModeChip.tsx        # erwartet: 1 (Wrapper)
+     grep -n 'const baseModes: Mode\[\]' RatingModeChip.tsx     # erwartet: 1
+  B) client/src/labs/components/rating/GuidedRating.tsx
+     grep -n 'currentPhase !== "overall" && (' GuidedRating.tsx # erwartet: 1
+  C) client/src/labs/components/rating/CompactRating.tsx
+     grep -n 'pid !== "overall" && (' CompactRating.tsx         # erwartet: 1
+  D) client/src/labs/components/rating/FlavorTags.tsx
+     grep -n 'if (phaseId === "overall") return null;' FlavorTags.tsx   # erwartet: 1
+     grep -n '{dimension && (' FlavorTags.tsx                           # erwartet: 1
+  E) client/src/labs/components/FlavourStudioSheet.tsx
+     grep -n 'dimension: DimKey;' FlavourStudioSheet.tsx                # erwartet: 1
+     grep -n 'const dimLabel = dimension ===' FlavourStudioSheet.tsx    # erwartet: 1
+     grep -n 'function getAllTermsForSection' FlavourStudioSheet.tsx    # erwartet: 1
+     grep -n 'function getQuickAddTerms' FlavourStudioSheet.tsx         # erwartet: 1
+     grep -n 'const quickTerms = useMemo' FlavourStudioSheet.tsx        # erwartet: 1
+
+Danach: PLAN als kurze Liste ausgeben (5 Dateien, 10 Edits) und AUF MEIN "GO" WARTEN.
+Erst nach meinem GO ausführen.
+
+----------------------------------------------------------------------
+EDIT 1 — Punkt 1: Modus-Chip vom Overlay in den Fluss (platzsparend oben)
+Datei: client/src/labs/components/rating/RatingModeChip.tsx
+----------------------------------------------------------------------
+ALT:
+    <div
+      ref={popoverRef}
+      style={{
+        position: "absolute",
+        top: SP.md,
+        right: SP.md,
+        zIndex: 30,
+      }}
+    >
+NEU:
+    <div
+      ref={popoverRef}
+      style={{
+        position: "relative",
+        display: "flex",
+        justifyContent: "flex-end",
+        marginBottom: SP.sm,
+      }}
+    >
+
+----------------------------------------------------------------------
+EDIT 2 — Punkt 3: Reihenfolge an RatingModeSelect angleichen
+(Quick → Eindruck → Kompakt → Geführt; intern: quick, tisch, compact, guided)
+Datei: client/src/labs/components/rating/RatingModeChip.tsx
+----------------------------------------------------------------------
+ALT:
+  const baseModes: Mode[] = hideQuick ? ["guided", "compact"] : ["guided", "compact", "quick"];
+  const allModes: Mode[] = showTisch ? ["tisch", ...baseModes] : baseModes;
+NEU:
+  const allModes: Mode[] = [
+    ...(hideQuick ? [] : ["quick" as Mode]),
+    ...(showTisch ? ["tisch" as Mode] : []),
+    "compact",
+    "guided",
+  ];
+
+----------------------------------------------------------------------
+EDIT 3 — Punkt 2: Gesamt-Gate in GuidedRating entfernen
+Datei: client/src/labs/components/rating/GuidedRating.tsx
+(Minimaler Eingriff: Bedingung entfernen, Einrückung unverändert.)
+----------------------------------------------------------------------
+ALT:
+        {currentPhase !== "overall" && (
+NEU:
+        {(
+
+----------------------------------------------------------------------
+EDIT 4 — Punkt 2: Gesamt-Gate in CompactRating entfernen
+Datei: client/src/labs/components/rating/CompactRating.tsx
+----------------------------------------------------------------------
+ALT:
+                {pid !== "overall" && (
+NEU:
+                {(
+
+----------------------------------------------------------------------
+EDIT 5 — Punkt 2: FlavorTags Early-Return raus + studioDimension-Fallback
+Datei: client/src/labs/components/rating/FlavorTags.tsx
+----------------------------------------------------------------------
+ALT:
+  const dimension: DimKey | undefined = PHASE_TO_DIM[phaseId];
+
+  if (phaseId === "overall") return null;
+NEU:
+  const dimension: DimKey | undefined = PHASE_TO_DIM[phaseId];
+  const studioDimension: DimKey | "overall" = dimension ?? "overall";
+
+----------------------------------------------------------------------
+EDIT 6 — Punkt 2: FlavourStudioSheet immer rendern + studioDimension durchreichen
+Datei: client/src/labs/components/rating/FlavorTags.tsx
+----------------------------------------------------------------------
+ALT:
+      {dimension && (
+NEU:
+      {(
+
+und im selben Block:
+ALT:
+            dimension={dimension}
+NEU:
+            dimension={studioDimension}
+
+----------------------------------------------------------------------
+EDIT 7 — Punkt 2: FlavourStudioSheet akzeptiert "overall" + korrektes Label
+Datei: client/src/labs/components/FlavourStudioSheet.tsx
+----------------------------------------------------------------------
+ALT:
+  dimension: DimKey;
+NEU:
+  dimension: DimKey | "overall";
+
+und:
+ALT:
+  const dimLabel = dimension === "nose" ? (isDE ? "Nase" : "Nose") : dimension === "taste" ? (isDE ? "Gaumen" : "Palate") : (isDE ? "Abgang" : "Finish");
+NEU:
+  const dimLabel = dimension === "nose" ? (isDE ? "Nase" : "Nose") : dimension === "taste" ? (isDE ? "Gaumen" : "Palate") : dimension === "finish" ? (isDE ? "Abgang" : "Finish") : (isDE ? "Gesamt" : "Overall");
+
+----------------------------------------------------------------------
+EDIT 8 — Quick-Add bei Gesamt aus ALLEN Sektionen (statt Nase-Fallback)
+Datei: client/src/labs/components/FlavourStudioSheet.tsx
+----------------------------------------------------------------------
+EDIT 8a:
+ALT:
+function getAllTermsForSection(categories: VocabCategory[], section: TermSection): string[] {
+  const terms = new Set<string>();
+  for (const cat of categories) {
+    for (const term of cat[section]) {
+      terms.add(term);
+    }
+  }
+  return Array.from(terms);
+}
+NEU:
+function getAllTermsForSection(categories: VocabCategory[], section: TermSection | "overall"): string[] {
+  const terms = new Set<string>();
+  const sections: TermSection[] = section === "overall" ? ["nose", "palate", "finish"] : [section];
+  for (const cat of categories) {
+    for (const sec of sections) {
+      for (const term of cat[sec]) {
+        terms.add(term);
+      }
+    }
+  }
+  return Array.from(terms);
+}
+
+EDIT 8b:
+ALT:
+function getQuickAddTerms(categories: VocabCategory[], section: TermSection): string[] {
+NEU:
+function getQuickAddTerms(categories: VocabCategory[], section: TermSection | "overall"): string[] {
+
+EDIT 8c:
+ALT:
+  const quickTerms = useMemo(() => getQuickAddTerms(categories, section), [categories, section]);
+NEU:
+  const quickTerms = useMemo(() => getQuickAddTerms(categories, dimension === "overall" ? "overall" : section), [categories, section, dimension]);
+
+----------------------------------------------------------------------
+VERIFIKATION (nach den Edits; KEIN commit!)
+----------------------------------------------------------------------
+1) Build (tsc OOMt im Env — Build ist die Wahrheit):
+       npm run build
+   Muss ohne Fehler durchlaufen.
+
+2) Grep-Nachweise (Ausgabe zeigen):
+   - grep -n 'justifyContent: "flex-end"' .../rating/RatingModeChip.tsx → 1
+   - grep -n 'overall" && (' .../rating/GuidedRating.tsx  → 0
+   - grep -n 'overall" && (' .../rating/CompactRating.tsx → 0
+   - grep -n 'phaseId === "overall") return null' .../rating/FlavorTags.tsx → 0
+   - grep -n 'studioDimension' .../rating/FlavorTags.tsx → 2
+   - grep -n 'DimKey | "overall"' .../FlavourStudioSheet.tsx → 1 (Prop-Typ)
+   - grep -n 'TermSection | "overall"' .../FlavourStudioSheet.tsx → 2 (8a + 8b)
+   - grep -n 'dimension === "overall" ? "overall" : section' .../FlavourStudioSheet.tsx → 1
+   - grep -rn '!== "overall"\|=== "overall") return null' client/src/labs/components/rating/ → 0
+
+3) Host/Cockpit nutzen dieselbe RatingFlowV2 (kein Eingriff nötig, Punkt 4):
+   - grep -n 'RatingFlowV2' .../pages/LabsHost.tsx .../pages/LabsHostCockpit.tsx → je ≥1
+
+4) Manuelle QA (Live-Tab eines geführten Gruppen-Tastings):
+   a) Modus-Chip rechtsbündig in eigener Zeile über den Phasen-Kacheln, keine
+      Überlappung von Abgang/Gesamt (Punkt 1).
+   b) Chip-Dropdown-Reihenfolge: Quick, Eindruck, Kompakt, Geführt (Punkt 3).
+   c) Phase "Gesamt": Aromen-Block + "Weitere Aromen & Bewertungsmodelle" inkl. aller
+      6 Modelle sichtbar (Punkt 2).
+   d) Modell-Button bei Gesamt öffnet Flavour-Studio-Sheet; Sheet-Label = "Gesamt";
+      Quick-Add-Chips ziehen aus allen Kategorien (z. B. Vanilla/Honey/Peat/Citrus/
+      Smoke gemischt), nicht nur Nase (Punkt 2 + Quick-Add).
+   e) Chips bei Gesamt landen in der Gesamt-Auswahl, bleiben nach Re-Rating erhalten.
+   f) Gegencheck Quick-Modus: weiterhin nur Overall-Score, kein Aromen-Block.
+
+5) ABSCHLUSS: NICHT committen. git diff --stat ausgeben, Zusammenfassung der
+   geänderten Dateien, dann auf meine Byte-Diff-Abnahme warten.
