@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import {
   Play, Lock, Eye, EyeOff, SkipForward, Users, Wine, Star,
   BarChart3, CheckCircle2, Clock, ChevronLeft, Loader2,
-  Monitor, Smartphone, FileText, Radio, X, LockKeyhole, Unlock, ImageOff, Sliders, RotateCcw, AlertTriangle,
+  Monitor, Smartphone, FileText, Radio, X, LockKeyhole, Unlock, ImageOff, Sliders, RotateCcw, AlertTriangle, Trash2,
   ChevronDown, Layers, Archive, Mic, MicOff, VolumeX, Volume2, Coffee,
 } from "lucide-react";
 import { useVoiceCohost } from "@/labs/hooks/useVoiceCohost";
@@ -19,7 +19,7 @@ import ParticipantAvatar from "@/labs/components/ParticipantAvatar";
 import { useAppStore } from "@/lib/store";
 import { stripGuestSuffix, formatScore } from "@/lib/utils";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
-import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi } from "@/lib/api";
+import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, adminApi } from "@/lib/api";
 import LabsRatingPanel, { type DimKey } from "@/labs/components/LabsRatingPanel";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import { useRatingScale } from "@/labs/hooks/useRatingScale";
@@ -212,6 +212,7 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
   const [showManageTasters, setShowManageTasters] = useState(false);
   const [restartDialog, setRestartDialog] = useState<false | "choose" | "confirmContinue" | "confirmClear" | "confirmArchive">(false);
   const [restartConfirmText, setRestartConfirmText] = useState("");
+  const [isDeletingTasting, setIsDeletingTasting] = useState(false);
   const [hostRatingIdx, setHostRatingIdx] = useState(0);
   const [cockpitWizard, setCockpitWizard] = useState(() => {
     if (typeof window !== "undefined") {
@@ -2922,6 +2923,37 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
               <button onClick={() => setRestartDialog("choose")} className="cockpit-action-btn cockpit-action-secondary" data-testid="cockpit-restart-session">
                 <RotateCcw style={{ width: 14, height: 14 }} />
                 {t("cockpit.restartSession", "Restart Session")}
+              </button>
+            )}
+            {["closed", "reveal"].includes(status) && currentParticipant?.role === "admin" && (
+              <button
+                onClick={() => {
+                  const answer = window.prompt(
+                    t("cockpit.deleteConfirmPrompt", {
+                      title: String(tasting?.title ?? ""),
+                      defaultValue: "\"{{title}}\" endgültig löschen? Tippe zur Bestätigung den genauen Namen ein:",
+                    }),
+                  );
+                  if (answer !== null && answer.trim() === String(tasting?.title ?? "").trim()) {
+                    setIsDeletingTasting(true);
+                    adminApi
+                      .deleteTasting(tastingId, pid)
+                      .then(() => {
+                        queryClient.invalidateQueries({ queryKey: ["tastings"] });
+                        navigate("/labs/tastings");
+                      })
+                      .catch((e: any) => {
+                        setIsDeletingTasting(false);
+                        window.alert(e?.message || t("cockpit.deleteFailed", "Tasting konnte nicht gelöscht werden"));
+                      });
+                  }
+                }}
+                disabled={isDeletingTasting}
+                className="cockpit-action-btn cockpit-action-danger"
+                data-testid="cockpit-delete-tasting"
+              >
+                <Trash2 style={{ width: 14, height: 14 }} />
+                {t("cockpit.deleteTasting", "Tasting löschen")}
               </button>
             )}
           </div>

@@ -23,6 +23,7 @@ import {
   Mail,
   Trophy,
   Trash2,
+  AlertTriangle,
   ChevronDown,
   ChevronRight,
   Pencil,
@@ -46,7 +47,7 @@ import {
   User,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { tastingApi, whiskyApi, inviteApi, guidedApi, friendsApi } from "@/lib/api";
+import { tastingApi, whiskyApi, inviteApi, guidedApi, friendsApi, adminApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
 import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
 import { formatRejoinCode } from "@/labs/utils/rejoinCode";
@@ -440,6 +441,17 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
       queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
       queryClient.invalidateQueries({ queryKey: ["tastings"] });
       setShowArchiveDialog(false);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => adminApi.deleteTasting(tastingId, currentParticipant?.id || ""),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tastings"] });
+      navigate("/labs/tastings");
+    },
+    onError: (e: any) => {
+      window.alert(e?.message || t("cockpit.deleteFailed", "Tasting konnte nicht gelöscht werden"));
     },
   });
 
@@ -2005,6 +2017,52 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
               </div>
             )}
           </div>
+        </section>
+      )}
+
+      {currentParticipant?.role === "admin" && tasting && (
+        <section className="labs-card" style={{ marginTop: 16, borderColor: "var(--labs-danger)" }} data-testid="admin-danger-zone">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <AlertTriangle className="w-4 h-4" style={{ color: "var(--labs-danger)" }} />
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-danger)", margin: 0 }}>
+              {t("cockpit.dangerZoneTitle", "Gefahrenzone")}
+            </h3>
+          </div>
+          <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: "0 0 12px", lineHeight: 1.4 }}>
+            {t("cockpit.dangerZoneDesc", "Unumkehrbare Aktionen für dieses Tasting")}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              const answer = window.prompt(
+                t("cockpit.deleteConfirmPrompt", {
+                  title: String(tasting.title ?? ""),
+                  defaultValue: "\"{{title}}\" endgültig löschen? Tippe zur Bestätigung den genauen Namen ein:",
+                }),
+              );
+              if (answer !== null && answer.trim() === String(tasting.title ?? "").trim()) {
+                deleteMutation.mutate();
+              }
+            }}
+            disabled={deleteMutation.isPending}
+            data-testid="admin-delete-tasting"
+            style={{
+              background: "var(--labs-danger)",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              padding: "10px 16px",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: deleteMutation.isPending ? "not-allowed" : "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            {deleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+            {t("cockpit.deleteTasting", "Tasting löschen")}
+          </button>
         </section>
       )}
 

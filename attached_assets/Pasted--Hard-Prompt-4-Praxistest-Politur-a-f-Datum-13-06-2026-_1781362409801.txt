@@ -1,0 +1,108 @@
+# Hard Prompt #4: Praxistest-Politur (a–f)
+
+**Datum:** 13.06.2026 · **Priorität:** MITTEL
+**Art:** 6 Polierarbeiten, 12 Edits, 8 Dateien. Größer.
+
+---
+
+## Worum es geht
+
+Sechs kleine, zusammenhängende Fixes aus dem echten Abend (Penta-Circle). Jeder Punkt ist <5 min Code, aber zusammen ergibt es eine saubere Polish.
+
+---
+
+## (a) KI-Import: Flaschenfoto persistieren
+
+**Datei:** `client/src/labs/pages/LabsHost.tsx` (KI-Import-Pipeline)
+
+Der Scan analysiert das Foto, verwirft es aber. `whisky.imageUrl` bleibt leer.
+
+**Edit:** Nach Analyse → Foto durch EXIF-Sanitizer → Object Storage → URL speichern.
+
+---
+
+## (b) Skalen-Legende am Slider
+
+**Datei:** `client/src/labs/components/rating/ScoreInput.tsx`
+
+Antippbare Info / Zonen-Markierungen mit Wortstufen (Einfach 65 … Herausragend 92).
+
+**Edit:** Unter dem Slider: `<div>` mit band-Keys + tischAnchors.
+
+---
+
+## (c) Host-Cockpit My Rating: Modus-Desync & Dropdown-Bug
+
+**Datei:** `client/src/labs/pages/LabsHostCockpit.tsx` (Z. ~3597)
+
+Badge zeigt „Kompakt", Dropdown-Haken zeigt „Geführt". Dropdown überlagert Gesamt-Tab.
+
+**Edits:** 
+1. Modus-Chip State sync
+2. zIndex/Positioning des Dropdowns
+
+---
+
+## (d) Exporte: Deckblatt + Whisky-Bilder
+
+**Datei:** `client/src/components/tasting-menu-pdf.ts` (jsPDF)
+
+Generiertes Deckblatt (coverImageUrl) + Whisky-Bilder einfügen.
+
+**Edit:** Deckblatt als erste Seite, dann Whisky-Loop mit Bildern.
+
+---
+
+## (e) Duplizieren-Button
+
+**Datei:** `client/src/labs/pages/LabsTastingDetail.tsx`
+
+Server-Endpoint `POST /api/tastings/:id/duplicate` + `storage.duplicateTasting` existieren. UI-Knopf fehlt.
+
+**Edit:** Knopf in Host-Aktionen.
+
+---
+
+## (f) Tisch-Entdeckbarkeit
+
+**Datei:** `client/src/labs/components/rating/RatingFlowV2.tsx` + `client/src/labs/pages/LabsLive.tsx`
+
+Vier-Karten-Auswahl wird übersprungen, wenn Draft/Pref existiert. Neuer Nutzer sieht Tisch nie.
+
+**Edit:** localStorage-Flag "tisch_seen" setzen bei erstem Tisch. Bei false: Auswahl erzwingen oder „Neu"-Hinweis am Chip.
+
+---
+
+## Schritt 0 — Diagnose (gesamt)
+
+```bash
+git tag pre-4-politur-2026-06-13
+NODE_OPTIONS=--max-old-space-size=6144 npx tsc --noEmit
+```
+
+Baseline: 500 errors.
+
+---
+
+## Schritt 1 — 12 Edits über 8 Dateien
+
+[Jeder Punkt (a–f) ist 1–2 Edits. Detailierung im Sub-Prompt.]
+
+---
+
+## Schritt 2 — Verifikation pro Punkt
+
+- (a) Foto hochladen, Log prüfen `[image-sanitize] ok type=image/heic` ✓
+- (b) Slider öffnen, Zonen sehen ✓
+- (c) Cockpit: Chip + Dropdown sync, zIndex ok ✓
+- (d) Export PDF: Deckblatt + Whiskys ✓
+- (e) Duplizieren-Button vorhanden ✓
+- (f) Neuer Tab, erstes Tasting: Vier-Karten-Auswahl **nicht** übersprungen ✓
+
+---
+
+## Schritt 3 — Abschlussbericht
+
+Alle 12 Edits, alle 8 Dateien, tsc 500 → 500, alle Verifizierungen grün.
+
+**HINWEIS:** Dieses Paket setzt voraus, dass (a) KI-Import läuft und (d) jsPDF verfügbar ist.
