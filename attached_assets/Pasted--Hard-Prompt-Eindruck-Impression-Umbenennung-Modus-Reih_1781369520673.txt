@@ -1,0 +1,115 @@
+# Hard Prompt — Eindruck/Impression: Umbenennung + Modus-Reihenfolge (Phase B, Teil 1)
+
+**Repo:** christophaldering/WhiskyHub · **Branch:** main
+**Umfang:** 3 Edits in 2 Dateien. Reine Label-/Reihenfolge-Änderung. Keine Logik, kein State, keine neuen Komponenten.
+
+-----
+
+## Schritt 0 — Diagnose (VOR jeder Änderung ausführen, Ausgabe zeigen)
+
+```bash
+grep -n 'ratingTisch: "Table"' client/src/lib/i18n.ts
+grep -n 'ratingTisch: "Tisch"' client/src/lib/i18n.ts
+grep -n 'mode: "tisch" as const' client/src/labs/components/rating/RatingModeSelect.tsx
+```
+
+**Erwartung:** Zeile 1 → genau 1 Treffer (EN), Zeile 2 → genau 1 Treffer (DE), Zeile 3 → genau 1 Treffer (Array in RatingModeSelect).
+
+**Abweichungs-Protokoll:** Wenn einer der drei greps 0 oder >1 Treffer liefert, oder ein SUCHEN-Block unten nicht **exakt 1×** matcht → **STOPP, nichts ändern, melde mir den Befund.** Nicht “ungefähr” ersetzen, nicht raten.
+
+-----
+
+## Was passiert (fachlich)
+
+1. **Umbenennung** des Bewertungsmodus „Tisch” → **„Eindruck”** (DE) / **„Impression”** (EN). Nur sichtbare Labels. Der interne Modus-Schlüssel `"tisch"` bleibt überall unverändert (er steckt in RatingFlowV2, sessionRatingMode, tischAnchors, localStorage `labs_tisch_seen`, data-testids — Umtaufen wäre ein riskanter Refactor ohne Gegenwert).
+1. **Beschreibung** `ratingTischD` neutralisiert: kein „gemacht für den Tisch” / „made for the table” mehr (passt nicht mehr zum neuen Namen).
+1. **Modus-Reihenfolge** in der Auswahl von einfach → komplex sortiert: **Quick → Eindruck → Kompakt → Geführt** (entspricht der tatsächlichen Komplexität der Modi).
+
+-----
+
+## Edits
+
+### Edit 1 — `client/src/lib/i18n.ts`
+
+**SUCHEN** (exakt, muss genau 1× vorkommen):
+
+```tsx
+        ratingTisch: "Table",
+        ratingTischNew: "New",
+        ratingTischD: "All four dimensions as steps — one tap each, made for the table.",
+```
+
+**ERSETZEN durch:**
+
+```tsx
+        ratingTisch: "Impression",
+        ratingTischNew: "New",
+        ratingTischD: "All four dimensions as quick steps — one tap per phase.",
+```
+
+### Edit 2 — `client/src/lib/i18n.ts`
+
+**SUCHEN** (exakt, muss genau 1× vorkommen):
+
+```tsx
+        ratingTisch: "Tisch",
+        ratingTischNew: "Neu",
+        ratingTischD: "Alle vier Dimensionen als Stufen — ein Tap pro Phase, gemacht für den Tisch.",
+```
+
+**ERSETZEN durch:**
+
+```tsx
+        ratingTisch: "Eindruck",
+        ratingTischNew: "Neu",
+        ratingTischD: "Alle vier Dimensionen als Stufen — ein Tap pro Phase.",
+```
+
+### Edit 3 — `client/src/labs/components/rating/RatingModeSelect.tsx`
+
+**SUCHEN** (exakt, muss genau 1× vorkommen):
+
+```tsx
+  }> = [
+    ...(showTisch ? [{ mode: "tisch" as const, title: labels.tisch || "Tisch", desc: labels.tischD || "Ein Tap pro Phase.", hint: labels.tischH || "", phaseId: "finish" as const }] : []),
+    { mode: "guided", title: labels.guided, desc: labels.guidedD, hint: labels.guidedH, phaseId: "nose" },
+    { mode: "compact", title: labels.compact, desc: labels.compactD, hint: labels.compactH, phaseId: "palate" },
+    { mode: "quick", title: labels.quick || "Quick", desc: labels.quickD || "Overall score only — two taps and done.", hint: labels.quickH || "When time is short.", phaseId: "overall" },
+  ];
+```
+
+**ERSETZEN durch:**
+
+```tsx
+  }> = [
+    { mode: "quick", title: labels.quick || "Quick", desc: labels.quickD || "Overall score only — two taps and done.", hint: labels.quickH || "When time is short.", phaseId: "overall" },
+    ...(showTisch ? [{ mode: "tisch" as const, title: labels.tisch || "Tisch", desc: labels.tischD || "Ein Tap pro Phase.", hint: labels.tischH || "", phaseId: "finish" as const }] : []),
+    { mode: "compact", title: labels.compact, desc: labels.compactD, hint: labels.compactH, phaseId: "palate" },
+    { mode: "guided", title: labels.guided, desc: labels.guidedD, hint: labels.guidedH, phaseId: "nose" },
+  ];
+```
+
+-----
+
+## Verifikation (nach den Edits, Ausgabe zeigen)
+
+```bash
+# 1) Neue Namen da, alte als Modusname weg
+grep -c 'ratingTisch: "Eindruck"\|ratingTisch: "Impression"' client/src/lib/i18n.ts   # erwartet: 2
+grep -c 'ratingTisch: "Tisch"\|ratingTisch: "Table"' client/src/lib/i18n.ts           # erwartet: 0
+
+# 2) Reihenfolge: quick muss VOR tisch VOR compact VOR guided stehen
+grep -n 'mode: "quick"\|mode: "tisch"\|mode: "compact"\|mode: "guided"' client/src/labs/components/rating/RatingModeSelect.tsx
+
+# 3) Typecheck — Baseline ist GENAU 500 Fehler (vorbestehend). Keine NEUEN Fehler erlaubt.
+NODE_OPTIONS='--max-old-space-size=6144' npx tsc --noEmit 2>&1 | grep -c 'error TS'   # erwartet: 500
+NODE_OPTIONS='--max-old-space-size=6144' npx tsc --noEmit 2>&1 | grep -E 'i18n\.ts|RatingModeSelect' || echo "OK: keine Fehler in den geaenderten Dateien"
+```
+
+**Smoke-Test (manuell, kurz):** Live-Tasting öffnen → Bewertungsform wählen. Die Karten erscheinen in der Reihenfolge Quick → Eindruck → Kompakt → Geführt. Die zweite Karte heißt „Eindruck” (DE) bzw. „Impression” (EN), nicht mehr „Tisch”/„Table”.
+
+-----
+
+## ⛔ Commit-Verbot
+
+**NICHT committen. NICHT pushen. NICHT `git add`.** Keine eigenmächtigen Commits. Nach den Edits + Verifikation: **anhalten und mir die Verifikations-Ausgabe zeigen.** Ich committe und pushe selbst, nachdem ich abgenommen habe. Falls du den Drang hast zu committen: nicht tun.
