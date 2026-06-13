@@ -35,6 +35,10 @@ export default function GuestWelcome() {
   const [name, setName] = useState("");
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState("");
+  const [showRejoinDialog, setShowRejoinDialog] = useState(false);
+  const [detectedRejoinCode, setDetectedRejoinCode] = useState<string | null>(null);
+  const [rejoining, setRejoining] = useState(false);
+  const [rejoinError, setRejoinError] = useState("");
   const viewTracked = useRef(false);
 
   useEffect(() => {
@@ -91,6 +95,20 @@ export default function GuestWelcome() {
 
   const canGuestJoin = data?.guestMode === "ultra" && !!data?.code && data?.status !== "archived" && data?.status !== "deleted";
 
+  // Rueckkehr erkennen: war dieser Gast schon hier? Reihenfolge: URL > localStorage > sessionStorage.
+  useEffect(() => {
+    if (loadState !== "ready" || !data || !canGuestJoin) return;
+    try { if (getSession().signedIn) return; } catch {}
+    let code: string | null = null;
+    try { code = new URLSearchParams(window.location.search).get("rejoin"); } catch {}
+    if (!code) { try { code = localStorage.getItem(`cs_guest_rejoin_${data.id}`); } catch {} }
+    if (!code) { try { code = sessionStorage.getItem(`cs_guest_rejoin_${data.id}`); } catch {} }
+    if (code) {
+      setDetectedRejoinCode(code);
+      setShowRejoinDialog(true);
+    }
+  }, [loadState, data, canGuestJoin]);
+
   const handleJoin = async () => {
     if (!data || !canGuestJoin || joining) return;
     const trimmed = name.trim();
@@ -112,7 +130,15 @@ export default function GuestWelcome() {
           const fallback = await tastingApi.getMyRejoinCode(data.id).catch(() => null);
           rejoinCode = fallback?.rejoinCode ?? null;
         }
-        if (rejoinCode) localStorage.setItem(`cs_guest_rejoin_${data.id}`, rejoinCode);
+        if (rejoinCode) {
+          localStorage.setItem(`cs_guest_rejoin_${data.id}`, rejoinCode);
+          try { sessionStorage.setItem(`cs_guest_rejoin_${data.id}`, rejoinCode); } catch {}
+          try {
+            const url = new URL(window.location.href);
+            url.searchParams.set("rejoin", rejoinCode);
+            window.history.replaceState(null, "", url.toString());
+          } catch {}
+        }
       } catch {}
       trackEvent("guest_join_success", { page: `/welcome/${tastingId}` });
       navigate(`/labs/live/${data.id}`);
@@ -120,6 +146,52 @@ export default function GuestWelcome() {
       const msg = (e as Error)?.message || "";
       setJoinError(msg || t("guestWelcome.joinFailed", "Beitritt nicht möglich. Bitte versuche es erneut."));
       setJoining(false);
+    }
+  };
+
+  const clearRejoinFromUrl = () => {
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("rejoin")) {
+        url.searchParams.delete("rejoin");
+        window.history.replaceState(null, "", url.toString());
+      }
+    } catch {}
+  };
+
+  const handleStartFresh = () => {
+    setShowRejoinDialog(false);
+    setRejoinError("");
+    if (data) {
+      try { localStorage.removeItem(`cs_guest_rejoin_${data.id}`); } catch {}
+      try { sessionStorage.removeItem(`cs_guest_rejoin_${data.id}`); } catch {}
+    }
+    clearRejoinFromUrl();
+  };
+
+  const handleRejoin = async () => {
+    if (!data || !detectedRejoinCode || rejoining) return;
+    setRejoinError("");
+    setRejoining(true);
+    try {
+      const result = await tastingApi.guestRejoin(data.id, detectedRejoinCode);
+      setGuestSession(result.id, result.name);
+      try { sessionStorage.setItem("cs_guest_shell", "1"); } catch {}
+      try {
+        const code = result.rejoinCode || detectedRejoinCode;
+        localStorage.setItem(`cs_guest_rejoin_${data.id}`, code);
+        sessionStorage.setItem(`cs_guest_rejoin_${data.id}`, code);
+      } catch {}
+      trackEvent("guest_rejoin_success", { page: `/welcome/${tastingId}` });
+      navigate(`/labs/live/${data.id}`);
+    } catch (e: unknown) {
+      // Code ungueltig/abgelaufen → stale Code entfernen, sauber neu anfangen lassen.
+      try { localStorage.removeItem(`cs_guest_rejoin_${data.id}`); } catch {}
+      try { sessionStorage.removeItem(`cs_guest_rejoin_${data.id}`); } catch {}
+      clearRejoinFromUrl();
+      const msg = (e as Error)?.message || "";
+      setRejoinError(msg || t("guestWelcome.rejoinFailed", "Wiedereinstieg nicht möglich. Bitte fang neu an."));
+      setRejoining(false);
     }
   };
 
@@ -186,6 +258,81 @@ export default function GuestWelcome() {
 
   return shell(
     <>
+      {showRejoinDialog && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 50,
+            background: "rgba(11,9,6,0.92)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+          data-testid="guest-rejoin-dialog"
+        >
+          <div style={{ width: "100%", maxWidth: 380, textAlign: "center" }}>
+            <div style={{ fontSize: 11, letterSpacing: "0.26em", textTransform: "uppercase", color: "#D4A847" }}>
+              {t("guestWelcome.rejoinEyebrow", "Willkommen zurück")}
+            </div>
+            <h2
+              style={{ fontFamily: FONT_DISPLAY, fontWeight: 600, fontSize: 24, lineHeight: 1.25, margin: "12px 0 0" }}
+              data-testid="guest-rejoin-title"
+            >
+              {t("guestWelcome.rejoinTitle", "Du warst hier schon — weitermachen?")}
+            </h2>
+            <p style={{ fontFamily: FONT_SERIF, fontStyle: "italic", fontSize: 15, color: "rgba(245,237,224,0.6)", marginTop: 10 }}>
+              {t("guestWelcome.rejoinBody", "Deine Bewertungen sind noch da.")}
+            </p>
+            {rejoinError && (
+              <div style={{ marginTop: 10, fontSize: 13, color: "#e8a3a3" }} data-testid="guest-rejoin-error">
+                {rejoinError}
+              </div>
+            )}
+            <button
+              onClick={handleRejoin}
+              disabled={rejoining}
+              data-testid="guest-rejoin-continue"
+              style={{
+                width: "100%",
+                height: 52,
+                marginTop: 18,
+                borderRadius: 12,
+                border: "none",
+                background: "#D4A847",
+                color: "#0B0906",
+                fontFamily: FONT_BODY,
+                fontSize: 16,
+                fontWeight: 700,
+                cursor: rejoining ? "wait" : "pointer",
+                opacity: rejoining ? 0.7 : 1,
+              }}
+            >
+              {rejoining ? t("guestWelcome.joining", "Einen Moment …") : t("guestWelcome.rejoinYes", "Ja, weitermachen")}
+            </button>
+            <button
+              onClick={handleStartFresh}
+              disabled={rejoining}
+              data-testid="guest-rejoin-fresh"
+              style={{
+                width: "100%",
+                height: 48,
+                marginTop: 10,
+                borderRadius: 12,
+                border: "1px solid rgba(245,237,224,0.28)",
+                background: "none",
+                color: "rgba(245,237,224,0.7)",
+                fontFamily: FONT_BODY,
+                fontSize: 14,
+                cursor: rejoining ? "default" : "pointer",
+              }}
+            >
+              {t("guestWelcome.rejoinNo", "Neu anfangen")}
+            </button>
+          </div>
+        </div>
+      )}
       <div style={{ marginTop: 44, textAlign: "center" }}>
         <div style={{ fontSize: 11, letterSpacing: "0.26em", textTransform: "uppercase", color: "#D4A847" }} data-testid="guest-welcome-eyebrow">
           {t("guestWelcome.invited", "Du bist eingeladen")}

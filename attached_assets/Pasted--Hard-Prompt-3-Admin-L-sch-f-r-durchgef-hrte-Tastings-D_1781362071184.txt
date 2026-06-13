@@ -1,0 +1,77 @@
+# Hard Prompt #3: Admin-Lösch für durchgeführte Tastings
+
+**Datum:** 13.06.2026 · **Priorität:** NORMAL
+**Art:** Danger Zone UI + Auth-Check. 2 Edits.
+
+---
+
+## Worum es geht
+
+Test-Tastings müssen auch nach Durchführung gelöscht werden können. Aktuell: nur Archivieren. Aber der Lösch-Endpoint existiert bereits. Neue Regel: **Nur Admins** (userRole === "admin") sehen Danger Zone mit Lösch-Button.
+
+---
+
+## Schritt 0 — Diagnose
+
+```bash
+git tag pre-3-admin-loeschen-2026-06-13
+```
+
+1. Lösch-Endpoint: POST `/api/tastings/{id}/delete` existiert (Replit) ✓
+2. Aktuell nur im Setup (Entwurf) verfügbar ✓
+3. **Fehlt:** Auf Detailseite/Cockpit (Live/Abgeschlossen) mit Admin-Check.
+
+---
+
+## Schritt 1 — Edits
+
+### Datei: `client/src/labs/pages/LabsTastingDetail.tsx`
+
+**Edit 1 — Danger Zone für Admins (unten auf Detailseite)**
+
+```typescript
+{currentParticipant?.role === "admin" && (
+  <div style={{ borderTop: "2px solid var(--labs-danger)", paddingTop: 20, marginTop: 20 }}>
+    <h3 style={{ color: "var(--labs-danger)" }}>Danger Zone</h3>
+    <button
+      onClick={() => {
+        const confirm = window.prompt(`Tasting "${tasting.name}" wirklich LÖSCHEN? Gib "${tasting.name}" ein zur Bestätigung:`);
+        if (confirm === tasting.name) {
+          tastingApi.delete(tastingId).then(() => navigate("/labs/tastings"));
+        }
+      }}
+      style={{ background: "var(--labs-danger)", color: "white", padding: "10px 16px", borderRadius: 8, cursor: "pointer" }}
+    >
+      ⚠️ Tasting löschen
+    </button>
+  </div>
+)}
+```
+
+### Datei: `client/src/labs/pages/LabsHostCockpit.tsx`
+
+**Edit 2 — Danger Zone im Cockpit (ähnlich)**
+
+```typescript
+{currentParticipant?.role === "admin" && (
+  <div style={{ ...dangerZoneStyle }}>
+    <h3>Danger Zone</h3>
+    <button onClick={() => confirmDelete()}>⚠️ Tasting löschen</button>
+  </div>
+)}
+```
+
+---
+
+## Schritt 2 — Verifikation
+
+1. Als **Non-Admin:** Danger Zone nicht sichtbar ✓
+2. Als **Admin:** Danger Zone sichtbar ✓
+3. Prompt: "Gib Tastingname ein" ✓
+4. Bei Match: Löschen funktioniert ✓
+
+---
+
+## Schritt 3 — Abschlussbericht
+
+Schritt-0-Befunde, 2 Edits, Verifikations-Output.
