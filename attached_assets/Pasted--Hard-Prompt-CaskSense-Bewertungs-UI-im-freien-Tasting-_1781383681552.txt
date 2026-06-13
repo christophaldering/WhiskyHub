@@ -1,0 +1,220 @@
+# Hard Prompt — CaskSense: Bewertungs-UI im freien Tasting auf RatingFlowV2 (Eindruck-Default)
+
+## Ziel
+Im Live-Tasting gibt es zwei getrennte Bewertungs-Oberflächen in `client/src/labs/pages/LabsLive.tsx`:
+- der **geführte Zweig** (`GuidedStepView`) nutzt bereits `RatingFlowV2` (mit Modus-Auswahl Quick/Eindruck/Kompakt/Geführt + Slider-Aufklapp),
+- der **freie Zweig** (Haupt-Body, `canRate ? (…)`) nutzt eine **alte, fest verdrahtete Tab-Maske** (Nose/Taste/Finish/Overall + Slider + Aromen + Notizen) **ohne Modus-Konzept**.
+
+Dieser Prompt ersetzt **nur die innere Tab-Maske des freien Zweigs** durch `RatingFlowV2` und startet dort standardmäßig im **Eindruck-Modus** (ohne vorgeschaltete Auswahl-Karten; Wechsel jederzeit über den Modus-Chip).
+
+**Der ganze Live-Rahmen bleibt unverändert:** Reveal/Download/Pause-Banner, Dram-Karussell, Whisky-Karte (oben) sowie Handouts und Ranking (unten). Auch die Speicher-Maschinerie (`rateMutation` + `debouncedSave`) bleibt — sie wird nur neu angezapft. Die Sprachnotiz bleibt erhalten und ihr Transkript fließt weiter in die Notizen, exakt wie heute.
+
+**Aufräumen folgt separat:** Der dann ungenutzte Alt-Maskencode (`activeDim`, `updateScore`, `updateNotes`, `InlineFlavorTags`-Nutzung, `studioOpen`, `computeAutoOverall` etc.) bleibt in DIESEM Schritt bewusst liegen — er bricht den Build nicht (kein `noUnusedLocals`) und wird in einem Folge-Prompt entfernt.
+
+---
+
+## Schritt 0 — Diagnose VOR jeder Änderung (Pflicht)
+Führe aus und berichte die Ausgabe, BEVOR du editierst:
+
+```bash
+# Bestätige die Ausgangslage im freien Zweig:
+grep -n "const allDimsScored = DIMENSIONS.every" client/src/labs/pages/LabsLive.tsx
+grep -n "<FlavourStudioSheet" client/src/labs/pages/LabsLive.tsx
+grep -n "const \[freeformMemo, setFreeformMemo\]" client/src/labs/pages/LabsLive.tsx
+grep -n "import RatingFlowV2\|RatingFlowV2 from" client/src/labs/pages/LabsLive.tsx
+grep -n "const mainScale = useRatingScale" client/src/labs/pages/LabsLive.tsx
+```
+
+Erwartung: Tab-Maske (`allDimsScored`) und `FlavourStudioSheet` existieren genau im freien Zweig; `freeformMemo`, `RatingFlowV2`-Import und `mainScale` sind vorhanden. Wenn etwas davon fehlt oder mehrfach vorkommt: **STOPP** und melde die Abweichung — nicht raten.
+
+---
+
+## Plan (erst lesen, dann ausführen)
+1. **Edit 1** — zwei State-Zeilen ergänzen (Modus-Merker + Daten-Ref).
+2. **Edit 2** — zwei Helfer ergänzen (`saveRatingData` = Speicher-Übersetzung inkl. Sprachnotiz; `freeInitialData` = vorhandene Bewertung laden).
+3. **Edit 3** — die innere Tab-Maske (von der Tab-Leiste bis inkl. `<FlavourStudioSheet … />`) durch den `RatingFlowV2`-Aufruf + Sprachnotiz-Block ersetzen.
+
+Die Edits sind **byte-genau** unten vorgegeben. Keine eigenen Anpassungen, keine Umformatierung.
+
+---
+
+## Edit 1 — State ergänzen (Modus-Merker + Daten-Ref)
+
+**FIND** (genau diese eine Zeile):
+```tsx
+  const [freeformMemo, setFreeformMemo] = useState<LabsVoiceMemoData | null>(null);
+```
+
+**REPLACE durch:**
+```tsx
+  const [freeformMemo, setFreeformMemo] = useState<LabsVoiceMemoData | null>(null);
+  const [freeRatingMode, setFreeRatingMode] = useState<"guided" | "compact" | "quick" | "tisch" | null>("tisch");
+  const freeRatingDataRef = useRef<Partial<RatingData> | undefined>(undefined);
+```
+
+---
+
+## Edit 2 — Helfer ergänzen (Speicher-Übersetzung + Laden)
+
+**FIND** (genau dieser Block — Ende von `debouncedSave`, direkt vor `computeAutoOverall`):
+```tsx
+    [currentParticipant, currentWhisky, tasting, tastingId]
+  );
+
+  const computeAutoOverall = (s: typeof scores) =>
+```
+
+**REPLACE durch:**
+```tsx
+    [currentParticipant, currentWhisky, tasting, tastingId]
+  );
+
+  // Bewertung aus RatingFlowV2 (freier Zweig) ins Speicherformat uebersetzen + Sprachnotiz anhaengen.
+  const saveRatingData = useCallback((data: Partial<RatingData> | undefined, memo: LabsVoiceMemoData | null) => {
+    if (!data?.scores) return;
+    const sc = data.scores;
+    if (typeof sc.nose !== "number" || typeof sc.palate !== "number" || typeof sc.finish !== "number") return;
+    const inv = mainScale.step > 0 ? 1 / mainScale.step : 2;
+    const eff = (data.overallExplicit === true || (typeof sc.overall === "number" && sc.overall > 0))
+      ? (sc.overall as number)
+      : Math.max(mainScale.step, Math.round(((sc.nose + sc.palate + sc.finish) / 3) * inv) / inv);
+    const allNotes = (["nose", "palate", "finish", "overall"] as const)
+      .map((ph) => data.notes?.[ph]?.trim())
+      .filter(Boolean)
+      .join(" | ");
+    const tg = data.tags ?? { nose: [], palate: [], finish: [], overall: [] };
+    const chipStr = [...(tg.nose ?? []), ...(tg.palate ?? []), ...(tg.finish ?? []), ...(tg.overall ?? [])].filter(Boolean);
+    let combined = allNotes;
+    if (memo?.transcript) combined = combined ? `${combined}\n${memo.transcript}` : memo.transcript;
+    if (chipStr.length > 0) combined = combined ? `${combined}\n[FLAVOURS] ${chipStr.join(", ")} [/FLAVOURS]` : `[FLAVOURS] ${chipStr.join(", ")} [/FLAVOURS]`;
+    debouncedSave({ nose: sc.nose, taste: sc.palate, finish: sc.finish, overall: eff }, combined);
+  }, [mainScale, debouncedSave]);
+
+  // Vorhandene Bewertung -> RatingFlowV2-Format (Aromen aus [FLAVOURS] zuruecklesen).
+  const freeInitialData = useMemo<RatingData | undefined>(() => {
+    if (!myRating) return undefined;
+    const raw = myRating.notes || "";
+    const fmatch = raw.match(/\[FLAVOURS\]\s*([\s\S]*?)\s*\[\/FLAVOURS\]/);
+    const chips = fmatch ? fmatch[1].split(",").map((c: string) => c.trim()).filter(Boolean) : [];
+    const clean = fmatch ? raw.replace(/\n?\[FLAVOURS\][\s\S]*?\[\/FLAVOURS\]/, "").trim() : raw;
+    const fb = mainScale.max === 100 ? 75 : Math.round((mainScale.max * 0.75) / mainScale.step) * mainScale.step;
+    const toU = (v: number | null | undefined) => v == null ? fb : (mainScale.max !== 100 && v > mainScale.max ? Math.round((v / 100) * mainScale.max * 10) / 10 : v);
+    return {
+      scores: { nose: toU(myRating.nose), palate: toU(myRating.taste), finish: toU(myRating.finish), overall: toU(myRating.overall) },
+      tags: { nose: chips, palate: [], finish: [], overall: [] },
+      notes: { nose: clean, palate: "", finish: "", overall: "" },
+      overallExplicit: true,
+    };
+  }, [myRating, mainScale]);
+
+  const computeAutoOverall = (s: typeof scores) =>
+```
+
+---
+
+## Edit 3 — Innere Tab-Maske durch RatingFlowV2 + Sprachnotiz ersetzen
+
+Im **freien Zweig** (Haupt-Body, **nicht** in `GuidedStepView`) steht der Block `{canRate ? ( <> … </> ) : ( … )}`.
+Ersetze **alles von diesem Start-Marker bis inklusive diesem End-Marker** durch den neuen Block. Das umschließende `{canRate ? (`, `<>`, `</>`, `) : (` **bleibt** stehen — getauscht wird nur der Inhalt dazwischen.
+
+**START-Marker** (erste zu löschende Zeilen — die Tab-Leiste-IIFE):
+```tsx
+              {(() => {
+                const allDimsScored = DIMENSIONS.every((d) => scores[d] > 0);
+```
+
+**END-Marker** (letzte zu löschende Zeilen — das alte FlavourStudioSheet):
+```tsx
+              <FlavourStudioSheet
+                open={studioOpen}
+                onOpenChange={setStudioOpen}
+                dimension={activeDim as DimKey}
+                existingChips={activeChips}
+                onChipsChange={handleStudioChipsChange}
+              />
+```
+
+**ERSETZE den gesamten Bereich (START bis END, beide einschließlich) durch:**
+```tsx
+              <RatingFlowV2
+                key={currentWhisky?.id}
+                scale={mainScale}
+                whisky={{ name: displayName, region: currentWhisky?.region || undefined, cask: currentWhisky?.caskType || undefined, blind: isBlind }}
+                initialData={freeInitialData}
+                preferredMode={freeRatingMode}
+                showTisch={true}
+                onChange={(draft) => {
+                  if (draft.mode) setFreeRatingMode(draft.mode);
+                  freeRatingDataRef.current = draft.data;
+                  saveRatingData(draft.data, freeformMemo);
+                }}
+                onDone={(data) => { saveRatingData(data, freeformMemo); }}
+                onBack={() => {}}
+              />
+              {VOICE_MEMOS_ENABLED && (
+                <div className="mt-3">
+                  <LabsVoiceMemoRecorder
+                    participantId={currentParticipant?.id || ""}
+                    memo={freeformMemo}
+                    onMemoChange={(memoData) => {
+                      setFreeformMemo(memoData);
+                      saveRatingData(freeRatingDataRef.current, memoData);
+                    }}
+                  />
+                </div>
+              )}
+```
+
+Hinweis: Direkt vor dem START-Marker steht `<>`, direkt nach dem END-Marker steht `</>` gefolgt von `) : (`. Diese vier bleiben unverändert. Nach dem Edit muss die Struktur lauten: `{canRate ? ( <> <RatingFlowV2 …/> {VOICE_MEMOS_ENABLED && (…)} </> ) : ( …AuthGate… )}`.
+
+---
+
+## Sicherheitsregeln (strikt)
+- **Nur** `client/src/labs/pages/LabsLive.tsx` anfassen. Keine andere Datei.
+- `shared/schema.ts` **nicht** berühren. **Keine** Migrationen (`drizzle-kit` o.ä.). **Keine** Routen löschen.
+- Den Alt-Maskencode (`updateScore`, `updateNotes`, `activeChips`, `studioOpen`, `computeAutoOverall`, `InlineFlavorTags`-Nutzung etc.) in diesem Schritt **nicht** entfernen und **nicht** umbauen — er bleibt liegen.
+- Keine Umbenennung von Dimensionen. Keine Design-/Style-Änderungen.
+
+---
+
+## Verifikation (ausführen + Ausgabe berichten)
+
+```bash
+# 1) RatingFlowV2 sitzt jetzt im freien Zweig (genau 2x in der Datei: GuidedStepView + freier Zweig):
+grep -c "<RatingFlowV2" client/src/labs/pages/LabsLive.tsx     # erwartet: 2
+grep -c "key={currentWhisky?.id}" client/src/labs/pages/LabsLive.tsx  # erwartet: 1
+
+# 2) Alte Tab-Maske + altes Studio-Sheet sind raus:
+grep -c "const allDimsScored = DIMENSIONS.every" client/src/labs/pages/LabsLive.tsx  # erwartet: 0
+grep -c "<FlavourStudioSheet" client/src/labs/pages/LabsLive.tsx                     # erwartet: 0
+
+# 3) Neue Helfer + State vorhanden:
+grep -c "const saveRatingData" client/src/labs/pages/LabsLive.tsx   # erwartet: 1
+grep -c "const freeInitialData" client/src/labs/pages/LabsLive.tsx  # erwartet: 1
+grep -c "const \[freeRatingMode" client/src/labs/pages/LabsLive.tsx # erwartet: 1
+
+# 4) TypeScript: KEINE neuen Fehler. Erwartung identisch zur Baseline:
+#    genau 1 LabsLive-Fehler, und zwar der vorbestehende activeChips/tagsByPhase-Fehler (TS7053).
+NODE_OPTIONS='--max-old-space-size=6144' npx tsc --noEmit 2>&1 | grep "LabsLive"
+```
+
+Erwartete tsc-Ausgabe: **genau eine** Zeile, der vorbestehende Fehler
+`LabsLive.tsx(####,12): error TS7053: … 'ActiveTab' can't be used to index type 'Record<Phase, string[]>'`.
+Wenn ein **anderer/zusätzlicher** Fehler in LabsLive auftaucht: melden, nicht selbst „reparieren".
+
+---
+
+## Smoke-Test (manuell, nach erfolgreichem Build)
+1. Offenes (nicht-geführtes) Tasting als **frischer Gast** öffnen → die Bewertung startet **direkt im Eindruck-Modus**, ohne Auswahl-Karten.
+2. Über den **Modus-Chip** auf Quick / Kompakt / Geführt wechseln → funktioniert; der gewählte Modus bleibt beim Dram-Wechsel erhalten.
+3. Bewerten → wird **automatisch gespeichert** (kein „Speichern"-Knopf nötig).
+4. **Aromen** wählen → bleiben nach Reload erhalten (landen im `[FLAVOURS]`-Teil der Notizen).
+5. **Sprachnotiz** aufnehmen → Transkript fließt in die Notizen und wird gespeichert.
+6. Tasting verlassen + erneut öffnen (Re-Rating) → vorhandene Werte + Aromen werden geladen.
+
+---
+
+## ⛔ Commit-Verbot (zwingend)
+- **NICHT committen. NICHT pushen.** Keine `git add` / `git commit` / `git push`.
+- Keine Safety-Tags setzen (macht Christoph von Hand).
+- Nach Abschluss nur die Verifikations-Ausgaben berichten und auf Freigabe warten.
