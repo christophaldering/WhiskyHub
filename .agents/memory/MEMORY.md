@@ -2,3 +2,4 @@
 - [Autoscale health probe vs domain redirect](autoscale-redirect-healthcheck.md) — replit.app→custom-domain 301 on GET / fails Cloud Run promote probe; gate redirect on Accept: text/html.
 - [Image upload sanitizer](image-upload-sanitizer.md) — all uploads strip EXIF via one chokepoint; keep multer allowlist in sync with sanitizer, fail-closed for images.
 - [tsc baseline OOM](tsc-baseline-oom.md) — `tsc --noEmit` prints a fake "0 errors" on OOM; use NODE_OPTIONS=--max-old-space-size=6144 for the real ~500 baseline.
+- [RatingFlowV2 onChange merge](rating-flow-onchange-merge.md) — free-branch auto-save merges per-category by spread; a subview emitting full empty tags/notes wipes saved aromas (QuickRating still does).
