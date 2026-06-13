@@ -244,7 +244,7 @@ export default function RatingFlowV2({
       setLiveData(merged);
       liveDataRef.current = merged;
     }
-    onChange?.({ mode, phaseIndex, data });
+    onChange?.({ mode, phaseIndex, data: liveDataRef.current ?? data });
   }, [mode, onChange]);
 
   const handleRatingBack = useCallback(() => {

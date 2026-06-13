@@ -95,7 +95,12 @@ export default function TischRating({ labels, whisky, initialData, onDone, onBac
         finish: toScore(finalScores[2]),
         overall: toScore(finalScores[3]),
       },
-      tags: { nose: [], palate: [], finish: [], overall: [] },
+      tags: {
+        nose: initialData?.tags?.nose ?? [],
+        palate: initialData?.tags?.palate ?? [],
+        finish: initialData?.tags?.finish ?? [],
+        overall: initialData?.tags?.overall ?? [],
+      },
       notes: {
         nose: initialData?.notes?.nose ?? "",
         palate: initialData?.notes?.palate ?? "",
