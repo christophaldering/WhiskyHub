@@ -851,6 +851,10 @@ const resources = {
         ratingTischD: "All four dimensions as quick steps — one tap per phase.",
         ratingTischH: "When the conversation matters more.",
         tischTapHint: "One tap per phase — details can wait until later.",
+        tischPreciseToggle: "Adjust precisely",
+        tischPreciseClose: "Faster",
+        tischNext: "Next",
+        tischDone: "Done",
         back: "Back",
         recognition: {
           title: "Recognized Whisky",
@@ -10662,6 +10666,10 @@ const resources = {
         ratingTischD: "Alle vier Dimensionen als Stufen — ein Tap pro Phase.",
         ratingTischH: "Wenn das Gespräch wichtiger ist.",
         tischTapHint: "Ein Tap pro Phase — Details kannst du später ergänzen.",
+        tischPreciseToggle: "Genauer einstellen",
+        tischPreciseClose: "Schneller",
+        tischNext: "Weiter",
+        tischDone: "Fertig",
         back: "Zur\u00fcck",
         recognition: {
           title: "Erkannter Whisky",

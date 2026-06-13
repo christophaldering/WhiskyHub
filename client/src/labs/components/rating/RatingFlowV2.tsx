@@ -185,6 +185,12 @@ export default function RatingFlowV2({
   const tischLabels = useMemo(() => ({
     tisch: modeLabels.tisch,
     tischTapHint: t("v2.tischTapHint", "Ein Tap pro Phase — Details kannst du später ergänzen."),
+    tapEdit: guidedLabels.tapEdit,
+    of: guidedLabels.of,
+    preciseToggle: t("v2.tischPreciseToggle", "Genauer einstellen"),
+    preciseToggleClose: t("v2.tischPreciseClose", "Schneller"),
+    next: t("v2.tischNext", "Weiter"),
+    done: t("v2.tischDone", "Fertig"),
     band90: guidedLabels.band90,
     band85: guidedLabels.band85,
     band80: guidedLabels.band80,

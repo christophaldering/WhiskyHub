@@ -5,10 +5,17 @@ import type { RatingScale } from "@/labs/hooks/useRatingScale";
 import { BackIcon } from "./icons";
 import PhaseSignature from "./PhaseSignature";
 import { TISCH_ANCHORS, anchorToScale, nearestAnchorIndex } from "./tischAnchors";
+import ScoreInput from "./ScoreInput";
 
 interface TischLabels {
   tisch: string;
   tischTapHint: string;
+  tapEdit: string;
+  of: string;
+  preciseToggle: string;
+  preciseToggleClose: string;
+  next: string;
+  done: string;
   band90: string;
   band85: string;
   band80: string;
@@ -57,30 +64,36 @@ export default function TischRating({ labels, whisky, initialData, onDone, onBac
   const bandWord = (key: (typeof TISCH_ANCHORS)[number]["bandKey"]): string => labels[key];
 
   // Bei Re-Rating: vorhandene Scores auf nächstliegende Anker abbilden.
-  const initialPicks = useMemo<(number | null)[]>(() => {
+  // Feine Scores pro Phase (null = noch nicht bewertet). Buttons und Slider schreiben in dasselbe Array.
+  const initialScores = useMemo<(number | null)[]>(() => {
     if (!initialData?.scores) return [null, null, null, null];
     const s = initialData.scores;
     const vals = [s.nose, s.palate, s.finish, s.overall];
-    return vals.map((v) => (typeof v === "number" && v > 0 ? nearestAnchorIndex(v, scaleMax, scaleStep) : null));
-  }, [initialData, scaleMax, scaleStep]);
+    return vals.map((v) => (typeof v === "number" && v > 0 ? v : null));
+  }, [initialData]);
 
-  const [picks, setPicks] = useState<(number | null)[]>(initialPicks);
+  const [scores, setScores] = useState<(number | null)[]>(initialScores);
   const [phaseIdx, setPhaseIdx] = useState(0);
   const [flashIdx, setFlashIdx] = useState<number | null>(null);
+  const [precise, setPrecise] = useState(false);
   const transitioningRef = useRef(false);
 
   const phaseId = PHASE_ORDER[phaseIdx];
   const accent = `var(--labs-phase-${phaseId})`;
+  const defaultScore = anchorToScale(TISCH_ANCHORS[2].value100, scaleMax, scaleStep);
 
-  const buildData = (finalPicks: (number | null)[]): RatingData => {
-    const toScore = (idx: number | null): number =>
-      anchorToScale(TISCH_ANCHORS[idx ?? 2].value100, scaleMax, scaleStep);
+  // Welcher Anker-Button ist für eine Phase aktiv (Highlight folgt dem feinen Score).
+  const activeAnchor = (phase: number): number | null =>
+    scores[phase] != null ? nearestAnchorIndex(scores[phase] as number, scaleMax, scaleStep) : null;
+
+  const buildData = (finalScores: (number | null)[]): RatingData => {
+    const toScore = (v: number | null): number => v ?? defaultScore;
     return {
       scores: {
-        nose: toScore(finalPicks[0]),
-        palate: toScore(finalPicks[1]),
-        finish: toScore(finalPicks[2]),
-        overall: toScore(finalPicks[3]),
+        nose: toScore(finalScores[0]),
+        palate: toScore(finalScores[1]),
+        finish: toScore(finalScores[2]),
+        overall: toScore(finalScores[3]),
       },
       tags: { nose: [], palate: [], finish: [], overall: [] },
       notes: {
@@ -93,24 +106,49 @@ export default function TischRating({ labels, whisky, initialData, onDone, onBac
     };
   };
 
+  const advance = (finalScores: (number | null)[]) => {
+    if (phaseIdx < PHASE_ORDER.length - 1) {
+      setPhaseIdx(phaseIdx + 1);
+    } else {
+      onDone(buildData(finalScores));
+    }
+  };
+
+  // Wortstufe antippen. Im schnellen Modus (precise=false) springt es nach kurzem Flash zur nächsten Phase.
   const handlePick = (anchorIdx: number) => {
     if (transitioningRef.current) return;
-    transitioningRef.current = true;
-    const next = [...picks];
-    next[phaseIdx] = anchorIdx;
-    setPicks(next);
+    const score = anchorToScale(TISCH_ANCHORS[anchorIdx].value100, scaleMax, scaleStep);
+    const next = [...scores];
+    next[phaseIdx] = score;
+    setScores(next);
     setFlashIdx(anchorIdx);
     onChange?.(phaseIdx, { scores: buildData(next).scores });
 
-    window.setTimeout(() => {
-      setFlashIdx(null);
-      transitioningRef.current = false;
-      if (phaseIdx < PHASE_ORDER.length - 1) {
-        setPhaseIdx(phaseIdx + 1);
-      } else {
-        onDone(buildData(next));
-      }
-    }, 180);
+    if (precise) {
+      window.setTimeout(() => setFlashIdx(null), 180);
+    } else {
+      transitioningRef.current = true;
+      window.setTimeout(() => {
+        setFlashIdx(null);
+        transitioningRef.current = false;
+        advance(next);
+      }, 180);
+    }
+  };
+
+  // Slider-Feinjustage (nur im präzisen Modus sichtbar). Kein Auto-Advance.
+  const handleSlider = (v: number) => {
+    const next = [...scores];
+    next[phaseIdx] = v;
+    setScores(next);
+    onChange?.(phaseIdx, { scores: buildData(next).scores });
+  };
+
+  // Manuelles Weiter im präzisen Modus.
+  const handleNext = () => {
+    if (transitioningRef.current) return;
+    const next = scores[phaseIdx] == null ? (() => { const n = [...scores]; n[phaseIdx] = defaultScore; setScores(n); return n; })() : scores;
+    advance(next);
   };
 
   const handleStepBack = () => {
@@ -171,12 +209,12 @@ export default function TischRating({ labels, whisky, initialData, onDone, onBac
               flex: 1,
               borderRadius: 2,
               background:
-                i < phaseIdx || picks[i] != null
+                i < phaseIdx || scores[i] != null
                   ? `var(--labs-phase-${p})`
                   : i === phaseIdx
                     ? `var(--labs-phase-${p})`
                     : "var(--labs-border)",
-              opacity: i === phaseIdx ? 1 : i < phaseIdx || picks[i] != null ? 0.55 : 1,
+              opacity: i === phaseIdx ? 1 : i < phaseIdx || scores[i] != null ? 0.55 : 1,
             }}
           />
         ))}
@@ -196,7 +234,7 @@ export default function TischRating({ labels, whisky, initialData, onDone, onBac
 
       <div style={{ display: "flex", flexDirection: "column", gap: SP.sm }}>
         {TISCH_ANCHORS.map((a, i) => {
-          const picked = picks[phaseIdx] === i;
+          const picked = activeAnchor(phaseIdx) === i;
           const flashing = flashIdx === i;
           const display = anchorToScale(a.value100, scaleMax, scaleStep);
           return (
@@ -230,9 +268,74 @@ export default function TischRating({ labels, whisky, initialData, onDone, onBac
         })}
       </div>
 
-      <div style={{ marginTop: SP.md, fontSize: 12, color: "var(--labs-text-muted)", textAlign: "center", fontFamily: FONT.body }} data-testid="tisch-tap-hint">
-        {labels.tischTapHint}
-      </div>
+      <button
+        onClick={() => setPrecise((p) => !p)}
+        data-testid="tisch-precise-toggle"
+        style={{
+          marginTop: SP.md,
+          width: "100%",
+          minHeight: TOUCH_MIN,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: SP.xs,
+          background: "none",
+          border: "none",
+          color: "var(--labs-text-muted)",
+          cursor: "pointer",
+          fontFamily: FONT.body,
+          fontSize: 13,
+        }}
+      >
+        <span>{precise ? labels.preciseToggleClose : labels.preciseToggle}</span>
+        <span style={{ fontSize: 11 }}>{precise ? "▴" : "▾"}</span>
+      </button>
+
+      {precise && (
+        <div data-testid="tisch-precise-panel" style={{ marginTop: SP.sm }}>
+          <ScoreInput
+            value={scores[phaseIdx] ?? defaultScore}
+            onChange={handleSlider}
+            phaseId={phaseId}
+            labels={{
+              tapEdit: labels.tapEdit,
+              of: labels.of,
+              band90: labels.band90,
+              band85: labels.band85,
+              band80: labels.band80,
+              band75: labels.band75,
+              band70: labels.band70,
+              band0: labels.band0,
+            }}
+            scale={scale}
+          />
+          <button
+            onClick={handleNext}
+            data-testid="tisch-precise-next"
+            style={{
+              marginTop: SP.md,
+              width: "100%",
+              minHeight: TOUCH_MIN + 8,
+              borderRadius: RADIUS.md,
+              border: "none",
+              background: accent,
+              color: "var(--labs-bg, #0B0906)",
+              cursor: "pointer",
+              fontFamily: FONT.body,
+              fontSize: 16,
+              fontWeight: 600,
+            }}
+          >
+            {phaseIdx < PHASE_ORDER.length - 1 ? labels.next : labels.done}
+          </button>
+        </div>
+      )}
+
+      {!precise && (
+        <div style={{ marginTop: SP.md, fontSize: 12, color: "var(--labs-text-muted)", textAlign: "center", fontFamily: FONT.body }} data-testid="tisch-tap-hint">
+          {labels.tischTapHint}
+        </div>
+      )}
     </div>
   );
 }
