@@ -1,0 +1,99 @@
+# HARD PROMPT — WP 1a-i: Gast-Eintritt via Invite-Link (ultra) + Accept-Landung
+# Einzige Datei: client/src/labs/pages/LabsInvite.tsx
+
+ROLLE: Exakt diese 3 Edits, null Freiheitsgrade. Abweichung → STOPP, melden, warten.
+VERBOTEN: kein git commit/add/push; kein schema.ts; keine Backend-Änderung (das ist
+bewusst Variante A — guest-join-Route NICHT anfassen); keine anderen Dateien.
+
+----------------------------------------------------------------------
+SCHRITT 0 — DIAGNOSE (nur lesen)
+----------------------------------------------------------------------
+    git tag pre-invite-guest-1ai-2026-06-14
+    F=client/src/labs/pages/LabsInvite.tsx
+Asserts (erwartet):
+    grep -c 'navigate(`/labs/tastings/${result.tastingId}`)' $F   # 1
+    grep -c 'if (!currentParticipant) {' $F                        # 1
+    grep -c 'data.tasting' $F                                      # 0  (wird neu eingeführt)
+Bestätige außerdem (lesen, nicht ändern): inviteApi.getByToken liefert { invite, tasting },
+also ist data.tasting (mit status/guestMode/code) im Query-Result vorhanden.
+Danach PLAN ausgeben, auf "GO" warten.
+
+----------------------------------------------------------------------
+EDIT 1 — Accept landet bei laufendem Tasting im Live-Raum
+ALT:
+    onSuccess: (result: any) => {
+      setAccepted(true);
+      setTimeout(() => navigate(`/labs/tastings/${result.tastingId}`), 1500);
+    },
+NEU:
+    onSuccess: (result: any) => {
+      setAccepted(true);
+      const id = result.tastingId;
+      const dest = data?.tasting?.status === "open" ? `/labs/live/${id}` : `/labs/tastings/${id}`;
+      setTimeout(() => navigate(dest), 1500);
+    },
+
+----------------------------------------------------------------------
+EDIT 2 — Ultra-Gast: ohne Konto in den erprobten Join-Flow umleiten
+ALT:
+  useEffect(() => {
+    if (currentParticipant && data?.invite && !accepted) {
+      acceptMutation.mutate();
+    }
+  }, [currentParticipant, data]);
+NEU:
+  useEffect(() => {
+    if (currentParticipant && data?.invite && !accepted) {
+      acceptMutation.mutate();
+    }
+  }, [currentParticipant, data]);
+
+  useEffect(() => {
+    if (!currentParticipant && data?.tasting?.guestMode === "ultra" && data?.tasting?.code) {
+      navigate(`/labs/join/${data.tasting.code}`);
+    }
+  }, [currentParticipant, data, navigate]);
+
+----------------------------------------------------------------------
+EDIT 3 — Nicht-eingeloggt: ultra → Lade-Hinweis (Redirect läuft), standard → Sign-in
+ALT:
+    if (!currentParticipant) {
+      return (
+        <div className="flex items-center justify-center" style={{ minHeight: "50vh" }}>
+          <div className="labs-card-elevated p-8 text-center max-w-md w-full mx-4">
+            <Wine
+NEU:
+    if (!currentParticipant) {
+      const ultraGuest = data.tasting?.guestMode === "ultra" && !!data.tasting?.code;
+      if (ultraGuest) {
+        return (
+          <div className="flex items-center justify-center" style={{ minHeight: "50vh" }}>
+            <div className="text-center">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" style={{ color: "var(--labs-accent)" }} />
+              <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>{t("labs.invite.joiningAsGuest", "Joining as guest...")}</p>
+            </div>
+          </div>
+        );
+      }
+      return (
+        <div className="flex items-center justify-center" style={{ minHeight: "50vh" }}>
+          <div className="labs-card-elevated p-8 text-center max-w-md w-full mx-4">
+            <Wine
+
+----------------------------------------------------------------------
+VERIFIKATION (kein commit!)
+----------------------------------------------------------------------
+1) npm run build → fehlerfrei.
+2) Asserts:
+    grep -c 'guestMode === "overall"' $F                 # 0 (kein Tippfehler)
+    grep -c 'data?.tasting?.guestMode === "ultra"' $F    # 1
+    grep -c 'ultraGuest' $F                               # 2
+    grep -c '/labs/live/${id}' $F                         # 1
+3) Manuelle QA:
+    a) Invite-Link eines "ultra"-Tastings, NICHT eingeloggt → leitet automatisch in den
+       Gast-Namens-Flow (LabsJoin) um; kein "Sign in"-Zwang mehr.
+    b) Invite-Link eines "standard"-Tastings, NICHT eingeloggt → weiterhin Sign-in-Screen
+       (Host verlangt Konto — Variante A, gewollt).
+    c) Eingeloggt + Tasting läuft (status open) → nach Accept Landung im Live-Raum
+       (/labs/live/:id); nicht-laufend → Detail-Seite wie bisher.
+4) git diff --stat, dann auf Byte-Diff-Abnahme warten. NICHT committen.
