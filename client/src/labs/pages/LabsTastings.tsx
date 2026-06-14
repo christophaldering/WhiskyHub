@@ -81,7 +81,7 @@ export default function LabsTastings() {
   }, [activeTab]);
 
   const handleTabClick = (tab: TastingsTab) => {
-    if (tab === "solo") setSoloEntry(undefined);
+    if (tab === "solo") setSoloEntry("impression");
     setActiveTab((prev) => (prev === tab ? null : tab));
   };
 
