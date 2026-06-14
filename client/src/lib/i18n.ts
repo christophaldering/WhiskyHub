@@ -9460,6 +9460,8 @@ const resources = {
         viewResults: "View Results",
         saveFailedError: "Save failed",
         ratingsLocked: "Ratings are locked",
+        joinedMidwayTitle: "Tasting already in progress",
+        joinedMidwayHint: "You're joining at dram {{n}} of {{total}}.",
         recap: {
           eyebrow: "Your Evening",
           title: "Your evening, in a glance",
@@ -19252,6 +19254,8 @@ const resources = {
         viewResults: "Ergebnisse ansehen",
         saveFailedError: "Speichern fehlgeschlagen",
         ratingsLocked: "Bewertungen sind gesperrt",
+        joinedMidwayTitle: "Das Tasting läuft bereits",
+        joinedMidwayHint: "Du steigst bei Dram {{n}} von {{total}} ein.",
         recap: {
           eyebrow: "Dein Abend",
           title: "Dein Abend auf einen Blick",

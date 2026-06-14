@@ -202,6 +202,10 @@ function GuidedStepView({
 }) {
   const { t } = useTranslation();
   const [localIndex, setLocalIndex] = useState(whiskyIndex);
+  const isHostViewer = currentParticipant?.id === tasting?.hostId;
+  const [entryBannerIdx, setEntryBannerIdx] = useState<number | null>(
+    !isHostViewer && whiskyIndex >= 1 ? whiskyIndex : null
+  );
   const pendingIndexRef = useRef<number | null>(null);
   const revealMomentActiveRef = useRef(false);
   const [interruptBanner, setInterruptBanner] = useState<{ fromIndex: number; toIndex: number } | null>(null);
@@ -241,6 +245,12 @@ function GuidedStepView({
       }
     }
   }, [whiskyIndex]);
+
+  useEffect(() => {
+    if (entryBannerIdx === null) return;
+    const tmr = setTimeout(() => setEntryBannerIdx(null), 7000);
+    return () => clearTimeout(tmr);
+  }, [entryBannerIdx]);
 
   const hostMaxIndex = whiskyIndex;
   const activeWhisky = allWhiskies[localIndex] ?? whisky;
@@ -475,6 +485,35 @@ function GuidedStepView({
 
   return (
     <div className="labs-fade-in">
+      {entryBannerIdx !== null && (
+        <div
+          onClick={() => setEntryBannerIdx(null)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "10px 14px",
+            borderRadius: 12,
+            background: "rgba(200,134,26,0.08)",
+            border: "1px solid rgba(200,134,26,0.2)",
+            marginBottom: 16,
+            cursor: "pointer",
+            animation: "labsFadeIn 200ms ease both",
+          }}
+          data-testid="live-entry-midway-banner"
+        >
+          <Clock style={{ width: 16, height: 16, color: "#c8861a", flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>
+              {t("liveUi.joinedMidwayTitle", "Tasting already in progress")}
+            </div>
+            <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+              {t("liveUi.joinedMidwayHint", "You're joining at dram {{n}} of {{total}}.", { n: entryBannerIdx + 1, total: totalWhiskies })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {revealMoment && (
         <LabsRevealMoment
           {...revealMoment}
