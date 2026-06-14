@@ -174,6 +174,7 @@ export default function LabsSolo() {
   const namingResolvedRef = useRef(false);
   const pendingFinalizeRef = useRef<(() => void) | null>(null);
   const pendingWhiskyRef = useRef<CapturedWhisky | null>(null);
+  const pendingImageRef = useRef<File | null>(null);
 
   const showDraftFlash = useCallback(() => {
     setDraftSavedFlash(true);
@@ -490,13 +491,15 @@ export default function LabsSolo() {
         if (entry?.id) entryId = entry.id;
       } catch {}
 
-      if (soloImageFile && entryId) {
+      const imgToUpload = soloImageFile || pendingImageRef.current;
+      if (imgToUpload && entryId) {
         try {
           const imgFormData = new FormData();
-          imgFormData.append("image", soloImageFile);
+          imgFormData.append("image", imgToUpload);
           await fetch(`/api/journal/${participantId}/${entryId}/image`, { method: "POST", body: imgFormData });
         } catch {}
         setSoloImageFile(null);
+        pendingImageRef.current = null;
       }
 
       clearSoloDraft();
@@ -624,16 +627,18 @@ export default function LabsSolo() {
         return;
       }
 
-      if (soloImageFile) {
+      const imgToUpload = soloImageFile || pendingImageRef.current;
+      if (imgToUpload) {
         try {
           const entry = await res.json();
           if (entry?.id) {
             const imgFormData = new FormData();
-            imgFormData.append("image", soloImageFile);
+            imgFormData.append("image", imgToUpload);
             await fetch(`/api/journal/${participantId}/${entry.id}/image`, { method: "POST", body: imgFormData });
           }
         } catch {}
         setSoloImageFile(null);
+        pendingImageRef.current = null;
       }
 
       clearSoloDraft();
@@ -701,7 +706,10 @@ export default function LabsSolo() {
     if (w) {
       pendingNameRef.current = w.name || null;
       setWhisky(w);
-      if (imageFile !== undefined) setSoloImageFile(imageFile);
+      if (imageFile !== undefined) {
+        setSoloImageFile(imageFile);
+        pendingImageRef.current = imageFile;
+      }
     }
     const runner = pendingFinalizeRef.current;
     pendingFinalizeRef.current = null;
