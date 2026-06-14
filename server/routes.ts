@@ -5456,6 +5456,92 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
     }
   });
 
+  // Eindruck-Zerlegung: nimmt einen rohen, freien Verkostungs-Eindruck und schlaegt
+  // behutsam Struktur vor (Tags, Nase/Gaumen/Abgang, optionaler Score-Vorschlag mit
+  // Konfidenz, eine sokratische Rueckfrage). Faktentreue: Score nur, wenn der Eindruck
+  // es hergibt, sonst null. Alles ist Vorschlag, nichts wird erzwungen.
+  app.post("/api/impression/parse", async (req: Request, res: Response) => {
+    const startMs = Date.now();
+    try {
+      const rateLimitKey = (req.headers["x-participant-id"] as string) || (req.ip || req.headers["x-forwarded-for"] || "unknown") as string;
+      const rateCheck = checkIdentifyRateLimit(rateLimitKey);
+      if (!rateCheck.allowed) {
+        return res.status(429).json({ message: "Too many requests.", retryAfter: rateCheck.retryAfterSeconds });
+      }
+
+      const { text, whiskyName } = req.body || {};
+      if (!text || typeof text !== "string" || text.trim().length < 2) {
+        return res.status(400).json({ message: "Impression text is required (at least 2 characters)" });
+      }
+      const impression = text.trim().slice(0, 1000);
+      const context = typeof whiskyName === "string" && whiskyName.trim() ? `\nWhisky: ${whiskyName.trim().slice(0, 120)}` : "";
+
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        temperature: 0.3,
+        max_tokens: 500,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: `Du bist ein behutsamer Verkostungs-Assistent. Du bekommst einen rohen, freien Eindruck eines Whiskys (oft knapp, z.B. "lecker, rauchig"). Erfinde NICHTS hinzu. Leite NUR ab, was der Eindruck wirklich hergibt. Antworte in der Sprache des Eindrucks. Gib JSON zurueck:
+{"flavorTags": ["..."], "nose": "kurzer Satz oder leer", "taste": "kurzer Satz oder leer", "finish": "kurzer Satz oder leer", "scoreSuggestion": {"overall": 0-100, "nose": 0-100, "taste": 0-100, "finish": 0-100} ODER null, "confidence": "high|medium|low", "followUpQuestion": "EINE eingrenzende Rueckfrage, die an ein bereits genanntes Wort anknuepft (z.B. rauchig -> eher Lagerfeuer oder Pflaster?), oder leer"}
+Regeln: Wenn der Eindruck zu vage fuer eine sinnvolle Zahl ist, setze scoreSuggestion=null und confidence="low". Je duenner der Eindruck, desto vorsichtiger. Hoechstens 6 flavorTags, nur Begriffe die im Eindruck stecken oder klar mitschwingen. Die Rueckfrage stellt nie eine fremde Liste, sondern schaerft nur das bereits Gesagte.`,
+          },
+          { role: "user", content: impression + context },
+        ],
+      });
+
+      const raw = completion.choices[0]?.message?.content || "{}";
+      let parsed: any = {};
+      try { parsed = JSON.parse(raw); } catch { parsed = {}; }
+
+      const clampScore = (v: any): number | null => {
+        const n = typeof v === "number" ? v : Number(v);
+        if (!Number.isFinite(n)) return null;
+        return Math.max(0, Math.min(100, Math.round(n)));
+      };
+      let score: { overall: number | null; nose: number | null; taste: number | null; finish: number | null } | null = null;
+      if (parsed.scoreSuggestion && typeof parsed.scoreSuggestion === "object") {
+        score = {
+          overall: clampScore(parsed.scoreSuggestion.overall),
+          nose: clampScore(parsed.scoreSuggestion.nose),
+          taste: clampScore(parsed.scoreSuggestion.taste),
+          finish: clampScore(parsed.scoreSuggestion.finish),
+        };
+        if (score.overall == null && score.nose == null && score.taste == null && score.finish == null) score = null;
+      }
+      const tags = Array.isArray(parsed.flavorTags)
+        ? parsed.flavorTags.filter((t: any) => typeof t === "string" && t.trim()).map((t: string) => t.trim()).slice(0, 6)
+        : [];
+      const conf = ["high", "medium", "low"].includes(parsed.confidence) ? parsed.confidence : "low";
+      const confWeightMap: Record<string, number> = { high: 0.9, medium: 0.6, low: 0.3 };
+
+      const result = {
+        rawImpression: impression,
+        flavorTags: tags,
+        nose: typeof parsed.nose === "string" ? parsed.nose.trim() : "",
+        taste: typeof parsed.taste === "string" ? parsed.taste.trim() : "",
+        finish: typeof parsed.finish === "string" ? parsed.finish.trim() : "",
+        scoreSuggestion: score,
+        confidence: conf,
+        confidenceWeight: confWeightMap[conf],
+        followUpQuestion: typeof parsed.followUpQuestion === "string" ? parsed.followUpQuestion.trim() : "",
+        tookMs: Date.now() - startMs,
+      };
+      console.log(`[IMPRESSION-PARSE] tags=${tags.length} conf=${conf} score=${score ? "yes" : "null"} in ${result.tookMs}ms`);
+      res.json(result);
+    } catch (e: any) {
+      console.error("[IMPRESSION-PARSE] error:", e.message);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.post("/api/whisky/identify-online", async (req: Request, res: Response) => {
     const startMs = Date.now();
     try {
