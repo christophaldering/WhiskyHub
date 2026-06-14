@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 interface PendingTasting {
   id: string;
   guestMode: string;
+  status?: string;
 }
 
 interface MyInvite {
@@ -27,6 +28,8 @@ interface MyInvite {
 export default function LabsJoin() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
+  const landAfter = (id: string, status?: string) =>
+    navigate(status === "open" ? `/labs/live/${id}` : `/labs/tastings/${id}`);
   const goBack = useLabsBack("/labs/tastings");
   const isEmbedded = useIsEmbeddedInTastings();
   const session = useSession();
@@ -134,17 +137,17 @@ export default function LabsJoin() {
         return;
       }
       if (!isLoggedIn) {
-        showAuthOrGuest({ id: tasting.id, guestMode: tasting.guestMode || "standard" }, trimmed);
+        showAuthOrGuest({ id: tasting.id, guestMode: tasting.guestMode || "standard", status: tasting.status }, trimmed);
         setLoading(false);
         return;
       }
       await tastingApi.join(tasting.id, currentParticipant!.id, trimmed);
-      navigate(`/labs/tastings/${tasting.id}`);
+      landAfter(tasting.id, tasting.status);
     } catch (e: unknown) {
       const msg = (e as Error).message || "";
       if (msg.toLowerCase().includes("already")) {
         const tasting = await tastingApi.getByCode(trimmed).catch(() => null);
-        if (tasting?.id) { navigate(`/labs/tastings/${tasting.id}`); return; }
+        if (tasting?.id) { landAfter(tasting.id, tasting.status); return; }
       }
       if (msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("invalid")) {
         setError("No tasting found with this code.");
@@ -176,13 +179,13 @@ export default function LabsJoin() {
       }
 
       if (!isLoggedIn) {
-        showAuthOrGuest({ id: tasting.id, guestMode: tasting.guestMode || "standard" }, trimmed);
+        showAuthOrGuest({ id: tasting.id, guestMode: tasting.guestMode || "standard", status: tasting.status }, trimmed);
         setLoading(false);
         return;
       }
 
       await tastingApi.join(tasting.id, currentParticipant!.id, trimmed);
-      navigate(`/labs/tastings/${tasting.id}`);
+      landAfter(tasting.id, tasting.status);
     } catch (e: unknown) {
       const msg = (e as Error).message || "";
       if (msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("invalid")) {
@@ -271,7 +274,7 @@ export default function LabsJoin() {
     try {
       const result = await tastingApi.guestRejoin(pendingTasting.id, code);
       setGuestSession(result.id, result.name);
-      navigate(`/labs/tastings/${pendingTasting.id}`);
+      landAfter(pendingTasting.id, pendingTasting.status);
     } catch (e: any) {
       const msg = (e as Error).message || "";
       setRejoinError(msg || t("labs.rejoin.notFound", "Code nicht gefunden. Bitte prüfe deine Eingabe."));
@@ -359,7 +362,7 @@ export default function LabsJoin() {
   const handleContinueAfterRejoinCode = () => {
     if (!pendingTasting) return;
     setShowRejoinCodeScreen(false);
-    navigate(`/labs/tastings/${pendingTasting.id}`);
+    landAfter(pendingTasting.id, pendingTasting.status);
   };
 
   const handleLogin = async () => {
@@ -396,7 +399,7 @@ export default function LabsJoin() {
             const tasting = await tastingApi.getByCode(pendingCode);
             if (tasting?.id && s.pid) {
               await tastingApi.join(tasting.id, s.pid, pendingCode);
-              navigate(`/labs/tastings/${tasting.id}`);
+              landAfter(tasting.id, tasting.status);
             }
           } catch (e: any) {
             const msg = e.message || "";
@@ -490,7 +493,7 @@ export default function LabsJoin() {
 
         <button
           className="labs-btn-ghost w-full flex items-center justify-center gap-2"
-          onClick={() => pendingTasting && navigate(`/labs/tastings/${pendingTasting.id}`)}
+          onClick={() => pendingTasting && landAfter(pendingTasting.id, pendingTasting.status)}
           data-testid="labs-join-rejoin-unavailable-continue"
         >
           <ArrowRight className="w-4 h-4" />
