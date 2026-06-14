@@ -5,7 +5,7 @@ import SoloCaptureScreen, { type CapturedWhisky } from "./SoloCaptureScreen";
 import SoloWhiskyForm from "./SoloWhiskyForm";
 
 interface Props {
-  participantId: string | null;
+  participantId: string;
   isAuthenticated: boolean;
   /**
    * Ordnet den identifizierten Whisky dem bereits erfassten Eindruck + Bewertung zu
