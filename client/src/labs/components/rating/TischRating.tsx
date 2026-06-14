@@ -167,6 +167,7 @@ export default function TischRating({ labels, whisky, initialData, onDone, onBac
 
   return (
     <div className="labs-fade-in" style={{ padding: `${SP.lg}px ${SP.md}px`, paddingBottom: 96 }}>
+      {phaseIdx > 0 && (
       <button
         onClick={handleStepBack}
         data-testid="tisch-rating-back"
@@ -188,6 +189,7 @@ export default function TischRating({ labels, whisky, initialData, onDone, onBac
         <BackIcon color="var(--labs-text)" size={20} />
         <span>{labels.back}</span>
       </button>
+      )}
 
       {!whisky.blind && whisky.name && (
         <div style={{ marginBottom: SP.sm }}>

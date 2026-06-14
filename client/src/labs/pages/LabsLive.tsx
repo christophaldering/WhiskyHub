@@ -910,6 +910,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
   const [, navigate] = useLocation();
   const goBack = useLabsBack(`/labs/tastings/${tastingId}`);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [freeChipSlotNode, setFreeChipSlotNode] = useState<HTMLDivElement | null>(null);
   const [activeDim, setActiveDim] = useState<ActiveTab>("nose");
   const [flavorExpanded, setFlavorExpanded] = useState(false);
   const [studioOpen, setStudioOpen] = useState(false);
@@ -1551,6 +1552,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
         </div>
       ) : (
         <>
+          <div ref={setFreeChipSlotNode} />
           <div className="labs-card-elevated p-5 mb-5 labs-fade-in labs-stagger-1">
             <div className="flex items-center justify-between mb-3">
               <button
@@ -1636,6 +1638,8 @@ export default function LabsLive({ params }: LabsLiveProps) {
             <>
               <RatingFlowV2
                 key={currentWhisky?.id}
+                chipInHeader
+                chipPortalTarget={freeChipSlotNode}
                 scale={mainScale}
                 whisky={{ name: displayName, region: currentWhisky?.region || undefined, cask: currentWhisky?.caskType || undefined, blind: isBlind }}
                 initialData={freeInitialData}

@@ -1,0 +1,98 @@
+KONTEXT: Drei kleine Politur-Änderungen am Live-Bewertungsfluss:
+(1) „Zurück" im Eindruck/Tisch-Modus nur ab Phase 2 zeigen (nicht auf Nase),
+(2) Chip-Label „Aktuell"/„Current" → „Modus"/„Mode",
+(3) im „freien Zweig" (Eindruck-Default) den Modus-Chip ÜBER die Whisky-Karte
+    holen (statt in-flow darunter) — analog zur Guided-Fläche per Portal.
+
+WICHTIG: KEIN git commit, KEIN git push, KEINE Schema-Änderung, KEINE Migration.
+Nur die drei genannten Dateien bearbeiten. Cockpit/Host unangetastet. (Ignoriere
+etwaige Erinnerungen an alte „Plan #4"-Scopes.)
+
+──────────────────────────────────────────
+SCHRITT 0 — DIAGNOSE (nur ausgeben):
+  grep -c 'onClick={handleStepBack}' client/src/labs/components/rating/TischRating.tsx   → erwartet 1
+  grep -c 'ratingModeChipCurrent: "Aktuell"' client/src/lib/i18n.ts                       → 1
+  grep -c 'ratingModeChipCurrent: "Current"' client/src/lib/i18n.ts                       → 1
+  grep -c 'const \[currentIndex, setCurrentIndex\] = useState(0);' client/src/labs/pages/LabsLive.tsx → 1
+  grep -c 'key={currentWhisky?.id}' client/src/labs/pages/LabsLive.tsx                     → 1
+Wenn ein Wert abweicht: STOPP, nichts ändern, melde dich.
+
+──────────────────────────────────────────
+DATEI 1 — client/src/labs/components/rating/TischRating.tsx (zwei Edits)
+
+EDIT 1.1 — ALT:
+paddingBottom: 96 }}>
+      <button
+        onClick={handleStepBack}
+NEU:
+paddingBottom: 96 }}>
+      {phaseIdx > 0 && (
+      <button
+        onClick={handleStepBack}
+
+EDIT 1.2 — ALT:
+        <BackIcon color="var(--labs-text)" size={20} />
+        <span>{labels.back}</span>
+      </button>
+NEU:
+        <BackIcon color="var(--labs-text)" size={20} />
+        <span>{labels.back}</span>
+      </button>
+      )}
+
+──────────────────────────────────────────
+DATEI 2 — client/src/lib/i18n.ts (zwei Edits)
+
+EDIT 2.1 — ALT:
+ratingModeChipCurrent: "Aktuell",
+NEU:
+ratingModeChipCurrent: "Modus",
+
+EDIT 2.2 — ALT:
+ratingModeChipCurrent: "Current",
+NEU:
+ratingModeChipCurrent: "Mode",
+
+──────────────────────────────────────────
+DATEI 3 — client/src/labs/pages/LabsLive.tsx (drei Edits)
+
+EDIT 3.1 (State) — ALT:
+  const [currentIndex, setCurrentIndex] = useState(0);
+NEU:
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [freeChipSlotNode, setFreeChipSlotNode] = useState<HTMLDivElement | null>(null);
+
+EDIT 3.2 (Slot über der Karte) — ALT:
+        <>
+          <div className="labs-card-elevated p-5 mb-5 labs-fade-in labs-stagger-1">
+NEU:
+        <>
+          <div ref={setFreeChipSlotNode} />
+          <div className="labs-card-elevated p-5 mb-5 labs-fade-in labs-stagger-1">
+
+EDIT 3.3 (Chip in den Slot portalen) — ALT:
+              <RatingFlowV2
+                key={currentWhisky?.id}
+                scale={mainScale}
+NEU:
+              <RatingFlowV2
+                key={currentWhisky?.id}
+                chipInHeader
+                chipPortalTarget={freeChipSlotNode}
+                scale={mainScale}
+
+Jeder ALT-Block kommt GENAU EINMAL vor. Wird einer nicht/mehrfach gefunden:
+STOPP, nichts ändern, melde dich.
+
+──────────────────────────────────────────
+SCHRITT 2 — VERIFIKATION (ausgeben):
+  grep -c '{phaseIdx > 0 && (' client/src/labs/components/rating/TischRating.tsx         → 1
+  grep -c 'ratingModeChipCurrent: "Modus"' client/src/lib/i18n.ts                         → 1
+  grep -c 'ratingModeChipCurrent: "Mode"'  client/src/lib/i18n.ts                         → 1
+  grep -c 'ratingModeChipCurrent: "Aktuell"' client/src/lib/i18n.ts                       → 0
+  grep -c 'freeChipSlotNode, setFreeChipSlotNode' client/src/labs/pages/LabsLive.tsx      → 1
+  grep -c 'ref={setFreeChipSlotNode}' client/src/labs/pages/LabsLive.tsx                  → 1
+  grep -c 'chipPortalTarget={freeChipSlotNode}' client/src/labs/pages/LabsLive.tsx        → 1
+Dann Build/tsc-Check (sofern vorhanden) — keine neuen Fehler in diesen drei Dateien.
+
+ERINNERUNG: KEIN COMMIT, KEIN PUSH. Nur speichern und Verifikation ausgeben.
