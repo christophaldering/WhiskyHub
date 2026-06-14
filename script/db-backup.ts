@@ -1,5 +1,5 @@
 /**
- * On-demand database backup.
+ * On-demand database backup (CLI).
  *
  * Usage:
  *   npm run db:backup
@@ -8,29 +8,18 @@
  * named casksense-<YYYY-MM-DD_HHMM>.dump (Europe/Berlin time). Keeps the 10 most
  * recent dumps and deletes older ones. The backups/ folder is git-ignored.
  *
+ * The actual dump logic lives in server/db-backup-runner.ts (also used by the
+ * weekly Object-Storage backup scheduler).
+ *
  * Restore:
  *   pg_restore -d "$DATABASE_URL" --clean --if-exists backups/<file>.dump
  */
-import { spawn } from "child_process";
-import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from "fs";
+import { readdirSync, statSync, unlinkSync } from "fs";
 import { join } from "path";
+import { runBackup } from "../server/db-backup-runner";
 
 const RETENTION = 10;
 const BACKUP_DIR = "backups";
-
-function berlinTimestamp(): string {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/Berlin",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(new Date());
-  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
-  return `${get("year")}-${get("month")}-${get("day")}_${get("hour")}${get("minute")}`;
-}
 
 function applyRetention(): void {
   const dumps = readdirSync(BACKUP_DIR)
@@ -45,47 +34,16 @@ function applyRetention(): void {
   }
 }
 
-function main(): void {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    console.error("DATABASE_URL is not set. Aborting backup.");
+async function main(): Promise<void> {
+  console.log(`creating backup in ./${BACKUP_DIR}/ ...`);
+  const result = await runBackup(BACKUP_DIR);
+  if (!result.ok || !result.filePath) {
+    console.error(result.error || "backup failed");
     process.exit(1);
   }
-
-  if (!existsSync(BACKUP_DIR)) {
-    mkdirSync(BACKUP_DIR, { recursive: true });
-  }
-
-  const fileName = `casksense-${berlinTimestamp()}.dump`;
-  const filePath = join(BACKUP_DIR, fileName);
-
-  console.log(`creating backup: ${filePath}`);
-
-  const child = spawn(
-    "pg_dump",
-    ["--format=custom", "--no-owner", "--no-privileges", "--file", filePath, databaseUrl],
-    { stdio: ["ignore", "inherit", "inherit"] },
-  );
-
-  child.on("error", (err) => {
-    console.error(`failed to start pg_dump: ${err.message}`);
-    process.exit(1);
-  });
-
-  child.on("close", (code) => {
-    if (code !== 0) {
-      console.error(`pg_dump exited with code ${code}`);
-      process.exit(code ?? 1);
-    }
-
-    const sizeBytes = statSync(filePath).size;
-    const sizeMb = (sizeBytes / (1024 * 1024)).toFixed(2);
-    console.log(`backup complete: ${fileName} (${sizeMb} MB)`);
-
-    applyRetention();
-
-    console.log(`restore with: pg_restore -d "$DATABASE_URL" --clean --if-exists ${filePath}`);
-  });
+  console.log(`backup complete: ${result.fileName} (${result.sizeMb} MB)`);
+  applyRetention();
+  console.log(`restore with: pg_restore -d "$DATABASE_URL" --clean --if-exists ${result.filePath}`);
 }
 
 main();

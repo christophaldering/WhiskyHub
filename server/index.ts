@@ -5,6 +5,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "http";
 import { APP_NAME, getVersionInfo } from "@shared/version";
 import { warmupGmailToken, sendEmail, buildReminderEmail } from "./email";
 import { startDailyReportScheduler } from "./daily-report";
+import { startBackupScheduler } from "./db-backup-scheduler";
 import { storage } from "./storage";
 
 declare module "http" {
@@ -889,6 +890,7 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
     }, 5 * 60 * 1000);
 
     startDailyReportScheduler();
+    startBackupScheduler();
   } catch (err) {
     console.error("Failed to initialize application:", err);
     process.exit(1);

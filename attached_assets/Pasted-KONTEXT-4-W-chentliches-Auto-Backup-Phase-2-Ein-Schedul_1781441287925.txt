@@ -1,0 +1,342 @@
+KONTEXT: #4 Wöchentliches Auto-Backup (Phase 2). Ein Scheduler erzeugt einmal pro
+ISO-Woche (Europe/Berlin) einen pg_dump und lädt ihn dauerhaft in den Replit
+Object Storage (überlebt Redeploys). Muster wie der bestehende Daily-Report-Scheduler
+(Slot-Claim). Zwei neue Dateien + drei kleine Edits.
+
+WICHTIG: KEIN git commit, KEIN git push. KEINE Migration manuell schreiben, KEIN
+drizzle-kit generate. Die neue Tabelle `backup_log` wird wie `daily_report_log`
+automatisch vom bestehenden `drizzle-kit push --force` (scripts/post-merge.sh) beim
+nächsten Republish angelegt. Nur die unten genannten Dateien anfassen. Cockpit
+unangetastet. (Es gibt KEINEN „Plan #4".)
+
+──────────────────────────────────────────
+SCHRITT 0 — DIAGNOSE (nur ausgeben):
+  grep -c 'export const dailyReportLog = pgTable("daily_report_log"' shared/schema.ts   → erwartet 1
+  grep -c 'import { startDailyReportScheduler } from "./daily-report";' server/index.ts → 1
+  grep -c '    startDailyReportScheduler();' server/index.ts                            → 1
+  test -f server/db-backup-runner.ts && echo "runner existiert (unerwartet)" || echo "runner fehlt (erwartet)"
+  test -f server/db-backup-scheduler.ts && echo "scheduler existiert (unerwartet)" || echo "scheduler fehlt (erwartet)"
+Wenn etwas abweicht: STOPP, melde dich.
+
+──────────────────────────────────────────
+NEUE DATEI 1 — server/db-backup-runner.ts (kompletter Inhalt):
+```
+/**
+ * Server-sicherer Datenbank-Backup-Runner.
+ *
+ * Erzeugt einen restore-faehigen pg_dump (custom format) in <targetDir> und gibt
+ * das Ergebnis als Objekt zurueck — KEIN process.exit (anders als das CLI-Skript),
+ * damit dies gefahrlos aus dem laufenden Server-Prozess aufgerufen werden kann.
+ *
+ * Retention/Upload sind bewusst NICHT hier, sondern Sache des Aufrufers:
+ *  - script/db-backup.ts (CLI): lokaler Ordner + lokale Retention
+ *  - server/db-backup-scheduler.ts: Temp-Ordner + Upload in Object Storage
+ */
+import { spawn } from "child_process";
+import { existsSync, mkdirSync, statSync } from "fs";
+import { join } from "path";
+
+export function berlinTimestamp(): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Berlin",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}\_${get("hour")}${get("minute")}`;
+}
+
+export interface BackupResult {
+  ok: boolean;
+  fileName?: string;
+  filePath?: string;
+  sizeMb?: string;
+  error?: string;
+}
+
+/**
+ * Erzeugt einen pg_dump in <targetDir>. Optionaler fester Dateiname (sonst
+ * casksense-<Berlin-Timestamp>.dump). Loest IMMER auf (wirft nicht) und gibt
+ * bei Fehlern { ok: false, error } zurueck.
+ */
+export async function runBackup(targetDir: string, fileName?: string): Promise<BackupResult> {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) return { ok: false, error: "DATABASE_URL is not set" };
+
+  try {
+    if (!existsSync(targetDir)) mkdirSync(targetDir, { recursive: true });
+  } catch (e) {
+    return { ok: false, error: `cannot create target dir: ${(e as Error).message}` };
+  }
+
+  const name = fileName ?? `casksense-${berlinTimestamp()}.dump`;
+  const filePath = join(targetDir, name);
+
+  return await new Promise<BackupResult>((resolve) => {
+    let settled = false;
+    const done = (r: BackupResult) => { if (!settled) { settled = true; resolve(r); } };
+
+    const child = spawn(
+      "pg_dump",
+      ["--format=custom", "--no-owner", "--no-privileges", "--file", filePath, databaseUrl],
+      { stdio: ["ignore", "inherit", "inherit"] },
+    );
+
+    child.on("error", (err) => {
+      done({ ok: false, error: `failed to start pg_dump: ${err.message}` });
+    });
+
+    child.on("close", (code) => {
+      if (code !== 0) {
+        done({ ok: false, error: `pg_dump exited with code ${code}` });
+        return;
+      }
+      try {
+        const sizeBytes = statSync(filePath).size;
+        const sizeMb = (sizeBytes / (1024 * 1024)).toFixed(2);
+        done({ ok: true, fileName: name, filePath, sizeMb });
+      } catch (e) {
+        done({ ok: false, error: `stat failed: ${(e as Error).message}` });
+      }
+    });
+  });
+}
+```
+
+──────────────────────────────────────────
+NEUE DATEI 2 — server/db-backup-scheduler.ts (kompletter Inhalt):
+```
+/**
+ * Woechentlicher Datenbank-Backup-Scheduler (Phase 2).
+ *
+ * Muster wie der Daily-Report-Scheduler (server/daily-report.ts): ein Tick claimt
+ * pro ISO-Woche (Europe/Berlin) genau einen Slot in der Tabelle `backup_log`
+ * (INSERT ... ON CONFLICT DO NOTHING). Gewinnt der Tick den Slot, wird ein
+ * pg_dump erzeugt und dauerhaft in den Replit Object Storage hochgeladen
+ * (ueberlebt Redeploys). Lokale Temp-Datei wird danach geloescht.
+ *
+ * Robustheit: Faellt etwas aus (z. B. pg_dump im Server-Prozess nicht verfuegbar),
+ * wird der Fehler geloggt und der Slot freigegeben — KEIN Crash, der Server
+ * laeuft normal weiter und versucht es beim naechsten Tick erneut.
+ */
+import { readFileSync, unlinkSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
+import { sql } from "drizzle-orm";
+import { db } from "./db";
+import { log } from "./index";
+import { ObjectStorageService, objectStorageClient } from "./replit_integrations/object_storage";
+import { runBackup } from "./db-backup-runner";
+
+const RETAIN_WEEKLY = 8; // ~2 Monate woechentliche Dumps im Object Storage
+const TICK_MS = 6 * 60 * 60 * 1000; // alle 6 h
+
+function parseStoragePath(fullPath: string): { bucketName: string; objectName: string } {
+  const parts = (fullPath.startsWith("/") ? fullPath.slice(1) : fullPath).split("/");
+  if (parts.length < 2) throw new Error(`Invalid storage path: ${fullPath}`);
+  return { bucketName: parts[0], objectName: parts.slice(1).join("/") };
+}
+
+function backupPrefix(objectStorage: ObjectStorageService): { bucketName: string; prefix: string } {
+  const dir = objectStorage.getPrivateObjectDir();
+  const trimmed = dir.endsWith("/") ? dir.slice(0, -1) : dir;
+  const { bucketName, objectName } = parseStoragePath(`${trimmed}/backups/`);
+  return { bucketName, prefix: objectName };
+}
+
+// ISO-Wochen-Schluessel in Europe/Berlin, z. B. "2026-W24" (lexikografisch = chronologisch).
+function berlinIsoWeekKey(date: Date): string {
+  const berlin = new Date(date.toLocaleString("en-US", { timeZone: "Europe/Berlin" }));
+  const d = new Date(Date.UTC(berlin.getFullYear(), berlin.getMonth(), berlin.getDate()));
+  const dayNum = (d.getUTCDay() + 6) % 7; // Mo=0 .. So=6
+  d.setUTCDate(d.getUTCDate() - dayNum + 3); // Donnerstag dieser ISO-Woche
+  const firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+  const firstDayNum = (firstThursday.getUTCDay() + 6) % 7;
+  firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDayNum + 3);
+  const week = 1 + Math.round((d.getTime() - firstThursday.getTime()) / (7 * 24 * 3600 * 1000));
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+async function tryClaimBackupSlot(weekKey: string): Promise<boolean> {
+  const res = await db.execute(sql`
+    INSERT INTO backup_log (week_key)
+    VALUES (${weekKey})
+    ON CONFLICT (week_key) DO NOTHING
+    RETURNING week_key
+  `);
+  const rows = ((res as any).rows ?? res) as any[];
+  return rows.length > 0;
+}
+
+async function releaseBackupSlot(weekKey: string): Promise<void> {
+  await db.execute(sql`DELETE FROM backup_log WHERE week_key = ${weekKey}`);
+}
+
+async function applyObjectRetention(objectStorage: ObjectStorageService, keep: number): Promise<void> {
+  const { bucketName, prefix } = backupPrefix(objectStorage);
+  const [files] = await objectStorageClient.bucket(bucketName).getFiles({ prefix });
+  const dumps = files
+    .filter((f: any) => typeof f.name === "string" && f.name.endsWith(".dump"))
+    .sort((a: any, b: any) => (a.name < b.name ? 1 : -1)); // neueste (hoechster Wochen-Key) zuerst
+  for (const f of dumps.slice(keep)) {
+    await f.delete({ ignoreNotFound: true }).catch(() => undefined);
+  }
+}
+
+export function startBackupScheduler(): void {
+  const tick = async () => {
+    const weekKey = berlinIsoWeekKey(new Date());
+    let claimed = false;
+    try {
+      claimed = await tryClaimBackupSlot(weekKey);
+      if (!claimed) return;
+
+      const tmpDir = join(tmpdir(), "casksense-backups");
+      const fileName = `casksense-${weekKey}.dump`;
+      const result = await runBackup(tmpDir, fileName);
+      if (!result.ok || !result.filePath) {
+        log(`Backup scheduler: pg_dump failed (${result.error}) — slot released`, "db-backup");
+        await releaseBackupSlot(weekKey).catch(() => undefined);
+        return;
+      }
+
+      const objectStorage = new ObjectStorageService();
+      const { bucketName, prefix } = backupPrefix(objectStorage);
+      const buffer = readFileSync(result.filePath);
+      await objectStorageClient
+        .bucket(bucketName)
+        .file(`${prefix}${fileName}`)
+        .save(buffer, { contentType: "application/octet-stream" });
+      log(`Weekly backup uploaded to Object Storage: backups/${fileName} (${result.sizeMb} MB)`, "db-backup");
+
+      try { unlinkSync(result.filePath); } catch { /* Temp-Cleanup ist best-effort */ }
+
+      // Retention: Fehler hier ist unkritisch (Backup ist gesichert) -> nur loggen, Slot NICHT freigeben.
+      try {
+        await applyObjectRetention(objectStorage, RETAIN_WEEKLY);
+      } catch (re) {
+        log(`Backup retention warning: ${(re as Error).message}`, "db-backup");
+      }
+    } catch (e) {
+      log(`Backup scheduler error: ${(e as Error).message}`, "db-backup");
+      if (claimed) await releaseBackupSlot(weekKey).catch(() => undefined);
+    }
+  };
+
+  setInterval(tick, TICK_MS);
+  setTimeout(tick, 60 * 1000);
+  log("Weekly DB backup scheduler armed (Object Storage, ISO week, Europe/Berlin)", "db-backup");
+}
+```
+
+──────────────────────────────────────────
+DATEI 3 — script/db-backup.ts: GESAMTEN Inhalt ersetzen durch:
+```
+/**
+ * On-demand database backup (CLI).
+ *
+ * Usage:
+ *   npm run db:backup
+ *
+ * Produces a compressed, restore-capable pg_dump (custom format) into ./backups/
+ * named casksense-<YYYY-MM-DD_HHMM>.dump (Europe/Berlin time). Keeps the 10 most
+ * recent dumps and deletes older ones. The backups/ folder is git-ignored.
+ *
+ * The actual dump logic lives in server/db-backup-runner.ts (also used by the
+ * weekly Object-Storage backup scheduler).
+ *
+ * Restore:
+ *   pg_restore -d "$DATABASE_URL" --clean --if-exists backups/<file>.dump
+ */
+import { readdirSync, statSync, unlinkSync } from "fs";
+import { join } from "path";
+import { runBackup } from "../server/db-backup-runner";
+
+const RETENTION = 10;
+const BACKUP_DIR = "backups";
+
+function applyRetention(): void {
+  const dumps = readdirSync(BACKUP_DIR)
+    .filter((f) => f.endsWith(".dump"))
+    .map((f) => ({ name: f, mtime: statSync(join(BACKUP_DIR, f)).mtimeMs }))
+    .sort((a, b) => b.mtime - a.mtime);
+
+  const stale = dumps.slice(RETENTION);
+  for (const { name } of stale) {
+    unlinkSync(join(BACKUP_DIR, name));
+    console.log(`removed old backup: ${name}`);
+  }
+}
+
+async function main(): Promise<void> {
+  console.log(`creating backup in ./${BACKUP_DIR}/ ...`);
+  const result = await runBackup(BACKUP_DIR);
+  if (!result.ok || !result.filePath) {
+    console.error(result.error || "backup failed");
+    process.exit(1);
+  }
+  console.log(`backup complete: ${result.fileName} (${result.sizeMb} MB)`);
+  applyRetention();
+  console.log(`restore with: pg_restore -d "$DATABASE_URL" --clean --if-exists ${result.filePath}`);
+}
+
+main();
+```
+
+──────────────────────────────────────────
+DATEI 4 — shared/schema.ts (ein Edit, ALT kommt GENAU EINMAL vor):
+
+ALT:
+export const dailyReportLog = pgTable("daily_report_log", {
+  reportDate: text("report_date").primaryKey(),
+  sentAt: timestamp("sent_at").notNull().defaultNow(),
+});
+export type DailyReportLog = typeof dailyReportLog.$inferSelect;
+NEU:
+export const dailyReportLog = pgTable("daily_report_log", {
+  reportDate: text("report_date").primaryKey(),
+  sentAt: timestamp("sent_at").notNull().defaultNow(),
+});
+export type DailyReportLog = typeof dailyReportLog.$inferSelect;
+
+// Woechentlicher Backup-Slot (server/db-backup-scheduler.ts) — ein Eintrag pro
+// ISO-Woche (Europe/Berlin) verhindert Doppel-Backups ueber mehrere Instanzen.
+export const backupLog = pgTable("backup_log", {
+  weekKey: text("week_key").primaryKey(),
+  runAt: timestamp("run_at").notNull().defaultNow(),
+});
+export type BackupLog = typeof backupLog.$inferSelect;
+
+──────────────────────────────────────────
+DATEI 5 — server/index.ts (zwei Edits, je GENAU EINMAL):
+
+EDIT 5.1 — ALT:
+import { startDailyReportScheduler } from "./daily-report";
+NEU:
+import { startDailyReportScheduler } from "./daily-report";
+import { startBackupScheduler } from "./db-backup-scheduler";
+
+EDIT 5.2 — ALT:
+    startDailyReportScheduler();
+NEU:
+    startDailyReportScheduler();
+    startBackupScheduler();
+
+──────────────────────────────────────────
+SCHRITT 2 — VERIFIKATION (ausgeben):
+  test -f server/db-backup-runner.ts && echo OK-runner
+  test -f server/db-backup-scheduler.ts && echo OK-scheduler
+  grep -c 'export async function runBackup' server/db-backup-runner.ts            → 1
+  grep -c 'export function startBackupScheduler' server/db-backup-scheduler.ts    → 1
+  grep -c 'import { runBackup } from "../server/db-backup-runner"' script/db-backup.ts → 1
+  grep -c 'export const backupLog = pgTable("backup_log"' shared/schema.ts        → 1
+  grep -c 'import { startBackupScheduler }' server/index.ts                       → 1
+  grep -c '    startBackupScheduler();' server/index.ts                           → 1
+Dann Build/architect-Review — keine neuen Fehler. (Die Tabelle `backup_log` muss
+NICHT jetzt angelegt werden; sie entsteht beim nächsten Republish via push.)
+
+ERINNERUNG: KEIN COMMIT, KEIN PUSH. Nur speichern und Verifikation ausgeben.

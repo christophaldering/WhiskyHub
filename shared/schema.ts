@@ -1484,6 +1484,14 @@ export const dailyReportLog = pgTable("daily_report_log", {
 });
 export type DailyReportLog = typeof dailyReportLog.$inferSelect;
 
+// Woechentlicher Backup-Slot (server/db-backup-scheduler.ts) — ein Eintrag pro
+// ISO-Woche (Europe/Berlin) verhindert Doppel-Backups ueber mehrere Instanzen.
+export const backupLog = pgTable("backup_log", {
+  weekKey: text("week_key").primaryKey(),
+  runAt: timestamp("run_at").notNull().defaultNow(),
+});
+export type BackupLog = typeof backupLog.$inferSelect;
+
 // --- Auto-Handout: Distillery Profiles (encyclopedia cache per distillery) ---
 //
 // These rows feed the Auto-Handout-Generator. One profile per distillery name
