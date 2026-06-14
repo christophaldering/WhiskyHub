@@ -1,0 +1,116 @@
+# HARD PROMPT — WP 2a: Story-Entscheidung beim Tasting-Abschluss (Backend + Host)
+# Drei Dateien: server/routes.ts  +  client/src/labs/pages/LabsHost.tsx  +  client/src/lib/i18n.ts
+
+ROLLE: Genau diese 5 Edits, null Freiheitsgrade. Abweichende Zählung → STOPP, melden, warten.
+VERBOTEN: kein git commit/add/push; kein schema.ts; keine andere Datei.
+ZIEL: Beim "End Session" entscheidet der Host (Default AN), ob eine gemeinsame Story
+freigegeben wird. Bei JA: storyEnabled=true + Baseline-Blocks seeden (vorhandene
+loadTastingStoryDocument-Logik, ohne KI), DANN schließen.
+
+----------------------------------------------------------------------
+SCHRITT 0 — DIAGNOSE (nur lesen, Plan ausgeben, auf "GO" warten)
+----------------------------------------------------------------------
+    git tag pre-wp2a-story-at-close-2026-06-14
+Bestätige:
+    grep -n 'const loadTastingStoryDocument' server/routes.ts                         # 1 Treffer (~26340)
+    grep -c 'await storage.updateTasting(req.params.id, { storyEnabled: !!storyEnabled });' server/routes.ts   # 1
+    grep -c 'const \[confirmEndSession, setConfirmEndSession\] = useState(false);' client/src/labs/pages/LabsHost.tsx  # 1
+    grep -c 'data-testid="mobile-confirm-end"' client/src/labs/pages/LabsHost.tsx      # 1
+    grep -c 'endSessionStoryToggle' client/src/lib/i18n.ts                             # 0
+Hinweis: loadTastingStoryDocument liegt im selben registerRoutes-Closure wie die
+/story-enabled-Route; der Aufruf aus dem Handler ist zur Request-Zeit gültig (keine TDZ,
+da Handler erst bei Requests laufen).
+
+----------------------------------------------------------------------
+EDIT 1 — Backend: Baseline-Seed beim Enable  [server/routes.ts]
+ALT:
+      const { storyEnabled } = req.body;
+      await storage.updateTasting(req.params.id, { storyEnabled: !!storyEnabled });
+      res.json({ ok: true, storyEnabled: !!storyEnabled });
+NEU:
+      const { storyEnabled } = req.body;
+      await storage.updateTasting(req.params.id, { storyEnabled: !!storyEnabled });
+      if (!!storyEnabled) {
+        // Baseline-Story sicherstellen, damit Teilnehmer/Gaeste sofort Inhalt sehen (datengetrieben, ohne KI).
+        try { await loadTastingStoryDocument(req.params.id); } catch (seedErr) { console.warn("[story-enabled] baseline seed failed:", seedErr); }
+      }
+      res.json({ ok: true, storyEnabled: !!storyEnabled });
+
+----------------------------------------------------------------------
+EDIT 2 — Host: State (nach confirmEndSession)  [LabsHost.tsx]
+ALT:
+  const [confirmEndSession, setConfirmEndSession] = useState(false);
+NEU:
+  const [confirmEndSession, setConfirmEndSession] = useState(false);
+  const [storyOnEnd, setStoryOnEnd] = useState(true);
+
+----------------------------------------------------------------------
+EDIT 3 — Host: Dialog (Story-Checkbox default-an + async Enable-vor-Close)  [LabsHost.tsx]
+ALT:
+            <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("m2.host.endSessionConfirmDesc")}</p>
+            <div className="flex gap-2">
+              <button className="labs-btn-ghost flex-1" style={{ minHeight: 44, fontSize: 14, borderRadius: 12 }} onClick={() => setConfirmEndSession(false)}>{t("m2.host.cancel")}</button>
+              <button className="labs-btn-danger flex-1 flex items-center justify-center gap-2" style={{ minHeight: 44, fontSize: 14, borderRadius: 12 }} onClick={() => { statusMutation.mutate({ status: "closed" }); setConfirmEndSession(false); }} data-testid="mobile-confirm-end">
+NEU:
+            <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("m2.host.endSessionConfirmDesc")}</p>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 44, cursor: "pointer" }} data-testid="mobile-end-story-toggle">
+              <input
+                type="checkbox"
+                checked={storyOnEnd}
+                onChange={(e) => setStoryOnEnd(e.target.checked)}
+                style={{ width: 18, height: 18, accentColor: "#c8861a", flexShrink: 0 }}
+              />
+              <span className="text-sm" style={{ color: "var(--labs-text)" }}>{t("m2.host.endSessionStoryToggle", "Gemeinsame Story für alle freigeben")}</span>
+            </label>
+            <div className="flex gap-2">
+              <button className="labs-btn-ghost flex-1" style={{ minHeight: 44, fontSize: 14, borderRadius: 12 }} onClick={() => setConfirmEndSession(false)}>{t("m2.host.cancel")}</button>
+              <button className="labs-btn-danger flex-1 flex items-center justify-center gap-2" style={{ minHeight: 44, fontSize: 14, borderRadius: 12 }} onClick={async () => {
+                if (storyOnEnd) {
+                  try {
+                    await fetch(`/api/tastings/${encodeURIComponent(tastingId)}/story-enabled`, {
+                      method: "PATCH",
+                      credentials: "include",
+                      headers: { "Content-Type": "application/json", "x-participant-id": pid ?? "" },
+                      body: JSON.stringify({ storyEnabled: true }),
+                    });
+                  } catch { /* nicht blockieren */ }
+                }
+                statusMutation.mutate({ status: "closed" });
+                setConfirmEndSession(false);
+              }} data-testid="mobile-confirm-end">
+
+----------------------------------------------------------------------
+EDIT 4 — i18n EN (m2.host, nach endSessionConfirmDesc)  [i18n.ts]
+ALT:
+          endSessionConfirmDesc: "This will close ratings for all drams and end the session. Participants can no longer submit ratings.",
+NEU:
+          endSessionConfirmDesc: "This will close ratings for all drams and end the session. Participants can no longer submit ratings.",
+          endSessionStoryToggle: "Share a group story with everyone",
+
+----------------------------------------------------------------------
+EDIT 5 — i18n DE (m2.host, nach endSessionConfirmDesc)  [i18n.ts]
+ALT:
+          endSessionConfirmDesc: "Hiermit werden die Bewertungen für alle Drams geschlossen und die Session beendet. Teilnehmer können keine Bewertungen mehr abgeben.",
+NEU:
+          endSessionConfirmDesc: "Hiermit werden die Bewertungen für alle Drams geschlossen und die Session beendet. Teilnehmer können keine Bewertungen mehr abgeben.",
+          endSessionStoryToggle: "Gemeinsame Story für alle freigeben",
+
+----------------------------------------------------------------------
+VERIFIKATION (kein commit!)
+----------------------------------------------------------------------
+1) npm run build (falls OOM: bekannt → Asserts + Lesen + Architect-Review).
+2) Counts:
+    grep -c 'try { await loadTastingStoryDocument(req.params.id); }' server/routes.ts   # 1
+    grep -c 'storyOnEnd' client/src/labs/pages/LabsHost.tsx                              # 3
+    grep -c 'mobile-end-story-toggle' client/src/labs/pages/LabsHost.tsx                 # 1
+    grep -c 'endSessionStoryToggle' client/src/lib/i18n.ts                               # 2
+3) Architect-Review: /story-enabled bleibt Host-only (hostId===participantId-Check davor);
+   Seed ist in try/catch → blockiert das Beenden nie; loadTastingStoryDocument seedet nur
+   bei leeren Blocks (sonst No-op), kein KI-Aufruf.
+4) Manuelle QA:
+    a) Laufendes Tasting als Host beenden, Schalter AN (Default) → Story ist danach
+       freigegeben UND nicht leer (über /tasting-story/:id bzw. Detail prüfbar).
+    b) Beenden mit Schalter AUS → keine Story freigegeben (wie bisher).
+    c) Schalter erscheint NUR im End-Session-Bestätigungsdialog.
+5) git diff --stat (3 Dateien: routes.ts +5, LabsHost +22/-1, i18n +2), dann auf
+   Byte-Diff-Abnahme warten. NICHT committen.
