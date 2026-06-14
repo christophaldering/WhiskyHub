@@ -1,0 +1,231 @@
+# HARD PROMPT — WP 3-A: Konto-Claim am Ende der Story-View (Gast-Höhepunkt)
+# 1 neue Datei + 1 Wiring-Datei. KEIN Backend, KEINE Änderung an RecapCard.
+
+ROLLE: Genau diese Schritte, null Freiheitsgrade. Abweichung → STOPP, melden, warten.
+VERBOTEN: kein git commit/add/push; kein schema.ts; keine andere Datei; RecapCard.tsx NICHT anfassen.
+ZIEL: Ein Gast, der seine eigene Tasting-Story ansieht, bekommt ganz am Ende ein
+selbst-gegatetes Konto-Claim-Panel (gleiche Logik wie RecapCard, fürs dunkle Theme).
+
+----------------------------------------------------------------------
+SCHRITT 0 — DIAGNOSE (nur lesen, Plan ausgeben, auf "GO" warten)
+----------------------------------------------------------------------
+    git tag pre-wp3a-story-claim-2026-06-14
+Bestätige:
+    test ! -e client/src/labs/components/GuestClaimPanel.tsx && echo "Datei existiert noch nicht — gut"
+    grep -c 'StoryRenderer document={document_} mode="public"' client/src/pages/labs-tasting-story-view.tsx   # 1
+    grep -c 'const \[fellBack, setFellBack\] = useState(false);' client/src/pages/labs-tasting-story-view.tsx  # 1
+    grep -c 'claimEyebrow:' client/src/lib/i18n.ts   # 2 (Keys existieren bereits — nicht ändern)
+
+----------------------------------------------------------------------
+SCHRITT 1 — NEUE DATEI anlegen: client/src/labs/components/GuestClaimPanel.tsx
+(Exakt dieser Inhalt, nichts hinzufügen/weglassen)
+----------------------------------------------------------------------
+import { useState, type CSSProperties } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { participantApi } from "@/lib/api";
+import { trackEvent } from "@/lib/funnelTracker";
+
+// Eigenstaendiges, selbst-gegatetes Konto-Claim-Panel fuer die (dunkle) Story-View.
+// Logik 1:1 wie in RecapCard; rendert nur fuer echte Gaeste (experienceLevel "guest", ohne E-Mail).
+
+const AMBER = "#C9A961";
+const CREAM = "#F5EDE0";
+const CREAM_MUTED = "rgba(245,239,227,0.65)";
+const FONT_DISPLAY = "'EB Garamond', serif";
+const FONT_BODY = "'Inter', sans-serif";
+
+type Props = { participantId: string; tastingId: string };
+
+export default function GuestClaimPanel({ participantId, tastingId }: Props) {
+  const { t } = useTranslation();
+
+  const { data: me } = useQuery<{ id: string; email?: string | null; experienceLevel?: string | null }>({
+    queryKey: ["story-claim-me", participantId],
+    queryFn: () => participantApi.get(participantId),
+    enabled: !!participantId,
+    retry: false,
+  });
+  const isGuest = !!me && me.experienceLevel === "guest" && !me.email;
+
+  const [claimStep, setClaimStep] = useState<"idle" | "code" | "done">("idle");
+  const [claimEmail, setClaimEmail] = useState("");
+  const [claimPin, setClaimPin] = useState("");
+  const [claimCode, setClaimCode] = useState("");
+  const [claimBusy, setClaimBusy] = useState(false);
+  const [claimError, setClaimError] = useState("");
+
+  const handleClaim = async () => {
+    if (claimBusy) return;
+    setClaimError("");
+    if (!claimEmail.trim() || claimPin.trim().length < 4) {
+      setClaimError(t("eveningRecap.claimMissing", "Bitte E-Mail und eine PIN (mind. 4 Zeichen) ausfüllen."));
+      return;
+    }
+    setClaimBusy(true);
+    try {
+      await participantApi.claim(participantId, claimEmail.trim(), claimPin.trim());
+      trackEvent("guest_claim", { page: `/tasting-story/${tastingId}` });
+      setClaimStep("code");
+    } catch (e: unknown) {
+      setClaimError((e as Error)?.message || t("eveningRecap.claimFailed", "Das hat nicht geklappt. Bitte versuche es erneut."));
+    } finally {
+      setClaimBusy(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (claimBusy) return;
+    setClaimError("");
+    if (claimCode.trim().length !== 6) {
+      setClaimError(t("eveningRecap.codeInvalid", "Der Code hat 6 Ziffern."));
+      return;
+    }
+    setClaimBusy(true);
+    try {
+      await participantApi.verify(participantId, claimCode.trim());
+      setClaimStep("done");
+    } catch (e: unknown) {
+      setClaimError((e as Error)?.message || t("eveningRecap.codeFailed", "Code ungültig oder abgelaufen."));
+    } finally {
+      setClaimBusy(false);
+    }
+  };
+
+  if (!isGuest) return null;
+
+  const inputStyle: CSSProperties = {
+    background: "rgba(245,239,227,0.06)",
+    border: "1px solid rgba(245,239,227,0.25)",
+    borderRadius: 10,
+    padding: "12px 14px",
+    color: CREAM,
+    fontFamily: FONT_BODY,
+    fontSize: 15,
+    minHeight: 44,
+    outline: "none",
+    width: "100%",
+    boxSizing: "border-box",
+  };
+  const btnStyle: CSSProperties = {
+    background: AMBER,
+    color: "#1a1714",
+    border: "none",
+    borderRadius: 9999,
+    padding: "12px 20px",
+    fontFamily: FONT_BODY,
+    fontWeight: 600,
+    fontSize: 14,
+    minHeight: 44,
+    cursor: "pointer",
+  };
+
+  return (
+    <div data-testid="story-guest-claim" style={{ maxWidth: 520, margin: "0 auto", padding: "8px 24px 80px", textAlign: "center" }}>
+      <div style={{ borderTop: "1px solid rgba(245,239,227,0.15)", paddingTop: 44 }}>
+        {claimStep === "idle" && (
+          <>
+            <div style={{ fontFamily: FONT_BODY, fontSize: 10, letterSpacing: "0.3em", textTransform: "uppercase", color: AMBER, marginBottom: 14 }}>
+              {t("eveningRecap.claimEyebrow", "Nimm deine Bewertungen mit")}
+            </div>
+            <div style={{ fontFamily: FONT_DISPLAY, fontStyle: "italic", fontSize: 22, color: CREAM, lineHeight: 1.4, marginBottom: 24 }}>
+              {t("eveningRecap.claimText", "Mit E-Mail und PIN wird dieser Abend der Anfang deiner eigenen Sammlung.")}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 340, margin: "0 auto" }}>
+              <input type="email" autoComplete="email" placeholder={t("eveningRecap.claimEmail", "Deine E-Mail")} value={claimEmail} onChange={(e) => setClaimEmail(e.target.value)} style={inputStyle} data-testid="story-claim-email" />
+              <input type="password" autoComplete="new-password" placeholder={t("eveningRecap.claimPin", "Wähle eine PIN (mind. 4 Zeichen)")} value={claimPin} onChange={(e) => setClaimPin(e.target.value)} style={inputStyle} data-testid="story-claim-pin" />
+              <button type="button" disabled={claimBusy} onClick={handleClaim} style={{ ...btnStyle, opacity: claimBusy ? 0.6 : 1 }} data-testid="story-claim-submit">
+                {claimBusy ? t("eveningRecap.claimBusy", "Einen Moment …") : t("eveningRecap.claimCta", "Konto erstellen")}
+              </button>
+            </div>
+          </>
+        )}
+        {claimStep === "code" && (
+          <>
+            <div style={{ fontFamily: FONT_DISPLAY, fontStyle: "italic", fontSize: 20, color: CREAM, lineHeight: 1.4, marginBottom: 20, maxWidth: 380, marginLeft: "auto", marginRight: "auto" }}>
+              {t("eveningRecap.codeText", "Wir haben dir einen 6-stelligen Code geschickt. Gib ihn hier ein — dann gehört der Abend dir.")}
+            </div>
+            <div style={{ display: "flex", gap: 10, maxWidth: 340, margin: "0 auto" }}>
+              <input inputMode="numeric" maxLength={6} placeholder={t("eveningRecap.codeLabel", "Code")} value={claimCode} onChange={(e) => setClaimCode(e.target.value.replace(/[^0-9]/g, ""))} style={{ ...inputStyle, flex: 1, letterSpacing: "0.2em", textAlign: "center" }} data-testid="story-claim-code" />
+              <button type="button" disabled={claimBusy} onClick={handleVerifyCode} style={{ ...btnStyle, opacity: claimBusy ? 0.6 : 1 }} data-testid="story-claim-verify">
+                {t("eveningRecap.codeCta", "Bestätigen")}
+              </button>
+            </div>
+            <button type="button" onClick={() => { participantApi.resendVerification(participantId).catch(() => {}); }} style={{ marginTop: 14, background: "none", border: "none", color: CREAM_MUTED, fontFamily: FONT_BODY, fontSize: 12, textDecoration: "underline", cursor: "pointer" }} data-testid="story-claim-resend">
+              {t("eveningRecap.codeResend", "Code erneut senden")}
+            </button>
+          </>
+        )}
+        {claimStep === "done" && (
+          <div data-testid="story-claim-done">
+            <div style={{ fontFamily: FONT_DISPLAY, fontSize: 26, color: CREAM, marginBottom: 8 }}>
+              {t("eveningRecap.doneTitle", "Dein Abend gehört jetzt dir.")}
+            </div>
+            <div style={{ fontFamily: FONT_DISPLAY, fontStyle: "italic", fontSize: 17, color: CREAM_MUTED }}>
+              {t("eveningRecap.doneText", "Melde dich künftig mit E-Mail und PIN an — deine Bewertungen warten auf dich.")}
+            </div>
+          </div>
+        )}
+        {claimError && (
+          <div style={{ marginTop: 14, fontSize: 13, color: "#E06060", fontFamily: FONT_BODY }} data-testid="story-claim-error">
+            {claimError}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+----------------------------------------------------------------------
+SCHRITT 2 — WIRING in client/src/pages/labs-tasting-story-view.tsx (3 Edits)
+----------------------------------------------------------------------
+EDIT A — Imports
+ALT:
+import ContextDownloadBar from "@/labs/components/ContextDownloadBar";
+NEU:
+import ContextDownloadBar from "@/labs/components/ContextDownloadBar";
+import GuestClaimPanel from "@/labs/components/GuestClaimPanel";
+import { useSession } from "@/lib/session";
+
+EDIT B — pid aus Session
+ALT:
+  const [fellBack, setFellBack] = useState(false);
+NEU:
+  const [fellBack, setFellBack] = useState(false);
+  const { pid } = useSession();
+
+EDIT C — Panel nach dem StoryRenderer
+ALT:
+      <TastingStoryDataProvider data={storyData ?? null}>
+        <StoryRenderer document={document_} mode="public" />
+      </TastingStoryDataProvider>
+    </div>
+NEU:
+      <TastingStoryDataProvider data={storyData ?? null}>
+        <StoryRenderer document={document_} mode="public" />
+      </TastingStoryDataProvider>
+      {pid && <GuestClaimPanel participantId={pid} tastingId={id} />}
+    </div>
+
+----------------------------------------------------------------------
+VERIFIKATION (kein commit!)
+----------------------------------------------------------------------
+1) npm run build (falls OOM: bekannt → Asserts + Lesen + Architect-Review).
+2) Asserts:
+    grep -c 'story-guest-claim' client/src/labs/components/GuestClaimPanel.tsx        # 1
+    grep -c 'if (!isGuest) return null;' client/src/labs/components/GuestClaimPanel.tsx # 1
+    grep -c 'React\.' client/src/labs/components/GuestClaimPanel.tsx                   # 0
+    grep -c '<GuestClaimPanel participantId={pid}' client/src/pages/labs-tasting-story-view.tsx  # 1
+    grep -c 'const { pid } = useSession();' client/src/pages/labs-tasting-story-view.tsx  # 1
+    git status --porcelain client/src/labs/components/RecapCard.tsx                    # LEER (unberührt)
+3) Architect-Review: Panel self-gated (rendert null außer für Gast ohne E-Mail);
+   Logik identisch zu RecapCard; eigene Testids (story-claim-*), keine Kollision;
+   Backend/RecapCard/i18n unverändert.
+4) Manuelle QA:
+    a) Als Gast (ohne Konto) das eigene Tasting beenden lassen (Host-Story an), dann
+       "Eure Geschichte ansehen" → ganz unten erscheint das Claim-Panel; E-Mail+PIN →
+       Code-Schritt → Verifizieren → "Dein Abend gehört jetzt dir."
+    b) Als eingeloggter Nutzer oder Host dieselbe Story → KEIN Claim-Panel.
+    c) Bewertungen nach Claim erhalten (gleiche participantId).
+5) git diff --stat (1 neue Datei + labs-tasting-story-view.tsx ~+5), dann auf
+   Byte-Diff-Abnahme warten. NICHT committen.
