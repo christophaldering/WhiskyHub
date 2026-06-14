@@ -1,3 +1,71 @@
+HARD PROMPT — Eindruck-Feature Schritt 2c: Reflexionsseite + sokratische Rückfragen (Sättigungslogik)
+Setzt Commit 977368c voraus. KEINE Schema-Änderung, KEINE Migration.
+KEIN git commit/push. Host-Cockpit NICHT anfassen. LabsSolo.tsx NICHT anfassen.
+
+SCHRITT 0 — DIAGNOSE (nur lesen):
+  grep -c 'const { text, whiskyName, askedQuestions }' server/routes.ts                  # erwartet 0
+  grep -c 'function shouldAskNext' client/src/labs/components/rating/ImpressionCapture.tsx # erwartet 0
+Weicht etwas ab: STOPP.
+
+═══ DATEI 1 (EDIT): server/routes.ts — vier Stellen im /api/impression/parse-Handler ═══
+
+--- 1.1 Body + askedQuestions-Verarbeitung (eindeutiger impression-Block) ---
+ALT:
+      const { text, whiskyName } = req.body || {};
+      if (!text || typeof text !== "string" || text.trim().length < 2) {
+        return res.status(400).json({ message: "Impression text is required (at least 2 characters)" });
+      }
+      const impression = text.trim().slice(0, 1000);
+NEU:
+      const { text, whiskyName, askedQuestions } = req.body || {};
+      if (!text || typeof text !== "string" || text.trim().length < 2) {
+        return res.status(400).json({ message: "Impression text is required (at least 2 characters)" });
+      }
+      const impression = text.trim().slice(0, 1000);
+      const asked: string[] = Array.isArray(askedQuestions)
+        ? askedQuestions.filter((q: any) => typeof q === "string" && q.trim()).map((q: string) => q.trim()).slice(0, 5)
+        : [];
+      const askedBlock = asked.length
+        ? ` Bereits gestellte Rueckfragen (KEINE davon und nichts inhaltlich Aehnliches erneut stellen): ${asked.join(" | ")}`
+        : "";
+
+--- 1.2 followUpQuestion-Schemazeile kürzen ---
+ALT:
+"followUpQuestion": "EINE eingrenzende Rueckfrage, die an ein bereits genanntes Wort anknuepft (z.B. rauchig -> eher Lagerfeuer oder Pflaster?), oder leer"}
+NEU:
+"followUpQuestion": "EINE sokratische Rueckfrage oder leer"}
+
+--- 1.3 Regeln erweitern (Doppelquelle + Sättigung) ---
+ALT:
+Die Rueckfrage stellt nie eine fremde Liste, sondern schaerft nur das bereits Gesagte.
+NEU:
+Zur followUpQuestion (sokratisch, nie eine fremde Aromenliste, schaerft nur das bereits Gesagte): Waehle EINE von zwei Quellen — (a) Disambiguierung eines vagen, spaltbaren Begriffs aus dem Eindruck (z.B. rauchig -> eher Lagerfeuer oder eher Pflaster/Jod?), oder (b) eine noch gar nicht beruehrte Kerndimension (Nase, Gaumen oder Abgang), zu der bisher nichts gesagt wurde. Setze followUpQuestion auf LEER, wenn keiner dieser Faelle mehr zutrifft (kein vager Begriff mehr offen UND alle drei Kerndimensionen beruehrt) oder wenn jede sinnvolle Frage nur eine bereits gestellte wiederholen wuerde.
+
+--- 1.4 askedBlock an den user-content ---
+ALT:
+          { role: "user", content: impression + context },
+NEU:
+          { role: "user", content: impression + context + askedBlock },
+
+═══ DATEI 2 (EDIT): client/src/labs/components/rating/impressionApi.ts ═══
+ALT:
+export async function parseImpression(text: string, whiskyName?: string): Promise<ImpressionResult> {
+  const res = await fetch("/api/impression/parse", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...pidHeaders() },
+    body: JSON.stringify({ text, whiskyName }),
+  });
+NEU:
+export async function parseImpression(text: string, whiskyName?: string, askedQuestions?: string[]): Promise<ImpressionResult> {
+  const res = await fetch("/api/impression/parse", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...pidHeaders() },
+    body: JSON.stringify({ text, whiskyName, askedQuestions }),
+  });
+
+═══ DATEI 3 (KOMPLETT ERSETZEN): client/src/labs/components/rating/ImpressionCapture.tsx ═══
+Gesamten Inhalt der Datei durch Folgendes ersetzen:
+
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FONT, SP, RADIUS, TOUCH_MIN, LABS_THEME } from "./theme";
@@ -295,3 +363,11 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip }: Impre
     </div>
   );
 }
+
+═══ LabsSolo.tsx: NICHT ANFASSEN (onApply-Mapping greift unverändert) ═══
+
+VERIFIKATION (nur lesen, NICHT committen/pushen):
+  grep -c 'impression + context + askedBlock' server/routes.ts                                  # 1
+  grep -c 'function shouldAskNext' client/src/labs/components/rating/ImpressionCapture.tsx       # 1
+  grep -c 'askedQuestions?: string\[\]' client/src/labs/components/rating/impressionApi.ts       # 1
+Dann Build + architect-Check: keine neuen TS-Fehler. KEIN git add/commit/push.

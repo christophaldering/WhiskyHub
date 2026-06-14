@@ -20,11 +20,11 @@ export type ImpressionResult = {
   tookMs: number;
 };
 
-export async function parseImpression(text: string, whiskyName?: string): Promise<ImpressionResult> {
+export async function parseImpression(text: string, whiskyName?: string, askedQuestions?: string[]): Promise<ImpressionResult> {
   const res = await fetch("/api/impression/parse", {
     method: "POST",
     headers: { "Content-Type": "application/json", ...pidHeaders() },
-    body: JSON.stringify({ text, whiskyName }),
+    body: JSON.stringify({ text, whiskyName, askedQuestions }),
   });
   if (!res.ok) {
     throw new Error(`impression parse failed: ${res.status}`);

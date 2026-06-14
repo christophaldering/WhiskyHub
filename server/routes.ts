@@ -5469,11 +5469,17 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         return res.status(429).json({ message: "Too many requests.", retryAfter: rateCheck.retryAfterSeconds });
       }
 
-      const { text, whiskyName } = req.body || {};
+      const { text, whiskyName, askedQuestions } = req.body || {};
       if (!text || typeof text !== "string" || text.trim().length < 2) {
         return res.status(400).json({ message: "Impression text is required (at least 2 characters)" });
       }
       const impression = text.trim().slice(0, 1000);
+      const asked: string[] = Array.isArray(askedQuestions)
+        ? askedQuestions.filter((q: any) => typeof q === "string" && q.trim()).map((q: string) => q.trim()).slice(0, 5)
+        : [];
+      const askedBlock = asked.length
+        ? ` Bereits gestellte Rueckfragen (KEINE davon und nichts inhaltlich Aehnliches erneut stellen): ${asked.join(" | ")}`
+        : "";
       const context = typeof whiskyName === "string" && whiskyName.trim() ? `\nWhisky: ${whiskyName.trim().slice(0, 120)}` : "";
 
       const openai = new OpenAI({
@@ -5490,10 +5496,10 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
           {
             role: "system",
             content: `Du bist ein behutsamer Verkostungs-Assistent. Du bekommst einen rohen, freien Eindruck eines Whiskys (oft knapp, z.B. "lecker, rauchig"). Erfinde NICHTS hinzu. Leite NUR ab, was der Eindruck wirklich hergibt. Antworte in der Sprache des Eindrucks. Gib JSON zurueck:
-{"flavorTags": ["..."], "nose": "kurzer Satz oder leer", "taste": "kurzer Satz oder leer", "finish": "kurzer Satz oder leer", "scoreSuggestion": {"overall": 0-100, "nose": 0-100, "taste": 0-100, "finish": 0-100} ODER null, "confidence": "high|medium|low", "followUpQuestion": "EINE eingrenzende Rueckfrage, die an ein bereits genanntes Wort anknuepft (z.B. rauchig -> eher Lagerfeuer oder Pflaster?), oder leer"}
-Regeln: Wenn der Eindruck zu vage fuer eine sinnvolle Zahl ist, setze scoreSuggestion=null und confidence="low". Je duenner der Eindruck, desto vorsichtiger. Hoechstens 6 flavorTags, nur Begriffe die im Eindruck stecken oder klar mitschwingen. Die Rueckfrage stellt nie eine fremde Liste, sondern schaerft nur das bereits Gesagte.`,
+{"flavorTags": ["..."], "nose": "kurzer Satz oder leer", "taste": "kurzer Satz oder leer", "finish": "kurzer Satz oder leer", "scoreSuggestion": {"overall": 0-100, "nose": 0-100, "taste": 0-100, "finish": 0-100} ODER null, "confidence": "high|medium|low", "followUpQuestion": "EINE sokratische Rueckfrage oder leer"}
+Regeln: Wenn der Eindruck zu vage fuer eine sinnvolle Zahl ist, setze scoreSuggestion=null und confidence="low". Je duenner der Eindruck, desto vorsichtiger. Hoechstens 6 flavorTags, nur Begriffe die im Eindruck stecken oder klar mitschwingen. Zur followUpQuestion (sokratisch, nie eine fremde Aromenliste, schaerft nur das bereits Gesagte): Waehle EINE von zwei Quellen — (a) Disambiguierung eines vagen, spaltbaren Begriffs aus dem Eindruck (z.B. rauchig -> eher Lagerfeuer oder eher Pflaster/Jod?), oder (b) eine noch gar nicht beruehrte Kerndimension (Nase, Gaumen oder Abgang), zu der bisher nichts gesagt wurde. Setze followUpQuestion auf LEER, wenn keiner dieser Faelle mehr zutrifft (kein vager Begriff mehr offen UND alle drei Kerndimensionen beruehrt) oder wenn jede sinnvolle Frage nur eine bereits gestellte wiederholen wuerde.`,
           },
-          { role: "user", content: impression + context },
+          { role: "user", content: impression + context + askedBlock },
         ],
       });
 
