@@ -4,7 +4,6 @@ import { Camera, ImagePlus, PenLine, Barcode, Loader2, AlertTriangle, ArrowLeft,
 import { useLocation } from "wouter";
 import BottleRecognitionFeedback, { type BottleRecognitionResult } from "@/labs/components/BottleRecognitionFeedback";
 import { CollectionPicker, type SelectedWhisky } from "@/labs/components/CollectionPicker";
-import ImpressionFirstHero from "./ImpressionFirstHero";
 
 export interface CapturedWhisky {
   id?: string;
@@ -23,7 +22,6 @@ interface Props {
   participantId: string;
   isAuthenticated: boolean;
   onManual: () => void;
-  onImpressionFirst: () => void;
   onCaptured: (w: CapturedWhisky, imageFile?: File | null) => void;
   onBarcode: (barcode: string) => void;
   onCollectionSelect: (w: CapturedWhisky) => void;
@@ -33,7 +31,7 @@ interface Props {
 
 type Status = "idle" | "identifying" | "error" | "barcode" | "feedback" | "barcode-scanning" | "barcode-lookup";
 
-export default function SoloCaptureScreen({ participantId, isAuthenticated, onManual, onImpressionFirst, onCaptured, onBarcode, onCollectionSelect, onBack, hideBack }: Props) {
+export default function SoloCaptureScreen({ participantId, isAuthenticated, onManual, onCaptured, onBarcode, onCollectionSelect, onBack, hideBack }: Props) {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -528,8 +526,6 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
       }} data-testid="solo-capture-sub">
         {t("v2.solo.captureSub", "How would you like to capture the whisky?")}
       </p>
-
-      <ImpressionFirstHero onClick={onImpressionFirst} />
 
       <span className="labs-section-label">{t("v2.solo.captureOptions", "Capture Options")}</span>
 

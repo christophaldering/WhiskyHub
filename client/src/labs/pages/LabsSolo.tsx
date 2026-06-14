@@ -108,13 +108,13 @@ async function ensureParticipantId(): Promise<string> {
   throw new Error("Could not create participant");
 }
 
-export default function LabsSolo() {
+export default function LabsSolo({ initialEntry }: { initialEntry?: "impression" } = {}) {
   const { t } = useTranslation();
   const goBack = useBackNavigation("/labs/tastings");
   const isEmbedded = useIsEmbeddedInTastings();
   const [, navigate] = useLocation();
 
-  const [step, setStep] = useState<Step>("capture");
+  const [step, setStep] = useState<Step>(initialEntry === "impression" ? "rating" : "capture");
   const [whisky, setWhisky] = useState<CapturedWhisky | null>(null);
   const [ratingResult, setRatingResult] = useState<RatingData | null>(null);
   const [participantId, setParticipantId] = useState<string>("");
@@ -137,7 +137,7 @@ export default function LabsSolo() {
   const [ratingMode, setRatingMode] = useState<"guided" | "compact" | "quick" | "tisch" | null>(null);
   const [ratingPhaseIndex, setRatingPhaseIndex] = useState(0);
   const [ratingInitialData, setRatingInitialData] = useState<RatingData | undefined>(undefined);
-  const [showImpressionCapture, setShowImpressionCapture] = useState(false);
+  const [showImpressionCapture, setShowImpressionCapture] = useState(initialEntry === "impression");
   const rawImpressionRef = useRef<string>("");
 
   const { data: participantData } = useQuery<Participant>({
@@ -328,6 +328,11 @@ export default function LabsSolo() {
     saveSoloDraft({ step: "rating", whisky: null, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: false, serverDraftId: null });
     showDraftFlash();
   }, [showDraftFlash]);
+
+  const handleIdentifyFirst = useCallback(() => {
+    setShowImpressionCapture(false);
+    setStep("capture");
+  }, []);
 
   const handleBarcode = useCallback((barcode: string) => {
     const w: CapturedWhisky = { name: barcode, distillery: "", country: "", region: "", cask: "", age: "", abv: "", fromAI: false, barcodeValue: barcode };
@@ -822,7 +827,6 @@ export default function LabsSolo() {
           participantId={participantId}
           isAuthenticated={isUserAuthenticated()}
           onManual={handleManual}
-          onImpressionFirst={handleImpressionFirst}
           onCaptured={handleCaptured}
           onBarcode={handleBarcode}
           onCollectionSelect={handleCollectionSelect}
@@ -869,6 +873,7 @@ export default function LabsSolo() {
             whiskyName={whisky?.name || undefined}
             onApply={handleImpressionApply}
             onSkip={handleImpressionSkip}
+            onIdentifyFirst={handleIdentifyFirst}
           />
         ) : (
         <RatingFlowV2

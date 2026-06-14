@@ -7,6 +7,7 @@ interface ImpressionCaptureProps {
   whiskyName?: string;
   onApply: (result: ImpressionResult) => void;
   onSkip: () => void;
+  onIdentifyFirst?: () => void;
 }
 
 const MAX_ROUNDS = 3;
@@ -31,7 +32,7 @@ function shouldAskNext(round: number, result: ImpressionResult, prev: Impression
   return true;
 }
 
-export default function ImpressionCapture({ whiskyName, onApply, onSkip }: ImpressionCaptureProps) {
+export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdentifyFirst }: ImpressionCaptureProps) {
   const { t } = useTranslation();
   const [phase, setPhase] = useState<"input" | "reflect" | "handoff">("input");
   const [text, setText] = useState("");
@@ -230,6 +231,27 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip }: Impre
               {t("v2.impressionSkip", "\u00dcberspringen")}
             </button>
           </div>
+          {onIdentifyFirst && (
+            <button
+              type="button"
+              onClick={onIdentifyFirst}
+              style={{
+                width: "100%",
+                marginTop: SP.md,
+                background: "transparent",
+                border: "none",
+                color: LABS_THEME.muted,
+                fontFamily: FONT.body,
+                fontSize: 14,
+                textDecoration: "underline",
+                textUnderlineOffset: 3,
+                cursor: "pointer",
+                padding: SP.sm,
+              }}
+            >
+              {t("v2.impressionIdentifyFirst", "Lieber erst den Whisky bestimmen")}
+            </button>
+          )}
         </>
       )}
 

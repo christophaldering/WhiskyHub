@@ -7,7 +7,8 @@ import { tastingApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
 import { useTranslation } from "react-i18next";
-import { JoinIcon, GlassIcon, HostIcon } from "@/labs/components/FlavourIcons";
+import { JoinIcon, HostIcon } from "@/labs/components/FlavourIcons";
+import ImpressionFirstHero from "./solo/ImpressionFirstHero";
 import LabsJoin from "@/labs/pages/LabsJoin";
 import LabsSolo from "@/labs/pages/LabsSolo";
 import LabsHost from "@/labs/pages/LabsHost";
@@ -60,6 +61,7 @@ export default function LabsTastings() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [activeTab, setActiveTab] = useState<TastingsTab | null>(initialTab);
+  const [soloEntry, setSoloEntry] = useState<"impression" | undefined>(undefined);
 
   useEffect(() => {
     try {
@@ -79,6 +81,7 @@ export default function LabsTastings() {
   }, [activeTab]);
 
   const handleTabClick = (tab: TastingsTab) => {
+    if (tab === "solo") setSoloEntry(undefined);
     setActiveTab((prev) => (prev === tab ? null : tab));
   };
 
@@ -170,7 +173,7 @@ export default function LabsTastings() {
       return (
         <div data-testid={`labs-tastings-standalone-${activeTab}`}>
           {activeTab === "join" && <LabsJoin />}
-          {activeTab === "solo" && <LabsSolo />}
+          {activeTab === "solo" && <LabsSolo initialEntry={soloEntry} key={`solo-${soloEntry ?? "methods"}`} />}
           {activeTab === "host" && <LabsHost />}
           {activeTab === "share" && <LabsBottleSharing />}
         </div>
@@ -191,21 +194,9 @@ export default function LabsTastings() {
         </div>
 
         <div className="labs-home-cards">
-          <button
-            className="labs-card labs-card-interactive labs-home-action-card labs-fade-in labs-stagger-1"
-            onClick={() => navigate('/labs/solo')}
-            data-testid="labs-action-solo"
-          >
-            <div className="labs-home-action-icon">
-              <GlassIcon size={20} />
-            </div>
-            <div className="labs-home-action-text">
-              <div className="ty-ui">{t('home.solo')}</div>
-              <div className="ty-caption labs-home-action-sub">
-                {t('home.soloSub')}
-              </div>
-            </div>
-          </button>
+          <ImpressionFirstHero
+            onClick={() => { setSoloEntry("impression"); setActiveTab("solo"); }}
+          />
 
           <button
             className="labs-card labs-card-interactive labs-home-action-card labs-fade-in labs-stagger-2"
@@ -406,7 +397,7 @@ export default function LabsTastings() {
         >
           <EmbeddedTastingsProvider>
             {activeTab === "join" && <LabsJoin />}
-            {activeTab === "solo" && <LabsSolo />}
+            {activeTab === "solo" && <LabsSolo initialEntry={soloEntry} key={`solo-${soloEntry ?? "methods"}`} />}
             {activeTab === "host" && <LabsHost />}
             {activeTab === "share" && <LabsBottleSharing />}
           </EmbeddedTastingsProvider>
