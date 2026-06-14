@@ -364,6 +364,7 @@ export default function LabsSolo() {
         ...(data.tags.finish || []),
       ].filter(Boolean).join(", "),
       notes: data.notes.overall || "",
+      ...(data.rawImpression ? { rawImpression: data.rawImpression } : {}),
       source: "solo",
       status,
       ...(tastingContext ? { tastingContext: JSON.stringify(tastingContext) } : {}),

@@ -1,0 +1,60 @@
+HARD PROMPT — Eindruck-Feature Schritt 2a/5: rawImpression durchs Journal leiten (Fundament)
+
+ROLLE: Genau diese fünf Änderungen über vier Dateien. Kein UI, keine weiteren Felder.
+KEIN git commit/push, KEINE Migration, KEIN drizzle generate. Host-Cockpit NICHT anfassen.
+
+SCHRITT 0 — DIAGNOSE (nur lesen):
+  grep -c 'rawImpression' shared/schema.ts                                  # erwartet 1 (nur ratings, aus 1)
+  grep -c '"abv", "price", "status"\]);' server/routes.ts                    # erwartet 1
+  grep -c '"voiceMemoTranscript", "voiceMemoDuration"\];' server/routes.ts   # erwartet 1
+  grep -c 'rawImpression' client/src/labs/components/rating/types.ts        # erwartet 0
+Weicht etwas ab: STOPP.
+
+=== 1) shared/schema.ts — rawImpression an journal_entries (additiv, nullable) ===
+ALT:
+  finishNotes: text("finish_notes"),
+  personalScore: real("personal_score"),
+NEU:
+  finishNotes: text("finish_notes"),
+  rawImpression: text("raw_impression"),
+  personalScore: real("personal_score"),
+
+(Hinweis: rein additive, nullable Spalte — wird beim Republish über das bestehende
+`drizzle-kit push` angelegt. KEIN `drizzle-kit generate`.)
+
+=== 2) server/routes.ts — Journal-POST-Whitelist ===
+ALT:
+"voiceMemoDuration", "abv", "price", "status"]);
+NEU:
+"voiceMemoDuration", "abv", "price", "status", "rawImpression"]);
+
+=== 3) server/routes.ts — Journal-PATCH-allowed (Draft-Update) ===
+ALT:
+"voiceMemoTranscript", "voiceMemoDuration"];
+NEU:
+"voiceMemoTranscript", "voiceMemoDuration", "rawImpression"];
+
+=== 4) client/src/labs/components/rating/types.ts — RatingData ===
+ALT:
+  overallExplicit?: boolean;
+}
+NEU:
+  overallExplicit?: boolean;
+  rawImpression?: string;
+}
+
+=== 5) client/src/labs/pages/LabsSolo.tsx — buildJournalBody leitet rawImpression durch ===
+ALT:
+      notes: data.notes.overall || "",
+      source: "solo",
+NEU:
+      notes: data.notes.overall || "",
+      ...(data.rawImpression ? { rawImpression: data.rawImpression } : {}),
+      source: "solo",
+
+VERIFIKATION (nur lesen, NICHT committen/pushen):
+  grep -c 'rawImpression: text("raw_impression")' shared/schema.ts                 # 2
+  grep -c '"status", "rawImpression"\]);' server/routes.ts                          # 1
+  grep -c '"voiceMemoDuration", "rawImpression"\];' server/routes.ts               # 1
+  grep -c 'rawImpression?: string;' client/src/labs/components/rating/types.ts     # 1
+Dann Build + architect-Check: keine neuen TS-Fehler. KEIN git add/commit/push.

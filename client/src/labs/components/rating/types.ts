@@ -26,4 +26,5 @@ export interface RatingData {
   tags: PhaseTags;
   notes: PhaseNotes;
   overallExplicit?: boolean;
+  rawImpression?: string;
 }
