@@ -33,7 +33,7 @@ interface QuickRatingProps {
   };
   initialData?: RatingData;
   onDone: (data: RatingData) => void;
-  onBack: () => void;
+  onBack?: () => void;
   onChange?: (phaseIndex: number, data: Partial<RatingData>) => void;
   onSaveAsDraft?: (data: RatingData) => void;
   scale?: RatingScale;
@@ -72,7 +72,7 @@ export default function QuickRating({ labels, whisky, initialData, onDone, onBac
 
   return (
     <div className="labs-fade-in" style={{ padding: `${SP.xl}px ${SP.md}px`, paddingBottom: 130 }}>
-      <button
+      {onBack && <button
         onClick={onBack}
         data-testid="quick-rating-back"
         style={{
@@ -92,7 +92,7 @@ export default function QuickRating({ labels, whisky, initialData, onDone, onBac
       >
         <BackIcon color="var(--labs-text)" size={20} />
         <span>{labels.back}</span>
-      </button>
+      </button>}
 
       {!whisky.blind && whisky.name && (
         <div style={{ marginBottom: SP.md }}>

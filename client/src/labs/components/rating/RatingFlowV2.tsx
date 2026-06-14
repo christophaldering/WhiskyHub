@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import type { RatingData } from "./types";
 import type { RatingScale } from "@/labs/hooks/useRatingScale";
@@ -35,6 +36,8 @@ interface RatingFlowV2Props {
   preferredMode?: "guided" | "compact" | "quick" | "tisch" | null;
   onSetPreferredMode?: (mode: "guided" | "compact" | "quick" | "tisch" | null) => void;
   showTisch?: boolean;
+  chipInHeader?: boolean;
+  chipPortalTarget?: HTMLElement | null;
 }
 
 type Step = "mode" | "rating";
@@ -53,6 +56,8 @@ export default function RatingFlowV2({
   preferredMode,
   onSetPreferredMode,
   showTisch,
+  chipInHeader,
+  chipPortalTarget,
 }: RatingFlowV2Props) {
   const { t } = useTranslation();
 
@@ -279,21 +284,27 @@ export default function RatingFlowV2({
   }
 
   const subviewInitialData: RatingData | undefined = liveData ?? initialData;
-  const showChip = true;
+
+  if (!mode) return null;
+
+  const chipEl = (
+    <RatingModeChip
+      mode={mode}
+      hideQuick={hideQuick}
+      showTisch={showTisch}
+      labels={chipLabels}
+      allowSetDefault={!!onSetPreferredMode}
+      onSwitch={handleSwitchMode}
+    />
+  );
+  const chipSlot = chipInHeader
+    ? (chipPortalTarget ? createPortal(chipEl, chipPortalTarget) : null)
+    : chipEl;
 
   if (step === "rating" && mode === "guided") {
     return (
       <div style={{ position: "relative" }}>
-        {showChip && (
-          <RatingModeChip
-            mode="guided"
-            hideQuick={hideQuick}
-            showTisch={showTisch}
-            labels={chipLabels}
-            allowSetDefault={!!onSetPreferredMode}
-            onSwitch={handleSwitchMode}
-          />
-        )}
+        {chipSlot}
         <GuidedRating
           labels={guidedLabels}
           whisky={{ ...whisky, blind: whisky.blind ?? false, flavorProfile: whisky.flavorProfile }}
@@ -312,16 +323,7 @@ export default function RatingFlowV2({
   if (step === "rating" && mode === "compact") {
     return (
       <div style={{ position: "relative" }}>
-        {showChip && (
-          <RatingModeChip
-            mode="compact"
-            hideQuick={hideQuick}
-            showTisch={showTisch}
-            labels={chipLabels}
-            allowSetDefault={!!onSetPreferredMode}
-            onSwitch={handleSwitchMode}
-          />
-        )}
+        {chipSlot}
         <CompactRating
           labels={compactLabels}
           whisky={{ ...whisky, blind: whisky.blind ?? false, flavorProfile: whisky.flavorProfile }}
@@ -339,22 +341,13 @@ export default function RatingFlowV2({
   if (step === "rating" && mode === "quick") {
     return (
       <div style={{ position: "relative" }}>
-        {showChip && (
-          <RatingModeChip
-            mode="quick"
-            hideQuick={hideQuick}
-            showTisch={showTisch}
-            labels={chipLabels}
-            allowSetDefault={!!onSetPreferredMode}
-            onSwitch={handleSwitchMode}
-          />
-        )}
+        {chipSlot}
         <QuickRating
           labels={quickLabels}
           whisky={{ ...whisky, blind: whisky.blind ?? false }}
           initialData={subviewInitialData}
           onDone={handleRatingDone}
-          onBack={handleRatingBack}
+          onBack={onSaveAsDraft ? handleRatingBack : undefined}
           onChange={handleChange}
           onSaveAsDraft={onSaveAsDraft}
           scale={scale}
@@ -366,16 +359,7 @@ export default function RatingFlowV2({
   if (step === "rating" && mode === "tisch") {
     return (
       <div style={{ position: "relative" }}>
-        {showChip && (
-          <RatingModeChip
-            mode="tisch"
-            hideQuick={hideQuick}
-            showTisch={showTisch}
-            labels={chipLabels}
-            allowSetDefault={!!onSetPreferredMode}
-            onSwitch={handleSwitchMode}
-          />
-        )}
+        {chipSlot}
         <TischRating
           labels={tischLabels}
           whisky={{ ...whisky, blind: whisky.blind ?? false }}

@@ -207,6 +207,7 @@ function GuidedStepView({
   const [interruptBanner, setInterruptBanner] = useState<{ fromIndex: number; toIndex: number } | null>(null);
   const [flowSaved, setFlowSaved] = useState(false);
   const [dramTransitionKey, setDramTransitionKey] = useState(0);
+  const [chipSlotNode, setChipSlotNode] = useState<HTMLDivElement | null>(null);
   const prevWhiskyIndexRef = useRef(whiskyIndex);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editRatingMode, setEditRatingMode] = useState<"edit" | "retaste" | null>(null);
@@ -524,18 +525,7 @@ function GuidedStepView({
             </span>
           )}
         </div>
-        <span
-          style={{
-            fontSize: 11,
-            color: "var(--labs-text-muted)",
-            maxWidth: 140,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {tasting.title}
-        </span>
+        <div ref={setChipSlotNode} style={{ display: "flex", alignItems: "center" }} />
       </div>
 
       <DramCarousel
@@ -581,6 +571,8 @@ function GuidedStepView({
       {canRate && !revealMoment ? (
         <div key={`flow-${localIndex}-${dramTransitionKey}`} style={{ animation: "labsPopIn 300ms ease both" }}>
           <RatingFlowV2
+            chipInHeader
+            chipPortalTarget={chipSlotNode}
             scale={liveScale}
             whisky={{
               name: displayName,

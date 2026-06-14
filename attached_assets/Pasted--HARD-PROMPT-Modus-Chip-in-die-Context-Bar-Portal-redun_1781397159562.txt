@@ -1,0 +1,254 @@
+# HARD PROMPT — Modus-Chip in die Context-Bar (Portal) + redundanten Quick-Zurück entfernen
+# Dateien: RatingFlowV2.tsx, QuickRating.tsx, LabsLive.tsx
+
+ROLLE: Exakt diese Edits, null Freiheitsgrade. Reihenfolge ZWINGEND.
+Abweichung erwartet/tatsächlich → STOPP, melden, warten.
+
+VERBOTEN: kein git commit/add/push (ich committe selbst); kein schema.ts; keine
+Migrationen; keine Routen-/Export-Löschung; nur die drei genannten Dateien.
+
+----------------------------------------------------------------------
+SCHRITT 0 — DIAGNOSE (nur lesen)
+----------------------------------------------------------------------
+    git tag pre-chip-contextbar-2026-06-14
+    RF=client/src/labs/components/rating/RatingFlowV2.tsx
+    QR=client/src/labs/components/rating/QuickRating.tsx
+    LL=client/src/labs/pages/LabsLive.tsx
+Asserts (erwartet):
+    grep -c 'const showChip = true;' $RF                                   # 1
+    grep -c '{showChip && (' $RF                                            # 4
+    grep -c 'import { createPortal }' $RF                                   # 0
+    grep -c '  onBack: () => void;' $QR                                     # 1
+    grep -c 'key={`flow-${localIndex}-${dramTransitionKey}`}' $LL           # 1
+    grep -c 'maxWidth: 140,' $LL                                            # 1
+Weicht etwas ab → STOPP. PLAN ausgeben, auf "GO" warten.
+
+======================================================================
+DATEI 1: RatingFlowV2.tsx
+======================================================================
+EDIT R1 — createPortal importieren
+ALT:
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+NEU:
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
+
+EDIT R2 — Props erweitern
+ALT:
+  showTisch?: boolean;
+}
+NEU:
+  showTisch?: boolean;
+  chipInHeader?: boolean;
+  chipPortalTarget?: HTMLElement | null;
+}
+
+EDIT R3 — Destructuring erweitern
+ALT:
+  showTisch,
+}: RatingFlowV2Props) {
+NEU:
+  showTisch,
+  chipInHeader,
+  chipPortalTarget,
+}: RatingFlowV2Props) {
+
+EDIT R4 — showChip ersetzen durch Mode-Guard + Chip-Definition
+ALT:
+  const subviewInitialData: RatingData | undefined = liveData ?? initialData;
+  const showChip = true;
+NEU:
+  const subviewInitialData: RatingData | undefined = liveData ?? initialData;
+
+  if (!mode) return null;
+
+  const chipEl = (
+    <RatingModeChip
+      mode={mode}
+      hideQuick={hideQuick}
+      showTisch={showTisch}
+      labels={chipLabels}
+      allowSetDefault={!!onSetPreferredMode}
+      onSwitch={handleSwitchMode}
+    />
+  );
+  const chipSlot = chipInHeader
+    ? (chipPortalTarget ? createPortal(chipEl, chipPortalTarget) : null)
+    : chipEl;
+
+EDIT R5 — guided-Branch: Chip-Block ersetzen
+ALT:
+        {showChip && (
+          <RatingModeChip
+            mode="guided"
+            hideQuick={hideQuick}
+            showTisch={showTisch}
+            labels={chipLabels}
+            allowSetDefault={!!onSetPreferredMode}
+            onSwitch={handleSwitchMode}
+          />
+        )}
+NEU:
+        {chipSlot}
+
+EDIT R6 — compact-Branch: Chip-Block ersetzen
+ALT:
+        {showChip && (
+          <RatingModeChip
+            mode="compact"
+            hideQuick={hideQuick}
+            showTisch={showTisch}
+            labels={chipLabels}
+            allowSetDefault={!!onSetPreferredMode}
+            onSwitch={handleSwitchMode}
+          />
+        )}
+NEU:
+        {chipSlot}
+
+EDIT R7 — quick-Branch: Chip-Block ersetzen
+ALT:
+        {showChip && (
+          <RatingModeChip
+            mode="quick"
+            hideQuick={hideQuick}
+            showTisch={showTisch}
+            labels={chipLabels}
+            allowSetDefault={!!onSetPreferredMode}
+            onSwitch={handleSwitchMode}
+          />
+        )}
+NEU:
+        {chipSlot}
+
+EDIT R8 — tisch-Branch: Chip-Block ersetzen
+ALT:
+        {showChip && (
+          <RatingModeChip
+            mode="tisch"
+            hideQuick={hideQuick}
+            showTisch={showTisch}
+            labels={chipLabels}
+            allowSetDefault={!!onSetPreferredMode}
+            onSwitch={handleSwitchMode}
+          />
+        )}
+NEU:
+        {chipSlot}
+
+EDIT R9 — quick-Branch: redundanten Zurück nur bei onSaveAsDraft durchreichen
+ALT:
+        <QuickRating
+          labels={quickLabels}
+          whisky={{ ...whisky, blind: whisky.blind ?? false }}
+          initialData={subviewInitialData}
+          onDone={handleRatingDone}
+          onBack={handleRatingBack}
+          onChange={handleChange}
+          onSaveAsDraft={onSaveAsDraft}
+          scale={scale}
+        />
+NEU:
+        <QuickRating
+          labels={quickLabels}
+          whisky={{ ...whisky, blind: whisky.blind ?? false }}
+          initialData={subviewInitialData}
+          onDone={handleRatingDone}
+          onBack={onSaveAsDraft ? handleRatingBack : undefined}
+          onChange={handleChange}
+          onSaveAsDraft={onSaveAsDraft}
+          scale={scale}
+        />
+
+======================================================================
+DATEI 2: QuickRating.tsx
+======================================================================
+EDIT Q1 — onBack optional
+ALT:
+  onBack: () => void;
+NEU:
+  onBack?: () => void;
+
+EDIT Q2 — Back-Button nur rendern, wenn onBack vorhanden (kein Re-Indent)
+ALT:
+    <div className="labs-fade-in" style={{ padding: `${SP.xl}px ${SP.md}px`, paddingBottom: 130 }}>
+      <button
+        onClick={onBack}
+NEU:
+    <div className="labs-fade-in" style={{ padding: `${SP.xl}px ${SP.md}px`, paddingBottom: 130 }}>
+      {onBack && <button
+        onClick={onBack}
+und (schließt das {onBack && ...}):
+ALT:
+        <span>{labels.back}</span>
+      </button>
+NEU:
+        <span>{labels.back}</span>
+      </button>}
+
+======================================================================
+DATEI 3: LabsLive.tsx  (alles innerhalb GuidedStepView)
+======================================================================
+EDIT G1 — Slot-State ergänzen
+ALT:
+  const [dramTransitionKey, setDramTransitionKey] = useState(0);
+NEU:
+  const [dramTransitionKey, setDramTransitionKey] = useState(0);
+  const [chipSlotNode, setChipSlotNode] = useState<HTMLDivElement | null>(null);
+
+EDIT G2 — redundanten Titel in der Context-Bar durch den Chip-Slot ersetzen
+ALT:
+        <span
+          style={{
+            fontSize: 11,
+            color: "var(--labs-text-muted)",
+            maxWidth: 140,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {tasting.title}
+        </span>
+NEU:
+        <div ref={setChipSlotNode} style={{ display: "flex", alignItems: "center" }} />
+
+EDIT G3 — Portal-Props an den GUIDED-Mount (nur dieser, via flow-Wrapper-Anker)
+ALT:
+        <div key={`flow-${localIndex}-${dramTransitionKey}`} style={{ animation: "labsPopIn 300ms ease both" }}>
+          <RatingFlowV2
+            scale={liveScale}
+NEU:
+        <div key={`flow-${localIndex}-${dramTransitionKey}`} style={{ animation: "labsPopIn 300ms ease both" }}>
+          <RatingFlowV2
+            chipInHeader
+            chipPortalTarget={chipSlotNode}
+            scale={liveScale}
+
+----------------------------------------------------------------------
+VERIFIKATION (kein commit!)
+----------------------------------------------------------------------
+1) npm run build  → fehlerfrei.
+2) Asserts:
+    grep -c 'showChip' $RF                         # 0
+    grep -c 'chipSlot' $RF                          # 6 (1 def + 4 Branches + 1 in chipEl-Block? -> mind. 5; entscheidend: 0x showChip)
+    grep -c 'createPortal' $RF                      # 2 (import + Aufruf)
+    grep -c 'chipPortalTarget' $RF                  # 3 (Props-Typ, Destructuring, Aufruf)
+    grep -c 'onBack?: () => void;' $QR              # 1
+    grep -c '{onBack && <button' $QR                # 1
+    grep -c 'chipSlotNode' $LL                      # 3 (useState, ref, mount-prop)
+    grep -c 'chipInHeader' $LL                      # 1
+3) Manuelle QA (Live-Tab, geführtes Gruppen-Tasting):
+    a) Modus-Chip sitzt jetzt OBEN rechts in der „Dram X / 12"-Zeile, über dem Bild —
+       nicht mehr unter dem Karussell. Kein sichtbarer Flash/Sprung beim Laden.
+    b) Chip-Dropdown öffnet nach unten und wird NICHT vom Karussell abgeschnitten
+       (z-index ok). Modus-Wechsel funktioniert (Quick/Eindruck/Kompakt/Geführt).
+    c) Quick-Modus: KEIN „Zurück"-Button mehr (geführt/Host/Cockpit). 
+    d) Tisch-Modus: „Zurück" ist NOCH DA und navigiert Phasen rückwärts (nicht entfernt!).
+    e) Solo/Drams (Quick): „Zurück" weiterhin vorhanden (= Editor verlassen).
+    f) Optischer Feinschliff-Check: vertikale Zentrierung des Chips in der Zeile ok?
+       (Der Chip-Wrapper hat marginBottom 8px; falls minimal nach oben versetzt,
+       ist das ein 1-Zeilen-Nachzug — erst melden, nicht eigenmächtig ändern.)
+4) git diff --stat, dann auf meine Byte-Diff-Abnahme warten. NICHT committen.
