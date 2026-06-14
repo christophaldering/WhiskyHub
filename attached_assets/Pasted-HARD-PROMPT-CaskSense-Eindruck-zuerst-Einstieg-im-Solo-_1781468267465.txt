@@ -1,0 +1,364 @@
+HARD PROMPT — CaskSense: „Eindruck zuerst"-Einstieg im Solo-Flow (komplett: Hero + Tür + Namens-Nachtrag)
+
+Kontext: WhiskyHub, React/TS. Ziel: Im Solo-Flow eine zweite Tür neben den Identifikations-Methoden — ein Hero, das mit dem ersten Eindruck am Glas beginnt und den Whisky erst danach (optional) benennt. Setze zuerst einen Sicherheits-Tag: git tag pre-impression-first-2026-06-14
+
+Mechanik (zum Verständnis): Der „Eindruck zuerst"-Pfad lässt whisky bewusst leer. Nach der Bewertung sitzt vor beiden Speicherstellen ein Gate; fehlt der Name, wird zum neuen naming-Schritt verzweigt. Der Name läuft über pendingNameRef (nicht über setWhisky-State), damit beim erneuten Speichern keine Race-Condition entsteht; namingResolvedRef verhindert eine Endlosschleife beim Überspringen.
+
+SCHRITT 0 — Diagnose (NUR LESEN, nichts ändern). Erwartung: jeder Befehl gibt 1 aus. Bei Abweichung STOPP + melden.
+
+grep -c 'from "@/labs/components/CollectionPicker"' client/src/labs/pages/solo/SoloCaptureScreen.tsx
+grep -c "onManual: () => void;" client/src/labs/pages/solo/SoloCaptureScreen.tsx
+grep -c 'onManual, onCaptured, onBarcode' client/src/labs/pages/solo/SoloCaptureScreen.tsx
+grep -c 'type Step = "capture" | "form" | "context" | "rating" | "quickFollowUp" | "done";' client/src/labs/pages/LabsSolo.tsx
+grep -c "const finalizedRef = useRef(false);" client/src/labs/pages/LabsSolo.tsx
+grep -c 'const whiskyName = whisky?.name || t("v2.ratingDram", "Dram");' client/src/labs/pages/LabsSolo.tsx
+grep -c "const handleAnother = useCallback" client/src/labs/pages/LabsSolo.tsx
+
+
+===== NEUE DATEI 1: client/src/labs/pages/solo/ImpressionFirstHero.tsx =====
+import { useTranslation } from "react-i18next";
+import { FONT, SP, RADIUS, LABS_THEME } from "@/labs/components/rating/theme";
+
+/**
+ * Hero-Einstieg im Solo-Flow: stellt den ersten Eindruck am Glas VOR die Logistik
+ * der Whisky-Identifikation. Bewusst gross, warm und einladend — der "heilige Moment"
+ * als Bild, die Methoden-Kacheln folgen darunter zurueckgenommen.
+ */
+export default function ImpressionFirstHero({ onClick }: { onClick: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-testid="solo-impression-first"
+      style={{
+        position: "relative",
+        display: "block",
+        width: "100%",
+        textAlign: "left",
+        border: "1px solid rgba(212,168,71,0.35)",
+        borderRadius: RADIUS.lg,
+        padding: SP.lg,
+        marginBottom: SP.lg,
+        cursor: "pointer",
+        overflow: "hidden",
+        minHeight: 158,
+        font: "inherit",
+        color: "inherit",
+        background:
+          "radial-gradient(130% 110% at 88% 0%, rgba(212,168,71,0.22), rgba(196,122,58,0.08) 45%, rgba(14,11,5,0) 78%), linear-gradient(135deg, rgba(196,122,58,0.16), rgba(14,11,5,0.25))",
+        boxShadow: "0 10px 36px rgba(212,168,71,0.14), inset 0 1px 0 rgba(255,255,255,0.05)",
+      }}
+    >
+      <svg
+        width="124"
+        height="146"
+        viewBox="0 0 124 146"
+        fill="none"
+        aria-hidden="true"
+        style={{ position: "absolute", right: 6, bottom: -4, opacity: 0.55, pointerEvents: "none" }}
+      >
+        <defs>
+          <linearGradient id="csImpressionLiquid" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#d4a847" stopOpacity="0.55" />
+            <stop offset="100%" stopColor="#c47a3a" stopOpacity="0.8" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M46 16 C45 16 44 17 44 19 C44 38 36 50 38 68 C40 90 50 106 62 106 C74 106 84 90 86 68 C88 50 80 38 80 19 C80 17 79 16 78 16 Z"
+          fill="none"
+          stroke="#d4a847"
+          strokeWidth="1.5"
+          strokeOpacity="0.7"
+        />
+        <path d="M39 65 C41 87 51 104 62 104 C73 104 83 87 85 65 C73 71 51 71 39 65 Z" fill="url(#csImpressionLiquid)" />
+        <ellipse cx="62" cy="65" rx="23" ry="4" fill="#d4a847" fillOpacity="0.3" />
+        <path d="M62 106 L62 126" stroke="#d4a847" strokeWidth="1.5" strokeOpacity="0.6" />
+        <path d="M48 130 C48 127 76 127 76 130 C76 133 48 133 48 130 Z" fill="none" stroke="#d4a847" strokeWidth="1.5" strokeOpacity="0.6" />
+        <path d="M51 26 C49 40 48 52 51 64" stroke="#f5ede0" strokeWidth="1.5" strokeOpacity="0.22" fill="none" strokeLinecap="round" />
+      </svg>
+
+      <div style={{ position: "relative", maxWidth: "70%" }}>
+        <div style={{ fontFamily: FONT.display, fontSize: 27, color: LABS_THEME.text, lineHeight: 1.12, marginBottom: SP.sm }}>
+          {t("v2.solo.impressionFirstTitle", "Das Glas steht bereit.")}
+        </div>
+        <div style={{ fontFamily: FONT.serif, fontSize: 17, color: LABS_THEME.muted, lineHeight: 1.4, marginBottom: SP.md }}>
+          {t("v2.solo.impressionFirstSub", "Sag, was du wahrnimmst \u2014 den Whisky kl\u00e4ren wir danach.")}
+        </div>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: FONT.body, fontSize: 15, fontWeight: 600, color: LABS_THEME.gold }}>
+          {t("v2.solo.impressionFirstCta", "Eindruck festhalten")}
+          <span aria-hidden="true">{"\u2192"}</span>
+        </span>
+      </div>
+    </button>
+  );
+}
+===== ENDE DATEI 1 =====
+
+
+===== NEUE DATEI 2: client/src/labs/pages/solo/SoloNamingStep.tsx =====
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { FONT, SP, RADIUS, LABS_THEME, TOUCH_MIN } from "@/labs/components/rating/theme";
+
+/**
+ * Namens-Nachtrag: erscheint NUR im Eindruck-zuerst-Pfad, nachdem der Eindruck
+ * festgehalten und bewertet wurde. Bewahrt die Zuordnung (DNA / Signatur / Vergleiche),
+ * ohne die Identifikation vor den ersten Eindruck zu schieben. Vollstaendig ueberspringbar.
+ */
+export default function SoloNamingStep({ onSubmit }: { onSubmit: (name: string | null) => void }) {
+  const { t } = useTranslation();
+  const [value, setValue] = useState("");
+
+  return (
+    <div
+      className="labs-fade-in"
+      style={{ minHeight: "60vh", display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: 440, margin: "0 auto", padding: "0 var(--labs-space-md)" }}
+    >
+      <div style={{ fontFamily: FONT.display, fontSize: 26, color: LABS_THEME.text, marginBottom: SP.sm }}>
+        {t("v2.solo.namingTitle", "Wie hie\u00df der Dram?")}
+      </div>
+      <div style={{ fontFamily: FONT.serif, fontSize: 17, color: LABS_THEME.muted, lineHeight: 1.45, marginBottom: SP.lg }}>
+        {t("v2.solo.namingSub", "Damit dein Eindruck sp\u00e4ter zu diesem Whisky findet \u2014 f\u00fcr DNA, Signatur und Vergleiche. Du kannst das auch \u00fcberspringen.")}
+      </div>
+
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        autoFocus
+        placeholder={t("v2.solo.namingPlaceholder", "z.\u202fB. Lagavulin 16")}
+        data-testid="solo-naming-input"
+        onKeyDown={(e) => { if (e.key === "Enter" && value.trim()) onSubmit(value.trim()); }}
+        style={{
+          width: "100%",
+          boxSizing: "border-box",
+          fontFamily: FONT.body,
+          fontSize: 16,
+          color: LABS_THEME.text,
+          background: LABS_THEME.inputBg,
+          border: `1px solid ${LABS_THEME.border}`,
+          borderRadius: RADIUS.md,
+          padding: "12px 14px",
+          minHeight: TOUCH_MIN,
+          marginBottom: SP.lg,
+          outline: "none",
+        }}
+      />
+
+      <button
+        type="button"
+        onClick={() => onSubmit(value.trim() || null)}
+        data-testid="solo-naming-save"
+        className="labs-btn-primary"
+        style={{ width: "100%", minHeight: TOUCH_MIN, marginBottom: SP.sm }}
+      >
+        {t("v2.solo.namingSave", "Speichern")}
+      </button>
+      <button
+        type="button"
+        onClick={() => onSubmit(null)}
+        data-testid="solo-naming-skip"
+        className="labs-btn-ghost"
+        style={{ width: "100%", minHeight: TOUCH_MIN, color: LABS_THEME.muted }}
+      >
+        {t("v2.solo.namingSkip", "Ohne Namen speichern")}
+      </button>
+    </div>
+  );
+}
+===== ENDE DATEI 2 =====
+
+
+===== DATEI client/src/labs/pages/solo/SoloCaptureScreen.tsx — VIER EDITS (jeder ALT-Block exakt 1x) =====
+
+--- S1 ---
+ALT:
+import { CollectionPicker, type SelectedWhisky } from "@/labs/components/CollectionPicker";
+NEU:
+import { CollectionPicker, type SelectedWhisky } from "@/labs/components/CollectionPicker";
+import ImpressionFirstHero from "./ImpressionFirstHero";
+
+--- S2 ---
+ALT:
+  onManual: () => void;
+NEU:
+  onManual: () => void;
+  onImpressionFirst: () => void;
+
+--- S3 ---
+ALT:
+export default function SoloCaptureScreen({ participantId, isAuthenticated, onManual, onCaptured, onBarcode, onCollectionSelect, onBack, hideBack }: Props) {
+NEU:
+export default function SoloCaptureScreen({ participantId, isAuthenticated, onManual, onImpressionFirst, onCaptured, onBarcode, onCollectionSelect, onBack, hideBack }: Props) {
+
+--- S4 ---
+ALT:
+        {t("v2.solo.captureSub", "How would you like to capture the whisky?")}
+      </p>
+
+      <span className="labs-section-label">{t("v2.solo.captureOptions", "Capture Options")}</span>
+NEU:
+        {t("v2.solo.captureSub", "How would you like to capture the whisky?")}
+      </p>
+
+      <ImpressionFirstHero onClick={onImpressionFirst} />
+
+      <span className="labs-section-label">{t("v2.solo.captureOptions", "Capture Options")}</span>
+
+
+===== DATEI client/src/labs/pages/LabsSolo.tsx — ELF EDITS (jeder ALT-Block exakt 1x) =====
+
+--- L1 ---
+ALT:
+import SoloCaptureScreen, { type CapturedWhisky } from "./solo/SoloCaptureScreen";
+NEU:
+import SoloCaptureScreen, { type CapturedWhisky } from "./solo/SoloCaptureScreen";
+import SoloNamingStep from "./solo/SoloNamingStep";
+
+--- L2 ---
+ALT:
+type Step = "capture" | "form" | "context" | "rating" | "quickFollowUp" | "done";
+NEU:
+type Step = "capture" | "form" | "context" | "rating" | "quickFollowUp" | "naming" | "done";
+
+--- L3 ---
+ALT:
+  const finalizedRef = useRef(false);
+NEU:
+  const finalizedRef = useRef(false);
+  const pendingNameRef = useRef<string | null>(null);
+  const namingResolvedRef = useRef(false);
+  const pendingFinalizeRef = useRef<(() => void) | null>(null);
+
+--- L4 ---
+ALT:
+    saveSoloDraft({ step: "form", whisky: null, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: false, serverDraftId: null });
+    showDraftFlash();
+  }, [showDraftFlash]);
+
+  const handleBarcode = useCallback((barcode: string) => {
+NEU:
+    saveSoloDraft({ step: "form", whisky: null, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: false, serverDraftId: null });
+    showDraftFlash();
+  }, [showDraftFlash]);
+
+  const handleImpressionFirst = useCallback(() => {
+    setWhisky(null);
+    setFromCollection(false);
+    setBottleAdded(false);
+    setSoloImageFile(null);
+    setDraftEntryId(null);
+    setTastingContext(null);
+    setRatingInitialData(undefined);
+    setRatingMode(null);
+    setRatingPhaseIndex(0);
+    setShowImpressionCapture(true);
+    pendingNameRef.current = null;
+    namingResolvedRef.current = false;
+    pendingFinalizeRef.current = null;
+    finalizedRef.current = false;
+    rawImpressionRef.current = "";
+    setStep("rating");
+    saveSoloDraft({ step: "rating", whisky: null, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: false, serverDraftId: null });
+    showDraftFlash();
+  }, [showDraftFlash]);
+
+  const handleBarcode = useCallback((barcode: string) => {
+
+--- L5 ---
+ALT:
+          onManual={handleManual}
+          onCaptured={handleCaptured}
+NEU:
+          onManual={handleManual}
+          onImpressionFirst={handleImpressionFirst}
+          onCaptured={handleCaptured}
+
+--- L6 ---
+ALT:
+    const whiskyName = whisky?.name || t("v2.ratingDram", "Dram");
+NEU:
+    const whiskyName = whisky?.name || pendingNameRef.current || t("v2.ratingDram", "Dram");
+
+--- L7 ---
+ALT:
+  const handleRatingDone = useCallback(async (data: RatingData) => {
+    setRatingResult(data);
+NEU:
+  const handleRatingDone = useCallback(async (data: RatingData) => {
+    if (!whisky?.name && !pendingNameRef.current && !namingResolvedRef.current) {
+      pendingFinalizeRef.current = () => { void handleRatingDone(data); };
+      setStep("naming");
+      return;
+    }
+    setRatingResult(data);
+
+--- L8 ---
+ALT:
+  const handleQuickFollowUpFinish = useCallback(async () => {
+    if (!quickFollowUpData) return;
+    setRatingResult(quickFollowUpData);
+NEU:
+  const handleQuickFollowUpFinish = useCallback(async () => {
+    if (!quickFollowUpData) return;
+    if (!whisky?.name && !pendingNameRef.current && !namingResolvedRef.current) {
+      pendingFinalizeRef.current = () => { void handleQuickFollowUpFinish(); };
+      setStep("naming");
+      return;
+    }
+    setRatingResult(quickFollowUpData);
+
+--- L9 ---
+ALT:
+  const handleAnother = useCallback(() => {
+NEU:
+  const handleNamingDone = useCallback((name: string | null) => {
+    const trimmed = (name || "").trim();
+    namingResolvedRef.current = true;
+    if (trimmed) {
+      pendingNameRef.current = trimmed;
+      setWhisky((prev) => (prev ? { ...prev, name: trimmed } : { name: trimmed, distillery: "", country: "", region: "", cask: "", age: "", abv: "", fromAI: false }));
+    }
+    const runner = pendingFinalizeRef.current;
+    pendingFinalizeRef.current = null;
+    if (runner) runner();
+  }, []);
+
+  const handleAnother = useCallback(() => {
+
+--- L10 ---
+ALT:
+    rawImpressionRef.current = "";
+    finalizedRef.current = false;
+    setStep("capture");
+  }, []);
+NEU:
+    rawImpressionRef.current = "";
+    finalizedRef.current = false;
+    pendingNameRef.current = null;
+    namingResolvedRef.current = false;
+    pendingFinalizeRef.current = null;
+    setStep("capture");
+  }, []);
+
+--- L11 ---
+ALT:
+  } else if (step === "done" && ratingResult) {
+NEU:
+  } else if (step === "naming") {
+    content = <SoloNamingStep onSubmit={handleNamingDone} />;
+  } else if (step === "done" && ratingResult) {
+
+
+SCHRITT 4 — Verifikation (NUR LESEN), jeder Befehl muss 1 ausgeben:
+grep -c "import ImpressionFirstHero" client/src/labs/pages/solo/SoloCaptureScreen.tsx
+grep -c "<ImpressionFirstHero onClick={onImpressionFirst}" client/src/labs/pages/solo/SoloCaptureScreen.tsx
+grep -c "import SoloNamingStep" client/src/labs/pages/LabsSolo.tsx
+grep -c "const handleImpressionFirst = useCallback" client/src/labs/pages/LabsSolo.tsx
+grep -c "onImpressionFirst={handleImpressionFirst}" client/src/labs/pages/LabsSolo.tsx
+grep -c "const handleNamingDone = useCallback" client/src/labs/pages/LabsSolo.tsx
+grep -c 'step === "naming"' client/src/labs/pages/LabsSolo.tsx
+Danach Dev-Build prüfen: in diesen vier Dateien kein Compile-Fehler.
+
+VERBOTE (strikt): NICHT committen, NICHT pushen (kein git commit, kein git push — das macht Christoph selbst). KEINE Schema-Änderungen, KEINE Migrationen, KEIN drizzle-kit. LabsHostCockpit.tsx / Host-Cockpit NICHT anfassen. Nur die 2 neuen + 2 bestehenden Dateien berühren, sonst nichts. Wenn ein ALT-Block nicht exakt 1x matcht: STOPP + melden, nicht improvisieren. Zur Erinnerung, weil der Agent dazu neigt: am Ende NICHT committen und NICHT pushen.

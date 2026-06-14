@@ -12,6 +12,7 @@ import { participantApi, participantUpdateApi } from "@/lib/api";
 import type { Participant } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import SoloCaptureScreen, { type CapturedWhisky } from "./solo/SoloCaptureScreen";
+import SoloNamingStep from "./solo/SoloNamingStep";
 import SoloWhiskyForm from "./solo/SoloWhiskyForm";
 import SoloDoneScreen from "./solo/SoloDoneScreen";
 import SoloContextStep from "./solo/SoloContextStep";
@@ -23,7 +24,7 @@ import type { RatingData } from "@/labs/components/rating/types";
 import ResumeRatingBanner from "@/labs/components/ResumeRatingBanner";
 import { saveSoloDraft, saveSoloDraftImmediate, loadSoloDraft, clearSoloDraft, hasDraftData } from "@/lib/draftStorage";
 
-type Step = "capture" | "form" | "context" | "rating" | "quickFollowUp" | "done";
+type Step = "capture" | "form" | "context" | "rating" | "quickFollowUp" | "naming" | "done";
 
 interface TastingContextState {
   place: string;
@@ -167,6 +168,9 @@ export default function LabsSolo() {
   const hasUnsavedRef = useRef(false);
   const latestRatingDataRef = useRef<Partial<RatingData>>({});
   const finalizedRef = useRef(false);
+  const pendingNameRef = useRef<string | null>(null);
+  const namingResolvedRef = useRef(false);
+  const pendingFinalizeRef = useRef<(() => void) | null>(null);
 
   const showDraftFlash = useCallback(() => {
     setDraftSavedFlash(true);
@@ -304,6 +308,27 @@ export default function LabsSolo() {
     showDraftFlash();
   }, [showDraftFlash]);
 
+  const handleImpressionFirst = useCallback(() => {
+    setWhisky(null);
+    setFromCollection(false);
+    setBottleAdded(false);
+    setSoloImageFile(null);
+    setDraftEntryId(null);
+    setTastingContext(null);
+    setRatingInitialData(undefined);
+    setRatingMode(null);
+    setRatingPhaseIndex(0);
+    setShowImpressionCapture(true);
+    pendingNameRef.current = null;
+    namingResolvedRef.current = false;
+    pendingFinalizeRef.current = null;
+    finalizedRef.current = false;
+    rawImpressionRef.current = "";
+    setStep("rating");
+    saveSoloDraft({ step: "rating", whisky: null, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: false, serverDraftId: null });
+    showDraftFlash();
+  }, [showDraftFlash]);
+
   const handleBarcode = useCallback((barcode: string) => {
     const w: CapturedWhisky = { name: barcode, distillery: "", country: "", region: "", cask: "", age: "", abv: "", fromAI: false, barcodeValue: barcode };
     setWhisky(w);
@@ -372,7 +397,7 @@ export default function LabsSolo() {
   }, []);
 
   const buildJournalBody = useCallback((data: RatingData, status: "final" | "draft", omitDimensionScores = false) => {
-    const whiskyName = whisky?.name || t("v2.ratingDram", "Dram");
+    const whiskyName = whisky?.name || pendingNameRef.current || t("v2.ratingDram", "Dram");
     return {
       title: whiskyName,
       name: whiskyName,
@@ -409,6 +434,11 @@ export default function LabsSolo() {
   }, [whisky, t, tastingContext]);
 
   const handleRatingDone = useCallback(async (data: RatingData) => {
+    if (!whisky?.name && !pendingNameRef.current && !namingResolvedRef.current) {
+      pendingFinalizeRef.current = () => { void handleRatingDone(data); };
+      setStep("naming");
+      return;
+    }
     setRatingResult(data);
     setSaveError(false);
     setIsDraftSave(false);
@@ -559,6 +589,11 @@ export default function LabsSolo() {
 
   const handleQuickFollowUpFinish = useCallback(async () => {
     if (!quickFollowUpData) return;
+    if (!whisky?.name && !pendingNameRef.current && !namingResolvedRef.current) {
+      pendingFinalizeRef.current = () => { void handleQuickFollowUpFinish(); };
+      setStep("naming");
+      return;
+    }
     setRatingResult(quickFollowUpData);
     setSaveError(false);
     setIsDraftSave(true);
@@ -651,6 +686,18 @@ export default function LabsSolo() {
     }
   }, [bottleAdded, fromCollection, whisky, participantId]);
 
+  const handleNamingDone = useCallback((name: string | null) => {
+    const trimmed = (name || "").trim();
+    namingResolvedRef.current = true;
+    if (trimmed) {
+      pendingNameRef.current = trimmed;
+      setWhisky((prev) => (prev ? { ...prev, name: trimmed } : { name: trimmed, distillery: "", country: "", region: "", cask: "", age: "", abv: "", fromAI: false }));
+    }
+    const runner = pendingFinalizeRef.current;
+    pendingFinalizeRef.current = null;
+    if (runner) runner();
+  }, []);
+
   const handleAnother = useCallback(() => {
     setWhisky(null);
     setRatingResult(null);
@@ -668,6 +715,9 @@ export default function LabsSolo() {
     setShowImpressionCapture(false);
     rawImpressionRef.current = "";
     finalizedRef.current = false;
+    pendingNameRef.current = null;
+    namingResolvedRef.current = false;
+    pendingFinalizeRef.current = null;
     setStep("capture");
   }, []);
 
@@ -772,6 +822,7 @@ export default function LabsSolo() {
           participantId={participantId}
           isAuthenticated={isUserAuthenticated()}
           onManual={handleManual}
+          onImpressionFirst={handleImpressionFirst}
           onCaptured={handleCaptured}
           onBarcode={handleBarcode}
           onCollectionSelect={handleCollectionSelect}
@@ -947,6 +998,8 @@ export default function LabsSolo() {
         </div>
       </div>
     );
+  } else if (step === "naming") {
+    content = <SoloNamingStep onSubmit={handleNamingDone} />;
   } else if (step === "done" && ratingResult) {
     const authenticated = isUserAuthenticated();
     content = (
