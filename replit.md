@@ -2,6 +2,14 @@
 
 > Aeltere Checkpoints (vor dem 12.06.2026) sind nach `docs/CHECKPOINTS_ARCHIV.md` ausgelagert.
 
+## Checkpoint: "Bewertungs-Flow-Politur II + Claim-Coverage + data-guard geklärt" (14.06.2026)
+Kleiner Aufräum-/Ergänzungs-Block (deployed bzw. gepusht). Punkte:
+- **Politur-Dreier (Commit `fdb7ae9`):** (1) „Zurück" im Eindruck/Tisch-Modus nur ab `phaseIdx > 0` (kein Editor-Verlassen auf der Nase; Phasen-zurück bleibt). (2) Modus-Chip-Label `v2.ratingModeChipCurrent`: „Aktuell"→„Modus" (DE), „Current"→„Mode" (EN) — bewusst kurz wegen Chip-Breite. (3) Im „freien Zweig" (Eindruck-Default, #1238) rendert der Modus-Chip jetzt per Portal (`freeChipSlotNode`, `chipInHeader`) ÜBER der Whisky-Karte statt in-flow darunter — analog zur Guided-Fläche.
+- **Claim-Coverage (#2):** `GuestClaimPanel` (tone="app", gast-gegated) erscheint jetzt auch im Nicht-Guided-„closed/archived"-Branch von `LabsLive` (nach „View Results"). Damit erreichen auch Gäste ohne geführten Modus die Anmeldung in-place. Self-Gating unverändert: einmal geclaimt → überall weg.
+- **data-guard geklärt (#3):** `_data_guard_snapshots` ist seit `d8047d5` BEWUSST in `shared/schema.ts` gelistet (Spalten exakt = `script/build.ts` CREATE), um `drizzle-kit push --force` (in `scripts/post-merge.sh`) am DROP zu hindern; das Drizzle-Objekt wird in KEINER Query benutzt (nur roh-SQL liest/schreibt). **NICHT entfernen** — die frühere Notiz „fix = aus schema.ts entfernen" war invertiert und hätte den Datenverlust ausgelöst.
+- **RatingConsistencyCard (#7):** bleibt bewusst unverändert — „Consistency" ist hier (statistische Stabilität des Bewertungsverhaltens) technisch korrekt, kein Rename zu „Sensorische Signatur".
+Offen / als eigene Schritte geplant: Session-Login nach Claim, wöchentliches Auto-Backup (Phase 2), Check-Feature Stufe 2c (Namenssuche/Barcode/Action-Buttons), Korrektur Tasting #29 (braucht DB-Zugriff + Klärung Ranking-vs-Score).
+
 ## Checkpoint: "Gast → Geschichte → Konto: Story-Freigabe, Story-CTA, Konto-Claim (Story + Abschluss)" (14.06.2026)
 Zweiter und dritter Bauabschnitt des Nordstern-Fahrplans („Der Weg vom eingeladenen Gast zum nächsten Host") — WP 2 + WP 3 (inkl. 3-A) sowie die Umdeutung von WP 4 zu „Option 3", alle deployed und auf GitHub gesichert (Commits `758d78f`/`67354ae`, `fa35a71`/`74f655f`, `d8047d5`, `2e845ad`/`ecada04`, `ef593e9`/`357ece2`). Je byte-exakt abgenommen:
 - **2a — Story-Freigabe beim Beenden:** `LabsHost.tsx` (End-Session-Dialog) + `server/routes.ts` + `i18n.ts`. Im Beenden-Dialog eine standardmäßig aktive Checkbox `storyOnEnd`; bei Beenden-mit-Haken erst `PATCH /api/tastings/:id/story-enabled {storyEnabled:true}`, dann schließen. Die `/story-enabled`-Route seedet zusätzlich Baseline-Blocks via `loadTastingStoryDocument` (datengetrieben über `buildInitialTastingStoryBlocks`, **ohne KI**, gleiche `registerRoutes`-Closure → zur Request-Zeit verfügbar). i18n `m2.host.endSessionStoryToggle`.

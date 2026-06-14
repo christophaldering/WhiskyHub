@@ -1693,6 +1693,9 @@ export default function LabsLive({ params }: LabsLiveProps) {
                     <Eye className="w-4 h-4 inline mr-1.5" />
                     View Results
                   </button>
+                  {currentParticipant?.id && (
+                    <GuestClaimPanel participantId={currentParticipant.id} tastingId={tastingId} tone="app" />
+                  )}
                 </div>
               ) : null}
             </div>

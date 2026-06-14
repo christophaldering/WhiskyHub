@@ -1,0 +1,62 @@
+KONTEXT: Bündel "Aufräumen + kleine Claim-Coverage".
+(A) Code: Konto-Claim auch auf dem Nicht-Guided-Abschluss-Screen (closed/archived)
+    in LabsLive — gast-gegated, reuse GuestClaimPanel (tone="app").
+(B) Doku: einen neuen Checkpoint-Block oben in replit.md einfügen.
+
+WICHTIG: KEIN git commit, KEIN git push, KEINE Schema-Änderung, KEINE Migration.
+Nur die zwei genannten Dateien. Cockpit unangetastet. (Es gibt KEINEN „Plan #4".)
+
+──────────────────────────────────────────
+SCHRITT 0 — DIAGNOSE (nur ausgeben):
+  grep -c 'import GuestClaimPanel' client/src/labs/pages/LabsLive.tsx                 → erwartet 1
+  grep -c 'data-testid="labs-live-view-results"' client/src/labs/pages/LabsLive.tsx   → 1
+  grep -c '> Aeltere Checkpoints (vor dem 12.06.2026)' replit.md                      → 1
+  grep -c '## Checkpoint: "Gast → Geschichte → Konto' replit.md                       → 1
+Wenn etwas abweicht: STOPP, nichts ändern, melde dich.
+
+──────────────────────────────────────────
+DATEI 1 — client/src/labs/pages/LabsLive.tsx (ein Edit). ALT kommt GENAU EINMAL vor.
+
+ALT:
+                    <Eye className="w-4 h-4 inline mr-1.5" />
+                    View Results
+                  </button>
+                </div>
+NEU:
+                    <Eye className="w-4 h-4 inline mr-1.5" />
+                    View Results
+                  </button>
+                  {currentParticipant?.id && (
+                    <GuestClaimPanel participantId={currentParticipant.id} tastingId={tastingId} tone="app" />
+                  )}
+                </div>
+
+──────────────────────────────────────────
+DATEI 2 — replit.md (ein Insert). ALT kommt GENAU EINMAL vor.
+
+ALT:
+> Aeltere Checkpoints (vor dem 12.06.2026) sind nach `docs/CHECKPOINTS_ARCHIV.md` ausgelagert.
+
+## Checkpoint: "Gast → Geschichte → Konto: Story-Freigabe, Story-CTA, Konto-Claim (Story + Abschluss)" (14.06.2026)
+NEU:
+> Aeltere Checkpoints (vor dem 12.06.2026) sind nach `docs/CHECKPOINTS_ARCHIV.md` ausgelagert.
+
+## Checkpoint: "Bewertungs-Flow-Politur II + Claim-Coverage + data-guard geklärt" (14.06.2026)
+Kleiner Aufräum-/Ergänzungs-Block (deployed bzw. gepusht). Punkte:
+- **Politur-Dreier (Commit `fdb7ae9`):** (1) „Zurück" im Eindruck/Tisch-Modus nur ab `phaseIdx > 0` (kein Editor-Verlassen auf der Nase; Phasen-zurück bleibt). (2) Modus-Chip-Label `v2.ratingModeChipCurrent`: „Aktuell"→„Modus" (DE), „Current"→„Mode" (EN) — bewusst kurz wegen Chip-Breite. (3) Im „freien Zweig" (Eindruck-Default, #1238) rendert der Modus-Chip jetzt per Portal (`freeChipSlotNode`, `chipInHeader`) ÜBER der Whisky-Karte statt in-flow darunter — analog zur Guided-Fläche. Agent-Phantom-Scope („Plan #4 / Cockpit-Chip") erneut sauber abgewehrt, Cockpit unangetastet.
+- **Claim-Coverage (#2):** `GuestClaimPanel` (tone="app", gast-gegated) erscheint jetzt auch im Nicht-Guided-„closed/archived"-Branch von `LabsLive` (nach „View Results"). Damit erreichen auch Gäste ohne geführten Modus die Anmeldung in-place. Self-Gating unverändert: einmal geclaimt → überall weg.
+- **data-guard geklärt (#3):** `_data_guard_snapshots` ist seit `d8047d5` BEWUSST in `shared/schema.ts` gelistet (Spalten exakt = `script/build.ts` CREATE), um `drizzle-kit push --force` (in `scripts/post-merge.sh`) am DROP zu hindern; das Drizzle-Objekt wird in KEINER Query benutzt (nur roh-SQL liest/schreibt). **NICHT entfernen** — die frühere Notiz „fix = aus schema.ts entfernen" war invertiert und hätte den Datenverlust ausgelöst.
+- **RatingConsistencyCard (#7):** bleibt bewusst unverändert — „Consistency" ist hier (statistische Stabilität des Bewertungsverhaltens) technisch korrekt, kein Rename zu „Sensorische Signatur".
+Offen / als eigene Schritte geplant: Session-Login nach Claim, wöchentliches Auto-Backup (Phase 2), Check-Feature Stufe 2c (Namenssuche/Barcode/Action-Buttons), Korrektur Tasting #29 (braucht DB-Zugriff + Klärung Ranking-vs-Score).
+
+## Checkpoint: "Gast → Geschichte → Konto: Story-Freigabe, Story-CTA, Konto-Claim (Story + Abschluss)" (14.06.2026)
+
+──────────────────────────────────────────
+SCHRITT 2 — VERIFIKATION (ausgeben):
+  grep -c 'participantId={currentParticipant.id} tastingId={tastingId} tone="app"' client/src/labs/pages/LabsLive.tsx → 1
+  grep -c 'tone="app"' client/src/labs/pages/LabsLive.tsx                            → 2
+  grep -c '## Checkpoint: "Bewertungs-Flow-Politur II' replit.md                      → 1
+  grep -c '## Checkpoint:' replit.md                                                  → bisher +1
+Dann Build/tsc-Check (sofern vorhanden) — keine neuen Fehler.
+
+ERINNERUNG: KEIN COMMIT, KEIN PUSH. Nur speichern und Verifikation ausgeben.
