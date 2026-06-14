@@ -363,8 +363,9 @@ export default function LabsSolo() {
         overall: prev?.notes?.overall || "",
       },
     }));
+    setRatingMode(preferredRatingModeFromProfile ?? "compact");
     setShowImpressionCapture(false);
-  }, []);
+  }, [preferredRatingModeFromProfile]);
 
   const handleImpressionSkip = useCallback(() => {
     setShowImpressionCapture(false);
