@@ -1,0 +1,128 @@
+# HARD PROMPT — WP 1b: "Mittendrin"-Banner beim Live-Einstieg
+# Zwei Dateien: client/src/labs/pages/LabsLive.tsx  +  client/src/lib/i18n.ts
+
+ROLLE: Genau diese 5 Edits, null Freiheitsgrade. Abweichung → STOPP, melden, warten.
+VERBOTEN: kein git commit/add/push; kein schema.ts; keine Backend-Änderung; keine andere Datei.
+ZIEL: Ein Teilnehmer, der in ein bereits laufendes geführtes Tasting einsteigt (Host schon
+auf Dram 2+), bekommt oben in GuidedStepView einen kurzen Orientierungs-Hinweis.
+
+----------------------------------------------------------------------
+SCHRITT 0 — DIAGNOSE (nur lesen, Plan ausgeben, auf "GO" warten)
+----------------------------------------------------------------------
+    git tag pre-live-midway-1b-2026-06-14
+Bestätige:
+    grep -n 'function GuidedStepView' client/src/labs/pages/LabsLive.tsx       # ~184
+    grep -n 'from "lucide-react"' client/src/labs/pages/LabsLive.tsx           # Clock ist drin
+    grep -c 'entryBannerIdx' client/src/labs/pages/LabsLive.tsx                # 0
+    grep -c 'joinedMidway' client/src/lib/i18n.ts                              # 0
+    grep -c 'labsFadeIn' client/src/labs/labs-theme.css                        # >0 (Animation existiert)
+
+----------------------------------------------------------------------
+EDIT 1 — State (in GuidedStepView, direkt nach localIndex)  [LabsLive.tsx]
+ALT:
+  const [localIndex, setLocalIndex] = useState(whiskyIndex);
+  const pendingIndexRef = useRef<number | null>(null);
+NEU:
+  const [localIndex, setLocalIndex] = useState(whiskyIndex);
+  const isHostViewer = currentParticipant?.id === tasting?.hostId;
+  const [entryBannerIdx, setEntryBannerIdx] = useState<number | null>(
+    !isHostViewer && whiskyIndex >= 1 ? whiskyIndex : null
+  );
+  const pendingIndexRef = useRef<number | null>(null);
+
+----------------------------------------------------------------------
+EDIT 2 — Auto-Dismiss-Effect (nach dem whiskyIndex-Interrupt-Effect)  [LabsLive.tsx]
+ALT:
+  }, [whiskyIndex]);
+
+  const hostMaxIndex = whiskyIndex;
+NEU:
+  }, [whiskyIndex]);
+
+  useEffect(() => {
+    if (entryBannerIdx === null) return;
+    const tmr = setTimeout(() => setEntryBannerIdx(null), 7000);
+    return () => clearTimeout(tmr);
+  }, [entryBannerIdx]);
+
+  const hostMaxIndex = whiskyIndex;
+
+----------------------------------------------------------------------
+EDIT 3 — Banner-JSX ganz oben im Return  [LabsLive.tsx]
+ALT:
+  return (
+    <div className="labs-fade-in">
+      {revealMoment && (
+NEU:
+  return (
+    <div className="labs-fade-in">
+      {entryBannerIdx !== null && (
+        <div
+          onClick={() => setEntryBannerIdx(null)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "10px 14px",
+            borderRadius: 12,
+            background: "rgba(200,134,26,0.08)",
+            border: "1px solid rgba(200,134,26,0.2)",
+            marginBottom: 16,
+            cursor: "pointer",
+            animation: "labsFadeIn 200ms ease both",
+          }}
+          data-testid="live-entry-midway-banner"
+        >
+          <Clock style={{ width: 16, height: 16, color: "#c8861a", flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>
+              {t("liveUi.joinedMidwayTitle", "Tasting already in progress")}
+            </div>
+            <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+              {t("liveUi.joinedMidwayHint", "You're joining at dram {{n}} of {{total}}.", { n: entryBannerIdx + 1, total: totalWhiskies })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {revealMoment && (
+
+----------------------------------------------------------------------
+EDIT 4 — i18n EN (im liveUi-Block, nach ratingsLocked)  [i18n.ts]
+ALT:
+        ratingsLocked: "Ratings are locked",
+NEU:
+        ratingsLocked: "Ratings are locked",
+        joinedMidwayTitle: "Tasting already in progress",
+        joinedMidwayHint: "You're joining at dram {{n}} of {{total}}.",
+
+----------------------------------------------------------------------
+EDIT 5 — i18n DE (im liveUi-Block, nach ratingsLocked)  [i18n.ts]
+ALT:
+        ratingsLocked: "Bewertungen sind gesperrt",
+NEU:
+        ratingsLocked: "Bewertungen sind gesperrt",
+        joinedMidwayTitle: "Das Tasting läuft bereits",
+        joinedMidwayHint: "Du steigst bei Dram {{n}} von {{total}} ein.",
+
+----------------------------------------------------------------------
+VERIFIKATION (kein commit!)
+----------------------------------------------------------------------
+1) npm run build (falls OOM: bekannt → Asserts + Lesen + Architect-Review).
+2) Counts:
+    grep -c 'entryBannerIdx' client/src/labs/pages/LabsLive.tsx        # 5
+    grep -c 'live-entry-midway-banner' client/src/labs/pages/LabsLive.tsx  # 1
+    grep -c 'joinedMidway' client/src/lib/i18n.ts                      # 4
+3) Architect-Review: neuer useEffect liegt auf Top-Level (vor jedem Early-Return),
+   keine Hook-Order-Verletzung. entryBannerIdx wird NUR beim Mount initialisiert →
+   Banner erscheint nicht erneut, wenn der Host während der Session weiterschaltet.
+4) Manuelle QA:
+    a) Als Gast/Teilnehmer in ein LAUFENDES Tasting einsteigen, während der Host auf
+       Dram ≥ 2 ist → Banner oben: "Das Tasting läuft bereits / Du steigst bei Dram N…".
+       Nach 7 s weg; Antippen schließt früher.
+    b) Host advanced danach einen Dram weiter → KEIN erneutes Mittendrin-Banner
+       (nur der normale interrupt/resume-Fluss).
+    c) Host selbst sieht das Banner NIE.
+    d) Einstieg bei Dram 1 (Index 0) → kein Banner.
+5) git diff --stat (erwartet: 2 files; LabsLive ~ +35, i18n +4), dann auf Byte-Diff-
+   Abnahme warten. NICHT committen.
