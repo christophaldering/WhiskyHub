@@ -9463,6 +9463,7 @@ const resources = {
         ratingsLocked: "Ratings are locked",
         joinedMidwayTitle: "Tasting already in progress",
         joinedMidwayHint: "You're joining at dram {{n}} of {{total}}.",
+        viewStory: "View your story",
         recap: {
           eyebrow: "Your Evening",
           title: "Your evening, in a glance",
@@ -19258,6 +19259,7 @@ const resources = {
         ratingsLocked: "Bewertungen sind gesperrt",
         joinedMidwayTitle: "Das Tasting läuft bereits",
         joinedMidwayHint: "Du steigst bei Dram {{n}} von {{total}} ein.",
+        viewStory: "Eure Geschichte ansehen",
         recap: {
           eyebrow: "Dein Abend",
           title: "Dein Abend auf einen Blick",

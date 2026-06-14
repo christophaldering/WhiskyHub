@@ -138,7 +138,7 @@ function LiveDownloadsSection({
   );
 }
 
-function GuidedComplete({ tastingId, presentationActive }: { tastingId: string; presentationActive?: boolean }) {
+function GuidedComplete({ tastingId, presentationActive, storyAvailable }: { tastingId: string; presentationActive?: boolean; storyAvailable?: boolean }) {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
   return (
@@ -167,14 +167,26 @@ function GuidedComplete({ tastingId, presentationActive }: { tastingId: string; 
           {t("liveUi.thankYou")}
         </p>
 
-        <button
-          className="labs-btn-primary"
-          onClick={() => navigate(`/labs/tastings/${tastingId}`)}
-          data-testid="guided-complete-results"
-        >
-          <Eye className="w-4 h-4 inline mr-1.5" />
-          {t("liveUi.viewResults")}
-        </button>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "stretch" }}>
+          {storyAvailable && (
+            <button
+              className="labs-btn-primary"
+              onClick={() => navigate(`/tasting-story/${tastingId}`)}
+              data-testid="guided-complete-story"
+            >
+              <Sparkles className="w-4 h-4 inline mr-1.5" />
+              {t("liveUi.viewStory", "View your story")}
+            </button>
+          )}
+          <button
+            className={storyAvailable ? "labs-btn-secondary" : "labs-btn-primary"}
+            onClick={() => navigate(`/labs/tastings/${tastingId}`)}
+            data-testid="guided-complete-results"
+          >
+            <Eye className="w-4 h-4 inline mr-1.5" />
+            {t("liveUi.viewResults")}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1328,7 +1340,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
               participants={Array.isArray(participants) ? participants : []}
               currentParticipant={currentParticipant}
             />
-            <GuidedComplete tastingId={tastingId} presentationActive={tasting.presentationSlide != null} />
+            <GuidedComplete tastingId={tastingId} presentationActive={tasting.presentationSlide != null} storyAvailable={getStoryPdfAvailable(tasting, isHost)} />
           </>
         ) : isLobby ? (
           <GuidedLobby tasting={tasting} participantCount={participantCount} />
