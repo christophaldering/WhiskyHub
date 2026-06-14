@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useLabsBack } from "@/labs/LabsLayout";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import GuestClaimPanel from "@/labs/components/GuestClaimPanel";
 import { Wine, ChevronLeft, ChevronRight, ChevronDown, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, Monitor, Sparkles, Settings, Pencil, RotateCcw, Download } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi, participantApi, participantUpdateApi } from "@/lib/api";
@@ -138,7 +139,7 @@ function LiveDownloadsSection({
   );
 }
 
-function GuidedComplete({ tastingId, presentationActive, storyAvailable }: { tastingId: string; presentationActive?: boolean; storyAvailable?: boolean }) {
+function GuidedComplete({ tastingId, presentationActive, storyAvailable, participantId }: { tastingId: string; presentationActive?: boolean; storyAvailable?: boolean; participantId?: string }) {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
   return (
@@ -187,6 +188,9 @@ function GuidedComplete({ tastingId, presentationActive, storyAvailable }: { tas
             {t("liveUi.viewResults")}
           </button>
         </div>
+        {participantId && (
+          <GuestClaimPanel participantId={participantId} tastingId={tastingId} tone="app" />
+        )}
       </div>
     </div>
   );
@@ -1340,7 +1344,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
               participants={Array.isArray(participants) ? participants : []}
               currentParticipant={currentParticipant}
             />
-            <GuidedComplete tastingId={tastingId} presentationActive={tasting.presentationSlide != null} storyAvailable={getStoryPdfAvailable(tasting, isHost)} />
+            <GuidedComplete tastingId={tastingId} presentationActive={tasting.presentationSlide != null} storyAvailable={getStoryPdfAvailable(tasting, isHost)} participantId={currentParticipant?.id} />
           </>
         ) : isLobby ? (
           <GuidedLobby tasting={tasting} participantCount={participantCount} />
