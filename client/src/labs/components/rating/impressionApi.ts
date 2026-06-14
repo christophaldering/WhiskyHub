@@ -17,6 +17,8 @@ export type ImpressionResult = {
   confidence: "high" | "medium" | "low";
   confidenceWeight: number;
   followUpQuestion: string;
+  followUpKind: "aroma" | "dimension" | "evaluation" | "";
+  followUpTerm: string;
   tookMs: number;
 };
 
