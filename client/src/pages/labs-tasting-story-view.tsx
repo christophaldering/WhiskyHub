@@ -7,6 +7,8 @@ import { getPublicTastingStoryData, type TastingStoryDataResponse } from "@/lib/
 import { TastingStoryDataProvider } from "@/storybuilder/data/TastingStoryDataContext";
 import { exportTastingStoryBlocksPdfFor } from "@/lib/pdf-story-blocks";
 import ContextDownloadBar from "@/labs/components/ContextDownloadBar";
+import GuestClaimPanel from "@/labs/components/GuestClaimPanel";
+import { useSession } from "@/lib/session";
 
 type Props = { id: string };
 
@@ -20,6 +22,7 @@ const STORY_DOWNLOAD_THEME: Record<string, string> = {
 
 export default function LabsTastingStoryViewPage({ id }: Props) {
   const [fellBack, setFellBack] = useState(false);
+  const { pid } = useSession();
 
   const { data, isLoading, isError, error } = useQuery<TastingStoryResponse>({
     queryKey: ["/api/public/tasting-stories", id],
@@ -153,6 +156,7 @@ export default function LabsTastingStoryViewPage({ id }: Props) {
       <TastingStoryDataProvider data={storyData ?? null}>
         <StoryRenderer document={document_} mode="public" />
       </TastingStoryDataProvider>
+      {pid && <GuestClaimPanel participantId={pid} tastingId={id} />}
     </div>
   );
 }
