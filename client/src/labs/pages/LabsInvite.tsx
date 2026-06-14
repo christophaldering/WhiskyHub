@@ -31,7 +31,9 @@ export default function LabsInvite({ params }: LabsInviteProps) {
     mutationFn: () => inviteApi.accept(token, currentParticipant!.id),
     onSuccess: (result: any) => {
       setAccepted(true);
-      setTimeout(() => navigate(`/labs/tastings/${result.tastingId}`), 1500);
+      const id = result.tastingId;
+      const dest = data?.tasting?.status === "open" ? `/labs/live/${id}` : `/labs/tastings/${id}`;
+      setTimeout(() => navigate(dest), 1500);
     },
   });
 
@@ -40,6 +42,12 @@ export default function LabsInvite({ params }: LabsInviteProps) {
       acceptMutation.mutate();
     }
   }, [currentParticipant, data]);
+
+  useEffect(() => {
+    if (!currentParticipant && data?.tasting?.guestMode === "ultra" && data?.tasting?.code) {
+      navigate(`/labs/join/${data.tasting.code}`);
+    }
+  }, [currentParticipant, data, navigate]);
 
   const renderContent = () => {
     if (isLoading) {
@@ -88,6 +96,17 @@ export default function LabsInvite({ params }: LabsInviteProps) {
     }
 
     if (!currentParticipant) {
+      const ultraGuest = data.tasting?.guestMode === "ultra" && !!data.tasting?.code;
+      if (ultraGuest) {
+        return (
+          <div className="flex items-center justify-center" style={{ minHeight: "50vh" }}>
+            <div className="text-center">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" style={{ color: "var(--labs-accent)" }} />
+              <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>{t("labs.invite.joiningAsGuest", "Joining as guest...")}</p>
+            </div>
+          </div>
+        );
+      }
       return (
         <div className="flex items-center justify-center" style={{ minHeight: "50vh" }}>
           <div className="labs-card-elevated p-8 text-center max-w-md w-full mx-4">
