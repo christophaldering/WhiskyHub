@@ -1,0 +1,255 @@
+AUFGABE: Solo-„Eindruck zuerst" robust machen + Namens-Nachtrag mit voller Methodenwahl
+
+Basis-Commit: 1e099b1. Sicherheits-Tag VOR allem setzen:
+  git tag pre-solo-eindruck-methodenwahl-2026-06-14
+
+Dieser Prompt hat ZWEI zusammengehörige Teile:
+  TEIL 1 = Solo-Einstieg landet zuverlässig beim Eindruck (entfernt den fragilen soloEntry/initialEntry-Schalter).
+  TEIL 2 = Der Namens-Nachtrag „Wie hieß der Dram?" bietet die volle Methodenwahl (Foto/Barcode/Suche/Sammlung/Manuell) statt nur Freitext und ordnet den erkannten Whisky dem bereits erfassten Eindruck zu.
+
+=== SCHRITT 0: DIAGNOSE (NUR LESEN, NICHTS ÄNDERN) ===
+Führe aus und berichte die Zahlen, BEVOR du editierst:
+  grep -n "initialEntry" client/src/labs/pages/LabsSolo.tsx
+  grep -n "soloEntry" client/src/labs/pages/LabsTastings.tsx
+  grep -n "SoloNamingStep\|handleNamingDone" client/src/labs/pages/LabsSolo.tsx
+  grep -n "pendingFinalizeRef\|pendingNameRef\|namingResolvedRef" client/src/labs/pages/LabsSolo.tsx
+  ls client/src/labs/pages/solo/SoloNamingCapture.tsx 2>/dev/null || echo "Datei existiert noch nicht (erwartet)"
+Erwartung: initialEntry kommt in LabsSolo mehrfach vor; soloEntry in LabsTastings mehrfach; SoloNamingCapture existiert noch NICHT.
+DANACH: Plan zeigen, auf Bestätigung warten. NICHT committen, NICHT pushen.
+
+=== SCHRITT 1: NEUE DATEI ANLEGEN ===
+Lege exakt diese Datei an: client/src/labs/pages/solo/SoloNamingCapture.tsx
+
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { FONT, SP, LABS_THEME, TOUCH_MIN } from "@/labs/components/rating/theme";
+import SoloCaptureScreen, { type CapturedWhisky } from "./SoloCaptureScreen";
+import SoloWhiskyForm from "./SoloWhiskyForm";
+
+interface Props {
+  participantId: string | null;
+  isAuthenticated: boolean;
+  /**
+   * Ordnet den identifizierten Whisky dem bereits erfassten Eindruck + Bewertung zu
+   * und finalisiert das Speichern. w === null bedeutet "Ohne Namen speichern".
+   */
+  onResolve: (w: CapturedWhisky | null, imageFile?: File | null) => void;
+}
+
+/**
+ * Namens-Nachtrag mit voller Methodenwahl (Foto / Hochladen / Barcode / Sammlung / Manuell).
+ * Erscheint NUR im Eindruck-zuerst-Pfad, NACHDEM Eindruck + Bewertung festgehalten wurden,
+ * damit die Identifikation nie vor dem ersten Eindruck steht (Nordstern). Der hier bestimmte
+ * Whisky wird dem bestehenden Eintrag zugeordnet (kein neuer Eintrag) - das traegt DNA,
+ * Sensorische Signatur und Vergleiche. Vollstaendig ueberspringbar via "Ohne Namen speichern".
+ */
+export default function SoloNamingCapture({ participantId, isAuthenticated, onResolve }: Props) {
+  const { t } = useTranslation();
+  const [phase, setPhase] = useState<"choose" | "confirm">("choose");
+  const [draft, setDraft] = useState<CapturedWhisky | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  if (phase === "confirm") {
+    return (
+      <SoloWhiskyForm
+        initial={draft || undefined}
+        fromAI={draft?.fromAI}
+        initialImageFile={imageFile}
+        onSubmit={(w, img) => onResolve(w, img)}
+        onBack={() => setPhase("choose")}
+      />
+    );
+  }
+
+  return (
+    <div className="labs-fade-in" style={{ maxWidth: 440, margin: "0 auto" }}>
+      <div style={{ padding: "0 var(--labs-space-md)", marginBottom: SP.md }}>
+        <div style={{ fontFamily: FONT.display, fontSize: 26, color: LABS_THEME.text, marginBottom: SP.sm }}>
+          {t("v2.solo.namingTitle", "Wie hie\u00df der Dram?")}
+        </div>
+        <div style={{ fontFamily: FONT.serif, fontSize: 17, color: LABS_THEME.muted, lineHeight: 1.45 }}>
+          {t(
+            "v2.solo.namingSub",
+            "Damit dein Eindruck sp\u00e4ter zu diesem Whisky findet \u2014 f\u00fcr DNA, Signatur und Vergleiche. Du kannst das auch \u00fcberspringen.",
+          )}
+        </div>
+      </div>
+
+      <SoloCaptureScreen
+        participantId={participantId}
+        isAuthenticated={isAuthenticated}
+        onManual={() => { setDraft(null); setImageFile(null); setPhase("confirm"); }}
+        onCaptured={(w, img) => { setDraft(w); setImageFile(img || null); setPhase("confirm"); }}
+        onBarcode={(code) => { setDraft({ name: code, distillery: "", country: "", region: "", cask: "", age: "", abv: "", fromAI: false, barcodeValue: code }); setImageFile(null); setPhase("confirm"); }}
+        onCollectionSelect={(w) => onResolve(w)}
+        onBack={() => {}}
+        hideBack
+      />
+
+      <div style={{ padding: "var(--labs-space-md) var(--labs-space-md) var(--labs-space-lg)" }}>
+        <button
+          type="button"
+          onClick={() => onResolve(null)}
+          data-testid="solo-naming-skip"
+          className="labs-btn-ghost"
+          style={{ width: "100%", minHeight: TOUCH_MIN, color: LABS_THEME.muted }}
+        >
+          {t("v2.solo.namingSkip", "Ohne Namen speichern")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+=== SCHRITT 2: client/src/labs/pages/LabsSolo.tsx (9 Edits, jeder ALT exakt 1x) ===
+
+[2.1] Import ergänzen.
+ALT:
+import SoloNamingStep from "./solo/SoloNamingStep";
+NEU:
+import SoloNamingStep from "./solo/SoloNamingStep";
+import SoloNamingCapture from "./solo/SoloNamingCapture";
+
+[2.2] Signatur — Prop entfernen.
+ALT:
+export default function LabsSolo({ initialEntry }: { initialEntry?: "impression" } = {}) {
+NEU:
+export default function LabsSolo() {
+
+[2.3] step-Init über Draft statt Prop.
+ALT:
+  const [step, setStep] = useState<Step>(initialEntry === "impression" ? "rating" : "capture");
+NEU:
+  const initialSoloDraft = loadSoloDraft();
+  const [step, setStep] = useState<Step>(initialSoloDraft ? "capture" : "rating");
+
+[2.4] resumeDraft aus derselben Quelle.
+ALT:
+  const [resumeDraft, setResumeDraft] = useState(() => loadSoloDraft());
+NEU:
+  const [resumeDraft, setResumeDraft] = useState(() => initialSoloDraft);
+
+[2.5] showImpressionCapture-Default.
+ALT:
+  const [showImpressionCapture, setShowImpressionCapture] = useState(initialEntry === "impression");
+NEU:
+  const [showImpressionCapture, setShowImpressionCapture] = useState(!initialSoloDraft);
+
+[2.6] Ref für die Race-freie Whisky-Zuordnung.
+ALT:
+  const pendingFinalizeRef = useRef<(() => void) | null>(null);
+NEU:
+  const pendingFinalizeRef = useRef<(() => void) | null>(null);
+  const pendingWhiskyRef = useRef<CapturedWhisky | null>(null);
+
+[2.7] buildJournalBody liest den nachgereichten Whisky als Fallback.
+ALT:
+    const whiskyName = whisky?.name || pendingNameRef.current || t("v2.ratingDram", "Dram");
+    return {
+      title: whiskyName,
+      name: whiskyName,
+      distillery: whisky?.distillery || "",
+      country: whisky?.country || "",
+      region: whisky?.region || "",
+      caskType: whisky?.cask || "",
+      age: whisky?.age || "",
+      abv: whisky?.abv || "",
+NEU:
+    const pw = pendingWhiskyRef.current;
+    const whiskyName = whisky?.name || pw?.name || pendingNameRef.current || t("v2.ratingDram", "Dram");
+    return {
+      title: whiskyName,
+      name: whiskyName,
+      distillery: whisky?.distillery || pw?.distillery || "",
+      country: whisky?.country || pw?.country || "",
+      region: whisky?.region || pw?.region || "",
+      caskType: whisky?.cask || pw?.cask || "",
+      age: whisky?.age || pw?.age || "",
+      abv: whisky?.abv || pw?.abv || "",
+
+[2.8] resolveNaming direkt VOR handleNamingDone einfügen.
+ALT:
+  const handleNamingDone = useCallback((name: string | null) => {
+NEU:
+  const resolveNaming = useCallback((w: CapturedWhisky | null, imageFile?: File | null) => {
+    namingResolvedRef.current = true;
+    pendingWhiskyRef.current = w;
+    if (w) {
+      pendingNameRef.current = w.name || null;
+      setWhisky(w);
+      if (imageFile !== undefined) setSoloImageFile(imageFile);
+    }
+    const runner = pendingFinalizeRef.current;
+    pendingFinalizeRef.current = null;
+    if (runner) runner();
+  }, []);
+
+  const handleNamingDone = useCallback((name: string | null) => {
+
+[2.9] naming-Step rendert die Methodenwahl statt des Freitext-Screens.
+ALT:
+  } else if (step === "naming") {
+    content = <SoloNamingStep onSubmit={handleNamingDone} />;
+NEU:
+  } else if (step === "naming") {
+    content = (
+      <SoloNamingCapture
+        participantId={participantId}
+        isAuthenticated={isUserAuthenticated()}
+        onResolve={resolveNaming}
+      />
+    );
+
+HINWEIS: handleNamingDone und der SoloNamingStep-Import werden dadurch ungenutzt. NICHT entfernen — sie schaden nicht und das Aufräumen ist eine separate Entscheidung.
+
+=== SCHRITT 3: client/src/labs/pages/LabsTastings.tsx (4 Edits) ===
+
+[3.1] soloEntry-State entfernen.
+ALT:
+  const [activeTab, setActiveTab] = useState<TastingsTab | null>(initialTab);
+  const [soloEntry, setSoloEntry] = useState<"impression" | undefined>(undefined);
+NEU:
+  const [activeTab, setActiveTab] = useState<TastingsTab | null>(initialTab);
+
+[3.2] handleTabClick: soloEntry-Zeile entfernen.
+ALT:
+  const handleTabClick = (tab: TastingsTab) => {
+    if (tab === "solo") setSoloEntry(undefined);
+    setActiveTab((prev) => (prev === tab ? null : tab));
+  };
+NEU:
+  const handleTabClick = (tab: TastingsTab) => {
+    setActiveTab((prev) => (prev === tab ? null : tab));
+  };
+
+[3.3] Glas-Karte: onClick vereinfachen.
+ALT:
+          <ImpressionFirstHero
+            onClick={() => { setSoloEntry("impression"); setActiveTab("solo"); }}
+          />
+NEU:
+          <ImpressionFirstHero
+            onClick={() => setActiveTab("solo")}
+          />
+
+[3.4] LabsSolo-Aufruf — kommt 2x vor, BEIDE Vorkommen ersetzen.
+ALT (2x):
+          {activeTab === "solo" && <LabsSolo initialEntry={soloEntry} key={`solo-${soloEntry ?? "methods"}`} />}
+NEU (2x):
+          {activeTab === "solo" && <LabsSolo />}
+
+=== VERIFIKATION (nur prüfen, NICHT committen) ===
+  grep -c "initialEntry" client/src/labs/pages/LabsSolo.tsx        # erwartet 0
+  grep -c "soloEntry" client/src/labs/pages/LabsTastings.tsx       # erwartet 0
+  grep -c "<SoloNamingCapture" client/src/labs/pages/LabsSolo.tsx  # erwartet 1
+  grep -c "<SoloNamingStep" client/src/labs/pages/LabsSolo.tsx     # erwartet 0
+  grep -c "pendingWhiskyRef" client/src/labs/pages/LabsSolo.tsx    # erwartet 3
+  grep -c "<LabsSolo />" client/src/labs/pages/LabsTastings.tsx    # erwartet 2
+Dann den Dev-Build/TypeScript-Check laufen lassen und melden, ob neue Fehler auftauchen (Baseline-Fehler ignorieren).
+
+=== VERBOTE (gelten durchgehend) ===
+- NICHT committen. NICHT pushen. NICHT `git commit`, nicht `git push`.
+- KEINE Schema-Änderungen, KEINE Migrationen, KEIN drizzle-kit (generate/push).
+- Host-Cockpit / LabsHostCockpit.tsx NICHT anfassen.
+- Nur die hier genannten 3 Dateien berühren (LabsSolo.tsx, LabsTastings.tsx, neue SoloNamingCapture.tsx).
+- Nach der Verifikation STOPPEN und mir den Stand zeigen. Erneut: NICHT committen, das mache ich selbst.
