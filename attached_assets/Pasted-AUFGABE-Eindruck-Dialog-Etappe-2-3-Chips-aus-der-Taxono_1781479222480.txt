@@ -1,0 +1,251 @@
+AUFGABE: Eindruck-Dialog Etappe 2+3 — Chips aus der Taxonomie + Wertungs-Stufen + Sättigung
+
+Basis: Etappe 1 muss bereits drin sein (Server liefert followUpKind/followUpTerm,
+impressionApi.ts kennt die Felder). Sicherheits-Tag VOR allem:
+  git tag pre-impression-dialog-e2-2026-06-14
+
+=== SCHRITT 0: DIAGNOSE (NUR LESEN) ===
+  grep -n "followUpKind" client/src/labs/components/rating/impressionApi.ts
+  ls client/src/labs/components/rating/impressionChips.ts 2>/dev/null || echo "impressionChips fehlt noch (erwartet)"
+  grep -n "flavorSiblingsForTerm" client/src/labs/data/flavor-data.ts
+Erwartung: followUpKind vorhanden (Etappe 1 drin); impressionChips + flavorSiblingsForTerm noch NICHT.
+Falls followUpKind FEHLT: STOPP — erst Etappe 1 einspielen. Danach Plan zeigen, Bestätigung abwarten. NICHT committen/pushen.
+
+=== SCHRITT 1: client/src/labs/data/flavor-data.ts — Funktion ANS DATEIENDE anhängen ===
+
+/**
+ * Findet zu einem genannten Aroma-Begriff (z.B. "rauchig") konkrete Verfeinerungs-Optionen
+ * aus der bestehenden Profi-Taxonomie - die Geschwister-Deskriptoren derselben Kategorie.
+ * Greift NUR auf das vorhandene Flavour-Vokabular zurueck (keine erfundenen Begriffe).
+ * Matching ist flexions-sicher (Praefix, min. 4 Zeichen) statt beliebiger Substring,
+ * damit "torfig" nicht ueber "fig" faelschlich Fruechte trifft.
+ * Gibt deutsche Labels zurueck (ohne den genannten Begriff selbst), maximal 6.
+ */
+export function flavorSiblingsForTerm(term: string, lang: "de" | "en" = "de"): string[] {
+  const t = (term || "").trim().toLowerCase();
+  if (t.length < 2) return [];
+  const label = (d: FlavorDescriptor) => (lang === "de" ? d.de : d.en);
+  const dedupe = (arr: string[]) => Array.from(new Set(arr.filter(Boolean)));
+  const flexMatch = (a: string, b: string) => {
+    if (a === b) return true;
+    if (a.length >= 4 && b.length >= 4 && (a.startsWith(b) || b.startsWith(a))) return true;
+    return false;
+  };
+  for (const cat of FLAVOR_CATEGORIES) {
+    const catLabel = (lang === "de" ? cat.de : cat.en).toLowerCase();
+    if (catLabel === t || cat.id === t) {
+      return dedupe(cat.subcategories.map(label)).slice(0, 6);
+    }
+  }
+  for (const cat of FLAVOR_CATEGORIES) {
+    const hit = cat.subcategories.find((d) =>
+      d.keywords.some((k) => flexMatch(k.trim().toLowerCase(), t)),
+    );
+    if (hit) {
+      return dedupe(cat.subcategories.filter((d) => d.id !== hit.id).map(label)).slice(0, 6);
+    }
+  }
+  for (const cat of FLAVOR_CATEGORIES) {
+    const catLabel = (lang === "de" ? cat.de : cat.en).toLowerCase();
+    if (flexMatch(catLabel, t)) {
+      return dedupe(cat.subcategories.map(label)).slice(0, 6);
+    }
+  }
+  return [];
+}
+
+=== SCHRITT 2: NEUE DATEI client/src/labs/components/rating/impressionChips.ts ===
+
+import { flavorSiblingsForTerm } from "@/labs/data/flavor-data";
+
+export interface EvaluationLevel {
+  label: string;
+  score: number;
+}
+
+export const EVALUATION_LEVELS: EvaluationLevel[] = [
+  { label: "schwach", score: 68 },
+  { label: "solide", score: 79 },
+  { label: "gut", score: 85 },
+  { label: "richtig gut", score: 89 },
+  { label: "herausragend", score: 93 },
+];
+
+const DIMENSION_CHIPS: Record<string, string[]> = {
+  nose: ["fruchtig", "blumig", "würzig", "rauchig", "malzig", "vanillig"],
+  taste: ["süß", "würzig", "fruchtig", "rauchig", "cremig", "trocken"],
+  finish: ["kurz", "mittel", "lang", "süß", "trocken", "wärmend"],
+};
+
+export interface ChipSet {
+  options: string[];
+  evaluation: EvaluationLevel[] | null;
+}
+
+export function chipsForFollowUp(kind: string, term: string): ChipSet {
+  if (kind === "evaluation") {
+    return { options: [], evaluation: EVALUATION_LEVELS };
+  }
+  if (kind === "dimension") {
+    return { options: DIMENSION_CHIPS[term] || [], evaluation: null };
+  }
+  if (kind === "aroma") {
+    return { options: flavorSiblingsForTerm(term, "de"), evaluation: null };
+  }
+  return { options: [], evaluation: null };
+}
+
+=== SCHRITT 3: client/src/labs/components/rating/ImpressionCapture.tsx (6 Edits, jeder ALT exakt 1x) ===
+
+[3.1] Import.
+ALT:
+import { parseImpression, type ImpressionResult } from "./impressionApi";
+NEU:
+import { parseImpression, type ImpressionResult } from "./impressionApi";
+import { chipsForFollowUp, type EvaluationLevel } from "./impressionChips";
+
+[3.2] Sättigung: MAX_ROUNDS + shouldAskNext ersetzen.
+ALT:
+const MAX_ROUNDS = 3;
+const confLevel = (c: "high" | "medium" | "low") => (c === "high" ? 2 : c === "medium" ? 1 : 0);
+
+function shouldAskNext(round: number, result: ImpressionResult, prev: ImpressionResult | null): boolean {
+  if (round >= MAX_ROUNDS) return false;            // harte Notbremse
+  if (!result.followUpQuestion) return false;       // kein Ansatzpunkt -> keine Frage moeglich
+  // Solange kein tragfaehiger Score ableitbar ist, integrativ weiterfragen
+  // (ueberspringt Konfidenz-Decke + Plateau): vager Eindruck ist NICHT gesaettigt.
+  if (result.scoreSuggestion === null) return true;
+  if (result.confidence === "high") return false;
+  if (prev) {
+    const confGain = confLevel(result.confidence) > confLevel(prev.confidence);
+    const newAspect =
+      result.flavorTags.length > prev.flavorTags.length ||
+      (!!result.nose && !prev.nose) ||
+      (!!result.taste && !prev.taste) ||
+      (!!result.finish && !prev.finish);
+    if (!confGain && !newAspect) return false;
+  }
+  return true;
+}
+NEU:
+const MAX_ROUNDS = 4;
+
+function shouldAskNext(round: number, result: ImpressionResult): boolean {
+  if (round >= MAX_ROUNDS) return false;       // harte Notbremse
+  if (!result.followUpQuestion) return false;  // Server signalisiert: nichts mehr offen
+  if (!result.followUpKind) return false;      // kein konkreter Fragetyp -> nicht weiterbohren
+  return true;
+}
+
+[3.3] State.
+ALT:
+  const [round, setRound] = useState(0);
+NEU:
+  const [round, setRound] = useState(0);
+  const [overrideOverall, setOverrideOverall] = useState<number | null>(null);
+
+[3.4] Chip-Handler vor handleInitial.
+ALT:
+  const handleInitial = async () => {
+NEU:
+  const appendChip = (label: string) => {
+    setText((prev) => {
+      const trimmed = prev.trim();
+      if (!trimmed) return label;
+      if (trimmed.toLowerCase().includes(label.toLowerCase())) return trimmed;
+      return `${trimmed}, ${label}`;
+    });
+  };
+  const pickEvaluation = (level: EvaluationLevel) => {
+    setOverrideOverall(level.score);
+    appendChip(level.label);
+  };
+
+  const handleInitial = async () => {
+
+[3.5] Die beiden shouldAskNext-Aufrufe (Argument prev entfernen).
+ALT:  if (shouldAskNext(0, r, null)) {
+NEU:  if (shouldAskNext(0, r)) {
+ALT:  if (shouldAskNext(nextRound, r, result)) {
+NEU:  if (shouldAskNext(nextRound, r)) {
+
+[3.6] handleConfirm: Wertungs-Anker in den Score einsetzen.
+ALT:
+  const handleConfirm = () => {
+    if (result) onApply({ ...result, rawImpression: enrichedText });
+    else onSkip();
+  };
+NEU:
+  const handleConfirm = () => {
+    if (!result) { onSkip(); return; }
+    const score = overrideOverall !== null
+      ? {
+          overall: overrideOverall,
+          nose: result.scoreSuggestion?.nose ?? null,
+          taste: result.scoreSuggestion?.taste ?? null,
+          finish: result.scoreSuggestion?.finish ?? null,
+        }
+      : result.scoreSuggestion;
+    onApply({ ...result, scoreSuggestion: score, rawImpression: enrichedText });
+  };
+
+[3.7] Chips zwischen Rückfrage und Eingabefeld.
+ALT:
+          <div style={{ fontFamily: FONT.serif, fontSize: 18, color: LABS_THEME.text, marginBottom: SP.sm, lineHeight: 1.4 }}>
+            {result.followUpQuestion}
+          </div>
+          <textarea
+NEU:
+          <div style={{ fontFamily: FONT.serif, fontSize: 18, color: LABS_THEME.text, marginBottom: SP.sm, lineHeight: 1.4 }}>
+            {result.followUpQuestion}
+          </div>
+          {(() => {
+            const chips = chipsForFollowUp(result.followUpKind, result.followUpTerm);
+            const chipStyle = (active: boolean) => ({
+              padding: "8px 14px",
+              borderRadius: 999,
+              border: `1px solid ${active ? LABS_THEME.gold : LABS_THEME.border}`,
+              background: active ? "rgba(212,168,71,0.16)" : "transparent",
+              color: active ? LABS_THEME.gold : LABS_THEME.text,
+              fontFamily: FONT.body,
+              fontSize: 14,
+              cursor: "pointer",
+              minHeight: 36,
+            } as const);
+            if (chips.evaluation) {
+              return (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: SP.sm, marginBottom: SP.md }}>
+                  {chips.evaluation.map((lvl) => (
+                    <button key={lvl.label} type="button" onClick={() => pickEvaluation(lvl)} style={chipStyle(overrideOverall === lvl.score)}>
+                      {lvl.label}
+                    </button>
+                  ))}
+                </div>
+              );
+            }
+            if (chips.options.length > 0) {
+              return (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: SP.sm, marginBottom: SP.md }}>
+                  {chips.options.map((opt) => (
+                    <button key={opt} type="button" onClick={() => appendChip(opt)} style={chipStyle(text.toLowerCase().includes(opt.toLowerCase()))}>
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              );
+            }
+            return null;
+          })()}
+          <textarea
+
+=== VERIFIKATION ===
+  grep -c "flavorSiblingsForTerm" client/src/labs/data/flavor-data.ts          # >= 1
+  grep -c "chipsForFollowUp" client/src/labs/components/rating/ImpressionCapture.tsx  # 2
+  grep -c "pickEvaluation" client/src/labs/components/rating/ImpressionCapture.tsx    # 2
+  grep -c "shouldAskNext(.*, r)" client/src/labs/components/rating/ImpressionCapture.tsx  # 2
+Dann Dev-Build/TypeScript-Check; nur neue Fehler melden.
+
+=== VERBOTE ===
+- NICHT committen, NICHT pushen. Keine Schema-Änderungen/Migrationen/drizzle-kit.
+- Nur die drei genannten Dateien (flavor-data.ts, neue impressionChips.ts, ImpressionCapture.tsx). Host-Cockpit nicht berühren.
+- Nach Verifikation STOPPEN und Stand zeigen. NICHT committen — das mache ich selbst.
