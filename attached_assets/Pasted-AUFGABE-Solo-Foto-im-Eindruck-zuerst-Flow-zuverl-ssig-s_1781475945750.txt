@@ -1,0 +1,93 @@
+AUFGABE: Solo-Foto im Eindruck-zuerst-Flow zuverlässig speichern
+
+Basis-Commit: 4ac58f8. Sicherheits-Tag VOR allem:
+  git tag pre-solo-foto-fix-2026-06-14
+
+HINTERGRUND: Im Eindruck-zuerst-Pfad wird der Whisky erst im Namens-Nachtrag bestimmt.
+Wird er dort per Foto identifiziert, ging das Bild beim Speichern verloren (Race-Condition:
+soloImageFile wird via State async gesetzt, der Finalize-Runner liest aber die alte Closure).
+Fix: ein synchroner Ref (pendingImageRef), analog zum bereits vorhandenen pendingWhiskyRef.
+
+=== SCHRITT 0: DIAGNOSE (NUR LESEN) ===
+  grep -n "pendingWhiskyRef\|pendingImageRef\|soloImageFile && entryId\|if (soloImageFile)" client/src/labs/pages/LabsSolo.tsx
+Erwartung: pendingWhiskyRef existiert, pendingImageRef noch NICHT.
+DANACH Plan zeigen, Bestätigung abwarten. NICHT committen, NICHT pushen.
+
+=== SCHRITT 1: client/src/labs/pages/LabsSolo.tsx (4 Edits, jeder ALT exakt 1x) ===
+
+[1.1] Ref deklarieren.
+ALT:
+  const pendingWhiskyRef = useRef<CapturedWhisky | null>(null);
+NEU:
+  const pendingWhiskyRef = useRef<CapturedWhisky | null>(null);
+  const pendingImageRef = useRef<File | null>(null);
+
+[1.2] resolveNaming hält das Foto synchron.
+ALT:
+      if (imageFile !== undefined) setSoloImageFile(imageFile);
+NEU:
+      if (imageFile !== undefined) {
+        setSoloImageFile(imageFile);
+        pendingImageRef.current = imageFile;
+      }
+
+[1.3] Speicher-Pfad 1 (handleRatingDone) liest Ref als Fallback.
+ALT:
+      if (soloImageFile && entryId) {
+        try {
+          const imgFormData = new FormData();
+          imgFormData.append("image", soloImageFile);
+          await fetch(`/api/journal/${participantId}/${entryId}/image`, { method: "POST", body: imgFormData });
+        } catch {}
+        setSoloImageFile(null);
+      }
+NEU:
+      const imgToUpload = soloImageFile || pendingImageRef.current;
+      if (imgToUpload && entryId) {
+        try {
+          const imgFormData = new FormData();
+          imgFormData.append("image", imgToUpload);
+          await fetch(`/api/journal/${participantId}/${entryId}/image`, { method: "POST", body: imgFormData });
+        } catch {}
+        setSoloImageFile(null);
+        pendingImageRef.current = null;
+      }
+
+[1.4] Speicher-Pfad 2 (handleQuickFollowUpFinish) liest Ref als Fallback.
+ALT:
+      if (soloImageFile) {
+        try {
+          const entry = await res.json();
+          if (entry?.id) {
+            const imgFormData = new FormData();
+            imgFormData.append("image", soloImageFile);
+            await fetch(`/api/journal/${participantId}/${entry.id}/image`, { method: "POST", body: imgFormData });
+          }
+        } catch {}
+        setSoloImageFile(null);
+      }
+NEU:
+      const imgToUpload = soloImageFile || pendingImageRef.current;
+      if (imgToUpload) {
+        try {
+          const entry = await res.json();
+          if (entry?.id) {
+            const imgFormData = new FormData();
+            imgFormData.append("image", imgToUpload);
+            await fetch(`/api/journal/${participantId}/${entry.id}/image`, { method: "POST", body: imgFormData });
+          }
+        } catch {}
+        setSoloImageFile(null);
+        pendingImageRef.current = null;
+      }
+
+=== VERIFIKATION (nur prüfen) ===
+  grep -c "pendingImageRef" client/src/labs/pages/LabsSolo.tsx   # erwartet 6
+  grep -c "imgToUpload" client/src/labs/pages/LabsSolo.tsx        # erwartet 6
+Dann Dev-Build/TypeScript-Check; nur neue Fehler melden (Baseline ignorieren).
+
+=== VERBOTE ===
+- NICHT committen, NICHT pushen.
+- Keine Schema-Änderungen, keine Migrationen, kein drizzle-kit.
+- Nur LabsSolo.tsx anfassen. Host-Cockpit nicht berühren.
+- Nach der Verifikation STOPPEN und Stand zeigen. NICHT committen — das mache ich selbst.
