@@ -1,0 +1,46 @@
+KONTEXT: #1 Session-Login nach Claim. Wenn ein Gast sich im GuestClaimPanel ein
+Konto anlegt (claim -> verify -> done), bleibt die Session bisher technisch "Gast".
+Nach erfolgreichem verify soll dieselbe E-Mail+PIN die Session sauber einloggen
+(signIn → /api/session/signin findet den Participant per E-Mail, gleicher pid,
+Bewertungen bleiben). Wirkt für beide Platzierungen (Story + Abschluss-Screen).
+
+WICHTIG: KEIN git commit, KEIN git push, KEINE Schema-/Migrations-Änderung.
+Nur EINE Datei: client/src/labs/components/GuestClaimPanel.tsx. (Kein "Plan #4".)
+
+──────────────────────────────────────────
+SCHRITT 0 — DIAGNOSE (nur ausgeben):
+  grep -c 'import { trackEvent } from "@/lib/funnelTracker";' client/src/labs/components/GuestClaimPanel.tsx  → erwartet 1
+  grep -c 'await participantApi.verify(participantId, claimCode.trim());' client/src/labs/components/GuestClaimPanel.tsx → 1
+  grep -c 'import { signIn } from "@/lib/session";' client/src/labs/components/GuestClaimPanel.tsx → erwartet 0 (noch nicht da)
+Wenn abweichend: STOPP, melde dich.
+
+──────────────────────────────────────────
+DATEI — client/src/labs/components/GuestClaimPanel.tsx (zwei Edits, je GENAU EINMAL)
+
+EDIT 1 (Import) — ALT:
+import { trackEvent } from "@/lib/funnelTracker";
+NEU:
+import { trackEvent } from "@/lib/funnelTracker";
+import { signIn } from "@/lib/session";
+
+EDIT 2 (Session-Elevation nach verify) — ALT:
+      await participantApi.verify(participantId, claimCode.trim());
+      setClaimStep("done");
+NEU:
+      await participantApi.verify(participantId, claimCode.trim());
+      // Konto ist gesichert -> Session auf "eingeloggt" heben (gleicher Participant,
+      // Bewertungen bleiben erhalten). Schlaegt das fehl, ist das kein Blocker:
+      // der Gast kann sich jederzeit mit E-Mail + PIN anmelden.
+      try {
+        await signIn({ email: claimEmail.trim(), pin: claimPin.trim(), mode: "tasting", remember: true });
+      } catch { /* Session-Elevation ist Bonus, kein Blocker */ }
+      setClaimStep("done");
+
+──────────────────────────────────────────
+SCHRITT 2 — VERIFIKATION (ausgeben):
+  grep -c 'import { signIn } from "@/lib/session";' client/src/labs/components/GuestClaimPanel.tsx → 1
+  grep -c 'await signIn({ email: claimEmail.trim(), pin: claimPin.trim(), mode: "tasting", remember: true })' client/src/labs/components/GuestClaimPanel.tsx → 1
+  grep -c 'await participantApi.verify(participantId, claimCode.trim());' client/src/labs/components/GuestClaimPanel.tsx → 1
+Dann Build/tsc-Check (sofern vorhanden) — keine neuen Fehler.
+
+ERINNERUNG: KEIN COMMIT, KEIN PUSH. Nur speichern und Verifikation ausgeben.

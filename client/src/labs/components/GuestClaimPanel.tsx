@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { participantApi } from "@/lib/api";
 import { trackEvent } from "@/lib/funnelTracker";
+import { signIn } from "@/lib/session";
 
 // Eigenstaendiges, selbst-gegatetes Konto-Claim-Panel.
 // tone="story": dunkles Story-Editorial-Theme (EB Garamond/Inter, Amber).
@@ -59,6 +60,12 @@ export default function GuestClaimPanel({ participantId, tastingId, tone = "stor
     setClaimBusy(true);
     try {
       await participantApi.verify(participantId, claimCode.trim());
+      // Konto ist gesichert -> Session auf "eingeloggt" heben (gleicher Participant,
+      // Bewertungen bleiben erhalten). Schlaegt das fehl, ist das kein Blocker:
+      // der Gast kann sich jederzeit mit E-Mail + PIN anmelden.
+      try {
+        await signIn({ email: claimEmail.trim(), pin: claimPin.trim(), mode: "tasting", remember: true });
+      } catch { /* Session-Elevation ist Bonus, kein Blocker */ }
       setClaimStep("done");
     } catch (e: unknown) {
       setClaimError((e as Error)?.message || t("eveningRecap.codeFailed", "Code ungültig oder abgelaufen."));
