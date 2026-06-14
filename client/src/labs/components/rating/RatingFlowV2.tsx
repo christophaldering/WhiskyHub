@@ -38,6 +38,7 @@ interface RatingFlowV2Props {
   showTisch?: boolean;
   chipInHeader?: boolean;
   chipPortalTarget?: HTMLElement | null;
+  autoSaveHint?: boolean;
 }
 
 type Step = "mode" | "rating";
@@ -58,6 +59,7 @@ export default function RatingFlowV2({
   showTisch,
   chipInHeader,
   chipPortalTarget,
+  autoSaveHint,
 }: RatingFlowV2Props) {
   const { t } = useTranslation();
 
@@ -184,6 +186,7 @@ export default function RatingFlowV2({
     note: guidedLabels.note,
     notePH: guidedLabels.notePH,
     save: guidedLabels.save,
+    savedHint: t("v2.ratingAutoSaved", "Automatisch gespeichert"),
     back: modeLabels.back,
   }), [t, guidedLabels, modeLabels.back]);
 
@@ -350,6 +353,7 @@ export default function RatingFlowV2({
           onBack={onSaveAsDraft ? handleRatingBack : undefined}
           onChange={handleChange}
           onSaveAsDraft={onSaveAsDraft}
+          autoSaveHint={autoSaveHint}
           scale={scale}
         />
       </div>

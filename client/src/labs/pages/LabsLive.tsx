@@ -1645,6 +1645,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                 initialData={freeInitialData}
                 preferredMode={freeRatingMode}
                 showTisch={true}
+                autoSaveHint={true}
                 onChange={(draft) => {
                   if (draft.mode) setFreeRatingMode(draft.mode);
                   freeRatingDataRef.current = draft.data;

@@ -20,6 +20,7 @@ interface QuickLabels {
   note: string;
   notePH: string;
   save: string;
+  savedHint: string;
   back: string;
 }
 
@@ -36,10 +37,11 @@ interface QuickRatingProps {
   onBack?: () => void;
   onChange?: (phaseIndex: number, data: Partial<RatingData>) => void;
   onSaveAsDraft?: (data: RatingData) => void;
+  autoSaveHint?: boolean;
   scale?: RatingScale;
 }
 
-export default function QuickRating({ labels, whisky, initialData, onDone, onBack, onChange, onSaveAsDraft, scale }: QuickRatingProps) {
+export default function QuickRating({ labels, whisky, initialData, onDone, onBack, onChange, onSaveAsDraft, autoSaveHint, scale }: QuickRatingProps) {
   const scaleMax = scale?.max ?? 100;
   const scaleStep = scale?.step ?? 0.5;
   const defaultScore = scaleMax === 100 ? 75 : Math.round((scaleMax * 0.75) / scaleStep) * scaleStep;
@@ -168,28 +170,49 @@ export default function QuickRating({ labels, whisky, initialData, onDone, onBac
         />
       </div>
 
-      <button
-        data-testid="button-quick-save"
-        onClick={handleSave}
-        style={{
-          width: "100%",
-          height: 56,
-          borderRadius: RADIUS.lg,
-          border: "none",
-          cursor: "pointer",
-          background: "linear-gradient(135deg, var(--labs-gold), var(--labs-amber))",
-          color: "var(--labs-accent-dark)",
-          fontSize: 17,
-          fontWeight: 700,
-          fontFamily: FONT.body,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: SP.sm,
-        }}
-      >
-        {labels.save}
-      </button>
+      {autoSaveHint ? (
+        <div
+          data-testid="text-quick-autosaved"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+            minHeight: 44,
+            color: "var(--labs-text-muted)",
+            fontSize: 13,
+            fontFamily: FONT.body,
+          }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          <span>{labels.savedHint}</span>
+        </div>
+      ) : (
+        <button
+          data-testid="button-quick-save"
+          onClick={handleSave}
+          style={{
+            width: "100%",
+            height: 56,
+            borderRadius: RADIUS.lg,
+            border: "none",
+            cursor: "pointer",
+            background: "linear-gradient(135deg, var(--labs-gold), var(--labs-amber))",
+            color: "var(--labs-accent-dark)",
+            fontSize: 17,
+            fontWeight: 700,
+            fontFamily: FONT.body,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: SP.sm,
+          }}
+        >
+          {labels.save}
+        </button>
+      )}
 
     </div>
   );
