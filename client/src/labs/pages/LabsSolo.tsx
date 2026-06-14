@@ -17,6 +17,8 @@ import SoloDoneScreen from "./solo/SoloDoneScreen";
 import SoloContextStep from "./solo/SoloContextStep";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import type { RatingFlowDraftState } from "@/labs/components/rating/RatingFlowV2";
+import ImpressionCapture from "@/labs/components/rating/ImpressionCapture";
+import type { ImpressionResult } from "@/labs/components/rating/impressionApi";
 import type { RatingData } from "@/labs/components/rating/types";
 import ResumeRatingBanner from "@/labs/components/ResumeRatingBanner";
 import { saveSoloDraft, saveSoloDraftImmediate, loadSoloDraft, clearSoloDraft, hasDraftData } from "@/lib/draftStorage";
@@ -134,6 +136,8 @@ export default function LabsSolo() {
   const [ratingMode, setRatingMode] = useState<"guided" | "compact" | "quick" | "tisch" | null>(null);
   const [ratingPhaseIndex, setRatingPhaseIndex] = useState(0);
   const [ratingInitialData, setRatingInitialData] = useState<RatingData | undefined>(undefined);
+  const [showImpressionCapture, setShowImpressionCapture] = useState(false);
+  const rawImpressionRef = useRef<string>("");
 
   const { data: participantData } = useQuery<Participant>({
     queryKey: ["participant", participantId],
@@ -331,7 +335,39 @@ export default function LabsSolo() {
 
   const handleContextDone = useCallback((ctx: TastingContextState | null) => {
     setTastingContext(ctx);
+    setShowImpressionCapture(true);
     setStep("rating");
+  }, []);
+
+  const handleImpressionApply = useCallback((result: ImpressionResult) => {
+    rawImpressionRef.current = result.rawImpression || "";
+    const sc = result.scoreSuggestion;
+    const D = 75;
+    setRatingInitialData((prev) => ({
+      scores: {
+        nose: sc?.nose ?? prev?.scores?.nose ?? D,
+        palate: sc?.taste ?? prev?.scores?.palate ?? D,
+        finish: sc?.finish ?? prev?.scores?.finish ?? D,
+        overall: sc?.overall ?? prev?.scores?.overall ?? D,
+      },
+      tags: {
+        nose: prev?.tags?.nose ?? [],
+        palate: prev?.tags?.palate ?? [],
+        finish: prev?.tags?.finish ?? [],
+        overall: result.flavorTags ?? [],
+      },
+      notes: {
+        nose: result.nose || prev?.notes?.nose || "",
+        palate: result.taste || prev?.notes?.palate || "",
+        finish: result.finish || prev?.notes?.finish || "",
+        overall: prev?.notes?.overall || "",
+      },
+    }));
+    setShowImpressionCapture(false);
+  }, []);
+
+  const handleImpressionSkip = useCallback(() => {
+    setShowImpressionCapture(false);
   }, []);
 
   const buildJournalBody = useCallback((data: RatingData, status: "final" | "draft", omitDimensionScores = false) => {
@@ -364,7 +400,7 @@ export default function LabsSolo() {
         ...(data.tags.finish || []),
       ].filter(Boolean).join(", "),
       notes: data.notes.overall || "",
-      ...(data.rawImpression ? { rawImpression: data.rawImpression } : {}),
+      ...(rawImpressionRef.current ? { rawImpression: rawImpressionRef.current } : {}),
       source: "solo",
       status,
       ...(tastingContext ? { tastingContext: JSON.stringify(tastingContext) } : {}),
@@ -628,6 +664,8 @@ export default function LabsSolo() {
     setDraftEntryId(null);
     setDraftSaving(false);
     setTastingContext(null);
+    setShowImpressionCapture(false);
+    rawImpressionRef.current = "";
     finalizedRef.current = false;
     setStep("capture");
   }, []);
@@ -774,6 +812,13 @@ export default function LabsSolo() {
   } else if (step === "rating") {
     content = (
       <div style={{ minHeight: "60vh" }}>
+        {showImpressionCapture ? (
+          <ImpressionCapture
+            whiskyName={whisky?.name || undefined}
+            onApply={handleImpressionApply}
+            onSkip={handleImpressionSkip}
+          />
+        ) : (
         <RatingFlowV2
           whisky={{
             name: whisky?.name || "",
@@ -791,6 +836,7 @@ export default function LabsSolo() {
           preferredMode={preferredRatingModeFromProfile}
           onSetPreferredMode={handleSetPreferredMode}
         />
+        )}
         {saveError && (
           <div className="labs-card" style={{
             position: "fixed",

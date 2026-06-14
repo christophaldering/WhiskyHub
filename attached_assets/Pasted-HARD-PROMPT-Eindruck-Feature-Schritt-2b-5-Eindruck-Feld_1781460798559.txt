@@ -1,0 +1,289 @@
+HARD PROMPT — Eindruck-Feature Schritt 2b/5: Eindruck-Feld im Solo-Flow (das sichtbare Erlebnis)
+Setzt Commit 0cdea3b (2a) voraus.
+
+ROLLE: Zwei neue Dateien anlegen + sechs Edits in LabsSolo.tsx. Sonst nichts.
+KEIN git commit/push, KEINE Migration, KEIN drizzle generate. Host-Cockpit NICHT anfassen.
+
+SCHRITT 0 — DIAGNOSE (nur lesen):
+  grep -c 'rawImpressionRef' client/src/labs/pages/LabsSolo.tsx        # erwartet 0
+  grep -c 'data.rawImpression ? { rawImpression' client/src/labs/pages/LabsSolo.tsx  # erwartet 1 (2a)
+  ls client/src/labs/components/rating/impressionApi.ts 2>/dev/null    # darf NICHT existieren
+Weicht etwas ab: STOPP.
+
+═══ DATEI 1 (NEU): client/src/labs/components/rating/impressionApi.ts ═══
+import { pidHeaders } from "@/lib/api";
+
+export type ImpressionScore = {
+  overall: number | null;
+  nose: number | null;
+  taste: number | null;
+  finish: number | null;
+};
+
+export type ImpressionResult = {
+  rawImpression: string;
+  flavorTags: string[];
+  nose: string;
+  taste: string;
+  finish: string;
+  scoreSuggestion: ImpressionScore | null;
+  confidence: "high" | "medium" | "low";
+  confidenceWeight: number;
+  followUpQuestion: string;
+  tookMs: number;
+};
+
+export async function parseImpression(text: string, whiskyName?: string): Promise<ImpressionResult> {
+  const res = await fetch("/api/impression/parse", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...pidHeaders() },
+    body: JSON.stringify({ text, whiskyName }),
+  });
+  if (!res.ok) {
+    throw new Error(`impression parse failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+═══ DATEI 2 (NEU): client/src/labs/components/rating/ImpressionCapture.tsx ═══
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { FONT, SP, RADIUS, TOUCH_MIN, LABS_THEME } from "./theme";
+import { parseImpression, type ImpressionResult } from "./impressionApi";
+
+interface ImpressionCaptureProps {
+  whiskyName?: string;
+  onApply: (result: ImpressionResult) => void;
+  onSkip: () => void;
+}
+
+export default function ImpressionCapture({ whiskyName, onApply, onSkip }: ImpressionCaptureProps) {
+  const { t } = useTranslation();
+  const [text, setText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+
+  const canSubmit = text.trim().length >= 2 && !loading;
+
+  const handleApply = async () => {
+    if (text.trim().length < 2 || loading) return;
+    setLoading(true);
+    setError(false);
+    try {
+      const result = await parseImpression(text.trim(), whiskyName);
+      onApply(result);
+    } catch {
+      setError(true);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ padding: SP.md }}>
+      <div style={{ fontFamily: FONT.display, fontSize: 22, color: LABS_THEME.text, marginBottom: SP.xs }}>
+        {t("v2.impressionTitle", "Erster Eindruck")}
+      </div>
+      <div style={{ fontFamily: FONT.serif, fontSize: 16, color: LABS_THEME.muted, marginBottom: SP.md, lineHeight: 1.45 }}>
+        {t("v2.impressionHint", "Was nimmst du wahr? Tippe oder sprich frei \u2014 ein, zwei Saetze genuegen. Den Rest ordnen wir gemeinsam.")}
+      </div>
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder={t("v2.impressionPlaceholder", "z.B. warm und weich, Vanille und etwas Rauch im Abgang \u2026")}
+        rows={4}
+        style={{
+          width: "100%",
+          boxSizing: "border-box",
+          background: LABS_THEME.inputBg,
+          border: `1px solid ${LABS_THEME.border}`,
+          borderRadius: RADIUS.md,
+          color: LABS_THEME.text,
+          fontFamily: FONT.body,
+          fontSize: 16,
+          lineHeight: 1.5,
+          padding: SP.md,
+          resize: "vertical",
+          minHeight: 96,
+          outline: "none",
+        }}
+      />
+      {error && (
+        <div style={{ fontFamily: FONT.body, fontSize: 14, color: LABS_THEME.amber, marginTop: SP.sm, lineHeight: 1.4 }}>
+          {t("v2.impressionError", "Konnte den Eindruck gerade nicht verarbeiten. Versuch es nochmal \u2014 oder ueberspringe und bewerte direkt.")}
+        </div>
+      )}
+      <div style={{ display: "flex", gap: SP.sm, marginTop: SP.md }}>
+        <button
+          onClick={handleApply}
+          disabled={!canSubmit}
+          style={{
+            flex: 1,
+            minHeight: TOUCH_MIN,
+            background: LABS_THEME.gold,
+            color: "#1a1408",
+            border: "none",
+            borderRadius: RADIUS.md,
+            fontFamily: FONT.body,
+            fontSize: 16,
+            fontWeight: 600,
+            opacity: canSubmit ? 1 : 0.45,
+            cursor: canSubmit ? "pointer" : "default",
+            transition: "opacity 200ms ease",
+          }}
+        >
+          {loading ? t("v2.impressionParsing", "Einen Moment \u2026") : t("v2.impressionApply", "Eindruck \u00fcbernehmen")}
+        </button>
+        <button
+          onClick={onSkip}
+          disabled={loading}
+          style={{
+            minHeight: TOUCH_MIN,
+            padding: `0 ${SP.md}px`,
+            background: "transparent",
+            color: LABS_THEME.muted,
+            border: `1px solid ${LABS_THEME.border}`,
+            borderRadius: RADIUS.md,
+            fontFamily: FONT.body,
+            fontSize: 16,
+            cursor: loading ? "default" : "pointer",
+          }}
+        >
+          {t("v2.impressionSkip", "\u00dcberspringen")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+═══ DATEI 3 (EDIT): client/src/labs/pages/LabsSolo.tsx — sechs Stellen ═══
+
+--- 3.1 Imports ---
+ALT:
+import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
+import type { RatingFlowDraftState } from "@/labs/components/rating/RatingFlowV2";
+NEU:
+import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
+import type { RatingFlowDraftState } from "@/labs/components/rating/RatingFlowV2";
+import ImpressionCapture from "@/labs/components/rating/ImpressionCapture";
+import type { ImpressionResult } from "@/labs/components/rating/impressionApi";
+
+--- 3.2 State + Ref ---
+ALT:
+  const [ratingInitialData, setRatingInitialData] = useState<RatingData | undefined>(undefined);
+NEU:
+  const [ratingInitialData, setRatingInitialData] = useState<RatingData | undefined>(undefined);
+  const [showImpressionCapture, setShowImpressionCapture] = useState(false);
+  const rawImpressionRef = useRef<string>("");
+
+--- 3.3 handleContextDone + zwei Handler ---
+ALT:
+  const handleContextDone = useCallback((ctx: TastingContextState | null) => {
+    setTastingContext(ctx);
+    setStep("rating");
+  }, []);
+NEU:
+  const handleContextDone = useCallback((ctx: TastingContextState | null) => {
+    setTastingContext(ctx);
+    setShowImpressionCapture(true);
+    setStep("rating");
+  }, []);
+
+  const handleImpressionApply = useCallback((result: ImpressionResult) => {
+    rawImpressionRef.current = result.rawImpression || "";
+    const sc = result.scoreSuggestion;
+    const D = 75;
+    setRatingInitialData((prev) => ({
+      scores: {
+        nose: sc?.nose ?? prev?.scores?.nose ?? D,
+        palate: sc?.taste ?? prev?.scores?.palate ?? D,
+        finish: sc?.finish ?? prev?.scores?.finish ?? D,
+        overall: sc?.overall ?? prev?.scores?.overall ?? D,
+      },
+      tags: {
+        nose: prev?.tags?.nose ?? [],
+        palate: prev?.tags?.palate ?? [],
+        finish: prev?.tags?.finish ?? [],
+        overall: result.flavorTags ?? [],
+      },
+      notes: {
+        nose: result.nose || prev?.notes?.nose || "",
+        palate: result.taste || prev?.notes?.palate || "",
+        finish: result.finish || prev?.notes?.finish || "",
+        overall: prev?.notes?.overall || "",
+      },
+    }));
+    setShowImpressionCapture(false);
+  }, []);
+
+  const handleImpressionSkip = useCallback(() => {
+    setShowImpressionCapture(false);
+  }, []);
+
+--- 3.4 handleStartOver Reset ---
+ALT:
+    finalizedRef.current = false;
+    setStep("capture");
+NEU:
+    setShowImpressionCapture(false);
+    rawImpressionRef.current = "";
+    finalizedRef.current = false;
+    setStep("capture");
+
+--- 3.5 buildJournalBody: Ref statt data-Feld (ersetzt 2a-Zeile) ---
+ALT:
+      ...(data.rawImpression ? { rawImpression: data.rawImpression } : {}),
+NEU:
+      ...(rawImpressionRef.current ? { rawImpression: rawImpressionRef.current } : {}),
+
+--- 3.6 rating-Step JSX: RatingFlowV2 in Ternary wrappen ---
+ALT:
+        <RatingFlowV2
+          whisky={{
+            name: whisky?.name || "",
+            region: whisky?.region || "",
+            cask: whisky?.cask || "",
+            blind: false,
+          }}
+          initialData={ratingInitialData}
+          initialMode={ratingMode}
+          initialPhaseIndex={ratingPhaseIndex}
+          onDone={handleQuickRatingDone}
+          onBack={handleRatingBack}
+          onChange={handleRatingChange}
+          onSaveAsDraft={handleSaveAsDraft}
+          preferredMode={preferredRatingModeFromProfile}
+          onSetPreferredMode={handleSetPreferredMode}
+        />
+NEU:
+        {showImpressionCapture ? (
+          <ImpressionCapture
+            whiskyName={whisky?.name || undefined}
+            onApply={handleImpressionApply}
+            onSkip={handleImpressionSkip}
+          />
+        ) : (
+        <RatingFlowV2
+          whisky={{
+            name: whisky?.name || "",
+            region: whisky?.region || "",
+            cask: whisky?.cask || "",
+            blind: false,
+          }}
+          initialData={ratingInitialData}
+          initialMode={ratingMode}
+          initialPhaseIndex={ratingPhaseIndex}
+          onDone={handleQuickRatingDone}
+          onBack={handleRatingBack}
+          onChange={handleRatingChange}
+          onSaveAsDraft={handleSaveAsDraft}
+          preferredMode={preferredRatingModeFromProfile}
+          onSetPreferredMode={handleSetPreferredMode}
+        />
+        )}
+
+VERIFIKATION (nur lesen, NICHT committen/pushen):
+  grep -c "import ImpressionCapture" client/src/labs/pages/LabsSolo.tsx            # 1
+  grep -c "palate: sc?.taste" client/src/labs/pages/LabsSolo.tsx                   # 1
+  grep -c "rawImpressionRef.current ? { rawImpression" client/src/labs/pages/LabsSolo.tsx  # 1
+  grep -c "data.rawImpression" client/src/labs/pages/LabsSolo.tsx                  # 0
+Dann Build + architect-Check: keine neuen TS-Fehler. NOCHMAL: KEIN git add/commit/push.
