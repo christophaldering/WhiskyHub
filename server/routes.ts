@@ -26883,7 +26883,7 @@ ${cleaned.slice(0, 60000)}`;
       }
 
       const { isRegeneratable } = await import("./tastingStoryRegen");
-      const aiTargets = reparsed.data.filter((b) => isRegeneratable(b.type));
+      const aiTargets = reparsed.data.filter((b) => isRegeneratable(b.type) && !b.locked && !b.hidden);
 
       const stepLabels: Record<string, string> = {
         "winner-hero": "KI schreibt den Sieger-Text…",

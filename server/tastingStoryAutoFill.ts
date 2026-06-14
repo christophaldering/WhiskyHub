@@ -129,6 +129,37 @@ function ensureGalleryItems(urls: string[] | undefined): Array<{ url: string; al
   return out;
 }
 
+// Leitet aus den Bewertungs-Zeitstempeln einen dezenten, gruppenbezogenen
+// Tempo-Beat ab (Gesamtdauer von der ersten bis zur letzten Bewertung).
+// Bewusst KEINE personenbezogenen Zeitpunkte. Gibt null zurueck, wenn die
+// Daten keinen sinnvollen Verlauf hergeben (z.B. Import = alle Zeiten gleich,
+// Solo-Schnellbewertung, oder unplausibel grosse Spanne).
+function buildTempoBeatBody(ratings: Rating[] | undefined): string | null {
+  if (!ratings || ratings.length < 2) return null;
+  const times = ratings
+    .map((r) => {
+      const v = r.createdAt as Date | string | null | undefined;
+      if (v instanceof Date) return v;
+      if (typeof v === "string") return new Date(v);
+      return null;
+    })
+    .filter((d): d is Date => d instanceof Date && !Number.isNaN(d.getTime()))
+    .map((d) => d.getTime());
+  if (times.length < 2) return null;
+  const spanMin = Math.round((Math.max(...times) - Math.min(...times)) / 60000);
+  // Guards: zu kurz (Import/Schnellbewertung) oder unplausibel lang -> kein Beat
+  if (spanMin < 15 || spanMin > 12 * 60) return null;
+  const rounded = Math.round(spanMin / 5) * 5;
+  const hours = Math.floor(rounded / 60);
+  const mins = rounded % 60;
+  const hourLabel = hours === 1 ? "eine Stunde" : `${hours} Stunden`;
+  let dauer: string;
+  if (hours === 0) dauer = `${mins} Minuten`;
+  else if (mins === 0) dauer = hourLabel;
+  else dauer = `${hourLabel} ${mins} Minuten`;
+  return `<p>Zwischen der ersten und der letzten Bewertung lagen rund ${dauer} \u2014 Zeit genug, jedem Dram in Ruhe nachzusp\u00fcren.</p>`;
+}
+
 export function buildInitialTastingStoryBlocks(args: {
   tasting: Tasting;
   whiskies: Whisky[];
@@ -197,6 +228,22 @@ export function buildInitialTastingStoryBlocks(args: {
     type: "divider",
     payload: { variant: "stars" },
   });
+
+  const tempoBody = buildTempoBeatBody(args.ratings);
+  if (tempoBody) {
+    blocks.push({
+      id: blockId(),
+      type: "text-section",
+      locked: true,
+      payload: {
+        eyebrow: "Im R\u00fcckblick",
+        heading: "Wie lange ihr verweilt habt",
+        body: tempoBody,
+        alignment: "left",
+        variant: "act-intro",
+      },
+    });
+  }
 
   if (whiskies.length > 0) {
     blocks.push({

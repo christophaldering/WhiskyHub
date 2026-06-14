@@ -3,4 +3,5 @@
 - [Image upload sanitizer](image-upload-sanitizer.md) — all uploads strip EXIF via one chokepoint; keep multer allowlist in sync with sanitizer, fail-closed for images.
 - [tsc baseline OOM](tsc-baseline-oom.md) — `tsc --noEmit` prints a fake "0 errors" on OOM; use NODE_OPTIONS=--max-old-space-size=6144 for the real ~500 baseline.
 - [RatingFlowV2 onChange merge](rating-flow-onchange-merge.md) — free-branch auto-save merges per-category by spread; a subview emitting full empty tags/notes wipes saved aromas (QuickRating still does).
+- [Story first-run locked blocks](story-firstrun-locked-blocks.md) — first-run AI fill must keep `!b.locked && !b.hidden`; data-seeded locked blocks (tempo beat) get clobbered otherwise.
 - [Section-type widening vs backend enum](section-overall-boundary.md) — widening a UI section type to add "overall" can leak an invalid value into a backend zod enum; narrow at every network boundary.

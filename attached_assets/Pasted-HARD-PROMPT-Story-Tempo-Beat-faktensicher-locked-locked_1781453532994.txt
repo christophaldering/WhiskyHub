@@ -1,0 +1,91 @@
+HARD PROMPT — Story-Tempo-Beat (faktensicher, locked) + locked im Erstlauf respektieren
+
+ROLLE: Genau diese drei Ersetzungen. Keine weiteren Änderungen, KEINE Schema-Änderung,
+KEIN git commit/push, KEINE Migration, KEIN drizzle. Host-Cockpit NICHT anfassen.
+(Dies ersetzt einen früheren Tempo-Beat-Prompt — falls der schon eingespielt wäre,
+STOPP und melde dich; dann brauchen wir nur den locked-Zusatz.)
+
+SCHRITT 0 — DIAGNOSE (nur lesen):
+  grep -c 'buildTempoBeatBody' server/tastingStoryAutoFill.ts                              # erwartet 0
+  grep -c 'variant: "stars"' server/tastingStoryAutoFill.ts                                # erwartet 1
+  grep -c 'const aiTargets = reparsed.data.filter((b) => isRegeneratable(b.type));' server/routes.ts  # erwartet 1
+Weicht ein Wert ab: STOPP.
+
+=== A) server/tastingStoryAutoFill.ts — Einfügung 1: Helper vor der Funktion ===
+ALT:
+export function buildInitialTastingStoryBlocks(args: {
+NEU:
+// Leitet aus den Bewertungs-Zeitstempeln einen dezenten, gruppenbezogenen
+// Tempo-Beat ab (Gesamtdauer von der ersten bis zur letzten Bewertung).
+// Bewusst KEINE personenbezogenen Zeitpunkte. Gibt null zurueck, wenn die
+// Daten keinen sinnvollen Verlauf hergeben (z.B. Import = alle Zeiten gleich,
+// Solo-Schnellbewertung, oder unplausibel grosse Spanne).
+function buildTempoBeatBody(ratings: Rating[] | undefined): string | null {
+  if (!ratings || ratings.length < 2) return null;
+  const times = ratings
+    .map((r) => {
+      const v = r.createdAt as Date | string | null | undefined;
+      if (v instanceof Date) return v;
+      if (typeof v === "string") return new Date(v);
+      return null;
+    })
+    .filter((d): d is Date => d instanceof Date && !Number.isNaN(d.getTime()))
+    .map((d) => d.getTime());
+  if (times.length < 2) return null;
+  const spanMin = Math.round((Math.max(...times) - Math.min(...times)) / 60000);
+  // Guards: zu kurz (Import/Schnellbewertung) oder unplausibel lang -> kein Beat
+  if (spanMin < 15 || spanMin > 12 * 60) return null;
+  const rounded = Math.round(spanMin / 5) * 5;
+  const hours = Math.floor(rounded / 60);
+  const mins = rounded % 60;
+  const hourLabel = hours === 1 ? "eine Stunde" : `${hours} Stunden`;
+  let dauer: string;
+  if (hours === 0) dauer = `${mins} Minuten`;
+  else if (mins === 0) dauer = hourLabel;
+  else dauer = `${hourLabel} ${mins} Minuten`;
+  return `<p>Zwischen der ersten und der letzten Bewertung lagen rund ${dauer} \u2014 Zeit genug, jedem Dram in Ruhe nachzusp\u00fcren.</p>`;
+}
+
+export function buildInitialTastingStoryBlocks(args: {
+
+=== B) server/tastingStoryAutoFill.ts — Einfügung 2: Tempo-Block (locked) nach dem stars-divider ===
+ALT:
+  blocks.push({
+    id: blockId(),
+    type: "divider",
+    payload: { variant: "stars" },
+  });
+NEU:
+  blocks.push({
+    id: blockId(),
+    type: "divider",
+    payload: { variant: "stars" },
+  });
+
+  const tempoBody = buildTempoBeatBody(args.ratings);
+  if (tempoBody) {
+    blocks.push({
+      id: blockId(),
+      type: "text-section",
+      locked: true,
+      payload: {
+        eyebrow: "Im R\u00fcckblick",
+        heading: "Wie lange ihr verweilt habt",
+        body: tempoBody,
+        alignment: "left",
+        variant: "act-intro",
+      },
+    });
+  }
+
+=== C) server/routes.ts — Erstlauf überspringt gesperrte/versteckte Blöcke ===
+ALT:
+      const aiTargets = reparsed.data.filter((b) => isRegeneratable(b.type));
+NEU:
+      const aiTargets = reparsed.data.filter((b) => isRegeneratable(b.type) && !b.locked && !b.hidden);
+
+VERIFIKATION (nur lesen, NICHT committen/pushen):
+  grep -c 'function buildTempoBeatBody' server/tastingStoryAutoFill.ts                 # 1
+  grep -c 'locked: true,' server/tastingStoryAutoFill.ts                              # 1
+  grep -c 'isRegeneratable(b.type) && !b.locked && !b.hidden' server/routes.ts        # 1
+Dann Build + architect-Check: keine neuen TS-Fehler. KEIN git add/commit/push.
