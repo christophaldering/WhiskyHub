@@ -5526,6 +5526,7 @@ Regeln: Wenn der Eindruck zu vage fuer eine sinnvolle Zahl ist, setze scoreSugge
         ? parsed.flavorTags.filter((t: any) => typeof t === "string" && t.trim()).map((t: string) => t.trim()).slice(0, 6)
         : [];
       const conf = ["high", "medium", "low"].includes(parsed.confidence) ? parsed.confidence : "low";
+      if (conf === "low") score = null; // vager Eindruck darf keinen Score vorschlagen
       const confWeightMap: Record<string, number> = { high: 0.9, medium: 0.6, low: 0.3 };
 
       const result = {

@@ -1,3 +1,27 @@
+HARD PROMPT — Eindruck-Feature 2d: Übergabe-Seite + kein Score bei vagem Eindruck
+Setzt Commit 6e94bd3 voraus. KEINE Schema-Änderung, KEINE Migration.
+KEIN git add/commit/push. Host-Cockpit NICHT anfassen. LabsSolo.tsx NICHT anfassen.
+
+SCHRITT 0 — DIAGNOSE (nur lesen, bei Abweichung STOPP):
+  grep -c 'if (conf === "low") score = null;' server/routes.ts                          → erwartet 0
+  grep -c 'phase === "handoff"' client/src/labs/components/rating/ImpressionCapture.tsx  → erwartet 0
+
+═══════════════════════════════════════════════════════════════════
+ÄNDERUNG 1 (EDIT): server/routes.ts — vager Eindruck schlägt keinen Score vor
+Genau eine Stelle ersetzen.
+
+ALT:
+      const conf = ["high", "medium", "low"].includes(parsed.confidence) ? parsed.confidence : "low";
+
+NEU:
+      const conf = ["high", "medium", "low"].includes(parsed.confidence) ? parsed.confidence : "low";
+      if (conf === "low") score = null; // vager Eindruck darf keinen Score vorschlagen
+
+═══════════════════════════════════════════════════════════════════
+ÄNDERUNG 2 (DATEI KOMPLETT ÜBERSCHREIBEN):
+client/src/labs/components/rating/ImpressionCapture.tsx
+Gesamten bisherigen Inhalt verwerfen und exakt durch Folgendes ersetzen:
+
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FONT, SP, RADIUS, TOUCH_MIN, LABS_THEME } from "./theme";
@@ -351,3 +375,13 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip }: Impre
     </div>
   );
 }
+
+═══════════════════════════════════════════════════════════════════
+LabsSolo.tsx: NICHT ANFASSEN — der bestehende onApply-Handler greift unverändert.
+
+VERIFIKATION (nur lesen, NICHT committen/pushen):
+  grep -c 'if (conf === "low") score = null;' server/routes.ts                              → 1
+  grep -cE 'phase === "(input|reflect|handoff)"' client/src/labs/components/rating/ImpressionCapture.tsx  → 3
+  grep -c 'setPhase("handoff")' client/src/labs/components/rating/ImpressionCapture.tsx     → 3
+  grep -c 'onApply(' client/src/labs/components/rating/ImpressionCapture.tsx                → 1
+Danach Build + architect-Check: keine neuen TS-Fehler. KEIN git add/commit/push.
