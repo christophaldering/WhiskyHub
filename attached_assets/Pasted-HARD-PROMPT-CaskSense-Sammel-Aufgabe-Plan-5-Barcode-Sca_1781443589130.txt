@@ -1,0 +1,261 @@
+HARD PROMPT — CaskSense Sammel-Aufgabe (Plan + #5 Barcode-Scanner + #6 Diagnose)
+
+ROLLE: Du führst exakt die unten stehenden Änderungen aus. KEINE eigenen Ideen,
+KEIN Scope erweitern. KEIN git commit, KEIN git push, KEINE Schema-Änderung,
+KEINE Migration, KEIN drizzle generate/push. LabsHostCockpit.tsx / Host-Cockpit
+NICHT anfassen (egal was du dort zu „Plan #4" vermutest — es gibt keinen).
+
+============================================================
+SCHRITT 0 — DIAGNOSE (nur lesen, noch nichts ändern)
+============================================================
+Bestätige per Ausgabe:
+  grep -c 'Offen / als eigene Schritte geplant:' replit.md            # erwartet 1
+  test -f client/src/labs/check/CheckBarcodeScanner.tsx && echo EXISTS || echo NEW   # erwartet NEW
+  grep -c 'Barcode (in Arbeit)' client/src/labs/check/CheckSheet.tsx   # erwartet 1
+  grep -c 'export async function lookupWhisky' client/src/labs/check/checkApi.ts  # erwartet 1
+  grep -rn 'Html5Qrcode' client/src/labs/pages/solo/SoloCaptureScreen.tsx | head -1  # muss existieren (Muster-Quelle)
+Wenn ein erwarteter Wert NICHT stimmt: STOPP und melde dich.
+
+============================================================
+TEIL A — Projektplan: zwei Ideen vormerken (replit.md)
+============================================================
+Ersetze (ALT kommt GENAU EINMAL vor):
+
+ALT:
+Offen / als eigene Schritte geplant: Session-Login nach Claim, wöchentliches Auto-Backup (Phase 2), Check-Feature Stufe 2c (Namenssuche/Barcode/Action-Buttons), Korrektur Tasting #29 (braucht DB-Zugriff + Klärung Ranking-vs-Score).
+
+NEU:
+Offen / als eigene Schritte geplant: Check-Feature Stufe 2c (Barcode-Scanner — Namenssuche & Action-Buttons existieren bereits), Korrektur Tasting #29 (braucht DB-Zugriff + Klärung Ranking-vs-Score). — Erledigt: Session-Login nach Claim, wöchentliches Auto-Backup (Phase 2). — Vorgemerkte Ideen: (i) Bewertungs-Zeitstempel (ratings.createdAt/updatedAt liegen bereits vor) im Story-Aufbau als Verlaufs-/Tempo-Beats nutzen — rein additiv, keine Schema-Änderung; (ii) Fotos in der ausführlichen Bewertung — Upload/Object-Storage/EXIF-Strip sind vorhanden, es fehlt nur ein Foto-Feld an ratings; optionaler Ortsname nur explizit opt-in (eingebettetes GPS wird ohnehin gestrippt).
+
+============================================================
+TEIL B — #5 Barcode-Scanner (3 Dateien)
+============================================================
+
+B1) NEUE DATEI client/src/labs/check/CheckBarcodeScanner.tsx mit GENAU diesem Inhalt:
+----------------------------------------------------------------
+import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { FONT } from "@/labs/components/rating/theme";
+
+// Barcode-Scanner fuer das Check-Sheet. Spiegelt das erprobte html5-qrcode-Muster
+// aus SoloCaptureScreen (facingMode environment, EAN/UPC-Formate). Liefert den
+// erkannten Code an onDetected; bei Kamera-/Init-Fehlern -> onCancel.
+const SCANNER_ID = "check-barcode-scanner-region";
+
+export default function CheckBarcodeScanner({
+  onDetected,
+  onCancel,
+}: {
+  onDetected: (code: string) => void;
+  onCancel: () => void;
+}) {
+  const { t } = useTranslation();
+  const scannerRef = useRef<any>(null);
+  const processingRef = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const start = async () => {
+      try {
+        const { Html5Qrcode } = await import("html5-qrcode");
+        await new Promise((r) => setTimeout(r, 100));
+        if (cancelled) return;
+        const el = document.getElementById(SCANNER_ID);
+        if (!el) return;
+
+        const scanner = new Html5Qrcode(SCANNER_ID);
+        scannerRef.current = scanner;
+
+        await scanner.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 280, height: 120 },
+            formatsToSupport: [2, 3, 4, 5, 8, 9, 10, 12, 13, 14, 15, 16],
+          },
+          (decodedText: string) => {
+            if (processingRef.current) return;
+            const cleaned = decodedText.trim();
+            if (!cleaned) return;
+            processingRef.current = true;
+            scanner.stop().then(() => scanner.clear()).catch(() => {});
+            scannerRef.current = null;
+            onDetected(cleaned);
+          },
+          () => {},
+        );
+      } catch (err) {
+        console.warn("Check barcode scanner error:", err);
+        if (!cancelled) onCancel();
+      }
+    };
+
+    start();
+
+    return () => {
+      cancelled = true;
+      const s = scannerRef.current;
+      if (s) {
+        try {
+          const state = s.getState?.();
+          if (state === 2) {
+            s.stop().then(() => s.clear()).catch(() => {});
+          } else {
+            s.clear?.();
+          }
+        } catch { /* best-effort cleanup */ }
+        scannerRef.current = null;
+      }
+    };
+    // einmalig beim Mount starten
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <p
+        style={{ fontFamily: FONT.serif, fontSize: 16, color: "var(--labs-text-secondary)", margin: 0 }}
+        data-testid="check-barcode-hint"
+      >
+        {t("check.barcode.hint", "Halte den Barcode (EAN/UPC) in den Rahmen")}
+      </p>
+      <div
+        id={SCANNER_ID}
+        style={{ width: "100%", minHeight: 220, borderRadius: 12, overflow: "hidden", background: "#000" }}
+        data-testid="check-barcode-region"
+      />
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            padding: "10px 16px",
+            borderRadius: 10,
+            border: "1px solid var(--labs-border)",
+            background: "transparent",
+            color: "var(--labs-text-secondary)",
+            fontFamily: FONT.body,
+            fontSize: 14,
+            cursor: "pointer",
+          }}
+          data-testid="check-barcode-cancel"
+        >
+          {t("ui.cancel", "Abbrechen")}
+        </button>
+      </div>
+    </div>
+  );
+}
+----------------------------------------------------------------
+
+B2) client/src/labs/check/checkApi.ts — ANS DATEIENDE anhängen:
+----------------------------------------------------------------
+
+export type CheckBarcodeLookup = { found: boolean; data?: { name?: string } };
+
+export async function lookupBarcode(code: string): Promise<CheckBarcodeLookup> {
+  const res = await fetch(`/api/barcode-lookup/${encodeURIComponent(code)}`, {
+    method: "GET",
+    headers: pidHeaders(),
+  });
+
+  if (res.status === 400) return { found: false };
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || `HTTP ${res.status}`);
+  }
+
+  return res.json();
+}
+----------------------------------------------------------------
+
+B3) client/src/labs/check/CheckSheet.tsx — fünf Ersetzungen (jedes ALT GENAU EINMAL):
+
+ALT:
+  identifyByPhoto,
+  identifyByText,
+  lookupWhisky,
+  RateLimitError,
+NEU:
+  identifyByPhoto,
+  identifyByText,
+  lookupWhisky,
+  lookupBarcode,
+  RateLimitError,
+
+ALT:
+import CheckRecognizedCard from "./CheckRecognizedCard";
+NEU:
+import CheckRecognizedCard from "./CheckRecognizedCard";
+import CheckBarcodeScanner from "./CheckBarcodeScanner";
+
+ALT:
+  | { kind: "pickup" }
+  | { kind: "text-input" }
+NEU:
+  | { kind: "pickup" }
+  | { kind: "text-input" }
+  | { kind: "scan" }
+
+ALT:
+  const handleCameraClick = () => cameraRef.current?.click();
+NEU:
+  const handleBarcode = async (code: string) => {
+    setPhase({ kind: "loading", step: "identifying" });
+    try {
+      const bc = await lookupBarcode(code);
+      if (bc.found && bc.data?.name) {
+        await handleTextQuery(bc.data.name);
+      } else {
+        setPhase({ kind: "no-match" });
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Barcode-Suche fehlgeschlagen";
+      setPhase({ kind: "error", message: msg });
+    }
+  };
+
+  const handleCameraClick = () => cameraRef.current?.click();
+
+ALT:
+          {phase.kind === "text-input" && (
+            <CheckTextInput onSubmit={handleTextQuery} onCancel={resetToPickup} />
+          )}
+NEU:
+          {phase.kind === "text-input" && (
+            <CheckTextInput onSubmit={handleTextQuery} onCancel={resetToPickup} />
+          )}
+          {phase.kind === "scan" && (
+            <CheckBarcodeScanner onDetected={handleBarcode} onCancel={resetToPickup} />
+          )}
+
+ALT:
+          icon={ScanLine}
+          label={t("check.pickup.barcode", "Barcode (in Arbeit)")}
+          onClick={() => {}}
+          testid="check-pickup-barcode"
+          disabled
+        />
+NEU:
+          icon={ScanLine}
+          label={t("check.pickup.barcode", "Barcode scannen")}
+          onClick={() => setPhase({ kind: "scan" })}
+          testid="check-pickup-barcode"
+        />
+
+============================================================
+VERIFIKATION (nur lesen) — und NICHT committen/pushen
+============================================================
+  grep -c 'export async function lookupBarcode' client/src/labs/check/checkApi.ts   # 1
+  grep -c 'CheckBarcodeScanner' client/src/labs/check/CheckSheet.tsx                # 2 (Import + Render)
+  grep -c 'const handleBarcode' client/src/labs/check/CheckSheet.tsx                # 1
+  grep -c '"Barcode (in Arbeit)"' client/src/labs/check/CheckSheet.tsx              # 0
+  grep -c 'Vorgemerkte Ideen' replit.md                                            # 1
+Lass den Workflow neu bauen (npm run dev / Build) und prüfe per „architect", dass
+keine TS-Fehler in den drei Check-Dateien stehen.
+
+ERINNERUNG: KEIN git add/commit/push. KEINE Migration, KEIN drizzle push/generate.
+Host-Cockpit / LabsHostCockpit.tsx unverändert lassen. Wenn etwas unklar ist: STOPP
+und frag nach, statt zu raten.

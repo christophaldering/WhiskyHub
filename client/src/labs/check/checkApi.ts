@@ -117,3 +117,21 @@ export async function lookupWhisky(whiskyId: string): Promise<CheckLookupRespons
 
   return res.json();
 }
+
+export type CheckBarcodeLookup = { found: boolean; data?: { name?: string } };
+
+export async function lookupBarcode(code: string): Promise<CheckBarcodeLookup> {
+  const res = await fetch(`/api/barcode-lookup/${encodeURIComponent(code)}`, {
+    method: "GET",
+    headers: pidHeaders(),
+  });
+
+  if (res.status === 400) return { found: false };
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || `HTTP ${res.status}`);
+  }
+
+  return res.json();
+}

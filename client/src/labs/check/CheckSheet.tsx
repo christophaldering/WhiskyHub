@@ -8,6 +8,7 @@ import {
   identifyByPhoto,
   identifyByText,
   lookupWhisky,
+  lookupBarcode,
   RateLimitError,
   type CheckIdentifyCandidate,
   type CheckIdentifyResponse,
@@ -15,6 +16,7 @@ import {
 } from "./checkApi";
 import CheckResultCard from "./CheckResultCard";
 import CheckRecognizedCard from "./CheckRecognizedCard";
+import CheckBarcodeScanner from "./CheckBarcodeScanner";
 
 type CheckSheetProps = {
   open: boolean;
@@ -24,6 +26,7 @@ type CheckSheetProps = {
 type Phase =
   | { kind: "pickup" }
   | { kind: "text-input" }
+  | { kind: "scan" }
   | { kind: "loading"; step: "identifying" | "looking-up" }
   | { kind: "result"; data: CheckLookupResponse }
   | { kind: "recognized"; candidate: CheckIdentifyCandidate }
@@ -105,6 +108,21 @@ export default function CheckSheet({ open, onClose }: CheckSheetProps) {
         return;
       }
       const msg = err instanceof Error ? err.message : "Identifikation fehlgeschlagen";
+      setPhase({ kind: "error", message: msg });
+    }
+  };
+
+  const handleBarcode = async (code: string) => {
+    setPhase({ kind: "loading", step: "identifying" });
+    try {
+      const bc = await lookupBarcode(code);
+      if (bc.found && bc.data?.name) {
+        await handleTextQuery(bc.data.name);
+      } else {
+        setPhase({ kind: "no-match" });
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Barcode-Suche fehlgeschlagen";
       setPhase({ kind: "error", message: msg });
     }
   };
@@ -223,6 +241,9 @@ export default function CheckSheet({ open, onClose }: CheckSheetProps) {
           {phase.kind === "text-input" && (
             <CheckTextInput onSubmit={handleTextQuery} onCancel={resetToPickup} />
           )}
+          {phase.kind === "scan" && (
+            <CheckBarcodeScanner onDetected={handleBarcode} onCancel={resetToPickup} />
+          )}
           {phase.kind === "loading" && <CheckLoading step={phase.step} />}
           {phase.kind === "result" && <CheckResultCard data={phase.data} pid={getParticipantId()} />}
           {phase.kind === "recognized" && (
@@ -291,10 +312,9 @@ function CheckPickup({
         />
         <PickupButton
           icon={ScanLine}
-          label={t("check.pickup.barcode", "Barcode (in Arbeit)")}
-          onClick={() => {}}
+          label={t("check.pickup.barcode", "Barcode scannen")}
+          onClick={() => setPhase({ kind: "scan" })}
           testid="check-pickup-barcode"
-          disabled
         />
       </div>
     </div>
