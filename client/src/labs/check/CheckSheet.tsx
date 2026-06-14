@@ -116,7 +116,7 @@ export default function CheckSheet({ open, onClose }: CheckSheetProps) {
     setPhase({ kind: "loading", step: "identifying" });
     try {
       const bc = await lookupBarcode(code);
-      if (bc.found && bc.data?.name) {
+      if (bc.found && bc.data?.name && bc.data.name.trim().length >= 2) {
         await handleTextQuery(bc.data.name);
       } else {
         setPhase({ kind: "no-match" });
@@ -236,6 +236,7 @@ export default function CheckSheet({ open, onClose }: CheckSheetProps) {
               onCamera={handleCameraClick}
               onGallery={handleGalleryClick}
               onText={() => setPhase({ kind: "text-input" })}
+              onBarcode={() => setPhase({ kind: "scan" })}
             />
           )}
           {phase.kind === "text-input" && (
@@ -272,10 +273,12 @@ function CheckPickup({
   onCamera,
   onGallery,
   onText,
+  onBarcode,
 }: {
   onCamera: () => void;
   onGallery: () => void;
   onText: () => void;
+  onBarcode: () => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -313,7 +316,7 @@ function CheckPickup({
         <PickupButton
           icon={ScanLine}
           label={t("check.pickup.barcode", "Barcode scannen")}
-          onClick={() => setPhase({ kind: "scan" })}
+          onClick={onBarcode}
           testid="check-pickup-barcode"
         />
       </div>

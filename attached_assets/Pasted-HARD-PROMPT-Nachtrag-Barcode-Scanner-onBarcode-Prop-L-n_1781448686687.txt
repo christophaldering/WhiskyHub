@@ -1,0 +1,60 @@
+HARD PROMPT — Nachtrag Barcode-Scanner: onBarcode-Prop + Längen-Guard
+
+JA, wende den onBarcode-Prop-Fix an — exakt wie unten. Zusätzlich Fix 4 gegen den
+von dir erkannten "Lädt"-Hänger. KEIN git commit, KEIN git push, KEINE Migration,
+KEIN drizzle. Host-Cockpit NICHT anfassen.
+
+Datei: client/src/labs/check/CheckSheet.tsx — vier Ersetzungen, jedes ALT GENAU EINMAL.
+
+--- FIX 1: CheckPickup-Props um onBarcode erweitern ---
+ALT:
+  onCamera,
+  onGallery,
+  onText,
+}: {
+  onCamera: () => void;
+  onGallery: () => void;
+  onText: () => void;
+}) {
+NEU:
+  onCamera,
+  onGallery,
+  onText,
+  onBarcode,
+}: {
+  onCamera: () => void;
+  onGallery: () => void;
+  onText: () => void;
+  onBarcode: () => void;
+}) {
+
+--- FIX 2: Barcode-Button auf die Prop umstellen ---
+ALT:
+          label={t("check.pickup.barcode", "Barcode scannen")}
+          onClick={() => setPhase({ kind: "scan" })}
+          testid="check-pickup-barcode"
+NEU:
+          label={t("check.pickup.barcode", "Barcode scannen")}
+          onClick={onBarcode}
+          testid="check-pickup-barcode"
+
+--- FIX 3: onBarcode an CheckPickup durchreichen (bei onText) ---
+ALT:
+              onText={() => setPhase({ kind: "text-input" })}
+NEU:
+              onText={() => setPhase({ kind: "text-input" })}
+              onBarcode={() => setPhase({ kind: "scan" })}
+
+--- FIX 4: Längen-Guard in handleBarcode (kein Hänger bei zu kurzem Namen) ---
+ALT:
+      if (bc.found && bc.data?.name) {
+        await handleTextQuery(bc.data.name);
+NEU:
+      if (bc.found && bc.data?.name && bc.data.name.trim().length >= 2) {
+        await handleTextQuery(bc.data.name);
+
+VERIFIKATION (nur lesen, NICHT committen/pushen):
+  grep -c 'onClick={() => setPhase({ kind: "scan" })}' client/src/labs/check/CheckSheet.tsx   # 0
+  grep -c 'onBarcode' client/src/labs/check/CheckSheet.tsx                                     # 4
+  grep -c 'bc.data.name.trim().length >= 2' client/src/labs/check/CheckSheet.tsx               # 1
+Dann Build + architect-Check: keine TS-Fehler. KEIN git add/commit/push.
