@@ -1217,6 +1217,7 @@ function MobileCompanion({
   const [mobileAiSelected, setMobileAiSelected] = useState<Set<number>>(new Set());
   const [mobileDragOver, setMobileDragOver] = useState(false);
   const [confirmEndSession, setConfirmEndSession] = useState(false);
+  const [storyOnEnd, setStoryOnEnd] = useState(true);
 
   const lockedDrams: string[] = (() => {
     try { return JSON.parse((tasting as any).lockedDrams || "[]"); } catch { return []; }
@@ -2166,9 +2167,31 @@ function MobileCompanion({
           <div className="labs-card p-4 space-y-3">
             <p className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{t("m2.host.endSessionConfirmTitle")}</p>
             <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("m2.host.endSessionConfirmDesc")}</p>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 44, cursor: "pointer" }} data-testid="mobile-end-story-toggle">
+              <input
+                type="checkbox"
+                checked={storyOnEnd}
+                onChange={(e) => setStoryOnEnd(e.target.checked)}
+                style={{ width: 18, height: 18, accentColor: "#c8861a", flexShrink: 0 }}
+              />
+              <span className="text-sm" style={{ color: "var(--labs-text)" }}>{t("m2.host.endSessionStoryToggle", "Gemeinsame Story für alle freigeben")}</span>
+            </label>
             <div className="flex gap-2">
               <button className="labs-btn-ghost flex-1" style={{ minHeight: 44, fontSize: 14, borderRadius: 12 }} onClick={() => setConfirmEndSession(false)}>{t("m2.host.cancel")}</button>
-              <button className="labs-btn-danger flex-1 flex items-center justify-center gap-2" style={{ minHeight: 44, fontSize: 14, borderRadius: 12 }} onClick={() => { statusMutation.mutate({ status: "closed" }); setConfirmEndSession(false); }} data-testid="mobile-confirm-end">
+              <button className="labs-btn-danger flex-1 flex items-center justify-center gap-2" style={{ minHeight: 44, fontSize: 14, borderRadius: 12 }} onClick={async () => {
+                if (storyOnEnd) {
+                  try {
+                    await fetch(`/api/tastings/${encodeURIComponent(tastingId)}/story-enabled`, {
+                      method: "PATCH",
+                      credentials: "include",
+                      headers: { "Content-Type": "application/json", "x-participant-id": pid ?? "" },
+                      body: JSON.stringify({ storyEnabled: true }),
+                    });
+                  } catch { /* nicht blockieren */ }
+                }
+                statusMutation.mutate({ status: "closed" });
+                setConfirmEndSession(false);
+              }} data-testid="mobile-confirm-end">
                 <Square className="w-4 h-4" />
                 {t("m2.host.endSessionConfirm")}
               </button>

@@ -18290,6 +18290,10 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       if (tasting.hostId !== participantId) return res.status(403).json({ message: "Only host can toggle story access" });
       const { storyEnabled } = req.body;
       await storage.updateTasting(req.params.id, { storyEnabled: !!storyEnabled });
+      if (!!storyEnabled) {
+        // Baseline-Story sicherstellen, damit Teilnehmer/Gaeste sofort Inhalt sehen (datengetrieben, ohne KI).
+        try { await loadTastingStoryDocument(req.params.id); } catch (seedErr) { console.warn("[story-enabled] baseline seed failed:", seedErr); }
+      }
       res.json({ ok: true, storyEnabled: !!storyEnabled });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
