@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FONT, SP, RADIUS, TOUCH_MIN, LABS_THEME } from "./theme";
 import { parseImpression, type ImpressionResult } from "./impressionApi";
+import { chipsForFollowUp, type EvaluationLevel } from "./impressionChips";
 
 interface ImpressionCaptureProps {
   whiskyName?: string;
@@ -10,25 +11,12 @@ interface ImpressionCaptureProps {
   onIdentifyFirst?: () => void;
 }
 
-const MAX_ROUNDS = 3;
-const confLevel = (c: "high" | "medium" | "low") => (c === "high" ? 2 : c === "medium" ? 1 : 0);
+const MAX_ROUNDS = 4;
 
-function shouldAskNext(round: number, result: ImpressionResult, prev: ImpressionResult | null): boolean {
-  if (round >= MAX_ROUNDS) return false;            // harte Notbremse
-  if (!result.followUpQuestion) return false;       // kein Ansatzpunkt -> keine Frage moeglich
-  // Solange kein tragfaehiger Score ableitbar ist, integrativ weiterfragen
-  // (ueberspringt Konfidenz-Decke + Plateau): vager Eindruck ist NICHT gesaettigt.
-  if (result.scoreSuggestion === null) return true;
-  if (result.confidence === "high") return false;
-  if (prev) {
-    const confGain = confLevel(result.confidence) > confLevel(prev.confidence);
-    const newAspect =
-      result.flavorTags.length > prev.flavorTags.length ||
-      (!!result.nose && !prev.nose) ||
-      (!!result.taste && !prev.taste) ||
-      (!!result.finish && !prev.finish);
-    if (!confGain && !newAspect) return false;
-  }
+function shouldAskNext(round: number, result: ImpressionResult): boolean {
+  if (round >= MAX_ROUNDS) return false;       // harte Notbremse
+  if (!result.followUpQuestion) return false;  // Server signalisiert: nichts mehr offen
+  if (!result.followUpKind) return false;      // kein konkreter Fragetyp -> nicht weiterbohren
   return true;
 }
 
@@ -44,8 +32,22 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
   const [enrichedText, setEnrichedText] = useState("");
   const [asked, setAsked] = useState<string[]>([]);
   const [round, setRound] = useState(0);
+  const [overrideOverall, setOverrideOverall] = useState<number | null>(null);
 
   const canSubmit = text.trim().length >= 2 && !loading;
+
+  const appendChip = (label: string) => {
+    setText((prev) => {
+      const trimmed = prev.trim();
+      if (!trimmed) return label;
+      if (trimmed.toLowerCase().includes(label.toLowerCase())) return trimmed;
+      return `${trimmed}, ${label}`;
+    });
+  };
+  const pickEvaluation = (level: EvaluationLevel) => {
+    setOverrideOverall(level.score);
+    appendChip(level.label);
+  };
 
   const handleInitial = async () => {
     if (text.trim().length < 2 || loading) return;
@@ -56,7 +58,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
       const r = await parseImpression(base, whiskyName, []);
       setEnrichedText(base);
       setResult(r);
-      if (shouldAskNext(0, r, null)) {
+      if (shouldAskNext(0, r)) {
         setPrevResult(null);
         setAsked([r.followUpQuestion]);
         setRound(0);
@@ -81,7 +83,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
       const nextRound = round + 1;
       const r = await parseImpression(newEnriched, whiskyName, asked);
       setEnrichedText(newEnriched);
-      if (shouldAskNext(nextRound, r, result)) {
+      if (shouldAskNext(nextRound, r)) {
         setPrevResult(result);
         setResult(r);
         setAsked((prev) => [...prev, r.followUpQuestion]);
@@ -101,8 +103,16 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
   const handleProceed = () => setPhase("handoff");
 
   const handleConfirm = () => {
-    if (result) onApply({ ...result, rawImpression: enrichedText });
-    else onSkip();
+    if (!result) { onSkip(); return; }
+    const score = overrideOverall !== null
+      ? {
+          overall: overrideOverall,
+          nose: result.scoreSuggestion?.nose ?? null,
+          taste: result.scoreSuggestion?.taste ?? null,
+          finish: result.scoreSuggestion?.finish ?? null,
+        }
+      : result.scoreSuggestion;
+    onApply({ ...result, scoreSuggestion: score, rawImpression: enrichedText });
   };
 
   const renderMirror = (r: ImpressionResult) => {
@@ -267,6 +277,43 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
           <div style={{ fontFamily: FONT.serif, fontSize: 18, color: LABS_THEME.text, marginBottom: SP.sm, lineHeight: 1.4 }}>
             {result.followUpQuestion}
           </div>
+          {(() => {
+            const chips = chipsForFollowUp(result.followUpKind, result.followUpTerm);
+            const chipStyle = (active: boolean) => ({
+              padding: "8px 14px",
+              borderRadius: 999,
+              border: `1px solid ${active ? LABS_THEME.gold : LABS_THEME.border}`,
+              background: active ? "rgba(212,168,71,0.16)" : "transparent",
+              color: active ? LABS_THEME.gold : LABS_THEME.text,
+              fontFamily: FONT.body,
+              fontSize: 14,
+              cursor: "pointer",
+              minHeight: 36,
+            } as const);
+            if (chips.evaluation) {
+              return (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: SP.sm, marginBottom: SP.md }}>
+                  {chips.evaluation.map((lvl) => (
+                    <button key={lvl.label} type="button" onClick={() => pickEvaluation(lvl)} style={chipStyle(overrideOverall === lvl.score)}>
+                      {lvl.label}
+                    </button>
+                  ))}
+                </div>
+              );
+            }
+            if (chips.options.length > 0) {
+              return (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: SP.sm, marginBottom: SP.md }}>
+                  {chips.options.map((opt) => (
+                    <button key={opt} type="button" onClick={() => appendChip(opt)} style={chipStyle(text.toLowerCase().includes(opt.toLowerCase()))}>
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              );
+            }
+            return null;
+          })()}
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}

@@ -367,3 +367,44 @@ export function getSortedCategories(profileId: string | null): FlavorCategory[] 
   const rest = FLAVOR_CATEGORIES.filter((c) => !prioritySet.has(c.id));
   return [...priority, ...rest];
 }
+
+/**
+ * Findet zu einem genannten Aroma-Begriff (z.B. "rauchig") konkrete Verfeinerungs-Optionen
+ * aus der bestehenden Profi-Taxonomie - die Geschwister-Deskriptoren derselben Kategorie.
+ * Greift NUR auf das vorhandene Flavour-Vokabular zurueck (keine erfundenen Begriffe).
+ * Matching ist flexions-sicher (Praefix, min. 4 Zeichen) statt beliebiger Substring,
+ * damit "torfig" nicht ueber "fig" faelschlich Fruechte trifft.
+ * Gibt deutsche Labels zurueck (ohne den genannten Begriff selbst), maximal 6.
+ */
+export function flavorSiblingsForTerm(term: string, lang: "de" | "en" = "de"): string[] {
+  const t = (term || "").trim().toLowerCase();
+  if (t.length < 2) return [];
+  const label = (d: FlavorDescriptor) => (lang === "de" ? d.de : d.en);
+  const dedupe = (arr: string[]) => Array.from(new Set(arr.filter(Boolean)));
+  const flexMatch = (a: string, b: string) => {
+    if (a === b) return true;
+    if (a.length >= 4 && b.length >= 4 && (a.startsWith(b) || b.startsWith(a))) return true;
+    return false;
+  };
+  for (const cat of FLAVOR_CATEGORIES) {
+    const catLabel = (lang === "de" ? cat.de : cat.en).toLowerCase();
+    if (catLabel === t || cat.id === t) {
+      return dedupe(cat.subcategories.map(label)).slice(0, 6);
+    }
+  }
+  for (const cat of FLAVOR_CATEGORIES) {
+    const hit = cat.subcategories.find((d) =>
+      d.keywords.some((k) => flexMatch(k.trim().toLowerCase(), t)),
+    );
+    if (hit) {
+      return dedupe(cat.subcategories.filter((d) => d.id !== hit.id).map(label)).slice(0, 6);
+    }
+  }
+  for (const cat of FLAVOR_CATEGORIES) {
+    const catLabel = (lang === "de" ? cat.de : cat.en).toLowerCase();
+    if (flexMatch(catLabel, t)) {
+      return dedupe(cat.subcategories.map(label)).slice(0, 6);
+    }
+  }
+  return [];
+}
