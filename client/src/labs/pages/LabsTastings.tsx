@@ -61,7 +61,6 @@ export default function LabsTastings() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [activeTab, setActiveTab] = useState<TastingsTab | null>(initialTab);
-  const [soloEntry, setSoloEntry] = useState<"impression" | undefined>(undefined);
 
   useEffect(() => {
     try {
@@ -81,7 +80,6 @@ export default function LabsTastings() {
   }, [activeTab]);
 
   const handleTabClick = (tab: TastingsTab) => {
-    if (tab === "solo") setSoloEntry("impression");
     setActiveTab((prev) => (prev === tab ? null : tab));
   };
 
@@ -173,7 +171,7 @@ export default function LabsTastings() {
       return (
         <div data-testid={`labs-tastings-standalone-${activeTab}`}>
           {activeTab === "join" && <LabsJoin />}
-          {activeTab === "solo" && <LabsSolo initialEntry={soloEntry} key={`solo-${soloEntry ?? "methods"}`} />}
+          {activeTab === "solo" && <LabsSolo />}
           {activeTab === "host" && <LabsHost />}
           {activeTab === "share" && <LabsBottleSharing />}
         </div>
@@ -195,7 +193,7 @@ export default function LabsTastings() {
 
         <div className="labs-home-cards">
           <ImpressionFirstHero
-            onClick={() => { setSoloEntry("impression"); setActiveTab("solo"); }}
+            onClick={() => setActiveTab("solo")}
           />
 
           <button
@@ -397,7 +395,7 @@ export default function LabsTastings() {
         >
           <EmbeddedTastingsProvider>
             {activeTab === "join" && <LabsJoin />}
-            {activeTab === "solo" && <LabsSolo initialEntry={soloEntry} key={`solo-${soloEntry ?? "methods"}`} />}
+            {activeTab === "solo" && <LabsSolo />}
             {activeTab === "host" && <LabsHost />}
             {activeTab === "share" && <LabsBottleSharing />}
           </EmbeddedTastingsProvider>

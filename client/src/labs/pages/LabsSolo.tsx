@@ -13,6 +13,7 @@ import type { Participant } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import SoloCaptureScreen, { type CapturedWhisky } from "./solo/SoloCaptureScreen";
 import SoloNamingStep from "./solo/SoloNamingStep";
+import SoloNamingCapture from "./solo/SoloNamingCapture";
 import SoloWhiskyForm from "./solo/SoloWhiskyForm";
 import SoloDoneScreen from "./solo/SoloDoneScreen";
 import SoloContextStep from "./solo/SoloContextStep";
@@ -108,13 +109,14 @@ async function ensureParticipantId(): Promise<string> {
   throw new Error("Could not create participant");
 }
 
-export default function LabsSolo({ initialEntry }: { initialEntry?: "impression" } = {}) {
+export default function LabsSolo() {
   const { t } = useTranslation();
   const goBack = useBackNavigation("/labs/tastings");
   const isEmbedded = useIsEmbeddedInTastings();
   const [, navigate] = useLocation();
 
-  const [step, setStep] = useState<Step>(initialEntry === "impression" ? "rating" : "capture");
+  const initialSoloDraft = loadSoloDraft();
+  const [step, setStep] = useState<Step>(initialSoloDraft ? "capture" : "rating");
   const [whisky, setWhisky] = useState<CapturedWhisky | null>(null);
   const [ratingResult, setRatingResult] = useState<RatingData | null>(null);
   const [participantId, setParticipantId] = useState<string>("");
@@ -133,11 +135,11 @@ export default function LabsSolo({ initialEntry }: { initialEntry?: "impression"
   const [tastingContext, setTastingContext] = useState<TastingContextState | null>(null);
 
   const [soloImageFile, setSoloImageFile] = useState<File | null>(null);
-  const [resumeDraft, setResumeDraft] = useState(() => loadSoloDraft());
+  const [resumeDraft, setResumeDraft] = useState(() => initialSoloDraft);
   const [ratingMode, setRatingMode] = useState<"guided" | "compact" | "quick" | "tisch" | null>(null);
   const [ratingPhaseIndex, setRatingPhaseIndex] = useState(0);
   const [ratingInitialData, setRatingInitialData] = useState<RatingData | undefined>(undefined);
-  const [showImpressionCapture, setShowImpressionCapture] = useState(initialEntry === "impression");
+  const [showImpressionCapture, setShowImpressionCapture] = useState(!initialSoloDraft);
   const rawImpressionRef = useRef<string>("");
 
   const { data: participantData } = useQuery<Participant>({
@@ -171,6 +173,7 @@ export default function LabsSolo({ initialEntry }: { initialEntry?: "impression"
   const pendingNameRef = useRef<string | null>(null);
   const namingResolvedRef = useRef(false);
   const pendingFinalizeRef = useRef<(() => void) | null>(null);
+  const pendingWhiskyRef = useRef<CapturedWhisky | null>(null);
 
   const showDraftFlash = useCallback(() => {
     setDraftSavedFlash(true);
@@ -402,16 +405,17 @@ export default function LabsSolo({ initialEntry }: { initialEntry?: "impression"
   }, []);
 
   const buildJournalBody = useCallback((data: RatingData, status: "final" | "draft", omitDimensionScores = false) => {
-    const whiskyName = whisky?.name || pendingNameRef.current || t("v2.ratingDram", "Dram");
+    const pw = pendingWhiskyRef.current;
+    const whiskyName = whisky?.name || pw?.name || pendingNameRef.current || t("v2.ratingDram", "Dram");
     return {
       title: whiskyName,
       name: whiskyName,
-      distillery: whisky?.distillery || "",
-      country: whisky?.country || "",
-      region: whisky?.region || "",
-      caskType: whisky?.cask || "",
-      age: whisky?.age || "",
-      abv: whisky?.abv || "",
+      distillery: whisky?.distillery || pw?.distillery || "",
+      country: whisky?.country || pw?.country || "",
+      region: whisky?.region || pw?.region || "",
+      caskType: whisky?.cask || pw?.cask || "",
+      age: whisky?.age || pw?.age || "",
+      abv: whisky?.abv || pw?.abv || "",
       personalScore: data.scores.overall,
       ...(omitDimensionScores ? {} : {
         noseScore: data.scores.nose,
@@ -690,6 +694,19 @@ export default function LabsSolo({ initialEntry }: { initialEntry?: "impression"
         .catch(() => {});
     }
   }, [bottleAdded, fromCollection, whisky, participantId]);
+
+  const resolveNaming = useCallback((w: CapturedWhisky | null, imageFile?: File | null) => {
+    namingResolvedRef.current = true;
+    pendingWhiskyRef.current = w;
+    if (w) {
+      pendingNameRef.current = w.name || null;
+      setWhisky(w);
+      if (imageFile !== undefined) setSoloImageFile(imageFile);
+    }
+    const runner = pendingFinalizeRef.current;
+    pendingFinalizeRef.current = null;
+    if (runner) runner();
+  }, []);
 
   const handleNamingDone = useCallback((name: string | null) => {
     const trimmed = (name || "").trim();
@@ -1004,7 +1021,13 @@ export default function LabsSolo({ initialEntry }: { initialEntry?: "impression"
       </div>
     );
   } else if (step === "naming") {
-    content = <SoloNamingStep onSubmit={handleNamingDone} />;
+    content = (
+      <SoloNamingCapture
+        participantId={participantId}
+        isAuthenticated={isUserAuthenticated()}
+        onResolve={resolveNaming}
+      />
+    );
   } else if (step === "done" && ratingResult) {
     const authenticated = isUserAuthenticated();
     content = (
