@@ -13,9 +13,12 @@ const MAX_ROUNDS = 3;
 const confLevel = (c: "high" | "medium" | "low") => (c === "high" ? 2 : c === "medium" ? 1 : 0);
 
 function shouldAskNext(round: number, result: ImpressionResult, prev: ImpressionResult | null): boolean {
-  if (round >= MAX_ROUNDS) return false;
+  if (round >= MAX_ROUNDS) return false;            // harte Notbremse
+  if (!result.followUpQuestion) return false;       // kein Ansatzpunkt -> keine Frage moeglich
+  // Solange kein tragfaehiger Score ableitbar ist, integrativ weiterfragen
+  // (ueberspringt Konfidenz-Decke + Plateau): vager Eindruck ist NICHT gesaettigt.
+  if (result.scoreSuggestion === null) return true;
   if (result.confidence === "high") return false;
-  if (!result.followUpQuestion) return false;
   if (prev) {
     const confGain = confLevel(result.confidence) > confLevel(prev.confidence);
     const newAspect =
