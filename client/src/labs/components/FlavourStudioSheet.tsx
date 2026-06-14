@@ -154,6 +154,13 @@ function getAllTermsForSection(categories: VocabCategory[], section: TermSection
   return Array.from(terms);
 }
 
+function secTerms(cat: VocabCategory, section: TermSection | "overall"): string[] {
+  if (section === "overall") {
+    return Array.from(new Set([...cat.nose, ...cat.palate, ...cat.finish]));
+  }
+  return cat[section];
+}
+
 function getQuickAddTerms(categories: VocabCategory[], section: TermSection | "overall"): string[] {
   const popular = [
     "Vanilla", "Honey", "Caramel", "Oak", "Peat", "Apple", "Citrus",
@@ -168,8 +175,8 @@ function getQuickAddTerms(categories: VocabCategory[], section: TermSection | "o
 function findTermCategory(term: string, categories: VocabCategory[]): CategoryId | null {
   const lower = term.toLowerCase();
   for (const cat of categories) {
-    for (const section of ["nose", "palate", "finish"] as TermSection[]) {
-      if (cat[section].some((t) => t.toLowerCase() === lower)) return cat.id;
+    for (const sec of ["nose", "palate", "finish"] as TermSection[]) {
+      if (cat[sec].some((t) => t.toLowerCase() === lower)) return cat.id;
     }
   }
   return null;
@@ -763,7 +770,7 @@ function CompactWheel({
   categories, section, selected, onToggle,
 }: {
   categories: VocabCategory[];
-  section: TermSection;
+  section: TermSection | "overall";
   selected: Set<string>;
   onToggle: (term: string) => void;
 }) {
@@ -789,7 +796,7 @@ function CompactWheel({
     const labelY = cy + labelR * Math.sin(midAngle);
     const isFocused = focused === cat.id;
     const isDimmed = focused !== null && !isFocused;
-    const count = cat[section].filter((t) => selected.has(t.toLowerCase())).length;
+    const count = secTerms(cat, section).filter((t) => selected.has(t.toLowerCase())).length;
     return { ...cat, path, labelX, labelY, isFocused, isDimmed, count };
   });
 
@@ -854,7 +861,7 @@ function CompactWheel({
             </button>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--labs-space-xs)" }}>
-            {focusedCat[section].map((term) => {
+            {secTerms(focusedCat, section).map((term) => {
               const isSelected = selected.has(term.toLowerCase());
               return (
                 <button
@@ -884,7 +891,7 @@ function CompactCompass({
   categories, section, selected, onToggle,
 }: {
   categories: VocabCategory[];
-  section: TermSection;
+  section: TermSection | "overall";
   selected: Set<string>;
   onToggle: (term: string) => void;
 }) {
@@ -898,7 +905,7 @@ function CompactCompass({
     if (selected.size === 0) return null;
     let totalX = 0, totalY = 0, totalWeight = 0;
     for (const cat of categories) {
-      const matchCount = cat[section].filter((term) => selected.has(term.toLowerCase())).length;
+      const matchCount = secTerms(cat, section).filter((term) => selected.has(term.toLowerCase())).length;
       if (matchCount > 0) {
         const pos = COMPASS_POSITIONS[cat.id];
         totalX += pos.x * matchCount;
@@ -920,7 +927,7 @@ function CompactCompass({
     const pos = COMPASS_POSITIONS[selectedCat];
     const px = 30 + pos.x * (w - 60);
     const py = 20 + pos.y * (h - 40);
-    return cat[section].slice(0, 5).map((term, i) => {
+    return secTerms(cat, section).slice(0, 5).map((term, i) => {
       const angle = (i * 72 - 90) * (Math.PI / 180);
       const chipR = 42;
       return { term, x: px + chipR * Math.cos(angle), y: py + chipR * Math.sin(angle) };
@@ -944,7 +951,7 @@ function CompactCompass({
           const isDimmed = selectedCat !== null && !isSelected;
           const r = isSelected ? 24 : 20;
           const color = CATEGORY_COLORS[cat.id];
-          const count = cat[section].filter((term) => selected.has(term.toLowerCase())).length;
+          const count = secTerms(cat, section).filter((term) => selected.has(term.toLowerCase())).length;
           return (
             <g key={cat.id} onClick={() => { setSelectedCat(isSelected ? null : cat.id); triggerHaptic("light"); }} style={{ cursor: "pointer" }}>
               <circle cx={px} cy={py} r={r + 6} fill={color} fillOpacity={0.25} style={{ transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)" }} />
@@ -961,7 +968,7 @@ function CompactCompass({
                   <text x={px + r - 2} y={py - r + 2} textAnchor="middle" dominantBaseline="middle" fill="var(--labs-bg)" fontSize={7} fontWeight={700}>{count}</text>
                 </g>
               )}
-              {cat[section].filter((term) => selected.has(term.toLowerCase())).map((selTerm, ti) => {
+              {secTerms(cat, section).filter((term) => selected.has(term.toLowerCase())).map((selTerm, ti) => {
                 const dotAngle = (ti * 45 + 20) * (Math.PI / 180);
                 const dotR = r * 0.65;
                 return (
@@ -1010,7 +1017,7 @@ function CompactCompass({
             </button>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--labs-space-xs)" }}>
-            {selCat[section].map((term) => {
+            {secTerms(selCat, section).map((term) => {
               const isS = selected.has(term.toLowerCase());
               return (
                 <button key={term} onClick={(e) => { e.stopPropagation(); onToggle(term); }}
@@ -1041,7 +1048,7 @@ function CompactRadar({
   categories: VocabCategory[];
   selected: Set<string>;
   onToggle: (term: string) => void;
-  section: TermSection;
+  section: TermSection | "overall";
 }) {
   const { t } = useTranslation();
   const isDark = useIsDarkTheme();
@@ -1132,7 +1139,7 @@ function CompactRadar({
         const keywords = AXIS_KEYWORDS[selectedAxis] || [];
         const axisTerms: string[] = [];
         for (const cat of categories) {
-          for (const term of cat[section]) {
+          for (const term of secTerms(cat, section)) {
             if (keywords.some((kw) => term.toLowerCase().includes(kw))) {
               axisTerms.push(term);
             }
@@ -1189,7 +1196,7 @@ function CompactRadar({
             </button>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--labs-space-xs)" }}>
-            {selCat[section].map((term) => {
+            {secTerms(selCat, section).map((term) => {
               const isS = selected.has(term.toLowerCase());
               return (
                 <button key={term} onClick={(e) => { e.stopPropagation(); onToggle(term); }}
@@ -1219,7 +1226,7 @@ function DescribeView({
 }: {
   selected: Set<string>;
   onToggle: (term: string) => void;
-  section: TermSection;
+  section: TermSection | "overall";
   categories: VocabCategory[];
 }) {
   const { t, i18n } = useTranslation();
@@ -1251,7 +1258,7 @@ function DescribeView({
       const res = await fetch("/api/labs/flavour-assist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: text, section, language: isDE ? "de" : "en" }),
+        body: JSON.stringify({ description: text, section: section === "overall" ? "nose" : section, language: isDE ? "de" : "en" }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -1298,7 +1305,7 @@ function DescribeView({
       const res = await fetch("/api/labs/flavour-assist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ referenceWhisky: `${name} ${distillery}`, section, language: isDE ? "de" : "en" }),
+        body: JSON.stringify({ referenceWhisky: `${name} ${distillery}`, section: section === "overall" ? "nose" : section, language: isDE ? "de" : "en" }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -2012,7 +2019,7 @@ export default function FlavourStudioSheet({
   }, [open, initialView]);
   const [customInput, setCustomInput] = useState("");
   const categories = useVocabCategories();
-  const section = DIM_TO_SECTION[dimension] || "nose";
+  const section: TermSection | "overall" = dimension === "overall" ? "overall" : (DIM_TO_SECTION[dimension] || "nose");
 
   const [selectedTerms, setSelectedTerms] = useState<Set<string>>(new Set());
 
@@ -2047,7 +2054,7 @@ export default function FlavourStudioSheet({
       if (existing) return existing;
       const allSectionTerms: string[] = [];
       for (const cat of categories) {
-        allSectionTerms.push(...cat[section]);
+        allSectionTerms.push(...secTerms(cat, section));
       }
       for (const cat of FLAVOR_CATEGORIES) {
         for (const sub of cat.subcategories) {
