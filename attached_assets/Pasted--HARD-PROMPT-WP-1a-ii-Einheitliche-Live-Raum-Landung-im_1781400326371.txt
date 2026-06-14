@@ -1,0 +1,91 @@
+# HARD PROMPT — WP 1a-ii: Einheitliche Live-Raum-Landung im Code-/Gast-Pfad
+# Einzige Datei: client/src/labs/pages/LabsJoin.tsx
+
+ROLLE: Genau diese Edits, null Freiheitsgrade. Abweichende Zählung → STOPP, melden, warten.
+VERBOTEN: kein git commit/add/push; kein schema.ts; keine Backend-Änderung; keine andere Datei.
+PRINZIP: Landung soll bei laufendem Tasting (status === "open") in den Live-Raum statt auf
+die Detail-Seite gehen — über einen zentralen Helper landAfter(id, status).
+
+----------------------------------------------------------------------
+SCHRITT 0 — DIAGNOSE (nur lesen, dann Plan ausgeben + auf "GO" warten)
+----------------------------------------------------------------------
+    git tag pre-join-landing-1aii-2026-06-14
+    F=client/src/labs/pages/LabsJoin.tsx
+Erwartete Ausgangs-Counts (müssen exakt stimmen, sonst STOPP):
+    grep -c 'navigate(`/labs/tastings/${tasting.id}`)' $F          # 4
+    grep -c 'navigate(`/labs/tastings/${pendingTasting.id}`)' $F   # 3
+    grep -c 'navigate(`/labs/tastings/${invite.tastingId}`)' $F    # 2  (bleibt unverändert!)
+    grep -c 'showAuthOrGuest({ id: tasting.id, guestMode: tasting.guestMode || "standard" }, trimmed);' $F   # 2
+    grep -c 'landAfter' $F                                          # 0
+Lesen/bestätigen: tastingApi.getByCode liefert status mit (server/routes.ts /api/tastings/code/:code
+gibt für auth den vollen Tasting, für nicht-auth { id, status, guestMode }). pendingTasting bekommt
+status über showAuthOrGuest.
+
+----------------------------------------------------------------------
+EDIT 1 — PendingTasting um status erweitern  (eindeutig, 1×)
+ALT:
+interface PendingTasting {
+  id: string;
+  guestMode: string;
+}
+NEU:
+interface PendingTasting {
+  id: string;
+  guestMode: string;
+  status?: string;
+}
+
+----------------------------------------------------------------------
+EDIT 2 — landAfter-Helper direkt nach navigate  (eindeutig, 1×)
+ALT:
+  const [, navigate] = useLocation();
+NEU:
+  const [, navigate] = useLocation();
+  const landAfter = (id: string, status?: string) =>
+    navigate(status === "open" ? `/labs/live/${id}` : `/labs/tastings/${id}`);
+
+----------------------------------------------------------------------
+EDIT 3 — showAuthOrGuest: status mitgeben  (GLOBAL, exakt 2 Treffer)
+Ersetze JEDES Vorkommen von:
+    showAuthOrGuest({ id: tasting.id, guestMode: tasting.guestMode || "standard" }, trimmed);
+durch:
+    showAuthOrGuest({ id: tasting.id, guestMode: tasting.guestMode || "standard", status: tasting.status }, trimmed);
+
+----------------------------------------------------------------------
+EDIT 4 — tasting.id-Landungen → landAfter  (GLOBAL, exakt 4 Treffer)
+Ersetze JEDES Vorkommen von:
+    navigate(`/labs/tastings/${tasting.id}`)
+durch:
+    landAfter(tasting.id, tasting.status)
+
+----------------------------------------------------------------------
+EDIT 5 — pendingTasting.id-Landungen → landAfter  (GLOBAL, exakt 3 Treffer)
+Ersetze JEDES Vorkommen von:
+    navigate(`/labs/tastings/${pendingTasting.id}`)
+durch:
+    landAfter(pendingTasting.id, pendingTasting.status)
+
+WICHTIG: navigate(`/labs/tastings/${invite.tastingId}`) (2×) und navigate(`/labs/tastings`) (1×)
+bleiben UNVERÄNDERT. Nur die oben genannten Muster ändern.
+
+----------------------------------------------------------------------
+VERIFIKATION (kein commit!)
+----------------------------------------------------------------------
+1) npm run build (falls OOM im Container: bekannt — dann Asserts + Lesen + Architect-Review).
+2) Counts danach:
+    grep -c 'landAfter(tasting.id, tasting.status)' $F                 # 4
+    grep -c 'landAfter(pendingTasting.id, pendingTasting.status)' $F   # 3
+    grep -c 'status?: string;' $F                                      # 1
+    grep -c 'navigate(`/labs/tastings/${tasting' $F                    # 0
+    grep -c 'navigate(`/labs/tastings/${invite.tastingId}`)' $F        # 2 (unverändert)
+    grep -c 'navigate(`/labs/tastings`)' $F                            # 1 (unverändert)
+3) Architect-Review: landAfter ist eine reine Helper-Funktion (kein Hook); keine Hook-Order-
+   Themen. Logik: status "open" → /labs/live/:id, sonst /labs/tastings/:id.
+4) Manuelle QA:
+    a) Gast-Join (ultra) per Code in ein LAUFENDES Tasting → nach Namens-Eingabe + Rejoin-Code-
+       Screen "Weiter" landet im Live-Raum (/labs/live/:id), nicht auf Detail.
+    b) Gast-Join in ein NICHT laufendes (z.B. geplantes) Tasting → Detail-Seite wie bisher.
+    c) Eingeloggt per Code in laufendes Tasting → Live-Raum; nicht laufend → Detail.
+    d) Gast-Rejoin (Wiedereinstiegs-Code) in laufendes Tasting → Live-Raum.
+5) git diff --stat (erwartet: 1 file, ~11 insertions / ~9 deletions), dann auf Byte-Diff-
+   Abnahme warten. NICHT committen.
