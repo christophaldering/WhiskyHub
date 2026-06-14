@@ -1,0 +1,215 @@
+HARD PROMPT — CaskSense: Glas-Einstieg nach vorn holen (Eindruck als Solo-Haupteinstieg, Gast + eingeloggt)
+
+Kontext: WhiskyHub, React/TS. Baut auf Commit 3d36c17 auf. Ziel: Das Glas-Hero zieht von der Solo-Methodenwahl auf die Einstiegsseite. In der GAST-Ansicht wird die Solo-Karte zum Glas-Hero; in der EINGELOGGTEN Ansicht öffnet der „Solo"-Button direkt den Eindruck. Beide führen mit einem Klick in den Eindruck. Die fünf Identifikations-Methoden bleiben als „erst den Whisky bestimmen"-Weg erreichbar (Link im Eindruck-Screen). ImpressionFirstHero.tsx existiert bereits (aus 3d36c17) und wird NICHT verändert.
+
+Sicherheits-Tag zuerst: git tag pre-glass-front-2026-06-14
+
+SCHRITT 0 — Diagnose (NUR LESEN). Erwartung in Klammern. Bei Abweichung STOPP + melden.
+grep -c "import ImpressionFirstHero" client/src/labs/pages/solo/SoloCaptureScreen.tsx   (1)
+grep -c "export default function LabsSolo() {" client/src/labs/pages/LabsSolo.tsx   (1)
+grep -c '{activeTab === "solo" && <LabsSolo />}' client/src/labs/pages/LabsTastings.tsx   (2)
+grep -c "onSkip: () => void;" client/src/labs/components/rating/ImpressionCapture.tsx   (1)
+
+
+===== DATEI 1: client/src/labs/pages/solo/SoloCaptureScreen.tsx — Hero wieder ENTFERNEN (4 Edits) =====
+
+--- D1a --- ALT:
+import { CollectionPicker, type SelectedWhisky } from "@/labs/components/CollectionPicker";
+import ImpressionFirstHero from "./ImpressionFirstHero";
+NEU:
+import { CollectionPicker, type SelectedWhisky } from "@/labs/components/CollectionPicker";
+
+--- D1b --- ALT:
+  onManual: () => void;
+  onImpressionFirst: () => void;
+NEU:
+  onManual: () => void;
+
+--- D1c --- ALT:
+export default function SoloCaptureScreen({ participantId, isAuthenticated, onManual, onImpressionFirst, onCaptured, onBarcode, onCollectionSelect, onBack, hideBack }: Props) {
+NEU:
+export default function SoloCaptureScreen({ participantId, isAuthenticated, onManual, onCaptured, onBarcode, onCollectionSelect, onBack, hideBack }: Props) {
+
+--- D1d --- ALT:
+      </p>
+
+      <ImpressionFirstHero onClick={onImpressionFirst} />
+
+      <span className="labs-section-label">{t("v2.solo.captureOptions", "Capture Options")}</span>
+NEU:
+      </p>
+
+      <span className="labs-section-label">{t("v2.solo.captureOptions", "Capture Options")}</span>
+
+
+===== DATEI 2: client/src/labs/components/rating/ImpressionCapture.tsx — „erst Whisky bestimmen"-Link (3 Edits) =====
+
+--- D2a --- ALT:
+  onSkip: () => void;
+NEU:
+  onSkip: () => void;
+  onIdentifyFirst?: () => void;
+
+--- D2b --- ALT:
+export default function ImpressionCapture({ whiskyName, onApply, onSkip }: ImpressionCaptureProps) {
+NEU:
+export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdentifyFirst }: ImpressionCaptureProps) {
+
+--- D2c --- (input-Phase-Ende; der Anker mit {phase === "reflect" ist eindeutig) ALT:
+          </div>
+        </>
+      )}
+
+      {phase === "reflect" && result && (
+NEU:
+          </div>
+          {onIdentifyFirst && (
+            <button
+              type="button"
+              onClick={onIdentifyFirst}
+              style={{
+                width: "100%",
+                marginTop: SP.md,
+                background: "transparent",
+                border: "none",
+                color: LABS_THEME.muted,
+                fontFamily: FONT.body,
+                fontSize: 14,
+                textDecoration: "underline",
+                textUnderlineOffset: 3,
+                cursor: "pointer",
+                padding: SP.sm,
+              }}
+            >
+              {t("v2.impressionIdentifyFirst", "Lieber erst den Whisky bestimmen")}
+            </button>
+          )}
+        </>
+      )}
+
+      {phase === "reflect" && result && (
+
+
+===== DATEI 3: client/src/labs/pages/LabsSolo.tsx — initialEntry-Einstieg + Methodenwahl-Wechsler (6 Edits) =====
+
+--- D3a --- ALT:
+export default function LabsSolo() {
+NEU:
+export default function LabsSolo({ initialEntry }: { initialEntry?: "impression" } = {}) {
+
+--- D3b --- ALT:
+  const [step, setStep] = useState<Step>("capture");
+NEU:
+  const [step, setStep] = useState<Step>(initialEntry === "impression" ? "rating" : "capture");
+
+--- D3c --- ALT:
+  const [showImpressionCapture, setShowImpressionCapture] = useState(false);
+NEU:
+  const [showImpressionCapture, setShowImpressionCapture] = useState(initialEntry === "impression");
+
+--- D3d --- (handleIdentifyFirst direkt nach handleImpressionFirst) ALT:
+    saveSoloDraft({ step: "rating", whisky: null, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: false, serverDraftId: null });
+    showDraftFlash();
+  }, [showDraftFlash]);
+
+  const handleBarcode = useCallback((barcode: string) => {
+NEU:
+    saveSoloDraft({ step: "rating", whisky: null, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: false, serverDraftId: null });
+    showDraftFlash();
+  }, [showDraftFlash]);
+
+  const handleIdentifyFirst = useCallback(() => {
+    setShowImpressionCapture(false);
+    setStep("capture");
+  }, []);
+
+  const handleBarcode = useCallback((barcode: string) => {
+
+--- D3e --- (alte Hero-Prop an SoloCaptureScreen entfernen) ALT:
+          onManual={handleManual}
+          onImpressionFirst={handleImpressionFirst}
+          onCaptured={handleCaptured}
+NEU:
+          onManual={handleManual}
+          onCaptured={handleCaptured}
+
+--- D3f --- (Link an ImpressionCapture durchreichen) ALT:
+          <ImpressionCapture
+            whiskyName={whisky?.name || undefined}
+            onApply={handleImpressionApply}
+            onSkip={handleImpressionSkip}
+          />
+NEU:
+          <ImpressionCapture
+            whiskyName={whisky?.name || undefined}
+            onApply={handleImpressionApply}
+            onSkip={handleImpressionSkip}
+            onIdentifyFirst={handleIdentifyFirst}
+          />
+
+Hinweis: handleImpressionFirst bleibt danach ungenutzt stehen — das ist ok und gewollt (kein Build-Fehler). NICHT entfernen.
+
+
+===== DATEI 4: client/src/labs/pages/LabsTastings.tsx — Glas-Einstieg für Gast + eingeloggt (6 Edits) =====
+
+--- D4a --- (Import; GlassIcon raus, ImpressionFirstHero rein) ALT:
+import { JoinIcon, GlassIcon, HostIcon } from "@/labs/components/FlavourIcons";
+NEU:
+import { JoinIcon, HostIcon } from "@/labs/components/FlavourIcons";
+import ImpressionFirstHero from "./solo/ImpressionFirstHero";
+
+--- D4b --- (soloEntry-State) ALT:
+  const [activeTab, setActiveTab] = useState<TastingsTab | null>(initialTab);
+NEU:
+  const [activeTab, setActiveTab] = useState<TastingsTab | null>(initialTab);
+  const [soloEntry, setSoloEntry] = useState<"impression" | undefined>(undefined);
+
+--- D4c --- (Solo-Button [eingeloggt] öffnet den Eindruck direkt) ALT:
+  const handleTabClick = (tab: TastingsTab) => {
+    setActiveTab((prev) => (prev === tab ? null : tab));
+NEU:
+  const handleTabClick = (tab: TastingsTab) => {
+    if (tab === "solo") setSoloEntry("impression");
+    setActiveTab((prev) => (prev === tab ? null : tab));
+
+--- D4d --- (Solo-Karte [Gast] WIRD das Glas-Hero) ALT:
+          <button
+            className="labs-card labs-card-interactive labs-home-action-card labs-fade-in labs-stagger-1"
+            onClick={() => navigate('/labs/solo')}
+            data-testid="labs-action-solo"
+          >
+            <div className="labs-home-action-icon">
+              <GlassIcon size={20} />
+            </div>
+            <div className="labs-home-action-text">
+              <div className="ty-ui">{t('home.solo')}</div>
+              <div className="ty-caption labs-home-action-sub">
+                {t('home.soloSub')}
+              </div>
+            </div>
+          </button>
+NEU:
+          <ImpressionFirstHero
+            onClick={() => { setSoloEntry("impression"); setActiveTab("solo"); }}
+          />
+
+--- D4e --- (BEIDE Vorkommen ersetzen — der ALT-Block kommt 2× vor, beide gleich ersetzen) ALT:
+{activeTab === "solo" && <LabsSolo />}
+NEU:
+{activeTab === "solo" && <LabsSolo initialEntry={soloEntry} key={`solo-${soloEntry ?? "methods"}`} />}
+
+
+SCHRITT 4 — Verifikation (NUR LESEN):
+grep -c "ImpressionFirstHero" client/src/labs/pages/solo/SoloCaptureScreen.tsx   (0)
+grep -c "import ImpressionFirstHero" client/src/labs/pages/LabsTastings.tsx   (1)
+grep -c "<ImpressionFirstHero" client/src/labs/pages/LabsTastings.tsx   (1)
+grep -c 'if (tab === "solo") setSoloEntry("impression");' client/src/labs/pages/LabsTastings.tsx   (1)
+grep -c "initialEntry={soloEntry}" client/src/labs/pages/LabsTastings.tsx   (2)
+grep -c 'initialEntry === "impression"' client/src/labs/pages/LabsSolo.tsx   (2)
+grep -c "const handleIdentifyFirst" client/src/labs/pages/LabsSolo.tsx   (1)
+grep -c "onIdentifyFirst={handleIdentifyFirst}" client/src/labs/pages/LabsSolo.tsx   (1)
+grep -c "impressionIdentifyFirst" client/src/labs/components/rating/ImpressionCapture.tsx   (1)
+grep -c "GlassIcon" client/src/labs/pages/LabsTastings.tsx   (0)
+Danach Dev-Build prüfen: in diesen fünf Dateien kein Compile-Fehler.
+
+VERBOTE (strikt): NICHT committen, NICHT pushen (kein git commit, kein git push — macht Christoph). KEINE Schema-Änderungen, KEINE Migrationen, KEIN drizzle-kit. ImpressionFirstHero.tsx NICHT verändern. LabsHostCockpit.tsx / Host-Cockpit NICHT anfassen. Nur die vier genannten Dateien berühren. Wenn ein ALT-Block nicht exakt matcht (bei D4e: nicht genau 2×): STOPP + melden, nicht improvisieren. Zur Erinnerung: am Ende NICHT committen und NICHT pushen.
