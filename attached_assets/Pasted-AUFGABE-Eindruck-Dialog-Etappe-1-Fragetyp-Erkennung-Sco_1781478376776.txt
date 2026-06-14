@@ -1,0 +1,70 @@
+AUFGABE: Eindruck-Dialog Etappe 1 — Fragetyp-Erkennung + Score aus Wertung
+
+Basis-Commit: aktueller main. Sicherheits-Tag VOR allem:
+  git tag pre-impression-dialog-e1-2026-06-14
+
+Zweck: Der Server liefert künftig zur Rückfrage einen TYP (aroma/dimension/evaluation)
+plus ein Schlüsselwort, und leitet den Score AUSSCHLIESSLICH aus wertenden Worten ab.
+Reine Aromen-Nennung ergibt keinen erfundenen Score mehr. Zwei Dateien, rein additiv.
+
+=== SCHRITT 0: DIAGNOSE (NUR LESEN) ===
+  grep -n "followUpKind\|followUpTerm" server/routes.ts client/src/labs/components/rating/impressionApi.ts
+Erwartung: kommt noch NICHT vor. Danach Plan zeigen, Bestätigung abwarten. NICHT committen/pushen.
+
+=== SCHRITT 1: server/routes.ts ===
+Im Endpoint app.post("/api/impression/parse", ...): Ersetze den GESAMTEN System-Prompt
+(das content-Feld der system-Message, beginnt mit `Du bist ein behutsamer Verkostungs-Assistent`
+und endet mit dem schließenden Backtick) durch exakt diesen Text:
+
+`Du bist ein behutsamer Verkostungs-Assistent. Du bekommst einen rohen, freien Eindruck eines Whiskys (oft knapp, z.B. "lecker, rauchig"). Erfinde NICHTS hinzu. Leite NUR ab, was der Eindruck wirklich hergibt. Antworte in der Sprache des Eindrucks. Gib JSON zurueck:
+{"flavorTags": ["..."], "nose": "kurzer Satz oder leer", "taste": "kurzer Satz oder leer", "finish": "kurzer Satz oder leer", "scoreSuggestion": {"overall": 0-100, "nose": 0-100, "taste": 0-100, "finish": 0-100} ODER null, "confidence": "high|medium|low", "followUpQuestion": "EINE sokratische Rueckfrage oder leer", "followUpKind": "aroma|dimension|evaluation oder leer", "followUpTerm": "ein Schluesselwort oder leer"}
+SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN Worten ab (z.B. lecker, ausgewogen, rund, langweilig, zu scharf, kantig, haengt lange nach). Eine reine Aromen-Nennung (rauchig, fruchtig, vanillig) ist KEINE Wertung -> dann scoreSuggestion=null und confidence="low". Je duenner die Wertung, desto vorsichtiger. Hoechstens 6 flavorTags, nur Begriffe die im Eindruck stecken oder klar mitschwingen. Bestimme followUpKind nach der DRINGLICHSTEN offenen Luecke und setze followUpTerm passend dazu: (1) "aroma" - ein bereits GENANNTER Begriff ist vage/spaltbar (z.B. rauchig, fruchtig, wuerzig, suess); followUpTerm = GENAU dieser eine Begriff (ein Wort, so wie genannt); die Frage laedt ein, ihn zu praezisieren (rauchig -> eher Lagerfeuer oder eher Pflaster/Jod?). (2) "dimension" - zu einer Kerndimension wurde noch GAR NICHTS gesagt; followUpTerm = "nose" ODER "taste" ODER "finish"; die Frage richtet sich genau dorthin. (3) "evaluation" - Charakter/Aromen sind da, aber KEINE Wertung gefallen; frage offen, wie gut es insgesamt wirkt; followUpTerm = "". Setze followUpKind, followUpTerm UND followUpQuestion auf LEER, wenn nichts mehr offen ist (alle drei Dimensionen beruehrt, kein vager Begriff offen, Wertung vorhanden) oder jede Frage nur eine bereits gestellte wiederholen wuerde.`
+
+Dann, im selben Endpoint, zwei kleine Ergänzungen am Ergebnis:
+
+[A] ALT:
+      const confWeightMap: Record<string, number> = { high: 0.9, medium: 0.6, low: 0.3 };
+
+      const result = {
+        rawImpression: impression,
+NEU:
+      const confWeightMap: Record<string, number> = { high: 0.9, medium: 0.6, low: 0.3 };
+      const validKinds = ["aroma", "dimension", "evaluation"];
+      const followUpKind = validKinds.includes(parsed.followUpKind) ? parsed.followUpKind : "";
+      const followUpTerm = typeof parsed.followUpTerm === "string" ? parsed.followUpTerm.trim().slice(0, 60) : "";
+
+      const result = {
+        rawImpression: impression,
+
+[B] ALT:
+        followUpQuestion: typeof parsed.followUpQuestion === "string" ? parsed.followUpQuestion.trim() : "",
+        tookMs: Date.now() - startMs,
+      };
+NEU:
+        followUpQuestion: typeof parsed.followUpQuestion === "string" ? parsed.followUpQuestion.trim() : "",
+        followUpKind,
+        followUpTerm,
+        tookMs: Date.now() - startMs,
+      };
+
+=== SCHRITT 2: client/src/labs/components/rating/impressionApi.ts ===
+ALT:
+  followUpQuestion: string;
+  tookMs: number;
+};
+NEU:
+  followUpQuestion: string;
+  followUpKind: "aroma" | "dimension" | "evaluation" | "";
+  followUpTerm: string;
+  tookMs: number;
+};
+
+=== VERIFIKATION ===
+  grep -c "followUpKind" server/routes.ts                 # erwartet >= 4
+  grep -c "followUpKind" client/src/labs/components/rating/impressionApi.ts  # erwartet 1
+Dann Dev-Build/TypeScript-Check; nur neue Fehler melden.
+
+=== VERBOTE ===
+- NICHT committen, NICHT pushen. Keine Schema-Änderungen/Migrationen/drizzle-kit.
+- Nur die zwei genannten Dateien. Host-Cockpit nicht berühren.
+- Nach Verifikation STOPPEN und Stand zeigen. NICHT committen — das mache ich selbst.
