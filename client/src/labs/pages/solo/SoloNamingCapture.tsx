@@ -56,6 +56,7 @@ export default function SoloNamingCapture({ participantId, isAuthenticated, onRe
       <SoloCaptureScreen
         participantId={participantId}
         isAuthenticated={isAuthenticated}
+        onImpression={() => {}}
         onManual={() => { setDraft(null); setImageFile(null); setPhase("confirm"); }}
         onCaptured={(w, img) => { setDraft(w); setImageFile(img || null); setPhase("confirm"); }}
         onBarcode={(code) => { setDraft({ name: code, distillery: "", country: "", region: "", cask: "", age: "", abv: "", fromAI: false, barcodeValue: code }); setImageFile(null); setPhase("confirm"); }}
