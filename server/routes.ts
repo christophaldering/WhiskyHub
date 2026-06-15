@@ -12187,6 +12187,8 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
       if (!requesterId || requesterId !== req.params.participantId) {
         return res.status(403).json({ message: "Forbidden" });
       }
+      const owner = await storage.getJournalEntry(req.params.id, req.params.participantId);
+      if (!owner) return res.status(404).json({ message: "Journal entry not found" });
       const photos = await storage.getEntryPhotos(req.params.id);
       res.json(Array.isArray(photos) ? photos : []);
     } catch (e: any) {
