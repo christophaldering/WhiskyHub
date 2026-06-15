@@ -23,7 +23,7 @@ function shouldAskNext(round: number, result: ImpressionResult): boolean {
 }
 
 export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdentifyFirst, participantId }: ImpressionCaptureProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [phase, setPhase] = useState<"input" | "reflect" | "handoff">("input");
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -131,10 +131,11 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
         }
       : result.scoreSuggestion;
     if (participantId) {
+      const vocabLocale: "de" | "en" = i18n.language?.startsWith("de") ? "de" : "en";
       const finalTags = result.flavorTags ?? [];
       const events = [
-        ...finalTags.map((tg) => ({ term: tg, status: (adoptedTerms.has(tg) ? "adopted" : "self") as "adopted" | "self", source: "impression" as const })),
-        ...[...offeredTerms].filter((tg) => !finalTags.includes(tg)).map((tg) => ({ term: tg, status: "offered" as const, source: "impression" as const })),
+        ...finalTags.map((tg) => ({ term: tg, status: (adoptedTerms.has(tg) ? "adopted" : "self") as "adopted" | "self", source: "impression" as const, locale: vocabLocale })),
+        ...[...offeredTerms].filter((tg) => !finalTags.includes(tg)).map((tg) => ({ term: tg, status: "offered" as const, source: "impression" as const, locale: vocabLocale })),
       ];
       recordVocabularyEvents(participantId, events);
     }
