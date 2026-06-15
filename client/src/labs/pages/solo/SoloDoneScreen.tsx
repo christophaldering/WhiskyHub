@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Check, FileEdit, MapPin, Sparkles, Users, Wine } from "lucide-react";
 import InsightStrip from "@/labs/components/InsightStrip";
 import GuestClaimPanel from "@/labs/components/GuestClaimPanel";
+import EntryPhotos from "./EntryPhotos";
 import { selectSoloInsights, type SoloEngineDna, type SoloEngineJournalEntry } from "@/labs/insights/engine";
 
 interface TastingContextLike {
@@ -31,6 +32,7 @@ interface Props {
   whiskyAge?: number | string | null;
   whiskyDistillery?: string | null;
   participantId?: string | null;
+  entryId?: string | null;
   authenticated?: boolean;
 }
 
@@ -71,7 +73,7 @@ function parseContext(input?: TastingContextLike | string | null): TastingContex
   return input;
 }
 
-export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, showAddToCollection, onAddToCollection, added, isDraft, tastingContext, whiskyId, whiskyRegion, whiskyAge, whiskyDistillery, participantId, authenticated }: Props) {
+export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, showAddToCollection, onAddToCollection, added, isDraft, tastingContext, whiskyId, whiskyRegion, whiskyAge, whiskyDistillery, participantId, authenticated, entryId }: Props) {
   const { t } = useTranslation();
 
   const insightsEnabled = !isDraft && !!participantId && !!authenticated;
@@ -298,6 +300,10 @@ export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, sh
           </button>
         )}
       </div>
+
+      {participantId && entryId && !isDraft && (
+        <EntryPhotos participantId={participantId} entryId={entryId} />
+      )}
 
       {participantId && !authenticated && (
         <GuestClaimPanel participantId={participantId} tastingId="solo" tone="app" />

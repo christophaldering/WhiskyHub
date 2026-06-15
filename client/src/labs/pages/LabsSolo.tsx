@@ -132,6 +132,7 @@ export default function LabsSolo() {
   const [showBackDialog, setShowBackDialog] = useState(false);
   const [quickFollowUpData, setQuickFollowUpData] = useState<RatingData | null>(null);
   const [draftEntryId, setDraftEntryId] = useState<string | null>(null);
+  const [savedEntryId, setSavedEntryId] = useState<string | null>(null);
   const [draftSaving, setDraftSaving] = useState(false);
   const [tastingContext, setTastingContext] = useState<TastingContextState | null>(null);
 
@@ -496,6 +497,7 @@ export default function LabsSolo() {
         const entry = await res.json();
         if (entry?.id) entryId = entry.id;
       } catch {}
+      setSavedEntryId(entryId);
 
       const imgToUpload = soloImageFile || pendingImageRef.current;
       if (imgToUpload && entryId) {
@@ -737,6 +739,7 @@ export default function LabsSolo() {
   const handleAnother = useCallback(() => {
     setWhisky(null);
     setRatingResult(null);
+    setSavedEntryId(null);
     setSaveError(false);
     setFromCollection(false);
     setBottleAdded(false);
@@ -1064,6 +1067,7 @@ export default function LabsSolo() {
         whiskyDistillery={whisky?.distillery || undefined}
         participantId={participantId}
         authenticated={authenticated}
+        entryId={savedEntryId}
       />
     );
   }
