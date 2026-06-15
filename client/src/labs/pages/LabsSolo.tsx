@@ -911,6 +911,7 @@ export default function LabsSolo() {
             onApply={handleImpressionApply}
             onSkip={handleImpressionSkip}
             onIdentifyFirst={handleIdentifyFirst}
+            participantId={participantId}
           />
         ) : (
         <RatingFlowV2

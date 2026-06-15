@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { FONT, SP, RADIUS, TOUCH_MIN, LABS_THEME } from "./theme";
 import { parseImpression, type ImpressionResult } from "./impressionApi";
 import { chipsForFollowUp, type EvaluationLevel } from "./impressionChips";
+import { recordVocabularyEvents } from "@/lib/vocabulary";
 
 interface ImpressionCaptureProps {
   whiskyName?: string;
   onApply: (result: ImpressionResult) => void;
   onSkip: () => void;
   onIdentifyFirst?: () => void;
+  participantId?: string;
 }
 
 const MAX_ROUNDS = 4;
@@ -20,7 +22,7 @@ function shouldAskNext(round: number, result: ImpressionResult): boolean {
   return true;
 }
 
-export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdentifyFirst }: ImpressionCaptureProps) {
+export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdentifyFirst, participantId }: ImpressionCaptureProps) {
   const { t } = useTranslation();
   const [phase, setPhase] = useState<"input" | "reflect" | "handoff">("input");
   const [text, setText] = useState("");
@@ -33,10 +35,26 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
   const [asked, setAsked] = useState<string[]>([]);
   const [round, setRound] = useState(0);
   const [overrideOverall, setOverrideOverall] = useState<number | null>(null);
+  const [offeredTerms, setOfferedTerms] = useState<Set<string>>(new Set());
+  const [adoptedTerms, setAdoptedTerms] = useState<Set<string>>(new Set());
+
+  // offeredTerms: Vereinigung ALLER je in Reflect gerenderten Chip-Labels (additive Telemetrie).
+  useEffect(() => {
+    if (phase !== "reflect" || !result) return;
+    const chips = chipsForFollowUp(result.followUpKind, result.followUpTerm);
+    const labels = chips.evaluation ? chips.evaluation.map((lvl) => lvl.label) : chips.options;
+    if (!labels.length) return;
+    setOfferedTerms((prev) => {
+      const next = new Set(prev);
+      labels.forEach((l) => next.add(l));
+      return next;
+    });
+  }, [phase, result?.followUpKind, result?.followUpTerm]);
 
   const canSubmit = text.trim().length >= 2 && !loading;
 
   const appendChip = (label: string) => {
+    setAdoptedTerms((prev) => new Set(prev).add(label));
     setText((prev) => {
       const trimmed = prev.trim();
       if (!trimmed) return label;
@@ -112,6 +130,14 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
           finish: result.scoreSuggestion?.finish ?? null,
         }
       : result.scoreSuggestion;
+    if (participantId) {
+      const finalTags = result.flavorTags ?? [];
+      const events = [
+        ...finalTags.map((tg) => ({ term: tg, status: (adoptedTerms.has(tg) ? "adopted" : "self") as "adopted" | "self", source: "impression" as const })),
+        ...[...offeredTerms].filter((tg) => !finalTags.includes(tg)).map((tg) => ({ term: tg, status: "offered" as const, source: "impression" as const })),
+      ];
+      recordVocabularyEvents(participantId, events);
+    }
     onApply({ ...result, scoreSuggestion: score, rawImpression: enrichedText });
   };
 

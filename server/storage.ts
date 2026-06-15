@@ -8,7 +8,7 @@ import { getParticipantOverallScores, computeStabilityScore } from "./participan
 import {
   participants, tastings, tastingParticipants, sharingParticipants, whiskies, whiskyHandoutLibrary, whiskyHandouts, tastingHandouts, distilleryHandouts, pdfSplitSessions, ratings, ratingAudit,
   profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, whiskyGroups, whiskyGroupMembers, journalEntries, benchmarkEntries, wishlistEntries,
-  newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, tastingPhotos, tastingEventPhotos, entryPhotos, tastingStoryVersions, tastingStoryImages, storyVersions, storyTemplates, userFeedback,
+  newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, tastingPhotos, tastingEventPhotos, entryPhotos, vocabularyAdoption, tastingStoryVersions, tastingStoryImages, storyVersions, storyTemplates, userFeedback,
   type InsertParticipant, type Participant,
   type InsertTasting, type Tasting,
   type InsertTastingParticipant, type TastingParticipant,
@@ -42,6 +42,7 @@ import {
   type InsertTastingPhoto, type TastingPhoto,
   type InsertTastingEventPhoto, type TastingEventPhoto,
   type InsertEntryPhoto, type EntryPhoto,
+  type InsertVocabularyAdoption, type VocabularyAdoption,
   type InsertTastingStoryVersion, type TastingStoryVersion,
   type InsertTastingStoryImage, type TastingStoryImage,
   type InsertStoryVersion, type StoryVersion,
@@ -694,6 +695,8 @@ export interface IStorage {
   getEntryPhotos(journalEntryId: string): Promise<EntryPhoto[]>;
   createEntryPhoto(data: InsertEntryPhoto): Promise<EntryPhoto>;
   deleteEntryPhoto(id: string, participantId: string): Promise<void>;
+  recordVocabularyEvents(participantId: string, events: { term: string; status: "offered"|"adopted"|"self"; locale?: string; source?: string }[]): Promise<{ recorded: number; resolved: number }>;
+  getVocabularyAdoption(participantId: string): Promise<VocabularyAdoption[]>;
 
   // Tasting Story Versions (host-saved snapshots of the story slides cache)
   listTastingStoryVersions(tastingId: string): Promise<TastingStoryVersion[]>;
@@ -3769,6 +3772,55 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEntryPhoto(id: string, participantId: string): Promise<void> {
     await db.delete(entryPhotos).where(and(eq(entryPhotos.id, id), eq(entryPhotos.participantId, participantId)));
+  }
+
+  async getVocabularyAdoption(participantId: string): Promise<VocabularyAdoption[]> {
+    return db.select().from(vocabularyAdoption)
+      .where(eq(vocabularyAdoption.participantId, participantId))
+      .orderBy(desc(vocabularyAdoption.lastAt));
+  }
+  async recordVocabularyEvents(participantId: string, events: { term: string; status: "offered"|"adopted"|"self"; locale?: string; source?: string }[]): Promise<{ recorded: number; resolved: number }> {
+    if (!participantId || !events?.length) return { recorded: 0, resolved: 0 };
+    const descriptors = await db.select().from(flavourDescriptors);
+    const norm = (s: string) => (s || "").trim().toLowerCase();
+    const resolve = (term: string) => {
+      const t = norm(term);
+      const d = descriptors.find(x => norm(x.de) === t || norm(x.en) === t || (x.keywords || []).some(k => norm(k) === t));
+      return d?.id ?? null;
+    };
+    const rank = (s: string) => (s === "self" ? 3 : s === "adopted" ? 2 : 1);
+    let recorded = 0, resolved = 0;
+    for (const ev of events) {
+      const term = (ev?.term || "").trim();
+      if (!term) continue;
+      const locale = ev.locale === "en" ? "en" : "de";
+      const status = (["offered","adopted","self"].includes(ev.status as any) ? ev.status : "offered") as "offered"|"adopted"|"self";
+      const source = ev.source || "impression";
+      const descriptorId = resolve(term);
+      if (descriptorId) resolved++;
+      const [existing] = await db.select().from(vocabularyAdoption).where(and(
+        eq(vocabularyAdoption.participantId, participantId),
+        eq(vocabularyAdoption.term, term),
+        eq(vocabularyAdoption.locale, locale),
+      ));
+      if (existing) {
+        const newStatus = rank(status) > rank(existing.status) ? status : existing.status;
+        const bump = (status === "adopted" || status === "self") ? 1 : 0;
+        await db.update(vocabularyAdoption).set({
+          status: newStatus,
+          descriptorId: existing.descriptorId ?? descriptorId,
+          useCount: existing.useCount + bump,
+          lastAt: new Date(),
+        }).where(eq(vocabularyAdoption.id, existing.id));
+      } else {
+        await db.insert(vocabularyAdoption).values({
+          participantId, descriptorId, term, locale, status, source,
+          useCount: (status === "adopted" || status === "self") ? 1 : 0,
+        });
+      }
+      recorded++;
+    }
+    return { recorded, resolved };
   }
 
   async listTastingStoryVersions(tastingId: string): Promise<TastingStoryVersion[]> {

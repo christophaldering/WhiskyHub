@@ -12179,6 +12179,23 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
     }
   });
 
+  app.post("/api/vocabulary/events", async (req: any, res: any) => {
+    try {
+      const caller = String(req.headers["x-participant-id"] || "");
+      const { participantId, events } = req.body || {};
+      if (!caller || !participantId || caller !== participantId) return res.status(403).json({ error: "Forbidden" });
+      if (!Array.isArray(events)) return res.status(400).json({ error: "events[] required" });
+      res.json(await storage.recordVocabularyEvents(participantId, events.slice(0, 50)));
+    } catch (e: any) { res.status(500).json({ error: e?.message || "vocab record failed" }); }
+  });
+  app.get("/api/vocabulary/:participantId/adoption", async (req: any, res: any) => {
+    try {
+      const caller = String(req.headers["x-participant-id"] || "");
+      if (!caller || caller !== req.params.participantId) return res.status(403).json({ error: "Forbidden" });
+      res.json(await storage.getVocabularyAdoption(req.params.participantId));
+    } catch (e: any) { res.status(500).json({ error: e?.message || "vocab read failed" }); }
+  });
+
   // ===== ENTRY MEMORY PHOTOS (solo journal entry, max 5; GPS stripped by universal sanitizer) =====
 
   app.get("/api/journal/:participantId/:id/photos", async (req: any, res: any) => {

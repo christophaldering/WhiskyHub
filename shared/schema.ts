@@ -817,6 +817,25 @@ export const insertEntryPhotoSchema = createInsertSchema(entryPhotos).omit({ id:
 export type InsertEntryPhoto = z.infer<typeof insertEntryPhotoSchema>;
 export type EntryPhoto = typeof entryPhotos.$inferSelect;
 
+export const vocabularyAdoption = pgTable("vocabulary_adoption", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  participantId: varchar("participant_id").notNull(),
+  descriptorId: varchar("descriptor_id"),                 // aufgelöste flavour_descriptors.id, null bei freiem Begriff
+  term: text("term").notNull(),                           // Roh-Wort wie erschienen
+  locale: varchar("locale").notNull().default("de"),
+  status: varchar("status").notNull(),                    // 'offered' | 'adopted' | 'self'
+  source: varchar("source").notNull().default("impression"),
+  useCount: integer("use_count").notNull().default(1),
+  firstAt: timestamp("first_at").defaultNow(),
+  lastAt: timestamp("last_at").defaultNow(),
+}, (table) => ({
+  uq: uniqueIndex("uq_vocab_participant_term").on(table.participantId, table.term, table.locale),
+  partIdx: index("idx_vocab_participant").on(table.participantId),
+}));
+export const insertVocabularyAdoptionSchema = createInsertSchema(vocabularyAdoption).omit({ id: true, firstAt: true, lastAt: true });
+export type InsertVocabularyAdoption = z.infer<typeof insertVocabularyAdoptionSchema>;
+export type VocabularyAdoption = typeof vocabularyAdoption.$inferSelect;
+
 export const tastingStoryVersions = pgTable("tasting_story_versions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tastingId: varchar("tasting_id").notNull(),
