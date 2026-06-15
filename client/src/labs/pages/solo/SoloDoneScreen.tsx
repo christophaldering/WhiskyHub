@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Check, FileEdit, MapPin, Sparkles, Users, Wine } from "lucide-react";
 import InsightStrip from "@/labs/components/InsightStrip";
+import GuestClaimPanel from "@/labs/components/GuestClaimPanel";
 import { selectSoloInsights, type SoloEngineDna, type SoloEngineJournalEntry } from "@/labs/insights/engine";
 
 interface TastingContextLike {
@@ -30,6 +31,7 @@ interface Props {
   whiskyAge?: number | string | null;
   whiskyDistillery?: string | null;
   participantId?: string | null;
+  authenticated?: boolean;
 }
 
 const PLACE_LABEL_KEY: Record<string, string> = {
@@ -69,10 +71,10 @@ function parseContext(input?: TastingContextLike | string | null): TastingContex
   return input;
 }
 
-export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, showAddToCollection, onAddToCollection, added, isDraft, tastingContext, whiskyId, whiskyRegion, whiskyAge, whiskyDistillery, participantId }: Props) {
+export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, showAddToCollection, onAddToCollection, added, isDraft, tastingContext, whiskyId, whiskyRegion, whiskyAge, whiskyDistillery, participantId, authenticated }: Props) {
   const { t } = useTranslation();
 
-  const insightsEnabled = !isDraft && !!participantId;
+  const insightsEnabled = !isDraft && !!participantId && !!authenticated;
 
   const dnaQuery = useQuery<SoloEngineDna | null>({
     queryKey: ["whisky-dna", participantId, "solo-recap"],
@@ -232,7 +234,9 @@ export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, sh
         }} data-testid="solo-done-saved">
           {isDraft
             ? t("v2.solo.draftSaved", "Entwurf gespeichert")
-            : t("v2.solo.saved", "Saved to diary")}
+            : authenticated
+              ? t("v2.solo.savedAuth", "Im Tagebuch festgehalten")
+              : t("v2.solo.savedGuest", "Dein Eindruck ist festgehalten")}
         </p>
 
         {isDraft && (
@@ -295,6 +299,10 @@ export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, sh
         )}
       </div>
 
+      {participantId && !authenticated && (
+        <GuestClaimPanel participantId={participantId} tastingId="solo" tone="app" />
+      )}
+
       <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--labs-space-sm)" }}>
         <button
           onClick={onAnother}
@@ -314,6 +322,12 @@ export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, sh
           {t("v2.solo.toHub", "Back to overview")}
         </button>
       </div>
+
+      {participantId && !authenticated && !isDraft && (
+        <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--labs-text-muted)", textAlign: "center", margin: "var(--labs-space-md) 0 0", maxWidth: 320 }} data-testid="solo-done-device-hint">
+          {t("v2.solo.guestDeviceHint", "Ohne Konto bleibt dein Eindruck nur auf diesem Ger\u00e4t.")}
+        </p>
+      )}
     </div>
   );
 }

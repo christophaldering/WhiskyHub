@@ -1062,7 +1062,8 @@ export default function LabsSolo() {
         whiskyRegion={whisky?.region || whisky?.country || undefined}
         whiskyAge={whisky?.age || undefined}
         whiskyDistillery={whisky?.distillery || undefined}
-        participantId={authenticated ? participantId : undefined}
+        participantId={participantId}
+        authenticated={authenticated}
       />
     );
   }

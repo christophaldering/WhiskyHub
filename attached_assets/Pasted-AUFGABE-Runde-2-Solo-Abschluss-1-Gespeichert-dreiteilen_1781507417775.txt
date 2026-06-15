@@ -1,0 +1,123 @@
+AUFGABE: Runde 2 — Solo-Abschluss. (1) "Gespeichert!" dreiteilen (Entwurf / angemeldet / Gast). (2) Für Gäste den Claim-Bogen (GuestClaimPanel, tone="app") einbinden. (3) Dezenter ehrlicher "ohne Konto"-Hinweis. (4) participantId auch für Gäste durchreichen; DNA-Insights bleiben den Angemeldeten vorbehalten.
+
+SICHERHEIT VORAB:
+- Git-Tag als Rollback-Punkt: pre-solo-done-claim-2026-06-15
+- NICHT committen, NICHT pushen. Keine Schema-Änderungen, keine Migrationen, kein drizzle-kit. Host-Cockpit / RatingFlowV2 / ImpressionCapture / GuestClaimPanel unberührt (GuestClaimPanel wird nur eingebunden, NICHT geändert).
+
+SCHRITT 0 — NUR LESEN (zeigen):
+1. grep -n "const insightsEnabled" client/src/labs/pages/solo/SoloDoneScreen.tsx
+2. grep -n "participantId?: string | null;" client/src/labs/pages/solo/SoloDoneScreen.tsx
+3. grep -n "participantId={authenticated ? participantId : undefined}" client/src/labs/pages/LabsSolo.tsx
+4. grep -n "impressionHowLink:" client/src/lib/i18n.ts   (EN + DE, je 1)
+Plan kurz bestätigen, DANN ausführen.
+
+=== DATEI 1: client/src/labs/pages/solo/SoloDoneScreen.tsx ===
+
+1a) Import GuestClaimPanel (nach dem InsightStrip-Import).
+ALT:
+import InsightStrip from "@/labs/components/InsightStrip";
+NEU:
+import InsightStrip from "@/labs/components/InsightStrip";
+import GuestClaimPanel from "@/labs/components/GuestClaimPanel";
+
+1b) Prop authenticated ins Interface.
+ALT:
+  participantId?: string | null;
+NEU:
+  participantId?: string | null;
+  authenticated?: boolean;
+
+1c) Destructuring.
+ALT:
+whiskyDistillery, participantId }: Props) {
+NEU:
+whiskyDistillery, participantId, authenticated }: Props) {
+
+1d) Insights nur für Angemeldete.
+ALT:
+  const insightsEnabled = !isDraft && !!participantId;
+NEU:
+  const insightsEnabled = !isDraft && !!participantId && !!authenticated;
+
+1e) Status-Text dreiteilen.
+ALT:
+          {isDraft
+            ? t("v2.solo.draftSaved", "Entwurf gespeichert")
+            : t("v2.solo.saved", "Saved to diary")}
+NEU:
+          {isDraft
+            ? t("v2.solo.draftSaved", "Entwurf gespeichert")
+            : authenticated
+              ? t("v2.solo.savedAuth", "Im Tagebuch festgehalten")
+              : t("v2.solo.savedGuest", "Dein Eindruck ist festgehalten")}
+
+1f) Claim-Panel vor dem Buttons-Block.
+ALT:
+      <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--labs-space-sm)" }}>
+        <button
+          onClick={onAnother}
+NEU:
+      {participantId && !authenticated && (
+        <GuestClaimPanel participantId={participantId} tastingId="solo" tone="app" />
+      )}
+
+      <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "var(--labs-space-sm)" }}>
+        <button
+          onClick={onAnother}
+
+1g) Ehrlicher Hinweis nach dem Buttons-Block.
+ALT:
+          {t("v2.solo.toHub", "Back to overview")}
+        </button>
+      </div>
+    </div>
+  );
+NEU:
+          {t("v2.solo.toHub", "Back to overview")}
+        </button>
+      </div>
+
+      {participantId && !authenticated && !isDraft && (
+        <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--labs-text-muted)", textAlign: "center", margin: "var(--labs-space-md) 0 0", maxWidth: 320 }} data-testid="solo-done-device-hint">
+          {t("v2.solo.guestDeviceHint", "Ohne Konto bleibt dein Eindruck nur auf diesem Ger\u00e4t.")}
+        </p>
+      )}
+    </div>
+  );
+
+=== DATEI 2: client/src/labs/pages/LabsSolo.tsx ===
+Im done-Step participantId auch für Gäste durchreichen + authenticated mitgeben.
+ALT:
+        participantId={authenticated ? participantId : undefined}
+NEU:
+        participantId={participantId}
+        authenticated={authenticated}
+
+=== DATEI 3: client/src/lib/i18n.ts ===
+
+3a) EN: nach der EN-impressionHowLink-Zeile einfügen.
+ALT:
+          impressionHowLink: "How does this work?",
+NEU:
+          impressionHowLink: "How does this work?",
+          savedAuth: "Saved to your diary",
+          savedGuest: "Your impression is captured",
+          guestDeviceHint: "Without an account, your impression stays on this device only.",
+
+3b) DE: nach der DE-impressionHowLink-Zeile einfügen.
+ALT:
+          impressionHowLink: "Wie funktioniert das?",
+NEU:
+          impressionHowLink: "Wie funktioniert das?",
+          savedAuth: "Im Tagebuch festgehalten",
+          savedGuest: "Dein Eindruck ist festgehalten",
+          guestDeviceHint: "Ohne Konto bleibt dein Eindruck nur auf diesem Gerät.",
+
+=== VERIFIKATION (zeigen) ===
+- grep -c "GuestClaimPanel" client/src/labs/pages/solo/SoloDoneScreen.tsx   → 2
+- grep -c "authenticated?: boolean;" client/src/labs/pages/solo/SoloDoneScreen.tsx   → 1
+- grep -c "savedGuest:\|savedAuth:\|guestDeviceHint:" client/src/lib/i18n.ts   → 6
+- grep -c "authenticated={authenticated}" client/src/labs/pages/LabsSolo.tsx   → 1
+- esbuild (jeweils 0 ERRORs): SoloDoneScreen.tsx, LabsSolo.tsx (jsx-Flags wie gehabt) und i18n.ts (--loader:.ts=ts)
+
+ERINNERUNG ZUM ABSCHLUSS: NICHT committen, NICHT pushen. Nur speichern. Kein drizzle-kit, keine Migration, kein Schema-Touch. GuestClaimPanel-Datei selbst NICHT ändern.
