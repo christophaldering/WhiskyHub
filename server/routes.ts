@@ -4552,7 +4552,7 @@ ${snippet}`;
       let aiText = "";
       try {
         const completion = await client.chat.completions.create({
-          model: process.env.AI_INTEGRATIONS_OPENAI_MODEL || "gpt-4o-mini",
+          model: process.env.AI_INTEGRATIONS_OPENAI_MODEL || "gpt-5-mini",
           temperature: 0.1,
           response_format: { type: "json_object" },
           messages: [
@@ -4875,7 +4875,7 @@ ${compactPages}`;
       let aiText = "";
       try {
         const completion = await client.chat.completions.create({
-          model: process.env.AI_INTEGRATIONS_OPENAI_MODEL || "gpt-4o-mini",
+          model: process.env.AI_INTEGRATIONS_OPENAI_MODEL || "gpt-5-mini",
           temperature: 0.1,
           response_format: { type: "json_object" },
           messages: [
@@ -4952,7 +4952,7 @@ Respond with JSON exactly in this shape (one entry per item, in the same order):
           const responsesClient = client as unknown as { responses?: { create: (args: unknown) => Promise<unknown> } };
           if (responsesClient.responses?.create) {
             const lookupRes = await responsesClient.responses.create({
-              model: process.env.AI_INTEGRATIONS_OPENAI_MODEL || "gpt-4o-mini",
+              model: process.env.AI_INTEGRATIONS_OPENAI_MODEL || "gpt-5-mini",
               tools: [{ type: "web_search" }],
               input: [
                 { role: "system", content: lookupSys },
@@ -5386,7 +5386,7 @@ Respond with JSON exactly in this shape (one entry per item, in the same order):
         });
 
         const completion = await openai.chat.completions.create({
-          model: "gpt-4o-mini",
+          model: "gpt-5-mini",
           temperature: 0.1,
           max_tokens: 500,
           response_format: { type: "json_object" },
@@ -5488,7 +5488,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       });
 
       const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini",
         temperature: 0.3,
         max_tokens: 500,
         response_format: { type: "json_object" },
@@ -7957,7 +7957,7 @@ Respond ONLY with valid JSON, no markdown.`;
       ].filter(Boolean).join(", ");
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini",
         messages: [
           {
             role: "system",
@@ -8085,7 +8085,7 @@ Respond with JSON in this exact shape:
 }`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini",
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: systemPrompt },
@@ -8228,7 +8228,7 @@ Respond with JSON in this exact shape:
       });
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini",
         response_format: { type: "json_object" },
         messages: [
           {
@@ -8689,8 +8689,8 @@ Beste Übereinstimmungen: ${pairings.slice(0, 2).map(p => `${p.aName} & ${p.bNam
           const ps = participantSummaries.find(p => p.id === pid)!;
           const myScores = ps.scores.map(s => `${s.whiskyName}: ${s.score}`).join(", ");
           const [deR, enR] = await Promise.all([
-            aiClient.chat.completions.create({ model: "gpt-4o-mini", messages: [{ role: "system", content: `Schreibe für ${ps.name} einen personalisierten Tasting-Kommentar auf Deutsch (80-120 Wörter, warm und spezifisch, epistemic tone). Was zeigen seine/ihre Bewertungen über den Gaumen?` }, { role: "user", content: `Bewertungen: ${myScores}. Stärkste Übereinstimmung mit: ${ps.closestMatch || "niemand"}. Präferenzen: Region ${ps.preferences?.topRegion || "??"}, Fass ${ps.preferences?.topCask || "??"}, Torf ${ps.preferences?.peatLevel || "??"}. Median-Taster: ${ps.isMedianTaster ? "Ja" : "Nein"}.` }], max_tokens: 250, temperature: 0.8 }),
-            aiClient.chat.completions.create({ model: "gpt-4o-mini", messages: [{ role: "system", content: `Write a personalized tasting comment for ${ps.name} in English (80-120 words, warm, epistemic tone). What do their scores reveal about their palate?` }, { role: "user", content: `Scores: ${myScores}. Closest match: ${ps.closestMatch || "none"}. Preferences: region ${ps.preferences?.topRegion || "??"}, cask ${ps.preferences?.topCask || "??"}, peat ${ps.preferences?.peatLevel || "??"}. Is median taster: ${ps.isMedianTaster ? "yes" : "no"}.` }], max_tokens: 250, temperature: 0.8 }),
+            aiClient.chat.completions.create({ model: "gpt-5-mini", messages: [{ role: "system", content: `Schreibe für ${ps.name} einen personalisierten Tasting-Kommentar auf Deutsch (80-120 Wörter, warm und spezifisch, epistemic tone). Was zeigen seine/ihre Bewertungen über den Gaumen?` }, { role: "user", content: `Bewertungen: ${myScores}. Stärkste Übereinstimmung mit: ${ps.closestMatch || "niemand"}. Präferenzen: Region ${ps.preferences?.topRegion || "??"}, Fass ${ps.preferences?.topCask || "??"}, Torf ${ps.preferences?.peatLevel || "??"}. Median-Taster: ${ps.isMedianTaster ? "Ja" : "Nein"}.` }], max_tokens: 250, temperature: 0.8 }),
+            aiClient.chat.completions.create({ model: "gpt-5-mini", messages: [{ role: "system", content: `Write a personalized tasting comment for ${ps.name} in English (80-120 words, warm, epistemic tone). What do their scores reveal about their palate?` }, { role: "user", content: `Scores: ${myScores}. Closest match: ${ps.closestMatch || "none"}. Preferences: region ${ps.preferences?.topRegion || "??"}, cask ${ps.preferences?.topCask || "??"}, peat ${ps.preferences?.peatLevel || "??"}. Is median taster: ${ps.isMedianTaster ? "yes" : "no"}.` }], max_tokens: 250, temperature: 0.8 }),
           ]);
           individualReports[pid] = { narrative: deR.choices[0]?.message?.content || "", narrativeEn: enR.choices[0]?.message?.content || "", preferenceProfile: preferenceProfiles[pid], closestMatchId: closestMatches[pid]?.id, closestMatchName: closestMatches[pid]?.name, generatedAt: new Date().toISOString() };
         }));
@@ -8859,8 +8859,8 @@ Beste Übereinstimmungen: ${pairings.slice(0, 2).map(p => `${p.aName} & ${p.bNam
           const prefs = preferenceProfiles[pid];
           try {
             const [deR, enR] = await Promise.all([
-              aiClient.chat.completions.create({ model: "gpt-4o-mini", messages: [{ role: "system", content: `Schreibe für ${name} einen personalisierten Tasting-Kommentar auf Deutsch (80-120 Wörter, warm und spezifisch, epistemic tone). Was zeigen seine/ihre Bewertungen über den Gaumen?` }, { role: "user", content: `Bewertungen: ${myScores}. Stärkste Übereinstimmung mit: ${closestName || "niemand"}. Präferenzen: Region ${prefs?.topRegion || "??"}, Fass ${prefs?.topCask || "??"}, Torf ${prefs?.peatLevel || "??"}. Median-Taster: ${isMedian ? "Ja" : "Nein"}.` }], max_tokens: 250, temperature: 0.8 }),
-              aiClient.chat.completions.create({ model: "gpt-4o-mini", messages: [{ role: "system", content: `Write a personalized tasting comment for ${name} in English (80-120 words, warm, epistemic tone). What do their scores reveal about their palate?` }, { role: "user", content: `Scores: ${myScores}. Closest match: ${closestName || "none"}. Preferences: region ${prefs?.topRegion || "??"}, cask ${prefs?.topCask || "??"}, peat ${prefs?.peatLevel || "??"}. Is median taster: ${isMedian ? "yes" : "no"}.` }], max_tokens: 250, temperature: 0.8 }),
+              aiClient.chat.completions.create({ model: "gpt-5-mini", messages: [{ role: "system", content: `Schreibe für ${name} einen personalisierten Tasting-Kommentar auf Deutsch (80-120 Wörter, warm und spezifisch, epistemic tone). Was zeigen seine/ihre Bewertungen über den Gaumen?` }, { role: "user", content: `Bewertungen: ${myScores}. Stärkste Übereinstimmung mit: ${closestName || "niemand"}. Präferenzen: Region ${prefs?.topRegion || "??"}, Fass ${prefs?.topCask || "??"}, Torf ${prefs?.peatLevel || "??"}. Median-Taster: ${isMedian ? "Ja" : "Nein"}.` }], max_tokens: 250, temperature: 0.8 }),
+              aiClient.chat.completions.create({ model: "gpt-5-mini", messages: [{ role: "system", content: `Write a personalized tasting comment for ${name} in English (80-120 words, warm, epistemic tone). What do their scores reveal about their palate?` }, { role: "user", content: `Scores: ${myScores}. Closest match: ${closestName || "none"}. Preferences: region ${prefs?.topRegion || "??"}, cask ${prefs?.topCask || "??"}, peat ${prefs?.peatLevel || "??"}. Is median taster: ${isMedian ? "yes" : "no"}.` }], max_tokens: 250, temperature: 0.8 }),
             ]);
             merged[pid] = {
               narrative: deR.choices[0]?.message?.content || "",
@@ -10311,7 +10311,7 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
       }
 
       const completion = await client.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini",
         temperature: 0.2,
         response_format: { type: "json_object" },
         messages: [
@@ -10403,7 +10403,7 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
       const requestedFields = fieldsToFill.map((f: string) => fieldDescriptions[f] || f).join(", ");
 
       const completion = await client.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini",
         temperature: 0.2,
         response_format: { type: "json_object" },
         messages: [
@@ -10515,7 +10515,7 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
         });
 
         const completion = await openai.chat.completions.create({
-          model: "gpt-4o-mini",
+          model: "gpt-5-mini",
           temperature: 0.1,
           max_tokens: 500,
           response_format: { type: "json_object" },
@@ -12501,7 +12501,7 @@ ${flavorProfile.topWhiskies?.length ? `Top-rated whiskies: ${flavorProfile.topWh
       });
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini",
         messages: [
           {
             role: "system",
@@ -12545,7 +12545,7 @@ ${flavorProfile.topWhiskies?.length ? `Top-rated whiskies: ${flavorProfile.topWh
       const knownWhiskies = Array.from(new Set([...dbWhiskyNames, ...benchmarkNames]));
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini",
         messages: [
           {
             role: "system",
@@ -14124,7 +14124,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           ).join("\n");
 
           const completion = await client.chat.completions.create({
-            model: "gpt-4o-mini",
+            model: "gpt-5-mini",
             temperature: 0.7,
             max_tokens: 600,
             messages: [
@@ -17303,7 +17303,7 @@ Key CaskSense Features:
         : `Here are the platform features:\n${featureList}`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini",
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: systemPrompt },
@@ -22240,7 +22240,7 @@ Whiskies: ${whiskyContext || "not specified"}
 User's style request: ${sanitizedPrompt}`;
 
       const completion = await client.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMsg },
@@ -23359,7 +23359,7 @@ Rules:
         });
 
         const completion = await openai.chat.completions.create({
-          model: "gpt-4o-mini",
+          model: "gpt-5-mini",
           messages: [
             { role: "system", content: "You are a whisky flavour expert. Return ONLY valid JSON arrays of flavour term strings." },
             { role: "user", content: prompt },
@@ -26172,7 +26172,7 @@ ${cleaned.slice(0, 60000)}`;
       }
       const def = STORY_AI_ACTIONS[action];
       const completion = await aiResult.client.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini",
         messages: [
           { role: "system", content: def.system },
           { role: "user", content: parsed.data.html },
@@ -27307,7 +27307,7 @@ ${cleaned.slice(0, 60000)}`;
       ].filter(Boolean).join("\n");
 
       const completion = await client.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini",
         temperature: 0.8,
         max_tokens: 200,
         messages: [
@@ -27669,7 +27669,7 @@ ${cleaned.slice(0, 60000)}`;
     const { system, user } = buildImagePoolPrompt(language, img, rosterParticipants, rosterWhiskies);
     const visionImageUrl = await resolveImagePoolImageForVision(img.url);
     const completion = await openaiClient.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5-mini",
       response_format: { type: "json_object" },
       max_tokens: 700,
       temperature: 0.6,
@@ -28440,7 +28440,7 @@ Do not invent specific ratings, tasting names or events that are not in the sour
           if (clientClosed) break;
           const completion = await aiResult.client.chat.completions.create(
             {
-              model: "gpt-4o-mini",
+              model: "gpt-5-mini",
               messages: toolMessages as unknown as Parameters<typeof aiResult.client.chat.completions.create>[0]["messages"],
               tools: openaiTools,
               tool_choice: "auto",
@@ -28553,7 +28553,7 @@ Do not invent specific ratings, tasting names or events that are not in the sour
         } else if (!clientClosed) {
           const finalStream = await aiResult.client.chat.completions.create(
             {
-              model: "gpt-4o-mini",
+              model: "gpt-5-mini",
               messages: toolMessages as unknown as Parameters<typeof aiResult.client.chat.completions.create>[0]["messages"],
               stream: true,
               temperature: 0.4,

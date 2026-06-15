@@ -142,7 +142,7 @@ ${JSON.stringify(snapshot, null, 2)}`;
 
   try {
     const completion = await ai.client.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5-mini",
       messages: [
         { role: "system", content: "Du bist ein freundlicher, präziser Produkt-Coach. Du analysierst nur aggregierte, anonyme Daten." },
         { role: "user", content: prompt },

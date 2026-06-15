@@ -87,7 +87,7 @@ export interface CondenseResult {
 
 async function callAi(client: OpenAI, system: string, user: string): Promise<CondenseResult> {
   const resp = await client.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-5-mini",
     messages: [
       { role: "system", content: system },
       { role: "user", content: user },

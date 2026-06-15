@@ -178,7 +178,7 @@ Requirements:
 Return JSON shape: { "entries": [{ "termEn": "...", "defEn": "...", "termDe": "...", "defDe": "..." }, ...] }`;
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-5-mini",
     messages: [
       { role: "system", content: sys },
       { role: "user", content: user },

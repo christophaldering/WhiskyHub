@@ -112,7 +112,7 @@ Rules:
 - Every entry must have a unique name+distillery combination`;
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-5-mini",
     messages: [{ role: "user", content: prompt }],
     temperature: 0.9,
     max_tokens: 16000,
