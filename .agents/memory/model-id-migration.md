@@ -18,4 +18,8 @@ When upgrading model identifiers in this repo (e.g. gpt-4o -> gpt-5, gpt-4o-mini
 
 **How to apply:** after the swap, grep that 0 exact old ids remain in `server/`+`scripts/`, the new id count matches, and the transcribe id is still present. Boot to confirm compile.
 
-**Known runtime risk (flag, don't fix unless in scope):** the gpt-5 family chat API can reject `max_tokens` (wants `max_completion_tokens`) and non-default `temperature`. Many call-sites pass `max_tokens` + `temperature` 0.75/0.8. A pure id swap boots fine but live AI calls may 4xx — check deployment logs for model-related 4xx after release.
+**Runtime incompatibility (now handled centrally):** the gpt-5 family chat API rejects `max_tokens` (wants `max_completion_tokens`) and non-default `temperature` (only 1). This DID 400 in production on `/api/impression/parse` after the swap. Fix lives in `server/openai-compat.ts`: a one-time shim on `OpenAI.Chat.Completions.prototype.create` that, for `model` ids starting `gpt-5`, renames `max_tokens`→`max_completion_tokens` and drops `temperature !== 1`; other models untouched. It is imported FIRST in `server/index.ts`.
+
+**Why central, not per-call-site:** ~46 scattered `.create({max_tokens, temperature})` calls; one SDK-prototype shim covers them all + future calls.
+
+**Coverage gap:** the shim only runs for code that boots through `server/index.ts`. Standalone scripts (`scripts/*`, `server/seed-whisky-db.ts`) do NOT import it — if run with a gpt-5 model they will still 400. Move the shim into a shared bootstrap if scripts need it. Also only patches Chat Completions, not `responses.create`.
