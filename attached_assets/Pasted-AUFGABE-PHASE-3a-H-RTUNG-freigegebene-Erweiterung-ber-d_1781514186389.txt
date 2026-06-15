@@ -1,0 +1,65 @@
+AUFGABE: PHASE 3a – HÄRTUNG (freigegebene Erweiterung über den ursprünglichen Prompt hinaus).
+Nur server/routes.ts, nur die 3 neuen ENTRY-MEMORY-PHOTOS-Routen. Sonst nichts.
+Hintergrund: GET/POST/DELETE der Foto-Routen bekommen den projektweit etablierten
+x-participant-id-Aufrufer-Check (wie /api/journal/:participantId GET & DELETE), und die
+Größen-Meldung wird an das echte 20-MB-Limit von memUpload angepasst. KEIN route-eigenes
+5-MB-Limit (Handy-Fotos sind oft größer; der Sanitizer komprimiert ohnehin).
+
+=== EDIT H1 — GET: Aufrufer-Check ===
+ERSETZE (1x):
+  app.get("/api/journal/:participantId/:id/photos", async (req: any, res: any) => {
+    try {
+      const photos = await storage.getEntryPhotos(req.params.id);
+DURCH:
+  app.get("/api/journal/:participantId/:id/photos", async (req: any, res: any) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId || requesterId !== req.params.participantId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      const photos = await storage.getEntryPhotos(req.params.id);
+
+=== EDIT H2 — POST: Größen-Meldung 5 → 20 MB ===
+ERSETZE (1x, die einzeilige Form):
+  if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ message: "Image must be under 5 MB" });
+DURCH:
+  if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ message: "Image must be under 20 MB" });
+
+=== EDIT H3 — POST: Aufrufer-Check ===
+ERSETZE (1x):
+      if (!req.file) return res.status(400).json({ message: "No image file provided" });
+      // Ownership: the journal entry must belong to this participant
+DURCH:
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId || requesterId !== req.params.participantId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      if (!req.file) return res.status(400).json({ message: "No image file provided" });
+      // Ownership: the journal entry must belong to this participant
+
+=== EDIT H4 — DELETE: Aufrufer-Check ===
+ERSETZE (1x):
+  app.delete("/api/journal/:participantId/photos/:photoId", async (req: any, res: any) => {
+    try {
+      await storage.deleteEntryPhoto(req.params.photoId, req.params.participantId);
+DURCH:
+  app.delete("/api/journal/:participantId/photos/:photoId", async (req: any, res: any) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId || requesterId !== req.params.participantId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      await storage.deleteEntryPhoto(req.params.photoId, req.params.participantId);
+
+=== VERIFIKATION ===
+  Im Block zwischen "ENTRY MEMORY PHOTOS" und "WISHLIST":
+    - genau 3x  message: "Forbidden"
+    - genau 1x  under 20 MB
+    - 0x  under 5 MB
+  TypeScript-Check (npm run check / tsc): 0 neue Fehler.
+
+=== VERBOTE ===
+- NICHT committen, NICHT pushen. KEIN drizzle-kit.
+- NUR server/routes.ts, NUR die 3 neuen Foto-Routen. Die bestehenden Endpoints
+  (image, PATCH) NICHT anfassen — deren Lücken sind ein separater Punkt, nicht jetzt.
+- Erinnerung: am Ende NICHT committen.

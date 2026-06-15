@@ -12183,6 +12183,10 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
   app.get("/api/journal/:participantId/:id/photos", async (req: any, res: any) => {
     try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId || requesterId !== req.params.participantId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
       const photos = await storage.getEntryPhotos(req.params.id);
       res.json(Array.isArray(photos) ? photos : []);
     } catch (e: any) {
@@ -12193,7 +12197,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
   app.post("/api/journal/:participantId/:id/photos", (req: any, res: any, next: any) => {
     memUpload.single("photo")(req, res, (err: any) => {
       if (err) {
-        if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ message: "Image must be under 5 MB" });
+        if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ message: "Image must be under 20 MB" });
         if (err.message) return res.status(415).json({ message: err.message });
         return res.status(400).json({ message: "Upload failed" });
       }
@@ -12201,6 +12205,10 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
     });
   }, async (req: any, res: any) => {
     try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId || requesterId !== req.params.participantId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
       if (!req.file) return res.status(400).json({ message: "No image file provided" });
       // Ownership: the journal entry must belong to this participant
       const owner = await storage.getJournalEntry(req.params.id, req.params.participantId);
@@ -12223,6 +12231,10 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
   app.delete("/api/journal/:participantId/photos/:photoId", async (req: any, res: any) => {
     try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId || requesterId !== req.params.participantId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
       await storage.deleteEntryPhoto(req.params.photoId, req.params.participantId);
       res.status(204).end();
     } catch (e: any) {
