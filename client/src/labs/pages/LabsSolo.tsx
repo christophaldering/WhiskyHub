@@ -17,7 +17,7 @@ import SoloNamingCapture from "./solo/SoloNamingCapture";
 import SoloWhiskyForm from "./solo/SoloWhiskyForm";
 import SoloDoneScreen from "./solo/SoloDoneScreen";
 import SoloContextStep from "./solo/SoloContextStep";
-import ImpressionFirstHero from "./solo/ImpressionFirstHero";
+import ImpressionIntro from "./solo/ImpressionIntro";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import type { RatingFlowDraftState } from "@/labs/components/rating/RatingFlowV2";
 import ImpressionCapture from "@/labs/components/rating/ImpressionCapture";
@@ -26,7 +26,7 @@ import type { RatingData } from "@/labs/components/rating/types";
 import ResumeRatingBanner from "@/labs/components/ResumeRatingBanner";
 import { saveSoloDraft, saveSoloDraftImmediate, loadSoloDraft, clearSoloDraft, hasDraftData } from "@/lib/draftStorage";
 
-type Step = "capture" | "form" | "context" | "rating" | "quickFollowUp" | "naming" | "done";
+type Step = "capture" | "impressionIntro" | "form" | "context" | "rating" | "quickFollowUp" | "naming" | "done";
 
 interface TastingContextState {
   place: string;
@@ -854,10 +854,10 @@ export default function LabsSolo() {
             />
           </div>
         )}
-        <ImpressionFirstHero onClick={startImpression} />
         <SoloCaptureScreen
           participantId={participantId}
           isAuthenticated={isUserAuthenticated()}
+          onImpression={() => setStep("impressionIntro")}
           onManual={handleManual}
           onCaptured={handleCaptured}
           onBarcode={handleBarcode}
@@ -867,6 +867,8 @@ export default function LabsSolo() {
         />
       </>
     );
+  } else if (step === "impressionIntro") {
+    content = <ImpressionIntro onStart={startImpression} onBack={() => setStep("capture")} />;
   } else if (step === "form") {
     content = (
       <SoloWhiskyForm

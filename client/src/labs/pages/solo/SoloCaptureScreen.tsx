@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Camera, ImagePlus, PenLine, Barcode, Loader2, AlertTriangle, ArrowLeft, Wine, ChevronRight, ScanLine, X, Layers } from "lucide-react";
+import { Camera, ImagePlus, PenLine, Barcode, Loader2, AlertTriangle, ArrowLeft, Library, ChevronRight, ScanLine, X, Layers } from "lucide-react";
+import { GlassIcon } from "@/labs/components/FlavourIcons";
 import { useLocation } from "wouter";
 import BottleRecognitionFeedback, { type BottleRecognitionResult } from "@/labs/components/BottleRecognitionFeedback";
 import { CollectionPicker, type SelectedWhisky } from "@/labs/components/CollectionPicker";
@@ -21,6 +22,7 @@ export interface CapturedWhisky {
 interface Props {
   participantId: string;
   isAuthenticated: boolean;
+  onImpression: () => void;
   onManual: () => void;
   onCaptured: (w: CapturedWhisky, imageFile?: File | null) => void;
   onBarcode: (barcode: string) => void;
@@ -31,7 +33,7 @@ interface Props {
 
 type Status = "idle" | "identifying" | "error" | "barcode" | "feedback" | "barcode-scanning" | "barcode-lookup";
 
-export default function SoloCaptureScreen({ participantId, isAuthenticated, onManual, onCaptured, onBarcode, onCollectionSelect, onBack, hideBack }: Props) {
+export default function SoloCaptureScreen({ participantId, isAuthenticated, onImpression, onManual, onCaptured, onBarcode, onCollectionSelect, onBack, hideBack }: Props) {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -527,7 +529,38 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
         {t("v2.solo.captureSub", "How would you like to capture the whisky?")}
       </p>
 
-      <span className="labs-section-label">{t("v2.solo.captureOptions", "Capture Options")}</span>
+      <span className="labs-section-label">{t("v2.solo.captureOptions", "Wege ins Glas")}</span>
+
+      <button
+        type="button"
+        onClick={onImpression}
+        data-testid="solo-impression-tile"
+        className="labs-list-row"
+        style={{
+          gap: 12, width: "100%", textAlign: "left", font: "inherit", color: "inherit",
+          marginBottom: "var(--labs-space-md)",
+          border: "1px solid rgba(212,168,71,0.45)",
+          borderRadius: 14,
+          background: "radial-gradient(120% 130% at 90% 0%, rgba(212,168,71,0.14), rgba(14,11,5,0) 70%), var(--labs-card)",
+        }}
+      >
+        <div style={{
+          width: 44, height: 44, borderRadius: 12,
+          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+          background: "var(--labs-accent-muted)",
+        }}>
+          <GlassIcon size={20} style={{ color: "var(--labs-accent)" }} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
+            {t("v2.solo.impressionTileTitle", "Eindruck festhalten")}
+          </div>
+          <div style={{ fontSize: 11, color: "var(--labs-accent)", marginTop: 1 }}>
+            {t("v2.solo.impressionMethod", "Sokratische Schärfung")}
+          </div>
+        </div>
+        <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }} />
+      </button>
 
       <div className="labs-grouped-list" style={{ marginBottom: "var(--labs-space-lg)" }}>
         <button
@@ -643,7 +676,7 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onMa
               display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
               background: "var(--labs-accent-muted)",
             }}>
-              <Wine className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
+              <Library className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
