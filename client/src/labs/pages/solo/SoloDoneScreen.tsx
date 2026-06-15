@@ -325,7 +325,7 @@ export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, sh
           className="labs-btn-secondary"
           style={{ width: "100%", minHeight: 44 }}
         >
-          {t("v2.solo.toHub", "Back to overview")}
+          {authenticated ? t("v2.solo.toHub", "Back to overview") : t("v2.solo.toHubGuest", "Ohne Konto fortfahren")}
         </button>
       </div>
 
