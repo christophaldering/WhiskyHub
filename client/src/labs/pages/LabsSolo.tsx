@@ -17,6 +17,7 @@ import SoloNamingCapture from "./solo/SoloNamingCapture";
 import SoloWhiskyForm from "./solo/SoloWhiskyForm";
 import SoloDoneScreen from "./solo/SoloDoneScreen";
 import SoloContextStep from "./solo/SoloContextStep";
+import ImpressionFirstHero from "./solo/ImpressionFirstHero";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import type { RatingFlowDraftState } from "@/labs/components/rating/RatingFlowV2";
 import ImpressionCapture from "@/labs/components/rating/ImpressionCapture";
@@ -116,7 +117,7 @@ export default function LabsSolo() {
   const [, navigate] = useLocation();
 
   const initialSoloDraft = loadSoloDraft();
-  const [step, setStep] = useState<Step>(initialSoloDraft ? "capture" : "rating");
+  const [step, setStep] = useState<Step>("capture");
   const [whisky, setWhisky] = useState<CapturedWhisky | null>(null);
   const [ratingResult, setRatingResult] = useState<RatingData | null>(null);
   const [participantId, setParticipantId] = useState<string>("");
@@ -139,7 +140,7 @@ export default function LabsSolo() {
   const [ratingMode, setRatingMode] = useState<"guided" | "compact" | "quick" | "tisch" | null>(null);
   const [ratingPhaseIndex, setRatingPhaseIndex] = useState(0);
   const [ratingInitialData, setRatingInitialData] = useState<RatingData | undefined>(undefined);
-  const [showImpressionCapture, setShowImpressionCapture] = useState(!initialSoloDraft);
+  const [showImpressionCapture, setShowImpressionCapture] = useState(false);
   const rawImpressionRef = useRef<string>("");
 
   const { data: participantData } = useQuery<Participant>({
@@ -336,6 +337,11 @@ export default function LabsSolo() {
   const handleIdentifyFirst = useCallback(() => {
     setShowImpressionCapture(false);
     setStep("capture");
+  }, []);
+
+  const startImpression = useCallback(() => {
+    setShowImpressionCapture(true);
+    setStep("rating");
   }, []);
 
   const handleBarcode = useCallback((barcode: string) => {
@@ -848,6 +854,7 @@ export default function LabsSolo() {
             />
           </div>
         )}
+        <ImpressionFirstHero onClick={startImpression} />
         <SoloCaptureScreen
           participantId={participantId}
           isAuthenticated={isUserAuthenticated()}

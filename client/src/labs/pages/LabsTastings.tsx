@@ -7,8 +7,7 @@ import { tastingApi } from "@/lib/api";
 import { stripGuestSuffix } from "@/lib/utils";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
 import { useTranslation } from "react-i18next";
-import { JoinIcon, HostIcon } from "@/labs/components/FlavourIcons";
-import ImpressionFirstHero from "./solo/ImpressionFirstHero";
+import { JoinIcon, HostIcon, GlassIcon } from "@/labs/components/FlavourIcons";
 import LabsJoin from "@/labs/pages/LabsJoin";
 import LabsSolo from "@/labs/pages/LabsSolo";
 import LabsHost from "@/labs/pages/LabsHost";
@@ -192,9 +191,21 @@ export default function LabsTastings() {
         </div>
 
         <div className="labs-home-cards">
-          <ImpressionFirstHero
+          <button
+            className="labs-card labs-card-interactive labs-home-action-card labs-fade-in labs-stagger-1"
             onClick={() => setActiveTab("solo")}
-          />
+            data-testid="labs-action-solo"
+          >
+            <div className="labs-home-action-icon">
+              <GlassIcon size={20} />
+            </div>
+            <div className="labs-home-action-text">
+              <div className="ty-ui">{t('home.solo')}</div>
+              <div className="ty-caption labs-home-action-sub">
+                {t('home.soloSub')}
+              </div>
+            </div>
+          </button>
 
           <button
             className="labs-card labs-card-interactive labs-home-action-card labs-fade-in labs-stagger-2"
