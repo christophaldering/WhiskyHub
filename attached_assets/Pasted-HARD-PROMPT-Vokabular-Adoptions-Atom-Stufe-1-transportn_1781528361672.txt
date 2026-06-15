@@ -1,0 +1,147 @@
+HARD PROMPT — Vokabular-Adoptions-Atom (Stufe 1, transportneutral)
+
+SICHERHEIT ZUERST:
+- Setze VOR jeder Änderung den Tag: git tag pre-VOCAB-atom-2026-06-15
+- KEINE Commits. KEIN git push. KEIN `drizzle-kit generate`. KEIN `drizzle-kit push`.
+  (Die neue Tabelle pushe ICH danach manuell — siehe Verifikation.)
+- Ändere NICHTS am Verhalten von onApply, am Mapping handleImpressionApply oder am Speicherpfad.
+  Das Atom ist reine, additive Fire-and-forget-Telemetrie.
+
+SCHRITT 0 — DIAGNOSE (erst lesen, nicht schreiben), melde Befunde bevor du baust:
+0.1 shared/schema.ts: ist `uniqueIndex` aus drizzle-orm/pg-core importiert? (entry_photos nutzt nur `index`.) Falls nein: Import ergänzen.
+0.2 server/storage.ts: bestätige, dass `and`, `eq`, `desc`, `sql` importiert sind und `flavourDescriptors` im Tabellen-Import (Zeile ~11) steht.
+0.3 client/src/lib/api.ts: bestätige Existenz von `pidHeaders()`.
+0.4 ImpressionCapture.tsx: finde (a) wo die Reflect-Phase die angebotenen Chips RENDERT, (b) den Tap-Handler, der einen Chip auswählt, (c) die finale Bestätigung (handleConfirm, ~Zeile 115, ruft onApply). Notiere die exakten Variablen/State-Namen für die Chip-Mengen und die finalen flavorTags. NICHT umbauen — nur ablesen.
+LEGE EINEN PLAN VOR. Warte auf mein OK, bevor du Dateien änderst.
+
+--- NACH MEINEM OK: ---
+
+A) shared/schema.ts (additiv, neben entryPhotos-Stil):
+export const vocabularyAdoption = pgTable("vocabulary_adoption", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  participantId: varchar("participant_id").notNull(),
+  descriptorId: varchar("descriptor_id"),                 // aufgelöste flavour_descriptors.id, null bei freiem Begriff
+  term: text("term").notNull(),                           // Roh-Wort wie erschienen
+  locale: varchar("locale").notNull().default("de"),
+  status: varchar("status").notNull(),                    // 'offered' | 'adopted' | 'self'
+  source: varchar("source").notNull().default("impression"),
+  useCount: integer("use_count").notNull().default(1),
+  firstAt: timestamp("first_at").defaultNow(),
+  lastAt: timestamp("last_at").defaultNow(),
+}, (table) => ({
+  uq: uniqueIndex("uq_vocab_participant_term").on(table.participantId, table.term, table.locale),
+  partIdx: index("idx_vocab_participant").on(table.participantId),
+}));
+export const insertVocabularyAdoptionSchema = createInsertSchema(vocabularyAdoption).omit({ id: true, firstAt: true, lastAt: true });
+export type InsertVocabularyAdoption = z.infer<typeof insertVocabularyAdoptionSchema>;
+export type VocabularyAdoption = typeof vocabularyAdoption.$inferSelect;
+// vocabularyAdoption zusätzlich in den Tabellen-Sammelimport von server/storage.ts (Zeile ~11) aufnehmen.
+
+B) server/storage.ts — Interface + Impl:
+// Interface (IStorage):
+recordVocabularyEvents(participantId: string, events: { term: string; status: "offered"|"adopted"|"self"; locale?: string; source?: string }[]): Promise<{ recorded: number; resolved: number }>;
+getVocabularyAdoption(participantId: string): Promise<VocabularyAdoption[]>;
+
+// Impl:
+async getVocabularyAdoption(participantId: string): Promise<VocabularyAdoption[]> {
+  return db.select().from(vocabularyAdoption)
+    .where(eq(vocabularyAdoption.participantId, participantId))
+    .orderBy(desc(vocabularyAdoption.lastAt));
+}
+async recordVocabularyEvents(participantId, events) {
+  if (!participantId || !events?.length) return { recorded: 0, resolved: 0 };
+  const descriptors = await db.select().from(flavourDescriptors);
+  const norm = (s: string) => (s || "").trim().toLowerCase();
+  const resolve = (term: string) => {
+    const t = norm(term);
+    const d = descriptors.find(x => norm(x.de) === t || norm(x.en) === t || (x.keywords || []).some(k => norm(k) === t));
+    return d?.id ?? null;
+  };
+  const rank = (s: string) => (s === "self" ? 3 : s === "adopted" ? 2 : 1);
+  let recorded = 0, resolved = 0;
+  for (const ev of events) {
+    const term = (ev?.term || "").trim();
+    if (!term) continue;
+    const locale = ev.locale === "en" ? "en" : "de";
+    const status = (["offered","adopted","self"].includes(ev.status as any) ? ev.status : "offered") as "offered"|"adopted"|"self";
+    const source = ev.source || "impression";
+    const descriptorId = resolve(term);
+    if (descriptorId) resolved++;
+    const [existing] = await db.select().from(vocabularyAdoption).where(and(
+      eq(vocabularyAdoption.participantId, participantId),
+      eq(vocabularyAdoption.term, term),
+      eq(vocabularyAdoption.locale, locale),
+    ));
+    if (existing) {
+      const newStatus = rank(status) > rank(existing.status) ? status : existing.status;
+      const bump = (status === "adopted" || status === "self") ? 1 : 0;
+      await db.update(vocabularyAdoption).set({
+        status: newStatus,
+        descriptorId: existing.descriptorId ?? descriptorId,
+        useCount: existing.useCount + bump,
+        lastAt: new Date(),
+      }).where(eq(vocabularyAdoption.id, existing.id));
+    } else {
+      await db.insert(vocabularyAdoption).values({
+        participantId, descriptorId, term, locale, status, source,
+        useCount: (status === "adopted" || status === "self") ? 1 : 0,
+      });
+    }
+    recorded++;
+  }
+  return { recorded, resolved };
+}
+
+C) server/routes.ts — direkt VOR dem Journal-Photos-Block (~12184):
+app.post("/api/vocabulary/events", async (req: any, res: any) => {
+  try {
+    const caller = String(req.headers["x-participant-id"] || "");
+    const { participantId, events } = req.body || {};
+    if (!caller || !participantId || caller !== participantId) return res.status(403).json({ error: "Forbidden" });
+    if (!Array.isArray(events)) return res.status(400).json({ error: "events[] required" });
+    res.json(await storage.recordVocabularyEvents(participantId, events.slice(0, 50)));
+  } catch (e: any) { res.status(500).json({ error: e?.message || "vocab record failed" }); }
+});
+app.get("/api/vocabulary/:participantId/adoption", async (req: any, res: any) => {
+  try {
+    const caller = String(req.headers["x-participant-id"] || "");
+    if (!caller || caller !== req.params.participantId) return res.status(403).json({ error: "Forbidden" });
+    res.json(await storage.getVocabularyAdoption(req.params.participantId));
+  } catch (e: any) { res.status(500).json({ error: e?.message || "vocab read failed" }); }
+});
+
+D) NEU client/src/lib/vocabulary.ts:
+import { pidHeaders } from "@/lib/api";
+export type VocabEvent = { term: string; status: "offered"|"adopted"|"self"; locale?: string; source?: string };
+export function recordVocabularyEvents(participantId: string, events: VocabEvent[]): void {
+  if (!participantId || !events?.length) return;
+  // Fire-and-forget — darf onApply/UI NIE blockieren oder Fehler werfen.
+  fetch("/api/vocabulary/events", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...pidHeaders() },
+    body: JSON.stringify({ participantId, events }),
+  }).catch(() => {});
+}
+
+E) ImpressionCapture.tsx — additiv, ohne onApply-Signatur zu ändern:
+- Neue optionale Prop: participantId?: string  (im Props-Interface + Destructuring).
+- Zwei State-Sets pflegen (mit den in 0.4 gefundenen Stellen verdrahten):
+  offeredTerms = Vereinigung ALLER je in Reflect gerenderten Chip-Labels;
+  adoptedTerms = alle vom Nutzer GETAPPTEN Chip-Labels.
+- In handleConfirm, UNMITTELBAR vor onApply(...): falls participantId gesetzt, baue Events und feuere recordVocabularyEvents:
+    const finalTags = result.flavorTags ?? [];
+    const events = [
+      ...finalTags.map(t => ({ term: t, status: adoptedTerms.has(t) ? "adopted" : "self", source: "impression" as const })),
+      ...[...offeredTerms].filter(t => !finalTags.includes(t)).map(t => ({ term: t, status: "offered" as const, source: "impression" as const })),
+    ];
+    recordVocabularyEvents(participantId, events);
+  (locale weglassen → Server-Default 'de'; späterer Feinschliff: aktuelle i18n-locale mitgeben.)
+
+F) LabsSolo.tsx (~Zeile 911): <ImpressionCapture ... /> um participantId={participantId} ergänzen.
+
+VERIFIKATION (alles muss zutreffen):
+- [ ] Es wurde NICHT committed, NICHT gepusht, KEIN drizzle-kit ausgeführt. (Nochmals: KEIN Commit, KEIN drizzle-kit.)
+- [ ] Die 36 Migrations-SQL-Dateien unter migrations/ sind unverändert/getrackt; *.sql NICHT in .gitignore.
+- [ ] onApply-Signatur, handleImpressionApply und der Speicherpfad sind unverändert.
+- [ ] `npm run build` / tsc läuft fehlerfrei (uniqueIndex-Import vorhanden).
+- [ ] ImpressionCapture funktioniert unverändert, auch wenn participantId fehlt (Live-Fall heute).
