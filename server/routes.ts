@@ -7846,7 +7846,7 @@ If distillery URL is unknown, set to null.
 Respond ONLY with valid JSON, no markdown.`;
 
       const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5",
         messages: [{ role: "user", content: prompt }],
         max_tokens: 600,
         temperature: 0.7,
@@ -8390,7 +8390,7 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
       }
 
       const response = await client.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5",
         messages: [
           {
             role: "system",
@@ -8654,8 +8654,8 @@ Beste Übereinstimmungen: ${pairings.slice(0, 2).map(p => `${p.aName} & ${p.bNam
       let groupNarrativeEn = "";
       try {
         const [deResp, enResp] = await Promise.all([
-          aiClient.chat.completions.create({ model: "gpt-4o", messages: [{ role: "system", content: systemPromptGroup }, { role: "user", content: userPromptGroup }], max_tokens: 600, temperature: 0.75 }),
-          aiClient.chat.completions.create({ model: "gpt-4o", messages: [{ role: "system", content: systemPromptGroup.replace("auf Deutsch", "in English") }, { role: "user", content: userPromptGroup }], max_tokens: 600, temperature: 0.75 }),
+          aiClient.chat.completions.create({ model: "gpt-5", messages: [{ role: "system", content: systemPromptGroup }, { role: "user", content: userPromptGroup }], max_tokens: 600, temperature: 0.75 }),
+          aiClient.chat.completions.create({ model: "gpt-5", messages: [{ role: "system", content: systemPromptGroup.replace("auf Deutsch", "in English") }, { role: "user", content: userPromptGroup }], max_tokens: 600, temperature: 0.75 }),
         ]);
         groupNarrative = deResp.choices[0]?.message?.content || "";
         groupNarrativeEn = enResp.choices[0]?.message?.content || "";
@@ -8665,7 +8665,7 @@ Beste Übereinstimmungen: ${pairings.slice(0, 2).map(p => `${p.aName} & ${p.bNam
       const whiskyCharacteristics: Record<string, string> = {};
       try {
         const charResp = await aiClient.chat.completions.create({
-          model: "gpt-4o",
+          model: "gpt-5",
           response_format: { type: "json_object" },
           messages: [{
             role: "system",
@@ -9333,7 +9333,7 @@ Beste Übereinstimmungen: ${pairings.slice(0, 2).map(p => `${p.aName} & ${p.bNam
       };
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5",
         messages: [
           {
             role: "system",
@@ -11530,7 +11530,7 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
 
         const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL });
         const response = await openai.chat.completions.create({
-          model: "gpt-4o",
+          model: "gpt-5",
           messages: [
             {
               role: "system",
@@ -11630,7 +11630,7 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
 
       const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL });
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5",
         messages: [
           {
             role: "system",
@@ -11691,7 +11691,7 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
       console.log(`Journal scan: file=${file.originalname}, size=${(file.size / 1024).toFixed(0)}KB, type=${file.mimetype}`);
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5",
         response_format: { type: "json_object" },
         messages: [
           {
@@ -12338,7 +12338,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
       console.log(`Wishlist scan: file=${file.originalname}, size=${(file.size / 1024).toFixed(0)}KB, type=${file.mimetype}`);
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5",
         response_format: { type: "json_object" },
         messages: [
           {
@@ -15218,7 +15218,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       });
 
       const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: JSON.stringify(participantData) },
@@ -17706,7 +17706,7 @@ Key CaskSense Features:
         });
 
         const response = await openai.chat.completions.create({
-          model: "gpt-4o",
+          model: "gpt-5",
           messages: [
             {
               role: "system",
@@ -17782,7 +17782,7 @@ Return ONLY valid JSON array. If no whisky data found, return [].`,
           });
 
           const response = await openai.chat.completions.create({
-            model: "gpt-4o",
+            model: "gpt-5",
             messages: [
               {
                 role: "system",
@@ -17825,7 +17825,7 @@ Return ONLY valid JSON array. If no whisky data found, return [].`,
       const truncatedText = textContent.slice(0, 60000);
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5",
         messages: [
           {
             role: "system",
@@ -17919,7 +17919,7 @@ Return ONLY a valid JSON array. If no whisky data is found, return [].`,
           identifiedList = JSON.parse(JSON.stringify(cachedPhoto.result.whiskies || []));
         } else {
           const response = await openai.chat.completions.create({
-            model: "gpt-4o",
+            model: "gpt-5",
             response_format: { type: "json_object" },
             messages: [
               {
@@ -18920,7 +18920,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
 
             const makeStoryRequest = (content: UserContentPart[]) =>
               aiClient.chat.completions.create({
-                model: "gpt-4o",
+                model: "gpt-5",
                 messages: [
                   {
                     role: "system",
@@ -19881,7 +19881,7 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
       }
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },
@@ -21104,7 +21104,7 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
       });
 
       const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -22974,7 +22974,7 @@ Rules:
       }
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },
@@ -25240,7 +25240,7 @@ Return a JSON object with:
 Be accurate. If you cannot read a value, use null. Match whiskies to the known lineup by position number.`;
 
       const response = await client.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5",
         max_tokens: 2000,
         temperature: 0.1,
         response_format: { type: "json_object" },
@@ -25531,7 +25531,7 @@ TEXT:
 ${cleaned.slice(0, 60000)}`;
 
               const completion = await openai.chat.completions.create({
-                model: process.env.AI_INTEGRATIONS_OPENAI_MODEL || "gpt-4o",
+                model: process.env.AI_INTEGRATIONS_OPENAI_MODEL || "gpt-5",
                 temperature: 0.1,
                 response_format: { type: "json_object" },
                 messages: [

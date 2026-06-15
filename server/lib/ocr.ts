@@ -42,7 +42,7 @@ export async function identifyWhiskyFromImage(filePath: string): Promise<VisionI
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-5",
       max_tokens: 800,
       temperature: 0.1,
       response_format: { type: "json_object" },
@@ -124,7 +124,7 @@ export async function extractTextFromImage(filePath: string): Promise<string> {
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-5",
       max_tokens: 500,
       messages: [
         {
