@@ -1,18 +1,31 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft } from "lucide-react";
 import { FONT, SP, RADIUS, TOUCH_MIN, LABS_THEME } from "@/labs/components/rating/theme";
 
-const SEEN_KEY = "casksense.impressionIntroSeen";
+const COUNT_KEY = "casksense.impressionIntroCount";
+const VERBOSE_TIMES = 5;
+
+function readCount(): number {
+  try { return parseInt(localStorage.getItem(COUNT_KEY) || "0", 10) || 0; } catch { return 0; }
+}
 
 export default function ImpressionIntro({ onStart, onBack }: { onStart: () => void; onBack?: () => void }) {
   const { t } = useTranslation();
-  let seen = false;
-  try { seen = localStorage.getItem(SEEN_KEY) === "1"; } catch { /* ignore */ }
+  const count = readCount();
+  const [showFull, setShowFull] = useState(count < VERBOSE_TIMES);
 
   const handleStart = () => {
-    try { localStorage.setItem(SEEN_KEY, "1"); } catch { /* ignore */ }
+    try { localStorage.setItem(COUNT_KEY, String(count + 1)); } catch { /* ignore */ }
     onStart();
   };
+
+  const bullets = [
+    t("v2.solo.impressionBullet1", "Sag in eigenen Worten, was du wahrnimmst \u2014 ein Wort gen\u00fcgt."),
+    t("v2.solo.impressionBullet2", "Wir fragen gezielt nach, mit Aromen zum Antippen."),
+    t("v2.solo.impressionBullet3", "Dein Eindruck f\u00fchrt \u2014 wir pr\u00e4gen ihn nicht vor."),
+    t("v2.solo.impressionBullet4", "Den Whisky kl\u00e4ren wir erst danach."),
+  ];
 
   return (
     <div style={{ padding: SP.lg, display: "flex", flexDirection: "column", minHeight: "70vh" }}>
@@ -48,17 +61,41 @@ export default function ImpressionIntro({ onStart, onBack }: { onStart: () => vo
           {t("v2.solo.impressionFirstTitle", "Das Glas steht bereit.")}
         </div>
 
-        <div style={{ fontFamily: FONT.serif, fontSize: 16, color: LABS_THEME.muted, lineHeight: 1.5, marginBottom: SP.xl, maxWidth: 440 }}>
-          {seen
-            ? t("v2.solo.impressionIntroShort", "Sag in eigenen Worten, was du wahrnimmst \u2014 den Rest sch\u00e4rfen wir gemeinsam.")
-            : t("v2.solo.impressionIntroLong", "Bevor du an Punkte und Kategorien denkst: Sag einfach in eigenen Worten, was dir in die Nase und auf die Zunge kommt. Ein Wort gen\u00fcgt zum Anfang. Daraus machen wir gemeinsam mehr \u2014 mit ein paar gezielten R\u00fcckfragen und passenden Aromen zum Antippen sch\u00e4rfen wir deinen Eindruck Schritt f\u00fcr Schritt, ohne ihn dir vorzugeben. Das ist die Sokratische Sch\u00e4rfung: Dein Eindruck f\u00fchrt, wir helfen nur beim Sch\u00e4rfen. Den Whisky selbst kl\u00e4ren wir erst danach \u2014 damit der erste Eindruck unverf\u00e4lscht bleibt.")}
-        </div>
+        {showFull ? (
+          <div style={{ maxWidth: 440, marginBottom: SP.xl, width: "100%" }}>
+            <div style={{ fontFamily: FONT.serif, fontSize: 16, color: LABS_THEME.muted, lineHeight: 1.4, marginBottom: SP.md }}>
+              {t("v2.solo.impressionBulletsTitle", "So funktioniert die Sokratische Sch\u00e4rfung:")}
+            </div>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, textAlign: "left", display: "flex", flexDirection: "column", gap: SP.sm }}>
+              {bullets.map((b, i) => (
+                <li key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontFamily: FONT.body, fontSize: 15, color: LABS_THEME.text, lineHeight: 1.4 }}>
+                  <span aria-hidden="true" style={{ color: LABS_THEME.gold, flexShrink: 0, marginTop: 1 }}>{"\u2022"}</span>
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <div style={{ maxWidth: 440, marginBottom: SP.md, display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <div style={{ fontFamily: FONT.serif, fontSize: 16, color: LABS_THEME.muted, lineHeight: 1.5, marginBottom: SP.sm }}>
+              {t("v2.solo.impressionIntroShort", "Sag in eigenen Worten, was du wahrnimmst \u2014 den Rest sch\u00e4rfen wir gemeinsam.")}
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowFull(true)}
+              data-testid="impression-intro-how"
+              style={{ background: "none", border: "none", color: LABS_THEME.gold, font: "inherit", fontSize: 14, cursor: "pointer", padding: 0, textDecoration: "underline" }}
+            >
+              {t("v2.solo.impressionHowLink", "Wie funktioniert das?")}
+            </button>
+          </div>
+        )}
 
         <button
           type="button"
           onClick={handleStart}
           data-testid="impression-intro-start"
-          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: TOUCH_MIN, padding: "0 24px", borderRadius: RADIUS.md, background: LABS_THEME.gold, color: "#0B0906", fontFamily: FONT.body, fontSize: 16, fontWeight: 600, border: "none", cursor: "pointer" }}
+          style={{ marginTop: SP.lg, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: TOUCH_MIN, padding: "0 24px", borderRadius: RADIUS.md, background: LABS_THEME.gold, color: "#0B0906", fontFamily: FONT.body, fontSize: 16, fontWeight: 600, border: "none", cursor: "pointer" }}
         >
           {t("v2.solo.impressionFirstCta", "Eindruck festhalten")}
           <span aria-hidden="true">{"\u2192"}</span>
