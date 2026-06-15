@@ -14,6 +14,7 @@ import conceptObserving from "@/assets/images/concept-observing.png";
 import conceptJudging from "@/assets/images/concept-judging.png";
 import conceptEvaluating from "@/assets/images/concept-evaluating.png";
 import conceptPredicting from "@/assets/images/concept-predicting.png";
+import conceptReflecting from "@/assets/images/concept-reflecting.png";
 
 const imageMap: Record<string, string> = {
   "concept-measuring": conceptMeasuring,
@@ -22,6 +23,7 @@ const imageMap: Record<string, string> = {
   "concept-judging": conceptJudging,
   "concept-evaluating": conceptEvaluating,
   "concept-predicting": conceptPredicting,
+  "concept-reflecting": conceptReflecting,
 };
 
 type Concept = {
