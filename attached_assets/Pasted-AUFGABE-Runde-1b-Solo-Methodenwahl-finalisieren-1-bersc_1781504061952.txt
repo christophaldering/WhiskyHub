@@ -1,0 +1,252 @@
+AUFGABE: Runde 1b — Solo-Methodenwahl finalisieren.
+(1) Überschrift "Whisky identifizieren" → "Wege ins Glas".
+(2) Sokratische Schärfung als erste, dezent gold-hervorgehobene Kachel in der Methodenwahl (eine von sieben, gleiche Größe).
+(3) Klick darauf → neue Erklärseite (Sokratische Schärfung), die beim ersten Mal ausführlich erklärt, danach knapp — und dann die Eindruck-Abfrage startet.
+(4) "Aus Sammlung"-Icon vom Weinglas auf ein Regal-Icon, damit das Glas eindeutig der Sokratischen Schärfung gehört.
+
+SICHERHEIT VORAB:
+- Git-Tag als Rollback-Punkt setzen: pre-solo-tiles-2026-06-15
+- NICHT committen, NICHT pushen. Keine Schema-Änderungen, keine Migrationen, kein drizzle-kit.
+- LabsHostCockpit.tsx / Host-Cockpit NICHT anfassen. RatingFlowV2.tsx und ImpressionCapture.tsx NICHT anfassen.
+
+SCHRITT 0 — NUR LESEN (Ergebnisse zeigen):
+1. grep -n "captureOptions:" client/src/lib/i18n.ts          (2 Treffer: EN + DE)
+2. grep -n "import { Camera" client/src/labs/pages/solo/SoloCaptureScreen.tsx
+3. grep -n "labs-section-label\">{t(\"v2.solo.captureOptions" client/src/labs/pages/solo/SoloCaptureScreen.tsx
+4. grep -n "<Wine className" client/src/labs/pages/solo/SoloCaptureScreen.tsx     (1 Treffer)
+5. grep -n "ImpressionFirstHero\|onClick={startImpression}\|type Step =" client/src/labs/pages/LabsSolo.tsx
+Plan kurz bestätigen, DANN ausführen.
+
+=== DATEI 1: client/src/lib/i18n.ts ===
+
+1a) EN-Überschrift.
+ALT:
+          captureOptions: "Identify whisky",
+NEU:
+          captureOptions: "Ways into the glass",
+
+1b) DE-Überschrift.
+ALT:
+          captureOptions: "Whisky identifizieren",
+NEU:
+          captureOptions: "Wege ins Glas",
+
+1c) EN: neue Keys direkt nach der EN-captureSub-Zeile einfügen.
+ALT:
+          captureSub: "Choose how to identify",
+NEU:
+          captureSub: "Choose how to identify",
+          impressionTileTitle: "Capture your impression",
+          impressionMethod: "Socratic Scaffolding",
+          impressionIntroLong: "Before you think about points and categories: just say, in your own words, what reaches your nose and tongue. One word is enough to start. We build on it together — with a few targeted follow-ups and matching aromas to tap, we sharpen your impression step by step, without putting words in your mouth. That is Socratic Scaffolding: your impression leads, we only help sharpen it. We identify the whisky itself afterwards — so your first impression stays untainted.",
+          impressionIntroShort: "Say in your own words what you notice — we'll sharpen the rest together.",
+
+1d) DE: neue Keys direkt nach der DE-captureSub-Zeile einfügen.
+ALT:
+          captureSub: "Wähle eine Methode",
+NEU:
+          captureSub: "Wähle eine Methode",
+          impressionTileTitle: "Eindruck festhalten",
+          impressionMethod: "Sokratische Schärfung",
+          impressionIntroLong: "Bevor du an Punkte und Kategorien denkst: Sag einfach in eigenen Worten, was dir in die Nase und auf die Zunge kommt. Ein Wort genügt zum Anfang. Daraus machen wir gemeinsam mehr — mit ein paar gezielten Rückfragen und passenden Aromen zum Antippen schärfen wir deinen Eindruck Schritt für Schritt, ohne ihn dir vorzugeben. Das ist die Sokratische Schärfung: Dein Eindruck führt, wir helfen nur beim Schärfen. Den Whisky selbst klären wir erst danach — damit der erste Eindruck unverfälscht bleibt.",
+          impressionIntroShort: "Sag in eigenen Worten, was du wahrnimmst — den Rest schärfen wir gemeinsam.",
+
+=== DATEI 2: client/src/labs/pages/solo/SoloCaptureScreen.tsx ===
+
+2a) lucide-Import: Wine → Library.
+ALT:
+import { Camera, ImagePlus, PenLine, Barcode, Loader2, AlertTriangle, ArrowLeft, Wine, ChevronRight, ScanLine, X, Layers } from "lucide-react";
+NEU:
+import { Camera, ImagePlus, PenLine, Barcode, Loader2, AlertTriangle, ArrowLeft, Library, ChevronRight, ScanLine, X, Layers } from "lucide-react";
+
+2b) GlassIcon importieren — neue Zeile direkt nach dem lucide-Import einfügen:
+import { GlassIcon } from "@/labs/components/FlavourIcons";
+
+2c) Prop onImpression ins Interface (vor onManual).
+ALT:
+  onManual: () => void;
+  onCaptured: (w: CapturedWhisky, imageFile?: File | null) => void;
+NEU:
+  onImpression: () => void;
+  onManual: () => void;
+  onCaptured: (w: CapturedWhisky, imageFile?: File | null) => void;
+
+2d) onImpression destrukturieren.
+ALT:
+export default function SoloCaptureScreen({ participantId, isAuthenticated, onManual, onCaptured, onBarcode, onCollectionSelect, onBack, hideBack }: Props) {
+NEU:
+export default function SoloCaptureScreen({ participantId, isAuthenticated, onImpression, onManual, onCaptured, onBarcode, onCollectionSelect, onBack, hideBack }: Props) {
+
+2e) Erste Kachel (Sokratische Schärfung) zwischen Überschrift und Methoden-Liste einfügen.
+ALT:
+      <span className="labs-section-label">{t("v2.solo.captureOptions", "Capture Options")}</span>
+
+      <div className="labs-grouped-list" style={{ marginBottom: "var(--labs-space-lg)" }}>
+NEU:
+      <span className="labs-section-label">{t("v2.solo.captureOptions", "Wege ins Glas")}</span>
+
+      <button
+        type="button"
+        onClick={onImpression}
+        data-testid="solo-impression-tile"
+        className="labs-list-row"
+        style={{
+          gap: 12, width: "100%", textAlign: "left", font: "inherit", color: "inherit",
+          marginBottom: "var(--labs-space-md)",
+          border: "1px solid rgba(212,168,71,0.45)",
+          borderRadius: 14,
+          background: "radial-gradient(120% 130% at 90% 0%, rgba(212,168,71,0.14), rgba(14,11,5,0) 70%), var(--labs-card)",
+        }}
+      >
+        <div style={{
+          width: 44, height: 44, borderRadius: 12,
+          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+          background: "var(--labs-accent-muted)",
+        }}>
+          <GlassIcon size={20} style={{ color: "var(--labs-accent)" }} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
+            {t("v2.solo.impressionTileTitle", "Eindruck festhalten")}
+          </div>
+          <div style={{ fontSize: 11, color: "var(--labs-accent)", marginTop: 1 }}>
+            {t("v2.solo.impressionMethod", "Sokratische Schärfung")}
+          </div>
+        </div>
+        <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }} />
+      </button>
+
+      <div className="labs-grouped-list" style={{ marginBottom: "var(--labs-space-lg)" }}>
+
+2f) Sammlungs-Icon: Weinglas → Regal.
+ALT:
+              <Wine className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
+NEU:
+              <Library className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
+
+=== DATEI 3: client/src/labs/pages/solo/ImpressionIntro.tsx  (NEUE DATEI, exakt dieser Inhalt) ===
+
+import { useTranslation } from "react-i18next";
+import { ArrowLeft } from "lucide-react";
+import { FONT, SP, RADIUS, TOUCH_MIN, LABS_THEME } from "@/labs/components/rating/theme";
+
+const SEEN_KEY = "casksense.impressionIntroSeen";
+
+export default function ImpressionIntro({ onStart, onBack }: { onStart: () => void; onBack?: () => void }) {
+  const { t } = useTranslation();
+  let seen = false;
+  try { seen = localStorage.getItem(SEEN_KEY) === "1"; } catch { /* ignore */ }
+
+  const handleStart = () => {
+    try { localStorage.setItem(SEEN_KEY, "1"); } catch { /* ignore */ }
+    onStart();
+  };
+
+  return (
+    <div style={{ padding: SP.lg, display: "flex", flexDirection: "column", minHeight: "70vh" }}>
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          data-testid="impression-intro-back"
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: LABS_THEME.muted, font: "inherit", fontSize: 14, cursor: "pointer", padding: 0, marginBottom: SP.lg, alignSelf: "flex-start" }}
+        >
+          <ArrowLeft size={18} />
+          {t("common.back", "Zur\u00fcck")}
+        </button>
+      )}
+
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
+        <svg width="96" height="113" viewBox="0 0 124 146" fill="none" aria-hidden="true" style={{ marginBottom: SP.lg, opacity: 0.9 }}>
+          <defs>
+            <linearGradient id="csIntroLiquid" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#d4a847" stopOpacity="0.55" />
+              <stop offset="100%" stopColor="#c47a3a" stopOpacity="0.8" />
+            </linearGradient>
+          </defs>
+          <path d="M46 16 C45 16 44 17 44 19 C44 38 36 50 38 68 C40 90 50 106 62 106 C74 106 84 90 86 68 C88 50 80 38 80 19 C80 17 79 16 78 16 Z" fill="none" stroke="#d4a847" strokeWidth="1.5" strokeOpacity="0.7" />
+          <path d="M39 65 C41 87 51 104 62 104 C73 104 83 87 85 65 C73 71 51 71 39 65 Z" fill="url(#csIntroLiquid)" />
+          <ellipse cx="62" cy="65" rx="23" ry="4" fill="#d4a847" fillOpacity="0.3" />
+          <path d="M62 106 L62 126" stroke="#d4a847" strokeWidth="1.5" strokeOpacity="0.6" />
+          <path d="M48 130 C48 127 76 127 76 130 C76 133 48 133 48 130 Z" fill="none" stroke="#d4a847" strokeWidth="1.5" strokeOpacity="0.6" />
+          <path d="M51 26 C49 40 48 52 51 64" stroke="#f5ede0" strokeWidth="1.5" strokeOpacity="0.22" fill="none" strokeLinecap="round" />
+        </svg>
+
+        <div style={{ fontFamily: FONT.display, fontSize: 28, color: LABS_THEME.text, lineHeight: 1.12, marginBottom: SP.md }}>
+          {t("v2.solo.impressionFirstTitle", "Das Glas steht bereit.")}
+        </div>
+
+        <div style={{ fontFamily: FONT.serif, fontSize: 16, color: LABS_THEME.muted, lineHeight: 1.5, marginBottom: SP.xl, maxWidth: 440 }}>
+          {seen
+            ? t("v2.solo.impressionIntroShort", "Sag in eigenen Worten, was du wahrnimmst \u2014 den Rest sch\u00e4rfen wir gemeinsam.")
+            : t("v2.solo.impressionIntroLong", "Bevor du an Punkte und Kategorien denkst: Sag einfach in eigenen Worten, was dir in die Nase und auf die Zunge kommt. Ein Wort gen\u00fcgt zum Anfang. Daraus machen wir gemeinsam mehr \u2014 mit ein paar gezielten R\u00fcckfragen und passenden Aromen zum Antippen sch\u00e4rfen wir deinen Eindruck Schritt f\u00fcr Schritt, ohne ihn dir vorzugeben. Das ist die Sokratische Sch\u00e4rfung: Dein Eindruck f\u00fchrt, wir helfen nur beim Sch\u00e4rfen. Den Whisky selbst kl\u00e4ren wir erst danach \u2014 damit der erste Eindruck unverf\u00e4lscht bleibt.")}
+        </div>
+
+        <button
+          type="button"
+          onClick={handleStart}
+          data-testid="impression-intro-start"
+          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: TOUCH_MIN, padding: "0 24px", borderRadius: RADIUS.md, background: LABS_THEME.gold, color: "#0B0906", fontFamily: FONT.body, fontSize: 16, fontWeight: 600, border: "none", cursor: "pointer" }}
+        >
+          {t("v2.solo.impressionFirstCta", "Eindruck festhalten")}
+          <span aria-hidden="true">{"\u2192"}</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+=== DATEI 4: client/src/labs/pages/LabsSolo.tsx ===
+
+4a) Step-Typ um impressionIntro erweitern.
+ALT:
+type Step = "capture" | "form" | "context" | "rating" | "quickFollowUp" | "naming" | "done";
+NEU:
+type Step = "capture" | "impressionIntro" | "form" | "context" | "rating" | "quickFollowUp" | "naming" | "done";
+
+4b) Import ImpressionIntro ergänzen (neben den anderen ./solo/-Imports):
+import ImpressionIntro from "./solo/ImpressionIntro";
+
+4c) Den in Runde 1a eingefügten Glas-Hero aus dem capture-Step ENTFERNEN und stattdessen onImpression durchreichen.
+ALT:
+        <ImpressionFirstHero onClick={startImpression} />
+        <SoloCaptureScreen
+          participantId={participantId}
+          isAuthenticated={isUserAuthenticated()}
+          onManual={handleManual}
+NEU:
+        <SoloCaptureScreen
+          participantId={participantId}
+          isAuthenticated={isUserAuthenticated()}
+          onImpression={() => setStep("impressionIntro")}
+          onManual={handleManual}
+
+4d) Den jetzt ungenutzten ImpressionFirstHero-Import aus LabsSolo ENTFERNEN (Zeile ersatzlos löschen):
+import ImpressionFirstHero from "./solo/ImpressionFirstHero";
+
+4e) Render-Block für den neuen Step direkt nach dem capture-Step einfügen.
+ALT:
+      </>
+    );
+  } else if (step === "form") {
+NEU:
+      </>
+    );
+  } else if (step === "impressionIntro") {
+    content = <ImpressionIntro onStart={startImpression} onBack={() => setStep("capture")} />;
+  } else if (step === "form") {
+
+=== VERIFIKATION (zeigen) ===
+- grep -n "Wege ins Glas\|Ways into the glass" client/src/lib/i18n.ts   → je 1
+- grep -n "impressionMethod\|impressionIntroLong\|impressionIntroShort" client/src/lib/i18n.ts   → je 2 (EN+DE)
+- grep -c "<Wine " client/src/labs/pages/solo/SoloCaptureScreen.tsx   → 0
+- grep -n "onImpression\|GlassIcon\|Library\|solo-impression-tile" client/src/labs/pages/solo/SoloCaptureScreen.tsx
+- grep -c "ImpressionFirstHero" client/src/labs/pages/LabsSolo.tsx   → 0
+- grep -n "impressionIntro\|ImpressionIntro" client/src/labs/pages/LabsSolo.tsx
+- esbuild (jeweils 0 ERRORs):
+  npx esbuild client/src/labs/pages/solo/ImpressionIntro.tsx --bundle --loader:.tsx=tsx --jsx=automatic --external:react --external:react-i18next --external:lucide-react --external:wouter --external:@/* --external:@tanstack/* --format=esm --outfile=/dev/null
+  npx esbuild client/src/labs/pages/solo/SoloCaptureScreen.tsx --bundle --loader:.tsx=tsx --jsx=automatic --external:react --external:react-i18next --external:lucide-react --external:wouter --external:@/* --external:@tanstack/* --format=esm --outfile=/dev/null
+  npx esbuild client/src/labs/pages/LabsSolo.tsx --bundle --loader:.tsx=tsx --jsx=automatic --external:react --external:react-i18next --external:lucide-react --external:wouter --external:@/* --external:@tanstack/* --format=esm --outfile=/dev/null
+  npx esbuild client/src/lib/i18n.ts --loader:.ts=ts --format=esm --outfile=/dev/null
+
+ERINNERUNG ZUM ABSCHLUSS: NICHT committen, NICHT pushen. Nur Dateien speichern. Kein drizzle-kit, keine Migration, kein Schema-Touch. Host-Cockpit unberührt.
