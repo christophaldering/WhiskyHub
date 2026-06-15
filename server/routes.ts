@@ -5554,6 +5554,106 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
     }
   });
 
+  // --- Helfer für das Eindruck-Gespräch (Ledger) ---
+  type LedgerSlot = "untouched" | "touched" | "sharpened";
+  interface Ledger { nose: LedgerSlot; palate: LedgerSlot; finish: LedgerSlot; body: LedgerSlot; intensity: LedgerSlot; affect: LedgerSlot; vagueResolved: boolean; }
+  const EMPTY_LEDGER: Ledger = { nose: "untouched", palate: "untouched", finish: "untouched", body: "untouched", intensity: "untouched", affect: "untouched", vagueResolved: false };
+  const slotRank = (s: LedgerSlot) => (s === "sharpened" ? 2 : s === "touched" ? 1 : 0);
+  const maxSlot = (a: LedgerSlot, b: LedgerSlot): LedgerSlot => (slotRank(a) >= slotRank(b) ? a : b);
+  function mergeLedger(old: Ledger, prop: Partial<Ledger>): Ledger {
+    return {
+      nose: maxSlot(old.nose, (prop.nose as LedgerSlot) || "untouched"),
+      palate: maxSlot(old.palate, (prop.palate as LedgerSlot) || "untouched"),
+      finish: maxSlot(old.finish, (prop.finish as LedgerSlot) || "untouched"),
+      body: maxSlot(old.body, (prop.body as LedgerSlot) || "untouched"),
+      intensity: maxSlot(old.intensity, (prop.intensity as LedgerSlot) || "untouched"),
+      affect: maxSlot(old.affect, (prop.affect as LedgerSlot) || "untouched"),
+      vagueResolved: !!old.vagueResolved || !!prop.vagueResolved,
+    };
+  }
+  function canClose(l: Ledger, intensity: string): boolean {
+    const core = [l.nose, l.palate, l.finish];
+    if (intensity === "schnell") return core.every((s) => slotRank(s) >= 1) && slotRank(l.affect) >= 1;
+    if (intensity === "rabbithole") return [l.nose, l.palate, l.finish, l.body, l.intensity].every((s) => slotRank(s) >= 2) && slotRank(l.affect) >= 2 && l.vagueResolved;
+    return [l.nose, l.palate, l.finish, l.body].every((s) => slotRank(s) >= 1) && slotRank(l.affect) >= 1 && l.vagueResolved; // neugierig (default)
+  }
+
+  app.post("/api/impression/converse", async (req: Request, res: Response) => {
+    const startMs = Date.now();
+    try {
+      const rateLimitKey = (req.headers["x-participant-id"] as string) || (req.ip || "unknown") as string;
+      const rateCheck = checkIdentifyRateLimit(rateLimitKey);
+      if (!rateCheck.allowed) return res.status(429).json({ message: "Too many requests.", retryAfter: rateCheck.retryAfterSeconds });
+
+      const { whiskyName, intensity, transcript, ledger, finalize } = req.body || {};
+      const turns: Array<{ role: string; text: string }> = Array.isArray(transcript)
+        ? transcript.filter((t: any) => t && typeof t.text === "string" && t.text.trim()).map((t: any) => ({ role: t.role === "mentor" ? "mentor" : "taster", text: String(t.text).trim().slice(0, 800) })).slice(-20)
+        : [];
+      if (turns.length === 0) return res.status(400).json({ message: "transcript required" });
+      const mode = ["schnell", "neugierig", "rabbithole"].includes(intensity) ? intensity : "neugierig";
+      const ctx = typeof whiskyName === "string" && whiskyName.trim() ? `\nWhisky: ${whiskyName.trim().slice(0, 120)}` : "";
+      const convo = turns.map((t) => `${t.role === "mentor" ? "MENTOR" : "TASTER"}: ${t.text}`).join("\n");
+
+      const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL });
+
+      // ---------- FINALIZE: ganzes Gespräch -> ImpressionResult (Score aus AFFEKT) ----------
+      if (finalize) {
+        const finSystem = `Du verdichtest ein ganzes Verkostungs-Gespräch zu einer Struktur. Erfinde nichts; nimm nur, was der TASTER wirklich gesagt hat. Antworte in der Sprache des Gesprächs. JSON:
+{"flavorTags":["..max6.."],"nose":"kurzer Satz oder leer","taste":"kurzer Satz oder leer","finish":"kurzer Satz oder leer","scoreSuggestion":{"overall":0-100,"nose":0-100,"taste":0-100,"finish":0-100} ODER null,"confidence":"high|medium|low"}
+SCORE-REGEL (NEU, wichtig): Leite den Score aus AFFEKT und INTENSITÄT ab — Begeisterung, "packt mich", "mächtig", "voluminös", "lange", "will mehr", "werde mich morgen erinnern" => HOCH; flach, enttäuschend, "naja" => niedrig. Starker positiver Affekt rechtfertigt einen hohen Score AUCH OHNE das Wort "lecker". Eine reine Aromennennung OHNE jeden Affekt rechtfertigt keinen hohen Score. Nur wenn im GESAMTEN Gespräch wirklich kein Affekt erkennbar ist => scoreSuggestion=null, confidence="low".`;
+        const completion = await openai.chat.completions.create({
+          model: "gpt-5-mini",
+          max_completion_tokens: 1200,
+          reasoning_effort: "minimal",
+          response_format: { type: "json_object" },
+          messages: [{ role: "system", content: finSystem }, { role: "user", content: `Gespräch:${ctx}\n${convo}` }],
+        });
+        let p: any = {}; try { p = JSON.parse(completion.choices[0]?.message?.content || "{}"); } catch { p = {}; }
+        const clamp = (v: any): number | null => { const n = Number(v); return Number.isFinite(n) ? Math.max(0, Math.min(100, Math.round(n))) : null; };
+        let score: any = null;
+        if (p.scoreSuggestion && typeof p.scoreSuggestion === "object") {
+          score = { overall: clamp(p.scoreSuggestion.overall), nose: clamp(p.scoreSuggestion.nose), taste: clamp(p.scoreSuggestion.taste), finish: clamp(p.scoreSuggestion.finish) };
+          if (score.overall == null && score.nose == null && score.taste == null && score.finish == null) score = null;
+        }
+        const conf = ["high", "medium", "low"].includes(p.confidence) ? p.confidence : "medium";
+        const cw: Record<string, number> = { high: 0.9, medium: 0.6, low: 0.3 };
+        return res.json({
+          rawImpression: turns.find((t) => t.role === "taster")?.text || "",
+          flavorTags: Array.isArray(p.flavorTags) ? p.flavorTags.filter((t: any) => typeof t === "string" && t.trim()).map((t: string) => t.trim()).slice(0, 6) : [],
+          nose: typeof p.nose === "string" ? p.nose.trim() : "",
+          taste: typeof p.taste === "string" ? p.taste.trim() : "",
+          finish: typeof p.finish === "string" ? p.finish.trim() : "",
+          scoreSuggestion: score, confidence: conf, confidenceWeight: cw[conf],
+          followUpQuestion: "", followUpKind: "", followUpTerm: "", tookMs: Date.now() - startMs,
+        });
+      }
+
+      // ---------- TURN: nächste Mentor-Antwort + Ledger-Update + Chips ----------
+      const curLedger: Ledger = (ledger && typeof ledger === "object") ? { ...EMPTY_LEDGER, ...ledger } : EMPTY_LEDGER;
+      const turnSystem = `Du bist ein erfahrener, neugieriger Verkostungs-Mentor — warm, aufmerksam, leicht herausfordernd, mäeutisch. Du SPIEGELST die letzte Antwort des Tasters, baust darauf auf und stellst genau EINE fokussierte Frage zur dringlichsten noch offenen Ecke. Wenn der Taster stockt oder vage bleibt, biete ein BILD / eine METAPHER an ("wäre dieser Whisky ein Raum — eng und schwül oder hoch und hallend?"). Erfinde nichts. Antworte in der Sprache des Tasters. Sei gesprochen und persönlich (1–3 Sätze), KEINE Aufzählung.
+Offene Ecken (Ledger, Status je untouched/touched/sharpened): Nase=${curLedger.nose}, Gaumen=${curLedger.palate}, Abgang=${curLedger.finish}, Körper/Mundgefühl=${curLedger.body}, wahrgenommene Intensität=${curLedger.intensity}, Affekt/Wertung=${curLedger.affect}, vager-Begriff-geschärft=${curLedger.vagueResolved}. Frage gezielt die schwächste relevante Ecke. Die Ecke Affekt/Wertung MUSS vor Schluss berührt sein — frage dann offen "wie sehr packt dich das, wo landet das für dich?".
+Gib JSON zurück:
+{"mentorTurn":"deine 1-3 Sätze","ledger":{"nose":"...","palate":"...","finish":"...","body":"...","intensity":"...","affect":"...","vagueResolved":true|false},"chips":["..bis zu 5 Vokabeln, die zur gerade besprochenen Ecke passen und mitschwingen — schärfen, nicht vorschreiben.."]}
+Aktualisiere das Ledger EHRLICH anhand des Gesprächs: untouched->touched sobald zu einer Ecke etwas gesagt wurde; touched->sharpened sobald sie präzisiert/mit konkreten Begriffen gefüllt ist. Setze vagueResolved=true, sobald mind. ein anfangs vager Begriff (z.B. rauchig, fruchtig) konkretisiert wurde.`;
+      const completion = await openai.chat.completions.create({
+        model: "gpt-5-mini",
+        max_completion_tokens: 900,
+        reasoning_effort: "minimal",
+        response_format: { type: "json_object" },
+        messages: [{ role: "system", content: turnSystem }, { role: "user", content: `${ctx}\n${convo}` }],
+      });
+      let p: any = {}; try { p = JSON.parse(completion.choices[0]?.message?.content || "{}"); } catch { p = {}; }
+      const merged = mergeLedger(curLedger, (p.ledger && typeof p.ledger === "object") ? p.ledger : {});
+      const chips = Array.isArray(p.chips) ? p.chips.filter((c: any) => typeof c === "string" && c.trim()).map((c: string) => c.trim()).slice(0, 5) : [];
+      const proposeClose = canClose(merged, mode);
+      console.log(`[IMPRESSION-CONVERSE] mode=${mode} close=${proposeClose} in ${Date.now() - startMs}ms`);
+      res.json({ mentorTurn: typeof p.mentorTurn === "string" ? p.mentorTurn.trim() : "", ledger: merged, chips, proposeClose, tookMs: Date.now() - startMs });
+    } catch (e: any) {
+      console.error("[IMPRESSION-CONVERSE] error:", e.message);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.post("/api/whisky/identify-online", async (req: Request, res: Response) => {
     const startMs = Date.now();
     try {
