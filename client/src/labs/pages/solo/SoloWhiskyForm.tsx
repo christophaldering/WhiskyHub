@@ -11,9 +11,10 @@ interface Props {
   onSubmit: (w: CapturedWhisky, imageFile?: File | null) => void;
   onBack: () => void;
   onChange?: (w: Partial<CapturedWhisky>) => void;
+  submitLabel?: string;
 }
 
-export default function SoloWhiskyForm({ initial, fromAI, initialImageFile, onSubmit, onBack, onChange }: Props) {
+export default function SoloWhiskyForm({ initial, fromAI, initialImageFile, onSubmit, onBack, onChange, submitLabel }: Props) {
   const { t } = useTranslation();
   const [name, setName] = useState(initial?.name || "");
   const [distillery, setDistillery] = useState(initial?.distillery || "");
@@ -209,7 +210,7 @@ export default function SoloWhiskyForm({ initial, fromAI, initialImageFile, onSu
         className="labs-btn-primary"
         style={{ width: "100%", minHeight: 44, marginTop: "var(--labs-space-xl)" }}
       >
-        {t("v2.solo.toRating", "Continue to Rating")}
+        {submitLabel ?? t("v2.solo.toRating", "Continue to Rating")}
       </button>
     </div>
   );

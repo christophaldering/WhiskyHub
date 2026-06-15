@@ -35,6 +35,7 @@ export default function SoloNamingCapture({ participantId, isAuthenticated, onRe
         initialImageFile={imageFile}
         onSubmit={(w, img) => onResolve(w, img)}
         onBack={() => setPhase("choose")}
+        submitLabel={t("v2.solo.namingContinue", "Weiter")}
       />
     );
   }
