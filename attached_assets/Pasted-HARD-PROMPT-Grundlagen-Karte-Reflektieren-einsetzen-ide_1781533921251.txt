@@ -1,0 +1,36 @@
+HARD PROMPT — Grundlagen-Karte „Reflektieren" einsetzen (idempotent, additiv)
+
+SICHERHEIT: KEINE Commits, KEIN push, KEINE Schema-/DB-Änderung.
+
+SCHRITT 0 — DIAGNOSE + IDEMPOTENZ-CHECK (lesen, dann melden):
+0.1 client/src/lib/i18n.ts: suche nach  id: "reflecting"
+0.2 client/src/labs/pages/LabsIdeaBehindNumbers.tsx: suche nach  concept-reflecting
+0.3 client/src/assets/images/concept-reflecting.png: existiert die Datei?
+ENTSCHEIDUNG:
+- Wenn 0.1 ODER 0.2 bereits einen Treffer hat → der Prompt lief schon. MELDE
+  "bereits angewendet" und STOPPE. Nichts ändern.
+- Wenn 0.3 fehlt → MELDE das und stoppe (Christoph muss das Bild erst hochladen).
+- Sonst: finde im ENGLISCHEN Block das Concept-Objekt mit id "predicting"
+  (endet auf  image: "concept-predicting" },) und dasselbe im DEUTSCHEN Block
+  (zweites Vorkommen). Plan vorlegen, dann ausführen.
+
+--- AUSFÜHRUNG ---
+
+A) LabsIdeaBehindNumbers.tsx — zwei Zeilen ergänzen:
+   - bei den anderen Bild-Imports:
+       import conceptReflecting from "@/assets/images/concept-reflecting.png";
+   - im Objekt imageMap, neue Zeile:
+       "concept-reflecting": conceptReflecting,
+
+B) client/src/lib/i18n.ts — DIREKT NACH dem EN-"predicting"-Objekt einfügen:
+   { id: "reflecting", section: "foundations", term: "Reflecting", metaphor: "To reflect means two things at once: to look into a mirror, and to think something over — and in tasting you do both. The mirror is the word that throws the sip back at you, long after it has gone.", explanation: "A sense-impression is fleeting — gone before you can grasp it. What remains is the word you give it. Nothing is in the mind that was not first in the senses: the impression always comes first. But only language makes it durable, memorable and findable. Whoever can say 'stewed pear with vanilla' keeps the shape of the moment; whoever has only 'sweet' loses it. This does not contradict perception — it continues it: the word you learn today becomes the perception you nose the next glass with. That is why vocabulary never comes before the first impression — it does not shape this glass, it sharpens the next.", whiskyLink: "In CaskSense your first impression is yours alone — free and unguided. Only once it stands does Socratic sharpening offer you words that sharpen your impression without dictating it. Then the mirror shows you how the community described the same dram — not as a verdict, but as resonance. So the fleeting moment becomes memory. Where Tasting becomes Reflection.", image: "concept-reflecting" },
+
+C) client/src/lib/i18n.ts — DIREKT NACH dem DE-"predicting"-Objekt einfügen:
+   { id: "reflecting", section: "foundations", term: "Reflektieren", metaphor: "Reflektieren heißt zweierlei zugleich: in einen Spiegel schauen und über etwas nachdenken — und beim Verkosten tust du beides. Der Spiegel ist das Wort, das den Schluck zurückwirft, lange nachdem er verschwunden ist.", explanation: "Ein Sinneseindruck ist flüchtig — verschwunden, ehe du ihn fassen kannst. Was bleibt, ist das Wort, das du ihm gibst. Nichts ist im Verstand, was nicht zuvor in den Sinnen war: Der Eindruck kommt immer zuerst. Aber erst die Sprache macht ihn haltbar, erinnerbar und wiederauffindbar. Wer 'gedünstete Birne mit Vanille' sagen kann, behält die Gestalt des Moments; wer nur 'süß' hat, verliert sie. Das ist kein Widerspruch zur Wahrnehmung, sondern ihre Fortsetzung: Das Wort, das du heute lernst, wird zur Wahrnehmung, mit der du das nächste Glas riechst. Darum kommt Vokabular nie vor dem ersten Eindruck — es prägt nicht dieses Glas, es schärft das nächste.", whiskyLink: "In CaskSense gehört dein erster Eindruck nur dir — frei und ungelenkt. Erst wenn er steht, bietet dir die Sokratische Schärfung Worte an, die deinen Eindruck schärfen, ohne ihn vorzuschreiben. Danach zeigt dir der Spiegel, wie die Community denselben Dram beschrieben hat — nicht als Urteil, sondern als Resonanz. So wird aus dem flüchtigen Moment Erinnerung. Where Tasting becomes Reflection.", image: "concept-reflecting" },
+
+VERIFIKATION:
+- [ ] Kommas: voriges "predicting"-Objekt endet mit }, — neues ebenso.
+- [ ] `npm run build` fehlerfrei (Import + Bild vorhanden).
+- [ ] Karte „Reflektieren/Reflecting" erscheint als letzte der Grundlagen unter
+      /labs/discover/research → Grundlagen, in DE und EN, mit dem Aquarell.
+- [ ] NICHT committed, NICHT gepusht. (Nochmals: kein Commit.)
