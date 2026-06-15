@@ -1,0 +1,151 @@
+AUFGABE: CaskSense – Erinnerungsfotos für Solo-Einträge, PHASE 3a (Schema + Server).
+Neue Tabelle entry_photos + Storage-Methoden + 3 Endpoints. KEINE UI in dieser Phase.
+
+=== SICHERHEIT ZUERST ===
+Setze VOR jeder Änderung den Git-Tag:  pre-entry-photos-3a-2026-06-15
+Rollback bei Problemen:  git reset --hard pre-entry-photos-3a-2026-06-15
+
+=== SCHRITT 0 — NUR DIAGNOSE, NICHTS ÄNDERN ===
+Führe diese Prüfungen aus und gib die Zahlen aus. Erst wenn alle stimmen, fahre fort:
+  grep -c 'export type TastingEventPhoto = typeof tastingEventPhotos.$inferSelect;' shared/schema.ts        → muss 1 sein
+  grep -c 'tastingPhotos, tastingEventPhotos, tastingStoryVersions' server/storage.ts                       → muss 1 sein
+  grep -c '  type InsertTastingEventPhoto, type TastingEventPhoto,' server/storage.ts                       → muss 1 sein
+  grep -c '  deleteTastingEventPhoto(id: string): Promise<void>;' server/storage.ts                         → muss 1 sein
+  grep -c '// ===== WISHLIST =====' server/routes.ts                                                        → muss >=1 sein
+Zeige mir die Zahlen und den Plan. NICHT committen, NICHT pushen, KEIN drizzle-kit. WARTE auf mein OK.
+
+=== EDIT A — shared/schema.ts ===
+FÜGE direkt NACH dieser Zeile (eindeutig, 1x):
+  export type TastingEventPhoto = typeof tastingEventPhotos.$inferSelect;
+diesen Block ein:
+
+// --- Entry Photos (memory photos attached to a solo journal entry; max 5; GPS stripped by universal sanitizer) ---
+export const entryPhotos = pgTable("entry_photos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  journalEntryId: varchar("journal_entry_id").notNull(),
+  participantId: varchar("participant_id").notNull(),
+  photoUrl: text("photo_url").notNull(),
+  caption: text("caption"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  entryIdx: index("idx_entry_photos_entry").on(table.journalEntryId, table.sortOrder),
+}));
+
+export const insertEntryPhotoSchema = createInsertSchema(entryPhotos).omit({ id: true, createdAt: true });
+export type InsertEntryPhoto = z.infer<typeof insertEntryPhotoSchema>;
+export type EntryPhoto = typeof entryPhotos.$inferSelect;
+
+=== EDIT B — server/storage.ts (vier kleine Änderungen) ===
+B1) ERSETZE (1x):
+  tastingPhotos, tastingEventPhotos, tastingStoryVersions
+DURCH:
+  tastingPhotos, tastingEventPhotos, entryPhotos, tastingStoryVersions
+
+B2) ERSETZE (1x):
+  type InsertTastingEventPhoto, type TastingEventPhoto,
+DURCH:
+  type InsertTastingEventPhoto, type TastingEventPhoto,
+  type InsertEntryPhoto, type EntryPhoto,
+
+B3) FÜGE direkt NACH dieser Zeile (eindeutig, IStorage-Interface, 1x):
+  deleteTastingEventPhoto(id: string): Promise<void>;
+diese drei Zeilen ein:
+  getEntryPhotos(journalEntryId: string): Promise<EntryPhoto[]>;
+  createEntryPhoto(data: InsertEntryPhoto): Promise<EntryPhoto>;
+  deleteEntryPhoto(id: string, participantId: string): Promise<void>;
+
+B4) FÜGE direkt NACH diesem Block (eindeutig, DatabaseStorage-Klasse, 1x):
+  async deleteTastingEventPhoto(id: string): Promise<void> {
+    await db.delete(tastingEventPhotos).where(eq(tastingEventPhotos.id, id));
+  }
+diesen Block ein:
+
+  async getEntryPhotos(journalEntryId: string): Promise<EntryPhoto[]> {
+    return db.select().from(entryPhotos).where(eq(entryPhotos.journalEntryId, journalEntryId)).orderBy(asc(entryPhotos.sortOrder), asc(entryPhotos.createdAt));
+  }
+
+  async createEntryPhoto(data: InsertEntryPhoto): Promise<EntryPhoto> {
+    const [result] = await db.insert(entryPhotos).values(data).returning();
+    return result;
+  }
+
+  async deleteEntryPhoto(id: string, participantId: string): Promise<void> {
+    await db.delete(entryPhotos).where(and(eq(entryPhotos.id, id), eq(entryPhotos.participantId, participantId)));
+  }
+
+=== EDIT C — server/routes.ts ===
+FÜGE direkt VOR dieser Zeile (eindeutiger Anker, erstes Vorkommen — direkt nach dem Journal-image-Endpoint):
+  // ===== WISHLIST =====
+diesen Block ein:
+
+  // ===== ENTRY MEMORY PHOTOS (solo journal entry, max 5; GPS stripped by universal sanitizer) =====
+
+  app.get("/api/journal/:participantId/:id/photos", async (req: any, res: any) => {
+    try {
+      const photos = await storage.getEntryPhotos(req.params.id);
+      res.json(Array.isArray(photos) ? photos : []);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/journal/:participantId/:id/photos", (req: any, res: any, next: any) => {
+    memUpload.single("photo")(req, res, (err: any) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ message: "Image must be under 5 MB" });
+        if (err.message) return res.status(415).json({ message: err.message });
+        return res.status(400).json({ message: "Upload failed" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      if (!req.file) return res.status(400).json({ message: "No image file provided" });
+      // Ownership: the journal entry must belong to this participant
+      const owner = await storage.getJournalEntry(req.params.id, req.params.participantId);
+      if (!owner) return res.status(404).json({ message: "Journal entry not found" });
+      const existing = await storage.getEntryPhotos(req.params.id);
+      if (existing.length >= 5) return res.status(409).json({ message: "Maximum of 5 photos per entry reached" });
+      // uploadBufferToObjectStorage runs the universal sanitizer (strips EXIF/GPS)
+      const photoUrl = await uploadBufferToObjectStorage(objectStorage, req.file.buffer, req.file.mimetype);
+      const photo = await storage.createEntryPhoto({
+        journalEntryId: req.params.id,
+        participantId: req.params.participantId,
+        photoUrl,
+        sortOrder: existing.length,
+      });
+      res.status(201).json(photo);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/journal/:participantId/photos/:photoId", async (req: any, res: any) => {
+    try {
+      await storage.deleteEntryPhoto(req.params.photoId, req.params.participantId);
+      res.status(204).end();
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+=== VERIFIKATION (nach den Edits ausführen, Zahlen zeigen) ===
+  grep -c 'pgTable("entry_photos"' shared/schema.ts                                  → 1
+  grep -c 'export type EntryPhoto' shared/schema.ts                                  → 1
+  grep -c 'tastingEventPhotos, entryPhotos,' server/storage.ts                       → 1
+  grep -c 'async getEntryPhotos' server/storage.ts                                   → 1
+  grep -c 'async createEntryPhoto' server/storage.ts                                 → 1
+  grep -c 'async deleteEntryPhoto' server/storage.ts                                 → 1
+  grep -c 'app.post("/api/journal/:participantId/:id/photos"' server/routes.ts       → 1
+  grep -c 'app.delete("/api/journal/:participantId/photos/:photoId"' server/routes.ts → 1
+Danach den TypeScript-Check laufen lassen (npm run check bzw. tsc) und melden, ob 0 Fehler in den 3 Dateien.
+
+=== STRIKTE VERBOTE (auch in der Verifikation gilt: NICHT committen!) ===
+- NICHT committen, NICHT pushen. Ich (Christoph) setze den Tag, nehme per Byte-Diff ab und pushe selbst.
+- KEIN drizzle-kit (kein push, kein generate, kein migrate). Die neue Tabelle entry_photos wird beim regulären Republish automatisch via post-merge.sh angelegt — du fasst die DB NICHT an.
+- KEINE weiteren Schema-Änderungen außer dem entry_photos-Block oben.
+- KEINE Änderungen an .gitignore; die migrations/*.sql-Dateien bleiben unverändert getrackt.
+- Dateien NICHT anfassen: RatingFlowV2.tsx, ImpressionCapture.tsx, LabsHostCockpit.tsx, LabsSolo.tsx, SoloDoneScreen.tsx (die UI kommt in Phase 3b).
+- NUR diese drei Dateien ändern: shared/schema.ts, server/storage.ts, server/routes.ts.
+- Erinnerung: am Ende NICHT committen.

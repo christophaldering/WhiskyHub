@@ -12179,6 +12179,57 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
     }
   });
 
+  // ===== ENTRY MEMORY PHOTOS (solo journal entry, max 5; GPS stripped by universal sanitizer) =====
+
+  app.get("/api/journal/:participantId/:id/photos", async (req: any, res: any) => {
+    try {
+      const photos = await storage.getEntryPhotos(req.params.id);
+      res.json(Array.isArray(photos) ? photos : []);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/journal/:participantId/:id/photos", (req: any, res: any, next: any) => {
+    memUpload.single("photo")(req, res, (err: any) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ message: "Image must be under 5 MB" });
+        if (err.message) return res.status(415).json({ message: err.message });
+        return res.status(400).json({ message: "Upload failed" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      if (!req.file) return res.status(400).json({ message: "No image file provided" });
+      // Ownership: the journal entry must belong to this participant
+      const owner = await storage.getJournalEntry(req.params.id, req.params.participantId);
+      if (!owner) return res.status(404).json({ message: "Journal entry not found" });
+      const existing = await storage.getEntryPhotos(req.params.id);
+      if (existing.length >= 5) return res.status(409).json({ message: "Maximum of 5 photos per entry reached" });
+      // uploadBufferToObjectStorage runs the universal sanitizer (strips EXIF/GPS)
+      const photoUrl = await uploadBufferToObjectStorage(objectStorage, req.file.buffer, req.file.mimetype);
+      const photo = await storage.createEntryPhoto({
+        journalEntryId: req.params.id,
+        participantId: req.params.participantId,
+        photoUrl,
+        sortOrder: existing.length,
+      });
+      res.status(201).json(photo);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/journal/:participantId/photos/:photoId", async (req: any, res: any) => {
+    try {
+      await storage.deleteEntryPhoto(req.params.photoId, req.params.participantId);
+      res.status(204).end();
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== WISHLIST =====
 
   app.get("/api/wishlist/:participantId", async (req, res) => {

@@ -800,6 +800,23 @@ export const insertTastingEventPhotoSchema = createInsertSchema(tastingEventPhot
 export type InsertTastingEventPhoto = z.infer<typeof insertTastingEventPhotoSchema>;
 export type TastingEventPhoto = typeof tastingEventPhotos.$inferSelect;
 
+// --- Entry Photos (memory photos attached to a solo journal entry; max 5; GPS stripped by universal sanitizer) ---
+export const entryPhotos = pgTable("entry_photos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  journalEntryId: varchar("journal_entry_id").notNull(),
+  participantId: varchar("participant_id").notNull(),
+  photoUrl: text("photo_url").notNull(),
+  caption: text("caption"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  entryIdx: index("idx_entry_photos_entry").on(table.journalEntryId, table.sortOrder),
+}));
+
+export const insertEntryPhotoSchema = createInsertSchema(entryPhotos).omit({ id: true, createdAt: true });
+export type InsertEntryPhoto = z.infer<typeof insertEntryPhotoSchema>;
+export type EntryPhoto = typeof entryPhotos.$inferSelect;
+
 export const tastingStoryVersions = pgTable("tasting_story_versions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tastingId: varchar("tasting_id").notNull(),

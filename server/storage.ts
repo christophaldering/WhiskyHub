@@ -8,7 +8,7 @@ import { getParticipantOverallScores, computeStabilityScore } from "./participan
 import {
   participants, tastings, tastingParticipants, sharingParticipants, whiskies, whiskyHandoutLibrary, whiskyHandouts, tastingHandouts, distilleryHandouts, pdfSplitSessions, ratings, ratingAudit,
   profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, whiskyGroups, whiskyGroupMembers, journalEntries, benchmarkEntries, wishlistEntries,
-  newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, tastingPhotos, tastingEventPhotos, tastingStoryVersions, tastingStoryImages, storyVersions, storyTemplates, userFeedback,
+  newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, tastingPhotos, tastingEventPhotos, entryPhotos, tastingStoryVersions, tastingStoryImages, storyVersions, storyTemplates, userFeedback,
   type InsertParticipant, type Participant,
   type InsertTasting, type Tasting,
   type InsertTastingParticipant, type TastingParticipant,
@@ -41,6 +41,7 @@ import {
   type InsertEncyclopediaSuggestion, type EncyclopediaSuggestion,
   type InsertTastingPhoto, type TastingPhoto,
   type InsertTastingEventPhoto, type TastingEventPhoto,
+  type InsertEntryPhoto, type EntryPhoto,
   type InsertTastingStoryVersion, type TastingStoryVersion,
   type InsertTastingStoryImage, type TastingStoryImage,
   type InsertStoryVersion, type StoryVersion,
@@ -690,6 +691,9 @@ export interface IStorage {
   createTastingEventPhoto(data: InsertTastingEventPhoto): Promise<TastingEventPhoto>;
   updateTastingEventPhoto(id: string, data: Partial<{ caption: string; sortOrder: number }>): Promise<TastingEventPhoto | undefined>;
   deleteTastingEventPhoto(id: string): Promise<void>;
+  getEntryPhotos(journalEntryId: string): Promise<EntryPhoto[]>;
+  createEntryPhoto(data: InsertEntryPhoto): Promise<EntryPhoto>;
+  deleteEntryPhoto(id: string, participantId: string): Promise<void>;
 
   // Tasting Story Versions (host-saved snapshots of the story slides cache)
   listTastingStoryVersions(tastingId: string): Promise<TastingStoryVersion[]>;
@@ -3752,6 +3756,19 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTastingEventPhoto(id: string): Promise<void> {
     await db.delete(tastingEventPhotos).where(eq(tastingEventPhotos.id, id));
+  }
+
+  async getEntryPhotos(journalEntryId: string): Promise<EntryPhoto[]> {
+    return db.select().from(entryPhotos).where(eq(entryPhotos.journalEntryId, journalEntryId)).orderBy(asc(entryPhotos.sortOrder), asc(entryPhotos.createdAt));
+  }
+
+  async createEntryPhoto(data: InsertEntryPhoto): Promise<EntryPhoto> {
+    const [result] = await db.insert(entryPhotos).values(data).returning();
+    return result;
+  }
+
+  async deleteEntryPhoto(id: string, participantId: string): Promise<void> {
+    await db.delete(entryPhotos).where(and(eq(entryPhotos.id, id), eq(entryPhotos.participantId, participantId)));
   }
 
   async listTastingStoryVersions(tastingId: string): Promise<TastingStoryVersion[]> {
