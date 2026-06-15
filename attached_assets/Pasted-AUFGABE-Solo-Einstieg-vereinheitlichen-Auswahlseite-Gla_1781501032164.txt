@@ -1,0 +1,109 @@
+AUFGABE: Solo-Einstieg vereinheitlichen — Auswahlseite (Glas-Hero oben + Methoden darunter) als gemeinsamer Einstieg für angemeldet UND Gast. Gast-Einstiegsseite: Solo-Karte schlank wie die anderen drei.
+
+SICHERHEIT VORAB:
+- Setze zuerst einen Git-Tag als Rollback-Punkt: pre-solo-entry-2026-06-15
+- NICHT committen, NICHT pushen. Keine Schema-Änderungen, keine Migrationen, kein drizzle-kit.
+- LabsHostCockpit.tsx und das Host-Cockpit NICHT anfassen.
+- RatingFlowV2.tsx und ImpressionCapture.tsx NICHT anfassen (nur Einstiegs-Verdrahtung in LabsSolo).
+
+SCHRITT 0 — NUR LESEN, NICHTS ÄNDERN (bitte Ergebnisse zeigen):
+1. grep -n "useState<Step>(initialSoloDraft" client/src/labs/pages/LabsSolo.tsx
+2. grep -n "showImpressionCapture, setShowImpressionCapture] = useState" client/src/labs/pages/LabsSolo.tsx
+3. grep -n "handleIdentifyFirst = useCallback" client/src/labs/pages/LabsSolo.tsx
+4. grep -n "step === \"capture\"" client/src/labs/pages/LabsSolo.tsx
+5. grep -n "ImpressionFirstHero" client/src/labs/pages/LabsTastings.tsx client/src/labs/pages/LabsSolo.tsx
+6. grep -n "JoinIcon, HostIcon" client/src/labs/pages/LabsTastings.tsx
+Erst wenn alle Treffer wie erwartet sind, weiter. Plan kurz bestätigen, DANN ausführen.
+
+=== DATEI A: client/src/labs/pages/LabsSolo.tsx ===
+
+A1) Einstieg immer bei der Methodenwahl starten.
+ALT:
+  const [step, setStep] = useState<Step>(initialSoloDraft ? "capture" : "rating");
+NEU:
+  const [step, setStep] = useState<Step>("capture");
+
+A2) Eindruck-Dialog startet nicht mehr automatisch, sondern erst per Glas-Klick.
+ALT:
+  const [showImpressionCapture, setShowImpressionCapture] = useState(!initialSoloDraft);
+NEU:
+  const [showImpressionCapture, setShowImpressionCapture] = useState(false);
+
+A3) Neuen Handler startImpression direkt NACH handleIdentifyFirst einfügen.
+ALT:
+  const handleIdentifyFirst = useCallback(() => {
+    setShowImpressionCapture(false);
+    setStep("capture");
+  }, []);
+NEU:
+  const handleIdentifyFirst = useCallback(() => {
+    setShowImpressionCapture(false);
+    setStep("capture");
+  }, []);
+
+  const startImpression = useCallback(() => {
+    setShowImpressionCapture(true);
+    setStep("rating");
+  }, []);
+
+A4) Glas-Hero im capture-Step ÜBER die Methodenwahl setzen (genau einmal vorhanden).
+ALT:
+        )}
+        <SoloCaptureScreen
+          participantId={participantId}
+NEU:
+        )}
+        <ImpressionFirstHero onClick={startImpression} />
+        <SoloCaptureScreen
+          participantId={participantId}
+
+A5) Import ergänzen (neben den anderen ./solo/-Imports oben).
+Füge hinzu:
+  import ImpressionFirstHero from "./solo/ImpressionFirstHero";
+
+=== DATEI B: client/src/labs/pages/LabsTastings.tsx ===
+
+B1) Solo-Karte von Glas-Hero auf schlanke Karte umstellen (vergleichbar mit Join/Host/Share).
+ALT:
+          <ImpressionFirstHero
+            onClick={() => setActiveTab("solo")}
+          />
+NEU:
+          <button
+            className="labs-card labs-card-interactive labs-home-action-card labs-fade-in labs-stagger-1"
+            onClick={() => setActiveTab("solo")}
+            data-testid="labs-action-solo"
+          >
+            <div className="labs-home-action-icon">
+              <GlassIcon size={20} />
+            </div>
+            <div className="labs-home-action-text">
+              <div className="ty-ui">{t('home.solo')}</div>
+              <div className="ty-caption labs-home-action-sub">
+                {t('home.soloSub')}
+              </div>
+            </div>
+          </button>
+
+B2) GlassIcon importieren.
+ALT:
+import { JoinIcon, HostIcon } from "@/labs/components/FlavourIcons";
+NEU:
+import { JoinIcon, HostIcon, GlassIcon } from "@/labs/components/FlavourIcons";
+
+B3) Den jetzt ungenutzten ImpressionFirstHero-Import aus LabsTastings ENTFERNEN.
+ALT (Zeile ersatzlos löschen):
+import ImpressionFirstHero from "./solo/ImpressionFirstHero";
+
+=== VERIFIKATION (zeigen) ===
+- grep -n "useState<Step>(\"capture\")" client/src/labs/pages/LabsSolo.tsx   → 1 Treffer
+- grep -n "setShowImpressionCapture] = useState(false)" client/src/labs/pages/LabsSolo.tsx  → 1 Treffer
+- grep -n "startImpression" client/src/labs/pages/LabsSolo.tsx   → mind. 2 Treffer (Definition + Nutzung im capture-Step)
+- grep -n "ImpressionFirstHero" client/src/labs/pages/LabsSolo.tsx   → 2 Treffer (Import + Nutzung)
+- grep -n "ImpressionFirstHero" client/src/labs/pages/LabsTastings.tsx   → 0 Treffer
+- grep -n "labs-action-solo\|GlassIcon" client/src/labs/pages/LabsTastings.tsx   → Karte + Import
+- esbuild-Check beider Dateien (jeweils 0 ERRORs):
+  npx esbuild client/src/labs/pages/LabsSolo.tsx --bundle --loader:.tsx=tsx --jsx=automatic --external:react --external:react-i18next --external:lucide-react --external:wouter --external:@/* --external:@tanstack/* --format=esm --outfile=/dev/null
+  npx esbuild client/src/labs/pages/LabsTastings.tsx --bundle --loader:.tsx=tsx --jsx=automatic --external:react --external:react-i18next --external:lucide-react --external:wouter --external:@/* --external:@tanstack/* --format=esm --outfile=/dev/null
+
+ERINNERUNG ZUM ABSCHLUSS: NICHT committen, NICHT pushen. Nur Dateien speichern. Kein drizzle-kit, keine Migration, kein Schema-Touch. Host-Cockpit unberührt.
