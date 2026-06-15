@@ -5489,8 +5489,8 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
 
       const completion = await openai.chat.completions.create({
         model: "gpt-5-mini",
-        temperature: 0.3,
-        max_tokens: 500,
+        max_completion_tokens: 2000,
+        reasoning_effort: "minimal",
         response_format: { type: "json_object" },
         messages: [
           {

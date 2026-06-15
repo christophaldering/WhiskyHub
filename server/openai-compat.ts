@@ -37,3 +37,4 @@ if (proto && typeof proto.create === "function" && !proto.__gpt5CompatPatched) {
   };
   proto.__gpt5CompatPatched = true;
 }
+console.log("[openai-compat] gpt-5 shim:", proto ? (proto.__gpt5CompatPatched ? "attached" : "present-not-patched") : "PROTO NOT FOUND");

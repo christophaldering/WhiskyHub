@@ -23,3 +23,5 @@ When upgrading model identifiers in this repo (e.g. gpt-4o -> gpt-5, gpt-4o-mini
 **Why central, not per-call-site:** ~46 scattered `.create({max_tokens, temperature})` calls; one SDK-prototype shim covers them all + future calls.
 
 **Coverage gap:** the shim only runs for code that boots through `server/index.ts`. Standalone scripts (`scripts/*`, `server/seed-whisky-db.ts`) do NOT import it — if run with a gpt-5 model they will still 400. Move the shim into a shared bootstrap if scripts need it. Also only patches Chat Completions, not `responses.create`.
+
+**Reasoning token budget (separate from the 400s):** gpt-5 reasoning models spend `max_completion_tokens` on INTERNAL reasoning first, so a small budget that worked for gpt-4o (e.g. 500) yields EMPTY output (200 OK, blank fields), not an error. For short JSON-output calls set `reasoning_effort: "minimal"` and a generous `max_completion_tokens` (e.g. 2000). The compat shim does NOT fix this — it only renames params; the budget is per-call intent and must be raised at the call-site.
