@@ -761,8 +761,8 @@ export default function LabsSolo() {
   }, []);
 
   const handleHub = useCallback(() => {
-    goBack();
-  }, [goBack]);
+    navigate(isUserAuthenticated() ? "/labs/taste" : "/labs/tastings");
+  }, [navigate]);
 
   const handleRatingBack = useCallback(() => {
     const currentData = latestRatingDataRef.current;
