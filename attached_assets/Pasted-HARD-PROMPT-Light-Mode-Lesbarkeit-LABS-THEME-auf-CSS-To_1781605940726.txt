@@ -1,0 +1,38 @@
+HARD PROMPT — Light-Mode-Lesbarkeit: LABS_THEME auf CSS-Tokens umstellen
+SICHERHEIT: KEINE Commits, KEIN push, KEINE DB-/Server-/Schema-Änderung. NUR client/src/labs/components/rating/theme.ts.
+
+HINTERGRUND: LABS_THEME ist eine reine Dunkel-Palette mit hartcodierten Farben (#f5ede0 etc.). In labs-theme.css existiert ein vollständiges Token-System mit Light-Variante (.labs-shell.labs-light bzw. :root:has(.labs-shell.labs-light)). Indem LABS_THEME auf diese Tokens zeigt, werden alle Konsumenten (ImpressionCapture/Cooper + 4 Solo-Screens) automatisch light/dark-fähig — OHNE die Komponenten anzufassen.
+
+SCHRITT 0 (lesen, melden): bestätige in theme.ts den Block `export const LABS_THEME: ThemeTokens = { ... };` (~Z.52–79) und dass SP/FONT/RADIUS/TOUCH_MIN/Interfaces unverändert darüber/daneben stehen. Plan nennen, dann ausführen.
+
+ÄNDERUNG — ersetze GENAU den kompletten Block `export const LABS_THEME: ThemeTokens = { … };` durch:
+
+export const LABS_THEME: ThemeTokens = {
+  bg: "var(--labs-bg)",
+  bgCard: "var(--labs-surface-elevated)",
+  bgHover: "var(--labs-surface-hover)",
+  border: "var(--labs-border-subtle)",
+  text: "var(--labs-text)",
+  muted: "var(--labs-text-secondary)",
+  faint: "var(--labs-text-muted)",
+  gold: "var(--labs-accent)",
+  amber: "var(--labs-amber)",
+  green: "var(--labs-success)",
+  headerBg: "var(--labs-header-bg)",
+  inputBg: "var(--labs-input-bg)",
+  phases: {
+    nose:    { accent: "var(--labs-phase-nose)",    dim: "var(--labs-phase-nose-dim)",    glow: "var(--labs-phase-nose-glow)" },
+    palate:  { accent: "var(--labs-phase-palate)",  dim: "var(--labs-phase-palate-dim)",  glow: "var(--labs-phase-palate-glow)" },
+    finish:  { accent: "var(--labs-phase-finish)",  dim: "var(--labs-phase-finish-dim)",  glow: "var(--labs-phase-finish-glow)" },
+    overall: { accent: "var(--labs-phase-overall)", dim: "var(--labs-phase-overall-dim)", glow: "var(--labs-phase-overall-glow)" },
+  },
+};
+
+(SP, FONT, RADIUS, TOUCH_MIN, ThemeTokens/PhaseTokens-Interfaces NICHT verändern.)
+
+VERIFIKATION:
+- [ ] npm run build / tsc grün.
+- [ ] LIGHT-Mode: Solo → "Erster Eindruck" → Text, Hinweis, Eingabefeld, Tiefe-Chips lesbar; Cooper-Gespräch (Sternbild, Chips, Chat) lesbar; handoff inkl. Prosa lesbar. Außerdem die Screens ImpressionIntro / SoloNamingCapture / SoloNamingStep / ImpressionFirstHero lesbar.
+- [ ] DARK-Mode: dieselben Screens weiterhin korrekt (leichte, beabsichtigte Verfeinerung erlaubt: Karten/Chips minimal definierter, da die alte bgCard fast unsichtbar-transluzent war).
+- [ ] Goldene Buttons: Text bleibt in BEIDEN Modi lesbar.
+- [ ] NICHT committed.
