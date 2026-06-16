@@ -50,7 +50,7 @@ export default function MeineWeltActionBar({ active, onSelect, showHubHeader = t
             <Archive className="w-5 h-5 labs-icon-accent" />
           </div>
           <span className="labs-action-bar-label">{t("myTastePage.tileMyCollection", "Collection")}</span>
-          <span className="labs-action-bar-sublabel">{t("myTastePage.tileMyCollectionDesc", "Drams")}</span>
+          <span className="labs-action-bar-sublabel">{t("myTastePage.tileMyCollectionDesc", "Flaschen & Wunschliste")}</span>
         </button>
         <button
           type="button"
@@ -62,7 +62,7 @@ export default function MeineWeltActionBar({ active, onSelect, showHubHeader = t
             <Sparkles className="w-5 h-5 labs-icon-accent" />
           </div>
           <span className="labs-action-bar-label">{t("myTastePage.tileAiInsights", "AI Insights")}</span>
-          <span className="labs-action-bar-sublabel">{t("myTastePage.tileAiInsightsDesc", "Tips")}</span>
+          <span className="labs-action-bar-sublabel">{t("myTastePage.tileAiInsightsDesc", "Reports & Empfehlungen")}</span>
         </button>
         <button
           type="button"
@@ -74,7 +74,7 @@ export default function MeineWeltActionBar({ active, onSelect, showHubHeader = t
             <BarChart3 className="w-5 h-5 labs-icon-success" />
           </div>
           <span className="labs-action-bar-label">{t("myTastePage.tileProfileAnalytics", "Analytics")}</span>
-          <span className="labs-action-bar-sublabel">{t("myTastePage.tileProfileAnalyticsDesc", "Aromas")}</span>
+          <span className="labs-action-bar-sublabel">{t("myTastePage.tileProfileAnalyticsDesc", "Statistik & Profil")}</span>
         </button>
       </div>
     </div>

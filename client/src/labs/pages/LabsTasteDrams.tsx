@@ -1258,7 +1258,7 @@ export default function LabsTasteDrams() {
                     { value: allItems.length, label: t("drams.total") },
                     { value: journal.filter((e: any) => e.status !== "draft").length, label: t("drams.solo") },
                     { value: tastingWhiskies.length, label: t("drams.tastings") },
-                    { value: journal.filter((e: any) => e.status === "draft").length, label: t("drams.drafts") },
+                    { value: journal.filter((e: any) => e.status === "draft").length, label: t("drams.statusOpen", "Offen") },
                   ].map(s => (
                     <div key={s.label} style={{ textAlign: "center", padding: "10px 4px", background: "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))", borderRadius: 10, border: "1px solid var(--labs-border)" }}>
                       <div className="labs-h2" style={{ color: "var(--labs-accent)", fontSize: 20 }}>{s.value}</div>
@@ -1270,31 +1270,6 @@ export default function LabsTasteDrams() {
             </div>
           )}
 
-          {statusFilter !== "open" && journal.filter((e: any) => e.status === "draft").length > 0 && (
-            <div style={{ padding: "0 20px", marginBottom: 12 }} data-testid="labs-draft-banner">
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "10px 14px",
-                  borderRadius: 12,
-                  background: "rgba(200,134,26,0.08)",
-                  border: "1px solid rgba(200,134,26,0.2)",
-                  cursor: "pointer",
-                }}
-                onClick={() => setStatusFilter("open")}
-              >
-                <FileEdit style={{ width: 16, height: 16, color: "#c8861a", flexShrink: 0 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>
-                    {t("v2.drams.openBanner", "{{count}} offene Drams — direkt anzeigen →", { count: journal.filter((e: any) => e.status === "draft").length })}
-                  </div>
-                </div>
-                <ChevronLeft style={{ width: 16, height: 16, color: "#c8861a", transform: "rotate(180deg)" }} />
-              </div>
-            </div>
-          )}
 
           <div style={{ padding: "0 20px", marginBottom: 12 }}>
             <div className="labs-segmented" style={{ marginBottom: 8 }}>
@@ -1369,7 +1344,7 @@ export default function LabsTasteDrams() {
                   data-testid="button-sort-dropdown"
                 >
                   {sortDirection === "desc" ? <ArrowDown className="w-3.5 h-3.5" /> : <ArrowUp className="w-3.5 h-3.5" />}
-                  {sortBy === "saved" ? t("drams.saved") : sortBy === "date" ? t("drams.date") : sortBy === "score" ? t("drams.score") : t("drams.name")}
+                  {t("drams.sortAction", "Sortieren")}
                 </button>
                 {sortDropdownOpen && (
                   <>
