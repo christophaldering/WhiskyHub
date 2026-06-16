@@ -1,0 +1,118 @@
+HARD PROMPT — Cooper PHASE B1 (Solo): Opt-in-Eintritt statt Auto-Cooper
+
+KONTEXT: In Solo erscheint Cooper aktuell automatisch (man muss aktiv "Überspringen").
+Ziel: eine Wahl-Karte DAVOR — "Mit Cooper sprechen" (einladend) / "Direkt bewerten".
+Nordstern: der Eindruck ist heilig, nicht Cooper → er wird angeboten, nicht aufgedrängt.
+Rein Client, KEIN Schema. Cooper-Dialog + Mapping bleiben unangetastet.
+
+══════════════════════════════════════════════════════════
+SCHRITT 0 — DIAGNOSE (NUR LESEN, dann STOPP + Plan, auf OK warten):
+══════════════════════════════════════════════════════════
+client/src/labs/pages/LabsSolo.tsx:
+a) Bestätige State-Zeile `const [showImpressionCapture, setShowImpressionCapture] = useState(false);` (~Z.145).
+b) Bestätige handleImpressionApply endet mit `setShowImpressionCapture(false);` vor `}, [preferredRatingModeFromProfile]);`.
+c) Bestätige handleImpressionSkip = `setShowImpressionCapture(false);`.
+d) Bestätige den Render-Zweig `{showImpressionCapture ? ( <ImpressionCapture .../> ) : (` im step==="rating"-Block (~Z.893).
+e) Bestätige, dass `t` (useTranslation) im Render in Scope ist (buildJournalBody nutzt t).
+→ DANN STOPP.
+
+══════════════════════════════════════════════════════════
+SCHRITT 1 — neuer State (nach Z.145)
+══════════════════════════════════════════════════════════
+NACH `const [showImpressionCapture, setShowImpressionCapture] = useState(false);`
+EINFÜGEN:
+  const [cooperStarted, setCooperStarted] = useState(false);
+
+══════════════════════════════════════════════════════════
+SCHRITT 2 — cooperStarted beim Verlassen zurücksetzen (2 Handler)
+══════════════════════════════════════════════════════════
+2a) In handleImpressionApply, ERSETZE:
+    setShowImpressionCapture(false);
+  }, [preferredRatingModeFromProfile]);
+DURCH:
+    setShowImpressionCapture(false);
+    setCooperStarted(false);
+  }, [preferredRatingModeFromProfile]);
+
+2b) ERSETZE:
+  const handleImpressionSkip = useCallback(() => {
+    setShowImpressionCapture(false);
+  }, []);
+DURCH:
+  const handleImpressionSkip = useCallback(() => {
+    setShowImpressionCapture(false);
+    setCooperStarted(false);
+  }, []);
+
+(Damit zeigt jeder neue Eindruck-Eintritt wieder die Wahl-Karte; Reset beim Verlassen, nicht beim Eintritt.)
+
+══════════════════════════════════════════════════════════
+SCHRITT 3 — Wahl-Karte vor Cooper rendern
+══════════════════════════════════════════════════════════
+ERSETZE EXAKT:
+        {showImpressionCapture ? (
+          <ImpressionCapture
+            whiskyName={whisky?.name || undefined}
+            onApply={handleImpressionApply}
+            onSkip={handleImpressionSkip}
+            onIdentifyFirst={handleIdentifyFirst}
+            participantId={participantId}
+          />
+        ) : (
+DURCH:
+        {showImpressionCapture ? (
+          cooperStarted ? (
+          <ImpressionCapture
+            whiskyName={whisky?.name || undefined}
+            onApply={handleImpressionApply}
+            onSkip={handleImpressionSkip}
+            onIdentifyFirst={handleIdentifyFirst}
+            participantId={participantId}
+          />
+          ) : (
+            <div className="labs-card" style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }} data-testid="solo-impression-choice">
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, lineHeight: 1.2, color: "var(--labs-text)" }}>
+                {whisky?.name || t("v2.ratingDram", "Dram")}
+              </div>
+              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 17, lineHeight: 1.4, color: "var(--labs-text-secondary)" }}>
+                {t("v2.impressionChoiceIntro", "Wie möchtest du deinen ersten Eindruck festhalten?")}
+              </div>
+              <button
+                type="button"
+                onClick={() => setCooperStarted(true)}
+                data-testid="solo-impression-choice-cooper"
+                style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, width: "100%", minHeight: 44, padding: "14px 18px", borderRadius: 14, border: "none", background: "var(--labs-accent)", color: "var(--labs-accent-dark)", cursor: "pointer", textAlign: "left" }}
+              >
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 600 }}>{t("v2.impressionChoiceCooper", "Mit Cooper sprechen")}</span>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, opacity: 0.8 }}>{t("v2.impressionChoiceCooperHint", "Dein Eindruck, behutsam geschärft")}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleImpressionSkip}
+                data-testid="solo-impression-choice-direct"
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", minHeight: 44, padding: "12px 18px", borderRadius: 14, border: "1px solid var(--labs-border)", background: "transparent", color: "var(--labs-text)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 500 }}
+              >
+                {t("v2.impressionChoiceDirect", "Direkt bewerten")}
+              </button>
+            </div>
+          )
+        ) : (
+
+WICHTIG: Der Block endet bewusst mit `) : (` — der darauf folgende <RatingFlowV2.../> und das
+schließende `)}` bleiben UNVERÄNDERT. Nicht anfassen.
+
+══════════════════════════════════════════════════════════
+VERIFIKATION (nur lesen):
+══════════════════════════════════════════════════════════
+- State cooperStarted existiert; in handleImpressionApply UND handleImpressionSkip wird setCooperStarted(false) gerufen.
+- Render: data-testid="solo-impression-choice" mit zwei Buttons (…-cooper / …-direct);
+  "…-cooper" setzt cooperStarted true, "…-direct" ruft handleImpressionSkip.
+- Klammern balancieren: nach dem neuen Block folgt unverändert <RatingFlowV2 …/> und `)}`.
+- App baut (tsc/build) ohne neue Fehler.
+- Verhalten: Eindruck-Eintritt zeigt zuerst die Wahl; "Mit Cooper" → Cooper wie gehabt;
+  "Direkt bewerten" → bisheriger Skip-Pfad (Modus-Wahl/Bewertung). Resume/Vertiefung unverändert (kein Eindruck-Zweig).
+
+HINWEIS: v2.impressionChoice* sind neue Keys, laufen über die deutschen Fallbacks (EN später) — wie der bestehende Stil.
+
+❗ KEIN COMMIT, kein git add/commit/push, kein drizzle-kit, KEINE Schema-Änderung.
+❗ Wiederholung: NICHT committen. Nur Dateien ändern, dann Ergebnis berichten.
