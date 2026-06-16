@@ -1850,12 +1850,16 @@ a.labs-dram-item {
 }
 
 .labs-hub-tile--active {
-  background: color-mix(in srgb, var(--labs-accent) 10%, var(--labs-surface));
-  border-color: var(--labs-border);
+  background: var(--labs-accent-muted);
+  border-color: var(--labs-accent);
 }
 
 .labs-hub-tile--active .labs-hub-tile-label {
   color: var(--labs-accent);
+}
+
+.labs-hub-tile--active .labs-hub-tile-icon {
+  background: color-mix(in srgb, var(--labs-accent) 20%, var(--labs-surface-elevated));
 }
 
 .labs-tastings-inline-content {
