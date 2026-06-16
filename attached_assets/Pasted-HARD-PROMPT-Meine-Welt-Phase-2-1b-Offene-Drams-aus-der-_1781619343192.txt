@@ -1,0 +1,53 @@
+HARD PROMPT — "Meine Welt" Phase 2.1b: "Offene Drams" aus der Sessions-Liste entfernen
+SICHERHEIT: KEINE Commits, KEIN push, keine DB/Server/Schema. Nur client/src/labs/components/MeineWeltTastingsList.tsx.
+
+KONTEXT: Drafts haben jetzt ihr Zuhause im Drams-Tagebuch (Tastings&Drams → Linse "Drams"). Der doppelte "Offene Drams"-Block in der Sessions-Liste fliegt raus. Das Wiederaufnehmen (?entry=) lebt unverändert im Drams-Tagebuch.
+
+SCHRITT 0 (lesen, melden): MeineWeltTastingsList.tsx — journalData-Query (~Z.118-123), openDrams-useMemo (~Z.125-140), Empty-State-Bedingung (~Z.314), "Offene Drams"-Render-Block (~Z.486-625, der einzige <section> der Datei). Plan nennen, dann ausführen.
+
+E1 — journalData-Query ENTFERNEN (ersatzlos):
+  const { data: journalData, isLoading: isJournalLoading } = useQuery({
+    queryKey: ["journal-entries", participantId],
+    queryFn: () => journalApi.getAll(participantId!),
+    enabled: !!participantId && filter === "active",
+    staleTime: 60_000,
+  });
+
+E2 — openDrams-useMemo ENTFERNEN (ersatzlos):
+  const openDrams = useMemo<OpenDram[]>(() => {
+    if (filter !== "active" || !Array.isArray(journalData)) return [];
+    const drafts = journalData.filter((e: any) => e?.status === "draft");
+    return drafts
+      .map((e: any) => ({
+        id: String(e.id),
+        name: String(e.name || e.title || "").trim(),
+        distillery: e.distillery ? String(e.distillery) : null,
+        source: detectDramSource(e),
+        occasion: e.occasion ? String(e.occasion).trim() : null,
+        fairDate: extractFairDate(e),
+        updatedAt: e.updatedAt ?? null,
+        createdAt: e.createdAt ?? null,
+      }))
+      .sort((a, b) => getDramTimestamp(b) - getDramTimestamp(a));
+  }, [journalData, filter]);
+
+E3 — Empty-State-Bedingung VEREINFACHEN (Pflicht, sonst kaputte Referenz). Ersetze
+      {items.length === 0 && (filter !== "active" || (!isJournalLoading && openDrams.length === 0)) ? (
+ durch
+      {items.length === 0 ? (
+
+E4 — "Offene Drams"-Render-Block ENTFERNEN: lösche den zusammenhängenden Block, der beginnt mit
+      {filter === "active" && openDrams.length > 0 && (
+ und endet mit dem einzigen
+        </section>
+      )}
+ der Datei (das ist der letzte Block vor `    </>` am Ende der Komponente). Ergebnis: das `)}` des vorherigen Blocks steht direkt vor `    </>`.
+
+HINWEIS: detectDramSource/extractFairDate/getDramTimestamp/OpenDram/FileEdit/journalApi-Import werden dadurch ungenutzt — das ist OK (noUnusedLocals aus, kein Build-Bruch). NICHT zwingend entfernen; falls du sie sauber mit rausnimmst, prüfe dass keiner anderswo genutzt wird.
+
+VERIFIKATION:
+- [ ] tsc/build grün; KEIN <section> mehr in der Datei (grep "<section" = 0).
+- [ ] Keine Referenz auf openDrams/journalData/isJournalLoading mehr (grep = 0).
+- [ ] Sessions-Linse zeigt nur noch Tastings (offene/Draft-/abgeschlossene Abende), KEINEN "Offene Drams"-Block.
+- [ ] Drams-Tagebuch (Linse "Drams") zeigt unverändert alle Drams inkl. Drafts; Resume via /labs/taste/drams?entry= intakt.
+- [ ] NICHT committed.

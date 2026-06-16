@@ -115,29 +115,6 @@ export default function MeineWeltTastingsList({ filter, searchQuery = "" }: Prop
     staleTime: 60_000,
   });
 
-  const { data: journalData, isLoading: isJournalLoading } = useQuery({
-    queryKey: ["journal-entries", participantId],
-    queryFn: () => journalApi.getAll(participantId!),
-    enabled: !!participantId && filter === "active",
-    staleTime: 60_000,
-  });
-
-  const openDrams = useMemo<OpenDram[]>(() => {
-    if (filter !== "active" || !Array.isArray(journalData)) return [];
-    const drafts = journalData.filter((e: any) => e?.status === "draft");
-    return drafts
-      .map((e: any) => ({
-        id: String(e.id),
-        name: String(e.name || e.title || "").trim(),
-        distillery: e.distillery ? String(e.distillery) : null,
-        source: detectDramSource(e),
-        occasion: e.occasion ? String(e.occasion).trim() : null,
-        fairDate: extractFairDate(e),
-        updatedAt: e.updatedAt ?? null,
-        createdAt: e.createdAt ?? null,
-      }))
-      .sort((a, b) => getDramTimestamp(b) - getDramTimestamp(a));
-  }, [journalData, filter]);
 
   const matchesSearch = (tasting: any): boolean => {
     const q = searchQuery.trim().toLowerCase();
@@ -311,7 +288,7 @@ export default function MeineWeltTastingsList({ filter, searchQuery = "" }: Prop
         </div>
       )}
 
-      {items.length === 0 && (filter !== "active" || (!isJournalLoading && openDrams.length === 0)) ? (
+      {items.length === 0 ? (
         <div
           className="labs-empty labs-fade-in"
           data-testid={`meine-welt-tastings-list-${filter}-empty`}
@@ -481,147 +458,6 @@ export default function MeineWeltTastingsList({ filter, searchQuery = "" }: Prop
             );
           })}
         </div>
-      )}
-
-      {filter === "active" && openDrams.length > 0 && (
-        <section
-          style={{ marginTop: items.length > 0 ? 20 : 0 }}
-          data-testid="meine-welt-open-drams-section"
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: 8,
-              padding: "0 2px",
-            }}
-          >
-            <h3
-              style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: "var(--labs-text-muted)",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                margin: 0,
-              }}
-              data-testid="meine-welt-open-drams-title"
-            >
-              {t("tastings.openDramsTitle", "Offene Drams")}
-            </h3>
-            <span
-              style={{ fontSize: 12, color: "var(--labs-text-muted)" }}
-              data-testid="meine-welt-open-drams-count"
-            >
-              {openDrams.length}
-            </span>
-          </div>
-          <div
-            className="labs-grouped-list labs-fade-in"
-            style={{
-              borderStyle: "dashed",
-              borderColor: "rgba(200,134,26,0.35)",
-              background: "rgba(200,134,26,0.04)",
-            }}
-          >
-            {openDrams.map((dram) => {
-              const sourceLabel =
-                dram.source === "fair"
-                  ? t("tastings.openDramsSourceFair", "Messe")
-                  : t("tastings.openDramsSourceSolo", "Solo");
-              const SourceIcon = dram.source === "fair" ? Layers : Wine;
-              const dramName = dram.name || t("tastings.openDramsUnnamed", "Unbenannter Dram");
-              return (
-                <Link key={dram.id} href={`/labs/taste/drams?entry=${dram.id}`}>
-                  <div
-                    className="labs-list-row"
-                    data-testid={`meine-welt-open-dram-${dram.id}`}
-                  >
-                    <div className="labs-tasting-card-icon labs-tasting-card-icon--default">
-                      <FileEdit className="labs-tasting-card-icon-sm labs-icon-accent" />
-                    </div>
-                    <div className="labs-tasting-card-body">
-                      <div className="labs-tasting-card-title-row">
-                        <span
-                          className="labs-tasting-card-title"
-                          data-testid={`meine-welt-open-dram-title-${dram.id}`}
-                        >
-                          {dramName}
-                        </span>
-                        <div className="labs-tasting-card-badges">
-                          <span
-                            className="labs-badge labs-badge--role labs-badge--guest"
-                            data-testid={`meine-welt-open-dram-source-${dram.id}`}
-                            style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
-                          >
-                            <SourceIcon style={{ width: 9, height: 9 }} />
-                            {sourceLabel}
-                          </span>
-                          <span
-                            className={getStatusConfig("draft").cssClass}
-                            data-testid={`meine-welt-open-dram-status-${dram.id}`}
-                          >
-                            {t(getStatusConfig("draft").labelKey, getStatusConfig("draft").fallbackLabel)}
-                          </span>
-                        </div>
-                      </div>
-                      {(() => {
-                        const dateSource = dram.fairDate ?? dram.updatedAt ?? dram.createdAt;
-                        const dateLabel = formatTastingDate(
-                          typeof dateSource === "string"
-                            ? dateSource
-                            : dateSource instanceof Date
-                              ? dateSource.toISOString()
-                              : null,
-                        );
-                        const contextLabel = dram.source === "fair" ? null : dram.occasion;
-                        const hasMeta = dram.distillery || dateLabel || contextLabel;
-                        if (!hasMeta) return null;
-                        return (
-                          <div className="labs-tasting-card-meta">
-                            {dram.distillery && (
-                              <span
-                                className="labs-tasting-card-meta-item"
-                                data-testid={`meine-welt-open-dram-distillery-${dram.id}`}
-                              >
-                                <span className="labs-tasting-card-host-name">{dram.distillery}</span>
-                              </span>
-                            )}
-                            {dateLabel && (
-                              <span
-                                className="labs-tasting-card-meta-item"
-                                data-testid={`meine-welt-open-dram-date-${dram.id}`}
-                              >
-                                <Calendar className="labs-tasting-card-meta-icon" />
-                                {dateLabel}
-                              </span>
-                            )}
-                            {contextLabel && (
-                              <span
-                                className="labs-tasting-card-meta-item labs-tasting-card-meta-item--location"
-                                data-testid={`meine-welt-open-dram-context-${dram.id}`}
-                              >
-                                <MapPin className="labs-tasting-card-meta-icon" />
-                                {contextLabel}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                    <div
-                      className="labs-tasting-card-actions"
-                      style={{ display: "flex", alignItems: "center", gap: 6 }}
-                    >
-                      <ChevronRight className="labs-tasting-chevron" />
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
       )}
     </>
   );
