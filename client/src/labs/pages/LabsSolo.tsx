@@ -143,6 +143,7 @@ export default function LabsSolo() {
   const [ratingPhaseIndex, setRatingPhaseIndex] = useState(0);
   const [ratingInitialData, setRatingInitialData] = useState<RatingData | undefined>(undefined);
   const [showImpressionCapture, setShowImpressionCapture] = useState(false);
+  const [cooperStarted, setCooperStarted] = useState(false);
   const rawImpressionRef = useRef<string>("");
   const narrativeRef = useRef<string>("");
 
@@ -389,10 +390,12 @@ export default function LabsSolo() {
     setRatingInitialData((prev) => mapImpressionToRating(result, { prev }));
     setRatingMode(preferredRatingModeFromProfile ?? "compact");
     setShowImpressionCapture(false);
+    setCooperStarted(false);
   }, [preferredRatingModeFromProfile]);
 
   const handleImpressionSkip = useCallback(() => {
     setShowImpressionCapture(false);
+    setCooperStarted(false);
   }, []);
 
   const buildJournalBody = useCallback((data: RatingData, status: "final" | "draft", omitDimensionScores = false) => {
@@ -891,6 +894,7 @@ export default function LabsSolo() {
     content = (
       <div style={{ minHeight: "60vh" }}>
         {showImpressionCapture ? (
+          cooperStarted ? (
           <ImpressionCapture
             whiskyName={whisky?.name || undefined}
             onApply={handleImpressionApply}
@@ -898,6 +902,33 @@ export default function LabsSolo() {
             onIdentifyFirst={handleIdentifyFirst}
             participantId={participantId}
           />
+          ) : (
+            <div className="labs-card" style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }} data-testid="solo-impression-choice">
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, lineHeight: 1.2, color: "var(--labs-text)" }}>
+                {whisky?.name || t("v2.ratingDram", "Dram")}
+              </div>
+              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 17, lineHeight: 1.4, color: "var(--labs-text-secondary)" }}>
+                {t("v2.impressionChoiceIntro", "Wie möchtest du deinen ersten Eindruck festhalten?")}
+              </div>
+              <button
+                type="button"
+                onClick={() => setCooperStarted(true)}
+                data-testid="solo-impression-choice-cooper"
+                style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, width: "100%", minHeight: 44, padding: "14px 18px", borderRadius: 14, border: "none", background: "var(--labs-accent)", color: "var(--labs-accent-dark)", cursor: "pointer", textAlign: "left" }}
+              >
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 600 }}>{t("v2.impressionChoiceCooper", "Mit Cooper sprechen")}</span>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, opacity: 0.8 }}>{t("v2.impressionChoiceCooperHint", "Dein Eindruck, behutsam geschärft")}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleImpressionSkip}
+                data-testid="solo-impression-choice-direct"
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", minHeight: 44, padding: "12px 18px", borderRadius: 14, border: "1px solid var(--labs-border)", background: "transparent", color: "var(--labs-text)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 500 }}
+              >
+                {t("v2.impressionChoiceDirect", "Direkt bewerten")}
+              </button>
+            </div>
+          )
         ) : (
         <RatingFlowV2
           whisky={{
