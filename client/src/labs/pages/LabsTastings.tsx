@@ -132,6 +132,13 @@ export default function LabsTastings() {
       invites = invites.filter(matchesSearch);
     }
 
+    // Dedupe: das "Du bist mittendrin"-Banner zeigt die aktive Live-Session bereits.
+    // Dieselbe Session aus der Liste unten ausblenden — aber nur in der Standardansicht (Suche darf sie finden).
+    if (!searchQuery.trim()) {
+      const bannerLiveId = list.find((t: any) => t.status === "open")?.id;
+      if (bannerLiveId) result = result.filter((t: any) => t.id !== bannerLiveId);
+    }
+
     result.sort((a: any, b: any) => {
       const statusOrder: Record<string, number> = { open: 0, draft: 1 };
       const orderA = statusOrder[a.status] ?? 2;
