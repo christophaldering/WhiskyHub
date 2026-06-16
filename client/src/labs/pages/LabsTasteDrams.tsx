@@ -436,6 +436,14 @@ export default function LabsTasteDrams() {
     },
   });
 
+  const narrativeMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => journalApi.update(session.pid!, id, data),
+    onSuccess: async (updatedEntry: any) => {
+      await queryClient.invalidateQueries({ queryKey: ["journal"] });
+      if (updatedEntry && selectedEntry) setSelectedEntry({ ...selectedEntry, ...updatedEntry });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => journalApi.delete(session.pid!, id),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["journal"] }); queryClient.invalidateQueries({ queryKey: ["journal-trash"] }); setDeleteTarget(null); if (selectedEntry?.id === deleteTarget?.id) { setSelectedEntry(null); setViewState("list"); } },
@@ -910,6 +918,12 @@ export default function LabsTasteDrams() {
               </>
             );
           })()}
+
+          <TastingNarrativeSection
+            value={(selectedEntry as any).tastingNarrative}
+            saving={narrativeMutation.isPending}
+            onSave={(text) => narrativeMutation.mutate({ id: selectedEntry.id, data: { tastingNarrative: text } })}
+          />
 
           <FriendsAlsoRated
             pid={session.pid || ""}
@@ -1770,6 +1784,47 @@ function MetaBadge({ label, value }: { label: string; value: string }) {
     <div style={{ background: "var(--labs-surface-elevated)", borderRadius: 6, padding: "4px 10px", fontSize: 12 }}>
       <span style={{ color: "var(--labs-text-muted)" }}>{label}: </span>
       <span style={{ color: "var(--labs-text)", fontWeight: 500 }}>{value}</span>
+    </div>
+  );
+}
+
+function TastingNarrativeSection({ value, onSave, saving }: { value?: string | null; onSave: (text: string) => void; saving?: boolean }) {
+  const { t } = useTranslation();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value || "");
+  useEffect(() => { setDraft(value || ""); }, [value]);
+  const has = !!(value && value.trim());
+  if (!has && !editing) return null;
+  return (
+    <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--labs-border)" }}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-accent)" }}>
+          {t("drams.tastingNarrative", "Meine Verkostungsnotiz")}
+        </div>
+        {!editing && (
+          <button onClick={() => { setDraft(value || ""); setEditing(true); }} style={{ fontSize: 12, color: "var(--labs-text-muted)", background: "transparent", border: "none", cursor: "pointer", padding: "4px 6px" }}>
+            {t("common.edit", "Bearbeiten")}
+          </button>
+        )}
+      </div>
+      {!editing ? (
+        <div className="labs-serif" style={{ fontSize: 16, color: "var(--labs-text-secondary)", lineHeight: 1.65, whiteSpace: "pre-wrap" }}>{value}</div>
+      ) : (
+        <>
+          <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={8}
+            style={{ width: "100%", boxSizing: "border-box", background: "var(--labs-bg-elevated, var(--labs-bg))", border: "1px solid var(--labs-border)", borderRadius: 10, color: "var(--labs-text)", fontFamily: "inherit", fontSize: 15, lineHeight: 1.6, padding: 12, resize: "vertical", minHeight: 140, outline: "none" }} />
+          <div className="flex gap-2 mt-2">
+            <button disabled={saving} onClick={() => { onSave(draft.trim()); setEditing(false); }}
+              style={{ padding: "8px 16px", fontSize: 14, fontWeight: 600, borderRadius: 8, cursor: saving ? "default" : "pointer", background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", opacity: saving ? 0.6 : 1 }}>
+              {saving ? t("common.saving", "Speichert \u2026") : t("common.save", "Speichern")}
+            </button>
+            <button disabled={saving} onClick={() => { setDraft(value || ""); setEditing(false); }}
+              style={{ padding: "8px 16px", fontSize: 14, borderRadius: 8, cursor: "pointer", background: "transparent", color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)" }}>
+              {t("common.cancel", "Abbrechen")}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
