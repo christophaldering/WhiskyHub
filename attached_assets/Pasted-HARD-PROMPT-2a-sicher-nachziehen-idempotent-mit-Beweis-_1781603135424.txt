@@ -1,0 +1,75 @@
+HARD PROMPT — 2a sicher nachziehen (idempotent, mit Beweis)
+SICHERHEIT: KEINE Commits, KEIN push durch dich. Schema-Spalte additiv.
+
+REGEL: Für jeden Punkt zuerst prüfen, ob er schon da ist; NUR Fehlendes hinzufügen. Nichts doppeln.
+
+E1 — shared/schema.ts, in journalEntries DIREKT NACH `rawImpression: text("raw_impression"),`:
+   tastingNarrative: text("tasting_narrative"),
+
+E2 — server/routes.ts, POST-Whitelist (sanitizeObject mit "rawImpression"): "tastingNarrative" ergänzen.
+E3 — server/routes.ts, PATCH allowed-Liste (mit "rawImpression"): "tastingNarrative" ergänzen.
+
+E4 — server/routes.ts, Handler /api/impression/converse:
+ (a) Destrukturierung: `finalize` → `finalize, prose`.
+ (b) NACH dem `if (finalize) {…}`-Block, VOR `// ---------- TURN:` einfügen:
+      if (prose) {
+        const proseSystem = `Du bist Cooper und schreibst aus einem ganzen Verkostungs-Gespräch eine fließende, persönliche Verkostungsnotiz — in der ICH-STIMME des Tasters ("Ich rieche…", "Im Mund…", "Im Abgang…").
+REGELN:
+- Nutze AUSSCHLIESSLICH, was der TASTER wirklich gesagt hat. Erfinde nichts.
+- Nimm ALLES auf, auch Nebennotizen, auch Verworfenes. Glätte nicht.
+- Bewahre Mehrdeutigkeit, Widersprüche, Überraschungen ORGANISCH im Fluss. Nur echte ungelöste Spannung leise aufgreifen — kein Pflicht-Absatz.
+- Entdeckungs-Bogen abbilden. Locker entlang Nase/Gaumen/Abgang/Gesamteindruck, zusammenhängender Text, KEINE Aufzählung, KEINE Zahlen. Evokativ, gern länger. Sprache des Gesprächs.
+Gib NUR den reinen Notiztext zurück, ohne Anführungszeichen.`;
+        const pc = await openai.chat.completions.create({ model: "gpt-5-mini", max_completion_tokens: 1500, reasoning_effort: "minimal", messages: [{ role: "system", content: proseSystem }, { role: "user", content: `Gespräch:${ctx}\n${convo}` }] });
+        return res.json({ narrative: (pc.choices[0]?.message?.content || "").trim() });
+      }
+
+E5 — client/.../rating/impressionApi.ts:
+ (a) ImpressionResult-Typ: `narrative?: string;` ergänzen.
+ (b) ans Dateiende:
+export async function proseImpression(args: { whiskyName?: string; intensity: Intensity; transcript: ConverseTurn[] }): Promise<{ narrative: string }> {
+  const res = await fetch("/api/impression/converse", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ ...args, prose: true }) });
+  if (!res.ok) throw new Error(`prose failed: ${res.status}`);
+  return res.json();
+}
+
+E6 — client/.../rating/ImpressionCapture.tsx:
+ (a) Import: `proseImpression` aus "./impressionApi" mit aufnehmen.
+ (b) bei den useState nach `const [result, setResult] = useState<ImpressionResult | null>(null);`:
+   const [narrative, setNarrative] = useState("");
+   const [narrativeLoading, setNarrativeLoading] = useState(false);
+ (c) neben handleFinish:
+   const handleProse = async () => {
+     if (narrativeLoading || transcript.length === 0) return;
+     setNarrativeLoading(true);
+     try { const r = await proseImpression({ whiskyName, intensity, transcript }); setNarrative(r.narrative || ""); } catch {}
+     setNarrativeLoading(false);
+   };
+ (d) handleConfirm: `onApply(result);` → `onApply({ ...result, narrative: narrative.trim() || undefined });`
+ (e) im handoff-Block DIREKT VOR dem `<button onClick={handleConfirm}` einfügen:
+   {!narrative ? (
+     <button type="button" onClick={handleProse} disabled={narrativeLoading} style={{ width: "100%", minHeight: TOUCH_MIN, marginBottom: SP.md, background: "transparent", color: LABS_THEME.gold, border: `1px solid ${LABS_THEME.gold}`, borderRadius: RADIUS.md, fontFamily: FONT.body, fontSize: 15, cursor: narrativeLoading ? "default" : "pointer" }}>
+       {narrativeLoading ? "Cooper formuliert …" : "Cooper, fass es in Worte"}
+     </button>
+   ) : (
+     <div style={{ marginBottom: SP.md }}>
+       <div style={{ fontFamily: FONT.serif, fontSize: 15, color: LABS_THEME.muted, marginBottom: SP.xs }}>Deine Verkostungsnotiz (bearbeitbar):</div>
+       <textarea value={narrative} onChange={(e) => setNarrative(e.target.value)} rows={8} style={{ width: "100%", boxSizing: "border-box", background: LABS_THEME.inputBg, border: `1px solid ${LABS_THEME.border}`, borderRadius: RADIUS.md, color: LABS_THEME.text, fontFamily: FONT.serif, fontSize: 16, lineHeight: 1.6, padding: SP.md, resize: "vertical", minHeight: 160, outline: "none" }} />
+     </div>
+   )}
+
+E7 — client/src/labs/pages/LabsSolo.tsx:
+ (a) bei rawImpressionRef:  const narrativeRef = useRef<string>("");
+ (b) in handleImpressionApply nach `rawImpressionRef.current = result.rawImpression || "";`:  narrativeRef.current = result.narrative || "";
+ (c) in buildJournalBody neben der rawImpression-Zeile:  ...(narrativeRef.current ? { tastingNarrative: narrativeRef.current } : {}),
+ (d) an beiden Reset-Stellen `rawImpressionRef.current = "";` daneben:  narrativeRef.current = "";
+
+BEWEIS (Pflicht — gib die WÖRTLICHE Ausgabe dieser Befehle zurück, nicht deine Einschätzung):
+  grep -c "tasting_narrative" shared/schema.ts
+  grep -c "tastingNarrative" server/routes.ts
+  grep -c "if (prose)" server/routes.ts
+  grep -c "proseImpression" client/src/labs/components/rating/impressionApi.ts
+  grep -c "handleProse" client/src/labs/components/rating/ImpressionCapture.tsx
+  grep -c "narrativeRef" client/src/labs/pages/LabsSolo.tsx
+  npm run build 2>&1 | tail -3
+NICHT committen.
