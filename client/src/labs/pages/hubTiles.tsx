@@ -65,6 +65,15 @@ export const TASTINGS_LENS_TILES: HubTileDef[] = [
     testId: "tile-tastings-lens-sessions",
     role: "nav",
   },
+  {
+    icon: FileText,
+    labelKey: "myTastePage.tastingsHub.lensHandouts",
+    labelFallback: "Handouts",
+    descKey: "myTastePage.tastingsHub.lensHandoutsDesc",
+    descFallback: "Material zu deinen Abenden",
+    testId: "tile-tastings-lens-handouts",
+    role: "nav",
+  },
 ];
 
 export const COLLECTION_HUB_TILES: HubTileDef[] = [
@@ -85,15 +94,6 @@ export const COLLECTION_HUB_TILES: HubTileDef[] = [
     descFallback: "Whiskies to try",
     href: "/labs/taste/wishlist",
     testId: "labs-link-collection-hub-wishlist",
-  },
-  {
-    icon: FileText,
-    labelKey: "myTastePage.myHandouts",
-    labelFallback: "My Handouts",
-    descKey: "myTastePage.myHandoutsNavDesc",
-    descFallback: "Your handout library",
-    href: "/labs/taste/my-handouts",
-    testId: "labs-link-collection-hub-handouts",
   },
 ];
 

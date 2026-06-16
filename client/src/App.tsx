@@ -692,11 +692,11 @@ function Router() {
                   } catch {}
                   return toCommunity
                     ? <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=nachschlagewerk&sub=community-handouts" replaceQuery />
-                    : <RedirectWithQuery to="/labs/taste" query="tab=collection&sub=labs-link-collection-hub-handouts" replaceQuery />;
+                    : <RedirectWithQuery to="/labs/taste" query="lens=handouts" replaceQuery />;
                 }}
               </Route>
               <Route path="/labs/host/handout-library/community">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=nachschlagewerk&sub=community-handouts" />}</Route>
-              <Route path="/labs/taste/my-handouts">{() => <RedirectWithQuery to="/labs/taste" query="tab=collection&sub=labs-link-collection-hub-handouts" />}</Route>
+              <Route path="/labs/taste/my-handouts">{() => <RedirectWithQuery to="/labs/taste" query="lens=handouts" />}</Route>
               <Route path="/labs/host/calendar" component={LabsCalendar} />
               <Route path="/labs/history/insights" component={LabsHistory} />
               <Route path="/labs/history/:id" component={LabsHistoricalDetail} />

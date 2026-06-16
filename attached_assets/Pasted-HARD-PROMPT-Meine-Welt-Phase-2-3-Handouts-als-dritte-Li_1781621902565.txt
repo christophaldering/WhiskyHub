@@ -1,0 +1,92 @@
+HARD PROMPT — "Meine Welt" Phase 2.3: Handouts als dritte Linse (raus aus Sammlung)
+SICHERHEIT: KEINE Commits, KEIN push, keine DB/Server/Schema. 3 Dateien (hubTiles.tsx, LabsTaste.tsx, App.tsx).
+
+SCHRITT 0 (lesen, melden): hubTiles.tsx (COLLECTION Handouts-Tile Z.88-97; TASTINGS_LENS_TILES; FileText importiert Z.8); LabsTaste.tsx (activeTastingsLens Z.152 nutzt searchStr Z.132; Linsen-Render Z.310-330; collection-Handouts-Inline Z.404; LabsHandoutLibrary/EmbeddedMeineWeltProvider importiert); App.tsx (Z.695 + Z.699 Handout-Redirects). Plan nennen, dann ausführen.
+
+E1 — client/src/labs/pages/hubTiles.tsx:
+ (a) Aus COLLECTION_HUB_TILES den Handouts-Block ENTFERNEN (ersatzlos):
+  {
+    icon: FileText,
+    labelKey: "myTastePage.myHandouts",
+    labelFallback: "My Handouts",
+    descKey: "myTastePage.myHandoutsNavDesc",
+    descFallback: "Your handout library",
+    href: "/labs/taste/my-handouts",
+    testId: "labs-link-collection-hub-handouts",
+  },
+ (b) In TASTINGS_LENS_TILES NACH dem sessions-Eintrag einfügen — ersetze
+    testId: "tile-tastings-lens-sessions",
+    role: "nav",
+  },
+];
+ durch
+    testId: "tile-tastings-lens-sessions",
+    role: "nav",
+  },
+  {
+    icon: FileText,
+    labelKey: "myTastePage.tastingsHub.lensHandouts",
+    labelFallback: "Handouts",
+    descKey: "myTastePage.tastingsHub.lensHandoutsDesc",
+    descFallback: "Material zu deinen Abenden",
+    testId: "tile-tastings-lens-handouts",
+    role: "nav",
+  },
+];
+
+E2 — client/src/labs/pages/LabsTaste.tsx:
+ (a) State (Z.152) — ersetze
+  const [activeTastingsLens, setActiveTastingsLens] = useState<"drams" | "sessions">("drams");
+ durch
+  const [activeTastingsLens, setActiveTastingsLens] = useState<"drams" | "sessions" | "handouts">(() => {
+    const l = new URLSearchParams(searchStr).get("lens");
+    return l === "sessions" || l === "handouts" ? l : "drams";
+  });
+
+ (b) activeTestId (Z.317) — ersetze
+            activeTestId={activeTastingsLens === "drams" ? "tile-tastings-lens-drams" : "tile-tastings-lens-sessions"}
+ durch
+            activeTestId={`tile-tastings-lens-${activeTastingsLens}`}
+
+ (c) onTileClick (Z.318-320) — ersetze
+            onTileClick={(tile) =>
+              setActiveTastingsLens(tile.testId === "tile-tastings-lens-sessions" ? "sessions" : "drams")
+            }
+ durch
+            onTileClick={(tile) =>
+              setActiveTastingsLens(tile.testId.replace("tile-tastings-lens-", "") as "drams" | "sessions" | "handouts")
+            }
+
+ (d) Handouts-Branch einfügen — ersetze
+          ) : (
+            <div style={{ marginTop: 16 }} data-testid="meine-welt-tastings-lens-sessions">
+ durch
+          ) : activeTastingsLens === "handouts" ? (
+            <div style={{ marginTop: 16 }} data-testid="meine-welt-tastings-lens-handouts">
+              <EmbeddedMeineWeltProvider>
+                <LabsHandoutLibrary mode="workspace" />
+              </EmbeddedMeineWeltProvider>
+            </div>
+          ) : (
+            <div style={{ marginTop: 16 }} data-testid="meine-welt-tastings-lens-sessions">
+
+ (e) collection-Handouts-Inline ENTFERNEN (ersatzlos):
+              {activeCollectionTile === "labs-link-collection-hub-handouts" && <LabsHandoutLibrary mode="workspace" />}
+
+E3 — client/src/App.tsx:
+ (a) Z.695 — ersetze
+                    : <RedirectWithQuery to="/labs/taste" query="tab=collection&sub=labs-link-collection-hub-handouts" replaceQuery />;
+ durch
+                    : <RedirectWithQuery to="/labs/taste" query="lens=handouts" replaceQuery />;
+ (b) Z.699 — ersetze
+              <Route path="/labs/taste/my-handouts">{() => <RedirectWithQuery to="/labs/taste" query="tab=collection&sub=labs-link-collection-hub-handouts" />}</Route>
+ durch
+              <Route path="/labs/taste/my-handouts">{() => <RedirectWithQuery to="/labs/taste" query="lens=handouts" />}</Route>
+
+VERIFIKATION:
+- [ ] tsc/build grün; KEINE Referenz mehr auf labs-link-collection-hub-handouts (grep = 0).
+- [ ] Tastings & Drams hat DREI Linsen: Drams · Sessions · Handouts.
+- [ ] Handouts-Linse zeigt die Handout-Bibliothek (LabsHandoutLibrary workspace).
+- [ ] /labs/taste/my-handouts öffnet die Handouts-Linse (?lens=handouts); "Handout-Bibliothek"-Links aus HostDashboard/HandoutManager landen dort.
+- [ ] Sammlung zeigt jetzt NUR Bottles + Wishlist (kein Drams/Handouts/AI-Bilder mehr) → reiner Besitz.
+- [ ] NICHT committed.

@@ -149,7 +149,10 @@ export default function LabsTaste() {
   }, []);
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const [activeTastingsFilter, setActiveTastingsFilter] = useState<TastingsHubFilter>("active");
-  const [activeTastingsLens, setActiveTastingsLens] = useState<"drams" | "sessions">("drams");
+  const [activeTastingsLens, setActiveTastingsLens] = useState<"drams" | "sessions" | "handouts">(() => {
+    const l = new URLSearchParams(searchStr).get("lens");
+    return l === "sessions" || l === "handouts" ? l : "drams";
+  });
   const [tastingsSearchQuery, setTastingsSearchQuery] = useState("");
   const [activeCollectionTile, setActiveCollectionTile] = useState<string | null>(
     initialTab === "collection" && initialSub && COLLECTION_SUB_IDS.has(initialSub) ? initialSub : null,
@@ -314,15 +317,21 @@ export default function LabsTaste() {
             testIdPrefix="meine-welt"
             variant="single-row"
             role="nav"
-            activeTestId={activeTastingsLens === "drams" ? "tile-tastings-lens-drams" : "tile-tastings-lens-sessions"}
+            activeTestId={`tile-tastings-lens-${activeTastingsLens}`}
             onTileClick={(tile) =>
-              setActiveTastingsLens(tile.testId === "tile-tastings-lens-sessions" ? "sessions" : "drams")
+              setActiveTastingsLens(tile.testId.replace("tile-tastings-lens-", "") as "drams" | "sessions" | "handouts")
             }
           />
           {activeTastingsLens === "drams" ? (
             <div style={{ marginTop: 16 }} data-testid="meine-welt-tastings-lens-drams">
               <EmbeddedMeineWeltProvider>
                 <LabsTasteDrams />
+              </EmbeddedMeineWeltProvider>
+            </div>
+          ) : activeTastingsLens === "handouts" ? (
+            <div style={{ marginTop: 16 }} data-testid="meine-welt-tastings-lens-handouts">
+              <EmbeddedMeineWeltProvider>
+                <LabsHandoutLibrary mode="workspace" />
               </EmbeddedMeineWeltProvider>
             </div>
           ) : (
@@ -401,7 +410,6 @@ export default function LabsTaste() {
             <EmbeddedMeineWeltProvider>
               {activeCollectionTile === "labs-link-collection-hub-bottles" && <LabsTasteCollection />}
               {activeCollectionTile === "labs-link-collection-hub-wishlist" && <LabsTasteWishlist />}
-              {activeCollectionTile === "labs-link-collection-hub-handouts" && <LabsHandoutLibrary mode="workspace" />}
             </EmbeddedMeineWeltProvider>
           </HubTileCollapsible>
           {!activeCollectionTile && (
