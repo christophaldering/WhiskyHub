@@ -22,6 +22,7 @@ import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import type { RatingFlowDraftState } from "@/labs/components/rating/RatingFlowV2";
 import ImpressionCapture from "@/labs/components/rating/ImpressionCapture";
 import type { ImpressionResult } from "@/labs/components/rating/impressionApi";
+import { mapImpressionToRating } from "@/labs/components/rating/mapImpressionToRating";
 import type { RatingData } from "@/labs/components/rating/types";
 import ResumeRatingBanner from "@/labs/components/ResumeRatingBanner";
 import { saveSoloDraft, saveSoloDraftImmediate, loadSoloDraft, clearSoloDraft, hasDraftData } from "@/lib/draftStorage";
@@ -385,28 +386,7 @@ export default function LabsSolo() {
   const handleImpressionApply = useCallback((result: ImpressionResult) => {
     rawImpressionRef.current = result.rawImpression || "";
     narrativeRef.current = result.narrative || "";
-    const sc = result.scoreSuggestion;
-    const D = 75;
-    setRatingInitialData((prev) => ({
-      scores: {
-        nose: sc?.nose ?? prev?.scores?.nose ?? D,
-        palate: sc?.taste ?? prev?.scores?.palate ?? D,
-        finish: sc?.finish ?? prev?.scores?.finish ?? D,
-        overall: sc?.overall ?? prev?.scores?.overall ?? D,
-      },
-      tags: {
-        nose: prev?.tags?.nose ?? [],
-        palate: prev?.tags?.palate ?? [],
-        finish: prev?.tags?.finish ?? [],
-        overall: result.flavorTags ?? [],
-      },
-      notes: {
-        nose: result.nose || prev?.notes?.nose || "",
-        palate: result.taste || prev?.notes?.palate || "",
-        finish: result.finish || prev?.notes?.finish || "",
-        overall: prev?.notes?.overall || "",
-      },
-    }));
+    setRatingInitialData((prev) => mapImpressionToRating(result, { prev }));
     setRatingMode(preferredRatingModeFromProfile ?? "compact");
     setShowImpressionCapture(false);
   }, [preferredRatingModeFromProfile]);
