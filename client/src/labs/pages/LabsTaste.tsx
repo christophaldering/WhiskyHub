@@ -380,7 +380,6 @@ export default function LabsTaste() {
               {activeCollectionTile === "labs-link-collection-hub-bottles" && <LabsTasteCollection />}
               {activeCollectionTile === "labs-link-collection-hub-wishlist" && <LabsTasteWishlist />}
               {activeCollectionTile === "labs-link-collection-hub-handouts" && <LabsHandoutLibrary mode="workspace" />}
-              {activeCollectionTile === "labs-link-collection-hub-ai-images" && <LabsAiImages />}
             </EmbeddedMeineWeltProvider>
           </HubTileCollapsible>
           {!activeCollectionTile && (
@@ -427,6 +426,7 @@ export default function LabsTaste() {
               {activeAITile === "labs-link-ai-insights-recommendations" && <LabsRecommendations />}
               {activeAITile === "labs-link-ai-insights-collection-analysis" && <LabsCollectionAnalysis />}
               {activeAITile === "labs-link-ai-insights-ai-curation" && <LabsAICuration />}
+              {activeAITile === "labs-link-ai-insights-ai-images" && <LabsAiImages />}
             </EmbeddedMeineWeltProvider>
           </HubTileCollapsible>
         </div>

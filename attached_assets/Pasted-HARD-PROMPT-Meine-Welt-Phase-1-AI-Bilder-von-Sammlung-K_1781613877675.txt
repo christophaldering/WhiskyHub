@@ -1,0 +1,51 @@
+HARD PROMPT — "Meine Welt" Phase 1: AI-Bilder von Sammlung → KI
+SICHERHEIT: KEINE Commits, KEIN push, keine DB/Server/Schema. 2 Dateien.
+
+SCHRITT 0 (lesen, melden): hubTiles.tsx COLLECTION_HUB_TILES (AI-Bilder-Block ~Z.86-94) + AI_INSIGHTS_HUB_TILES (Ende ~Z.142-143); LabsTaste.tsx collection-Inline (Z.383) + ai-Inline (Z.425-430), LabsAiImages-Import Z.30. Plan nennen, dann ausführen.
+
+E1 — client/src/labs/pages/hubTiles.tsx:
+ (a) Aus COLLECTION_HUB_TILES diesen Block ENTFERNEN (ersatzlos):
+  {
+    icon: ImageIcon,
+    labelKey: "labs.aiImages.tileLabel",
+    labelFallback: "AI Bilder",
+    descKey: "labs.aiImages.tileDesc",
+    descFallback: "Galerie deiner KI-Cover",
+    href: "/labs/taste/ai-images",
+    testId: "labs-link-collection-hub-ai-images",
+  },
+ (b) In AI_INSIGHTS_HUB_TILES NACH dem ai-curation-Eintrag einfügen — ersetze
+    href: "/labs/taste/ai-curation",
+    testId: "labs-link-ai-insights-ai-curation",
+  },
+];
+ durch
+    href: "/labs/taste/ai-curation",
+    testId: "labs-link-ai-insights-ai-curation",
+  },
+  {
+    icon: ImageIcon,
+    labelKey: "labs.aiImages.tileLabel",
+    labelFallback: "AI Bilder",
+    descKey: "labs.aiImages.tileDesc",
+    descFallback: "Galerie deiner KI-Cover",
+    href: "/labs/taste/ai-images",
+    testId: "labs-link-ai-insights-ai-images",
+  },
+];
+
+E2 — client/src/labs/pages/LabsTaste.tsx:
+ (a) Aus dem collection-Inline diese Zeile ENTFERNEN (ersatzlos):
+              {activeCollectionTile === "labs-link-collection-hub-ai-images" && <LabsAiImages />}
+ (b) Im ai-Inline NACH der ai-curation-Zeile einfügen — ersetze
+              {activeAITile === "labs-link-ai-insights-ai-curation" && <LabsAICuration />}
+ durch
+              {activeAITile === "labs-link-ai-insights-ai-curation" && <LabsAICuration />}
+              {activeAITile === "labs-link-ai-insights-ai-images" && <LabsAiImages />}
+
+VERIFIKATION:
+- [ ] tsc/build grün.
+- [ ] "Meine Welt" → Sammlung zeigt jetzt: Drams, Bottles, Wishlist, Handouts (KEIN AI-Bilder mehr).
+- [ ] "Meine Welt" → KI zeigt AI-Bilder als letzte Kachel; Klick öffnet die Galerie inline.
+- [ ] LabsAiImages weiterhin importiert/genutzt; testId "labs-link-ai-insights-ai-images".
+- [ ] NICHT committed.

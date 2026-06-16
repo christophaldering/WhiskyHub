@@ -83,15 +83,6 @@ export const COLLECTION_HUB_TILES: HubTileDef[] = [
     href: "/labs/taste/my-handouts",
     testId: "labs-link-collection-hub-handouts",
   },
-  {
-    icon: ImageIcon,
-    labelKey: "labs.aiImages.tileLabel",
-    labelFallback: "AI Bilder",
-    descKey: "labs.aiImages.tileDesc",
-    descFallback: "Galerie deiner KI-Cover",
-    href: "/labs/taste/ai-images",
-    testId: "labs-link-collection-hub-ai-images",
-  },
 ];
 
 export const AI_INSIGHTS_HUB_TILES: HubTileDef[] = [
@@ -139,6 +130,15 @@ export const AI_INSIGHTS_HUB_TILES: HubTileDef[] = [
     descFallback: "AI-curated lineups & suggestions",
     href: "/labs/taste/ai-curation",
     testId: "labs-link-ai-insights-ai-curation",
+  },
+  {
+    icon: ImageIcon,
+    labelKey: "labs.aiImages.tileLabel",
+    labelFallback: "AI Bilder",
+    descKey: "labs.aiImages.tileDesc",
+    descFallback: "Galerie deiner KI-Cover",
+    href: "/labs/taste/ai-images",
+    testId: "labs-link-ai-insights-ai-images",
   },
 ];
 
