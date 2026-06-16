@@ -12330,6 +12330,14 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
     } catch (e: any) { res.status(500).json({ error: e?.message || "vocab read failed" }); }
   });
 
+  app.get("/api/vocabulary/community", async (req: any, res: any) => {
+    try {
+      const caller = String(req.headers["x-participant-id"] || "");
+      if (!caller) return res.status(403).json({ error: "Forbidden" });
+      res.json(await storage.getCommunityVocabulary(3));
+    } catch (e: any) { res.status(500).json({ error: e?.message || "community vocab failed" }); }
+  });
+
   // ===== ENTRY MEMORY PHOTOS (solo journal entry, max 5; GPS stripped by universal sanitizer) =====
 
   app.get("/api/journal/:participantId/:id/photos", async (req: any, res: any) => {

@@ -22,3 +22,10 @@ export async function getVocabularyAdoption(participantId: string): Promise<Voca
   if (!res.ok) throw new Error(`vocab read failed: ${res.status}`);
   return res.json();
 }
+
+export type CommunityVocabRow = { term: string; userCount: number };
+export async function getCommunityVocabulary(): Promise<CommunityVocabRow[]> {
+  const res = await fetch(`/api/vocabulary/community`, { headers: { ...pidHeaders() } });
+  if (!res.ok) throw new Error(`community vocab failed: ${res.status}`);
+  return res.json();
+}

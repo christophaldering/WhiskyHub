@@ -4,7 +4,7 @@ import i18n from "i18next";
 import { useQuery } from "@tanstack/react-query";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import { useSession } from "@/lib/session";
-import { getVocabularyAdoption, type VocabAdoptionRow } from "@/lib/vocabulary";
+import { getVocabularyAdoption, getCommunityVocabulary, type VocabAdoptionRow, type CommunityVocabRow } from "@/lib/vocabulary";
 import { journalApi, ratingNotesApi } from "@/lib/api";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 import { ChevronLeft, CircleDot, X, Wine } from "lucide-react";
@@ -244,6 +244,24 @@ function VocabularyHarvest({ pid }: { pid: string }) {
     return { terms, total: terms.length, selfCount, earliest };
   }, [rows]);
 
+  const { data: community } = useQuery<CommunityVocabRow[]>({
+    queryKey: ["vocab-community"],
+    queryFn: getCommunityVocabulary,
+  });
+  const mirror = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const c of (community || [])) map.set(c.term.toLowerCase(), c.userCount);
+    const shared: { term: string; userCount: number }[] = [];
+    const signature: string[] = [];
+    for (const tm of stats.terms) {
+      const uc = map.get(tm.term.toLowerCase());
+      if (uc != null) shared.push({ term: tm.term, userCount: uc });
+      else signature.push(tm.term);
+    }
+    shared.sort((a, b) => b.userCount - a.userCount);
+    return { shared, signature, hasCommunity: (community || []).length > 0 };
+  }, [community, stats.terms]);
+
   const growth = useMemo(() => {
     if (stats.terms.length < 2) return [] as { month: string; count: number }[];
     const byMonth = new Map<string, number>();
@@ -322,6 +340,41 @@ function VocabularyHarvest({ pid }: { pid: string }) {
                   <span key={i} style={{ display: "inline-flex", alignItems: "center", padding: "5px 11px", borderRadius: 9999, fontSize: 13, color: "var(--labs-text-muted)", background: "transparent", border: "1px dashed var(--labs-border)" }} data-testid={`vocab-gap-${i}`}>{term}</span>
                 ))}
               </div>
+            </div>
+          )}
+
+          {mirror.hasCommunity ? (
+            <div style={{ marginTop: 24 }}>
+              <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700 }}>{t("labs.vocab.mirrorTitle", "Im Spiegel der Community")}</p>
+              {mirror.shared.length > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  <p className="text-sm mb-1" style={{ color: "var(--labs-text)", fontWeight: 600 }}>{t("labs.vocab.sharedTitle", "Geteilte Sprache")}</p>
+                  <p className="text-xs mb-2" style={{ color: "var(--labs-text-muted)" }}>{t("labs.vocab.sharedSubtitle", "Worte, die du mit der Community teilst")}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {mirror.shared.slice(0, 16).map((s, i) => (
+                      <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 11px", borderRadius: 9999, fontSize: 13, color: "var(--labs-text)", background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)" }} data-testid={`vocab-shared-${i}`}>
+                        {s.term}<span style={{ color: "var(--labs-text-muted)", fontSize: 11 }}>·{s.userCount}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {mirror.signature.length > 0 && (
+                <div>
+                  <p className="text-sm mb-1" style={{ color: "var(--labs-accent)", fontWeight: 600 }}>{t("labs.vocab.signatureTitle", "Deine Signatur")}</p>
+                  <p className="text-xs mb-2" style={{ color: "var(--labs-text-muted)" }}>{t("labs.vocab.signatureSubtitle", "Worte, die dich auszeichnen — kaum jemand sonst nutzt sie")}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {mirror.signature.slice(0, 16).map((term, i) => (
+                      <span key={i} style={{ display: "inline-flex", alignItems: "center", padding: "5px 11px", borderRadius: 9999, fontSize: 13, color: "var(--labs-accent)", background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-accent)" }} data-testid={`vocab-sig-${i}`}>{term}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ marginTop: 24 }}>
+              <p className="text-xs mb-2" style={{ color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700 }}>{t("labs.vocab.mirrorTitle", "Im Spiegel der Community")}</p>
+              <p className="text-sm" style={{ color: "var(--labs-text-secondary)", lineHeight: 1.5 }}>{t("labs.vocab.mirrorEmpty", "Der Spiegel füllt sich, sobald mehr Genießer ihre Eindrücke festhalten. Dann siehst du, welche Worte du teilst — und welche dich auszeichnen.")}</p>
             </div>
           )}
         </>

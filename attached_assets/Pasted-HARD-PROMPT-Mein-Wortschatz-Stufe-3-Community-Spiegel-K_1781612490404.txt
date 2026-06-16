@@ -1,0 +1,134 @@
+HARD PROMPT — "Mein Wortschatz" Stufe 3: Community-Spiegel (K-Anonymität ≥3)
+SICHERHEIT: KEINE Commits, KEIN push, KEINE Schema-/Tabellen-/Migrations-Änderung, KEIN drizzle-kit. 3 Dateien. Liegt auf dem Feinschliff drauf.
+
+SCHRITT 0 (lesen, melden): server/storage.ts getVocabularyAdoption (~Z.3777, Klassenmethode; Imports Z.1 haben inArray/desc/sql, vocabularyAdoption importiert); server/routes.ts Vocabulary-Endpoints (~Z.12316 events POST, ~Z.12325 adoption GET); client/src/lib/vocabulary.ts (pidHeaders + getVocabularyAdoption); client/src/labs/pages/LabsTasteWheel.tsx VocabularyHarvest (stats-useMemo, Fragment-Ende). Plan nennen, dann ausführen.
+
+S1a — server/storage.ts: NEUE Methode direkt NACH getVocabularyAdoption einfügen
+ (Anker — Ende von getVocabularyAdoption):
+  async getVocabularyAdoption(participantId: string): Promise<VocabularyAdoption[]> {
+    return db.select().from(vocabularyAdoption)
+      .where(eq(vocabularyAdoption.participantId, participantId))
+      .orderBy(desc(vocabularyAdoption.lastAt));
+  }
+ DANACH einfügen:
+
+  async getCommunityVocabulary(minUsers: number = 3): Promise<{ term: string; userCount: number }[]> {
+    const rows = await db
+      .select({
+        term: sql<string>`lower(trim(${vocabularyAdoption.term}))`,
+        userCount: sql<number>`count(distinct ${vocabularyAdoption.participantId})::int`,
+      })
+      .from(vocabularyAdoption)
+      .where(inArray(vocabularyAdoption.status, ["adopted", "self"]))
+      .groupBy(sql`lower(trim(${vocabularyAdoption.term}))`);
+    return rows
+      .map((r) => ({ term: String(r.term), userCount: Number(r.userCount) }))
+      .filter((r) => r.term.length > 0 && r.userCount >= minUsers)
+      .sort((a, b) => b.userCount - a.userCount)
+      .slice(0, 500);
+  }
+
+S1b — server/routes.ts: NEUES Endpoint direkt NACH dem adoption-GET (~Z.12331) einfügen:
+
+  app.get("/api/vocabulary/community", async (req: any, res: any) => {
+    try {
+      const caller = String(req.headers["x-participant-id"] || "");
+      if (!caller) return res.status(403).json({ error: "Forbidden" });
+      res.json(await storage.getCommunityVocabulary(3));
+    } catch (e: any) { res.status(500).json({ error: e?.message || "community vocab failed" }); }
+  });
+
+S2 — client/src/lib/vocabulary.ts: ans Dateiende anhängen:
+
+export type CommunityVocabRow = { term: string; userCount: number };
+export async function getCommunityVocabulary(): Promise<CommunityVocabRow[]> {
+  const res = await fetch(`/api/vocabulary/community`, { headers: { ...pidHeaders() } });
+  if (!res.ok) throw new Error(`community vocab failed: ${res.status}`);
+  return res.json();
+}
+
+S3 — client/src/labs/pages/LabsTasteWheel.tsx:
+ (a) Import ERSETZEN
+   import { getVocabularyAdoption, type VocabAdoptionRow } from "@/lib/vocabulary";
+ durch
+   import { getVocabularyAdoption, getCommunityVocabulary, type VocabAdoptionRow, type CommunityVocabRow } from "@/lib/vocabulary";
+
+ (b) Community-Query + mirror-useMemo NACH der stats-useMemo einfügen
+   (Anker — Ende der stats-useMemo):
+    return { terms, total: terms.length, selfCount, earliest };
+  }, [rows]);
+ DANACH einfügen:
+
+  const { data: community } = useQuery<CommunityVocabRow[]>({
+    queryKey: ["vocab-community"],
+    queryFn: getCommunityVocabulary,
+  });
+  const mirror = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const c of (community || [])) map.set(c.term.toLowerCase(), c.userCount);
+    const shared: { term: string; userCount: number }[] = [];
+    const signature: string[] = [];
+    for (const tm of stats.terms) {
+      const uc = map.get(tm.term.toLowerCase());
+      if (uc != null) shared.push({ term: tm.term, userCount: uc });
+      else signature.push(tm.term);
+    }
+    shared.sort((a, b) => b.userCount - a.userCount);
+    return { shared, signature, hasCommunity: (community || []).length > 0 };
+  }, [community, stats.terms]);
+
+ (c) Render-Block einfügen DIREKT VOR dem Fragment-Ende
+   (Anker — Ende von VocabularyHarvest):
+        </>
+      )}
+    </div>
+  );
+}
+ ERSETZEN durch (Community-Block VOR </> eingefügt):
+
+          {mirror.hasCommunity ? (
+            <div style={{ marginTop: 24 }}>
+              <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700 }}>{t("labs.vocab.mirrorTitle", "Im Spiegel der Community")}</p>
+              {mirror.shared.length > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  <p className="text-sm mb-1" style={{ color: "var(--labs-text)", fontWeight: 600 }}>{t("labs.vocab.sharedTitle", "Geteilte Sprache")}</p>
+                  <p className="text-xs mb-2" style={{ color: "var(--labs-text-muted)" }}>{t("labs.vocab.sharedSubtitle", "Worte, die du mit der Community teilst")}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {mirror.shared.slice(0, 16).map((s, i) => (
+                      <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 11px", borderRadius: 9999, fontSize: 13, color: "var(--labs-text)", background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)" }} data-testid={`vocab-shared-${i}`}>
+                        {s.term}<span style={{ color: "var(--labs-text-muted)", fontSize: 11 }}>·{s.userCount}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {mirror.signature.length > 0 && (
+                <div>
+                  <p className="text-sm mb-1" style={{ color: "var(--labs-accent)", fontWeight: 600 }}>{t("labs.vocab.signatureTitle", "Deine Signatur")}</p>
+                  <p className="text-xs mb-2" style={{ color: "var(--labs-text-muted)" }}>{t("labs.vocab.signatureSubtitle", "Worte, die dich auszeichnen — kaum jemand sonst nutzt sie")}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {mirror.signature.slice(0, 16).map((term, i) => (
+                      <span key={i} style={{ display: "inline-flex", alignItems: "center", padding: "5px 11px", borderRadius: 9999, fontSize: 13, color: "var(--labs-accent)", background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-accent)" }} data-testid={`vocab-sig-${i}`}>{term}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ marginTop: 24 }}>
+              <p className="text-xs mb-2" style={{ color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700 }}>{t("labs.vocab.mirrorTitle", "Im Spiegel der Community")}</p>
+              <p className="text-sm" style={{ color: "var(--labs-text-secondary)", lineHeight: 1.5 }}>{t("labs.vocab.mirrorEmpty", "Der Spiegel füllt sich, sobald mehr Genießer ihre Eindrücke festhalten. Dann siehst du, welche Worte du teilst — und welche dich auszeichnen.")}</p>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+VERIFIKATION:
+- [ ] tsc/build grün.
+- [ ] GET /api/vocabulary/community liefert nur Begriffe mit ≥3 verschiedenen participant_ids (jetzt: leeres Array → korrekt).
+- [ ] Endpoint ohne x-participant-id → 403.
+- [ ] Wortschatz-Seite: bei leerem Lexikon Platzhalter "Der Spiegel füllt sich…"; sobald ≥3-Begriffe existieren, "Geteilte Sprache" (mit ·N) + "Deine Signatur" (gold, ohne Zahl).
+- [ ] KEINE Schema-/Migrations-Änderung, KEIN drizzle-kit, NICHT committed.

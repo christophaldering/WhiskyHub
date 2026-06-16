@@ -3779,6 +3779,22 @@ export class DatabaseStorage implements IStorage {
       .where(eq(vocabularyAdoption.participantId, participantId))
       .orderBy(desc(vocabularyAdoption.lastAt));
   }
+
+  async getCommunityVocabulary(minUsers: number = 3): Promise<{ term: string; userCount: number }[]> {
+    const rows = await db
+      .select({
+        term: sql<string>`lower(trim(${vocabularyAdoption.term}))`,
+        userCount: sql<number>`count(distinct ${vocabularyAdoption.participantId})::int`,
+      })
+      .from(vocabularyAdoption)
+      .where(inArray(vocabularyAdoption.status, ["adopted", "self"]))
+      .groupBy(sql`lower(trim(${vocabularyAdoption.term}))`);
+    return rows
+      .map((r) => ({ term: String(r.term), userCount: Number(r.userCount) }))
+      .filter((r) => r.term.length > 0 && r.userCount >= minUsers)
+      .sort((a, b) => b.userCount - a.userCount)
+      .slice(0, 500);
+  }
   async recordVocabularyEvents(participantId: string, events: { term: string; status: "offered"|"adopted"|"self"; locale?: string; source?: string }[]): Promise<{ recorded: number; resolved: number }> {
     if (!participantId || !events?.length) return { recorded: 0, resolved: 0 };
     const descriptors = await db.select().from(flavourDescriptors);
