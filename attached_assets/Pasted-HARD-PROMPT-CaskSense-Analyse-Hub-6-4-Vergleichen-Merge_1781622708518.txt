@@ -1,0 +1,143 @@
+HARD PROMPT — CaskSense Analyse-Hub 6→4 (Vergleichen-Merge + Downloads-Kachel raus)
+
+KONTEXT: Reiner Client-Umbau. Der Analyse-Tab in "Meine Welt" zeigt 6 Kacheln; Ziel sind 4:
+(1) Statistik & Verlauf, (2) Aromen & Wortschatz, (3) NEU "Vergleichen" (Compare + Benchmark
+zusammengelegt, Umschalter), (4) Profil/Palate. Die Downloads-Kachel entfällt als Analyse-Kachel
+(die Downloads-SEITE bleibt unangetastet und über Einstellungen → Daten erreichbar).
+
+══════════════════════════════════════════════════════════
+SCHRITT 0 — DIAGNOSE (NUR LESEN, NICHTS ÄNDERN, ergebnis berichten):
+══════════════════════════════════════════════════════════
+a) client/src/labs/pages/hubTiles.tsx: Bestätige, dass ANALYTICS_HUB_TILES die Kacheln
+   testId "labs-link-analytics-hub-compare", "...-downloads", "...-benchmark" enthält.
+b) client/src/labs/pages/LabsTaste.tsx: Bestätige die drei Inline-Render-Zeilen
+   für compare (<LabsTasteCompare />), downloads (<LabsTasteDownloads />), benchmark (<LabsBenchmark />).
+c) Prüfe, ob es eine Menge ANALYTICS_SUB_IDS gibt, die "...-downloads"/"...-benchmark" enthält
+   (in LabsTaste.tsx oder hubTiles.tsx). Falls ja: NUR berichten, NICHT ändern (stehenbleibende
+   Einträge sind harmlos, weil sie keiner Kachel mehr zugeordnet werden).
+d) Bestätige, dass LabsTasteCompare und LabsBenchmark Default-Exports sind.
+
+→ DANN STOPP. Plan kurz darstellen und auf mein "OK" warten, BEVOR du etwas änderst.
+
+══════════════════════════════════════════════════════════
+SCHRITT 1 — NEUE DATEI client/src/labs/pages/LabsCompareBenchmark.tsx
+══════════════════════════════════════════════════════════
+Lege exakt diese Datei an:
+
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import LabsTasteCompare from "./LabsTasteCompare";
+import LabsBenchmark from "./LabsBenchmark";
+
+export default function LabsCompareBenchmark() {
+  const { t } = useTranslation();
+  const [mode, setMode] = useState<"intern" | "extern">("intern");
+  return (
+    <div>
+      <div style={{ padding: "16px 20px 0" }}>
+        <div className="labs-segmented" style={{ marginBottom: 8 }}>
+          <button
+            onClick={() => setMode("intern")}
+            className={`labs-segmented-btn ${mode === "intern" ? "labs-segmented-btn-active" : ""}`}
+            data-testid="compare-mode-intern"
+          >
+            {t("compare.modeIntern", "Meine Drams")}
+          </button>
+          <button
+            onClick={() => setMode("extern")}
+            className={`labs-segmented-btn ${mode === "extern" ? "labs-segmented-btn-active" : ""}`}
+            data-testid="compare-mode-extern"
+          >
+            {t("compare.modeExtern", "Extern")}
+          </button>
+        </div>
+      </div>
+      {mode === "intern" ? <LabsTasteCompare /> : <LabsBenchmark />}
+    </div>
+  );
+}
+
+══════════════════════════════════════════════════════════
+SCHRITT 2 — hubTiles.tsx (ANALYTICS_HUB_TILES)
+══════════════════════════════════════════════════════════
+2a) Compare-Kachel umbenennen. ERSETZE:
+  {
+    icon: GitCompareArrows,
+    labelKey: "myTastePage.comparison",
+    labelFallback: "Compare",
+    descKey: "myTastePage.analyticsHub.compareDesc",
+    descFallback: "Compare your ratings side by side",
+    href: "/labs/taste/compare",
+    testId: "labs-link-analytics-hub-compare",
+  },
+DURCH:
+  {
+    icon: GitCompareArrows,
+    labelKey: "myTastePage.analyticsHub.vergleichen",
+    labelFallback: "Vergleichen",
+    descKey: "myTastePage.analyticsHub.vergleichenDesc",
+    descFallback: "Deine Drams & externe Daten",
+    href: "/labs/taste/compare",
+    testId: "labs-link-analytics-hub-compare",
+  },
+
+2b) Downloads-Kachel KOMPLETT ENTFERNEN (ganzer Block inkl. Klammern/Komma):
+  {
+    icon: Download,
+    labelKey: "myTastePage.analyticsHub.downloads",
+    labelFallback: "Downloads",
+    descKey: "myTastePage.analyticsHub.downloadsDesc",
+    descFallback: "Export your data as CSV or Excel",
+    href: "/labs/taste/downloads",
+    testId: "labs-link-analytics-hub-downloads",
+  },
+
+2c) Benchmark-Kachel KOMPLETT ENTFERNEN (ganzer Block inkl. Klammern/Komma):
+  {
+    icon: Brain,
+    labelKey: "bibliothek.benchmark",
+    labelFallback: "Benchmark",
+    descKey: "bibliothek.benchmarkDesc",
+    descFallback: "External tasting data & comparison",
+    href: "/labs/taste/benchmark",
+    testId: "labs-link-analytics-hub-benchmark",
+  },
+
+HINWEIS: Die Icon-Imports Download/Brain ggf. weiter von anderen Kacheln genutzt — NICHT
+entfernen, außer du hast sicher geprüft, dass sie nirgends sonst verwendet werden. Im Zweifel
+stehenlassen (harmlos).
+
+══════════════════════════════════════════════════════════
+SCHRITT 3 — LabsTaste.tsx
+══════════════════════════════════════════════════════════
+3a) Import ergänzen. Nach der Zeile
+  import LabsBenchmark from "./LabsBenchmark";
+EINFÜGEN:
+  import LabsCompareBenchmark from "./LabsCompareBenchmark";
+
+3b) Compare-Inline ersetzen. ERSETZE:
+            {activeAnalyticsTile === "labs-link-analytics-hub-compare" && <LabsTasteCompare />}
+DURCH:
+            {activeAnalyticsTile === "labs-link-analytics-hub-compare" && <LabsCompareBenchmark />}
+
+3c) Downloads-Inline ENTFERNEN (ganze Zeile löschen):
+            {activeAnalyticsTile === "labs-link-analytics-hub-downloads" && <LabsTasteDownloads />}
+
+3d) Benchmark-Inline ENTFERNEN (ganze Zeile löschen):
+            {activeAnalyticsTile === "labs-link-analytics-hub-benchmark" && <LabsBenchmark />}
+
+HINWEIS: Die Imports LabsTasteDownloads und LabsBenchmark in LabsTaste.tsx werden dadurch ggf.
+ungenutzt. Das ist HARMLOS (kein noUnusedLocals). Du DARFST sie entfernen, MUSST aber nicht.
+Wenn du sie entfernst: nur die beiden import-Zeilen in LabsTaste.tsx, sonst nichts.
+
+══════════════════════════════════════════════════════════
+VERIFIKATION (nach den Änderungen, NUR LESEN):
+══════════════════════════════════════════════════════════
+- hubTiles.tsx ANALYTICS_HUB_TILES enthält genau 4 Kacheln: analytics, wheel, compare(="Vergleichen"), palate.
+- Kein "labs-link-analytics-hub-downloads" und kein "labs-link-analytics-hub-benchmark" mehr in ANALYTICS_HUB_TILES.
+- LabsTaste.tsx: compare-Zeile rendert <LabsCompareBenchmark />; downloads- und benchmark-Inline-Zeilen sind weg.
+- Neue Datei LabsCompareBenchmark.tsx existiert und ist Default-Export.
+- App baut (npm run build oder tsc) ohne neue Fehler.
+
+❗ ABSOLUT KEIN COMMIT. KEIN git add/commit/push. KEIN drizzle-kit. KEINE Schema-Änderung.
+❗ Wiederholung: NICHT committen. Nur Dateien im Workspace ändern, dann mir das Ergebnis berichten.
