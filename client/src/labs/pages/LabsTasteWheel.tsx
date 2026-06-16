@@ -4,6 +4,7 @@ import i18n from "i18next";
 import { useQuery } from "@tanstack/react-query";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import { useSession } from "@/lib/session";
+import { getVocabularyAdoption, type VocabAdoptionRow } from "@/lib/vocabulary";
 import { journalApi, ratingNotesApi } from "@/lib/api";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { ChevronLeft, CircleDot, X, Wine } from "lucide-react";
@@ -98,10 +99,10 @@ export default function LabsTasteWheel() {
       <MeineWeltActionBar active="analytics" />
 
       <h1 className="labs-h2 mb-1 labs-fade-in" style={{ color: "var(--labs-text)" }} data-testid="text-wheel-title">
-        {t("labs.wheel.title", "Flavor Wheel")}
+        {t("labs.aromasVocab.title", "Aromen & Wortschatz")}
       </h1>
       <p className="text-sm mb-1 labs-fade-in" style={{ color: "var(--labs-text-muted)" }}>
-        {t("labs.wheel.subtitle", "Aroma categories extracted from your tasting notes")}
+        {t("labs.aromasVocab.subtitle", "Dein Aromen-Rad und die Worte, die du dir zu eigen gemacht hast")}
       </p>
       <p className="text-xs mb-6 labs-fade-in" style={{ color: "var(--labs-text-muted)" }} data-testid="text-source-count">
         {t("labs.wheel.sources", "Sources: {{drams}} drams, {{notes}} rating notes", { drams: journalEntries?.length || 0, notes: ratingNotes?.length || 0 })}
@@ -213,6 +214,69 @@ export default function LabsTasteWheel() {
             </div>
           )}
         </div>
+      )}
+
+      {pid && <VocabularyHarvest pid={pid} />}
+    </div>
+  );
+}
+
+function VocabularyHarvest({ pid }: { pid: string }) {
+  const { t } = useTranslation();
+  const { data: rows } = useQuery<VocabAdoptionRow[]>({
+    queryKey: ["vocab-adoption", pid],
+    queryFn: () => getVocabularyAdoption(pid),
+    enabled: !!pid,
+  });
+  const stats = useMemo(() => {
+    const owned = (rows || []).filter((r) => r.status === "adopted" || r.status === "self");
+    const map = new Map<string, { term: string; useCount: number; self: boolean; first: number }>();
+    for (const r of owned) {
+      const key = r.term.toLowerCase();
+      const ts = r.firstAt ? new Date(r.firstAt).getTime() : Date.now();
+      const prev = map.get(key);
+      if (prev) { prev.useCount += r.useCount || 1; prev.self = prev.self || r.status === "self"; prev.first = Math.min(prev.first, ts); }
+      else { map.set(key, { term: r.term, useCount: r.useCount || 1, self: r.status === "self", first: ts }); }
+    }
+    const terms = Array.from(map.values()).sort((a, b) => b.useCount - a.useCount);
+    const selfCount = terms.filter((x) => x.self).length;
+    const earliest = terms.length ? new Date(Math.min(...terms.map((x) => x.first))) : null;
+    return { terms, total: terms.length, selfCount, earliest };
+  }, [rows]);
+
+  return (
+    <div className="labs-card p-5 labs-fade-in" style={{ marginTop: 16 }} data-testid="vocab-harvest">
+      <h2 className="labs-h3 mb-1" style={{ color: "var(--labs-text)" }}>{t("labs.vocab.title", "Mein Wortschatz")}</h2>
+      <p className="text-sm mb-4" style={{ color: "var(--labs-text-muted)" }}>{t("labs.vocab.subtitle", "Die Worte, die du dir zu eigen gemacht hast")}</p>
+      {stats.total === 0 ? (
+        <p className="text-sm" style={{ color: "var(--labs-text-secondary)", lineHeight: 1.5 }}>{t("labs.vocab.empty", "Noch keine Begriffe gesammelt — dein Wortschatz wächst mit jedem Eindruck am Glas.")}</p>
+      ) : (
+        <>
+          <div className="flex items-baseline gap-2 mb-1">
+            <span className="labs-serif" style={{ fontSize: 32, fontWeight: 700, color: "var(--labs-accent)", lineHeight: 1 }}>{stats.total}</span>
+            <span className="text-sm" style={{ color: "var(--labs-text-secondary)" }}>{t("labs.vocab.count", "eigene Geschmacksbegriffe")}</span>
+          </div>
+          {stats.selfCount > 0 && (
+            <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("labs.vocab.selfCount", "davon {{n}} in eigenen Worten", { n: stats.selfCount })}</p>
+          )}
+          {stats.earliest && (
+            <p className="text-xs mb-4" style={{ color: "var(--labs-text-muted)" }}>{t("labs.vocab.since", "gesammelt seit {{date}}", { date: stats.earliest.toLocaleDateString(undefined, { month: "long", year: "numeric" }) })}</p>
+          )}
+          <div className="flex flex-wrap gap-2 mt-2">
+            {stats.terms.map((w, i) => (
+              <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 11px", borderRadius: 9999, fontSize: 13, fontFamily: "inherit", color: w.self ? "var(--labs-accent)" : "var(--labs-text)", background: "var(--labs-surface-elevated)", border: w.self ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border)" }} data-testid={`vocab-term-${i}`}>
+                {w.term}
+                {w.useCount > 1 && <span style={{ color: "var(--labs-text-muted)", fontSize: 11 }}>·{w.useCount}</span>}
+              </span>
+            ))}
+          </div>
+          {stats.selfCount > 0 && (
+            <p className="text-xs mt-4 flex items-center gap-2" style={{ color: "var(--labs-text-muted)" }}>
+              <span style={{ display: "inline-block", width: 9, height: 9, borderRadius: 9999, border: "1px solid var(--labs-accent)" }} />
+              {t("labs.vocab.legend", "Gold umrandet = in eigenen Worten gefunden, nicht aus Vorschlägen")}
+            </p>
+          )}
+        </>
       )}
     </div>
   );
