@@ -1,0 +1,112 @@
+HARD PROMPT — CaskSense: Unterschriften korrigieren + Drams-Seite entschlacken
+
+KONTEXT: Reiner Client-/i18n-Umbau, KEIN Schema, KEINE neue Tabelle.
+Zwei Themen:
+(A) Die vier Top-Tab-Unterzeilen in "Meine Welt" sind teils falsch/irreführend
+    (v.a. "Sammlung → Drams" — Drams leben seit dem IA-Umbau NICHT mehr in der Sammlung,
+     sie kollidiert mit der Nachbarkachel "Tastings & Drams").
+(B) Die Drams-Seite zeigt den "offen"-Begriff dreifach (Statistik-Kachel "Drafts",
+    Banner "offene Drams", Segment "Offen") und das Sortier-Dropdown sieht durch sein
+    Label "Gespeichert" wie ein Mystery-Button aus.
+
+══════════════════════════════════════════════════════════
+SCHRITT 0 — DIAGNOSE (NUR LESEN, dann STOPP + Plan zeigen, auf mein OK warten):
+══════════════════════════════════════════════════════════
+a) client/src/lib/i18n.ts: bestätige, dass es ZWEI Vorkommen von
+   `tileMyCollectionDesc: "Drams",` gibt (EN-Block ~4981 mit Nachbarn "Tips"/"Aromas";
+   DE-Block ~14790 mit Nachbarn "Tipps"/"Aromen"). WICHTIG: dieser eine String ist NICHT
+   eindeutig → nur über Mehrzeilen-Anker ersetzen (siehe Schritt 1).
+b) client/src/labs/pages/LabsTasteDrams.tsx: bestätige (1) den Banner-Block mit
+   data-testid="labs-draft-banner", (2) die Statistik-Kachel-Zeile mit `label: t("drams.drafts")`,
+   (3) die Sort-Button-Zeile mit `t("drams.saved") : sortBy === "date"`.
+→ DANN STOPP.
+
+══════════════════════════════════════════════════════════
+SCHRITT 1 — i18n.ts: vier Unterzeilen korrigieren (6 Edits, je eindeutiger Anker)
+══════════════════════════════════════════════════════════
+EN-Block:
+1a) ERSETZE (zweizeilig, dadurch eindeutig):
+        tileMyCollection: "Collection",
+        tileMyCollectionDesc: "Drams",
+DURCH:
+        tileMyCollection: "Collection",
+        tileMyCollectionDesc: "Bottles & Wishlist",
+
+1b) ERSETZE  `tileAiInsightsDesc: "Tips",`  DURCH  `tileAiInsightsDesc: "Reports & Recommendations",`
+1c) ERSETZE  `tileProfileAnalyticsDesc: "Aromas",`  DURCH  `tileProfileAnalyticsDesc: "Stats & Profile",`
+
+DE-Block:
+1d) ERSETZE (zweizeilig, dadurch eindeutig):
+        tileMyCollection: "Sammlung",
+        tileMyCollectionDesc: "Drams",
+DURCH:
+        tileMyCollection: "Sammlung",
+        tileMyCollectionDesc: "Flaschen & Wunschliste",
+
+1e) ERSETZE  `tileAiInsightsDesc: "Tipps",`  DURCH  `tileAiInsightsDesc: "Reports & Empfehlungen",`
+1f) ERSETZE  `tileProfileAnalyticsDesc: "Aromen",`  DURCH  `tileProfileAnalyticsDesc: "Statistik & Profil",`
+
+══════════════════════════════════════════════════════════
+SCHRITT 2 — MeineWeltActionBar.tsx: Code-Fallbacks angleichen (Hygiene, 3 Edits)
+══════════════════════════════════════════════════════════
+(Die Fallbacks greifen nur, falls ein Key fehlt — aber sie sollen sinnvoll sein.)
+2a) ERSETZE  `{t("myTastePage.tileMyCollectionDesc", "Drams")}`  DURCH  `{t("myTastePage.tileMyCollectionDesc", "Flaschen & Wunschliste")}`
+2b) ERSETZE  `{t("myTastePage.tileAiInsightsDesc", "Tips")}`  DURCH  `{t("myTastePage.tileAiInsightsDesc", "Reports & Empfehlungen")}`
+2c) ERSETZE  `{t("myTastePage.tileProfileAnalyticsDesc", "Aromas")}`  DURCH  `{t("myTastePage.tileProfileAnalyticsDesc", "Statistik & Profil")}`
+
+══════════════════════════════════════════════════════════
+SCHRITT 3 — LabsTasteDrams.tsx: Dreifach-"offen" entschlacken + Sort-Label
+══════════════════════════════════════════════════════════
+3a) Banner ENTFERNEN. Lösche den GESAMTEN folgenden Block ersatzlos
+    (von `{statusFilter !== "open" ...` bis zum schließenden `)}`):
+
+          {statusFilter !== "open" && journal.filter((e: any) => e.status === "draft").length > 0 && (
+            <div style={{ padding: "0 20px", marginBottom: 12 }} data-testid="labs-draft-banner">
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "10px 14px",
+                  borderRadius: 12,
+                  background: "rgba(200,134,26,0.08)",
+                  border: "1px solid rgba(200,134,26,0.2)",
+                  cursor: "pointer",
+                }}
+                onClick={() => setStatusFilter("open")}
+              >
+                <FileEdit style={{ width: 16, height: 16, color: "#c8861a", flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>
+                    {t("v2.drams.openBanner", "{{count}} offene Drams — direkt anzeigen →", { count: journal.filter((e: any) => e.status === "draft").length })}
+                  </div>
+                </div>
+                <ChevronLeft style={{ width: 16, height: 16, color: "#c8861a", transform: "rotate(180deg)" }} />
+              </div>
+            </div>
+          )}
+
+    HINWEIS: dadurch evtl. ungenutzte Imports (FileEdit) sind HARMLOS — stehenlassen.
+
+3b) Statistik-Kachel "Drafts" → "Offen". ERSETZE:
+                    { value: journal.filter((e: any) => e.status === "draft").length, label: t("drams.drafts") },
+DURCH:
+                    { value: journal.filter((e: any) => e.status === "draft").length, label: t("drams.statusOpen", "Offen") },
+
+3c) Sort-Button als "Sortieren" lesbar machen (Wert wandert in die Auswahl im Dropdown,
+    wo er schon per Haken markiert ist). ERSETZE:
+                  {sortBy === "saved" ? t("drams.saved") : sortBy === "date" ? t("drams.date") : sortBy === "score" ? t("drams.score") : t("drams.name")}
+DURCH:
+                  {t("drams.sortAction", "Sortieren")}
+
+══════════════════════════════════════════════════════════
+VERIFIKATION (nur lesen):
+══════════════════════════════════════════════════════════
+- i18n.ts: kein `tileMyCollectionDesc: "Drams"` mehr; DE zeigt "Flaschen & Wunschliste",
+  "Reports & Empfehlungen", "Statistik & Profil"; EN entsprechend englisch.
+- LabsTasteDrams.tsx: kein data-testid="labs-draft-banner" mehr; Statistik-Kachel nutzt
+  drams.statusOpen; Sort-Button rendert t("drams.sortAction","Sortieren").
+- App baut (npm run build / tsc) ohne neue Fehler.
+
+❗ KEIN COMMIT, KEIN git add/commit/push, KEIN drizzle-kit, KEINE Schema-Änderung.
+❗ Wiederholung: NICHT committen. Nur Dateien im Workspace ändern, dann Ergebnis berichten.
