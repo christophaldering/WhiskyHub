@@ -1,0 +1,49 @@
+HARD PROMPT — Cooper-Politur (Wiederholungs-Fix + Notbremse + eigener Rate-Limit-Eimer)
+SICHERHEIT: KEINE Commits, KEIN push, KEINE DB-/Schema-Änderung. Nur server/routes.ts.
+
+SCHRITT 0 (lesen): bestätige in server/routes.ts:
+- die Funktion checkIdentifyRateLimit (~Z.74) + die Konstanten IDENTIFY_RATE_LIMIT/WINDOW (~Z.70),
+- den Handler app.post("/api/impression/converse", ...) (~Z.5581),
+- den turnSystem-String darin (~Z.5633) und die Zeile `const proposeClose = canClose(merged, mode);`.
+Plan kurz vorlegen, dann ausführen.
+
+ÄNDERUNG 1 — eigener Rate-Limit-Eimer. Direkt NACH der schließenden Klammer von
+checkIdentifyRateLimit (vor `const aiScanCache`) einfügen:
+
+const converseRateLimit = new Map<string, { count: number; resetAt: number }>();
+const CONVERSE_RATE_LIMIT = 40;
+const CONVERSE_RATE_WINDOW_MS = 5 * 60 * 1000;
+function checkConverseRateLimit(key: string): { allowed: boolean; retryAfterSeconds?: number } {
+  const now = Date.now();
+  const entry = converseRateLimit.get(key);
+  if (!entry || now > entry.resetAt) { converseRateLimit.set(key, { count: 1, resetAt: now + CONVERSE_RATE_WINDOW_MS }); return { allowed: true }; }
+  if (entry.count >= CONVERSE_RATE_LIMIT) { return { allowed: false, retryAfterSeconds: Math.ceil((entry.resetAt - now) / 1000) }; }
+  entry.count++;
+  return { allowed: true };
+}
+
+ÄNDERUNG 2 — converse nutzt den neuen Eimer. NUR im Handler /api/impression/converse
+(die rateCheck-Zeile direkt nach `const rateLimitKey = ...`): ersetze
+  const rateCheck = checkIdentifyRateLimit(rateLimitKey);
+durch
+  const rateCheck = checkConverseRateLimit(rateLimitKey);
+(WICHTIG: nur diese eine Stelle im converse-Handler — die anderen checkIdentifyRateLimit-Aufrufe NICHT anfassen.)
+
+ÄNDERUNG 3 — Wiederholungen vermeiden + Ecke abhaken. Im turnSystem-String: finde den Satz,
+der mit "Sei gesprochen und persönlich" beginnt und mit "KEINE Aufzählung." endet, und hänge
+im SELBEN String direkt dahinter an (mit führendem Leerzeichen):
+  " Stelle NIE zweimal dieselbe oder eine sehr ähnliche Frage — sieh dir deine vorigen MENTOR-Zeilen im Verlauf an. Wenn der Taster zu einer Ecke nichts Neues beiträgt, ausweicht oder zweimal vage bleibt, hake diese Ecke als 'touched' ab und WECHSLE zur nächsten offenen Ecke statt nachzubohren. Wenn nichts Wesentliches mehr offen ist oder der Taster erschöpft wirkt, fasse kurz zusammen und biete den Abschluss an."
+
+ÄNDERUNG 4 — Runden-Notbremse. Ersetze die Zeile
+  const proposeClose = canClose(merged, mode);
+durch
+  const tasterTurns = turns.filter((tt) => tt.role === "taster").length;
+  const hardCap = mode === "schnell" ? 3 : mode === "rabbithole" ? 10 : 6;
+  const proposeClose = canClose(merged, mode) || tasterTurns >= hardCap;
+
+VERIFIKATION:
+- [ ] npm run build / tsc grün.
+- [ ] Langes Solo-Gespräch (Neugierig): Cooper wiederholt Fragen NICHT mehr, wechselt die Ecke wenn du ausweichst, und bietet spätestens nach ~6 Antworten den Abschluss an.
+- [ ] Mehrere Gespräche hintereinander lösen KEIN frühes "Too many requests" mehr aus.
+- [ ] /api/impression/parse + andere checkIdentifyRateLimit-Aufrufe unverändert.
+- [ ] NICHT committed.

@@ -86,6 +86,18 @@ function checkIdentifyRateLimit(key: string): { allowed: boolean; retryAfterSeco
   return { allowed: true };
 }
 
+const converseRateLimit = new Map<string, { count: number; resetAt: number }>();
+const CONVERSE_RATE_LIMIT = 40;
+const CONVERSE_RATE_WINDOW_MS = 5 * 60 * 1000;
+function checkConverseRateLimit(key: string): { allowed: boolean; retryAfterSeconds?: number } {
+  const now = Date.now();
+  const entry = converseRateLimit.get(key);
+  if (!entry || now > entry.resetAt) { converseRateLimit.set(key, { count: 1, resetAt: now + CONVERSE_RATE_WINDOW_MS }); return { allowed: true }; }
+  if (entry.count >= CONVERSE_RATE_LIMIT) { return { allowed: false, retryAfterSeconds: Math.ceil((entry.resetAt - now) / 1000) }; }
+  entry.count++;
+  return { allowed: true };
+}
+
 const aiScanCache = new Map<string, { result: any; timestamp: number }>();
 let tourCacheVersion = Date.now();
 const tourImageCache = new Map<string, string>();
@@ -5582,7 +5594,7 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
     const startMs = Date.now();
     try {
       const rateLimitKey = (req.headers["x-participant-id"] as string) || (req.ip || "unknown") as string;
-      const rateCheck = checkIdentifyRateLimit(rateLimitKey);
+      const rateCheck = checkConverseRateLimit(rateLimitKey);
       if (!rateCheck.allowed) return res.status(429).json({ message: "Too many requests.", retryAfter: rateCheck.retryAfterSeconds });
 
       const { whiskyName, intensity, transcript, ledger, finalize } = req.body || {};
@@ -5630,7 +5642,7 @@ SCORE-REGEL (NEU, wichtig): Leite den Score aus AFFEKT und INTENSITÄT ab — Be
 
       // ---------- TURN: nächste Mentor-Antwort + Ledger-Update + Chips ----------
       const curLedger: Ledger = (ledger && typeof ledger === "object") ? { ...EMPTY_LEDGER, ...ledger } : EMPTY_LEDGER;
-      const turnSystem = `Du bist Cooper, ein erfahrener Verkostungs-Begleiter — zurückhaltend und warm. Du lässt den Taster führen und drängst nie; meist genügt eine ruhige, gezielte Frage. Gelegentlich (NICHT jede Runde) überraschst du mit einer Reflexion, die die Aufmerksamkeit wachhält — ein unerwarteter Spiegel oder ein Bild. Du bist mäeutisch: du schärfst die Wahrnehmung des Tasters, du urteilst nicht. Du SPIEGELST die letzte Antwort des Tasters, baust darauf auf und stellst genau EINE fokussierte Frage zur dringlichsten noch offenen Ecke. Wenn der Taster stockt oder vage bleibt, biete ein BILD / eine METAPHER an ("wäre dieser Whisky ein Raum — eng und schwül oder hoch und hallend?"). Erfinde nichts. Antworte in der Sprache des Tasters. Sei gesprochen und persönlich (1–3 Sätze), KEINE Aufzählung.
+      const turnSystem = `Du bist Cooper, ein erfahrener Verkostungs-Begleiter — zurückhaltend und warm. Du lässt den Taster führen und drängst nie; meist genügt eine ruhige, gezielte Frage. Gelegentlich (NICHT jede Runde) überraschst du mit einer Reflexion, die die Aufmerksamkeit wachhält — ein unerwarteter Spiegel oder ein Bild. Du bist mäeutisch: du schärfst die Wahrnehmung des Tasters, du urteilst nicht. Du SPIEGELST die letzte Antwort des Tasters, baust darauf auf und stellst genau EINE fokussierte Frage zur dringlichsten noch offenen Ecke. Wenn der Taster stockt oder vage bleibt, biete ein BILD / eine METAPHER an ("wäre dieser Whisky ein Raum — eng und schwül oder hoch und hallend?"). Erfinde nichts. Antworte in der Sprache des Tasters. Sei gesprochen und persönlich (1–3 Sätze), KEINE Aufzählung. Stelle NIE zweimal dieselbe oder eine sehr ähnliche Frage — sieh dir deine vorigen MENTOR-Zeilen im Verlauf an. Wenn der Taster zu einer Ecke nichts Neues beiträgt, ausweicht oder zweimal vage bleibt, hake diese Ecke als 'touched' ab und WECHSLE zur nächsten offenen Ecke statt nachzubohren. Wenn nichts Wesentliches mehr offen ist oder der Taster erschöpft wirkt, fasse kurz zusammen und biete den Abschluss an.
 Offene Ecken (Ledger, Status je untouched/touched/sharpened): Nase=${curLedger.nose}, Gaumen=${curLedger.palate}, Abgang=${curLedger.finish}, Körper/Mundgefühl=${curLedger.body}, wahrgenommene Intensität=${curLedger.intensity}, Affekt/Wertung=${curLedger.affect}, vager-Begriff-geschärft=${curLedger.vagueResolved}. Frage gezielt die schwächste relevante Ecke. Die Ecke Affekt/Wertung MUSS vor Schluss berührt sein — frage dann offen "wie sehr packt dich das, wo landet das für dich?".
 Gib JSON zurück:
 {"mentorTurn":"deine 1-3 Sätze","ledger":{"nose":"...","palate":"...","finish":"...","body":"...","intensity":"...","affect":"...","vagueResolved":true|false},"chips":["..bis zu 5 Vokabeln, die zur gerade besprochenen Ecke passen und mitschwingen — schärfen, nicht vorschreiben.."]}
@@ -5645,7 +5657,9 @@ Aktualisiere das Ledger EHRLICH anhand des Gesprächs: untouched->touched sobald
       let p: any = {}; try { p = JSON.parse(completion.choices[0]?.message?.content || "{}"); } catch { p = {}; }
       const merged = mergeLedger(curLedger, (p.ledger && typeof p.ledger === "object") ? p.ledger : {});
       const chips = Array.isArray(p.chips) ? p.chips.filter((c: any) => typeof c === "string" && c.trim()).map((c: string) => c.trim()).slice(0, 5) : [];
-      const proposeClose = canClose(merged, mode);
+      const tasterTurns = turns.filter((tt) => tt.role === "taster").length;
+      const hardCap = mode === "schnell" ? 3 : mode === "rabbithole" ? 10 : 6;
+      const proposeClose = canClose(merged, mode) || tasterTurns >= hardCap;
       console.log(`[IMPRESSION-CONVERSE] mode=${mode} close=${proposeClose} in ${Date.now() - startMs}ms`);
       res.json({ mentorTurn: typeof p.mentorTurn === "string" ? p.mentorTurn.trim() : "", ledger: merged, chips, proposeClose, tookMs: Date.now() - startMs });
     } catch (e: any) {
