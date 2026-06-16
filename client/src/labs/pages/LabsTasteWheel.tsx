@@ -258,16 +258,17 @@ function VocabularyHarvest({ pid }: { pid: string }) {
   }, [stats.terms]);
 
   const gap = useMemo(() => {
-    const owned = new Set(stats.terms.map((t) => t.term.toLowerCase()));
+    const stem = (s: string) => s.toLowerCase().trim().replace(/(en|er|e|n|s)$/, "");
+    const owned = new Set(stats.terms.map((t) => stem(t.term)));
     const seen = new Set<string>();
     const out: string[] = [];
     for (const r of (rows || [])) {
       if (r.status !== "offered") continue;
-      const key = r.term.toLowerCase();
-      if (owned.has(key) || seen.has(key)) continue;
-      seen.add(key); out.push(r.term);
+      const k = stem(r.term);
+      if (owned.has(k) || seen.has(k)) continue;
+      seen.add(k); out.push(r.term);
     }
-    return out;
+    return out.slice(0, 8);
   }, [rows, stats.terms]);
 
   return (
@@ -280,29 +281,22 @@ function VocabularyHarvest({ pid }: { pid: string }) {
         <>
           <div className="flex items-baseline gap-2 mb-1">
             <span className="labs-serif" style={{ fontSize: 32, fontWeight: 700, color: "var(--labs-accent)", lineHeight: 1 }}>{stats.total}</span>
-            <span className="text-sm" style={{ color: "var(--labs-text-secondary)" }}>{t("labs.vocab.count", "eigene Geschmacksbegriffe")}</span>
+            <span className="text-sm" style={{ color: "var(--labs-text-secondary)" }}>{t("labs.vocab.count", "Geschmacksbegriffe")}</span>
           </div>
           {stats.selfCount > 0 && (
-            <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("labs.vocab.selfCount", "davon {{n}} in eigenen Worten", { n: stats.selfCount })}</p>
+            <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("labs.vocab.selfCount", "davon {{n}} selbst gefunden", { n: stats.selfCount })}</p>
           )}
           {stats.earliest && (
             <p className="text-xs mb-4" style={{ color: "var(--labs-text-muted)" }}>{t("labs.vocab.since", "gesammelt seit {{date}}", { date: stats.earliest.toLocaleDateString(undefined, { month: "long", year: "numeric" }) })}</p>
           )}
           <div className="flex flex-wrap gap-2 mt-2">
             {stats.terms.map((w, i) => (
-              <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 11px", borderRadius: 9999, fontSize: 13, fontFamily: "inherit", color: w.self ? "var(--labs-accent)" : "var(--labs-text)", background: "var(--labs-surface-elevated)", border: w.self ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border)" }} data-testid={`vocab-term-${i}`}>
+              <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 11px", borderRadius: 9999, fontSize: 13, fontFamily: "inherit", color: "var(--labs-text)", background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)" }} data-testid={`vocab-term-${i}`}>
                 {w.term}
                 {w.useCount > 1 && <span style={{ color: "var(--labs-text-muted)", fontSize: 11 }}>·{w.useCount}</span>}
               </span>
             ))}
           </div>
-          {stats.selfCount > 0 && (
-            <p className="text-xs mt-4 flex items-center gap-2" style={{ color: "var(--labs-text-muted)" }}>
-              <span style={{ display: "inline-block", width: 9, height: 9, borderRadius: 9999, border: "1px solid var(--labs-accent)" }} />
-              {t("labs.vocab.legend", "Gold umrandet = in eigenen Worten gefunden, nicht aus Vorschlägen")}
-            </p>
-          )}
-
           {growth.length >= 2 && (
             <div style={{ marginTop: 24 }}>
               <p className="text-xs mb-2" style={{ color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700 }}>{t("labs.vocab.growthTitle", "Wachstum")}</p>
@@ -324,12 +318,9 @@ function VocabularyHarvest({ pid }: { pid: string }) {
               <p className="text-sm mb-1" style={{ color: "var(--labs-text)", fontWeight: 600 }}>{t("labs.vocab.gapTitle", "Am Horizont")}</p>
               <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)", lineHeight: 1.5 }}>{t("labs.vocab.gapSubtitle", "Worte, die dir begegnet sind, aber noch nicht deine wurden")}</p>
               <div className="flex flex-wrap gap-2">
-                {gap.slice(0, 12).map((term, i) => (
+                {gap.map((term, i) => (
                   <span key={i} style={{ display: "inline-flex", alignItems: "center", padding: "5px 11px", borderRadius: 9999, fontSize: 13, color: "var(--labs-text-muted)", background: "transparent", border: "1px dashed var(--labs-border)" }} data-testid={`vocab-gap-${i}`}>{term}</span>
                 ))}
-                {gap.length > 12 && (
-                  <span style={{ display: "inline-flex", alignItems: "center", padding: "5px 11px", fontSize: 13, color: "var(--labs-text-muted)" }}>+{gap.length - 12}</span>
-                )}
               </div>
             </div>
           )}
