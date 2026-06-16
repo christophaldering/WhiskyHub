@@ -6,7 +6,7 @@ import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import { useSession } from "@/lib/session";
 import { getVocabularyAdoption, type VocabAdoptionRow } from "@/lib/vocabulary";
 import { journalApi, ratingNotesApi } from "@/lib/api";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 import { ChevronLeft, CircleDot, X, Wine } from "lucide-react";
 import { FLAVOR_CATEGORIES, type FlavorCategory } from "@/labs/data/flavor-data";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
@@ -244,6 +244,32 @@ function VocabularyHarvest({ pid }: { pid: string }) {
     return { terms, total: terms.length, selfCount, earliest };
   }, [rows]);
 
+  const growth = useMemo(() => {
+    if (stats.terms.length < 2) return [] as { month: string; count: number }[];
+    const byMonth = new Map<string, number>();
+    for (const tm of stats.terms) {
+      const d = new Date(tm.first);
+      const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      byMonth.set(k, (byMonth.get(k) || 0) + 1);
+    }
+    const keys = Array.from(byMonth.keys()).sort();
+    let cum = 0;
+    return keys.map((k) => { cum += byMonth.get(k)!; const [y, m] = k.split("-"); return { month: `${m}/${y.slice(2)}`, count: cum }; });
+  }, [stats.terms]);
+
+  const gap = useMemo(() => {
+    const owned = new Set(stats.terms.map((t) => t.term.toLowerCase()));
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const r of (rows || [])) {
+      if (r.status !== "offered") continue;
+      const key = r.term.toLowerCase();
+      if (owned.has(key) || seen.has(key)) continue;
+      seen.add(key); out.push(r.term);
+    }
+    return out;
+  }, [rows, stats.terms]);
+
   return (
     <div className="labs-card p-5 labs-fade-in" style={{ marginTop: 16 }} data-testid="vocab-harvest">
       <h2 className="labs-h3 mb-1" style={{ color: "var(--labs-text)" }}>{t("labs.vocab.title", "Mein Wortschatz")}</h2>
@@ -275,6 +301,37 @@ function VocabularyHarvest({ pid }: { pid: string }) {
               <span style={{ display: "inline-block", width: 9, height: 9, borderRadius: 9999, border: "1px solid var(--labs-accent)" }} />
               {t("labs.vocab.legend", "Gold umrandet = in eigenen Worten gefunden, nicht aus Vorschlägen")}
             </p>
+          )}
+
+          {growth.length >= 2 && (
+            <div style={{ marginTop: 24 }}>
+              <p className="text-xs mb-2" style={{ color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700 }}>{t("labs.vocab.growthTitle", "Wachstum")}</p>
+              <div style={{ height: 140 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={growth} margin={{ top: 6, right: 8, bottom: 0, left: -20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--labs-border-subtle)" vertical={false} />
+                    <XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} axisLine={false} tickLine={false} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} axisLine={false} tickLine={false} width={28} />
+                    <Line type="monotone" dataKey="count" stroke="var(--labs-accent)" strokeWidth={2} dot={{ r: 3, fill: "var(--labs-accent)" }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {gap.length > 0 && (
+            <div style={{ marginTop: 24 }}>
+              <p className="text-sm mb-1" style={{ color: "var(--labs-text)", fontWeight: 600 }}>{t("labs.vocab.gapTitle", "Am Horizont")}</p>
+              <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)", lineHeight: 1.5 }}>{t("labs.vocab.gapSubtitle", "Worte, die dir begegnet sind, aber noch nicht deine wurden")}</p>
+              <div className="flex flex-wrap gap-2">
+                {gap.slice(0, 12).map((term, i) => (
+                  <span key={i} style={{ display: "inline-flex", alignItems: "center", padding: "5px 11px", borderRadius: 9999, fontSize: 13, color: "var(--labs-text-muted)", background: "transparent", border: "1px dashed var(--labs-border)" }} data-testid={`vocab-gap-${i}`}>{term}</span>
+                ))}
+                {gap.length > 12 && (
+                  <span style={{ display: "inline-flex", alignItems: "center", padding: "5px 11px", fontSize: 13, color: "var(--labs-text-muted)" }}>+{gap.length - 12}</span>
+                )}
+              </div>
+            </div>
           )}
         </>
       )}

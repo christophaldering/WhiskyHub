@@ -1,0 +1,187 @@
+HARD PROMPT — "Mein Wortschatz": Ernte + Wachstum + Lücke (Stufe 1+2, ein Rutsch)
+SICHERHEIT: KEINE Commits, KEIN push, KEINE DB-/Server-/Schema-Änderung. Nur 3 Client-Dateien.
+
+SCHRITT 0 (lesen, melden): bestätige client/src/lib/vocabulary.ts (recordVocabularyEvents + pidHeaders-Import vorhanden); LabsTasteWheel.tsx (Z.8 recharts-Import; useSession→pid Z.41-43; t/useQuery/useMemo importiert; Render-Ende Z.215-219); hubTiles.tsx ANALYTICS_HUB_TILES Flavor-Wheel-Eintrag (testId "labs-link-analytics-hub-wheel"). Plan nennen, dann ausführen.
+
+E1 — client/src/lib/vocabulary.ts: ans Dateiende anhängen:
+
+export type VocabAdoptionRow = {
+  id: string; term: string; locale: string;
+  status: "offered" | "adopted" | "self";
+  source: string; useCount: number;
+  firstAt: string | null; lastAt: string | null; descriptorId: string | null;
+};
+export async function getVocabularyAdoption(participantId: string): Promise<VocabAdoptionRow[]> {
+  if (!participantId) return [];
+  const res = await fetch(`/api/vocabulary/${participantId}/adoption`, { headers: { ...pidHeaders() } });
+  if (!res.ok) throw new Error(`vocab read failed: ${res.status}`);
+  return res.json();
+}
+
+E2 — client/src/labs/pages/LabsTasteWheel.tsx:
+ (a) recharts-Import (Z.8) ERSETZEN durch:
+   import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
+ (b) Import ergänzen:
+   import { getVocabularyAdoption, type VocabAdoptionRow } from "@/lib/vocabulary";
+ (c) Seitentitel/Untertitel umbenennen — ersetze
+   {t("labs.wheel.title", "Flavor Wheel")}
+ durch
+   {t("labs.aromasVocab.title", "Aromen & Wortschatz")}
+ und
+   {t("labs.wheel.subtitle", "Aroma categories extracted from your tasting notes")}
+ durch
+   {t("labs.aromasVocab.subtitle", "Dein Aromen-Rad und die Worte, die du dir zu eigen gemacht hast")}
+ (d) Render-Ende: ersetze GENAU
+
+      )}
+    </div>
+  );
+}
+
+ durch:
+
+      )}
+
+      {pid && <VocabularyHarvest pid={pid} />}
+    </div>
+  );
+}
+
+function VocabularyHarvest({ pid }: { pid: string }) {
+  const { t } = useTranslation();
+  const { data: rows } = useQuery<VocabAdoptionRow[]>({
+    queryKey: ["vocab-adoption", pid],
+    queryFn: () => getVocabularyAdoption(pid),
+    enabled: !!pid,
+  });
+  const stats = useMemo(() => {
+    const owned = (rows || []).filter((r) => r.status === "adopted" || r.status === "self");
+    const map = new Map<string, { term: string; useCount: number; self: boolean; first: number }>();
+    for (const r of owned) {
+      const key = r.term.toLowerCase();
+      const ts = r.firstAt ? new Date(r.firstAt).getTime() : Date.now();
+      const prev = map.get(key);
+      if (prev) { prev.useCount += r.useCount || 1; prev.self = prev.self || r.status === "self"; prev.first = Math.min(prev.first, ts); }
+      else { map.set(key, { term: r.term, useCount: r.useCount || 1, self: r.status === "self", first: ts }); }
+    }
+    const terms = Array.from(map.values()).sort((a, b) => b.useCount - a.useCount);
+    const selfCount = terms.filter((x) => x.self).length;
+    const earliest = terms.length ? new Date(Math.min(...terms.map((x) => x.first))) : null;
+    return { terms, total: terms.length, selfCount, earliest };
+  }, [rows]);
+
+  const growth = useMemo(() => {
+    if (stats.terms.length < 2) return [] as { month: string; count: number }[];
+    const byMonth = new Map<string, number>();
+    for (const tm of stats.terms) {
+      const d = new Date(tm.first);
+      const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      byMonth.set(k, (byMonth.get(k) || 0) + 1);
+    }
+    const keys = Array.from(byMonth.keys()).sort();
+    let cum = 0;
+    return keys.map((k) => { cum += byMonth.get(k)!; const [y, m] = k.split("-"); return { month: `${m}/${y.slice(2)}`, count: cum }; });
+  }, [stats.terms]);
+
+  const gap = useMemo(() => {
+    const owned = new Set(stats.terms.map((t) => t.term.toLowerCase()));
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const r of (rows || [])) {
+      if (r.status !== "offered") continue;
+      const key = r.term.toLowerCase();
+      if (owned.has(key) || seen.has(key)) continue;
+      seen.add(key); out.push(r.term);
+    }
+    return out;
+  }, [rows, stats.terms]);
+
+  return (
+    <div className="labs-card p-5 labs-fade-in" style={{ marginTop: 16 }} data-testid="vocab-harvest">
+      <h2 className="labs-h3 mb-1" style={{ color: "var(--labs-text)" }}>{t("labs.vocab.title", "Mein Wortschatz")}</h2>
+      <p className="text-sm mb-4" style={{ color: "var(--labs-text-muted)" }}>{t("labs.vocab.subtitle", "Die Worte, die du dir zu eigen gemacht hast")}</p>
+      {stats.total === 0 ? (
+        <p className="text-sm" style={{ color: "var(--labs-text-secondary)", lineHeight: 1.5 }}>{t("labs.vocab.empty", "Noch keine Begriffe gesammelt — dein Wortschatz wächst mit jedem Eindruck am Glas.")}</p>
+      ) : (
+        <>
+          <div className="flex items-baseline gap-2 mb-1">
+            <span className="labs-serif" style={{ fontSize: 32, fontWeight: 700, color: "var(--labs-accent)", lineHeight: 1 }}>{stats.total}</span>
+            <span className="text-sm" style={{ color: "var(--labs-text-secondary)" }}>{t("labs.vocab.count", "eigene Geschmacksbegriffe")}</span>
+          </div>
+          {stats.selfCount > 0 && (
+            <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{t("labs.vocab.selfCount", "davon {{n}} in eigenen Worten", { n: stats.selfCount })}</p>
+          )}
+          {stats.earliest && (
+            <p className="text-xs mb-4" style={{ color: "var(--labs-text-muted)" }}>{t("labs.vocab.since", "gesammelt seit {{date}}", { date: stats.earliest.toLocaleDateString(undefined, { month: "long", year: "numeric" }) })}</p>
+          )}
+          <div className="flex flex-wrap gap-2 mt-2">
+            {stats.terms.map((w, i) => (
+              <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 11px", borderRadius: 9999, fontSize: 13, fontFamily: "inherit", color: w.self ? "var(--labs-accent)" : "var(--labs-text)", background: "var(--labs-surface-elevated)", border: w.self ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border)" }} data-testid={`vocab-term-${i}`}>
+                {w.term}
+                {w.useCount > 1 && <span style={{ color: "var(--labs-text-muted)", fontSize: 11 }}>·{w.useCount}</span>}
+              </span>
+            ))}
+          </div>
+          {stats.selfCount > 0 && (
+            <p className="text-xs mt-4 flex items-center gap-2" style={{ color: "var(--labs-text-muted)" }}>
+              <span style={{ display: "inline-block", width: 9, height: 9, borderRadius: 9999, border: "1px solid var(--labs-accent)" }} />
+              {t("labs.vocab.legend", "Gold umrandet = in eigenen Worten gefunden, nicht aus Vorschlägen")}
+            </p>
+          )}
+
+          {growth.length >= 2 && (
+            <div style={{ marginTop: 24 }}>
+              <p className="text-xs mb-2" style={{ color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700 }}>{t("labs.vocab.growthTitle", "Wachstum")}</p>
+              <div style={{ height: 140 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={growth} margin={{ top: 6, right: 8, bottom: 0, left: -20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--labs-border-subtle)" vertical={false} />
+                    <XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} axisLine={false} tickLine={false} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} axisLine={false} tickLine={false} width={28} />
+                    <Line type="monotone" dataKey="count" stroke="var(--labs-accent)" strokeWidth={2} dot={{ r: 3, fill: "var(--labs-accent)" }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {gap.length > 0 && (
+            <div style={{ marginTop: 24 }}>
+              <p className="text-sm mb-1" style={{ color: "var(--labs-text)", fontWeight: 600 }}>{t("labs.vocab.gapTitle", "Am Horizont")}</p>
+              <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)", lineHeight: 1.5 }}>{t("labs.vocab.gapSubtitle", "Worte, die dir begegnet sind, aber noch nicht deine wurden")}</p>
+              <div className="flex flex-wrap gap-2">
+                {gap.slice(0, 12).map((term, i) => (
+                  <span key={i} style={{ display: "inline-flex", alignItems: "center", padding: "5px 11px", borderRadius: 9999, fontSize: 13, color: "var(--labs-text-muted)", background: "transparent", border: "1px dashed var(--labs-border)" }} data-testid={`vocab-gap-${i}`}>{term}</span>
+                ))}
+                {gap.length > 12 && (
+                  <span style={{ display: "inline-flex", alignItems: "center", padding: "5px 11px", fontSize: 13, color: "var(--labs-text-muted)" }}>+{gap.length - 12}</span>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+E3 — client/src/labs/pages/hubTiles.tsx, Eintrag mit testId "labs-link-analytics-hub-wheel": ersetze
+   labelKey: "myTastePage.analyticsHub.flavorWheel",
+   labelFallback: "Flavor Wheel",
+   descKey: "myTastePage.analyticsHub.flavorWheelDesc",
+   descFallback: "Aromas across all your tastings",
+ durch
+   labelKey: "myTastePage.analyticsHub.aromasVocab",
+   labelFallback: "Aromen & Wortschatz",
+   descKey: "myTastePage.analyticsHub.aromasVocabDesc",
+   descFallback: "Dein Aromen-Rad und deine gesammelten Worte",
+ (icon, href "/labs/taste/wheel", testId UNVERÄNDERT.)
+
+VERIFIKATION:
+- [ ] npm run build / tsc grün; recharts-Import enthält LineChart/Line/XAxis/YAxis/CartesianGrid.
+- [ ] Analyse-Hub-Kachel heißt "Aromen & Wortschatz".
+- [ ] Seite: oben Wheel, darunter "Mein Wortschatz" — Anzahl, selbst gefundene gold umrandet (·N bei useCount>1), "seit"-Zeile.
+- [ ] Wachstums-Kurve erscheint NUR ab ≥2 Monaten (jetzt evtl. noch nicht — korrekt).
+- [ ] "Am Horizont": angebotene, nicht übernommene Worte als gestrichelte Chips (max 12 + "+N").
+- [ ] Ohne Begriffe: sanfter Leer-Hinweis, kein Fehler. In BEIDEN Modi lesbar.
+- [ ] NICHT committed.
