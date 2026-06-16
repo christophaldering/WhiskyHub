@@ -175,21 +175,12 @@ export const ANALYTICS_HUB_TILES: HubTileDef[] = [
   },
   {
     icon: GitCompareArrows,
-    labelKey: "myTastePage.comparison",
-    labelFallback: "Compare",
-    descKey: "myTastePage.analyticsHub.compareDesc",
-    descFallback: "Compare your ratings side by side",
+    labelKey: "myTastePage.analyticsHub.vergleichen",
+    labelFallback: "Vergleichen",
+    descKey: "myTastePage.analyticsHub.vergleichenDesc",
+    descFallback: "Deine Drams & externe Daten",
     href: "/labs/taste/compare",
     testId: "labs-link-analytics-hub-compare",
-  },
-  {
-    icon: Download,
-    labelKey: "myTastePage.analyticsHub.downloads",
-    labelFallback: "Downloads",
-    descKey: "myTastePage.analyticsHub.downloadsDesc",
-    descFallback: "Export your data as CSV or Excel",
-    href: "/labs/taste/downloads",
-    testId: "labs-link-analytics-hub-downloads",
   },
   {
     icon: Activity,
@@ -199,15 +190,6 @@ export const ANALYTICS_HUB_TILES: HubTileDef[] = [
     descFallback: "Your CaskSense flavor profile",
     href: "/labs/taste/profile",
     testId: "labs-link-analytics-hub-palate",
-  },
-  {
-    icon: Brain,
-    labelKey: "bibliothek.benchmark",
-    labelFallback: "Benchmark",
-    descKey: "bibliothek.benchmarkDesc",
-    descFallback: "External tasting data & comparison",
-    href: "/labs/taste/benchmark",
-    testId: "labs-link-analytics-hub-benchmark",
   },
 ];
 
