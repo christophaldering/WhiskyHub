@@ -1023,6 +1023,18 @@ export default function LabsTasteDrams() {
             {t("v2.saveDraftInline", "Zwischenstand sichern")} ✓
           </div>
         )}
+        {deepRateWhisky.name && (
+          <div style={{ marginBottom: 16 }}>
+            <div className="labs-serif" style={{ fontSize: 22, fontWeight: 700, color: "var(--labs-text)", lineHeight: 1.2 }}>
+              {deepRateWhisky.name}
+            </div>
+            {(deepRateWhisky.region || deepRateWhisky.cask) && (
+              <div style={{ fontSize: 13, color: "var(--labs-text-muted)", marginTop: 2 }}>
+                {[deepRateWhisky.region, deepRateWhisky.cask].filter(Boolean).join(" · ")}
+              </div>
+            )}
+          </div>
+        )}
         <RatingFlowV2
           whisky={deepRateWhisky}
           initialData={deepRateInitialData}
