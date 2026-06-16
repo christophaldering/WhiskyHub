@@ -1,0 +1,148 @@
+HARD PROMPT — "Meine Welt" Phase 2.1a: Tastings & Drams (zwei Linsen, Drams raus aus Sammlung)
+SICHERHEIT: KEINE Commits, KEIN push, keine DB/Server/Schema. 5 Dateien. KEINE "Offene Drams"-Logik anfassen (das ist 2.1b).
+
+SCHRITT 0 (lesen, melden): hubTiles.tsx (COLLECTION_HUB_TILES Drams-Tile Z.50-58; TASTINGS_HUB_TILES endet Z.47; BookOpen/Users importiert Z.4-5); LabsTaste.tsx (hubTiles-Import; State Z.150; tastings-Branch Z.305-349; collection-Inline Z.379; EmbeddedMeineWeltProvider/LabsTasteDrams/Search importiert); MeineWeltActionBar.tsx (Z.40-41); App.tsx (Z.764 Redirect); engine.ts (3× deepLink). Plan nennen, dann ausführen.
+
+E1 — client/src/labs/pages/hubTiles.tsx:
+ (a) Aus COLLECTION_HUB_TILES den Drams-Block ENTFERNEN (ersatzlos):
+  {
+    icon: BookOpen,
+    labelKey: "myTastePage.myDrams",
+    labelFallback: "My Drams",
+    descKey: "myTastePage.myDramsNavDesc",
+    descFallback: "Tasting diary",
+    href: "/labs/taste/drams",
+    testId: "labs-link-collection-hub-drams",
+  },
+ (b) NEUES Array direkt NACH dem Ende von TASTINGS_HUB_TILES (nach dessen `];`) einfügen:
+
+export const TASTINGS_LENS_TILES: HubTileDef[] = [
+  {
+    icon: BookOpen,
+    labelKey: "myTastePage.tastingsHub.lensDrams",
+    labelFallback: "Drams",
+    descKey: "myTastePage.tastingsHub.lensDramsDesc",
+    descFallback: "Dein Verkostungs-Tagebuch",
+    testId: "tile-tastings-lens-drams",
+    role: "nav",
+  },
+  {
+    icon: Users,
+    labelKey: "myTastePage.tastingsHub.lensSessions",
+    labelFallback: "Sessions",
+    descKey: "myTastePage.tastingsHub.lensSessionsDesc",
+    descFallback: "Deine Tasting-Abende",
+    testId: "tile-tastings-lens-sessions",
+    role: "nav",
+  },
+];
+
+E2 — client/src/labs/pages/LabsTaste.tsx:
+ (a) Im hubTiles-Import `  TASTINGS_HUB_TILES,` → danach Zeile `  TASTINGS_LENS_TILES,` ergänzen.
+ (b) NACH der Zeile
+   const [activeTastingsFilter, setActiveTastingsFilter] = useState<TastingsHubFilter>("active");
+  einfügen:
+   const [activeTastingsLens, setActiveTastingsLens] = useState<"drams" | "sessions">("drams");
+ (c) Den GESAMTEN tastings-Branch ersetzen — ersetze von
+    if (activeTab === "tastings") {
+  bis zum zugehörigen schließenden
+      );
+    }
+  (das ist der Block Z.305-349, der mit `<MeineWeltTastingsList filter={activeTastingsFilter} searchQuery={tastingsSearchQuery} />` endet) durch:
+
+    if (activeTab === "tastings") {
+      const activeTile = TASTINGS_HUB_TILES.find((tile) => tile.filter === activeTastingsFilter);
+      return (
+        <div data-testid="meine-welt-inline-tastings">
+          <HubTileGrid
+            tiles={TASTINGS_LENS_TILES}
+            t={t}
+            testIdPrefix="meine-welt"
+            variant="single-row"
+            role="nav"
+            activeTestId={activeTastingsLens === "drams" ? "tile-tastings-lens-drams" : "tile-tastings-lens-sessions"}
+            onTileClick={(tile) =>
+              setActiveTastingsLens(tile.testId === "tile-tastings-lens-sessions" ? "sessions" : "drams")
+            }
+          />
+          {activeTastingsLens === "drams" ? (
+            <div style={{ marginTop: 16 }} data-testid="meine-welt-tastings-lens-drams">
+              <EmbeddedMeineWeltProvider>
+                <LabsTasteDrams />
+              </EmbeddedMeineWeltProvider>
+            </div>
+          ) : (
+            <div style={{ marginTop: 16 }} data-testid="meine-welt-tastings-lens-sessions">
+              <HubTileGrid
+                tiles={TASTINGS_HUB_TILES}
+                t={t}
+                variant="single-row"
+                role="filter"
+                activeTestId={activeTile?.testId}
+                onTileClick={(tile) => {
+                  const next = (tile as (typeof TASTINGS_HUB_TILES)[number]).filter;
+                  if (!next) return;
+                  if (next === activeTastingsFilter) setActiveTastingsFilter("active");
+                  else setActiveTastingsFilter(next);
+                }}
+              />
+              {rawTastingsCount !== null && rawTastingsCount > 0 && (
+                <div
+                  className="labs-tastings-search-wrapper"
+                  style={{ marginTop: 12 }}
+                  data-testid="meine-welt-tastings-search-wrapper"
+                >
+                  <Search className="labs-tastings-search-icon w-4 h-4" />
+                  <input
+                    className="labs-input labs-tastings-search-input"
+                    placeholder={
+                      activeTastingsFilter === "completed"
+                        ? t("tastings.archiveSearchPlaceholder", "Archiv durchsuchen...")
+                        : t("tastings.searchPlaceholder", "Tastings durchsuchen...")
+                    }
+                    value={tastingsSearchQuery}
+                    onChange={(e) => setTastingsSearchQuery(e.target.value)}
+                    data-testid="meine-welt-tastings-search"
+                  />
+                </div>
+              )}
+              <div
+                style={{ marginTop: 12 }}
+                data-testid={`meine-welt-tastings-inline-${activeTastingsFilter}`}
+              >
+                <MeineWeltTastingsList filter={activeTastingsFilter} searchQuery={tastingsSearchQuery} />
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+ (d) Im collection-Inline diese Zeile ENTFERNEN (ersatzlos):
+              {activeCollectionTile === "labs-link-collection-hub-drams" && <LabsTasteDrams />}
+
+E3 — client/src/labs/components/MeineWeltActionBar.tsx: ersetze
+          <span className="labs-action-bar-label">{t("myTastePage.tileMyTastings", "My Tastings")}</span>
+          <span className="labs-action-bar-sublabel">{t("myTastePage.tileMyTastingsDesc", "Search & history")}</span>
+ durch
+          <span className="labs-action-bar-label">{t("myTastePage.tileTastingsDrams", "Tastings & Drams")}</span>
+          <span className="labs-action-bar-sublabel">{t("myTastePage.tileTastingsDramsDesc", "Tagebuch & Abende")}</span>
+
+E4 — client/src/App.tsx Z.764: ersetze
+              <Route path="/labs/taste/drams">{() => <RedirectWithQuery to="/labs/taste" query="tab=collection&sub=labs-link-collection-hub-drams" />}</Route>
+ durch
+              <Route path="/labs/taste/drams">{() => <RedirectWithQuery to="/labs/taste" query="" />}</Route>
+
+E5 — client/src/labs/insights/engine.ts: ALLE 3 Vorkommen von
+        deepLink: "/labs/taste?tab=collection&sub=labs-link-collection-hub-drams",
+ ersetzen durch
+        deepLink: "/labs/taste",
+
+VERIFIKATION:
+- [ ] tsc/build grün.
+- [ ] "Meine Welt": Top-Tab heißt "Tastings & Drams".
+- [ ] Tab öffnet mit Linse "Drams" (Tagebuch sichtbar); Umschalten auf "Sessions" zeigt Aktiv/Abgeschlossen + Tastings-Liste wie zuvor.
+- [ ] Sammlung zeigt KEIN Drams mehr (nur Bottles · Wishlist · Handouts).
+- [ ] /labs/taste/drams öffnet das Drams-Tagebuch (jetzt im Tastings-Tab); /labs/taste/drams?entry=ID öffnet den richtigen Eintrag (Resume intakt).
+- [ ] "Offene Drams"-Block in der Sessions-Liste ist UNVERÄNDERT vorhanden (kommt erst in 2.1b).
+- [ ] NICHT committed.

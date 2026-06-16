@@ -46,16 +46,28 @@ export const TASTINGS_HUB_TILES: TastingsHubTileDef[] = [
   },
 ];
 
-export const COLLECTION_HUB_TILES: HubTileDef[] = [
+export const TASTINGS_LENS_TILES: HubTileDef[] = [
   {
     icon: BookOpen,
-    labelKey: "myTastePage.myDrams",
-    labelFallback: "My Drams",
-    descKey: "myTastePage.myDramsNavDesc",
-    descFallback: "Tasting diary",
-    href: "/labs/taste/drams",
-    testId: "labs-link-collection-hub-drams",
+    labelKey: "myTastePage.tastingsHub.lensDrams",
+    labelFallback: "Drams",
+    descKey: "myTastePage.tastingsHub.lensDramsDesc",
+    descFallback: "Dein Verkostungs-Tagebuch",
+    testId: "tile-tastings-lens-drams",
+    role: "nav",
   },
+  {
+    icon: Users,
+    labelKey: "myTastePage.tastingsHub.lensSessions",
+    labelFallback: "Sessions",
+    descKey: "myTastePage.tastingsHub.lensSessionsDesc",
+    descFallback: "Deine Tasting-Abende",
+    testId: "tile-tastings-lens-sessions",
+    role: "nav",
+  },
+];
+
+export const COLLECTION_HUB_TILES: HubTileDef[] = [
   {
     icon: Archive,
     labelKey: "myTastePage.myBottles",

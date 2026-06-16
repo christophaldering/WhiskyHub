@@ -16,6 +16,7 @@ import {
   ANALYTICS_HUB_TILES,
   COLLECTION_HUB_TILES,
   TASTINGS_HUB_TILES,
+  TASTINGS_LENS_TILES,
   HubTileGrid,
   HubTileCollapsible,
   type TastingsHubFilter,
@@ -148,6 +149,7 @@ export default function LabsTaste() {
   }, []);
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const [activeTastingsFilter, setActiveTastingsFilter] = useState<TastingsHubFilter>("active");
+  const [activeTastingsLens, setActiveTastingsLens] = useState<"drams" | "sessions">("drams");
   const [tastingsSearchQuery, setTastingsSearchQuery] = useState("");
   const [activeCollectionTile, setActiveCollectionTile] = useState<string | null>(
     initialTab === "collection" && initialSub && COLLECTION_SUB_IDS.has(initialSub) ? initialSub : null,
@@ -307,44 +309,65 @@ export default function LabsTaste() {
       return (
         <div data-testid="meine-welt-inline-tastings">
           <HubTileGrid
-            tiles={TASTINGS_HUB_TILES}
+            tiles={TASTINGS_LENS_TILES}
             t={t}
+            testIdPrefix="meine-welt"
             variant="single-row"
-            role="filter"
-            activeTestId={activeTile?.testId}
-            onTileClick={(tile) => {
-              const next = (tile as (typeof TASTINGS_HUB_TILES)[number]).filter;
-              if (!next) return;
-              if (next === activeTastingsFilter) setActiveTastingsFilter("active");
-              else setActiveTastingsFilter(next);
-            }}
+            role="nav"
+            activeTestId={activeTastingsLens === "drams" ? "tile-tastings-lens-drams" : "tile-tastings-lens-sessions"}
+            onTileClick={(tile) =>
+              setActiveTastingsLens(tile.testId === "tile-tastings-lens-sessions" ? "sessions" : "drams")
+            }
           />
-          {rawTastingsCount !== null && rawTastingsCount > 0 && (
-            <div
-              className="labs-tastings-search-wrapper"
-              style={{ marginTop: 12 }}
-              data-testid="meine-welt-tastings-search-wrapper"
-            >
-              <Search className="labs-tastings-search-icon w-4 h-4" />
-              <input
-                className="labs-input labs-tastings-search-input"
-                placeholder={
-                  activeTastingsFilter === "completed"
-                    ? t("tastings.archiveSearchPlaceholder", "Archiv durchsuchen...")
-                    : t("tastings.searchPlaceholder", "Tastings durchsuchen...")
-                }
-                value={tastingsSearchQuery}
-                onChange={(e) => setTastingsSearchQuery(e.target.value)}
-                data-testid="meine-welt-tastings-search"
+          {activeTastingsLens === "drams" ? (
+            <div style={{ marginTop: 16 }} data-testid="meine-welt-tastings-lens-drams">
+              <EmbeddedMeineWeltProvider>
+                <LabsTasteDrams />
+              </EmbeddedMeineWeltProvider>
+            </div>
+          ) : (
+            <div style={{ marginTop: 16 }} data-testid="meine-welt-tastings-lens-sessions">
+              <HubTileGrid
+                tiles={TASTINGS_HUB_TILES}
+                t={t}
+                variant="single-row"
+                role="filter"
+                activeTestId={activeTile?.testId}
+                onTileClick={(tile) => {
+                  const next = (tile as (typeof TASTINGS_HUB_TILES)[number]).filter;
+                  if (!next) return;
+                  if (next === activeTastingsFilter) setActiveTastingsFilter("active");
+                  else setActiveTastingsFilter(next);
+                }}
               />
+              {rawTastingsCount !== null && rawTastingsCount > 0 && (
+                <div
+                  className="labs-tastings-search-wrapper"
+                  style={{ marginTop: 12 }}
+                  data-testid="meine-welt-tastings-search-wrapper"
+                >
+                  <Search className="labs-tastings-search-icon w-4 h-4" />
+                  <input
+                    className="labs-input labs-tastings-search-input"
+                    placeholder={
+                      activeTastingsFilter === "completed"
+                        ? t("tastings.archiveSearchPlaceholder", "Archiv durchsuchen...")
+                        : t("tastings.searchPlaceholder", "Tastings durchsuchen...")
+                    }
+                    value={tastingsSearchQuery}
+                    onChange={(e) => setTastingsSearchQuery(e.target.value)}
+                    data-testid="meine-welt-tastings-search"
+                  />
+                </div>
+              )}
+              <div
+                style={{ marginTop: 12 }}
+                data-testid={`meine-welt-tastings-inline-${activeTastingsFilter}`}
+              >
+                <MeineWeltTastingsList filter={activeTastingsFilter} searchQuery={tastingsSearchQuery} />
+              </div>
             </div>
           )}
-          <div
-            style={{ marginTop: 12 }}
-            data-testid={`meine-welt-tastings-inline-${activeTastingsFilter}`}
-          >
-            <MeineWeltTastingsList filter={activeTastingsFilter} searchQuery={tastingsSearchQuery} />
-          </div>
         </div>
       );
     }
@@ -376,7 +399,6 @@ export default function LabsTaste() {
             }
           >
             <EmbeddedMeineWeltProvider>
-              {activeCollectionTile === "labs-link-collection-hub-drams" && <LabsTasteDrams />}
               {activeCollectionTile === "labs-link-collection-hub-bottles" && <LabsTasteCollection />}
               {activeCollectionTile === "labs-link-collection-hub-wishlist" && <LabsTasteWishlist />}
               {activeCollectionTile === "labs-link-collection-hub-handouts" && <LabsHandoutLibrary mode="workspace" />}

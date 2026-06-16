@@ -128,7 +128,7 @@ export function selectSoloInsights(input: SoloEngineInput): Insight[] {
         subline: t("insights.solo.streak.subline", "Keep tasting — patterns sharpen with reps."),
         visual: { kind: "icon", iconName: "flame", badge: dramsToday },
         score: clamp01(dramsToday / 5) * 0.6,
-        deepLink: "/labs/taste?tab=collection&sub=labs-link-collection-hub-drams",
+        deepLink: "/labs/taste",
         testId: "insight-solo-streak",
         tone: "accent",
       });
@@ -363,7 +363,7 @@ export function selectFeedInsights(input: FeedEngineInput): Insight[] {
           : t("insights.feed.weekly.sublineNoScore", "Keep the diary going."),
         visual: { kind: "sparkline", values: scores.length > 0 ? scores : [0, 0, 0, 0, 0], maxValue: 100 },
         score: clamp01(lastWeek.length / 7) * 0.85,
-        deepLink: "/labs/taste?tab=collection&sub=labs-link-collection-hub-drams",
+        deepLink: "/labs/taste",
         testId: "insight-feed-weekly",
         tone: "accent",
       });
@@ -391,7 +391,7 @@ export function selectFeedInsights(input: FeedEngineInput): Insight[] {
         subline: t("insights.feed.streak.subline", "Don't break the chain."),
         visual: { kind: "icon", iconName: "flame", badge: streak },
         score: clamp01(streak / 14) * 0.8,
-        deepLink: "/labs/taste?tab=collection&sub=labs-link-collection-hub-drams",
+        deepLink: "/labs/taste",
         testId: "insight-feed-streak",
         tone: "accent",
       });

@@ -37,8 +37,8 @@ export default function MeineWeltActionBar({ active, onSelect, showHubHeader = t
           <div className="labs-action-bar-icon labs-action-bar-icon--accent">
             <GlassWater className="w-5 h-5 labs-icon-accent" />
           </div>
-          <span className="labs-action-bar-label">{t("myTastePage.tileMyTastings", "My Tastings")}</span>
-          <span className="labs-action-bar-sublabel">{t("myTastePage.tileMyTastingsDesc", "Search & history")}</span>
+          <span className="labs-action-bar-label">{t("myTastePage.tileTastingsDrams", "Tastings & Drams")}</span>
+          <span className="labs-action-bar-sublabel">{t("myTastePage.tileTastingsDramsDesc", "Tagebuch & Abende")}</span>
         </button>
         <button
           type="button"
