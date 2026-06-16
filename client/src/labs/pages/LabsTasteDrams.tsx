@@ -25,7 +25,8 @@ import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import type { RatingData } from "@/labs/components/rating/types";
 
-type FilterValue = "all" | "solo" | "tasting" | "drafts";
+type OriginFilter = "all" | "solo" | "tasting";
+type StatusFilter = "all" | "open" | "done";
 type ViewState = "list" | "detail" | "edit" | "trash" | "deepRate";
 type DatePeriod = "all" | "7d" | "30d" | "3m" | "1y";
 type ScoreRange = "all" | "90+" | "80-89" | "70-79" | "<70";
@@ -41,8 +42,11 @@ interface DramEntry extends JournalEntry {
   savedAt?: string | Date | null;
 }
 
-const FILTER_KEYS: FilterValue[] = ["all", "solo", "tasting", "drafts"];
-const FILTER_I18N: Record<FilterValue, string> = { all: "drams.tabAll", solo: "drams.tabSolo", tasting: "drams.tabTasting", drafts: "drams.tabDrafts" };
+const ORIGIN_KEYS: OriginFilter[] = ["all", "solo", "tasting"];
+const ORIGIN_I18N: Record<OriginFilter, string> = { all: "drams.tabAll", solo: "drams.tabSolo", tasting: "drams.tabTasting" };
+const STATUS_KEYS: StatusFilter[] = ["all", "open", "done"];
+const STATUS_I18N: Record<StatusFilter, string> = { all: "drams.statusAll", open: "drams.statusOpen", done: "drams.statusDone" };
+const STATUS_FALLBACK: Record<StatusFilter, string> = { all: "Alle", open: "Offen", done: "Abgeschlossen" };
 
 const DATE_PERIOD_KEYS: { key: DatePeriod; i18nKey: string; days: number }[] = [
   { key: "all", i18nKey: "drams.allTime", days: 0 },
@@ -171,7 +175,8 @@ export default function LabsTasteDrams() {
   const { t } = useTranslation();
   const session = useSession();
   const [, navigate] = useLocation();
-  const [activeFilter, setActiveFilter] = useState<FilterValue>("all");
+  const [originFilter, setOriginFilter] = useState<OriginFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [datePeriod, setDatePeriod] = useState<DatePeriod>("all");
   const [selectedEntry, setSelectedEntry] = useState<DramEntry | null>(null);
   const [viewState, setViewState] = useState<ViewState>("list");
@@ -315,7 +320,7 @@ export default function LabsTasteDrams() {
   const uniqueCaskTypes = useMemo(() => Array.from(new Set(allItems.map((e: any) => e.caskType).filter(Boolean))).sort(), [allItems]);
 
   const hasAdvancedFilters = filterDistillery !== "all" || filterRegion !== "all" || filterCaskType !== "all" || scoreRange !== "all" || datePeriod !== "all";
-  const hasAnyFilter = activeFilter !== "all" || datePeriod !== "all" || search.trim() !== "" || hasAdvancedFilters || sortBy !== "saved" || sortDirection !== "desc";
+  const hasAnyFilter = originFilter !== "all" || statusFilter !== "all" || datePeriod !== "all" || search.trim() !== "" || hasAdvancedFilters || sortBy !== "saved" || sortDirection !== "desc";
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -341,7 +346,7 @@ export default function LabsTasteDrams() {
   }, [datePeriod, scoreRange, filterDistillery, filterRegion, filterCaskType]);
 
   const resetAllFilters = () => {
-    setActiveFilter("all"); setDatePeriod("all"); setSearch("");
+    setOriginFilter("all"); setStatusFilter("all"); setDatePeriod("all"); setSearch("");
     setFilterDistillery("all"); setFilterRegion("all"); setFilterCaskType("all"); setScoreRange("all"); setSortBy("saved"); setSortDirection("desc"); setSortDropdownOpen(false);
   };
 
@@ -351,12 +356,10 @@ export default function LabsTasteDrams() {
 
   const filteredEntries = useMemo(() => {
     let items: any[] = [];
-    if (activeFilter === "drafts") {
-      items = journal.filter((e: any) => e.status === "draft").map((e: any) => ({ ...e, source: e.source || "solo" }));
-    } else {
-      if (activeFilter === "all" || activeFilter === "solo") items.push(...journal.map((e: any) => ({ ...e, source: e.source || "solo" })));
-      if (activeFilter === "all" || activeFilter === "tasting") items.push(...tastingWhiskies);
-    }
+    if (originFilter === "all" || originFilter === "solo") items.push(...journal.map((e: any) => ({ ...e, source: e.source || "solo" })));
+    if (originFilter === "all" || originFilter === "tasting") items.push(...tastingWhiskies);
+    if (statusFilter === "open") items = items.filter((e: any) => e.status === "draft");
+    else if (statusFilter === "done") items = items.filter((e: any) => e.status !== "draft");
     if (search.trim()) {
       const q = search.toLowerCase();
       items = items.filter((e: any) => (e.name || e.title || "").toLowerCase().includes(q) || (e.distillery || "").toLowerCase().includes(q));
@@ -404,7 +407,7 @@ export default function LabsTasteDrams() {
       return ((a.createdAt ? new Date(a.createdAt).getTime() : 0) - (b.createdAt ? new Date(b.createdAt).getTime() : 0)) * dir;
     });
     return items;
-  }, [journal, tastingWhiskies, activeFilter, search, datePeriod, filterDistillery, filterRegion, filterCaskType, scoreRange, sortBy, sortDirection]);
+  }, [journal, tastingWhiskies, originFilter, statusFilter, search, datePeriod, filterDistillery, filterRegion, filterCaskType, scoreRange, sortBy, sortDirection]);
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => journalApi.update(session.pid!, id, data),
@@ -1267,7 +1270,7 @@ export default function LabsTasteDrams() {
             </div>
           )}
 
-          {activeFilter !== "drafts" && journal.filter((e: any) => e.status === "draft").length > 0 && (
+          {statusFilter !== "open" && journal.filter((e: any) => e.status === "draft").length > 0 && (
             <div style={{ padding: "0 20px", marginBottom: 12 }} data-testid="labs-draft-banner">
               <div
                 style={{
@@ -1280,12 +1283,12 @@ export default function LabsTasteDrams() {
                   border: "1px solid rgba(200,134,26,0.2)",
                   cursor: "pointer",
                 }}
-                onClick={() => setActiveFilter("drafts")}
+                onClick={() => setStatusFilter("open")}
               >
                 <FileEdit style={{ width: 16, height: 16, color: "#c8861a", flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>
-                    {t("v2.drams.draftBanner", "{{count}} offene Drafts — direkt zum Drafts-Tab →", { count: journal.filter((e: any) => e.status === "draft").length })}
+                    {t("v2.drams.openBanner", "{{count}} offene Drams — direkt anzeigen →", { count: journal.filter((e: any) => e.status === "draft").length })}
                   </div>
                 </div>
                 <ChevronLeft style={{ width: 16, height: 16, color: "#c8861a", transform: "rotate(180deg)" }} />
@@ -1294,12 +1297,20 @@ export default function LabsTasteDrams() {
           )}
 
           <div style={{ padding: "0 20px", marginBottom: 12 }}>
-            <div className="labs-segmented" style={{ marginBottom: 0 }}>
-              {FILTER_KEYS.map(fk => (
-                <button key={fk} onClick={() => setActiveFilter(fk)}
-                  className={`labs-segmented-btn ${activeFilter === fk ? "labs-segmented-btn-active" : ""}`}
+            <div className="labs-segmented" style={{ marginBottom: 8 }}>
+              {ORIGIN_KEYS.map(fk => (
+                <button key={fk} onClick={() => setOriginFilter(fk)}
+                  className={`labs-segmented-btn ${originFilter === fk ? "labs-segmented-btn-active" : ""}`}
                   style={{ fontSize: 13, padding: "6px 0" }}
-                  data-testid={`labs-filter-${fk}`}>{t(FILTER_I18N[fk])}</button>
+                  data-testid={`labs-origin-${fk}`}>{t(ORIGIN_I18N[fk])}</button>
+              ))}
+            </div>
+            <div className="labs-segmented" style={{ marginBottom: 0 }}>
+              {STATUS_KEYS.map(sk => (
+                <button key={sk} onClick={() => setStatusFilter(sk)}
+                  className={`labs-segmented-btn ${statusFilter === sk ? "labs-segmented-btn-active" : ""}`}
+                  style={{ fontSize: 13, padding: "6px 0" }}
+                  data-testid={`labs-status-${sk}`}>{t(STATUS_I18N[sk], STATUS_FALLBACK[sk])}</button>
               ))}
             </div>
           </div>

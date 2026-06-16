@@ -1,0 +1,106 @@
+HARD PROMPT — "Meine Welt" Phase 2.2: Status Offen/Abgeschlossen + zwei Achsen im Tagebuch
+SICHERHEIT: KEINE Commits, KEIN push, keine DB/Server/Schema. 2 Dateien (statusConfig.ts, LabsTasteDrams.tsx). Interner Status-Wert "draft" bleibt unverändert — nur Anzeige + Filter.
+
+SCHRITT 0 (lesen, melden): statusConfig.ts (draft-Block Z.10-16); LabsTasteDrams.tsx (FilterValue Z.28; FILTER_KEYS/I18N Z.44-45; activeFilter Z.174; hasAnyFilter Z.318; resetAllFilters Z.344; Filter-Logik Z.352-358; deps Z.407; Draft-Banner Z.1270-1293; Segmented-Render Z.1296-1305). Plan nennen, dann ausführen.
+
+E1 — client/src/labs/utils/statusConfig.ts: im draft-Block ersetze
+    labelKey: "tastingStatus.draft",
+    fallbackLabel: "Draft",
+ durch
+    labelKey: "tastingStatus.draftOpen",
+    fallbackLabel: "Offen",
+
+E2 — client/src/labs/pages/LabsTasteDrams.tsx:
+
+ (a) Typ (Z.28) — ersetze
+type FilterValue = "all" | "solo" | "tasting" | "drafts";
+ durch
+type OriginFilter = "all" | "solo" | "tasting";
+type StatusFilter = "all" | "open" | "done";
+
+ (b) Keys (Z.44-45) — ersetze
+const FILTER_KEYS: FilterValue[] = ["all", "solo", "tasting", "drafts"];
+const FILTER_I18N: Record<FilterValue, string> = { all: "drams.tabAll", solo: "drams.tabSolo", tasting: "drams.tabTasting", drafts: "drams.tabDrafts" };
+ durch
+const ORIGIN_KEYS: OriginFilter[] = ["all", "solo", "tasting"];
+const ORIGIN_I18N: Record<OriginFilter, string> = { all: "drams.tabAll", solo: "drams.tabSolo", tasting: "drams.tabTasting" };
+const STATUS_KEYS: StatusFilter[] = ["all", "open", "done"];
+const STATUS_I18N: Record<StatusFilter, string> = { all: "drams.statusAll", open: "drams.statusOpen", done: "drams.statusDone" };
+const STATUS_FALLBACK: Record<StatusFilter, string> = { all: "Alle", open: "Offen", done: "Abgeschlossen" };
+
+ (c) State (Z.174) — ersetze
+  const [activeFilter, setActiveFilter] = useState<FilterValue>("all");
+ durch
+  const [originFilter, setOriginFilter] = useState<OriginFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+
+ (d) hasAnyFilter (Z.318) — ersetze `activeFilter !== "all"` durch `originFilter !== "all" || statusFilter !== "all"` (Rest der Zeile unverändert).
+
+ (e) resetAllFilters (Z.344) — ersetze
+    setActiveFilter("all"); setDatePeriod("all"); setSearch("");
+ durch
+    setOriginFilter("all"); setStatusFilter("all"); setDatePeriod("all"); setSearch("");
+
+ (f) Filter-Logik — ersetze
+    let items: any[] = [];
+    if (activeFilter === "drafts") {
+      items = journal.filter((e: any) => e.status === "draft").map((e: any) => ({ ...e, source: e.source || "solo" }));
+    } else {
+      if (activeFilter === "all" || activeFilter === "solo") items.push(...journal.map((e: any) => ({ ...e, source: e.source || "solo" })));
+      if (activeFilter === "all" || activeFilter === "tasting") items.push(...tastingWhiskies);
+    }
+ durch
+    let items: any[] = [];
+    if (originFilter === "all" || originFilter === "solo") items.push(...journal.map((e: any) => ({ ...e, source: e.source || "solo" })));
+    if (originFilter === "all" || originFilter === "tasting") items.push(...tastingWhiskies);
+    if (statusFilter === "open") items = items.filter((e: any) => e.status === "draft");
+    else if (statusFilter === "done") items = items.filter((e: any) => e.status !== "draft");
+
+ (g) deps (Z.407) — ersetze `activeFilter` durch `originFilter, statusFilter` (in der useMemo-Dependency-Liste).
+
+ (h) Draft-Banner: 
+   - Bedingung (Z.1270) ersetze `activeFilter !== "drafts"` durch `statusFilter !== "open"`.
+   - onClick (Z.1283) ersetze `setActiveFilter("drafts")` durch `setStatusFilter("open")`.
+   - Text (Z.1289) ersetze
+                    {t("v2.drams.draftBanner", "{{count}} offene Drafts — direkt zum Drafts-Tab →", { count: journal.filter((e: any) => e.status === "draft").length })}
+     durch
+                    {t("v2.drams.openBanner", "{{count}} offene Drams — direkt anzeigen →", { count: journal.filter((e: any) => e.status === "draft").length })}
+
+ (i) Segmented-Render — ersetze den ganzen Block
+          <div style={{ padding: "0 20px", marginBottom: 12 }}>
+            <div className="labs-segmented" style={{ marginBottom: 0 }}>
+              {FILTER_KEYS.map(fk => (
+                <button key={fk} onClick={() => setActiveFilter(fk)}
+                  className={`labs-segmented-btn ${activeFilter === fk ? "labs-segmented-btn-active" : ""}`}
+                  style={{ fontSize: 13, padding: "6px 0" }}
+                  data-testid={`labs-filter-${fk}`}>{t(FILTER_I18N[fk])}</button>
+              ))}
+            </div>
+          </div>
+ durch
+          <div style={{ padding: "0 20px", marginBottom: 12 }}>
+            <div className="labs-segmented" style={{ marginBottom: 8 }}>
+              {ORIGIN_KEYS.map(fk => (
+                <button key={fk} onClick={() => setOriginFilter(fk)}
+                  className={`labs-segmented-btn ${originFilter === fk ? "labs-segmented-btn-active" : ""}`}
+                  style={{ fontSize: 13, padding: "6px 0" }}
+                  data-testid={`labs-origin-${fk}`}>{t(ORIGIN_I18N[fk])}</button>
+              ))}
+            </div>
+            <div className="labs-segmented" style={{ marginBottom: 0 }}>
+              {STATUS_KEYS.map(sk => (
+                <button key={sk} onClick={() => setStatusFilter(sk)}
+                  className={`labs-segmented-btn ${statusFilter === sk ? "labs-segmented-btn-active" : ""}`}
+                  style={{ fontSize: 13, padding: "6px 0" }}
+                  data-testid={`labs-status-${sk}`}>{t(STATUS_I18N[sk], STATUS_FALLBACK[sk])}</button>
+              ))}
+            </div>
+          </div>
+
+VERIFIKATION:
+- [ ] tsc/build grün; KEINE Referenz mehr auf activeFilter/FilterValue/FILTER_KEYS/FILTER_I18N (grep = 0).
+- [ ] Tagebuch: ZWEI Chip-Reihen — Herkunft (Alle·Solo·Tasting) und Status (Alle·Offen·Abgeschlossen).
+- [ ] Status "Offen" zeigt nur unfertige Drams, "Abgeschlossen" nur fertige; Herkunft & Status kombinierbar.
+- [ ] Status-Chip eines unfertigen Drams (Detailansicht) liest "Offen" statt "Draft".
+- [ ] Banner sagt "offene Drams", führt auf Status=Offen.
+- [ ] NICHT committed.

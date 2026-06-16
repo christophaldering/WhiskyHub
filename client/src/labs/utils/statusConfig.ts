@@ -8,8 +8,8 @@ export interface StatusConfig {
 
 export const TASTING_STATUS_CONFIG: Record<string, StatusConfig> = {
   draft: {
-    labelKey: "tastingStatus.draft",
-    fallbackLabel: "Draft",
+    labelKey: "tastingStatus.draftOpen",
+    fallbackLabel: "Offen",
     cssClass: "labs-status-chip labs-status-chip--draft",
     color: "var(--labs-info)",
     bg: "var(--labs-info-muted)",
