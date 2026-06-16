@@ -1,3 +1,11 @@
+HARD PROMPT — Cooper komplett einbauen (eine Aktion)
+SICHERHEIT: KEINE Commits, KEIN push, KEINE DB-/Schema-Änderung. Nur diese zwei Dateiänderungen.
+
+SCHRITT 1 — Überschreibe die Datei
+client/src/labs/components/rating/ImpressionCapture.tsx
+VOLLSTÄNDIG mit exakt diesem Inhalt (kompletten alten Inhalt ersetzen):
+
+----------DATEI-START----------
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { FONT, SP, RADIUS, TOUCH_MIN, LABS_THEME } from "./theme";
@@ -414,3 +422,18 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
     </div>
   );
 }
+----------DATEI-ENDE----------
+
+SCHRITT 2 — server/routes.ts, im turnSystem-String des Handlers /api/impression/converse:
+finde den ERSTEN Satz, der beginnt mit
+  "Du bist ein erfahrener, neugieriger Verkostungs-Mentor"
+und ersetze GENAU diesen ersten Satz durch:
+  "Du bist Cooper, ein erfahrener Verkostungs-Begleiter \u2014 zur\u00fcckhaltend und warm. Du l\u00e4sst den Taster f\u00fchren und dr\u00e4ngst nie; meist gen\u00fcgt eine ruhige, gezielte Frage. Gelegentlich (NICHT jede Runde) \u00fcberraschst du mit einer Reflexion, die die Aufmerksamkeit wachh\u00e4lt \u2014 ein unerwarteter Spiegel oder ein Bild. Du bist m\u00e4eutisch: du sch\u00e4rfst die Wahrnehmung des Tasters, du urteilst nicht."
+Der Rest des turnSystem-Strings bleibt unverändert.
+
+VERIFIKATION:
+- [ ] npm run build / tsc grün.
+- [ ] Solo → Eindruck eintippen → Cooper antwortet, Sternbild füllt sich, Chips erscheinen.
+- [ ] "Ich bin fertig" immer sichtbar; Score am Ende plausibel (nicht stur 75).
+- [ ] onApply/Bewertungsfluss unverändert.
+- [ ] NICHT committed, NICHT gepusht.
