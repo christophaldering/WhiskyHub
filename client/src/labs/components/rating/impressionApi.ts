@@ -19,6 +19,7 @@ export type ImpressionResult = {
   followUpQuestion: string;
   followUpKind: "aroma" | "dimension" | "evaluation" | "";
   followUpTerm: string;
+  narrative?: string;
   tookMs: number;
 };
 
@@ -49,5 +50,10 @@ export async function converseImpression(args: { whiskyName?: string; intensity:
 export async function finalizeImpression(args: { whiskyName?: string; intensity: Intensity; transcript: ConverseTurn[] }): Promise<ImpressionResult> {
   const res = await fetch("/api/impression/converse", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ ...args, finalize: true }) });
   if (!res.ok) throw new Error(`finalize failed: ${res.status}`);
+  return res.json();
+}
+export async function proseImpression(args: { whiskyName?: string; intensity: Intensity; transcript: ConverseTurn[] }): Promise<{ narrative: string }> {
+  const res = await fetch("/api/impression/converse", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ ...args, prose: true }) });
+  if (!res.ok) throw new Error(`prose failed: ${res.status}`);
   return res.json();
 }

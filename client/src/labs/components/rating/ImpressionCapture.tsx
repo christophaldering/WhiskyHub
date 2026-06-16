@@ -9,6 +9,7 @@ import {
   type ConverseResult,
   converseImpression,
   finalizeImpression,
+  proseImpression,
   EMPTY_LEDGER,
 } from "./impressionApi";
 import { recordVocabularyEvents } from "@/lib/vocabulary";
@@ -53,6 +54,8 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
   const [chips, setChips] = useState<string[]>([]);
   const [proposeClose, setProposeClose] = useState(false);
   const [result, setResult] = useState<ImpressionResult | null>(null);
+  const [narrative, setNarrative] = useState("");
+  const [narrativeLoading, setNarrativeLoading] = useState(false);
 
   const [offeredTerms, setOfferedTerms] = useState<Set<string>>(new Set());
   const [adoptedTerms, setAdoptedTerms] = useState<Set<string>>(new Set());
@@ -145,6 +148,13 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
     setLoading(false);
   };
 
+  const handleProse = async () => {
+    if (narrativeLoading || transcript.length === 0) return;
+    setNarrativeLoading(true);
+    try { const r = await proseImpression({ whiskyName, intensity, transcript }); setNarrative(r.narrative || ""); } catch {}
+    setNarrativeLoading(false);
+  };
+
   const handleConfirm = () => {
     if (!result) {
       onSkip();
@@ -159,7 +169,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
       ];
       recordVocabularyEvents(participantId, events);
     }
-    onApply(result);
+    onApply({ ...result, narrative: narrative.trim() || undefined });
   };
 
   const renderMirror = (r: ImpressionResult) => {
@@ -403,6 +413,16 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
           <div style={{ fontFamily: FONT.serif, fontSize: 15, color: LABS_THEME.faint, marginBottom: SP.md, lineHeight: 1.45 }}>
             {t("v2.impressionHandoffNote", "Nur ein Ausgangspunkt \u2014 in der Bewertung kannst du jeden Wert anpassen.")}
           </div>
+          {!narrative ? (
+            <button type="button" onClick={handleProse} disabled={narrativeLoading} style={{ width: "100%", minHeight: TOUCH_MIN, marginBottom: SP.md, background: "transparent", color: LABS_THEME.gold, border: `1px solid ${LABS_THEME.gold}`, borderRadius: RADIUS.md, fontFamily: FONT.body, fontSize: 15, cursor: narrativeLoading ? "default" : "pointer" }}>
+              {narrativeLoading ? t("v2.proseLoading", "Cooper formuliert \u2026") : t("v2.proseButton", "Cooper, fass es in Worte")}
+            </button>
+          ) : (
+            <div style={{ marginBottom: SP.md }}>
+              <div style={{ fontFamily: FONT.serif, fontSize: 15, color: LABS_THEME.muted, marginBottom: SP.xs }}>{t("v2.proseLabel", "Deine Verkostungsnotiz (bearbeitbar):")}</div>
+              <textarea value={narrative} onChange={(e) => setNarrative(e.target.value)} rows={8} style={{ width: "100%", boxSizing: "border-box", background: LABS_THEME.inputBg, border: `1px solid ${LABS_THEME.border}`, borderRadius: RADIUS.md, color: LABS_THEME.text, fontFamily: FONT.serif, fontSize: 16, lineHeight: 1.6, padding: SP.md, resize: "vertical", minHeight: 160, outline: "none" }} />
+            </div>
+          )}
           <button
             onClick={handleConfirm}
             style={{ width: "100%", minHeight: TOUCH_MIN, background: LABS_THEME.gold, color: "#1a1408", border: "none", borderRadius: RADIUS.md, fontFamily: FONT.body, fontSize: 16, fontWeight: 600, cursor: "pointer" }}

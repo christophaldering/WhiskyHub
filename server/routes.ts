@@ -5597,7 +5597,7 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
       const rateCheck = checkConverseRateLimit(rateLimitKey);
       if (!rateCheck.allowed) return res.status(429).json({ message: "Too many requests.", retryAfter: rateCheck.retryAfterSeconds });
 
-      const { whiskyName, intensity, transcript, ledger, finalize } = req.body || {};
+      const { whiskyName, intensity, transcript, ledger, finalize, prose } = req.body || {};
       const turns: Array<{ role: string; text: string }> = Array.isArray(transcript)
         ? transcript.filter((t: any) => t && typeof t.text === "string" && t.text.trim()).map((t: any) => ({ role: t.role === "mentor" ? "mentor" : "taster", text: String(t.text).trim().slice(0, 800) })).slice(-20)
         : [];
@@ -5638,6 +5638,26 @@ SCORE-REGEL (NEU, wichtig): Leite den Score aus AFFEKT und INTENSITÄT ab — Be
           scoreSuggestion: score, confidence: conf, confidenceWeight: cw[conf],
           followUpQuestion: "", followUpKind: "", followUpTerm: "", tookMs: Date.now() - startMs,
         });
+      }
+
+      // ---------- PROSE: ganzes Gespräch -> fließende Verkostungsnotiz (Ich-Stimme) ----------
+      if (prose) {
+        const proseSystem = `Du bist Cooper und schreibst aus einem ganzen Verkostungs-Gespräch eine fließende, persönliche Verkostungsnotiz — in der ICH-STIMME des Tasters ("Ich rieche…", "Im Mund…", "Im Abgang…").
+REGELN:
+- Nutze AUSSCHLIESSLICH, was der TASTER wirklich gesagt hat. Erfinde nichts, ergänze keine Aromen.
+- Nimm ALLES auf, was er beschrieben hat — auch Nebennotizen, auch Verworfenes. Glätte nicht.
+- Bewahre Mehrdeutigkeit, Widersprüche und Überraschungen ORGANISCH im Fluss ("erst dachte ich…, dann eher…"). Nur wenn eine echte, ungelöste Spannung im Gespräch steckt, greif sie leise als Teil der Erzählung auf — kein Schema, kein Pflicht-Absatz.
+- Bilde den Entdeckungs-Bogen ab (Reihenfolge, das Auftauchen von Neuem).
+- Locker entlang Nase / Gaumen / Abgang / Gesamteindruck, als zusammenhängender Text, KEINE Aufzählung, KEINE Bewertungszahlen.
+- Evokativ, gern etwas länger. Antworte in der Sprache des Gesprächs.
+Gib NUR den reinen Notiztext zurück, ohne Anführungszeichen, ohne Vorrede.`;
+        const pc = await openai.chat.completions.create({
+          model: "gpt-5-mini",
+          max_completion_tokens: 1500,
+          reasoning_effort: "minimal",
+          messages: [{ role: "system", content: proseSystem }, { role: "user", content: `Gespräch:${ctx}\n${convo}` }],
+        });
+        return res.json({ narrative: (pc.choices[0]?.message?.content || "").trim() });
       }
 
       // ---------- TURN: nächste Mentor-Antwort + Ledger-Update + Chips ----------
@@ -12143,7 +12163,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
         return res.status(403).json({ message: "Forbidden" });
       }
 
-      const sanitizedBody = sanitizeObject(req.body, ["title", "name", "distillery", "region", "country", "noseNotes", "tasteNotes", "finishNotes", "notes", "mood", "occasion", "tastingContext", "age", "caskType", "peatLevel", "bottler", "personalScore", "noseScore", "tasteScore", "finishScore", "whiskybaseId", "imageUrl", "source", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration", "abv", "price", "status", "rawImpression"]);
+      const sanitizedBody = sanitizeObject(req.body, ["title", "name", "distillery", "region", "country", "noseNotes", "tasteNotes", "finishNotes", "notes", "mood", "occasion", "tastingContext", "age", "caskType", "peatLevel", "bottler", "personalScore", "noseScore", "tasteScore", "finishScore", "whiskybaseId", "imageUrl", "source", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration", "abv", "price", "status", "rawImpression", "tastingNarrative"]);
       if (sanitizedBody.abv !== undefined) sanitizedBody.abv = sanitizedBody.abv != null ? (typeof sanitizedBody.abv === "string" ? parseFloat(sanitizedBody.abv.replace(",", ".").replace("%", "")) || null : sanitizedBody.abv) : null;
       if (sanitizedBody.price !== undefined) sanitizedBody.price = sanitizedBody.price != null ? (typeof sanitizedBody.price === "string" ? parseFloat(sanitizedBody.price.replace(",", ".").replace(/[^0-9.]/g, "")) || null : sanitizedBody.price) : null;
       const parsed = insertJournalEntrySchema.parse({ ...sanitizedBody, participantId: req.params.participantId });
@@ -12171,7 +12191,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
   app.patch("/api/journal/:participantId/:id", async (req, res) => {
     try {
-      const allowed = ["title", "name", "distillery", "region", "country", "age", "abv", "caskType", "peatLevel", "bottler", "noseNotes", "tasteNotes", "finishNotes", "notes", "personalScore", "noseScore", "tasteScore", "finishScore", "mood", "occasion", "tastingContext", "imageUrl", "status", "whiskybaseId", "price", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration", "rawImpression"];
+      const allowed = ["title", "name", "distillery", "region", "country", "age", "abv", "caskType", "peatLevel", "bottler", "noseNotes", "tasteNotes", "finishNotes", "notes", "personalScore", "noseScore", "tasteScore", "finishScore", "mood", "occasion", "tastingContext", "imageUrl", "status", "whiskybaseId", "price", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration", "rawImpression", "tastingNarrative"];
       const textKeys = ["title", "name", "distillery", "noseNotes", "tasteNotes", "finishNotes", "notes", "mood", "occasion", "tastingContext", "region", "country", "peatLevel", "bottler"];
       const filtered: any = {};
       for (const key of allowed) {

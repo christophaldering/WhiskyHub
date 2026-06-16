@@ -1,0 +1,90 @@
+HARD PROMPT — Cooper Prosa-Beschreibung 2a: erzeugen, bearbeiten, speichern
+SICHERHEIT: KEINE Commits, KEIN push. Schema-Spalte ist additiv (kein DROP); drizzle-kit führt Christoph danach MANUELL aus, NICHT der Agent.
+
+SCHRITT 0 (lesen, melden): bestätige shared/schema.ts journalEntries (Z.519) mit rawImpression (Z.536); server/routes.ts converse-Handler (Z.5581) + die zwei Journal-Whitelists (Z.12132 POST sanitizeObject, Z.12160 PATCH allowed); LabsSolo handleImpressionApply (Z.383) + buildJournalBody (Z.415); impressionApi.ts ImpressionResult (Z.10) + die converse/finalize-Funktionen. Plan vorlegen, dann ausführen.
+
+E1 — shared/schema.ts: in der journalEntries-Tabelle DIREKT NACH
+  rawImpression: text("raw_impression"),
+einfügen:
+  tastingNarrative: text("tasting_narrative"),
+
+E2 — server/routes.ts Z.~12132 (POST sanitizeObject): ergänze in der Array-Liste "tastingNarrative" (z.B. direkt nach "rawImpression").
+E3 — server/routes.ts Z.~12160 (PATCH allowed): ergänze in der Liste "tastingNarrative".
+
+E4 — server/routes.ts, Handler /api/impression/converse:
+ (a) Destrukturierung erweitern: ersetze
+   const { whiskyName, intensity, transcript, ledger, finalize } = req.body || {};
+ durch
+   const { whiskyName, intensity, transcript, ledger, finalize, prose } = req.body || {};
+ (b) DIREKT NACH dem schließenden `}` des `if (finalize) { ... }`-Blocks und VOR dem Kommentar `// ---------- TURN:` einfügen:
+
+      // ---------- PROSE: ganzes Gespräch -> fließende Verkostungsnotiz (Ich-Stimme) ----------
+      if (prose) {
+        const proseSystem = `Du bist Cooper und schreibst aus einem ganzen Verkostungs-Gespräch eine fließende, persönliche Verkostungsnotiz — in der ICH-STIMME des Tasters ("Ich rieche…", "Im Mund…", "Im Abgang…").
+REGELN:
+- Nutze AUSSCHLIESSLICH, was der TASTER wirklich gesagt hat. Erfinde nichts, ergänze keine Aromen.
+- Nimm ALLES auf, was er beschrieben hat — auch Nebennotizen, auch Verworfenes. Glätte nicht.
+- Bewahre Mehrdeutigkeit, Widersprüche und Überraschungen ORGANISCH im Fluss ("erst dachte ich…, dann eher…"). Nur wenn eine echte, ungelöste Spannung im Gespräch steckt, greif sie leise als Teil der Erzählung auf — kein Schema, kein Pflicht-Absatz.
+- Bilde den Entdeckungs-Bogen ab (Reihenfolge, das Auftauchen von Neuem).
+- Locker entlang Nase / Gaumen / Abgang / Gesamteindruck, als zusammenhängender Text, KEINE Aufzählung, KEINE Bewertungszahlen.
+- Evokativ, gern etwas länger. Antworte in der Sprache des Gesprächs.
+Gib NUR den reinen Notiztext zurück, ohne Anführungszeichen, ohne Vorrede.`;
+        const pc = await openai.chat.completions.create({
+          model: "gpt-5-mini",
+          max_completion_tokens: 1500,
+          reasoning_effort: "minimal",
+          messages: [{ role: "system", content: proseSystem }, { role: "user", content: `Gespräch:${ctx}\n${convo}` }],
+        });
+        return res.json({ narrative: (pc.choices[0]?.message?.content || "").trim() });
+      }
+
+E5 — client/src/labs/components/rating/impressionApi.ts:
+ (a) ImpressionResult-Typ: Feld ergänzen:  narrative?: string;
+ (b) ans Dateiende:
+export async function proseImpression(args: { whiskyName?: string; intensity: Intensity; transcript: ConverseTurn[] }): Promise<{ narrative: string }> {
+  const res = await fetch("/api/impression/converse", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ ...args, prose: true }) });
+  if (!res.ok) throw new Error(`prose failed: ${res.status}`);
+  return res.json();
+}
+
+E6 — client/.../ImpressionCapture.tsx:
+ (a) Import erweitern: proseImpression aus "./impressionApi" mit aufnehmen.
+ (b) bei den useState, nach `const [result, setResult] = useState<ImpressionResult | null>(null);` ergänzen:
+   const [narrative, setNarrative] = useState("");
+   const [narrativeLoading, setNarrativeLoading] = useState(false);
+ (c) neben handleFinish ergänzen:
+   const handleProse = async () => {
+     if (narrativeLoading || transcript.length === 0) return;
+     setNarrativeLoading(true);
+     try { const r = await proseImpression({ whiskyName, intensity, transcript }); setNarrative(r.narrative || ""); } catch {}
+     setNarrativeLoading(false);
+   };
+ (d) handleConfirm: ersetze `onApply(result);` durch
+   onApply({ ...result, narrative: narrative.trim() || undefined });
+ (e) im handoff-Block, DIREKT VOR dem abschließenden „Zur Bewertung"-Button (handleConfirm), einfügen:
+   {!narrative ? (
+     <button type="button" onClick={handleProse} disabled={narrativeLoading} style={{ width: "100%", minHeight: TOUCH_MIN, marginBottom: SP.md, background: "transparent", color: LABS_THEME.gold, border: `1px solid ${LABS_THEME.gold}`, borderRadius: RADIUS.md, fontFamily: FONT.body, fontSize: 15, cursor: narrativeLoading ? "default" : "pointer" }}>
+       {narrativeLoading ? t("v2.proseLoading", "Cooper formuliert \u2026") : t("v2.proseButton", "Cooper, fass es in Worte")}
+     </button>
+   ) : (
+     <div style={{ marginBottom: SP.md }}>
+       <div style={{ fontFamily: FONT.serif, fontSize: 15, color: LABS_THEME.muted, marginBottom: SP.xs }}>{t("v2.proseLabel", "Deine Verkostungsnotiz (bearbeitbar):")}</div>
+       <textarea value={narrative} onChange={(e) => setNarrative(e.target.value)} rows={8} style={{ width: "100%", boxSizing: "border-box", background: LABS_THEME.inputBg, border: `1px solid ${LABS_THEME.border}`, borderRadius: RADIUS.md, color: LABS_THEME.text, fontFamily: FONT.serif, fontSize: 16, lineHeight: 1.6, padding: SP.md, resize: "vertical", minHeight: 160, outline: "none" }} />
+     </div>
+   )}
+
+E7 — client/src/labs/pages/LabsSolo.tsx:
+ (a) bei rawImpressionRef ergänzen:  const narrativeRef = useRef<string>("");
+ (b) in handleImpressionApply, nach `rawImpressionRef.current = result.rawImpression || "";`:
+   narrativeRef.current = result.narrative || "";
+ (c) in buildJournalBody, neben der rawImpression-Zeile ergänzen:
+   ...(narrativeRef.current ? { tastingNarrative: narrativeRef.current } : {}),
+ (d) an den beiden Reset-Stellen, wo `rawImpressionRef.current = "";` steht, ergänze daneben:
+   narrativeRef.current = "";
+
+VERIFIKATION:
+- [ ] npm run build / tsc grün.
+- [ ] (Christoph führt danach MANUELL aus: npx drizzle-kit push --force → nur CREATE/ADD COLUMN tasting_narrative, KEIN DROP.)
+- [ ] Solo-Gespräch → handoff: "Cooper, fass es in Worte" erzeugt einen fließenden Ich-Text aus dem ganzen Verlauf; editierbar.
+- [ ] Nach "Zur Bewertung" + Speichern: SELECT tasting_narrative FROM journal_entries ORDER BY created_at DESC LIMIT 1 → Text + Zeitstempel da.
+- [ ] NICHT committed.

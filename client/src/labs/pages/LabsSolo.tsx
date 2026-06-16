@@ -143,6 +143,7 @@ export default function LabsSolo() {
   const [ratingInitialData, setRatingInitialData] = useState<RatingData | undefined>(undefined);
   const [showImpressionCapture, setShowImpressionCapture] = useState(false);
   const rawImpressionRef = useRef<string>("");
+  const narrativeRef = useRef<string>("");
 
   const { data: participantData } = useQuery<Participant>({
     queryKey: ["participant", participantId],
@@ -330,6 +331,7 @@ export default function LabsSolo() {
     pendingFinalizeRef.current = null;
     finalizedRef.current = false;
     rawImpressionRef.current = "";
+    narrativeRef.current = "";
     setStep("rating");
     saveSoloDraft({ step: "rating", whisky: null, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: false, serverDraftId: null });
     showDraftFlash();
@@ -382,6 +384,7 @@ export default function LabsSolo() {
 
   const handleImpressionApply = useCallback((result: ImpressionResult) => {
     rawImpressionRef.current = result.rawImpression || "";
+    narrativeRef.current = result.narrative || "";
     const sc = result.scoreSuggestion;
     const D = 75;
     setRatingInitialData((prev) => ({
@@ -444,6 +447,7 @@ export default function LabsSolo() {
       ].filter(Boolean).join(", "),
       notes: data.notes.overall || "",
       ...(rawImpressionRef.current ? { rawImpression: rawImpressionRef.current } : {}),
+      ...(narrativeRef.current ? { tastingNarrative: narrativeRef.current } : {}),
       source: "solo",
       status,
       ...(tastingContext ? { tastingContext: JSON.stringify(tastingContext) } : {}),
@@ -753,6 +757,7 @@ export default function LabsSolo() {
     setTastingContext(null);
     setShowImpressionCapture(false);
     rawImpressionRef.current = "";
+    narrativeRef.current = "";
     finalizedRef.current = false;
     pendingNameRef.current = null;
     namingResolvedRef.current = false;

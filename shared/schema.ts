@@ -534,6 +534,7 @@ export const journalEntries = pgTable("journal_entries", {
   tasteNotes: text("taste_notes"),
   finishNotes: text("finish_notes"),
   rawImpression: text("raw_impression"),
+  tastingNarrative: text("tasting_narrative"),
   personalScore: real("personal_score"),
   noseScore: real("nose_score"),
   tasteScore: real("taste_score"),
