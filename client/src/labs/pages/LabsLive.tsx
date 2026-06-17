@@ -32,6 +32,9 @@ import { useTastingEvents } from "@/labs/hooks/useTastingEvents";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import type { RatingFlowDraftState } from "@/labs/components/rating/RatingFlowV2";
 import type { RatingData } from "@/labs/components/rating/types";
+import ImpressionCapture from "@/labs/components/rating/ImpressionCapture";
+import type { ImpressionResult } from "@/labs/components/rating/impressionApi";
+import { mapImpressionToRating } from "@/labs/components/rating/mapImpressionToRating";
 import DramCarousel from "@/labs/components/DramCarousel";
 import DeinAbendRecap from "@/labs/components/DeinAbendRecap";
 import { ResumeOrSkipBanner } from "@/labs/components/ResumeRatingBanner";
@@ -232,6 +235,8 @@ function GuidedStepView({
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editRatingMode, setEditRatingMode] = useState<"edit" | "retaste" | null>(null);
   const [draftSavedFlash, setDraftSavedFlash] = useState(false);
+  const [liveCooperOpenId, setLiveCooperOpenId] = useState<string | null>(null);
+  const [liveCooperInitial, setLiveCooperInitial] = useState<{ id: string; data: RatingData } | null>(null);
   const draftFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -624,7 +629,27 @@ function GuidedStepView({
       )}
 
       {canRate && !revealMoment ? (
+        liveCooperOpenId === activeWhisky?.id ? (
+          <ImpressionCapture
+            whiskyName={isBlindStep ? undefined : displayName}
+            onApply={(result: ImpressionResult) => {
+              if (!activeWhisky) return;
+              const liveInv = 1 / liveScale.step;
+              const fallback = liveScale.max === 100 ? 75 : Math.round((liveScale.max * 0.75) / liveScale.step) * liveScale.step;
+              const convertScore = (v: number) => liveScale.max === 100 ? v : Math.round((v / 100) * liveScale.max * liveInv) / liveInv;
+              setLiveCooperInitial({ id: activeWhisky.id, data: mapImpressionToRating(result, { fallback, convertScore }) });
+              setLiveCooperOpenId(null);
+            }}
+            onSkip={() => setLiveCooperOpenId(null)}
+            participantId={currentParticipant?.id}
+          />
+        ) : (
         <div key={`flow-${localIndex}-${dramTransitionKey}`} style={{ animation: "labsPopIn 300ms ease both" }}>
+          {!myRating && activeWhisky && !(liveCooperInitial && liveCooperInitial.id === activeWhisky.id) && (
+            <button type="button" onClick={() => { if (activeWhisky) setLiveCooperOpenId(activeWhisky.id); }} data-testid="live-cooper-sidedoor" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", minHeight: 44, padding: "10px 16px", marginBottom: 12, borderRadius: 12, border: "1px solid var(--labs-accent)", background: "transparent", color: "var(--labs-accent)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600 }}>
+              {t("v2.impressionSideDoor", "Mit Cooper schärfen")}
+            </button>
+          )}
           <RatingFlowV2
             chipInHeader
             chipPortalTarget={chipSlotNode}
@@ -635,7 +660,7 @@ function GuidedStepView({
               cask: activeWhisky?.caskType || undefined,
               blind: isBlindStep,
             }}
-            initialData={myRating && editRatingMode !== "retaste" ? (() => {
+            initialData={(!myRating && liveCooperInitial && activeWhisky && liveCooperInitial.id === activeWhisky.id) ? liveCooperInitial.data : myRating && editRatingMode !== "retaste" ? (() => {
               const rawNotes = myRating.notes || "";
               const flavourMatch = rawNotes.match(/\[FLAVOURS\]\s*([\s\S]*?)\s*\[\/FLAVOURS\]/);
               const chips = flavourMatch ? flavourMatch[1].split(",").map((s: string) => s.trim()).filter(Boolean) : [];
@@ -770,6 +795,7 @@ function GuidedStepView({
             </div>
           )}
         </div>
+        )
       ) : (
         <div className="labs-card-elevated p-6 text-center labs-fade-in labs-stagger-2">
           {!currentParticipant ? (
