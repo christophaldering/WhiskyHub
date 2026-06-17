@@ -1,0 +1,118 @@
+HARD PROMPT — Cooper PHASE B1 (LabsLive): Seitentür „Mit Cooper schärfen" (ersetzt frühere Zwischenschirm-Variante)
+
+KONTEXT: Live ist primär ein Tisch-Erlebnis (aber nicht nur). Cooper darf den Gruppen-Takt
+NICHT brechen → KEIN Zwischenschirm vor der Bewertung. Stattdessen: die Bewertung steht
+sofort bereit; oben sitzt eine optionale, modalitäts-neutrale Einladung "Mit Cooper schärfen".
+Wer tippt, bekommt den Cooper-Dialog (heute Text/Diktat, später Stimme — Innen-Umbau von
+ImpressionCapture, hier NICHT relevant); danach ist die Bewertung skalengerecht vorbefüllt.
+KEINE Persistenz der Narrative (Phase B2). KEIN Schema. Bestehende Bewertung/Resume unberührt.
+
+══════════════════════════════════════════════════════════
+SCHRITT 0 — DIAGNOSE (NUR LESEN, dann STOPP + Plan, auf OK warten):
+══════════════════════════════════════════════════════════
+client/src/labs/pages/LabsLive.tsx:
+a) Z.32-34: RatingFlowV2- und RatingData-Imports bestätigen.
+b) Z.~234: `const [draftSavedFlash, setDraftSavedFlash] = useState(false);` bestätigen.
+c) Z.~626-627: bestätige
+     {canRate && !revealMoment ? (
+       <div key={`flow-${localIndex}-${dramTransitionKey}`} style={{ animation: "labsPopIn 300ms ease both" }}>
+d) Z.~639: `initialData={myRating && editRatingMode !== "retaste" ? (() => {`
+e) Flow-div-Schluss + Else-Grenze (genau diese 5 Zeilen aufeinanderfolgend):
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="labs-card-elevated p-6 text-center labs-fade-in labs-stagger-2">
+   Falls Einrückung/Zeilen abweichen → MELDEN und auf OK warten (Klammer-Balance kritisch).
+f) Scope bestätigen: displayName, activeWhisky, isBlindStep, myRating, editRatingMode,
+   currentParticipant, liveScale, t.
+→ DANN STOPP.
+
+══════════════════════════════════════════════════════════
+SCHRITT 1 — Imports (nach Z.34)
+══════════════════════════════════════════════════════════
+NACH `import type { RatingData } from "@/labs/components/rating/types";`
+EINFÜGEN:
+import ImpressionCapture from "@/labs/components/rating/ImpressionCapture";
+import type { ImpressionResult } from "@/labs/components/rating/impressionApi";
+import { mapImpressionToRating } from "@/labs/components/rating/mapImpressionToRating";
+
+══════════════════════════════════════════════════════════
+SCHRITT 2 — State (nach draftSavedFlash)
+══════════════════════════════════════════════════════════
+NACH `const [draftSavedFlash, setDraftSavedFlash] = useState(false);`
+EINFÜGEN:
+  const [liveCooperOpenId, setLiveCooperOpenId] = useState<string | null>(null);
+  const [liveCooperInitial, setLiveCooperInitial] = useState<{ id: string; data: RatingData } | null>(null);
+
+══════════════════════════════════════════════════════════
+SCHRITT 3 — Seitentür ÖFFNEN: Cooper-Zweig + Button im Flow (Edit A)
+══════════════════════════════════════════════════════════
+ERSETZE EXAKT:
+      {canRate && !revealMoment ? (
+        <div key={`flow-${localIndex}-${dramTransitionKey}`} style={{ animation: "labsPopIn 300ms ease both" }}>
+DURCH:
+      {canRate && !revealMoment ? (
+        liveCooperOpenId === activeWhisky?.id ? (
+          <ImpressionCapture
+            whiskyName={isBlindStep ? undefined : displayName}
+            onApply={(result: ImpressionResult) => {
+              if (!activeWhisky) return;
+              const liveInv = 1 / liveScale.step;
+              const fallback = liveScale.max === 100 ? 75 : Math.round((liveScale.max * 0.75) / liveScale.step) * liveScale.step;
+              const convertScore = (v: number) => liveScale.max === 100 ? v : Math.round((v / 100) * liveScale.max * liveInv) / liveInv;
+              setLiveCooperInitial({ id: activeWhisky.id, data: mapImpressionToRating(result, { fallback, convertScore }) });
+              setLiveCooperOpenId(null);
+            }}
+            onSkip={() => setLiveCooperOpenId(null)}
+            participantId={currentParticipant?.id}
+          />
+        ) : (
+        <div key={`flow-${localIndex}-${dramTransitionKey}`} style={{ animation: "labsPopIn 300ms ease both" }}>
+          {!myRating && activeWhisky && !(liveCooperInitial && liveCooperInitial.id === activeWhisky.id) && (
+            <button type="button" onClick={() => { if (activeWhisky) setLiveCooperOpenId(activeWhisky.id); }} data-testid="live-cooper-sidedoor" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", minHeight: 44, padding: "10px 16px", marginBottom: 12, borderRadius: 12, border: "1px solid var(--labs-accent)", background: "transparent", color: "var(--labs-accent)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600 }}>
+              {t("v2.impressionSideDoor", "Mit Cooper schärfen")}
+            </button>
+          )}
+
+══════════════════════════════════════════════════════════
+SCHRITT 4 — initialData: Cooper-Seed bevorzugen (Edit C)
+══════════════════════════════════════════════════════════
+ERSETZE EXAKT:
+            initialData={myRating && editRatingMode !== "retaste" ? (() => {
+DURCH:
+            initialData={(!myRating && liveCooperInitial && activeWhisky && liveCooperInitial.id === activeWhisky.id) ? liveCooperInitial.data : myRating && editRatingMode !== "retaste" ? (() => {
+
+══════════════════════════════════════════════════════════
+SCHRITT 5 — Seitentür SCHLIESSEN (Edit B) — genau EIN zusätzliches `)`
+══════════════════════════════════════════════════════════
+ERSETZE EXAKT (die 5 Zeilen aus Schritt 0e):
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="labs-card-elevated p-6 text-center labs-fade-in labs-stagger-2">
+DURCH:
+            </div>
+          )}
+        </div>
+        )
+      ) : (
+        <div className="labs-card-elevated p-6 text-center labs-fade-in labs-stagger-2">
+
+══════════════════════════════════════════════════════════
+VERIFIKATION (nur lesen):
+══════════════════════════════════════════════════════════
+- Imports + 2 neue States (liveCooperOpenId, liveCooperInitial) vorhanden.
+- data-testid="live-cooper-sidedoor"-Button erscheint nur bei frischer Station (!myRating und noch kein Cooper-Seed); öffnet Cooper.
+- liveCooperOpenId === activeWhisky.id rendert ImpressionCapture; onApply seedet + schließt, onSkip schließt.
+- initialData beginnt mit `(!myRating && liveCooperInitial && activeWhisky && liveCooperInitial.id === activeWhisky.id) ? liveCooperInitial.data :`.
+- Klammer-Balance: tsc/build OHNE Fehler (entscheidender Check für Edit A+B).
+- Verhalten: Bewertung sofort nutzbar (kein Zwischenschirm); Cooper rein optional; bestehende Bewertung → kein Button;
+  Blindprobe → Cooper bekommt keinen Namen; 10er-Skala → Cooper-Score umgerechnet.
+
+HINWEIS Naming-Watch: Solo-Wahlkarte sagt "Mit Cooper sprechen", Live-Seitentür sagt "Mit Cooper schärfen"
+(neutraler, da später auch Stimme). Bewusst — Angleichung später, nicht jetzt.
+
+❗ KEIN COMMIT, kein git add/commit/push, kein drizzle-kit, KEINE Schema-Änderung.
+❗ Wiederholung: NICHT committen. Erst Schritt 0 melden und auf OK warten, DANN 1–5. Danach berichten.
