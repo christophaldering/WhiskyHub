@@ -552,7 +552,7 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onIm
               {t("v2.solo.impressionTileTitle", "Eindruck festhalten")}
             </div>
             <div style={{ fontSize: 11, color: "var(--labs-accent)", marginTop: 1 }}>
-              {t("v2.solo.impressionMethod", "Sokratische Schärfung")}
+              {t("v2.solo.impressionTileSubtitle", "Dein erster Eindruck in eigenen Worten")}
             </div>
           </div>
           <ChevronRight className="w-4 h-4" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }} />

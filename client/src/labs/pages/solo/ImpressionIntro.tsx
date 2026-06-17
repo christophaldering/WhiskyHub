@@ -74,6 +74,9 @@ export default function ImpressionIntro({ onStart, onBack }: { onStart: () => vo
                 </li>
               ))}
             </ul>
+            <div style={{ fontFamily: FONT.serif, fontSize: 13, color: LABS_THEME.faint, marginTop: SP.md, fontStyle: "italic" }}>
+              {t("v2.solo.impressionMethod", "Sokratische Schärfung")}
+            </div>
           </div>
         ) : (
           <div style={{ maxWidth: 440, marginBottom: SP.md, display: "flex", flexDirection: "column", alignItems: "center" }}>
