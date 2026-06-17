@@ -1,0 +1,112 @@
+HARD PROMPT — Eindruck-Intro & Listen-Zeile: Erlebnis führt, Cooper bleibt dem Dialog vorbehalten
+
+KONTEXT: Reiner Copy-/i18n-Umbau (DE + EN) + zwei kleine Render-Anpassungen. KEIN Schema.
+Ziel: Das Eindruck-Intro und die "Wege ins Glas"-Zeile führen mit dem ERLEBNIS statt mit dem
+Fachbegriff; das anonyme "wir" verschwindet; "Sokratische Schärfung" bleibt als LEISE Caption
+erhalten (nicht als Aufmacher); Cooper wird hier bewusst NICHT genannt (man trifft ihn im Dialog).
+
+══════════════════════════════════════════════════════════
+SCHRITT 0 — DIAGNOSE (NUR LESEN, dann STOPP + Plan, auf OK warten):
+══════════════════════════════════════════════════════════
+a) client/src/lib/i18n.ts DE-Block (~10755-10763): bestätige die Keys impressionMethod,
+   impressionBulletsTitle, impressionBullet2/3/4 mit den unten zitierten Werten.
+b) client/src/lib/i18n.ts EN-Block (~920-927): bestätige impressionMethod ("Socratic Scaffolding"),
+   impressionBulletsTitle ("How Socratic Scaffolding works:"), impressionBullet2/3/4.
+c) client/src/labs/pages/solo/SoloCaptureScreen.tsx ~Z.555: `{t("v2.solo.impressionMethod", "Sokratische Schärfung")}`.
+d) client/src/labs/pages/solo/ImpressionIntro.tsx: bestätige im showFull-Block den Abschluss
+   `</ul>` gefolgt von `</div>` gefolgt von `) : (` und dass FONT, LABS_THEME, SP importiert sind.
+→ DANN STOPP.
+
+══════════════════════════════════════════════════════════
+SCHRITT 1 — i18n.ts DE-Block
+══════════════════════════════════════════════════════════
+1a) Neuen Key ergänzen. ERSETZE:
+          impressionMethod: "Sokratische Schärfung",
+DURCH:
+          impressionMethod: "Sokratische Schärfung",
+          impressionTileSubtitle: "Dein erster Eindruck in eigenen Worten",
+
+1b) ERSETZE:
+          impressionBulletsTitle: "So funktioniert die Sokratische Schärfung:",
+DURCH:
+          impressionBulletsTitle: "So hältst du deinen Eindruck fest:",
+
+1c) ERSETZE:
+          impressionBullet2: "Wir fragen gezielt nach, mit Aromen zum Antippen.",
+DURCH:
+          impressionBullet2: "Behutsame Rückfragen vertiefen ihn — mit Aromen zum Antippen.",
+
+1d) ERSETZE:
+          impressionBullet3: "Dein Eindruck führt — wir prägen ihn nicht vor.",
+DURCH:
+          impressionBullet3: "Dein Eindruck führt — nichts wird dir vorgegeben.",
+
+1e) ERSETZE:
+          impressionBullet4: "Den Whisky klären wir erst danach.",
+DURCH:
+          impressionBullet4: "Den Whisky klärst du erst danach.",
+
+══════════════════════════════════════════════════════════
+SCHRITT 2 — i18n.ts EN-Block
+══════════════════════════════════════════════════════════
+2a) Neuen Key ergänzen. ERSETZE:
+          impressionMethod: "Socratic Scaffolding",
+DURCH:
+          impressionMethod: "Socratic Scaffolding",
+          impressionTileSubtitle: "Your first impression, in your own words",
+
+2b) ERSETZE:
+          impressionBulletsTitle: "How Socratic Scaffolding works:",
+DURCH:
+          impressionBulletsTitle: "How to capture your impression:",
+
+2c) ERSETZE:
+          impressionBullet2: "We ask targeted follow-ups, with aromas to tap.",
+DURCH:
+          impressionBullet2: "Gentle follow-ups deepen it — with aromas to tap.",
+
+2d) ERSETZE:
+          impressionBullet3: "Your impression leads — we don't put words in your mouth.",
+DURCH:
+          impressionBullet3: "Your impression leads — nothing is put in your mouth.",
+
+2e) ERSETZE:
+          impressionBullet4: "We identify the whisky only afterwards.",
+DURCH:
+          impressionBullet4: "You identify the whisky only afterwards.",
+
+══════════════════════════════════════════════════════════
+SCHRITT 3 — Listen-Zeile auf Erlebnis-Untertitel (SoloCaptureScreen.tsx ~Z.555)
+══════════════════════════════════════════════════════════
+ERSETZE:
+              {t("v2.solo.impressionMethod", "Sokratische Schärfung")}
+DURCH:
+              {t("v2.solo.impressionTileSubtitle", "Dein erster Eindruck in eigenen Worten")}
+
+══════════════════════════════════════════════════════════
+SCHRITT 4 — Leise Caption unter den Bullets (ImpressionIntro.tsx)
+══════════════════════════════════════════════════════════
+ERSETZE (im showFull-Block):
+            </ul>
+          </div>
+        ) : (
+DURCH:
+            </ul>
+            <div style={{ fontFamily: FONT.serif, fontSize: 13, color: LABS_THEME.faint, marginTop: SP.md, fontStyle: "italic" }}>
+              {t("v2.solo.impressionMethod", "Sokratische Schärfung")}
+            </div>
+          </div>
+        ) : (
+
+══════════════════════════════════════════════════════════
+VERIFIKATION (nur lesen):
+══════════════════════════════════════════════════════════
+- i18n DE+EN: impressionTileSubtitle existiert; impressionBulletsTitle ohne "Sokratische Schärfung"/"Socratic Scaffolding";
+  Bullets 2/3/4 ohne "wir"/"we"; impressionMethod unverändert ("Sokratische Schärfung"/"Socratic Scaffolding").
+- SoloCaptureScreen: Listen-Untertitel nutzt impressionTileSubtitle.
+- ImpressionIntro: faint Caption mit impressionMethod sitzt unter den Bullets (nur im showFull-Block).
+- Cooper wird in Intro + Listen-Zeile NICHT genannt.
+- App baut (tsc/build) ohne neue Fehler.
+
+❗ KEIN COMMIT, kein git add/commit/push, kein drizzle-kit, KEINE Schema-Änderung.
+❗ Wiederholung: NICHT committen. Erst Schritt 0 melden + OK abwarten, DANN 1–4. Danach berichten.
