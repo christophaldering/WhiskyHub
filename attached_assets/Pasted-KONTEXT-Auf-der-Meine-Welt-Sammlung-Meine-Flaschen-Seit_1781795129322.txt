@@ -1,0 +1,63 @@
+KONTEXT
+Auf der "Meine Welt" → Sammlung → Meine Flaschen-Seite (LabsTasteCollection) erscheinen
+Overlays (Whiskybase-Import/Sync-Sheet, Sync-Ergebnis, Import-Bestätigung, Löschen, Abbrechen)
+nicht am Viewport, sondern weit unten in der Seite, mit nur teilweise vernebeltem Hintergrund.
+
+URSACHE (bereits diagnostiziert — NICHT neu suchen)
+Alle diese Overlays nutzen korrekt position:fixed; inset:0. Sie hängen aber im Aufklapp-Wrapper
+HubTileCollapsible mit der CSS-Klasse .labs-hub-tile-content-zone. Deren Animation
+"labsHubTileExpand ... both" behält nach Ablauf den transform-Endwert translateY(0). Ein
+nicht-none-transform (auch translateY(0)) macht den Wrapper zum Bezugsrahmen (containing block)
+für position:fixed-Nachfahren → das Overlay klebt am Wrapper statt am Viewport.
+Fix an der Wurzel: transform aus beiden Keyframes entfernen (reine Opacity-Animation). Das
+repariert ALLE Overlays in ALLEN Hub-Aufklappern app-weit auf einmal.
+
+SCHRITT 0 — DIAGNOSE (vor jeder Änderung, nur lesen, ausgeben)
+1. git tag pre-overlay-containingblock-fix-2026-06-18
+2. Öffne client/src/labs/labs-theme.css und bestätige, dass die beiden Keyframes
+   @keyframes labsHubTileExpand und @keyframes labsHubTileCollapse aktuell exakt
+   "transform: translateY(...)" enthalten (siehe ALT unten). Gib die gefundenen Zeilen aus.
+3. Bestätige, dass .labs-hub-tile-content-zone weiterhin overflow:hidden +
+   animation:labsHubTileExpand 200ms ease-out both behält (NICHT anfassen).
+KEINE Datei ändern, bevor du Punkt 1–3 ausgegeben hast.
+
+PLAN (genau EINE Datei, genau EINE Stelle)
+Datei: client/src/labs/labs-theme.css
+Ersetze die beiden Keyframe-Blöcke 1:1 — sonst nichts.
+
+ALT (exakt so vorhanden):
+@keyframes labsHubTileExpand {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes labsHubTileCollapse {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-4px); }
+}
+
+NEU (exakt einsetzen, inkl. Kommentar):
+/* Opacity-only: a lingering transform (even translateY(0)) on the content
+   zone would establish a containing block for position:fixed descendants,
+   trapping overlays/sheets inside the collapsible instead of the viewport. */
+@keyframes labsHubTileExpand {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes labsHubTileCollapse {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+VERIFIKATION
+- Nur client/src/labs/labs-theme.css verändert, nur die beiden Keyframes (Opacity statt transform).
+- .labs-hub-tile-content-zone selbst unverändert (overflow:hidden + animation bleiben).
+- Keine .tsx-Datei, keine i18n, kein Schema, keine Migration angefasst.
+- Sicht-Check: Sammlung → Meine Flaschen → "Importieren & Synchronisieren": Sheet erscheint
+  sofort viewport-zentriert (Desktop) bzw. als Bottom-Sheet (Mobile), Nebel über voller Fläche.
+  Auch Sync-Ergebnis-, Import-Bestätigungs-, Löschen- und Abbrechen-Dialog mittig.
+
+COMMIT-VERBOT (zwingend, nochmals explizit)
+NICHT committen, NICHT pushen, KEIN drizzle-kit, KEINE Migration. Nur die Datei im Workspace
+ändern und stehen lassen. Rollback falls nötig: git reset --hard pre-overlay-containingblock-fix-2026-06-18
