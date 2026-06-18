@@ -193,8 +193,6 @@ export default function LabsTasteDrams() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
-  const [statsExpanded, setStatsExpanded] = useState(false);
-  const statsInitRef = useRef(false);
   const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -239,14 +237,6 @@ export default function LabsTasteDrams() {
     enabled: !!session.pid,
     retry: 2,
   });
-
-  useEffect(() => {
-    if (statsInitRef.current) return;
-    if (isLoading) return;
-    const hasDrafts = journal.some((e: any) => e.status === "draft");
-    if (hasDrafts) setStatsExpanded(true);
-    statsInitRef.current = true;
-  }, [journal, isLoading]);
 
   const deepLinkAppliedRef = useRef(false);
   const [enteredViaDeepLink, setEnteredViaDeepLink] = useState(false);
@@ -314,6 +304,19 @@ export default function LabsTasteDrams() {
     ...journal.map((e: any) => ({ ...e, source: e.source || "solo" })),
     ...tastingWhiskies,
   ], [journal, tastingWhiskies]);
+
+  // Counts pro Filter-Option — decken sich exakt mit der Filterwirkung (Origin/Status global, je Dimension).
+  const originCounts = useMemo<Record<OriginFilter, number>>(() => ({
+    all: allItems.length,
+    solo: journal.length,
+    tasting: tastingWhiskies.length,
+  }), [allItems.length, journal.length, tastingWhiskies.length]);
+
+  const statusCounts = useMemo<Record<StatusFilter, number>>(() => ({
+    all: allItems.length,
+    open: allItems.filter((e: any) => e.status === "draft").length,
+    done: allItems.filter((e: any) => e.status !== "draft").length,
+  }), [allItems]);
 
   const uniqueDistilleries = useMemo(() => Array.from(new Set(allItems.map((e: any) => e.distillery).filter(Boolean))).sort(), [allItems]);
   const uniqueRegions = useMemo(() => Array.from(new Set(allItems.map((e: any) => e.region).filter(Boolean))).sort(), [allItems]);
@@ -1238,54 +1241,27 @@ export default function LabsTasteDrams() {
         </div>
       ) : (
         <>
-          {allItems.length > 0 && (
-            <div style={{ padding: "0 20px", marginBottom: 12 }}>
-              <button
-                onClick={() => setStatsExpanded(!statsExpanded)}
-                className="w-full flex items-center justify-between"
-                style={{ padding: "10px 14px", background: "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))", border: "1px solid var(--labs-border)", borderRadius: 12, cursor: "pointer", color: "var(--labs-text)" }}
-                data-testid="button-labs-toggle-stats"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="labs-serif" style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-accent)" }}>{allItems.length}</span>
-                  <span style={{ fontSize: 13, color: "var(--labs-text-muted)" }}>{t("drams.dramsLogged")}</span>
-                </div>
-                <ChevronDown className="w-4 h-4" style={{ color: "var(--labs-text-muted)", transition: "transform 0.2s", transform: statsExpanded ? "rotate(180deg)" : "rotate(0)" }} />
-              </button>
-              {statsExpanded && (
-                <div className="labs-auto-grid" style={{ "--grid-min": "100px", gap: "0.5rem", marginTop: 8 } as React.CSSProperties} data-testid="labs-drams-overview">
-                  {[
-                    { value: allItems.length, label: t("drams.total") },
-                    { value: journal.filter((e: any) => e.status !== "draft").length, label: t("drams.solo") },
-                    { value: tastingWhiskies.length, label: t("drams.tastings") },
-                    { value: journal.filter((e: any) => e.status === "draft").length, label: t("drams.statusOpen", "Offen") },
-                  ].map(s => (
-                    <div key={s.label} style={{ textAlign: "center", padding: "10px 4px", background: "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))", borderRadius: 10, border: "1px solid var(--labs-border)" }}>
-                      <div className="labs-h2" style={{ color: "var(--labs-accent)", fontSize: 20 }}>{s.value}</div>
-                      <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginTop: 2 }}>{s.label}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-
-          <div style={{ padding: "0 20px", marginBottom: 12 }}>
+          <div style={{ padding: "0 20px", marginBottom: 12, marginTop: 4 }}>
             <div className="labs-segmented" style={{ marginBottom: 8 }}>
               {ORIGIN_KEYS.map(fk => (
                 <button key={fk} onClick={() => setOriginFilter(fk)}
                   className={`labs-segmented-btn ${originFilter === fk ? "labs-segmented-btn-active" : ""}`}
-                  style={{ fontSize: 13, padding: "6px 0" }}
-                  data-testid={`labs-origin-${fk}`}>{t(ORIGIN_I18N[fk])}</button>
+                  style={{ fontSize: 13, padding: "7px 8px" }}
+                  data-testid={`labs-origin-${fk}`}>
+                  {t(ORIGIN_I18N[fk])}
+                  <span style={{ marginLeft: 6, fontSize: 11, opacity: 0.6, fontVariantNumeric: "tabular-nums" }}>{originCounts[fk]}</span>
+                </button>
               ))}
             </div>
             <div className="labs-segmented" style={{ marginBottom: 0 }}>
               {STATUS_KEYS.map(sk => (
                 <button key={sk} onClick={() => setStatusFilter(sk)}
                   className={`labs-segmented-btn ${statusFilter === sk ? "labs-segmented-btn-active" : ""}`}
-                  style={{ fontSize: 13, padding: "6px 0" }}
-                  data-testid={`labs-status-${sk}`}>{t(STATUS_I18N[sk], STATUS_FALLBACK[sk])}</button>
+                  style={{ fontSize: 13, padding: "7px 8px" }}
+                  data-testid={`labs-status-${sk}`}>
+                  {t(STATUS_I18N[sk], STATUS_FALLBACK[sk])}
+                  <span style={{ marginLeft: 6, fontSize: 11, opacity: 0.6, fontVariantNumeric: "tabular-nums" }}>{statusCounts[sk]}</span>
+                </button>
               ))}
             </div>
           </div>
