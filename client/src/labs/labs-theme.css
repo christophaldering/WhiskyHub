@@ -1828,14 +1828,17 @@ a.labs-dram-item {
   pointer-events: none;
 }
 
+/* Opacity-only: a lingering transform (even translateY(0)) on the content
+   zone would establish a containing block for position:fixed descendants,
+   trapping overlays/sheets inside the collapsible instead of the viewport. */
 @keyframes labsHubTileExpand {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 @keyframes labsHubTileCollapse {
-  from { opacity: 1; transform: translateY(0); }
-  to   { opacity: 0; transform: translateY(-4px); }
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }
 
 .labs-hub-tile:active {
