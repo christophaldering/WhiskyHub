@@ -7,12 +7,19 @@ type Status = "idle" | "token" | "connecting" | "connected" | "error";
 
 const VOICES = ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse", "marin", "cedar"];
 
+type Corner = "untouched" | "touched" | "sharpened";
+interface Ledger { nose: Corner; palate: Corner; finish: Corner; body: Corner; intensity: Corner; affect: Corner; vagueResolved: boolean; }
+const LEDGER_CORNERS = ["nose", "palate", "finish", "body", "intensity", "affect"] as const;
+const EMPTY_LEDGER: Ledger = { nose: "untouched", palate: "untouched", finish: "untouched", body: "untouched", intensity: "untouched", affect: "untouched", vagueResolved: false };
+const CORNER_LABELS: Record<(typeof LEDGER_CORNERS)[number], string> = { nose: "Nase", palate: "Gaumen", finish: "Abgang", body: "Körper", intensity: "Intensität", affect: "Wertung" };
+
 export default function LabsVoiceProbe() {
   const session = useSession();
   const [status, setStatus] = useState<Status>("idle");
   const [statusText, setStatusText] = useState("Bereit.");
   const [model, setModel] = useState<string>("");
   const [voice, setVoice] = useState<string>("cedar");
+  const [ledger, setLedger] = useState<Ledger>(EMPTY_LEDGER);
   const [busy, setBusy] = useState(false);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const micRef = useRef<MediaStream | null>(null);
@@ -41,6 +48,7 @@ export default function LabsVoiceProbe() {
     setBusy(true);
     setStatus("token");
     setStatusText("fordere Token an …");
+    setLedger(EMPTY_LEDGER);
     try {
       const tokenRes = await fetch("/api/voice-probe/token", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ voice }) });
       const tokenText = await tokenRes.text();
@@ -77,7 +85,24 @@ export default function LabsVoiceProbe() {
 
       const dc = pc.createDataChannel("oai-events");
       dc.onopen = () => console.log("[voice-probe] datachannel open");
-      dc.onmessage = (e) => { console.log("[voice-probe] event", e.data); };
+      dc.onmessage = (e) => {
+        let msg: any = null;
+        try { msg = JSON.parse(e.data); } catch { return; }
+        if (msg?.type === "response.function_call_arguments.done" && msg?.name === "update_ledger") {
+          console.log("[voice-probe] tool-call update_ledger", msg.arguments);
+          let args: any = {};
+          try { args = JSON.parse(msg.arguments); } catch { /* noop */ }
+          setLedger((prev) => {
+            const next: Ledger = { ...prev };
+            for (const k of LEDGER_CORNERS) { if (typeof args[k] === "string") next[k] = args[k] as Corner; }
+            if (typeof args.vagueResolved === "boolean") next.vagueResolved = args.vagueResolved;
+            return next;
+          });
+          try {
+            dc.send(JSON.stringify({ type: "conversation.item.create", item: { type: "function_call_output", call_id: msg.call_id, output: JSON.stringify({ ok: true }) } }));
+          } catch (err) { console.error("[voice-probe] ledger-ack failed", err); }
+        }
+      };
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
@@ -144,6 +169,24 @@ export default function LabsVoiceProbe() {
           );
         })}
       </div>
+
+      {status === "connected" && (
+        <div
+          data-testid="ledger-constellation"
+          style={{ display: "flex", flexWrap: "wrap", gap: SP.md, justifyContent: "center", padding: SP.md, border: `1px solid ${LABS_THEME.border}`, borderRadius: RADIUS.md, background: LABS_THEME.bgCard }}
+        >
+          {LEDGER_CORNERS.map((c) => {
+            const st = ledger[c];
+            const color = st === "sharpened" ? LABS_THEME.gold : st === "touched" ? LABS_THEME.muted : LABS_THEME.faint;
+            return (
+              <div key={c} data-testid={`ledger-corner-${c}`} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.xs, minWidth: 64 }}>
+                <div style={{ width: 14, height: 14, borderRadius: RADIUS.full, background: color, boxShadow: st === "sharpened" ? `0 0 8px ${LABS_THEME.gold}` : "none", transition: "background 600ms ease, box-shadow 600ms ease" }} />
+                <div style={{ fontFamily: FONT.body, fontSize: 12, color, transition: "color 600ms ease" }}>{CORNER_LABELS[c]}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: SP.md }}>
         <button

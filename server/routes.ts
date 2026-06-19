@@ -5603,7 +5603,26 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
       const apiKey = process.env.OPENAI_API_KEY;
       if (!apiKey) return res.status(500).json({ message: "OPENAI_API_KEY not configured" });
 
-      const instructions = "Du bist ein Testpartner. Antworte kurz und freundlich auf Deutsch.";
+      const instructions = "Du bist Cooper, ein erfahrener, zurückhaltender Verkostungs-Begleiter. Du sprichst Deutsch, warm und ruhig. Du lässt den Taster führen und drängst nie — meist genügt eine einzige, gezielte Frage zur dringlichsten noch offenen Wahrnehmung. Wiederhole die Worte des Tasters NIEMALS wörtlich und kündige das Zuhören nicht an (keine Floskeln wie ‚das nehme ich auf'). Bleib knapp und gesprochen. Sobald im Gespräch zu einer Wahrnehmungs-Ecke etwas gesagt oder präzisiert wird, rufe das Tool `update_ledger` mit dem aktuellen Stand auf. Die Ecke Affekt/Wertung soll vor einem möglichen Abschluss berührt sein.";
+      const ledgerEnum = ["untouched", "touched", "sharpened"];
+      const tools = [{
+        type: "function",
+        name: "update_ledger",
+        description: "Ehrlicher Schärfungs-Status jeder Wahrnehmungs-Ecke. untouched→touched sobald etwas gesagt wurde; touched→sharpened sobald mit konkreten Begriffen präzisiert.",
+        parameters: {
+          type: "object",
+          properties: {
+            nose: { type: "string", enum: ledgerEnum },
+            palate: { type: "string", enum: ledgerEnum },
+            finish: { type: "string", enum: ledgerEnum },
+            body: { type: "string", enum: ledgerEnum },
+            intensity: { type: "string", enum: ledgerEnum },
+            affect: { type: "string", enum: ledgerEnum },
+            vagueResolved: { type: "boolean" },
+          },
+          required: [],
+        },
+      }];
       const VOICES = ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse", "marin", "cedar"];
       const voice = VOICES.includes(req.body?.voice) ? req.body.voice : "cedar";
       const candidates = ["gpt-realtime-2", "gpt-realtime"];
@@ -5614,7 +5633,7 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
           headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({
             expires_after: { anchor: "created_at", seconds: 60 },
-            session: { type: "realtime", model, instructions, reasoning: { effort: "low" }, audio: { output: { voice } } },
+            session: { type: "realtime", model, instructions, reasoning: { effort: "low" }, audio: { output: { voice } }, tools },
           }),
         });
         const text = await r.text();
