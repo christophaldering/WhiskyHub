@@ -5604,6 +5604,8 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
       if (!apiKey) return res.status(500).json({ message: "OPENAI_API_KEY not configured" });
 
       const instructions = "Du bist ein Testpartner. Antworte kurz und freundlich auf Deutsch.";
+      const VOICES = ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse", "marin", "cedar"];
+      const voice = VOICES.includes(req.body?.voice) ? req.body.voice : "cedar";
       const candidates = ["gpt-realtime-2", "gpt-realtime"];
       let lastErr = "";
       for (const model of candidates) {
@@ -5612,7 +5614,7 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
           headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({
             expires_after: { anchor: "created_at", seconds: 60 },
-            session: { type: "realtime", model, instructions, reasoning: { effort: "low" } },
+            session: { type: "realtime", model, instructions, reasoning: { effort: "low" }, audio: { output: { voice } } },
           }),
         });
         const text = await r.text();
@@ -5621,7 +5623,7 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
           const value = data?.value || data?.client_secret?.value;
           const expiresAt = data?.expires_at ?? data?.expiresAt ?? null;
           if (!value) { lastErr = `Kein ephemeraler Key in der Antwort: ${text.slice(0, 400)}`; continue; }
-          return res.json({ value, expiresAt, model });
+          return res.json({ value, expiresAt, model, voice });
         }
         lastErr = `${r.status} ${text.slice(0, 400)}`;
         if (model !== candidates[candidates.length - 1] && /model/i.test(text)) continue;

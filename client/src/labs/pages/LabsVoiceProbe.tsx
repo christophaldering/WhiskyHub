@@ -5,11 +5,14 @@ import { FONT, SP, RADIUS, TOUCH_MIN, LABS_THEME } from "@/labs/components/ratin
 
 type Status = "idle" | "token" | "connecting" | "connected" | "error";
 
+const VOICES = ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse", "marin", "cedar"];
+
 export default function LabsVoiceProbe() {
   const session = useSession();
   const [status, setStatus] = useState<Status>("idle");
   const [statusText, setStatusText] = useState("Bereit.");
   const [model, setModel] = useState<string>("");
+  const [voice, setVoice] = useState<string>("cedar");
   const [busy, setBusy] = useState(false);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const micRef = useRef<MediaStream | null>(null);
@@ -39,13 +42,14 @@ export default function LabsVoiceProbe() {
     setStatus("token");
     setStatusText("fordere Token an …");
     try {
-      const tokenRes = await fetch("/api/voice-probe/token", { method: "POST", headers: { ...pidHeaders() } });
+      const tokenRes = await fetch("/api/voice-probe/token", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ voice }) });
       const tokenText = await tokenRes.text();
       if (!tokenRes.ok) { fail(`Token ${tokenRes.status}: ${tokenText.slice(0, 300)}`); return; }
       let tokenData: any = {}; try { tokenData = JSON.parse(tokenText); } catch { /* noop */ }
       const EPHEMERAL_KEY = tokenData?.value;
       const usedModel = tokenData?.model || "gpt-realtime";
       setModel(usedModel);
+      if (tokenData?.voice) setVoice(tokenData.voice);
       if (!EPHEMERAL_KEY) { fail("Kein ephemeraler Key in der Token-Antwort."); return; }
 
       setStatus("connecting");
@@ -90,7 +94,7 @@ export default function LabsVoiceProbe() {
     } catch (e: any) {
       fail(e?.message || String(e), e);
     }
-  }, [fail]);
+  }, [fail, voice]);
 
   const disconnect = useCallback(() => {
     cleanup();
@@ -120,7 +124,25 @@ export default function LabsVoiceProbe() {
         data-testid="status-voice-probe"
         style={{ fontSize: 16, color: statusColor, padding: SP.md, border: `1px solid ${LABS_THEME.border}`, borderRadius: RADIUS.md, background: LABS_THEME.bgCard, minHeight: 56, display: "flex", alignItems: "center", lineHeight: 1.4 }}
       >
-        {statusText}{model ? `  ·  Modell: ${model}` : ""}
+        {statusText}{model ? `  ·  Modell: ${model}` : ""}{`  ·  Stimme: ${voice}`}
+      </div>
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: SP.sm }}>
+        {VOICES.map((v) => {
+          const active = voice === v;
+          const locked = status === "connected";
+          return (
+            <button
+              key={v}
+              data-testid={`chip-voice-${v}`}
+              onClick={() => setVoice(v)}
+              disabled={locked}
+              style={{ minHeight: 36, padding: `0 ${SP.md}px`, borderRadius: RADIUS.full, border: `1px solid ${active ? LABS_THEME.gold : LABS_THEME.border}`, background: active ? "rgba(212,168,71,0.14)" : "transparent", color: active ? LABS_THEME.gold : LABS_THEME.muted, fontFamily: FONT.body, fontSize: 14, cursor: locked ? "default" : "pointer", opacity: locked && !active ? 0.5 : 1 }}
+            >
+              {v}
+            </button>
+          );
+        })}
       </div>
 
       <div style={{ display: "flex", gap: SP.md }}>
