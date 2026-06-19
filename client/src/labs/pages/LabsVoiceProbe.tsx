@@ -84,7 +84,10 @@ export default function LabsVoiceProbe() {
       pc.addTrack(ms.getTracks()[0], ms);
 
       const dc = pc.createDataChannel("oai-events");
-      dc.onopen = () => console.log("[voice-probe] datachannel open");
+      dc.onopen = () => {
+        console.log("[voice-probe] datachannel open");
+        try { dc.send(JSON.stringify({ type: "response.create" })); } catch (err) { console.error("[voice-probe] greeting trigger failed", err); }
+      };
       dc.onmessage = (e) => {
         let msg: any = null;
         try { msg = JSON.parse(e.data); } catch { return; }

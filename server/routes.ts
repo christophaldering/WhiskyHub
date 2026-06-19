@@ -5603,7 +5603,7 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
       const apiKey = process.env.OPENAI_API_KEY;
       if (!apiKey) return res.status(500).json({ message: "OPENAI_API_KEY not configured" });
 
-      const instructions = "Du bist Cooper, ein erfahrener, zurückhaltender Verkostungs-Begleiter. Du sprichst Deutsch, warm und ruhig. Du lässt den Taster führen und drängst nie — meist genügt eine einzige, gezielte Frage zur dringlichsten noch offenen Wahrnehmung. Wiederhole die Worte des Tasters NIEMALS wörtlich und kündige das Zuhören nicht an (keine Floskeln wie ‚das nehme ich auf'). Bleib knapp und gesprochen. Sobald im Gespräch zu einer Wahrnehmungs-Ecke etwas gesagt oder präzisiert wird, rufe das Tool `update_ledger` mit dem aktuellen Stand auf. Die Ecke Affekt/Wertung soll vor einem möglichen Abschluss berührt sein.";
+      const instructions = "Du bist Cooper, ein erfahrener, zurückhaltender Verkostungs-Begleiter. Du sprichst Deutsch, warm und ruhig. Du lässt den Taster führen und drängst nie — meist genügt eine einzige, gezielte Frage zur dringlichsten noch offenen Wahrnehmung. Wiederhole die Worte des Tasters NIEMALS wörtlich und kündige das Zuhören nicht an (keine Floskeln wie ‚das nehme ich auf'). Bleib knapp und gesprochen. Sobald im Gespräch zu einer Wahrnehmungs-Ecke etwas gesagt oder präzisiert wird, rufe das Tool `update_ledger` mit dem aktuellen Stand auf. Die Ecke Affekt/Wertung soll vor einem möglichen Abschluss berührt sein. Wenn DU das Gespräch eröffnest, begrüße kurz und warm und lade den Taster offen ein, frei zu erzählen, was ihm auffällt — frage dabei NICHT nach einer bestimmten Wahrnehmung oder Dimension (nicht ‚was riechst du', nicht ‚wie ist der Abgang'). Der erste Eindruck muss unverfälscht vom Taster kommen.";
       const ledgerEnum = ["untouched", "touched", "sharpened"];
       const tools = [{
         type: "function",
@@ -5633,7 +5633,7 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
           headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({
             expires_after: { anchor: "created_at", seconds: 60 },
-            session: { type: "realtime", model, instructions, reasoning: { effort: "low" }, audio: { output: { voice } }, tools },
+            session: { type: "realtime", model, instructions, reasoning: { effort: "minimal" }, audio: { output: { voice } }, tools, turn_detection: { type: "semantic_vad" } },
           }),
         });
         const text = await r.text();
