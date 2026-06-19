@@ -5625,7 +5625,7 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
       }];
       const VOICES = ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse", "marin", "cedar"];
       const voice = VOICES.includes(req.body?.voice) ? req.body.voice : "cedar";
-      const candidates = ["gpt-realtime-2", "gpt-realtime"];
+      const candidates = ["gpt-realtime", "gpt-realtime-2"];
       let lastErr = "";
       for (const model of candidates) {
         const r = await fetch("https://api.openai.com/v1/realtime/client_secrets", {
@@ -5633,7 +5633,7 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
           headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({
             expires_after: { anchor: "created_at", seconds: 60 },
-            session: { type: "realtime", model, instructions, reasoning: { effort: "minimal" }, audio: { input: { turn_detection: { type: "server_vad", silence_duration_ms: 500, prefix_padding_ms: 300, threshold: 0.5 } }, output: { voice } }, tools },
+            session: { type: "realtime", model, instructions, audio: { input: { turn_detection: { type: "server_vad", silence_duration_ms: 400, prefix_padding_ms: 300, threshold: 0.5 } }, output: { voice } }, tools },
           }),
         });
         const text = await r.text();
