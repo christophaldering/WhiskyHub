@@ -1,0 +1,51 @@
+# HARD PROMPT — Cooper-Stimme zurückbauen + Text-Dialog beleben
+
+## ROLLE & GRENZEN
+CaskSense-Repo. Reihenfolge strikt: erst Step 0 (Diagnose, nichts ändern), dann Plan vorlegen und auf mein "GO" warten, DANN Code. KEINE Commits, KEIN git push, KEINE Schema-Änderung, KEIN drizzle-kit. Setze vor der ersten Änderung den Safety-Tag `pre-cooper-voice-teardown-2026-06-19`.
+
+## ZIEL
+Das (stille, halbfertige) TTS-Vorlese-Feature vollständig entfernen — grüne Wiese für einen späteren Realtime-Umbau. Der TEXT-Dialog von Cooper bleibt erhalten und wird zugleich von einem Fehler befreit: Cooper wiederholt die Antworten des Tasters wörtlich ("das wiederhole ich…", "das nehme ich auf", "du sagst also…") — das soll weg.
+
+## STEP 0 — DIAGNOSE (nichts ändern, berichten, dann auf GO warten)
+1. `grep -rn "useCooperVoice\|fetchCooperVoice\|autoSpeak\|/api/impression/voice" client/src server` — liste ALLE Fundstellen. Das ist die Rückbau-Karte.
+2. Bestätige diese erwarteten Stellen:
+   - Server: `app.post("/api/impression/voice", …)` in `server/routes.ts`.
+   - Datei `client/src/labs/components/rating/useCooperVoice.ts` existiert.
+   - `fetchCooperVoice` in `client/src/labs/components/rating/impressionApi.ts`.
+   - In `ImpressionCapture.tsx`: Import von `useCooperVoice`; Prop `autoSpeak`; `const voice = useCooperVoice()`; `const [muted,setMuted]`; ein `useEffect` mit `voice.stop()` auf `[phase]`; in `applyConverse` die Zeile mit `voice.speak`; der Mute-Toggle-Block (`{autoSpeak && (…)}`); der Lautsprecher-`<button>` im mentor-Zweig der `transcript.map`.
+   - `autoSpeak={true}` in `LabsSolo.tsx`.
+3. Bestätige den TURN-System-Prompt in `server/routes.ts` (enthält den Satz „Du SPIEGELST die letzte Antwort des Tasters …").
+4. Lege den Plan vor (Liste der Schnitte). Warte auf "GO".
+
+## ABSCHNITT A — STIMME ENTFERNEN (erst nach GO)
+- **`server/routes.ts`**: den kompletten `app.post("/api/impression/voice", …)`-Handler löschen (inkl. schließendem `});`).
+- **`client/.../useCooperVoice.ts`**: Datei löschen.
+- **`impressionApi.ts`**: Funktion `fetchCooperVoice` löschen. Sonst nichts in der Datei anfassen.
+- **`ImpressionCapture.tsx`** — alle Stimm-Spuren entfernen:
+  - Import `useCooperVoice` raus.
+  - Prop `autoSpeak` aus Interface UND aus dem Destructuring (`autoSpeak = false`) raus.
+  - `const voice = useCooperVoice();` und `const [muted, setMuted] = useState(false);` raus.
+  - Den `useEffect(() => { if (phase !== "converse") voice.stop(); }, [phase])` KOMPLETT raus.
+  - In `applyConverse` die Zeile `if (r.mentorTurn && autoSpeak && !muted) voice.speak(r.mentorTurn);` raus.
+  - Den gesamten Mute-Toggle-Block `{autoSpeak && ( … )}` am Anfang der `converse`-Phase raus.
+  - Im `transcript.map`, mentor-Zweig: den Lautsprecher-`<button type="button" onClick={() => voice.speak(turn.text)} …>` samt SVG raus. Der `<span>`(✦) + der mentor-Text-`<div>` bleiben unverändert.
+- **`LabsSolo.tsx`**: `autoSpeak={true}` an `<ImpressionCapture>` raus.
+- i18n-Keys `v2.cooperVoice*` dürfen bleiben (ungenutzt, harmlos) — nicht zwingend entfernen.
+- `server/replit_integrations/audio/client.ts` NICHT anfassen (die TTS-Funktionen lagen schon vorher ungenutzt dort; `speechToText` wird anderweitig gebraucht).
+
+## ABSCHNITT B — TEXT-DIALOG BELEBEN (erst nach GO)
+In `server/routes.ts`, im TURN-System-Prompt (`turnSystem`), den Spiegel-Satz ersetzen. Aktuell sinngemäß „Du SPIEGELST die letzte Antwort des Tasters, baust darauf auf und stellst genau EINE fokussierte Frage". NEU formulieren (Wortlaut anpassen, Sinn treffen):
+
+> „Greife auf, was der Taster gerade beschrieben hat, und baue natürlich darauf auf — aber WIEDERHOLE seine Worte NIEMALS wörtlich und kündige das Zuhören nicht an. VERBOTEN sind Füllfloskeln wie ‚das wiederhole ich', ‚das nehme ich auf', ‚du sagst also', ‚verstanden'. Steig stattdessen direkt in die Substanz: vertiefe einen Aspekt oder stelle genau EINE fokussierte Frage zur dringlichsten offenen Ecke. Klinge wie ein erfahrener Gegenüber am Tisch, nicht wie ein Protokoll."
+
+Sonst am Prompt nichts ändern. `mergeLedger`, `canClose`, Chips, Hard-Caps bleiben unangetastet.
+
+(Optional, nur falls die Antworten danach immer noch flach wirken — NICHT ohne Rücksprache ändern: `reasoning_effort` im TURN-Aufruf von `"minimal"` auf `"low"`. Erst am Glas bewerten.)
+
+## VERIFIKATION (am Ende, berichten)
+- [ ] `npm run build` / tsc grün.
+- [ ] `grep -rn "useCooperVoice\|fetchCooperVoice\|autoSpeak\|impression/voice" client/src server` → KEINE Treffer mehr (außer evtl. i18n-Keys).
+- [ ] `ImpressionCapture.tsx` rendert den Text-Dialog unverändert, nur ohne Lautsprecher-Icons und ohne Mute-Toggle.
+- [ ] Solo-Flow startet sauber, converse-Phase funktioniert wie zuvor (nur stumm).
+- [ ] Der TURN-Prompt enthält die neue Anti-Wiederholungs-Regel; der alte „SPIEGELST"-Satz ist weg.
+- [ ] **KEINE Commits. KEIN push. KEINE Schema-/Migrations-Änderung. KEIN drizzle-kit.** Nur die genannten Dateien. Bestätige das ausdrücklich.
