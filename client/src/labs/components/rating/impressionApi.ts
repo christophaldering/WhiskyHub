@@ -57,13 +57,3 @@ export async function proseImpression(args: { whiskyName?: string; intensity: In
   if (!res.ok) throw new Error(`prose failed: ${res.status}`);
   return res.json();
 }
-
-export async function fetchCooperVoice(text: string): Promise<ArrayBuffer> {
-  const res = await fetch("/api/impression/voice", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...pidHeaders() },
-    body: JSON.stringify({ text }),
-  });
-  if (!res.ok) throw new Error(`voice failed: ${res.status}`);
-  return res.arrayBuffer();
-}

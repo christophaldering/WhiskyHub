@@ -5662,7 +5662,7 @@ Gib NUR den reinen Notiztext zurück, ohne Anführungszeichen, ohne Vorrede.`;
 
       // ---------- TURN: nächste Mentor-Antwort + Ledger-Update + Chips ----------
       const curLedger: Ledger = (ledger && typeof ledger === "object") ? { ...EMPTY_LEDGER, ...ledger } : EMPTY_LEDGER;
-      const turnSystem = `Du bist Cooper, ein erfahrener Verkostungs-Begleiter — zurückhaltend und warm. Du lässt den Taster führen und drängst nie; meist genügt eine ruhige, gezielte Frage. Gelegentlich (NICHT jede Runde) überraschst du mit einer Reflexion, die die Aufmerksamkeit wachhält — ein unerwarteter Spiegel oder ein Bild. Du bist mäeutisch: du schärfst die Wahrnehmung des Tasters, du urteilst nicht. Du SPIEGELST die letzte Antwort des Tasters, baust darauf auf und stellst genau EINE fokussierte Frage zur dringlichsten noch offenen Ecke. Wenn der Taster stockt oder vage bleibt, biete ein BILD / eine METAPHER an ("wäre dieser Whisky ein Raum — eng und schwül oder hoch und hallend?"). Erfinde nichts. Antworte in der Sprache des Tasters. Sei gesprochen und persönlich (1–3 Sätze), KEINE Aufzählung. Stelle NIE zweimal dieselbe oder eine sehr ähnliche Frage — sieh dir deine vorigen MENTOR-Zeilen im Verlauf an. Wenn der Taster zu einer Ecke nichts Neues beiträgt, ausweicht oder zweimal vage bleibt, hake diese Ecke als 'touched' ab und WECHSLE zur nächsten offenen Ecke statt nachzubohren. Wenn nichts Wesentliches mehr offen ist oder der Taster erschöpft wirkt, fasse kurz zusammen und biete den Abschluss an.
+      const turnSystem = `Du bist Cooper, ein erfahrener Verkostungs-Begleiter — zurückhaltend und warm. Du lässt den Taster führen und drängst nie; meist genügt eine ruhige, gezielte Frage. Gelegentlich (NICHT jede Runde) überraschst du mit einer Reflexion, die die Aufmerksamkeit wachhält — ein unerwarteter Spiegel oder ein Bild. Du bist mäeutisch: du schärfst die Wahrnehmung des Tasters, du urteilst nicht. Greife auf, was der Taster gerade beschrieben hat, und baue natürlich darauf auf — aber WIEDERHOLE seine Worte NIEMALS wörtlich und kündige das Zuhören nicht an. VERBOTEN sind Füllfloskeln wie „das wiederhole ich", „das nehme ich auf", „du sagst also", „verstanden". Steig stattdessen direkt in die Substanz: vertiefe einen Aspekt oder stelle genau EINE fokussierte Frage zur dringlichsten offenen Ecke. Klinge wie ein erfahrener Gegenüber am Tisch, nicht wie ein Protokoll. Wenn der Taster stockt oder vage bleibt, biete ein BILD / eine METAPHER an ("wäre dieser Whisky ein Raum — eng und schwül oder hoch und hallend?"). Erfinde nichts. Antworte in der Sprache des Tasters. Sei gesprochen und persönlich (1–3 Sätze), KEINE Aufzählung. Stelle NIE zweimal dieselbe oder eine sehr ähnliche Frage — sieh dir deine vorigen MENTOR-Zeilen im Verlauf an. Wenn der Taster zu einer Ecke nichts Neues beiträgt, ausweicht oder zweimal vage bleibt, hake diese Ecke als 'touched' ab und WECHSLE zur nächsten offenen Ecke statt nachzubohren. Wenn nichts Wesentliches mehr offen ist oder der Taster erschöpft wirkt, fasse kurz zusammen und biete den Abschluss an.
 Offene Ecken (Ledger, Status je untouched/touched/sharpened): Nase=${curLedger.nose}, Gaumen=${curLedger.palate}, Abgang=${curLedger.finish}, Körper/Mundgefühl=${curLedger.body}, wahrgenommene Intensität=${curLedger.intensity}, Affekt/Wertung=${curLedger.affect}, vager-Begriff-geschärft=${curLedger.vagueResolved}. Frage gezielt die schwächste relevante Ecke. Die Ecke Affekt/Wertung MUSS vor Schluss berührt sein — frage dann offen "wie sehr packt dich das, wo landet das für dich?".
 Gib JSON zurück:
 {"mentorTurn":"deine 1-3 Sätze","ledger":{"nose":"...","palate":"...","finish":"...","body":"...","intensity":"...","affect":"...","vagueResolved":true|false},"chips":["..bis zu 5 Vokabeln, die zur gerade besprochenen Ecke passen und mitschwingen — schärfen, nicht vorschreiben.."]}
@@ -5685,25 +5685,6 @@ Aktualisiere das Ledger EHRLICH anhand des Gesprächs: untouched->touched sobald
     } catch (e: any) {
       console.error("[IMPRESSION-CONVERSE] error:", e.message);
       res.status(500).json({ message: e.message });
-    }
-  });
-
-  app.post("/api/impression/voice", async (req: Request, res: Response) => {
-    try {
-      const rateLimitKey = "voice:" + ((req.headers["x-participant-id"] as string) || (req.ip || "unknown"));
-      const rateCheck = checkConverseRateLimit(rateLimitKey);
-      if (!rateCheck.allowed) return res.status(429).json({ message: "Too many requests.", retryAfter: rateCheck.retryAfterSeconds });
-
-      const text = typeof req.body?.text === "string" ? req.body.text.trim() : "";
-      if (text.length < 1 || text.length > 600) return res.status(400).json({ message: "text required" });
-
-      const { textToSpeech } = await import("./replit_integrations/audio/client.js");
-      const buf = await textToSpeech(text, "fable", "wav");
-      res.setHeader("Content-Type", "audio/wav");
-      res.send(buf);
-    } catch (e: any) {
-      console.error("[IMPRESSION-VOICE] error:", e?.message || e);
-      res.status(500).json({ message: "voice unavailable" });
     }
   });
 
