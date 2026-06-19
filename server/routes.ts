@@ -5688,6 +5688,25 @@ Aktualisiere das Ledger EHRLICH anhand des Gesprächs: untouched->touched sobald
     }
   });
 
+  app.post("/api/impression/voice", async (req: Request, res: Response) => {
+    try {
+      const rateLimitKey = "voice:" + ((req.headers["x-participant-id"] as string) || (req.ip || "unknown"));
+      const rateCheck = checkConverseRateLimit(rateLimitKey);
+      if (!rateCheck.allowed) return res.status(429).json({ message: "Too many requests.", retryAfter: rateCheck.retryAfterSeconds });
+
+      const text = typeof req.body?.text === "string" ? req.body.text.trim() : "";
+      if (text.length < 1 || text.length > 600) return res.status(400).json({ message: "text required" });
+
+      const { textToSpeech } = await import("./replit_integrations/audio/client.js");
+      const buf = await textToSpeech(text, "fable", "wav");
+      res.setHeader("Content-Type", "audio/wav");
+      res.send(buf);
+    } catch (e: any) {
+      console.error("[IMPRESSION-VOICE] error:", e?.message || e);
+      res.status(500).json({ message: "voice unavailable" });
+    }
+  });
+
   app.post("/api/whisky/identify-online", async (req: Request, res: Response) => {
     const startMs = Date.now();
     try {

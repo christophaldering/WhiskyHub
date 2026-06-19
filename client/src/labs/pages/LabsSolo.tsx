@@ -901,6 +901,7 @@ export default function LabsSolo() {
             onSkip={handleImpressionSkip}
             onIdentifyFirst={handleIdentifyFirst}
             participantId={participantId}
+            autoSpeak={true}
           />
           ) : (
             <div className="labs-card" style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }} data-testid="solo-impression-choice">

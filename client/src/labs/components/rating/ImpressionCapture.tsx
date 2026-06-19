@@ -13,6 +13,7 @@ import {
   EMPTY_LEDGER,
 } from "./impressionApi";
 import { recordVocabularyEvents } from "@/lib/vocabulary";
+import { useCooperVoice } from "./useCooperVoice";
 
 interface ImpressionCaptureProps {
   whiskyName?: string;
@@ -20,6 +21,7 @@ interface ImpressionCaptureProps {
   onSkip: () => void;
   onIdentifyFirst?: () => void;
   participantId?: string;
+  autoSpeak?: boolean;
 }
 
 type Phase = "input" | "converse" | "handoff";
@@ -39,8 +41,10 @@ const LEDGER_SLOTS: { key: keyof Omit<Ledger, "vagueResolved">; label: string }[
   { key: "affect", label: "Wertung" },
 ];
 
-export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdentifyFirst, participantId }: ImpressionCaptureProps) {
+export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdentifyFirst, participantId, autoSpeak = false }: ImpressionCaptureProps) {
   const { t, i18n } = useTranslation();
+  const voice = useCooperVoice();
+  const [muted, setMuted] = useState(false);
 
   const [phase, setPhase] = useState<Phase>("input");
   const [text, setText] = useState("");
@@ -66,6 +70,10 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: "smooth" });
   }, [transcript, loading]);
 
+  useEffect(() => {
+    if (phase !== "converse") voice.stop();
+  }, [phase]);
+
   const vocabLocale = (): "de" | "en" => (i18n.language?.startsWith("de") ? "de" : "en");
   const canStart = text.trim().length >= 2 && !loading;
 
@@ -81,6 +89,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
   const applyConverse = (baseTurns: ConverseTurn[], r: ConverseResult) => {
     const withMentor: ConverseTurn[] = r.mentorTurn ? [...baseTurns, { role: "mentor", text: r.mentorTurn }] : baseTurns;
     setTranscript(withMentor);
+    if (r.mentorTurn && autoSpeak && !muted) voice.speak(r.mentorTurn);
     setLedger(r.ledger);
     setChips(r.chips || []);
     noteOffered(r.chips || []);
@@ -320,6 +329,28 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
 
       {phase === "converse" && (
         <>
+          {autoSpeak && (
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: SP.sm }}>
+              <button
+                type="button"
+                onClick={() => { const next = !muted; setMuted(next); if (next) voice.stop(); }}
+                style={{ display: "flex", alignItems: "center", gap: 6, minHeight: 32, padding: "4px 10px", background: "transparent", border: `1px solid ${LABS_THEME.border}`, borderRadius: RADIUS.md, color: muted ? LABS_THEME.muted : LABS_THEME.gold, fontFamily: FONT.body, fontSize: 12, cursor: "pointer" }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  {muted ? (
+                    <>
+                      <line x1="23" y1="9" x2="17" y2="15" />
+                      <line x1="17" y1="9" x2="23" y2="15" />
+                    </>
+                  ) : (
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                  )}
+                </svg>
+                {muted ? t("v2.cooperVoiceMuteOff", "Stimme an") : t("v2.cooperVoiceMuteOn", "Stimme aus")}
+              </button>
+            </div>
+          )}
           <LedgerConstellation />
 
           <div ref={threadRef} style={{ maxHeight: 320, overflowY: "auto", marginBottom: SP.md, paddingRight: 2 }}>
@@ -328,6 +359,19 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
                 <div key={i} style={{ display: "flex", gap: SP.sm, marginBottom: SP.md }}>
                   <span style={{ color: LABS_THEME.gold, fontSize: 12, lineHeight: "26px" }}>{"\u2726"}</span>
                   <div style={{ fontFamily: FONT.serif, fontSize: 17, color: LABS_THEME.text, lineHeight: 1.45 }}>{turn.text}</div>
+                  <button
+                    type="button"
+                    onClick={() => voice.speak(turn.text)}
+                    aria-label={t("v2.cooperVoicePlay", "Vorlesen")}
+                    title={t("v2.cooperVoicePlay", "Vorlesen")}
+                    style={{ marginLeft: "auto", flexShrink: 0, alignSelf: "flex-start", background: "transparent", border: "none", padding: 4, lineHeight: 0, cursor: "pointer", color: voice.speaking ? LABS_THEME.gold : LABS_THEME.muted }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                    </svg>
+                  </button>
                 </div>
               ) : (
                 <div key={i} style={{ display: "flex", justifyContent: "flex-end", marginBottom: SP.md }}>
