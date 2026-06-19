@@ -1,0 +1,78 @@
+# HARD PROMPT — Cooper Stimme (Stufe 1 von 2)
+
+## ROLLE & GRENZEN
+Du arbeitest am CaskSense-Repo. Halte dich strikt an die Reihenfolge: erst Step 0 (Diagnose), dann Plan vorlegen und auf mein "GO" warten, DANN erst Code. KEINE Commits, KEIN git push, KEINE Schema-Änderung, KEIN drizzle-kit. Setze vor der ersten Dateiänderung den Safety-Tag `pre-cooper-voice-2026-06-19`.
+
+## KONTEXT
+Cooper ist heute rein textbasiert. Ziel dieser Stufe: Coopers Antworten (mentorTurns) hörbar machen — über die BEREITS vorhandene, ungenutzte `textToSpeech()`-Funktion in `server/replit_integrations/audio/client.ts` (Modell `gpt-audio`, Stimme `fable`). Solo: Auto-Play. Live: nur auf Tap. Nordstern: NUR in der `converse`-Phase Ton — die `input`-Phase (freier erster Eindruck) und `handoff` bleiben STUMM.
+
+## STEP 0 — DIAGNOSE (vor jeder Änderung, nichts editieren)
+Berichte mir das Ergebnis, dann warte auf GO:
+1. Bestätige, dass `export async function textToSpeech(text, voice, format)` in `server/replit_integrations/audio/client.ts` existiert und WAV (Buffer) zurückgibt.
+2. **KRITISCHER VORAB-TEST:** Lege ein TEMPORÄRES Wegwerf-Skript an (z.B. `scripts/_tts_probe.ts`), das `textToSpeech("Ein kurzer Test.", "fable", "wav")` aufruft und nur `buffer.length` loggt. Führe es einmal aus. Ist die Länge > 0 → `gpt-audio` ist erreichbar. Bei 403/404/leer → STOPP, melde den Fehler, baue NICHTS. Lösche das Probe-Skript danach wieder.
+3. Bestätige den Andock-Punkt: `applyConverse` in `client/src/labs/components/rating/ImpressionCapture.tsx` (~Z.81) setzt jeden neuen `r.mentorTurn`.
+4. Bestätige die Einbindungen: Solo `client/src/labs/pages/LabsSolo.tsx` (~Z.898, `<ImpressionCapture>`) und Live `client/src/labs/pages/LabsLive.tsx` (~Z.633).
+5. Lege einen kurzen Plan vor (Dateien + geplante Edits). Warte auf mein "GO".
+
+## PLAN (erst nach GO ausführen)
+
+### Server — `server/routes.ts`
+Direkt NACH dem `app.post("/api/impression/converse", ...)`-Block einen neuen Endpoint:
+- `app.post("/api/impression/voice", async (req, res) => {...})`
+- Rate-Limit über die vorhandene Funktion, aber EIGENER Eimer-Key: `checkConverseRateLimit("voice:" + ((req.headers["x-participant-id"] as string) || req.ip || "unknown"))`. Bei `!allowed` → 429 mit `retryAfter`.
+- Body `{ text }`: trimmen, Guard `length >= 1 && length <= 600`, sonst 400 `{message:"text required"}`.
+- `const { textToSpeech } = await import("./replit_integrations/audio/client.js");`
+- `const buf = await textToSpeech(text, "fable", "wav");`
+- `res.setHeader("Content-Type", "audio/wav"); res.send(buf);`
+- try/catch → 500 `{message:"voice unavailable"}`. KEINE Persistenz, KEINE DB.
+
+### Client — `client/src/labs/components/rating/impressionApi.ts`
+Neue Funktion:
+```ts
+export async function fetchCooperVoice(text: string): Promise<ArrayBuffer> {
+  const res = await fetch("/api/impression/voice", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...pidHeaders() },
+    body: JSON.stringify({ text }),
+  });
+  if (!res.ok) throw new Error(`voice failed: ${res.status}`);
+  return res.arrayBuffer();
+}
+```
+
+### Client — NEU `client/src/labs/components/rating/useCooperVoice.ts`
+Ein gekapselter Hook. Hält einen lazy `AudioContext` (erst bei erstem `speak` erzeugen — iOS-Geste-konform, der erste Turn folgt immer auf einen Antwort-Tap). Exponiert:
+- `speak(text: string): Promise<void>` — bricht laufende Wiedergabe ab; `fetchCooperVoice` → `decodeAudioData` → `AudioBufferSourceNode` → `AnalyserNode` → `destination`; `source.start()`.
+- `speaking: boolean` (State).
+- `levelRef: React.MutableRefObject<number>` — während der Wiedergabe per `requestAnimationFrame` aus `analyser.getByteTimeDomainData` ein RMS-Wert 0..1 hineinschreiben (KEIN State, kein Re-Render-Sturm). **Dies ist die Schnittstelle für Stufe 2 (Schimmer) — schon jetzt anlegen, aber noch nicht visuell nutzen.**
+- `stop(): void` — Source stoppen, rAF abbrechen, `levelRef.current = 0`, `speaking=false`.
+- Fehler in `speak` schlucken (Stimme ist additiv; bei Ausfall bleibt der Text lesbar).
+
+### Client — `ImpressionCapture.tsx`
+- Neue Prop `autoSpeak?: boolean` (default `false`) im Interface + Destructuring.
+- `const voice = useCooperVoice();`
+- Lokaler State `const [muted, setMuted] = useState(false);`
+- In `applyConverse`: nach dem Setzen des Transcripts —
+  `if (r.mentorTurn && autoSpeak && !muted) voice.speak(r.mentorTurn);`
+- Im mentorTurn-Render (in der `transcript.map`, im `role === "mentor"`-Zweig): kleiner Lautsprecher-Button rechts neben dem Text → `onClick={() => voice.speak(turn.text)}`, aktiver Zustand wenn `voice.speaking`. Styling über `LABS_THEME`/`FONT`/`TOUCH_MIN`, kein Emoji — SVG- oder Unicode-Lautsprecher.
+- Mute-Toggle: NUR rendern wenn `autoSpeak` — kleines Icon oben in der converse-Phase, schaltet `muted`; bei Aktivierung `voice.stop()`.
+- **Nordstern-Guard:** In dem `useEffect`, der Phasen beobachtet (oder neu anlegen): wenn `phase !== "converse"` → `voice.stop()`. So bleibt `input` & `handoff` garantiert stumm.
+
+### Client — `LabsSolo.tsx`
+Am `<ImpressionCapture ... />` (~Z.898) eine Zeile ergänzen: `autoSpeak={true}`. Sonst nichts.
+
+### Client — `LabsLive.tsx`
+NICHTS ändern — `autoSpeak` bleibt default `false` → kein Auto-Play am Tisch, nur der Tap-Button. (Verifizieren, dass es so bleibt.)
+
+### i18n (DE-Keys, EN via Fallback)
+`v2.cooperVoicePlay` = "Vorlesen", `v2.cooperVoiceMuteOn` = "Stimme aus", `v2.cooperVoiceMuteOff` = "Stimme an".
+
+## VERIFIKATION (am Ende ausführen & berichten)
+- [ ] `npm run build` / tsc grün.
+- [ ] `POST /api/impression/voice` mit `{text:"Test"}` → 200, `Content-Type: audio/wav`, Body > 0 Bytes. Leerer Text → 400.
+- [ ] Solo: Cooper-Antwort wird automatisch gesprochen; Mute-Toggle stoppt Auto-Play; Tap-Button spielt erneut ab.
+- [ ] Live: KEIN Auto-Play; Tap-Button funktioniert.
+- [ ] `input`-Phase und `handoff`-Phase erzeugen KEINEN Ton; Phasenwechsel stoppt laufende Wiedergabe.
+- [ ] `levelRef` wird während `speaking` aktualisiert (kurz per console.log prüfen, dann log entfernen) — noch nicht visuell genutzt.
+- [ ] Probe-Skript aus Step 0 gelöscht.
+- [ ] **KEINE Commits. KEIN git push. KEINE Schema-/Migrations-Änderung. KEIN drizzle-kit.** Nur die genannten Dateien angefasst. Bestätige das ausdrücklich.
