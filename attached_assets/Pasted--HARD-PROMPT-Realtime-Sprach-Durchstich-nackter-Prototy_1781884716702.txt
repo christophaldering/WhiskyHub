@@ -1,0 +1,46 @@
+# HARD PROMPT — Realtime-Sprach-Durchstich (nackter Prototyp, Web-Teil)
+
+## ROLLE & GRENZEN
+CaskSense-Repo. Erst Step 0 (Diagnose, nichts ändern), Plan vorlegen, auf mein "GO" warten, DANN Code. KEINE Commits, KEIN push, KEINE Schema-/Migrations-Änderung, KEIN drizzle-kit. Safety-Tag vor erster Änderung: `pre-voice-probe-2026-06-19`.
+
+## ZIEL
+Ein isolierter, NUR für Admins sichtbarer Test-Screen `/labs/voice-probe`, der ein freihändiges Echtzeit-Sprachgespräch mit OpenAIs Realtime-Modell aufbaut — OHNE jede Cooper-Logik (kein Ledger, keine Chips, keine Persona, kein Bezug zum Eindruck-Flow). Zweck: verifizieren, dass Token-Erzeugung, Modell-Zugang und der WebRTC-Handshake funktionieren. Fehler müssen SICHTBAR sein (Status-Text + console), niemals still geschluckt.
+
+## STEP 0 — DIAGNOSE (nichts ändern, berichten, auf GO warten)
+1. Bestätige, dass `process.env.OPENAI_API_KEY` im Code referenzierbar ist (z.B. wie in `server/lib/embeddings.ts`). NICHT den Proxy `AI_INTEGRATIONS_OPENAI_API_KEY` verwenden — Realtime braucht den direkten Key.
+2. Finde das Muster für Admin-Check (z.B. `isAdmin`-Helper in `server/ai-client.ts`) und für `requireAuth`.
+3. Finde, wie Labs-Routen registriert werden (Router/Routing in `client/src/labs`), um `/labs/voice-probe` admin-only einzuhängen.
+4. Plan vorlegen. Warte auf "GO".
+
+## SERVER — `server/routes.ts`: Token-Endpoint
+Neuer Endpoint `app.post("/api/voice-probe/token", …)`:
+- `requireAuth` + Admin-Check; Nicht-Admin → 403.
+- Erzeugt ein ephemerales Client-Secret über die Realtime-GA-API:
+  `POST https://api.openai.com/v1/realtime/client_secrets` mit Header `Authorization: Bearer ${process.env.OPENAI_API_KEY}` und `Content-Type: application/json`. **KEIN** `OpenAI-Beta`-Header (das ist GA, nicht Beta).
+  - Session-Config im Body: `session.type = "realtime"`, `model = "gpt-realtime-2"`, eine knappe Test-Instruktion (z.B. „Du bist ein Testpartner. Antworte kurz und freundlich auf Deutsch."), `reasoning.effort = "low"`.
+  - **Die exakte Body-Struktur an der offiziellen Doku verifizieren:** `https://developers.openai.com/api/docs/guides/realtime-webrtc` und `.../client_secrets/methods/create`. Setze `expires_after` auf ~60 s.
+  - Falls `gpt-realtime-2` einen „model not found" wirft, in der Diagnose melden — Fallback `gpt-realtime`.
+- Antworte mit `{ value: <ephemeral key "ek_...">, expiresAt, model }`. KEINE Persistenz, keine DB.
+- Eigener Rate-Limit-Eimer (z.B. `checkConverseRateLimit("voiceprobe:" + key)`).
+- try/catch → 500 mit der echten Fehlermeldung im Body (für die Diagnose).
+
+## CLIENT — `/labs/voice-probe` (admin-only)
+Neue Seite mit einem Knopf „Verbinden" + großer Status-Zeile (`idle / fordere Token an / verbinde / verbunden / Fehler: <text>`). Styling über `LABS_THEME`/`FONT` (dunkel ok, es ist ein Test). Ablauf beim Klick:
+1. `fetch("/api/voice-probe/token", { method:"POST", headers:{...pidHeaders()} })` → `EPHEMERAL_KEY`.
+2. `const pc = new RTCPeerConnection();`
+3. Remote-Audio: `<audio autoplay>` erzeugen, `pc.ontrack = e => audioEl.srcObject = e.streams[0]`.
+4. Mikro: `const ms = await navigator.mediaDevices.getUserMedia({ audio:true }); pc.addTrack(ms.getTracks()[0]);`
+5. `const dc = pc.createDataChannel("oai-events");` (Events nur in console loggen, mehr nicht).
+6. `const offer = await pc.createOffer(); await pc.setLocalDescription(offer);`
+7. SDP posten: `POST https://api.openai.com/v1/realtime/calls?model=gpt-realtime-2` mit `Authorization: Bearer ${EPHEMERAL_KEY}`, `Content-Type: application/sdp`, body = `offer.sdp`. Antwort (SDP) → `await pc.setRemoteDescription({ type:"answer", sdp:<antwort> })`.
+8. `pc.onconnectionstatechange` → Status-Zeile aktualisieren; bei `"connected"` „verbunden — sprich jetzt".
+- JEDER Fehler (Token, getUserMedia, SDP, ICE) landet SICHTBAR in der Status-Zeile UND in console.error. Nichts still wegfangen.
+- Ein „Trennen"-Knopf, der `pc.close()` und die Mic-Tracks stoppt.
+- Route admin-only registrieren (nicht in der normalen Navigation verlinken — direkter Aufruf genügt).
+
+## VERIFIKATION (berichten)
+- [ ] `npm run build` / tsc grün.
+- [ ] Nach Deploy im **Desktop-Browser** auf casksense.com (als Admin eingeloggt): `/labs/voice-probe` → „Verbinden" → Mikro-Erlaubnis-Dialog → Status „verbunden" → man spricht, das Modell antwortet hörbar.
+- [ ] Token-Endpoint von Nicht-Admin → 403.
+- [ ] Bei Fehler steht die echte Ursache in der Status-Zeile (nicht still).
+- [ ] KEIN Bezug zum Eindruck-/Cooper-Flow angefasst. KEINE Commits, KEIN push, KEINE Schema-/drizzle-Änderung. Ausdrücklich bestätigen.
