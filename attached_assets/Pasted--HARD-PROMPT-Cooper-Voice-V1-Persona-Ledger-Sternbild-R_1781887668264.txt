@@ -1,0 +1,32 @@
+# HARD PROMPT — Cooper-Voice V1: Persona + Ledger-Sternbild
+
+## ROLLE & GRENZEN
+CaskSense-Repo. Step 0 kurz, Plan vorlegen, auf "GO" warten, DANN Code. KEINE Commits, KEIN push, KEINE Schema-/Migrations-Änderung, KEIN drizzle-kit. Safety-Tag: `pre-cooper-voice-v1-2026-06-19`.
+
+## ZIEL
+Den bestehenden Admin-Screen `/labs/voice-probe` zum echten Cooper-Voice-Test ausbauen: Cooper spricht mit seiner Persona (zurückhaltend, mäeutisch), und während man frei mit ihm redet, füllt sich ein sichtbares Ledger-Sternbild live — gespeist durch ein `update_ledger`-Tool, das Cooper über den Data-Channel aufruft. NUR Ledger (Chips = V2, Abschluss = V3, Solo-Integration + Nordstern später). Stimmenwahl + cedar bleiben. Fehler weiterhin sichtbar.
+
+## STEP 0 (kurz, dann GO)
+Bestätige: `/api/voice-probe/token` (Server) und `LabsVoiceProbe.tsx` (Client) sind der aktuelle Stand; der Data-Channel `oai-events` wird im Client schon angelegt (`dc`). Plan vorlegen.
+
+## SERVER — `/api/voice-probe/token` (session-config erweitern)
+1. **Persona als `instructions`** (ersetzt die Test-Instruktion):
+   > „Du bist Cooper, ein erfahrener, zurückhaltender Verkostungs-Begleiter. Du sprichst Deutsch, warm und ruhig. Du lässt den Taster führen und drängst nie — meist genügt eine einzige, gezielte Frage zur dringlichsten noch offenen Wahrnehmung. Wiederhole die Worte des Tasters NIEMALS wörtlich und kündige das Zuhören nicht an (keine Floskeln wie ‚das nehme ich auf'). Bleib knapp und gesprochen. Sobald im Gespräch zu einer Wahrnehmungs-Ecke etwas gesagt oder präzisiert wird, rufe das Tool `update_ledger` mit dem aktuellen Stand auf. Die Ecke Affekt/Wertung soll vor einem möglichen Abschluss berührt sein."
+2. **Tool `update_ledger`** in `session.tools` (Format `{ type:"function", name, description, parameters }`):
+   - parameters (JSON-Schema, alle optional): `nose, palate, finish, body, intensity, affect` je `enum:["untouched","touched","sharpened"]`; `vagueResolved: boolean`.
+   - description: „Ehrlicher Schärfungs-Status jeder Wahrnehmungs-Ecke. untouched→touched sobald etwas gesagt wurde; touched→sharpened sobald mit konkreten Begriffen präzisiert."
+3. Exakte session/tools-Struktur an `developers.openai.com/api/docs/guides/realtime-conversations#function-calling` verifizieren. `audio.output.voice` (cedar/Whitelist) bleibt.
+
+## CLIENT — `LabsVoiceProbe.tsx`
+1. **Ledger-State**: `{ nose, palate, finish, body, intensity, affect, vagueResolved }`, initial alle `"untouched"` / `false`. Bei jedem neuen Connect zurücksetzen.
+2. **Tool-Calls empfangen** in `dc.onmessage`: JSON parsen; bei `msg.type === "response.function_call_arguments.done"` und `msg.name === "update_ledger"` → `JSON.parse(msg.arguments)` → Ledger-State mergen (nur gelieferte Felder). Den call ggf. quittieren mit einem `conversation.item.create`-Event (`type:"function_call_output", call_id: msg.call_id, output: JSON.stringify({ok:true})`) — **OHNE** anschließendes `response.create`, damit Coopers Redefluss NICHT unterbrochen wird.
+3. **Sternbild rendern** (über den Knöpfen, nur sichtbar wenn verbunden): sechs Punkte mit Labels Nase/Gaumen/Abgang/Körper/Intensität/Wertung. Farbe je Status: untouched → `LABS_THEME.faint`, touched → `LABS_THEME.muted`, sharpened → `LABS_THEME.gold`. Sanfter Übergang. KEIN Fortschrittsbalken (Nordstern-Ästhetik: ein wachsendes Sternbild, kein Score).
+4. Tool-Call-Events zusätzlich in `console.log` (Diagnose).
+
+## VERIFIKATION (berichten)
+- [ ] Build grün.
+- [ ] `/labs/voice-probe` (Admin, Browser) → Verbinden → Cooper meldet sich ruhig auf Deutsch und stellt EINE Frage (keine Wiederholungs-Floskeln).
+- [ ] Beim Reden über Nase/Gaumen/… füllt sich das Sternbild live (Punkte wechseln untouched→touched→sharpened); Tool-Calls erscheinen in der console.
+- [ ] Coopers Reden stockt durch die Tool-Calls NICHT.
+- [ ] Stimme weiterhin cedar; Fehler weiterhin sichtbar.
+- [ ] KEIN Commit/push, keine Schema-/drizzle-Änderung. Ausdrücklich bestätigen.
