@@ -130,6 +130,7 @@ const LabsCommunity = lazy(() => import("@/labs/pages/LabsCommunity"));
 const LabsCommunityDetail = lazy(() => import("@/labs/pages/LabsCommunityDetail"));
 const LabsMakingOf = lazy(() => import("@/labs/pages/LabsMakingOf"));
 const LabsAdmin = lazy(() => import("@/labs/pages/LabsAdmin"));
+const LabsVoiceProbe = lazy(() => import("@/labs/pages/LabsVoiceProbe"));
 const LabsOnboarding = lazy(() => import("@/labs/pages/LabsOnboarding"));
 const LabsResultsPresent = lazy(() => import("@/labs/pages/LabsResultsPresent"));
 const GuestWelcome = lazy(() => import("@/pages/guest-welcome"));
@@ -795,6 +796,7 @@ function Router() {
               <Route path="/labs/community" component={LabsCommunity} />
               <Route path="/labs/making-of" component={LabsMakingOf} />
               <Route path="/labs/admin" component={LabsAdmin} />
+              <Route path="/labs/voice-probe" component={LabsVoiceProbe} />
               <Route path="/labs/home" component={LabsHome} />
               <Route>{() => (
                 <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>

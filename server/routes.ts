@@ -5590,6 +5590,49 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
     return [l.nose, l.palate, l.finish, l.body].every((s) => slotRank(s) >= 1) && slotRank(l.affect) >= 1 && l.vagueResolved; // neugierig (default)
   }
 
+  // ===== VOICE PROBE (admin-only realtime-sprach-durchstich, isoliert) =====
+  app.post("/api/voice-probe/token", async (req: Request, res: Response) => {
+    try {
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const rate = checkConverseRateLimit("voiceprobe:" + auth.participant.id);
+      if (!rate.allowed) return res.status(429).json({ message: "Too many requests.", retryAfter: rate.retryAfterSeconds });
+
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) return res.status(500).json({ message: "OPENAI_API_KEY not configured" });
+
+      const instructions = "Du bist ein Testpartner. Antworte kurz und freundlich auf Deutsch.";
+      const candidates = ["gpt-realtime-2", "gpt-realtime"];
+      let lastErr = "";
+      for (const model of candidates) {
+        const r = await fetch("https://api.openai.com/v1/realtime/client_secrets", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            expires_after: { anchor: "created_at", seconds: 60 },
+            session: { type: "realtime", model, instructions, reasoning: { effort: "low" } },
+          }),
+        });
+        const text = await r.text();
+        if (r.ok) {
+          let data: any = {}; try { data = JSON.parse(text); } catch { data = {}; }
+          const value = data?.value || data?.client_secret?.value;
+          const expiresAt = data?.expires_at ?? data?.expiresAt ?? null;
+          if (!value) { lastErr = `Kein ephemeraler Key in der Antwort: ${text.slice(0, 400)}`; continue; }
+          return res.json({ value, expiresAt, model });
+        }
+        lastErr = `${r.status} ${text.slice(0, 400)}`;
+        if (model !== candidates[candidates.length - 1] && /model/i.test(text)) continue;
+        break;
+      }
+      return res.status(500).json({ message: `Realtime-Token fehlgeschlagen: ${lastErr}` });
+    } catch (e: any) {
+      return res.status(500).json({ message: e?.message || String(e) });
+    }
+  });
+
   app.post("/api/impression/converse", async (req: Request, res: Response) => {
     const startMs = Date.now();
     try {
