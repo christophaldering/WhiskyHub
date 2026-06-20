@@ -6,7 +6,7 @@ const CORNER_LABELS: Record<(typeof LEDGER_CORNERS)[number], string> = { nose: "
 
 export default function LabsVoiceProbe() {
   const session = useSession();
-  const { status, statusText, model, voice, setVoice, mode, setMode, ledger, busy, connect, disconnect } = useCooperVoice();
+  const { status, statusText, model, voice, setVoice, mode, setMode, ledger, transcript, busy, connect, disconnect } = useCooperVoice();
 
   if (session.role !== "admin") {
     return (
@@ -83,6 +83,20 @@ export default function LabsVoiceProbe() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {transcript.length > 0 && (
+        <div
+          data-testid="transcript-debug"
+          style={{ display: "flex", flexDirection: "column", gap: SP.xs, maxHeight: 220, overflowY: "auto", padding: SP.md, border: `1px dashed ${LABS_THEME.border}`, borderRadius: RADIUS.md, background: LABS_THEME.bgCard }}
+        >
+          <div style={{ fontFamily: FONT.body, fontSize: 11, color: LABS_THEME.faint, textTransform: "uppercase", letterSpacing: 1, marginBottom: SP.xs }}>Transkript (Test)</div>
+          {transcript.map((t, i) => (
+            <div key={i} data-testid={`transcript-line-${i}`} style={{ fontFamily: FONT.body, fontSize: 13, lineHeight: 1.5, color: t.role === "mentor" ? LABS_THEME.gold : LABS_THEME.muted }}>
+              <span style={{ fontWeight: 600 }}>{t.role === "mentor" ? "Cooper:" : "Du:"}</span> {t.text}
+            </div>
+          ))}
         </div>
       )}
 

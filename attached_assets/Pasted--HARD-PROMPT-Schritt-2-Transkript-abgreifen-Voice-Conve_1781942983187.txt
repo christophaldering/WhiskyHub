@@ -1,0 +1,32 @@
+# HARD PROMPT — Schritt 2: Transkript abgreifen (Voice → ConverseTurn[])
+
+GRENZEN: Drei Dateien — `server/routes.ts` (Token-Endpoint), `client/src/labs/components/rating/useCooperVoice.ts`, `client/src/labs/pages/LabsVoiceProbe.tsx`. Kein Commit/push, keine Schema-Änderung. Solo-Flow NICHT anfassen. Safety-Tag `pre-cooper-transcript-2026-06-20`.
+
+## STEP 0
+Token-Endpoint `/api/voice-probe/token` und den `dc.onmessage`-Block im Hook (Z.91–119) ansehen, Plan nennen, dann ausführen.
+
+## 1. SERVER — Transkription aktivieren
+In der session-config unter `audio.input` zusätzlich ergänzen (NEBEN turn_detection, nicht ersetzen):
+`transcription: { model: "gpt-4o-mini-transcribe", language: "de" }`
+→ also `audio: { input: { turn_detection: {…}, transcription: { model: "gpt-4o-mini-transcribe", language: "de" } }, output: { voice } }`
+Falls die API das Modell ablehnt (kein Transkript / Fehler): Fallback `whisper-1`, dann `gpt-4o-transcribe`.
+
+## 2. HOOK `useCooperVoice.ts` — Transkript sammeln
+- `ConverseTurn`-Typ aus `./impressionApi` importieren (role: "taster" | "mentor"; text: string). Falls Import-Probleme: lokal kompatiblen Typ definieren.
+- Neuer State: `const [transcript, setTranscript] = useState<ConverseTurn[]>([]);`
+- In `connect()` direkt bei `setLedger(EMPTY_LEDGER)` auch `setTranscript([])` (Reset pro Session).
+- In `dc.onmessage` zwei Fälle ergänzen (zusätzlich zu den bestehenden):
+  - `if (msg?.type === "conversation.item.input_audio_transcription.completed" && msg?.transcript) { const t = String(msg.transcript).trim(); if (t) setTranscript(prev => [...prev, { role: "taster", text: t }]); }`
+  - `if (msg?.type === "response.audio_transcript.done" && msg?.transcript) { const t = String(msg.transcript).trim(); if (t) setTranscript(prev => [...prev, { role: "mentor", text: t }]); }`
+- Rückgabe-Objekt um `transcript` erweitern.
+- HINWEIS (nicht fixen, nur kennen): Input-Transkripte können minimal verzögert eintreffen → Reihenfolge gelegentlich leicht unscharf. Für finalize/prose unkritisch, verfeinern wir später bei Bedarf.
+
+## 3. SCREEN `LabsVoiceProbe.tsx` — Transkript sichtbar machen (Verifikation)
+- `transcript` aus dem Hook destrukturieren.
+- Unter dem Sternbild eine einfache Debug-Liste rendern (nur wenn `transcript.length > 0`): pro Eintrag eine Zeile, „Du:" (taster) bzw. „Cooper:" (mentor) als Präfix, gold/muted unterscheidbar, theme-konform (FONT/LABS_THEME). Scrollbar/kompakt, klar als Test-Anzeige erkennbar.
+
+## VERIFIKATION
+- [ ] Build grün, kein Token-Fehler.
+- [ ] `/labs/voice-probe` verbinden, sprechen → DEIN Gesagtes erscheint als „Du:"-Zeile, Coopers Antwort als „Cooper:"-Zeile; Liste wächst mit dem Gespräch.
+- [ ] Sternbild, Begrüßung, Modus/Stimme, kein-Hänger-Verhalten unverändert.
+- [ ] Kein Commit/push, keine Schema-Änderung. Bestätigen.

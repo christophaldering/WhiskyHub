@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { pidHeaders } from "@/lib/api";
+import type { ConverseTurn } from "./impressionApi";
 
 type Status = "idle" | "token" | "connecting" | "connected" | "error";
 
@@ -17,6 +18,7 @@ export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fl
   const [voice, setVoice] = useState<string>(opts?.initialVoice ?? "cedar");
   const [mode, setMode] = useState<"fluessig" | "tiefsinnig">(opts?.initialMode ?? "tiefsinnig");
   const [ledger, setLedger] = useState<Ledger>(EMPTY_LEDGER);
+  const [transcript, setTranscript] = useState<ConverseTurn[]>([]);
   const [busy, setBusy] = useState(false);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const micRef = useRef<MediaStream | null>(null);
@@ -46,6 +48,7 @@ export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fl
     setStatus("token");
     setStatusText("fordere Token an …");
     setLedger(EMPTY_LEDGER);
+    setTranscript([]);
     try {
       const tokenRes = await fetch("/api/voice-probe/token", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ voice, mode }) });
       const tokenText = await tokenRes.text();
@@ -99,6 +102,8 @@ export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fl
             try { dc.send(JSON.stringify({ type: "response.create" })); } catch (err) { console.error("[voice-probe] pending response trigger failed", err); }
           }
         }
+        if (msg?.type === "conversation.item.input_audio_transcription.completed" && msg?.transcript) { const t = String(msg.transcript).trim(); if (t) setTranscript((prev) => [...prev, { role: "taster", text: t }]); }
+        if (msg?.type === "response.audio_transcript.done" && msg?.transcript) { const t = String(msg.transcript).trim(); if (t) setTranscript((prev) => [...prev, { role: "mentor", text: t }]); }
         if (msg?.type === "response.function_call_arguments.done" && msg?.name === "update_ledger") {
           console.log("[voice-probe] tool-call update_ledger", msg.arguments);
           let args: any = {};
@@ -142,5 +147,5 @@ export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fl
     setBusy(false);
   }, [cleanup]);
 
-  return { status, statusText, model, voice, setVoice, mode, setMode, ledger, busy, connect, disconnect };
+  return { status, statusText, model, voice, setVoice, mode, setMode, ledger, transcript, busy, connect, disconnect };
 }

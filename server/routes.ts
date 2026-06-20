@@ -5630,7 +5630,7 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
       const silenceMs = mode === "tiefsinnig" ? 500 : 400;
       let lastErr = "";
       for (const model of candidates) {
-        const session: any = { type: "realtime", model, instructions, audio: { input: { turn_detection: { type: "server_vad", silence_duration_ms: silenceMs, prefix_padding_ms: 300, threshold: 0.5 } }, output: { voice } }, tools };
+        const session: any = { type: "realtime", model, instructions, audio: { input: { turn_detection: { type: "server_vad", silence_duration_ms: silenceMs, prefix_padding_ms: 300, threshold: 0.5 }, transcription: { model: "gpt-4o-mini-transcribe", language: "de" } }, output: { voice } }, tools };
         if (mode === "tiefsinnig") session.reasoning = { effort: "low" };
         const r = await fetch("https://api.openai.com/v1/realtime/client_secrets", {
           method: "POST",
