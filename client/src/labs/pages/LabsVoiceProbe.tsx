@@ -83,6 +83,8 @@ export default function LabsVoiceProbe() {
       micRef.current = ms;
       pc.addTrack(ms.getTracks()[0], ms);
 
+      let responseActive = false;
+      let pendingToolResponse = false;
       const dc = pc.createDataChannel("oai-events");
       dc.onopen = () => {
         console.log("[voice-probe] datachannel open");
@@ -91,6 +93,14 @@ export default function LabsVoiceProbe() {
       dc.onmessage = (e) => {
         let msg: any = null;
         try { msg = JSON.parse(e.data); } catch { return; }
+        if (msg?.type === "response.created") { responseActive = true; }
+        if (msg?.type === "response.done") {
+          responseActive = false;
+          if (pendingToolResponse) {
+            pendingToolResponse = false;
+            try { dc.send(JSON.stringify({ type: "response.create" })); } catch (err) { console.error("[voice-probe] pending response trigger failed", err); }
+          }
+        }
         if (msg?.type === "response.function_call_arguments.done" && msg?.name === "update_ledger") {
           console.log("[voice-probe] tool-call update_ledger", msg.arguments);
           let args: any = {};
@@ -104,6 +114,9 @@ export default function LabsVoiceProbe() {
           try {
             dc.send(JSON.stringify({ type: "conversation.item.create", item: { type: "function_call_output", call_id: msg.call_id, output: JSON.stringify({ ok: true }) } }));
           } catch (err) { console.error("[voice-probe] ledger-ack failed", err); }
+          if (responseActive) { pendingToolResponse = true; } else {
+            try { dc.send(JSON.stringify({ type: "response.create" })); } catch (err) { console.error("[voice-probe] tool response trigger failed", err); }
+          }
         }
       };
 
