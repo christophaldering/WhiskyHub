@@ -1,0 +1,37 @@
+# HARD PROMPT — Whisky-Bearbeitung (Foto + Details) auch im gestarteten Tasting
+
+GRENZEN: Nur `client/src/labs/pages/LabsTastingDetail.tsx`. Kein Commit/push, keine Schema-Änderung. Safety-Tag `pre-tasting-edit-live-2026-06-20`.
+
+## STEP 0
+- Die Gates identifizieren, die das BEARBEITEN einzelner Whiskys steuern: das Edit-Formular (~Z.1424, `isHost && isDraft && editingWhiskyId === wid`) und den „Bearbeiten"-Knopf pro Whisky-Zeile (~Z.1472/1491). NUR diese betreffen uns.
+- NICHT anfassen: Gates für Tasting-Meta (~Z.889/1005), für Whisky HINZUFÜGEN/ENTFERNEN (showAddWhisky ~Z.1376) und Reveal/Blind-Logik. Lineup-Struktur bleibt Draft-gebunden; nur das Bearbeiten bestehender Whiskys wird geöffnet.
+- Bestätigen, dass `WhiskyImageUpload` aus `@/components/WhiskyImageUpload` importierbar ist und `queryClient` im Scope verfügbar ist (für Invalidierung). Plan nennen.
+
+## TEIL A — Gating lockern (Whisky-Bearbeitung)
+Bei den in Step 0 identifizierten Whisky-EDIT-Gates `isDraft` entfernen, sodass nur noch `isHost` zählt:
+- Edit-Formular: `isHost && editingWhiskyId === wid` (statt `isHost && isDraft && …`).
+- „Bearbeiten"-Knopf der Whisky-Zeile: `isHost` (statt `isHost && isDraft`).
+So erscheint die Whisky-Bearbeitung für den Host in JEDEM Status (draft, open/live, reveal). Andere Gates unverändert.
+
+## TEIL B — Foto-Wechsel in die Edit-Zeile
+1. Import: `import WhiskyImageUpload from "@/components/WhiskyImageUpload";`
+2. Die Whisky-Edit-Komponente (mit name/distillery/country/age/abv-Inputs) um einen optionalen Prop `onImageChanged?: () => void` erweitern.
+3. GANZ OBEN in der Edit-Zeile (vor dem Namens-Input) einen Foto-Block einsetzen:
+```tsx
+<WhiskyImageUpload
+  whiskyId={whisky.id}
+  imageUrl={(whisky.imageUrl as string | null) ?? null}
+  onImageUploaded={() => onImageChanged?.()}
+  onImageDeleted={() => onImageChanged?.()}
+/>
+```
+4. An der Render-Stelle der Edit-Komponente (~Z.1434, wo `onSave={(data) => updateWhiskyMutation.mutate(...)}` steht) den neuen Prop verdrahten: `onImageChanged={() => queryClient.invalidateQueries({ queryKey: [...] })}` — denselben Query-Key benutzen, den `updateWhiskyMutation` in onSuccess invalidiert (Tasting-Detail neu laden, damit das neue Foto erscheint).
+
+## VERIFIKATION
+- [ ] Build grün.
+- [ ] Gestartetes Tasting (Status „open"), als Host: pro Whisky erscheint „Bearbeiten"; das Formular zeigt Foto-Upload + Name/Destillerie/Land/Alter/ABV.
+- [ ] Foto wechseln (Kamera/Galerie) → neues Bild erscheint nach kurzem Reload in der Liste; altes Bild bleibt serverseitig in der Galerie erhalten.
+- [ ] Text-Details ändern + speichern funktioniert im Live-Status.
+- [ ] Whisky HINZUFÜGEN/ENTFERNEN bleibt nur im Draft (unverändert); Blind-Modus unberührt (Teilnehmer sehen Foto erst beim Aufdecken).
+- [ ] Nicht-Host sieht keine Edit-Möglichkeit.
+- [ ] Kein Commit/push. Bestätigen.
