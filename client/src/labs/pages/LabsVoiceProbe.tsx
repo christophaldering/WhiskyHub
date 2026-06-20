@@ -10,6 +10,12 @@ export default function LabsVoiceProbe() {
   const { status, statusText, model, voice, setVoice, mode, setMode, ledger, transcript, busy, connect, disconnect } = useCooperVoice();
   const transcriptEndRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => { transcriptEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [transcript.length]);
+  const transcriptBlocks = transcript.reduce<{ role: "taster" | "mentor"; text: string }[]>((acc, t) => {
+    const last = acc[acc.length - 1];
+    if (last && last.role === t.role) last.text = `${last.text} ${t.text}`;
+    else acc.push({ role: t.role, text: t.text });
+    return acc;
+  }, []);
 
   if (session.role !== "admin") {
     return (
@@ -89,18 +95,30 @@ export default function LabsVoiceProbe() {
         </div>
       )}
 
-      {transcript.length > 0 && (
-        <div
-          data-testid="transcript-debug"
-          style={{ display: "flex", flexDirection: "column", gap: SP.xs, maxHeight: 240, overflowY: "auto", padding: SP.md, border: `1px dashed ${LABS_THEME.border}`, borderRadius: RADIUS.md, background: LABS_THEME.bgCard }}
-        >
-          <div style={{ fontFamily: FONT.body, fontSize: 11, color: LABS_THEME.faint, textTransform: "uppercase", letterSpacing: 1, marginBottom: SP.xs }}>Transkript (Test)</div>
-          {transcript.map((t, i) => (
-            <div key={i} data-testid={`transcript-line-${i}`} style={{ fontFamily: FONT.body, fontSize: 13, lineHeight: 1.5, color: t.role === "mentor" ? LABS_THEME.gold : LABS_THEME.muted }}>
-              <span style={{ fontWeight: 600 }}>{t.role === "mentor" ? "Cooper:" : "Du:"}</span> {t.text}
-            </div>
-          ))}
-          <div ref={transcriptEndRef} />
+      {status !== "idle" && (
+        <div style={{ display: "flex", flexDirection: "column", padding: SP.md, border: `1px dashed ${LABS_THEME.border}`, borderRadius: RADIUS.md, background: LABS_THEME.bgCard }}>
+          <div style={{ fontFamily: FONT.body, fontSize: 11, color: LABS_THEME.faint, textTransform: "uppercase", letterSpacing: 1, marginBottom: SP.sm }}>Transkript (Test)</div>
+          <div
+            data-testid="transcript-debug"
+            style={{ display: "flex", flexDirection: "column", maxHeight: 220, overflowY: "auto", maskImage: "linear-gradient(to bottom, transparent 0, black 36px)", WebkitMaskImage: "linear-gradient(to bottom, transparent 0, black 36px)" }}
+          >
+            {transcript.length === 0 ? (
+              <div style={{ fontFamily: FONT.body, fontSize: 14, color: LABS_THEME.faint, paddingTop: 36 }}>… warte auf Stimme</div>
+            ) : (
+              transcriptBlocks.map((b, i) => (
+                <div
+                  key={i}
+                  data-testid={`transcript-block-${i}`}
+                  style={b.role === "mentor"
+                    ? { color: LABS_THEME.gold, fontFamily: FONT.serif, fontStyle: "italic", fontSize: 18, lineHeight: 1.5, marginTop: i === 0 ? 36 : SP.sm }
+                    : { color: LABS_THEME.text, fontFamily: FONT.body, fontSize: 16, lineHeight: 1.6, marginTop: i === 0 ? 36 : SP.sm }}
+                >
+                  {b.text}
+                </div>
+              ))
+            )}
+            <div ref={transcriptEndRef} />
+          </div>
         </div>
       )}
 
