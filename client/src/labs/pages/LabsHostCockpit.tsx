@@ -700,6 +700,23 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
     return result;
   }, [activeWhisky, ratings, participants]);
 
+  const myRatingsList = useMemo(() => {
+    const byWhisky: Record<string, any> = {};
+    for (const r of (ratings as any[]).filter((r: any) => r.participantId === pid)) byWhisky[r.whiskyId] = r;
+    const overalls: number[] = [];
+    const rows = (whiskies as any[]).map((w: any, idx: number) => {
+      const r = byWhisky[w.id];
+      const overall = r?.overall ?? null;
+      if (overall != null) overalls.push(overall);
+      return { id: w.id as string, name: w.name as string, idx, overall };
+    });
+    const ratedCount = overalls.length;
+    const avg = ratedCount ? Math.round((overalls.reduce((a, b) => a + b, 0) / overalls.length) * 2) / 2 : null;
+    const min = ratedCount ? Math.min(...overalls) : null;
+    const max = ratedCount ? Math.max(...overalls) : null;
+    return { rows, ratedCount, avg, min, max };
+  }, [ratings, whiskies, pid]);
+
   if (!tasting) return null;
 
   const lockedDrams: string[] = (() => {
@@ -3583,6 +3600,49 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
             </div>
           ) : (
           <>
+          {myRatingsList.ratedCount > 0 && (
+            <div style={{ marginBottom: 12, padding: 10, borderRadius: 8, background: "var(--labs-surface-elevated)" }} data-testid="cockpit-my-overview">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  {t("cockpitUi.myValuesOverview", "Deine Werte")}
+                </span>
+                <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                  {myRatingsList.ratedCount}/{whiskies.length} {t("ui.rated", "bewertet")}
+                </span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {myRatingsList.rows.map((row) => {
+                  const label = isBlind ? `Dram ${blindLabel(row.idx)}` : (row.name || `Dram ${row.idx + 1}`);
+                  const pct = row.overall != null ? Math.max(0, Math.min(100, (row.overall / ratingScale) * 100)) : 0;
+                  const isActive = row.idx === hostRatingIdx;
+                  return (
+                    <button
+                      key={row.id}
+                      type="button"
+                      onClick={() => setHostRatingIdx(row.idx)}
+                      style={{ display: "flex", alignItems: "center", gap: 10, background: isActive ? "var(--labs-accent-muted)" : "transparent", border: "none", borderRadius: 6, padding: "4px 6px", cursor: "pointer", fontFamily: "inherit", width: "100%", textAlign: "left" }}
+                      data-testid={`cockpit-my-overview-row-${row.idx}`}
+                    >
+                      <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: isActive ? "var(--labs-accent)" : "var(--labs-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+                      <div style={{ width: 70, height: 5, borderRadius: 3, background: "var(--labs-border)", overflow: "hidden", flexShrink: 0 }}>
+                        <div style={{ width: `${pct}%`, height: "100%", borderRadius: 3, background: "var(--labs-accent)" }} />
+                      </div>
+                      <span style={{ width: 36, textAlign: "right", fontSize: 12, fontWeight: 700, color: row.overall != null ? "var(--labs-accent)" : "var(--labs-text-muted)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+                        {row.overall != null ? formatScore(row.overall) : "—"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {myRatingsList.ratedCount >= 2 && (
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--labs-border)", fontSize: 11, color: "var(--labs-text-muted)" }}>
+                  <span>{t("cockpit.avgLabel", "Schnitt")}: <strong style={{ color: "var(--labs-text)" }}>{formatScore(myRatingsList.avg!)}</strong></span>
+                  <span>{t("cockpit.range", "Range")}: <strong style={{ color: "var(--labs-text)" }}>{formatScore(myRatingsList.min!)}–{formatScore(myRatingsList.max!)}</strong></span>
+                  <span>Spread: <strong style={{ color: "var(--labs-text)" }}>{formatScore(myRatingsList.max! - myRatingsList.min!)}</strong></span>
+                </div>
+              )}
+            </div>
+          )}
           <div style={{ display: "flex", gap: 4, marginBottom: 12, flexWrap: "wrap" }}>
             {whiskies.map((_: any, idx: number) => (
               <button
