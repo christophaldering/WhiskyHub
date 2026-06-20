@@ -1,0 +1,23 @@
+# HARD PROMPT — Transkript: Coopers Text erst nach dem Sprechen zeigen
+
+GRENZEN: Nur `client/src/labs/components/rating/useCooperVoice.ts` (Hook, Event-Handling). Screen NICHT anfassen. Kein Commit/push, keine Schema-Änderung. Safety-Tag `pre-cooper-transcript-timing-2026-06-20`.
+
+PROBLEM: Coopers Transkript (`response.output_audio_transcript.done`) wird sofort angezeigt — aber das feuert, während/bevor er spricht (Text wird parallel zum Audio generiert). Es soll erst erscheinen, wenn er FERTIG gesprochen hat. Das Signal dafür ist das WebRTC-Event `output_audio_buffer.stopped`. (Deine eigenen Worte sind schon korrekt — sie kommen ohnehin erst nach deinem Sprech-Ende.)
+
+ÄNDERUNG in `connect()` / `dc.onmessage`:
+1. Neuer Ref neben den anderen: `const mentorTimeoutRef = useRef<any>(null);`
+2. In `connect()`, im Scope wo `dc` lebt (neben `responseActive`/`pendingToolResponse`):
+   - `let pendingMentor: string | null = null;`
+   - `const flushMentor = () => { if (mentorTimeoutRef.current) { clearTimeout(mentorTimeoutRef.current); mentorTimeoutRef.current = null; } if (pendingMentor) { const t = pendingMentor; pendingMentor = null; setTranscript(prev => [...prev, { role: "mentor", text: t }]); } };`
+3. Den bestehenden mentor-Handler (`response.output_audio_transcript.done` / Beta `response.audio_transcript.done`) ÄNDERN: NICHT mehr sofort in `setTranscript` pushen, sondern puffern:
+   `pendingMentor = t; if (mentorTimeoutRef.current) clearTimeout(mentorTimeoutRef.current); mentorTimeoutRef.current = setTimeout(flushMentor, 15000);`
+4. NEUEN Handler ergänzen: `if (msg?.type === "output_audio_buffer.stopped") { flushMentor(); }`
+5. In `cleanup()`: `if (mentorTimeoutRef.current) { clearTimeout(mentorTimeoutRef.current); mentorTimeoutRef.current = null; }`
+Die taster-Logik (`conversation.item.input_audio_transcription.completed`) bleibt UNVERÄNDERT.
+
+VERIFIKATION:
+- [ ] Build grün.
+- [ ] `/labs/voice-probe`: Coopers Zeile erscheint erst, NACHDEM er zu Ende gesprochen hat — nicht vorher.
+- [ ] Deine Zeilen erscheinen weiterhin nach deinem Sprech-Ende.
+- [ ] Sternbild, Begrüßung, kein-Hänger, Teleprompter-Darstellung unverändert.
+- [ ] Kein Commit/push. Bestätigen.
