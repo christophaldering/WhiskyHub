@@ -29,11 +29,12 @@ interface Props {
   onCollectionSelect: (w: CapturedWhisky) => void;
   onBack: () => void;
   hideBack?: boolean;
+  hideHeader?: boolean;
 }
 
 type Status = "idle" | "identifying" | "error" | "barcode" | "feedback" | "barcode-scanning" | "barcode-lookup";
 
-export default function SoloCaptureScreen({ participantId, isAuthenticated, onImpression, onManual, onCaptured, onBarcode, onCollectionSelect, onBack, hideBack }: Props) {
+export default function SoloCaptureScreen({ participantId, isAuthenticated, onImpression, onManual, onCaptured, onBarcode, onCollectionSelect, onBack, hideBack, hideHeader = false }: Props) {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -515,21 +516,25 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onIm
         </button>
       )}
 
-      <h2 className="labs-h2" data-testid="solo-title" style={{ marginBottom: "var(--labs-space-sm)" }}>
-        {t("v2.solo.title", "Log a Dram")}
-      </h2>
+      {!hideHeader && (
+        <>
+          <h2 className="labs-h2" data-testid="solo-title" style={{ marginBottom: "var(--labs-space-sm)" }}>
+            {t("v2.solo.title", "Log a Dram")}
+          </h2>
 
-      <p style={{
-        fontFamily: "var(--font-ui)",
-        fontSize: 14,
-        color: "var(--labs-text-muted)",
-        marginBottom: "var(--labs-space-xl)",
-        marginTop: 0,
-      }} data-testid="solo-capture-sub">
-        {t("v2.solo.captureSub", "How would you like to capture the whisky?")}
-      </p>
+          <p style={{
+            fontFamily: "var(--font-ui)",
+            fontSize: 14,
+            color: "var(--labs-text-muted)",
+            marginBottom: "var(--labs-space-xl)",
+            marginTop: 0,
+          }} data-testid="solo-capture-sub">
+            {t("v2.solo.captureSub", "How would you like to capture the whisky?")}
+          </p>
 
-      <span className="labs-section-label">{t("v2.solo.captureOptions", "Wege ins Glas")}</span>
+          <span className="labs-section-label">{t("v2.solo.captureOptions", "Wege ins Glas")}</span>
+        </>
+      )}
 
       <div className="labs-grouped-list" style={{ marginBottom: "var(--labs-space-lg)" }}>
         {onImpression && (

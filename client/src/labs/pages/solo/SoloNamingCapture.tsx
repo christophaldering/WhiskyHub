@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FONT, SP, LABS_THEME, TOUCH_MIN } from "@/labs/components/rating/theme";
+import { FONT, SP, RADIUS, LABS_THEME, TOUCH_MIN } from "@/labs/components/rating/theme";
 import SoloCaptureScreen, { type CapturedWhisky } from "./SoloCaptureScreen";
 import SoloWhiskyForm from "./SoloWhiskyForm";
 
@@ -26,6 +26,7 @@ export default function SoloNamingCapture({ participantId, isAuthenticated, onRe
   const [phase, setPhase] = useState<"choose" | "confirm">("choose");
   const [draft, setDraft] = useState<CapturedWhisky | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [nameInput, setNameInput] = useState("");
 
   if (phase === "confirm") {
     return (
@@ -54,6 +55,42 @@ export default function SoloNamingCapture({ participantId, isAuthenticated, onRe
         </div>
       </div>
 
+      <div style={{ padding: "0 var(--labs-space-md)", marginBottom: SP.lg }}>
+        <input
+          type="text"
+          value={nameInput}
+          onChange={(e) => setNameInput(e.target.value)}
+          placeholder={t("v2.solo.namingNamePlaceholder", "z.B. Lagavulin 16")}
+          data-testid="solo-naming-name-input"
+          style={{
+            width: "100%",
+            boxSizing: "border-box",
+            background: LABS_THEME.inputBg,
+            border: `1px solid ${LABS_THEME.border}`,
+            borderRadius: RADIUS.md,
+            color: LABS_THEME.text,
+            fontFamily: FONT.serif,
+            fontSize: 16,
+            minHeight: TOUCH_MIN,
+            padding: SP.md,
+          }}
+        />
+        <button
+          type="button"
+          disabled={nameInput.trim().length < 2}
+          onClick={() => onResolve({ name: nameInput.trim(), distillery: "", country: "", region: "", cask: "", age: "", abv: "", fromAI: false })}
+          data-testid="solo-naming-name-submit"
+          className="labs-btn-primary"
+          style={{ width: "100%", minHeight: TOUCH_MIN, marginTop: SP.sm }}
+        >
+          {t("v2.solo.namingNameSubmit", "Weiter")}
+        </button>
+      </div>
+
+      <div style={{ padding: "0 var(--labs-space-md)", marginBottom: SP.md }}>
+        <span className="labs-section-label">{t("v2.solo.namingOrMethods", "Oder per Foto, Barcode oder Sammlung")}</span>
+      </div>
+
       <SoloCaptureScreen
         participantId={participantId}
         isAuthenticated={isAuthenticated}
@@ -63,6 +100,7 @@ export default function SoloNamingCapture({ participantId, isAuthenticated, onRe
         onCollectionSelect={(w) => onResolve(w)}
         onBack={() => {}}
         hideBack
+        hideHeader
       />
 
       <div style={{ padding: "var(--labs-space-md) var(--labs-space-md) var(--labs-space-lg)" }}>

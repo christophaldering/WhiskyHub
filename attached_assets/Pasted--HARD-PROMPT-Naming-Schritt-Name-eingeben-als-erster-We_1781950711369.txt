@@ -1,0 +1,27 @@
+# HARD PROMPT — Naming-Schritt: Name eingeben als erster Weg
+
+GRENZEN: `client/src/labs/pages/solo/SoloCaptureScreen.tsx` (Prop hideHeader) + `client/src/labs/pages/solo/SoloNamingCapture.tsx` (Namensfeld zuerst). Der initiale Capture-Schritt bleibt UNVERÄNDERT (dort soll der Header bleiben). Kein Commit/push, keine Schema-Änderung. Safety-Tag `pre-naming-simplify-2026-06-20`.
+
+## TEIL A — SoloCaptureScreen: Header optional ausblendbar
+- Neue Prop `hideHeader?: boolean` (Props-Interface + Funktions-Signatur, default false).
+- Den Header-Block am Anfang des Haupt-Returns in `{!hideHeader && ( … )}` wickeln: die drei Elemente `<h2 …data-testid="solo-title">` (`v2.solo.title`), das `<p data-testid="solo-capture-sub">` (`v2.solo.captureSub`) UND das `<span className="labs-section-label">` (`v2.solo.captureOptions` „Wege ins Glas"). Bei `hideHeader` erscheint also direkt die Methoden-Liste, ohne eigenen Titel/Sub/Section-Label.
+- Sonst nichts ändern (Lade-/Barcode-/Identify-Zustände unberührt).
+
+## TEIL B — SoloNamingCapture: Name eingeben als primärer Weg
+In der Phase `"choose"`, NACH dem bestehenden Titel/Sub-Block („Wie hieß der Dram?" …) und VOR `<SoloCaptureScreen>`:
+1. State `const [nameInput, setNameInput] = useState("");`
+2. Prominenter Namens-Eingabe-Block (theme-konform, FONT/SP/LABS_THEME/TOUCH_MIN):
+   - Ein Texteingabefeld, `value={nameInput}`, placeholder `t("v2.solo.namingNamePlaceholder", "z.B. Lagavulin 16")`, Stil wie die anderen Inputs (inputBg/border/RADIUS, fontSize 16, minHeight TOUCH_MIN, padding SP.md, width 100%, box-sizing border-box).
+   - Darunter ein gold-Button „Weiter" (`t("v2.solo.namingNameSubmit", "Weiter")`), disabled wenn `nameInput.trim().length < 2`, onClick →
+     `onResolve({ name: nameInput.trim(), distillery: "", country: "", region: "", cask: "", age: "", abv: "", fromAI: false })`.
+3. Danach ein dezenter Trenner-Label vor den Methoden: `<span className="labs-section-label">{t("v2.solo.namingOrMethods", "Oder per Foto, Barcode oder Sammlung")}</span>` (faint/muted).
+4. `<SoloCaptureScreen …>` wie bisher, aber mit zusätzlicher Prop `hideHeader`.
+5. „Ohne Namen speichern" unten bleibt unverändert.
+
+## VERIFIKATION
+- [ ] Build grün.
+- [ ] Solo-Flow bis zum Ende durchspielen: nach der Bewertung erscheint der Namens-Schritt mit Titel „Wie hieß der Dram?", DARUNTER zuerst ein Namens-Textfeld + „Weiter", dann erst die Methoden (Foto/Hochladen/Manuell/Barcode) — KEIN „Solo Dram / Wähle eine Methode / Wege ins Glas"-Block mehr.
+- [ ] Name eingeben + „Weiter" speichert den Dram mit Namen (führt zum Done-Screen).
+- [ ] Die Methoden darunter funktionieren weiter (Foto/Barcode/Manuell → Bestätigung).
+- [ ] Initialer Capture-Schritt (ganz am Anfang, „Wege ins Glas") UNVERÄNDERT — Header dort noch da.
+- [ ] Kein Commit/push. Bestätigen.
