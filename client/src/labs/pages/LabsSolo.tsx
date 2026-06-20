@@ -211,7 +211,7 @@ export default function LabsSolo() {
 
   useEffect(() => {
     if (step === "rating" && showImpressionCapture) {
-      const id = setTimeout(() => flowTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+      const id = setTimeout(() => flowTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
       return () => clearTimeout(id);
     }
   }, [step, showImpressionCapture, cooperStarted]);

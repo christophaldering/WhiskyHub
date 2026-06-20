@@ -1,0 +1,34 @@
+# HARD PROMPT — Cooper: Zuhörer statt Kommentator (+ Layout nachholen)
+
+GRENZEN: `server/routes.ts` (Voice-Persona Z.~5606, Turn Z.~5733, VAD Z.~5630) + `client/src/labs/pages/LabsSolo.tsx` (Layout). Kein Commit/push, keine Schema-Änderung. Safety-Tag `pre-cooper-zuhoeren-2026-06-20`. WICHTIG: BEIDE Teile (A und B) umsetzen — nicht nur einen.
+
+## TEIL A — Cooper hört mehr zu, spricht weniger, reverbalisiert nicht
+
+**A1 — Voice-Persona (Z.~5606):** Den Absatz, der mit „Halte mit den feinsten Unterscheidungen mit …" beginnt und mit „… Erkläre nie das Offensichtliche." endet, KOMPLETT ersetzen durch:
+`Dein Grundmodus ist Zuhören, nicht Reden. Die meiste Zeit hältst du dich bewusst zurück — ein knapper Anstoß, ein einzelnes Wort, oder einfach Raum, damit der Taster weiterdenkt. Erzähle NIE nach, was er gesagt hat, weder wörtlich noch mit anderen Worten; kein Spiegeln, kein Nacherzählen seiner Sätze. Wenn du überhaupt sprichst, dann knapp und mit deinen eigenen Worten: hebe EINEN markanten Punkt heraus oder setze eine einzige kurze Frage — niemals eine Nacherzählung. Greife nicht jede Nuance auf; wähle selten und gezielt den einen Moment, der es wert ist. Am Anfang und in der Mitte hältst du dich spürbar zurück; erst wenn der Taster zum Abschluss kommt, wirst du etwas ausführlicher und darfst das Bild ruhig in deinen eigenen Worten verdichten. Erkläre nie das Offensichtliche. Sei ein nachdenklicher, aufnehmender Gesprächspartner, kein ständig kommentierender Begleiter.`
+
+**A2 — VAD länger warten lassen (Z.~5637):** `silenceMs` erhöhen, damit Cooper Denkpausen aushält statt in jede Lücke zu springen:
+`const silenceMs = mode === "tiefsinnig" ? 900 : 700;` (vorher 500/400).
+
+**A3 — Turn-System getippt (Z.~5733):** Im bestehenden Floskel-Verbot ergänzen, dass auch Nacherzählen verboten ist: nach „kündige das Zuhören nicht an" anfügen `und erzähle NIE nach, was der Taster gesagt hat — weder wörtlich noch mit anderen Worten (kein Spiegeln, kein „du sagst also")`. Sonst unverändert.
+
+## TEIL B — Layout: Eindruck-Moment nach oben (war übersprungen)
+1. Ref `const flowTopRef = useRef<HTMLDivElement | null>(null);`
+2. Den return-Wrapper `<div className="labs-page" …>` mit `ref={flowTopRef}` versehen und `scrollMarginTop: 72` ins style ergänzen.
+3. useEffect:
+   ```
+   useEffect(() => {
+     if (step === "rating" && showImpressionCapture) {
+       const id = setTimeout(() => flowTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
+       return () => clearTimeout(id);
+     }
+   }, [step, showImpressionCapture, cooperStarted]);
+   ```
+
+## VERIFIKATION (beide Teile!)
+- [ ] Build grün.
+- [ ] Cooper hört im Gespräch hörbar mehr zu: reagiert nicht mehr auf jeden Satz, erzählt NICHT nach, was gesagt wurde; wenn er spricht, knapp und in eigenen Worten; wird erst gegen Ende etwas ausführlicher.
+- [ ] Spürbar längere Pause, bevor Cooper einsetzt (er springt nicht mehr sofort in Denkpausen).
+- [ ] „Mit Cooper sprechen" → der Eindruck-Block rückt nach oben, Hub wird nach oben weggeschoben.
+- [ ] Persona im Übrigen unverändert (Küfer, kein Vorgreifen am Whisky, Augenhöhe, Ledger-Tool, offene Begrüßung).
+- [ ] Kein Commit/push. Bestätigen.
