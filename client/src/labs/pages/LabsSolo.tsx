@@ -180,6 +180,7 @@ export default function LabsSolo() {
   const pendingFinalizeRef = useRef<(() => void) | null>(null);
   const pendingWhiskyRef = useRef<CapturedWhisky | null>(null);
   const pendingImageRef = useRef<File | null>(null);
+  const flowTopRef = useRef<HTMLDivElement | null>(null);
 
   const showDraftFlash = useCallback(() => {
     setDraftSavedFlash(true);
@@ -207,6 +208,13 @@ export default function LabsSolo() {
   useEffect(() => {
     hasUnsavedRef.current = step === "form" || step === "rating";
   }, [step]);
+
+  useEffect(() => {
+    if (step === "rating" && showImpressionCapture) {
+      const id = setTimeout(() => flowTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+      return () => clearTimeout(id);
+    }
+  }, [step, showImpressionCapture, cooperStarted]);
 
   useEffect(() => {
     try {
@@ -1091,7 +1099,7 @@ export default function LabsSolo() {
   }
 
   return (
-    <div className="labs-page" style={{ position: "relative" }}>
+    <div ref={flowTopRef} className="labs-page" style={{ position: "relative", scrollMarginTop: 72 }}>
       {content}
       {draftSavedFlash && (
         <div

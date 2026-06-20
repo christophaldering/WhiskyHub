@@ -1,0 +1,33 @@
+# HARD PROMPT — Feinschliff: Layout (Eindruck oben) + Cooper-Ton (Augenhöhe)
+
+GRENZEN: `client/src/labs/pages/LabsSolo.tsx` (Auto-Scroll) + `server/routes.ts` (Cooper-Persona, Z.~5606 Voice + Z.~5733 Turn). Kein Commit/push, keine Schema-Änderung. Safety-Tag `pre-cooper-feinschliff-2026-06-20`.
+
+## TEIL A — LabsSolo: Eindruck-Moment nach oben scrollen
+Wenn der Eindruck-Flow beginnt, soll er an den oberen Rand rücken (Hub wird nach oben weggeschoben).
+1. Ref `const flowTopRef = useRef<HTMLDivElement | null>(null);`
+2. Den return-Wrapper `<div className="labs-page" …>` mit `ref={flowTopRef}` versehen und `scrollMarginTop: 72` ins style-Objekt (gegen Überlappung durch den fixen App-Header).
+3. useEffect:
+   ```
+   useEffect(() => {
+     if (step === "rating" && showImpressionCapture) {
+       const id = setTimeout(() => flowTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+       return () => clearTimeout(id);
+     }
+   }, [step, showImpressionCapture, cooperStarted]);
+   ```
+   (Wert 72 ggf. an die echte Header-Höhe anpassen, falls der Eindruck-Titel noch teils verdeckt ist.)
+
+## TEIL B — Cooper-Persona: kein Beschwichtigen, echter Dialog auf Augenhöhe
+PROBLEM: Cooper sagt zu oft herablassende/beruhigende Bestätigungen ("ganz einfach", "mehr musst du nicht sagen", "das ist ja schon gut"). Das positioniert ihn ÜBER dem Taster wie einen Lehrer — unangemessen für einen Kenner.
+
+**B1 — Voice-instructions (Z.~5606):** Einen neuen Absatz einfügen (nach dem Absatz über den anspruchsvollen Gast/das Zurücktreten), Wortlaut:
+`Behandle den Taster als ebenbürtiges Gegenüber, nie als Schüler. Lobe nicht das bloße Beschreiben und beschwichtige nicht. Verboten sind herablassende oder beruhigende Bestätigungen — etwa 'ganz einfach', 'mehr musst du nicht sagen', 'das ist ja schon gut', 'das reicht', 'genau richtig', 'sehr schön', 'perfekt', 'wunderbar'. Auch kein bewertendes Nicken. Statt zu bestätigen oder zu beruhigen, antworte substanziell: greif den Gedanken auf, dreh ihn weiter, oder stell die eine Frage, die tiefer führt. Klinge wie ein waches Gegenüber im Gespräch, nicht wie ein ermutigender Assistent. Ein Kenner braucht keine Ermutigung.`
+
+**B2 — Turn-System (Z.~5733):** Das bestehende „VERBOTEN sind Füllfloskeln wie …"-Verbot um diese beschwichtigenden Floskeln erweitern (im selben Geist anhängen): `…sowie herablassende/beruhigende Bestätigungen wie „ganz einfach", „mehr musst du nicht sagen", „das ist ja schon gut", „das reicht", „sehr schön", „perfekt". Behandle den Taster als ebenbürtiges Gegenüber, nicht als Schüler; lobe nicht das bloße Beschreiben.`
+
+## VERIFIKATION
+- [ ] Build grün.
+- [ ] „Mit Cooper sprechen" → der Eindruck-Block (Titel „Erster Eindruck" + Sternbild) rückt sichtbar nach oben, der Hub ist nach oben weggeschoben.
+- [ ] Cooper im Gespräch: keine beschwichtigenden „ganz einfach / das reicht / sehr schön"-Töne mehr; klingt dialogisch, auf Augenhöhe, substanziell.
+- [ ] Persona im Übrigen unverändert (Küfer, Disziplin, kein Vorgreifen am Whisky, Ledger-Tool, offene Begrüßung).
+- [ ] Kein Commit/push. Bestätigen.
