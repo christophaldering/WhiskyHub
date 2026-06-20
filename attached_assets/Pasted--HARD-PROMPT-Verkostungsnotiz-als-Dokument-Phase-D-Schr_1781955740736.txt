@@ -1,0 +1,47 @@
+# HARD PROMPT — Verkostungsnotiz als Dokument (Phase D, Schritt 1)
+
+GRENZEN: Neue Datei `client/src/labs/utils/tastingNoteHtml.ts` + Knopf in `client/src/labs/pages/LabsTasteDrams.tsx` (Dram-Detailansicht). Kein Commit/push, keine Schema-Änderung. Safety-Tag `pre-tasting-note-2026-06-20`.
+
+## STEP 0
+- In LabsTasteDrams die Detail-Ansicht von `selectedEntry` finden, wo die Action-Buttons stehen (Bearbeiten / Ausführlich bewerten / Erneut verkosten / Mehr, ~Z.712–756). Dort kommt der neue Knopf dazu.
+- Tags-Quelle prüfen: gibt es auf dem Entry Flavor-Tags (Feld `tags`/`flavorTags`) ODER liefert die vorhandene Parsing-Logik (`parseEntry`/dims/chips) Tags? Wenn leicht verfügbar → mappen; sonst Tags weglassen (Notiz funktioniert ohne). Plan nennen.
+- Prüfen, ob `i18n` bereits im Scope ist (für locale).
+
+## TEIL A — Neue Datei `client/src/labs/utils/tastingNoteHtml.ts`
+Exakt diesen Inhalt anlegen:
+
+```ts
+[HIER den vollständigen Inhalt der Datei tastingNoteHtml.ts einfügen — siehe Codeblock unten]
+```
+
+## TEIL B — Knopf in der Dram-Detailansicht
+1. Import oben: `import { buildTastingNoteHtml } from "@/labs/utils/tastingNoteHtml";` und ein Icon, z.B. `FileText` aus lucide-react.
+2. Funktion in der Komponente:
+```ts
+const openTastingNote = () => {
+  const e: any = selectedEntry;
+  if (!e) return;
+  const html = buildTastingNoteHtml({
+    name: e.name || e.title || "Dram",
+    dateISO: e.createdAt ?? null,
+    subtitleParts: [e.region, e.distillery, e.age ? String(e.age) : null, e.abv != null && e.abv !== "" ? `${e.abv}% vol` : null],
+    imageUrl: e.imageUrl ?? null,
+    narrative: (e.tastingNarrative || e.overallNotes || "").trim() || null,
+    scores: { nose: e.noseScore, taste: e.tasteScore, finish: e.finishScore, overall: e.personalScore },
+    tags: /* aus Step 0; sonst [] */ [],
+    locale: i18n.language?.startsWith("de") ? "de" : "en",
+  });
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank");
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+};
+```
+3. Knopf bei den anderen Action-Buttons (gleicher Stil, z.B. `labs-btn-secondary`), Label `t("drams.tastingNote", "Notiz")` mit FileText-Icon, onClick={openTastingNote}.
+
+## VERIFIKATION
+- [ ] Build grün.
+- [ ] Dram-Detail: neuer „Notiz"-Knopf; Klick öffnet in neuem Tab eine helle, gebrandete Verkostungsnotiz (CaskSense-Kopf, Goldlinie, Dram-Name in Playfair, Datum/Region, Bild falls vorhanden, Ich-Prosa in Cormorant, Wertungs-Block Nase/Gaumen/Abgang/Gesamt, Aromen, Fuß).
+- [ ] Im Browser „Drucken / Als PDF sichern" → Creme-Hintergrund + Gold bleiben erhalten (print-color-adjust).
+- [ ] Dram ohne Prosa/Bild/Tags rendert trotzdem sauber (nur vorhandene Teile).
+- [ ] Kein Commit/push. Bestätigen.
