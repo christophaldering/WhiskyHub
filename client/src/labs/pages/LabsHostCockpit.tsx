@@ -1434,6 +1434,7 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
                 {renderControls(true)}
                 {renderLineup()}
                 {renderParticipants()}
+                {renderMyOverview()}
                 <button
                   onClick={() => { navigate(`/labs/live/${tastingId}`); }}
                   style={{
@@ -1503,6 +1504,7 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
                 {renderControls(false)}
                 {!isWideDesktop && renderLineup()}
                 {renderParticipants()}
+                {renderMyOverview()}
                 {renderMyRating()}
               </div>
 
@@ -3571,6 +3573,49 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
     );
   }
 
+  function renderMyOverview() {
+    if (myRatingsList.ratedCount === 0) return null;
+    return (
+      <div className="cockpit-card" data-testid="cockpit-my-overview">
+        <div className="cockpit-card-header">
+          <div className="cockpit-card-title">
+            <Star style={{ width: 13, height: 13, color: "var(--labs-accent)" }} />
+            {t("cockpitUi.myValuesOverview", "Deine Werte")}
+          </div>
+          <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+            {myRatingsList.ratedCount}/{whiskies.length} {t("ui.rated", "bewertet")}
+          </span>
+        </div>
+        <div className="cockpit-card-body">
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {myRatingsList.rows.map((row) => {
+              const label = isBlind ? `Dram ${blindLabel(row.idx)}` : (row.name || `Dram ${row.idx + 1}`);
+              const pct = row.overall != null ? Math.max(0, Math.min(100, (row.overall / ratingScale) * 100)) : 0;
+              return (
+                <div key={row.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: "var(--labs-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+                  <div style={{ width: 70, height: 5, borderRadius: 3, background: "var(--labs-border)", overflow: "hidden", flexShrink: 0 }}>
+                    <div style={{ width: `${pct}%`, height: "100%", borderRadius: 3, background: "var(--labs-accent)" }} />
+                  </div>
+                  <span style={{ width: 36, textAlign: "right", fontSize: 12, fontWeight: 700, color: row.overall != null ? "var(--labs-accent)" : "var(--labs-text-muted)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+                    {row.overall != null ? formatScore(row.overall) : "—"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          {myRatingsList.ratedCount >= 2 && (
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, paddingTop: 8, borderTop: "1px solid var(--labs-border)", fontSize: 11, color: "var(--labs-text-muted)" }}>
+              <span>{t("cockpit.avgLabel", "Schnitt")}: <strong style={{ color: "var(--labs-text)" }}>{formatScore(myRatingsList.avg!)}</strong></span>
+              <span>{t("cockpit.range", "Range")}: <strong style={{ color: "var(--labs-text)" }}>{formatScore(myRatingsList.min!)}–{formatScore(myRatingsList.max!)}</strong></span>
+              <span>Spread: <strong style={{ color: "var(--labs-text)" }}>{formatScore(myRatingsList.max! - myRatingsList.min!)}</strong></span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   function renderMyRating() {
     return (
       <>
@@ -3600,49 +3645,6 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
             </div>
           ) : (
           <>
-          {myRatingsList.ratedCount > 0 && (
-            <div style={{ marginBottom: 12, padding: 10, borderRadius: 8, background: "var(--labs-surface-elevated)" }} data-testid="cockpit-my-overview">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  {t("cockpitUi.myValuesOverview", "Deine Werte")}
-                </span>
-                <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
-                  {myRatingsList.ratedCount}/{whiskies.length} {t("ui.rated", "bewertet")}
-                </span>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {myRatingsList.rows.map((row) => {
-                  const label = isBlind ? `Dram ${blindLabel(row.idx)}` : (row.name || `Dram ${row.idx + 1}`);
-                  const pct = row.overall != null ? Math.max(0, Math.min(100, (row.overall / ratingScale) * 100)) : 0;
-                  const isActive = row.idx === hostRatingIdx;
-                  return (
-                    <button
-                      key={row.id}
-                      type="button"
-                      onClick={() => setHostRatingIdx(row.idx)}
-                      style={{ display: "flex", alignItems: "center", gap: 10, background: isActive ? "var(--labs-accent-muted)" : "transparent", border: "none", borderRadius: 6, padding: "4px 6px", cursor: "pointer", fontFamily: "inherit", width: "100%", textAlign: "left" }}
-                      data-testid={`cockpit-my-overview-row-${row.idx}`}
-                    >
-                      <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: isActive ? "var(--labs-accent)" : "var(--labs-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
-                      <div style={{ width: 70, height: 5, borderRadius: 3, background: "var(--labs-border)", overflow: "hidden", flexShrink: 0 }}>
-                        <div style={{ width: `${pct}%`, height: "100%", borderRadius: 3, background: "var(--labs-accent)" }} />
-                      </div>
-                      <span style={{ width: 36, textAlign: "right", fontSize: 12, fontWeight: 700, color: row.overall != null ? "var(--labs-accent)" : "var(--labs-text-muted)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
-                        {row.overall != null ? formatScore(row.overall) : "—"}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-              {myRatingsList.ratedCount >= 2 && (
-                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--labs-border)", fontSize: 11, color: "var(--labs-text-muted)" }}>
-                  <span>{t("cockpit.avgLabel", "Schnitt")}: <strong style={{ color: "var(--labs-text)" }}>{formatScore(myRatingsList.avg!)}</strong></span>
-                  <span>{t("cockpit.range", "Range")}: <strong style={{ color: "var(--labs-text)" }}>{formatScore(myRatingsList.min!)}–{formatScore(myRatingsList.max!)}</strong></span>
-                  <span>Spread: <strong style={{ color: "var(--labs-text)" }}>{formatScore(myRatingsList.max! - myRatingsList.min!)}</strong></span>
-                </div>
-              )}
-            </div>
-          )}
           <div style={{ display: "flex", gap: 4, marginBottom: 12, flexWrap: "wrap" }}>
             {whiskies.map((_: any, idx: number) => (
               <button
