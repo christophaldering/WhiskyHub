@@ -59,6 +59,7 @@ import ManageTastersDialog from "@/labs/components/ManageTastersDialog";
 import TastingAnalysisSection from "@/labs/components/TastingAnalysisSection";
 import TastingPersonalSection from "@/labs/components/TastingPersonalSection";
 import WhiskyImage from "@/labs/components/WhiskyImage";
+import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 import { getTastingPhase, isResultDownloadsPhase, RESULT_DOWNLOAD_KINDS } from "@/labs/utils/tastingPhase";
 import type { Tasting, WhiskyFriend } from "@shared/schema";
 import QRCode from "qrcode";
@@ -207,10 +208,11 @@ function QuickChip({ icon: Icon, label, onClick, testId }: {
   );
 }
 
-function InlineWhiskyEdit({ whisky, onSave, onCancel }: {
+function InlineWhiskyEdit({ whisky, onSave, onCancel, onImageChanged }: {
   whisky: Record<string, unknown>;
   onSave: (data: Record<string, unknown>) => void;
   onCancel: () => void;
+  onImageChanged?: () => void;
 }) {
   const { t } = useTranslation();
   const [name, setName] = useState((whisky.name as string) || "");
@@ -221,6 +223,12 @@ function InlineWhiskyEdit({ whisky, onSave, onCancel }: {
 
   return (
     <div className="labs-card p-3 space-y-2" data-testid={`labs-detail-whisky-edit-${whisky.id}`}>
+      <WhiskyImageUpload
+        whiskyId={whisky.id as string}
+        imageUrl={(whisky.imageUrl as string | null) ?? null}
+        onImageUploaded={() => onImageChanged?.()}
+        onImageDeleted={() => onImageChanged?.()}
+      />
       <input
         className="labs-input w-full text-sm"
         value={name}
@@ -1421,7 +1429,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
               >
                 {(whiskies || []).map((w: Record<string, unknown>, i: number) => {
                   const wid = w.id as string;
-                  if (isHost && isDraft && editingWhiskyId === wid) {
+                  if (isHost && editingWhiskyId === wid) {
                     return (
                       <div
                         key={wid}
@@ -1433,6 +1441,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                           whisky={w}
                           onSave={(data) => updateWhiskyMutation.mutate({ id: wid, data })}
                           onCancel={() => setEditingWhiskyId(null)}
+                          onImageChanged={() => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] })}
                         />
                       </div>
                     );
@@ -1469,7 +1478,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                         position: "relative",
                       }}
                     >
-                      {isHost && isDraft && (
+                      {isHost && (
                         <div
                           style={{
                             position: "absolute",
@@ -1494,7 +1503,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                           >
                             <Pencil className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} />
                           </button>
-                          {deletingWhiskyId === wid ? (
+                          {isDraft && (deletingWhiskyId === wid ? (
                             <>
                               <button
                                 type="button"
@@ -1528,7 +1537,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                             >
                               <Trash2 className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} />
                             </button>
-                          )}
+                          ))}
                         </div>
                       )}
 
