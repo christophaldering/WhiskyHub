@@ -29,10 +29,14 @@ export default function LabsVoiceProbe() {
 
   return (
     <div style={{ minHeight: "100vh", background: LABS_THEME.bg, color: LABS_THEME.text, fontFamily: FONT.body, padding: SP.lg, display: "flex", flexDirection: "column", gap: SP.lg, maxWidth: 560, margin: "0 auto" }}>
-      <div style={{ fontFamily: FONT.serif, fontSize: 24, color: LABS_THEME.gold }}>Realtime-Sprach-Durchstich</div>
-      <div style={{ fontSize: 13, color: LABS_THEME.faint, lineHeight: 1.5 }}>
-        Isolierter Admin-Test. Kein Bezug zum Eindruck-/Cooper-Flow. Beim Verbinden wird die Mikrofon-Erlaubnis abgefragt.
-      </div>
+      {status !== "connected" && (
+        <>
+          <div style={{ fontFamily: FONT.serif, fontSize: 24, color: LABS_THEME.gold }}>Realtime-Sprach-Durchstich</div>
+          <div style={{ fontSize: 13, color: LABS_THEME.faint, lineHeight: 1.5 }}>
+            Isolierter Admin-Test. Kein Bezug zum Eindruck-/Cooper-Flow. Beim Verbinden wird die Mikrofon-Erlaubnis abgefragt.
+          </div>
+        </>
+      )}
 
       <div
         data-testid="status-voice-probe"
@@ -41,41 +45,45 @@ export default function LabsVoiceProbe() {
         {statusText}{model ? `  ·  Modell: ${model}` : ""}{`  ·  Stimme: ${voice}`}{`  ·  Modus: ${mode === "tiefsinnig" ? "Tiefsinnig" : "Flüssig"}`}
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: SP.sm }}>
-        {VOICES.map((v) => {
-          const active = voice === v;
-          const locked = status === "connected";
-          return (
-            <button
-              key={v}
-              data-testid={`chip-voice-${v}`}
-              onClick={() => setVoice(v)}
-              disabled={locked}
-              style={{ minHeight: 36, padding: `0 ${SP.md}px`, borderRadius: RADIUS.full, border: `1px solid ${active ? LABS_THEME.gold : LABS_THEME.border}`, background: active ? "rgba(212,168,71,0.14)" : "transparent", color: active ? LABS_THEME.gold : LABS_THEME.muted, fontFamily: FONT.body, fontSize: 14, cursor: locked ? "default" : "pointer", opacity: locked && !active ? 0.5 : 1 }}
-            >
-              {v}
-            </button>
-          );
-        })}
-      </div>
+      {status !== "connected" && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: SP.sm }}>
+          {VOICES.map((v) => {
+            const active = voice === v;
+            const locked = status === "connected";
+            return (
+              <button
+                key={v}
+                data-testid={`chip-voice-${v}`}
+                onClick={() => setVoice(v)}
+                disabled={locked}
+                style={{ minHeight: 36, padding: `0 ${SP.md}px`, borderRadius: RADIUS.full, border: `1px solid ${active ? LABS_THEME.gold : LABS_THEME.border}`, background: active ? "rgba(212,168,71,0.14)" : "transparent", color: active ? LABS_THEME.gold : LABS_THEME.muted, fontFamily: FONT.body, fontSize: 14, cursor: locked ? "default" : "pointer", opacity: locked && !active ? 0.5 : 1 }}
+              >
+                {v}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: SP.sm }}>
-        {([["fluessig", "Flüssig"], ["tiefsinnig", "Tiefsinnig"]] as const).map(([m, label]) => {
-          const active = mode === m;
-          const locked = status === "connected";
-          return (
-            <button
-              key={m}
-              data-testid={`chip-mode-${m}`}
-              onClick={() => setMode(m)}
-              disabled={locked}
-              style={{ minHeight: 36, padding: `0 ${SP.md}px`, borderRadius: RADIUS.full, border: `1px solid ${active ? LABS_THEME.gold : LABS_THEME.border}`, background: active ? "rgba(212,168,71,0.14)" : "transparent", color: active ? LABS_THEME.gold : LABS_THEME.muted, fontFamily: FONT.body, fontSize: 14, cursor: locked ? "default" : "pointer", opacity: locked && !active ? 0.5 : 1 }}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
+      {status !== "connected" && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: SP.sm }}>
+          {([["fluessig", "Flüssig"], ["tiefsinnig", "Tiefsinnig"]] as const).map(([m, label]) => {
+            const active = mode === m;
+            const locked = status === "connected";
+            return (
+              <button
+                key={m}
+                data-testid={`chip-mode-${m}`}
+                onClick={() => setMode(m)}
+                disabled={locked}
+                style={{ minHeight: 36, padding: `0 ${SP.md}px`, borderRadius: RADIUS.full, border: `1px solid ${active ? LABS_THEME.gold : LABS_THEME.border}`, background: active ? "rgba(212,168,71,0.14)" : "transparent", color: active ? LABS_THEME.gold : LABS_THEME.muted, fontFamily: FONT.body, fontSize: 14, cursor: locked ? "default" : "pointer", opacity: locked && !active ? 0.5 : 1 }}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {status === "connected" && (
         <div
@@ -100,7 +108,7 @@ export default function LabsVoiceProbe() {
           <div style={{ fontFamily: FONT.body, fontSize: 11, color: LABS_THEME.faint, textTransform: "uppercase", letterSpacing: 1, marginBottom: SP.sm }}>Transkript (Test)</div>
           <div
             data-testid="transcript-debug"
-            style={{ display: "flex", flexDirection: "column", maxHeight: 220, overflowY: "auto", maskImage: "linear-gradient(to bottom, transparent 0, black 36px)", WebkitMaskImage: "linear-gradient(to bottom, transparent 0, black 36px)" }}
+            style={{ display: "flex", flexDirection: "column", maxHeight: status === "connected" ? 300 : 220, overflowY: "auto", maskImage: "linear-gradient(to bottom, transparent 0, black 36px)", WebkitMaskImage: "linear-gradient(to bottom, transparent 0, black 36px)" }}
           >
             {transcript.length === 0 ? (
               <div style={{ fontFamily: FONT.body, fontSize: 14, color: LABS_THEME.faint, paddingTop: 36 }}>… warte auf Stimme</div>

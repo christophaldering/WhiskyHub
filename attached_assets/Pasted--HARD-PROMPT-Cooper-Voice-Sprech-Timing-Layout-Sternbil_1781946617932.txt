@@ -1,0 +1,30 @@
+# HARD PROMPT — Cooper-Voice: Sprech-Timing + Layout (Sternbild oben)
+
+GRENZEN: Zwei Dateien — `useCooperVoice.ts` (Timing) + `LabsVoiceProbe.tsx` (Layout). Kein Commit/push, keine Schema-Änderung. Safety-Tag `pre-cooper-timing-layout-2026-06-20`.
+
+## TEIL A — Hook `useCooperVoice.ts`: Coopers Text erst nach dem Sprechen
+PROBLEM: `response.output_audio_transcript.done` feuert, während/bevor Cooper spricht (Text parallel zum Audio generiert). Coopers Zeile soll erst bei Sprech-ENDE erscheinen — Signal dafür ist das WebRTC-Event `output_audio_buffer.stopped`. (Deine eigenen Worte sind schon korrekt getaktet, unverändert lassen.)
+1. Neuer Ref: `const mentorTimeoutRef = useRef<any>(null);`
+2. In `connect()`, im Scope von `dc` (neben `responseActive`/`pendingToolResponse`):
+   - `let pendingMentor: string | null = null;`
+   - `const flushMentor = () => { if (mentorTimeoutRef.current) { clearTimeout(mentorTimeoutRef.current); mentorTimeoutRef.current = null; } if (pendingMentor) { const t = pendingMentor; pendingMentor = null; setTranscript(prev => [...prev, { role: "mentor", text: t }]); } };`
+3. Den mentor-Handler (`response.output_audio_transcript.done` / Beta `response.audio_transcript.done`) ÄNDERN — nicht mehr sofort pushen, sondern puffern:
+   `pendingMentor = t; if (mentorTimeoutRef.current) clearTimeout(mentorTimeoutRef.current); mentorTimeoutRef.current = setTimeout(flushMentor, 15000);`
+4. NEUER Handler: `if (msg?.type === "output_audio_buffer.stopped") { flushMentor(); }`
+5. In `cleanup()`: `if (mentorTimeoutRef.current) { clearTimeout(mentorTimeoutRef.current); mentorTimeoutRef.current = null; }`
+Die taster-Logik bleibt unverändert.
+
+## TEIL B — Screen `LabsVoiceProbe.tsx`: Layout im verbundenen Zustand
+Im Zustand `status === "connected"` die Lesehierarchie umstellen, sodass Sternbild + Gespräch im Fokus stehen:
+- Reihenfolge im connected-State: (1) kompakte Status-Zeile, (2) **Sternbild ganz oben**, (3) **Transkript-Teleprompter direkt darunter** (mit größerer `maxHeight`, z. B. 300, da jetzt mehr Platz), (4) „Trennen"-Button unten.
+- Titel/Beschreibung sowie Stimmen- und Modus-Chips im connected-State AUSBLENDEN (sie dienen nur der Einstellung vor dem Verbinden und sind während des Gesprächs gesperrt).
+- Im NICHT-verbundenen Zustand bleibt alles wie bisher (Titel, Chips, Sternbild-leer/aus, „Verbinden").
+- Theme-konform, keine neuen Farben/Fonts.
+
+## VERIFIKATION
+- [ ] Build grün.
+- [ ] Coopers Zeile erscheint erst NACH dem Sprechen; deine Zeilen wie bisher nach deinem Sprech-Ende.
+- [ ] Im verbundenen Zustand steht das Sternbild oben, das durchlaufende Gespräch direkt darunter und gut lesbar; Chips/Titel ausgeblendet.
+- [ ] Vor dem Verbinden unverändert einstellbar (Stimme/Modus/Verbinden).
+- [ ] Begrüßung, kein-Hänger, Teleprompter-Stil unverändert.
+- [ ] Kein Commit/push. Bestätigen.
