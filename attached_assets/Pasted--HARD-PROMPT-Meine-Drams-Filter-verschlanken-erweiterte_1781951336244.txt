@@ -1,0 +1,28 @@
+# HARD PROMPT — Meine Drams: Filter verschlanken (erweiterte Filter + Sheet raus)
+
+GRENZEN: Nur `client/src/labs/pages/LabsTasteDrams.tsx`. Kein Commit/push, keine Schema-Änderung. Safety-Tag `pre-drams-filter-schlank-2026-06-20`.
+
+ZIEL: Die fünf erweiterten Filter (Zeitraum, Score-Bereich, Destillerie, Region, Fass-Typ) und der dazugehörige Bottom-Sheet komplett entfernen. BEHALTEN: Suche, Herkunft (originFilter Solo/Tasting), Status (statusFilter Offen/Abgeschlossen), Sortierung (sortBy/sortDirection + Dropdown).
+
+## STEP 0 (Pflicht)
+Alle Verwendungen dieser Symbole im File auflisten, damit keine tote Referenz bleibt:
+`datePeriod, setDatePeriod, scoreRange, setScoreRange, filterDistillery, setFilterDistillery, filterRegion, setFilterRegion, filterCaskType, setFilterCaskType, filterSheetOpen, setFilterSheetOpen, hasAdvancedFilters, activeFilterCount, clearAdvancedFilters, uniqueDistilleries, uniqueRegions, uniqueCaskTypes, DATE_PERIOD_KEYS, FilterBottomSheet`. Plan nennen, dann ausführen.
+HINWEIS: `SlidersHorizontal` wird auch vom „Ausführlich bewerten"-Button (~Z.722) genutzt → Import NICHT entfernen.
+
+## ÄNDERUNGEN
+1. **States entfernen:** datePeriod, scoreRange, filterDistillery, filterRegion, filterCaskType, filterSheetOpen (+ deren Typ-Aliase `DatePeriod`/`ScoreRange`, falls nur hier genutzt, und Konstante `DATE_PERIOD_KEYS`).
+2. **Abgeleitetes entfernen:** uniqueDistilleries, uniqueRegions, uniqueCaskTypes, hasAdvancedFilters, activeFilterCount, clearAdvancedFilters sowie eine etwaige datePeriod-Label-Berechnung.
+3. **`hasAnyFilter` bereinigen:** so umschreiben, dass es nur noch auf originFilter, statusFilter, search, sortBy, sortDirection beruht (datePeriod/hasAdvancedFilters raus).
+4. **`resetAllFilters` bereinigen:** nur noch originFilter/statusFilter/search/sortBy/sortDirection/sortDropdown zurücksetzen; die entfernten Setter raus.
+5. **`filteredEntries`-Memo:** die fünf Filter-Blöcke (datePeriod, filterDistillery, filterRegion, filterCaskType, scoreRange) löschen; Suche/Origin/Status/Sort bleiben; Dependency-Array entsprechend kürzen.
+6. **Inline-Filter-Button entfernen:** den `<button … onClick={() => setFilterSheetOpen(true)} … data-testid="button-labs-open-filters">` (SlidersHorizontal + drams.filter + activeFilterCount-Badge) komplett raus. Die Suche dehnt sich dann natürlich (flex:1), der Sortieren-Button bleibt rechts daneben.
+7. **Sheet-Render entfernen:** den Block `{filterSheetOpen && <FilterBottomSheet … />}` löschen.
+8. **Komponente entfernen:** die gesamte Funktion `function FilterBottomSheet(...)` am Dateiende löschen.
+9. Ungenutzte i18n-Keys (drams.filter, drams.datePeriod, …) dürfen bleiben (harmlos).
+
+## VERIFIKATION
+- [ ] Build grün, keine TS-Fehler (keine verwaisten Referenzen auf entfernte Symbole).
+- [ ] „Meine Drams": über der Liste nur noch Suche (breit) + Sortieren; KEIN „Filter"-Button, KEIN Bottom-Sheet mehr.
+- [ ] Suche filtert nach Name/Destillerie; Herkunft (Solo/Tasting) und Status (Offen/Abgeschlossen) und Sortierung funktionieren weiter.
+- [ ] Liste rendert vollständig, Karten unverändert.
+- [ ] Kein Commit/push. Bestätigen.

@@ -28,8 +28,6 @@ import type { RatingData } from "@/labs/components/rating/types";
 type OriginFilter = "all" | "solo" | "tasting";
 type StatusFilter = "all" | "open" | "done";
 type ViewState = "list" | "detail" | "edit" | "trash" | "deepRate";
-type DatePeriod = "all" | "7d" | "30d" | "3m" | "1y";
-type ScoreRange = "all" | "90+" | "80-89" | "70-79" | "<70";
 type SortBy = "date" | "score" | "name" | "saved";
 type SortDirection = "asc" | "desc";
 
@@ -47,14 +45,6 @@ const ORIGIN_I18N: Record<OriginFilter, string> = { all: "drams.tabAll", solo: "
 const STATUS_KEYS: StatusFilter[] = ["all", "open", "done"];
 const STATUS_I18N: Record<StatusFilter, string> = { all: "drams.statusAll", open: "drams.statusOpen", done: "drams.statusDone" };
 const STATUS_FALLBACK: Record<StatusFilter, string> = { all: "Alle", open: "Offen", done: "Abgeschlossen" };
-
-const DATE_PERIOD_KEYS: { key: DatePeriod; i18nKey: string; days: number }[] = [
-  { key: "all", i18nKey: "drams.allTime", days: 0 },
-  { key: "7d", i18nKey: "drams.sevenDays", days: 7 },
-  { key: "30d", i18nKey: "drams.thirtyDays", days: 30 },
-  { key: "3m", i18nKey: "drams.threeMonths", days: 90 },
-  { key: "1y", i18nKey: "drams.oneYear", days: 365 },
-];
 
 function isJsonScoreString(value: string): boolean {
   try {
@@ -177,7 +167,6 @@ export default function LabsTasteDrams() {
   const [, navigate] = useLocation();
   const [originFilter, setOriginFilter] = useState<OriginFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [datePeriod, setDatePeriod] = useState<DatePeriod>("all");
   const [selectedEntry, setSelectedEntry] = useState<DramEntry | null>(null);
   const [viewState, setViewState] = useState<ViewState>("list");
   const [editForm, setEditForm] = useState<Record<string, any>>({});
@@ -185,14 +174,9 @@ export default function LabsTasteDrams() {
   const [detailMoreMenuOpen, setDetailMoreMenuOpen] = useState(false);
   useEffect(() => { setDetailMoreMenuOpen(false); }, [selectedEntry?.id, viewState]);
   const [search, setSearch] = useState("");
-  const [filterDistillery, setFilterDistillery] = useState("all");
-  const [filterRegion, setFilterRegion] = useState("all");
-  const [filterCaskType, setFilterCaskType] = useState("all");
-  const [scoreRange, setScoreRange] = useState<ScoreRange>("all");
   const [sortBy, setSortBy] = useState<SortBy>("saved");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
-  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -318,43 +302,11 @@ export default function LabsTasteDrams() {
     done: allItems.filter((e: any) => e.status !== "draft").length,
   }), [allItems]);
 
-  const uniqueDistilleries = useMemo(() => Array.from(new Set(allItems.map((e: any) => e.distillery).filter(Boolean))).sort(), [allItems]);
-  const uniqueRegions = useMemo(() => Array.from(new Set(allItems.map((e: any) => e.region).filter(Boolean))).sort(), [allItems]);
-  const uniqueCaskTypes = useMemo(() => Array.from(new Set(allItems.map((e: any) => e.caskType).filter(Boolean))).sort(), [allItems]);
-
-  const hasAdvancedFilters = filterDistillery !== "all" || filterRegion !== "all" || filterCaskType !== "all" || scoreRange !== "all" || datePeriod !== "all";
-  const hasAnyFilter = originFilter !== "all" || statusFilter !== "all" || datePeriod !== "all" || search.trim() !== "" || hasAdvancedFilters || sortBy !== "saved" || sortDirection !== "desc";
-
-  const activeFilterCount = useMemo(() => {
-    let count = 0;
-    if (datePeriod !== "all") count++;
-    if (scoreRange !== "all") count++;
-    if (filterDistillery !== "all") count++;
-    if (filterRegion !== "all") count++;
-    if (filterCaskType !== "all") count++;
-    return count;
-  }, [datePeriod, scoreRange, filterDistillery, filterRegion, filterCaskType]);
-
-  const activeFilterChips = useMemo(() => {
-    const chips: { label: string; onClear: () => void }[] = [];
-    if (datePeriod !== "all") {
-      const label = t(DATE_PERIOD_KEYS.find(p => p.key === datePeriod)?.i18nKey || "drams.allTime");
-      chips.push({ label, onClear: () => setDatePeriod("all") });
-    }
-    if (scoreRange !== "all") chips.push({ label: t("drams.scoreChip", { range: scoreRange }), onClear: () => setScoreRange("all") });
-    if (filterDistillery !== "all") chips.push({ label: filterDistillery, onClear: () => setFilterDistillery("all") });
-    if (filterRegion !== "all") chips.push({ label: filterRegion, onClear: () => setFilterRegion("all") });
-    if (filterCaskType !== "all") chips.push({ label: filterCaskType, onClear: () => setFilterCaskType("all") });
-    return chips;
-  }, [datePeriod, scoreRange, filterDistillery, filterRegion, filterCaskType]);
+  const hasAnyFilter = originFilter !== "all" || statusFilter !== "all" || search.trim() !== "" || sortBy !== "saved" || sortDirection !== "desc";
 
   const resetAllFilters = () => {
-    setOriginFilter("all"); setStatusFilter("all"); setDatePeriod("all"); setSearch("");
-    setFilterDistillery("all"); setFilterRegion("all"); setFilterCaskType("all"); setScoreRange("all"); setSortBy("saved"); setSortDirection("desc"); setSortDropdownOpen(false);
-  };
-
-  const clearAdvancedFilters = () => {
-    setDatePeriod("all"); setScoreRange("all"); setFilterDistillery("all"); setFilterRegion("all"); setFilterCaskType("all");
+    setOriginFilter("all"); setStatusFilter("all"); setSearch("");
+    setSortBy("saved"); setSortDirection("desc"); setSortDropdownOpen(false);
   };
 
   const filteredEntries = useMemo(() => {
@@ -366,26 +318,6 @@ export default function LabsTasteDrams() {
     if (search.trim()) {
       const q = search.toLowerCase();
       items = items.filter((e: any) => (e.name || e.title || "").toLowerCase().includes(q) || (e.distillery || "").toLowerCase().includes(q));
-    }
-    if (datePeriod !== "all") {
-      const days = DATE_PERIOD_KEYS.find(p => p.key === datePeriod)?.days || 0;
-      if (days > 0) {
-        const cutoff = Date.now() - days * 86400000;
-        items = items.filter((e: any) => e.createdAt && new Date(e.createdAt).getTime() >= cutoff);
-      }
-    }
-    if (filterDistillery !== "all") items = items.filter((e: any) => e.distillery === filterDistillery);
-    if (filterRegion !== "all") items = items.filter((e: any) => e.region === filterRegion);
-    if (filterCaskType !== "all") items = items.filter((e: any) => e.caskType === filterCaskType);
-    if (scoreRange !== "all") {
-      items = items.filter((e: any) => {
-        const s = e.personalScore;
-        if (s == null) return false;
-        if (scoreRange === "90+") return s >= 90;
-        if (scoreRange === "80-89") return s >= 80 && s < 90;
-        if (scoreRange === "70-79") return s >= 70 && s < 80;
-        return s < 70;
-      });
     }
     const dir = sortDirection === "asc" ? 1 : -1;
     items.sort((a: any, b: any) => {
@@ -410,7 +342,7 @@ export default function LabsTasteDrams() {
       return ((a.createdAt ? new Date(a.createdAt).getTime() : 0) - (b.createdAt ? new Date(b.createdAt).getTime() : 0)) * dir;
     });
     return items;
-  }, [journal, tastingWhiskies, originFilter, statusFilter, search, datePeriod, filterDistillery, filterRegion, filterCaskType, scoreRange, sortBy, sortDirection]);
+  }, [journal, tastingWhiskies, originFilter, statusFilter, search, sortBy, sortDirection]);
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => journalApi.update(session.pid!, id, data),
@@ -1290,24 +1222,6 @@ export default function LabsTasteDrams() {
                   </button>
                 )}
               </div>
-              <button
-                onClick={() => setFilterSheetOpen(true)}
-                className="flex items-center gap-1.5"
-                style={{
-                  padding: "8px 12px", fontSize: 13, fontWeight: 500, borderRadius: 10, cursor: "pointer",
-                  background: activeFilterCount > 0 ? "var(--labs-accent-muted, rgba(212,168,71,0.12))" : "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))",
-                  border: `1px solid ${activeFilterCount > 0 ? "var(--labs-accent)" : "var(--labs-border)"}`,
-                  color: activeFilterCount > 0 ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                  whiteSpace: "nowrap", flexShrink: 0,
-                }}
-                data-testid="button-labs-open-filters"
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-                {t("drams.filter")}
-                {activeFilterCount > 0 && (
-                  <span style={{ background: "var(--labs-accent)", color: "var(--labs-bg, #0e0b05)", fontSize: 11, fontWeight: 700, borderRadius: 999, minWidth: 18, height: 18, display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "0 5px" }}>{activeFilterCount}</span>
-                )}
-              </button>
               <div className="relative" style={{ flexShrink: 0 }}>
                 <button
                   onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
@@ -1367,32 +1281,6 @@ export default function LabsTasteDrams() {
               </div>
             </div>
           </div>
-
-          {activeFilterChips.length > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap" style={{ padding: "8px 20px 0" }}>
-              {activeFilterChips.map((chip, i) => (
-                <button
-                  key={i}
-                  onClick={chip.onClear}
-                  className="flex items-center gap-1"
-                  style={{ padding: "4px 10px", fontSize: 12, fontWeight: 500, borderRadius: 999, background: "var(--labs-accent-muted, rgba(212,168,71,0.12))", color: "var(--labs-accent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 25%, transparent)", cursor: "pointer" }}
-                  data-testid={`filter-chip-${i}`}
-                >
-                  {chip.label}
-                  <X className="w-3 h-3" />
-                </button>
-              ))}
-              {activeFilterChips.length > 1 && (
-                <button
-                  onClick={clearAdvancedFilters}
-                  style={{ padding: "4px 8px", fontSize: 11, fontWeight: 500, color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 2 }}
-                  data-testid="button-labs-clear-all-filters"
-                >
-                  {t("drams.clearAll")}
-                </button>
-              )}
-            </div>
-          )}
 
           <div style={{ padding: "12px 20px 0" }}>
             {isError ? (
@@ -1507,163 +1395,10 @@ export default function LabsTasteDrams() {
             )}
           </div>
 
-          {filterSheetOpen && (
-            <FilterBottomSheet
-              datePeriod={datePeriod} setDatePeriod={setDatePeriod}
-              scoreRange={scoreRange} setScoreRange={setScoreRange}
-              filterDistillery={filterDistillery} setFilterDistillery={setFilterDistillery}
-              filterRegion={filterRegion} setFilterRegion={setFilterRegion}
-              filterCaskType={filterCaskType} setFilterCaskType={setFilterCaskType}
-              uniqueDistilleries={uniqueDistilleries} uniqueRegions={uniqueRegions} uniqueCaskTypes={uniqueCaskTypes}
-              onClose={() => setFilterSheetOpen(false)}
-              onClear={clearAdvancedFilters}
-              activeCount={activeFilterCount}
-            />
-          )}
         </>
       )}
 
       {deleteTarget && <DeleteDialog onCancel={() => setDeleteTarget(null)} onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)} isPending={deleteMutation.isPending} />}
-    </div>
-  );
-}
-
-function FilterBottomSheet({
-  datePeriod, setDatePeriod, scoreRange, setScoreRange,
-  filterDistillery, setFilterDistillery, filterRegion, setFilterRegion,
-  filterCaskType, setFilterCaskType,
-  uniqueDistilleries, uniqueRegions, uniqueCaskTypes,
-  onClose, onClear, activeCount,
-}: {
-  datePeriod: DatePeriod; setDatePeriod: (v: DatePeriod) => void;
-  scoreRange: ScoreRange; setScoreRange: (v: ScoreRange) => void;
-  filterDistillery: string; setFilterDistillery: (v: string) => void;
-  filterRegion: string; setFilterRegion: (v: string) => void;
-  filterCaskType: string; setFilterCaskType: (v: string) => void;
-  uniqueDistilleries: string[]; uniqueRegions: string[]; uniqueCaskTypes: string[];
-  onClose: () => void; onClear: () => void; activeCount: number;
-}) {
-  const { t } = useTranslation();
-  const [isDesktop, setIsDesktop] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return window.matchMedia("(min-width: 640px)").matches;
-  });
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const mq = window.matchMedia("(min-width: 640px)");
-    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
-    if (mq.addEventListener) mq.addEventListener("change", handler);
-    else mq.addListener(handler);
-    return () => {
-      if (mq.removeEventListener) mq.removeEventListener("change", handler);
-      else mq.removeListener(handler);
-    };
-  }, []);
-  const selectStyle = (isActive: boolean) => ({
-    width: "100%", padding: "10px 32px 10px 12px", fontSize: 14, fontWeight: isActive ? 600 : 400,
-    color: isActive ? "var(--labs-accent)" : "var(--labs-text)",
-    background: "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))",
-    border: `1px solid ${isActive ? "var(--labs-accent)" : "var(--labs-border)"}`,
-    borderRadius: 10, cursor: "pointer", appearance: "none" as const, WebkitAppearance: "none" as const, outline: "none", boxSizing: "border-box" as const,
-  });
-
-  return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: isDesktop ? "center" : "flex-end", justifyContent: "center", padding: isDesktop ? 16 : 0 }} data-testid="filter-bottom-sheet">
-      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }} onClick={onClose} />
-      <div style={{ position: "relative", zIndex: 1, width: "100%", maxHeight: isDesktop ? "90vh" : "80vh", maxWidth: 672, margin: isDesktop ? "auto" : "0 auto", background: "var(--labs-bg, #0e0b05)", borderRadius: isDesktop ? "16px" : "20px 20px 0 0", overflow: "auto", padding: "0 0 env(safe-area-inset-bottom, 20px)", boxShadow: "0 -8px 32px rgba(0,0,0,0.4)" }}>
-        <div style={{ position: "sticky", top: 0, background: "var(--labs-bg, #0e0b05)", padding: "16px 20px 12px", borderBottom: "1px solid var(--labs-border)", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--labs-text)", margin: 0 }}>{t("drams.filters")}</h3>
-          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} data-testid="button-close-filter-sheet">
-            <X className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
-          </button>
-        </div>
-
-        <div style={{ padding: "16px 20px" }}>
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)", display: "block", marginBottom: 8 }}>{t("drams.datePeriod")}</label>
-            <div className="flex gap-2 flex-wrap">
-              {DATE_PERIOD_KEYS.map(p => (
-                <button key={p.key} onClick={() => setDatePeriod(p.key)}
-                  style={{
-                    padding: "7px 14px", fontSize: 13, fontWeight: datePeriod === p.key ? 600 : 400, borderRadius: 999, cursor: "pointer",
-                    background: datePeriod === p.key ? "var(--labs-accent-muted, rgba(212,168,71,0.12))" : "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))",
-                    border: `1px solid ${datePeriod === p.key ? "var(--labs-accent)" : "var(--labs-border)"}`,
-                    color: datePeriod === p.key ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                  }}
-                  data-testid={`labs-period-${p.key}`}
-                >{t(p.i18nKey)}</button>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)", display: "block", marginBottom: 8 }}>{t("drams.scoreRange")}</label>
-            <div className="flex gap-2 flex-wrap">
-              {(["all", "90+", "80-89", "70-79", "<70"] as ScoreRange[]).map(sr => (
-                <button key={sr} onClick={() => setScoreRange(sr)}
-                  style={{
-                    padding: "7px 14px", fontSize: 13, fontWeight: scoreRange === sr ? 600 : 400, borderRadius: 999, cursor: "pointer",
-                    background: scoreRange === sr ? "var(--labs-accent-muted, rgba(212,168,71,0.12))" : "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))",
-                    border: `1px solid ${scoreRange === sr ? "var(--labs-accent)" : "var(--labs-border)"}`,
-                    color: scoreRange === sr ? "var(--labs-accent)" : "var(--labs-text-muted)",
-                  }}
-                  data-testid={`labs-score-${sr}`}
-                >{sr === "all" ? t("drams.all") : sr}</button>
-              ))}
-            </div>
-          </div>
-
-          {uniqueDistilleries.length > 0 && (
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)", display: "block", marginBottom: 8 }}>{t("drams.distillery")}</label>
-              <div style={{ position: "relative" }}>
-                <select value={filterDistillery} onChange={(e) => setFilterDistillery(e.target.value)} style={selectStyle(filterDistillery !== "all")} data-testid="labs-filter-distillery">
-                  <option value="all">{t("drams.allDistilleries")}</option>
-                  {uniqueDistilleries.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                </select>
-                <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--labs-text-muted)", pointerEvents: "none" }} />
-              </div>
-            </div>
-          )}
-
-          {uniqueRegions.length > 0 && (
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)", display: "block", marginBottom: 8 }}>{t("drams.region")}</label>
-              <div style={{ position: "relative" }}>
-                <select value={filterRegion} onChange={(e) => setFilterRegion(e.target.value)} style={selectStyle(filterRegion !== "all")} data-testid="labs-filter-region">
-                  <option value="all">{t("drams.allRegions")}</option>
-                  {uniqueRegions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                </select>
-                <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--labs-text-muted)", pointerEvents: "none" }} />
-              </div>
-            </div>
-          )}
-
-          {uniqueCaskTypes.length > 0 && (
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)", display: "block", marginBottom: 8 }}>{t("drams.caskType")}</label>
-              <div style={{ position: "relative" }}>
-                <select value={filterCaskType} onChange={(e) => setFilterCaskType(e.target.value)} style={selectStyle(filterCaskType !== "all")} data-testid="labs-filter-cask-type">
-                  <option value="all">{t("drams.allCaskTypes")}</option>
-                  {uniqueCaskTypes.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                </select>
-                <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--labs-text-muted)", pointerEvents: "none" }} />
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div style={{ padding: "12px 20px 20px", borderTop: "1px solid var(--labs-border)", display: "flex", gap: 10 }}>
-          {activeCount > 0 && (
-            <button onClick={() => { onClear(); }} className="labs-btn-secondary" style={{ flex: 1, padding: "12px", fontSize: 14, borderRadius: 12 }} data-testid="button-filter-clear">
-              {t("drams.clearAll")}
-            </button>
-          )}
-          <button onClick={onClose} className="labs-btn-primary" style={{ flex: activeCount > 0 ? 2 : 1, padding: "12px", fontSize: 14, borderRadius: 12 }} data-testid="button-filter-apply">
-            {activeCount > 0 ? t("drams.doneActive", { count: activeCount }) : t("drams.done")}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
