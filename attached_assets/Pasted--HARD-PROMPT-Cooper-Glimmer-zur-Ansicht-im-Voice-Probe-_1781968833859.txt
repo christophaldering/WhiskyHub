@@ -1,0 +1,156 @@
+# HARD PROMPT — Cooper-Glimmer zur Ansicht im Voice-Probe
+
+ZIEL: Eine ruhige, atmende Glut-Präsenz („Glimmer"), die zur Stimme mitschwingt, im Admin-Test-Screen `LabsVoiceProbe` ansehbar machen. Reine Ansicht/Prototyp — der echte Solo-Flow bleibt unberührt.
+
+GRENZEN: Nur diese 3 Dateien: NEU `client/src/labs/components/rating/CooperGlimmer.tsx`, erweitern `client/src/labs/components/rating/useCooperVoice.ts`, einbinden in `client/src/labs/pages/LabsVoiceProbe.tsx`. Kein Commit/push, keine Schema-Änderung. Safety-Tag `pre-cooper-glimmer-2026-06-20`.
+
+## STEP 0
+- Bestätigen: in `useCooperVoice.ts` existieren `audioRef` (~Z.25), der `pc.ontrack`-Handler (~Z.74, setzt `audioEl.srcObject`), die lokale `responseActive`-Logik (~Z.89/101/103), das `output_audio_buffer.stopped`-Event (~Z.111) und das `return {…}` (~Z.155).
+- In `LabsVoiceProbe.tsx` die Stelle finden, wo der Hook konsumiert wird und wo der verbundene Zustand (Sternbild/Teleprompter) gerendert wird.
+- Plan nennen. KEINE Änderung am getippten Cooper-Flow, an `ImpressionCapture` oder `LabsSolo`.
+
+## TEIL A — Neue Datei `CooperGlimmer.tsx` (Inhalt exakt so):
+```tsx
+// client/src/labs/components/rating/CooperGlimmer.tsx
+//
+// Cooper als ruhige, atmende Präsenz — eine Glut, ein Schein, der zur Stimme leicht
+// mitschwingt. Bewusst NICHT fotorealistisch. On-brand: Gold/Amber/Creme, weich,
+// aquarellig. Reine Darstellung (kopflos): bekommt levelRef (Audio-Amplitude 0..1)
+// und speaking (ob Cooper gerade antwortet); animiert sich selbst per RAF.
+
+import { useEffect, useRef } from "react";
+
+interface CooperGlimmerProps {
+  levelRef?: React.MutableRefObject<number>; // Audio-Amplitude 0..1 (vom Hook)
+  speaking?: boolean;                          // Cooper antwortet gerade
+  active?: boolean;                            // Verbindung steht
+  size?: number;                               // Kantenlänge in px
+}
+
+export default function CooperGlimmer({ levelRef, speaking = false, active = true, size = 220 }: CooperGlimmerProps) {
+  const haloRef = useRef<HTMLDivElement>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
+  const coreRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
+  const tRef = useRef(0);
+  const lvlRef = useRef(0);   // geglättetes Level
+  const spkRef = useRef(0);   // geglätteter Speaking-Boost
+
+  useEffect(() => {
+    const animate = () => {
+      tRef.current += 0.016;
+      const t = tRef.current;
+
+      // Grund-Atem: zwei überlagerte, langsame Sinus → organisch, nicht maschinell
+      const breath = 0.5 + 0.35 * Math.sin(t * 0.62) + 0.15 * Math.sin(t * 0.27 + 1.3);
+
+      // Stimme: echte Amplitude (geglättet); Fallback-Puls, falls Amplitude 0 bleibt (iOS)
+      const raw = Math.max(0, Math.min(1, levelRef?.current ?? 0));
+      lvlRef.current += (raw - lvlRef.current) * 0.20;
+      const spkTarget = speaking ? 1 : 0;
+      spkRef.current += (spkTarget - spkRef.current) * 0.08;
+      const fallbackPulse = spkRef.current * (0.18 + 0.12 * Math.sin(t * 3.1));
+      const voice = active ? Math.max(lvlRef.current, fallbackPulse) : 0;
+
+      const base = active ? 0.32 + 0.18 * breath : 0.10;
+      const intensity = Math.min(1, base + 1.05 * voice);
+      const sCore = 1 + 0.05 * breath + 0.30 * voice;
+      const sGlow = 1 + 0.09 * breath + 0.42 * voice;
+      const sHalo = 1 + 0.13 * breath + 0.30 * voice;
+
+      if (coreRef.current) {
+        coreRef.current.style.transform = `translate(-50%,-50%) scale(${sCore.toFixed(3)})`;
+        coreRef.current.style.opacity = (0.55 + 0.45 * intensity).toFixed(3);
+      }
+      if (glowRef.current) {
+        glowRef.current.style.transform = `translate(-50%,-50%) scale(${sGlow.toFixed(3)})`;
+        glowRef.current.style.opacity = (0.40 + 0.55 * intensity).toFixed(3);
+      }
+      if (haloRef.current) {
+        haloRef.current.style.transform = `translate(-50%,-50%) scale(${sHalo.toFixed(3)})`;
+        haloRef.current.style.opacity = (0.25 + 0.45 * intensity).toFixed(3);
+      }
+      rafRef.current = requestAnimationFrame(animate);
+    };
+    rafRef.current = requestAnimationFrame(animate);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, [active, speaking, levelRef]);
+
+  const layer = (ref: React.RefObject<HTMLDivElement>, d: number, bg: string, blur: number): React.CSSProperties => ({
+    position: "absolute", left: "50%", top: "50%", width: d, height: d,
+    borderRadius: "50%", background: bg, filter: `blur(${blur}px)`,
+    transform: "translate(-50%,-50%)", pointerEvents: "none", willChange: "transform, opacity",
+  });
+
+  return (
+    <div style={{ position: "relative", width: size, height: size, margin: "0 auto" }} aria-hidden="true">
+      <div ref={haloRef} style={layer(haloRef, size * 0.95, "radial-gradient(circle, rgba(196,122,58,0.30) 0%, rgba(196,122,58,0.12) 42%, transparent 70%)", 24)} />
+      <div ref={glowRef} style={layer(glowRef, size * 0.66, "radial-gradient(circle, rgba(212,168,71,0.55) 0%, rgba(212,168,71,0.30) 45%, transparent 72%)", 14)} />
+      <div ref={coreRef} style={layer(coreRef, size * 0.40, "radial-gradient(circle, rgba(245,237,224,0.92) 0%, rgba(212,168,71,0.80) 32%, rgba(196,122,58,0.45) 60%, transparent 78%)", 7)} />
+    </div>
+  );
+}
+```
+
+## TEIL B — Hook `useCooperVoice.ts` erweitern (additiv)
+1. Neue Refs bei den anderen Refs (~Z.25): 
+```tsx
+const levelRef = useRef(0);                       // Audio-Amplitude 0..1, von der Glimmer-Ansicht gelesen
+const audioCtxRef = useRef<AudioContext | null>(null);
+const levelRafRef = useRef<number | null>(null);
+```
+2. Neuer State (bei `status`/`statusText`): `const [speaking, setSpeaking] = useState(false);`
+3. `pc.ontrack` (~Z.74) erweitern — AnalyserNode auf den Remote-Stream legen, Amplitude in einen RAF-Loop schreiben:
+```tsx
+pc.ontrack = (e) => {
+  audioEl.srcObject = e.streams[0];
+  try {
+    const AC: any = (window as any).AudioContext || (window as any).webkitAudioContext;
+    if (AC) {
+      const ctx = new AC();
+      audioCtxRef.current = ctx;
+      const srcNode = ctx.createMediaStreamSource(e.streams[0]);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.6;
+      srcNode.connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const tick = () => {
+        analyser.getByteFrequencyData(data);
+        let sum = 0; for (let i = 0; i < data.length; i++) sum += data[i];
+        levelRef.current = Math.min(1, (sum / data.length / 255) * 2.2);
+        levelRafRef.current = requestAnimationFrame(tick);
+      };
+      tick();
+    }
+  } catch { /* iOS Safari liefert auf Remote-Streams evtl. keine Daten → Glimmer nutzt speaking-Fallback */ }
+};
+```
+4. Speaking-Signal aus den vorhandenen Events: bei `response.created` → `setSpeaking(true)`; bei `output_audio_buffer.stopped` (~Z.111) UND bei `response.done` (~Z.103) → `setSpeaking(false)`. (Die bestehende `responseActive`-Logik NICHT ersetzen — nur diese `setSpeaking`-Aufrufe ergänzen.)
+5. Im disconnect/cleanup (~Z.150) ergänzen:
+```tsx
+if (levelRafRef.current) { cancelAnimationFrame(levelRafRef.current); levelRafRef.current = null; }
+if (audioCtxRef.current) { try { audioCtxRef.current.close(); } catch {} audioCtxRef.current = null; }
+levelRef.current = 0;
+setSpeaking(false);
+```
+6. Return (~Z.155) additiv erweitern: `return { …bisher…, levelRef, speaking };`
+
+## TEIL C — In `LabsVoiceProbe.tsx` einbinden (nur Ansicht)
+- Import: `import CooperGlimmer from "@/labs/components/rating/CooperGlimmer";`
+- `levelRef` und `speaking` aus dem Hook beziehen (wie die anderen Werte konsumiert werden).
+- Im verbundenen Zustand GANZ OBEN, vor dem Sternbild/Teleprompter, einsetzen:
+```tsx
+<div style={{ padding: "12px 0 4px" }}>
+  <CooperGlimmer levelRef={levelRef} speaking={speaking} active={status === "connected"} />
+</div>
+```
+Sternbild + Teleprompter bleiben darunter unverändert (zum Vergleich/Diagnose).
+
+## VERIFIKATION
+- [ ] Build grün, keine TS-Fehler.
+- [ ] Voice-Probe öffnen, „Gespräch beginnen" → über dem Sternbild erscheint die atmende Glut (ruhiges Pulsieren, Gold/Amber/Creme).
+- [ ] Wenn Cooper spricht: Glut wird hörbar-sichtbar lebendiger (heller/größer), beruhigt sich danach.
+- [ ] Trennen → Glut beruhigt sich/verblasst, kein Konsolen-Fehler, kein hängender AudioContext.
+- [ ] Getippter Cooper, `ImpressionCapture`, `LabsSolo` unverändert.
+- [ ] Kein Commit/push. Bestätigen.

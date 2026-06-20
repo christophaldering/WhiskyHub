@@ -2,12 +2,13 @@ import { useRef, useEffect } from "react";
 import { useSession } from "@/lib/session";
 import { FONT, SP, RADIUS, TOUCH_MIN, LABS_THEME } from "@/labs/components/rating/theme";
 import { useCooperVoice, VOICES, LEDGER_CORNERS } from "@/labs/components/rating/useCooperVoice";
+import CooperGlimmer from "@/labs/components/rating/CooperGlimmer";
 
 const CORNER_LABELS: Record<(typeof LEDGER_CORNERS)[number], string> = { nose: "Nase", palate: "Gaumen", finish: "Abgang", body: "Körper", intensity: "Intensität", affect: "Wertung" };
 
 export default function LabsVoiceProbe() {
   const session = useSession();
-  const { status, statusText, model, voice, setVoice, mode, setMode, ledger, transcript, busy, connect, disconnect } = useCooperVoice();
+  const { status, statusText, model, voice, setVoice, mode, setMode, ledger, transcript, busy, connect, disconnect, levelRef, speaking } = useCooperVoice();
   const transcriptEndRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => { transcriptEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [transcript.length]);
   const transcriptBlocks = transcript.reduce<{ role: "taster" | "mentor"; text: string }[]>((acc, t) => {
@@ -82,6 +83,12 @@ export default function LabsVoiceProbe() {
               </button>
             );
           })}
+        </div>
+      )}
+
+      {status === "connected" && (
+        <div style={{ padding: "12px 0 4px" }}>
+          <CooperGlimmer levelRef={levelRef} speaking={speaking} active={status === "connected"} />
         </div>
       )}
 
