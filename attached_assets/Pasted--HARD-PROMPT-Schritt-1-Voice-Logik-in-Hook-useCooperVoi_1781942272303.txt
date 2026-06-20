@@ -1,0 +1,28 @@
+# HARD PROMPT — Schritt 1: Voice-Logik in Hook useCooperVoice herauslösen
+
+GRENZEN: Reine Refaktorierung, KEINE Verhaltensänderung. Nur zwei Dateien: NEU `client/src/labs/components/rating/useCooperVoice.ts` + Umbau `client/src/labs/pages/LabsVoiceProbe.tsx`. Kein Commit/push, keine Schema-Änderung, keine neuen Features (kein Transkript, das kommt erst Schritt 2). Ledger-Typen NICHT mit impressionApi.ts vereinheitlichen — das ist bewusst ein späterer Schritt. Safety-Tag `pre-cooper-voice-hook-2026-06-20`.
+
+## STEP 0
+`LabsVoiceProbe.tsx` lesen und bestätigen: Logik (Z.16–147: States/Refs/cleanup/fail/connect/disconnect/Event-Handling) ist klar von der UI (Z.149–247) getrennt. Plan kurz nennen, dann ausführen.
+
+## NEUE DATEI `useCooperVoice.ts`
+Enthält und EXPORTIERT:
+- Die Ledger-Typen 1:1 aus LabsVoiceProbe: `Corner`, `Ledger`, `EMPTY_LEDGER`, `LEDGER_CORNERS` (unverändert übernehmen).
+- `VOICES`-Konstante (unverändert).
+- Den Hook `useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fluessig" | "tiefsinnig" })`:
+  - Kapselt die GESAMTE Logik aus Z.16–147 unverändert: States (status, statusText, model, voice, mode, ledger, busy), Refs (pc/mic/audio/status), `cleanup`, `fail`, `connect`, `disconnect`, das komplette `dc.onmessage`-Event-Handling inkl. Begrüßung (dc.onopen → response.create), Ledger-Update und Kein-Hänger-Fix (responseActive/pendingToolResponse). Wortgleich, nur in den Hook verschoben.
+  - `voice`/`mode` initialisieren aus `opts?.initialVoice ?? "cedar"` bzw. `opts?.initialMode ?? "tiefsinnig"`.
+  - Token-Endpoint bleibt `/api/voice-probe/token`.
+  - Gibt zurück: `{ status, statusText, model, voice, setVoice, mode, setMode, ledger, busy, connect, disconnect }`.
+
+## UMBAU `LabsVoiceProbe.tsx`
+- Importiert `useCooperVoice` (+ ggf. `VOICES`, `LEDGER_CORNERS`, Ledger-Typen daraus).
+- Ersetzt die gesamte herausgelöste Logik durch `const { status, statusText, model, voice, setVoice, mode, setMode, ledger, busy, connect, disconnect } = useCooperVoice();`
+- Behält UNVERÄNDERT: Admin-Gate, Status-Zeile, Stimmen-Chips (rufen setVoice), Modus-Chips (setMode), Ledger-Sternbild, Verbinden/Trennen-Buttons. `CORNER_LABELS` darf im Screen bleiben.
+- Optisch und funktional IDENTISCH zu vorher.
+
+## VERIFIKATION
+- [ ] Build grün, keine TS-Fehler.
+- [ ] `/labs/voice-probe` verhält sich EXAKT wie vorher: Verbinden, Mikrofon-Abfrage, offene Begrüßung, Stimme cedar wählbar, Modus Flüssig/Tiefsinnig, Sternbild füllt sich live, kein Hänger nach Tool-Calls, Trennen.
+- [ ] Keine neue Funktionalität, kein Transkript.
+- [ ] Kein Commit/push, keine Schema-Änderung. Bestätigen.
