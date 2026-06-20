@@ -896,6 +896,7 @@ export default function LabsSolo() {
         {showImpressionCapture ? (
           cooperStarted ? (
           <ImpressionCapture
+            startPhase="voice"
             whiskyName={whisky?.name || undefined}
             onApply={handleImpressionApply}
             onSkip={handleImpressionSkip}

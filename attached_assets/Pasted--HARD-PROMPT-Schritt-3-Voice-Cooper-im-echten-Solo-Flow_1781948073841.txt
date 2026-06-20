@@ -1,0 +1,46 @@
+# HARD PROMPT — Schritt 3: Voice-Cooper im echten Solo-Flow
+
+GRENZEN: Zwei Dateien — `client/src/labs/components/rating/ImpressionCapture.tsx` (neue Voice-Phase) + `client/src/labs/pages/LabsSolo.tsx` (eine Prop). Der getippte Flow (input/converse/handoff) bleibt UNVERÄNDERT — nur additiv. Kein Commit/push, keine Schema-Änderung. Safety-Tag `pre-cooper-voice-solo-2026-06-20`.
+
+## STEP 0
+- `useCooperVoice`-Rückgabe ansehen (status, transcript, ledger, voice/mode, connect, disconnect).
+- Prüfen, ob `voice.ledger` typkompatibel zu `LedgerConstellation` ist (beide nutzen nose/palate/finish/body/intensity/affect + Corner-Werte untouched/touched/sharpened). Falls TS meckert: beim Übergeben casten `as any` ODER den Hook-Ledger-Typ aus `./impressionApi` importieren lassen. Plan nennen, dann bauen.
+
+## TEIL A — `ImpressionCapture.tsx`
+1. `import { useCooperVoice } from "./useCooperVoice";` und oben in der Komponente `const voice = useCooperVoice();` (Hook IMMER aufrufen — React-Regel; er tut nichts ohne connect()).
+2. Phase-Typ erweitern: `type Phase = "voice" | "input" | "converse" | "handoff";`
+3. Neue Prop `startPhase?: "voice" | "input"` (default "input"); `const [phase, setPhase] = useState<Phase>(startPhase ?? "input");`
+4. `LedgerConstellation` einen optionalen Parameter geben: `({ data }: { data?: Ledger }) =>` und intern `const lg = data ?? ledger;` statt direkt `ledger`. Bestehende Aufrufe (`<LedgerConstellation />`) bleiben gültig.
+5. Neue Funktion `handleVoiceFinish`:
+   - `const tr = voice.transcript;`
+   - `voice.disconnect();`
+   - wenn `tr.length === 0` → `onSkip(); return;`
+   - `setTranscript(tr);` (für die spätere Prosa im handoff)
+   - `rawImpressionRef.current = tr.filter(t => t.role === "taster").map(t => t.text).join(" ");`
+   - `setLoading(true);` dann `finalizeImpression({ whiskyName, intensity, transcript: tr })` → `setResult({ ...r, rawImpression: rawImpressionRef.current || r.rawImpression }); setPhase("handoff");` (try/catch → setError). `setLoading(false);`
+   - intensity bleibt Default "neugierig" (keine Tiefe-Wahl im Voice-Einstieg).
+6. Voice-Phase rendern (`phase === "voice"`), Titel „Erster Eindruck" bleibt darüber:
+   - **Vor Verbindung** (`voice.status !== "connected"`):
+     - Einleitung (FONT.serif, muted): „Nimm dein Glas. Wenn du so weit bist, erzähl Cooper frei, was dir auffällt."
+     - Knopf (gold, TOUCH_MIN): „Gespräch mit Cooper beginnen" → `voice.connect()`. Bei `voice.status === "connecting"/"token"` Label „Verbinde …", disabled.
+     - dezenter KI-Hinweis (FONT.body, 12px, faint): „Coopers Stimme ist KI-generiert." — IMMER sichtbar in der Voice-Phase (Pflicht).
+     - „Lieber tippen" (underline-Link) → `voice.disconnect(); setPhase("input");`
+     - „Überspringen" (Link, wie input-Phase) → `voice.disconnect(); onSkip();`
+     - Bei `voice.status === "error"`: `voice.statusText` als amber-Hinweis zeigen + Tipp-Fallback anbieten.
+   - **Nach Verbindung** (`voice.status === "connected"`):
+     - `<LedgerConstellation data={voice.ledger} />` GANZ OBEN.
+     - DARUNTER der Teleprompter aus `voice.transcript` — Stufe-2-Stil wie im Test-Screen: aufeinanderfolgende gleiche role zu einem Block, weicher Absatz bei Sprecherwechsel, taster = FONT.body/LABS_THEME.text, mentor = FONT.serif/italic/LABS_THEME.gold; Container maxHeight ~280, overflowY auto, oben Fade-Maske, Auto-Scroll ans Ende. (Code aus LabsVoiceProbe als Vorlage übernehmen.)
+     - Knopf (gold): „Ich bin fertig" → `handleVoiceFinish`.
+     - kleiner KI-Hinweis bleibt sichtbar.
+7. Sicherstellen: Verlässt man die Voice-Phase irgendwie (skip/tippen/finish), wird `voice.disconnect()` gerufen. (Unmount-cleanup macht der Hook selbst.)
+
+## TEIL B — `LabsSolo.tsx`
+- Im `<ImpressionCapture …>`-Aufruf (Z.898) `startPhase="voice"` ergänzen. Sonst nichts.
+
+## VERIFIKATION
+- [ ] Build grün.
+- [ ] „Mit Cooper sprechen" öffnet die Voice-Phase: KI-Hinweis sichtbar, „Gespräch beginnen" fragt Mikro ab und verbindet; Cooper begrüßt offen.
+- [ ] Verbunden: Sternbild oben, Teleprompter darunter (richtig getaktet, Coopers Text erst nach Sprechen), kein Hänger.
+- [ ] „Ich bin fertig" → finalize → handoff-Seite (Spiegel + Wertungs-Vorschlag + „Cooper, fass es in Worte" + „Zur Bewertung") → onApply füllt die Bewertung vor.
+- [ ] „Lieber tippen" wechselt sauber in den getippten Flow; getippter Cooper unverändert funktionsfähig.
+- [ ] Kein Commit/push, keine Schema-Änderung. Bestätigen.

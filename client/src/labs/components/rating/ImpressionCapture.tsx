@@ -13,6 +13,7 @@ import {
   EMPTY_LEDGER,
 } from "./impressionApi";
 import { recordVocabularyEvents } from "@/lib/vocabulary";
+import { useCooperVoice } from "./useCooperVoice";
 
 interface ImpressionCaptureProps {
   whiskyName?: string;
@@ -20,9 +21,10 @@ interface ImpressionCaptureProps {
   onSkip: () => void;
   onIdentifyFirst?: () => void;
   participantId?: string;
+  startPhase?: "voice" | "input";
 }
 
-type Phase = "input" | "converse" | "handoff";
+type Phase = "voice" | "input" | "converse" | "handoff";
 
 const INTENSITIES: { key: Intensity; label: string }[] = [
   { key: "schnell", label: "Schnell" },
@@ -39,10 +41,11 @@ const LEDGER_SLOTS: { key: keyof Omit<Ledger, "vagueResolved">; label: string }[
   { key: "affect", label: "Wertung" },
 ];
 
-export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdentifyFirst, participantId }: ImpressionCaptureProps) {
+export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdentifyFirst, participantId, startPhase }: ImpressionCaptureProps) {
   const { t, i18n } = useTranslation();
+  const voice = useCooperVoice();
 
-  const [phase, setPhase] = useState<Phase>("input");
+  const [phase, setPhase] = useState<Phase>(startPhase ?? "input");
   const [text, setText] = useState("");
   const [reply, setReply] = useState("");
   const [loading, setLoading] = useState(false);
@@ -65,6 +68,18 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
   useEffect(() => {
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: "smooth" });
   }, [transcript, loading]);
+
+  const voiceEndRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    voiceEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [voice.transcript.length]);
+
+  const voiceBlocks: ConverseTurn[] = [];
+  for (const turn of voice.transcript) {
+    const last = voiceBlocks[voiceBlocks.length - 1];
+    if (last && last.role === turn.role) last.text = `${last.text} ${turn.text}`;
+    else voiceBlocks.push({ role: turn.role, text: turn.text });
+  }
 
   const vocabLocale = (): "de" | "en" => (i18n.language?.startsWith("de") ? "de" : "en");
   const canStart = text.trim().length >= 2 && !loading;
@@ -148,6 +163,24 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
     setLoading(false);
   };
 
+  const handleVoiceFinish = async () => {
+    const tr = voice.transcript;
+    voice.disconnect();
+    if (tr.length === 0) { onSkip(); return; }
+    setTranscript(tr);
+    rawImpressionRef.current = tr.filter((x) => x.role === "taster").map((x) => x.text).join(" ");
+    setLoading(true);
+    setError(false);
+    try {
+      const r = await finalizeImpression({ whiskyName, intensity, transcript: tr });
+      setResult({ ...r, rawImpression: rawImpressionRef.current || r.rawImpression });
+      setPhase("handoff");
+    } catch {
+      setError(true);
+    }
+    setLoading(false);
+  };
+
   const handleProse = async () => {
     if (narrativeLoading || transcript.length === 0) return;
     setNarrativeLoading(true);
@@ -211,10 +244,12 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
       ].filter(Boolean)
     : [];
 
-  const LedgerConstellation = () => (
+  const LedgerConstellation = ({ data }: { data?: Ledger }) => {
+    const lg = data ?? ledger;
+    return (
     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: SP.xs, marginBottom: SP.md, padding: `0 ${SP.xs}px` }}>
       {LEDGER_SLOTS.map((slot) => {
-        const status = ledger[slot.key];
+        const status = lg[slot.key];
         const dot =
           status === "sharpened"
             ? { background: LABS_THEME.gold, border: `1px solid ${LABS_THEME.gold}`, boxShadow: "0 0 8px rgba(212,168,71,0.6)" }
@@ -231,7 +266,8 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
         );
       })}
     </div>
-  );
+    );
+  };
 
   const chipStyle = {
     padding: "8px 14px",
@@ -250,6 +286,80 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
       <div style={{ fontFamily: FONT.display, fontSize: 22, color: LABS_THEME.text, marginBottom: SP.xs }}>
         {t("v2.impressionTitle", "Erster Eindruck")}
       </div>
+
+      {phase === "voice" && (
+        <>
+          {voice.status !== "connected" ? (
+            <>
+              <div style={{ fontFamily: FONT.serif, fontSize: 16, color: LABS_THEME.muted, marginBottom: SP.md, lineHeight: 1.45 }}>
+                {t("v2.voiceIntro", "Nimm dein Glas. Wenn du so weit bist, erz\u00e4hl Cooper frei, was dir auff\u00e4llt.")}
+              </div>
+              {voice.status === "error" && (
+                <div style={{ fontFamily: FONT.body, fontSize: 14, color: LABS_THEME.amber, marginBottom: SP.sm, lineHeight: 1.4 }}>
+                  {voice.statusText}
+                </div>
+              )}
+              <button
+                onClick={() => voice.connect()}
+                disabled={voice.status === "connecting" || voice.status === "token"}
+                style={{ width: "100%", minHeight: TOUCH_MIN, background: LABS_THEME.gold, color: "#1a1408", border: "none", borderRadius: RADIUS.md, fontFamily: FONT.body, fontSize: 16, fontWeight: 600, opacity: (voice.status === "connecting" || voice.status === "token") ? 0.6 : 1, cursor: (voice.status === "connecting" || voice.status === "token") ? "default" : "pointer" }}
+              >
+                {(voice.status === "connecting" || voice.status === "token") ? t("v2.voiceConnecting", "Verbinde \u2026") : t("v2.voiceStart", "Gespr\u00e4ch mit Cooper beginnen")}
+              </button>
+              <div style={{ fontFamily: FONT.body, fontSize: 12, color: LABS_THEME.faint, marginTop: SP.sm, lineHeight: 1.4 }}>
+                {t("v2.voiceAiNote", "Coopers Stimme ist KI-generiert.")}
+              </div>
+              <button
+                type="button"
+                onClick={() => { voice.disconnect(); setPhase("input"); }}
+                style={{ width: "100%", marginTop: SP.md, background: "transparent", border: "none", color: LABS_THEME.muted, fontFamily: FONT.body, fontSize: 14, textDecoration: "underline", textUnderlineOffset: 3, cursor: "pointer", padding: SP.sm }}
+              >
+                {t("v2.voicePreferType", "Lieber tippen")}
+              </button>
+              <button
+                type="button"
+                onClick={() => { voice.disconnect(); onSkip(); }}
+                style={{ width: "100%", background: "transparent", border: "none", color: LABS_THEME.muted, fontFamily: FONT.body, fontSize: 14, textDecoration: "underline", textUnderlineOffset: 3, cursor: "pointer", padding: SP.sm }}
+              >
+                {t("v2.impressionSkip", "\u00dcberspringen")}
+              </button>
+            </>
+          ) : (
+            <>
+              <LedgerConstellation data={voice.ledger as any} />
+              <div
+                style={{ display: "flex", flexDirection: "column", maxHeight: 280, overflowY: "auto", maskImage: "linear-gradient(to bottom, transparent 0, black 36px)", WebkitMaskImage: "linear-gradient(to bottom, transparent 0, black 36px)", marginBottom: SP.md }}
+              >
+                {voice.transcript.length === 0 ? (
+                  <div style={{ fontFamily: FONT.body, fontSize: 14, color: LABS_THEME.faint, paddingTop: 36 }}>{t("v2.voiceWaiting", "\u2026 warte auf Stimme")}</div>
+                ) : (
+                  voiceBlocks.map((b, i) => (
+                    <div
+                      key={i}
+                      style={b.role === "mentor"
+                        ? { color: LABS_THEME.gold, fontFamily: FONT.serif, fontStyle: "italic", fontSize: 18, lineHeight: 1.5, marginTop: i === 0 ? 36 : SP.sm }
+                        : { color: LABS_THEME.text, fontFamily: FONT.body, fontSize: 16, lineHeight: 1.6, marginTop: i === 0 ? 36 : SP.sm }}
+                    >
+                      {b.text}
+                    </div>
+                  ))
+                )}
+                <div ref={voiceEndRef} />
+              </div>
+              <button
+                onClick={handleVoiceFinish}
+                disabled={loading}
+                style={{ width: "100%", minHeight: TOUCH_MIN, background: LABS_THEME.gold, color: "#1a1408", border: "none", borderRadius: RADIUS.md, fontFamily: FONT.body, fontSize: 16, fontWeight: 600, opacity: loading ? 0.6 : 1, cursor: loading ? "default" : "pointer" }}
+              >
+                {loading ? t("v2.impressionParsing", "Einen Moment \u2026") : t("v2.voiceFinish", "Ich bin fertig")}
+              </button>
+              <div style={{ fontFamily: FONT.body, fontSize: 12, color: LABS_THEME.faint, marginTop: SP.sm, lineHeight: 1.4 }}>
+                {t("v2.voiceAiNote", "Coopers Stimme ist KI-generiert.")}
+              </div>
+            </>
+          )}
+        </>
+      )}
 
       {phase === "input" && (
         <>
