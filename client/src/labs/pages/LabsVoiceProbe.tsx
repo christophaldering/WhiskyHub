@@ -1,3 +1,4 @@
+import { useRef, useEffect } from "react";
 import { useSession } from "@/lib/session";
 import { FONT, SP, RADIUS, TOUCH_MIN, LABS_THEME } from "@/labs/components/rating/theme";
 import { useCooperVoice, VOICES, LEDGER_CORNERS } from "@/labs/components/rating/useCooperVoice";
@@ -7,6 +8,8 @@ const CORNER_LABELS: Record<(typeof LEDGER_CORNERS)[number], string> = { nose: "
 export default function LabsVoiceProbe() {
   const session = useSession();
   const { status, statusText, model, voice, setVoice, mode, setMode, ledger, transcript, busy, connect, disconnect } = useCooperVoice();
+  const transcriptEndRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => { transcriptEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [transcript.length]);
 
   if (session.role !== "admin") {
     return (
@@ -89,7 +92,7 @@ export default function LabsVoiceProbe() {
       {transcript.length > 0 && (
         <div
           data-testid="transcript-debug"
-          style={{ display: "flex", flexDirection: "column", gap: SP.xs, maxHeight: 220, overflowY: "auto", padding: SP.md, border: `1px dashed ${LABS_THEME.border}`, borderRadius: RADIUS.md, background: LABS_THEME.bgCard }}
+          style={{ display: "flex", flexDirection: "column", gap: SP.xs, maxHeight: 240, overflowY: "auto", padding: SP.md, border: `1px dashed ${LABS_THEME.border}`, borderRadius: RADIUS.md, background: LABS_THEME.bgCard }}
         >
           <div style={{ fontFamily: FONT.body, fontSize: 11, color: LABS_THEME.faint, textTransform: "uppercase", letterSpacing: 1, marginBottom: SP.xs }}>Transkript (Test)</div>
           {transcript.map((t, i) => (
@@ -97,6 +100,7 @@ export default function LabsVoiceProbe() {
               <span style={{ fontWeight: 600 }}>{t.role === "mentor" ? "Cooper:" : "Du:"}</span> {t.text}
             </div>
           ))}
+          <div ref={transcriptEndRef} />
         </div>
       )}
 

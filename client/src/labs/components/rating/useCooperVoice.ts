@@ -103,7 +103,7 @@ export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fl
           }
         }
         if (msg?.type === "conversation.item.input_audio_transcription.completed" && msg?.transcript) { const t = String(msg.transcript).trim(); if (t) setTranscript((prev) => [...prev, { role: "taster", text: t }]); }
-        if (msg?.type === "response.audio_transcript.done" && msg?.transcript) { const t = String(msg.transcript).trim(); if (t) setTranscript((prev) => [...prev, { role: "mentor", text: t }]); }
+        if ((msg?.type === "response.output_audio_transcript.done" || msg?.type === "response.audio_transcript.done") && msg?.transcript) { const t = String(msg.transcript).trim(); if (t) setTranscript((prev) => [...prev, { role: "mentor", text: t }]); }
         if (msg?.type === "response.function_call_arguments.done" && msg?.name === "update_ledger") {
           console.log("[voice-probe] tool-call update_ledger", msg.arguments);
           let args: any = {};
