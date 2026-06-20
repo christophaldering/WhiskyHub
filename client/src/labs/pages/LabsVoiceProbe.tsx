@@ -19,6 +19,7 @@ export default function LabsVoiceProbe() {
   const [statusText, setStatusText] = useState("Bereit.");
   const [model, setModel] = useState<string>("");
   const [voice, setVoice] = useState<string>("cedar");
+  const [mode, setMode] = useState<"fluessig" | "tiefsinnig">("tiefsinnig");
   const [ledger, setLedger] = useState<Ledger>(EMPTY_LEDGER);
   const [busy, setBusy] = useState(false);
   const pcRef = useRef<RTCPeerConnection | null>(null);
@@ -50,7 +51,7 @@ export default function LabsVoiceProbe() {
     setStatusText("fordere Token an …");
     setLedger(EMPTY_LEDGER);
     try {
-      const tokenRes = await fetch("/api/voice-probe/token", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ voice }) });
+      const tokenRes = await fetch("/api/voice-probe/token", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ voice, mode }) });
       const tokenText = await tokenRes.text();
       if (!tokenRes.ok) { fail(`Token ${tokenRes.status}: ${tokenText.slice(0, 300)}`); return; }
       let tokenData: any = {}; try { tokenData = JSON.parse(tokenText); } catch { /* noop */ }
@@ -58,6 +59,7 @@ export default function LabsVoiceProbe() {
       const usedModel = tokenData?.model || "gpt-realtime";
       setModel(usedModel);
       if (tokenData?.voice) setVoice(tokenData.voice);
+      if (tokenData?.mode) setMode(tokenData.mode);
       if (!EPHEMERAL_KEY) { fail("Kein ephemeraler Key in der Token-Antwort."); return; }
 
       setStatus("connecting");
@@ -135,7 +137,7 @@ export default function LabsVoiceProbe() {
     } catch (e: any) {
       fail(e?.message || String(e), e);
     }
-  }, [fail, voice]);
+  }, [fail, voice, mode]);
 
   const disconnect = useCallback(() => {
     cleanup();
@@ -165,7 +167,7 @@ export default function LabsVoiceProbe() {
         data-testid="status-voice-probe"
         style={{ fontSize: 16, color: statusColor, padding: SP.md, border: `1px solid ${LABS_THEME.border}`, borderRadius: RADIUS.md, background: LABS_THEME.bgCard, minHeight: 56, display: "flex", alignItems: "center", lineHeight: 1.4 }}
       >
-        {statusText}{model ? `  ·  Modell: ${model}` : ""}{`  ·  Stimme: ${voice}`}
+        {statusText}{model ? `  ·  Modell: ${model}` : ""}{`  ·  Stimme: ${voice}`}{`  ·  Modus: ${mode === "tiefsinnig" ? "Tiefsinnig" : "Flüssig"}`}
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: SP.sm }}>
@@ -181,6 +183,24 @@ export default function LabsVoiceProbe() {
               style={{ minHeight: 36, padding: `0 ${SP.md}px`, borderRadius: RADIUS.full, border: `1px solid ${active ? LABS_THEME.gold : LABS_THEME.border}`, background: active ? "rgba(212,168,71,0.14)" : "transparent", color: active ? LABS_THEME.gold : LABS_THEME.muted, fontFamily: FONT.body, fontSize: 14, cursor: locked ? "default" : "pointer", opacity: locked && !active ? 0.5 : 1 }}
             >
               {v}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: SP.sm }}>
+        {([["fluessig", "Flüssig"], ["tiefsinnig", "Tiefsinnig"]] as const).map(([m, label]) => {
+          const active = mode === m;
+          const locked = status === "connected";
+          return (
+            <button
+              key={m}
+              data-testid={`chip-mode-${m}`}
+              onClick={() => setMode(m)}
+              disabled={locked}
+              style={{ minHeight: 36, padding: `0 ${SP.md}px`, borderRadius: RADIUS.full, border: `1px solid ${active ? LABS_THEME.gold : LABS_THEME.border}`, background: active ? "rgba(212,168,71,0.14)" : "transparent", color: active ? LABS_THEME.gold : LABS_THEME.muted, fontFamily: FONT.body, fontSize: 14, cursor: locked ? "default" : "pointer", opacity: locked && !active ? 0.5 : 1 }}
+            >
+              {label}
             </button>
           );
         })}

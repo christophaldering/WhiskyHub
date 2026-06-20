@@ -5625,15 +5625,19 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
       }];
       const VOICES = ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse", "marin", "cedar"];
       const voice = VOICES.includes(req.body?.voice) ? req.body.voice : "cedar";
-      const candidates = ["gpt-realtime", "gpt-realtime-2"];
+      const mode = ["fluessig", "tiefsinnig"].includes(req.body?.mode) ? req.body.mode : "tiefsinnig";
+      const candidates = mode === "tiefsinnig" ? ["gpt-realtime-2", "gpt-realtime"] : ["gpt-realtime", "gpt-realtime-2"];
+      const silenceMs = mode === "tiefsinnig" ? 500 : 400;
       let lastErr = "";
       for (const model of candidates) {
+        const session: any = { type: "realtime", model, instructions, audio: { input: { turn_detection: { type: "server_vad", silence_duration_ms: silenceMs, prefix_padding_ms: 300, threshold: 0.5 } }, output: { voice } }, tools };
+        if (mode === "tiefsinnig") session.reasoning = { effort: "low" };
         const r = await fetch("https://api.openai.com/v1/realtime/client_secrets", {
           method: "POST",
           headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({
             expires_after: { anchor: "created_at", seconds: 60 },
-            session: { type: "realtime", model, instructions, audio: { input: { turn_detection: { type: "server_vad", silence_duration_ms: 400, prefix_padding_ms: 300, threshold: 0.5 } }, output: { voice } }, tools },
+            session,
           }),
         });
         const text = await r.text();
@@ -5642,7 +5646,7 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
           const value = data?.value || data?.client_secret?.value;
           const expiresAt = data?.expires_at ?? data?.expiresAt ?? null;
           if (!value) { lastErr = `Kein ephemeraler Key in der Antwort: ${text.slice(0, 400)}`; continue; }
-          return res.json({ value, expiresAt, model, voice });
+          return res.json({ value, expiresAt, model, voice, mode });
         }
         lastErr = `${r.status} ${text.slice(0, 400)}`;
         if (model !== candidates[candidates.length - 1] && /model/i.test(text)) continue;
