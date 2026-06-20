@@ -1,0 +1,39 @@
+# HARD PROMPT — Tasting-Beenden zuverlässig machen (Cockpit)
+
+PROBLEM: „End Session" im Cockpit öffnet den Teilnehmer-Picker; dessen Bestätigung ruft `updateStatusMut.mutate("closed")` (fire-and-forget, kein onError). `handlePickerConfirm` schließt den Picker IMMER — auch wenn der Statuswechsel scheitert. Folge: Tasting bleibt „open", Host merkt nichts.
+
+GRENZEN: Nur `client/src/labs/pages/LabsHostCockpit.tsx`. Kein Commit/push, keine Schema-/Server-Änderung. Safety-Tag `pre-endsession-feedback-2026-06-20`.
+
+## STEP 0
+- Bestätigen: `updateStatusMut` (~Z.276, nur `onSuccess`), `handlePickerConfirm` (~Z.743, ruft `updateStatusMut.mutate("closed")` und `setShowParticipantPicker(false)` im try-Block).
+- Prüfen, ob ein Toast-Mechanismus (`useToast`/`toast`) bereits in dieser Datei im Scope ist. Falls nein: bestehenden Projekt-Toast-Import ergänzen (Muster aus anderen Labs-Seiten übernehmen). Plan nennen.
+
+## FIX
+1. `updateStatusMut` um `onError` ergänzen:
+```tsx
+onError: () => {
+  toast({ title: t("cockpit.endFailed", "Beenden fehlgeschlagen — bitte erneut versuchen"), variant: "destructive" });
+},
+```
+2. `handlePickerConfirm` so umbauen, dass der Picker NUR bei Erfolg schließt und Fehler sichtbar werden:
+```tsx
+const handlePickerConfirm = async () => {
+  setPickerSaving(true);
+  try {
+    invalidateTastingAggregates(queryClient, tastingId);
+    await updateStatusMut.mutateAsync("closed");
+    setShowParticipantPicker(false);   // nur bei Erfolg
+  } catch {
+    // Picker bleibt offen; onError-Toast informiert den Host
+  } finally {
+    setPickerSaving(false);
+  }
+};
+```
+(`mutateAsync` statt `mutate`, damit der `await` einen Fehler wirklich fängt.)
+
+## VERIFIKATION
+- [ ] Build grün.
+- [ ] Offenes Tasting im Cockpit → „End Session" → Picker bestätigen → Status wechselt auf Auswertung/Reveal, Tasting verschwindet aus „2 Live"/Banner.
+- [ ] Bei simuliertem Fehler (z. B. offline): Picker bleibt offen, Fehler-Toast erscheint, Status bleibt unverändert — kein stilles „sieht beendet aus".
+- [ ] Kein Commit/push. Bestätigen.

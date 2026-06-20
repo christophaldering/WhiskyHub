@@ -279,6 +279,9 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
       queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
       queryClient.invalidateQueries({ queryKey: ["tastings"] });
     },
+    onError: () => {
+      toast({ title: t("cockpit.endFailed", "Beenden fehlgeschlagen — bitte erneut versuchen"), variant: "destructive" });
+    },
   });
 
   const restartMut = useMutation({
@@ -744,10 +747,10 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
     setPickerSaving(true);
     try {
       invalidateTastingAggregates(queryClient, tastingId);
-      updateStatusMut.mutate("closed");
-      setShowParticipantPicker(false);
+      await updateStatusMut.mutateAsync("closed");
+      setShowParticipantPicker(false);   // nur bei Erfolg
     } catch {
-      // keep modal open on error
+      // Picker bleibt offen; onError-Toast informiert den Host
     } finally {
       setPickerSaving(false);
     }
