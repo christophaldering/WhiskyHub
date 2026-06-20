@@ -16,7 +16,7 @@ import {
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy,
   Mic, Play as PlayIcon, Pause, ChevronDown, RotateCcw, Camera,
   ArrowUp, ArrowDown, SlidersHorizontal, Archive, Clock, FileEdit, MoreHorizontal,
-  Users, Smile,
+  Users, Smile, FileText,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import ContextDownloadBar from "@/labs/components/ContextDownloadBar";
@@ -24,6 +24,7 @@ import { downloadCsvFromRows, downloadXlsxFromSheets, safeFileSegment } from "@/
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import type { RatingData } from "@/labs/components/rating/types";
+import { buildTastingNoteHtml } from "@/labs/utils/tastingNoteHtml";
 
 type OriginFilter = "all" | "solo" | "tasting";
 type StatusFilter = "all" | "open" | "done";
@@ -517,6 +518,25 @@ export default function LabsTasteDrams() {
     updateMutation.mutate({ id: selectedEntry.id, data });
   };
 
+  const openTastingNote = () => {
+    const e: any = selectedEntry;
+    if (!e) return;
+    const html = buildTastingNoteHtml({
+      name: e.name || e.title || "Dram",
+      dateISO: e.createdAt ?? null,
+      subtitleParts: [e.region, e.distillery, e.age ? String(e.age) : null, (e.abv != null && e.abv !== "") ? `${e.abv}% vol` : null],
+      imageUrl: e.imageUrl ?? null,
+      narrative: (e.tastingNarrative || e.overallNotes || "").trim() || null,
+      scores: { nose: e.noseScore, taste: e.tasteScore, finish: e.finishScore, overall: e.personalScore },
+      tags: [],
+      locale: "de",
+    });
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  };
+
   const handleBack = () => {
     if (enteredViaDeepLink && typeof window !== "undefined" && window.history.length > 1) {
       setEnteredViaDeepLink(false);
@@ -643,6 +663,9 @@ export default function LabsTasteDrams() {
             <div className="flex gap-2 items-center">
               <button onClick={() => handleEdit(selectedEntry)} className="labs-btn-secondary flex items-center gap-1.5" style={{ padding: "6px 12px", fontSize: 13 }} data-testid="button-labs-edit-dram">
                 <Pencil className="w-3.5 h-3.5" /> {t("drams.edit")}
+              </button>
+              <button onClick={openTastingNote} className="labs-btn-secondary flex items-center gap-1.5" style={{ padding: "6px 12px", fontSize: 13 }} data-testid="button-labs-tasting-note">
+                <FileText className="w-3.5 h-3.5" /> {t("drams.tastingNote", "Notiz")}
               </button>
               {selectedEntry.status === "final" && isQuickRating(selectedEntry) && (
                 <button

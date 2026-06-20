@@ -1,0 +1,177 @@
+# HARD PROMPT — Verkostungsnotiz komplett (Datei NEU anlegen + Knopf)
+
+GRENZEN: Neue Datei `client/src/labs/utils/tastingNoteHtml.ts` + Knopf in `client/src/labs/pages/LabsTasteDrams.tsx`. Kein Commit/push, keine Schema-Änderung. Safety-Tag `pre-tasting-note-2026-06-20`.
+
+## SCHRITT 1 — Datei NEU anlegen: `client/src/labs/utils/tastingNoteHtml.ts`
+Mit GENAU diesem Inhalt (vollständig, nichts auslassen):
+
+```ts
+// client/src/labs/utils/tastingNoteHtml.ts
+// Baut eine eigenständige, helle, druckfreundliche Verkostungsnotiz als HTML-String.
+// Markentreu: Playfair Display + Cormorant Garamond via Google Fonts, Creme-Papier,
+// Gold-Akzente. Wird per Blob in neuem Tab geöffnet; Nutzer druckt / sichert als PDF.
+
+export interface TastingNoteData {
+  name: string;
+  dateISO?: string | null;
+  subtitleParts?: (string | null | undefined)[];
+  imageUrl?: string | null;
+  narrative?: string | null;
+  scores?: { nose?: number | null; taste?: number | null; finish?: number | null; overall?: number | null };
+  tags?: string[];
+  locale?: "de" | "en";
+}
+
+const esc = (s: unknown): string =>
+  String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+function formatDate(iso: string | null | undefined, locale: "de" | "en"): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString(locale === "de" ? "de-DE" : "en-GB", { day: "numeric", month: "long", year: "numeric" });
+}
+
+export function buildTastingNoteHtml(data: TastingNoteData): string {
+  const locale = data.locale === "en" ? "en" : "de";
+  const L = locale === "de"
+    ? { note: "Verkostungsnotiz", nose: "Nase", palate: "Gaumen", finish: "Abgang", overall: "Gesamt", foot: "Festgehalten mit CaskSense" }
+    : { note: "Tasting Note", nose: "Nose", palate: "Palate", finish: "Finish", overall: "Overall", foot: "Captured with CaskSense" };
+
+  const name = esc(data.name || "Dram");
+  const date = formatDate(data.dateISO, locale);
+  const subtitle = (data.subtitleParts || []).map((p) => (p == null ? "" : String(p).trim())).filter(Boolean).map(esc).join("  ·  ");
+  const meta = [date, subtitle].filter(Boolean).join("  ·  ");
+
+  const narrative = (data.narrative || "").trim();
+  const narrativeHtml = narrative
+    ? `<div class="prose">${esc(narrative).replace(/\n{2,}/g, "</p><p>").replace(/\n/g, "<br>").replace(/^/, "<p>").replace(/$/, "</p>")}</div>`
+    : "";
+
+  const s = data.scores || {};
+  const scoreCells = [
+    { label: L.nose, v: s.nose },
+    { label: L.palate, v: s.taste },
+    { label: L.finish, v: s.finish },
+    { label: L.overall, v: s.overall, accent: true },
+  ].filter((c) => c.v != null && !isNaN(Number(c.v)));
+  const scoresHtml = scoreCells.length
+    ? `<div class="scores">${scoreCells.map((c) => `
+        <div class="score${c.accent ? " score--accent" : ""}">
+          <div class="score__num">${esc(Math.round(Number(c.v)))}</div>
+          <div class="score__label">${esc(c.label)}</div>
+        </div>`).join("")}</div>`
+    : "";
+
+  const tags = (data.tags || []).map((t) => String(t).trim()).filter(Boolean);
+  const tagsHtml = tags.length
+    ? `<div class="tags">${tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("")}</div>`
+    : "";
+
+  const imageHtml = data.imageUrl
+    ? `<div class="imgwrap"><img class="img" src="${esc(data.imageUrl)}" alt="${name}"></div>`
+    : "";
+
+  return `<!DOCTYPE html>
+<html lang="${locale}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${name} — ${esc(L.note)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6EFE2; --ink:#2A2018; --muted:#7A6E5C; --gold:#C9A24B; --amber:#C47A3A; --line:#E2D6BE;
+    --display:'Playfair Display',Georgia,serif; --serif:'Cormorant Garamond',Georgia,serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:var(--paper);color:var(--ink);-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  body{font-family:var(--serif);line-height:1.6;padding:48px 20px 64px;display:flex;justify-content:center;}
+  .sheet{width:100%;max-width:640px;}
+  .brand{font-family:var(--display);font-weight:600;font-size:.92rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);}
+  .eyebrow{font-family:var(--serif);font-style:italic;font-size:1rem;color:var(--muted);margin-top:2px;}
+  .rule{height:1px;background:var(--line);margin:18px 0 26px;position:relative;}
+  .rule::after{content:"";position:absolute;left:0;top:0;width:64px;height:1px;background:var(--gold);}
+  .title{font-family:var(--display);font-weight:600;font-size:2.15rem;line-height:1.12;color:var(--ink);}
+  .meta{font-family:var(--serif);font-size:1.06rem;color:var(--muted);margin-top:8px;letter-spacing:.01em;}
+  .imgwrap{margin:28px 0 4px;text-align:center;}
+  .img{max-width:100%;max-height:300px;border-radius:3px;border:1px solid var(--line);box-shadow:0 1px 0 rgba(0,0,0,.04);}
+  .prose{margin:30px 0 6px;font-family:var(--serif);font-size:1.22rem;line-height:1.74;color:var(--ink);}
+  .prose p{margin-bottom:.85em;}
+  .scores{display:flex;gap:10px;margin:30px 0 8px;flex-wrap:wrap;}
+  .score{flex:1;min-width:88px;text-align:center;padding:14px 8px;border:1px solid var(--line);border-radius:4px;background:rgba(201,162,75,.05);}
+  .score--accent{border-color:var(--gold);background:rgba(201,162,75,.12);}
+  .score__num{font-family:var(--display);font-weight:600;font-size:1.7rem;color:var(--ink);line-height:1;}
+  .score--accent .score__num{color:var(--amber);}
+  .score__label{font-family:var(--serif);font-size:.92rem;letter-spacing:.04em;color:var(--muted);margin-top:5px;text-transform:uppercase;}
+  .tags{margin:26px 0 4px;display:flex;flex-wrap:wrap;gap:8px;}
+  .tag{font-family:var(--serif);font-style:italic;font-size:1.02rem;color:var(--ink);padding:3px 13px;border:1px solid var(--line);border-radius:999px;background:rgba(201,162,75,.04);}
+  .foot{margin-top:38px;padding-top:16px;border-top:1px solid var(--line);font-family:var(--serif);font-size:.92rem;color:var(--muted);display:flex;justify-content:space-between;letter-spacing:.02em;}
+  .foot a{color:var(--gold);text-decoration:none;}
+  @page{margin:16mm;}
+  @media print{
+    body{padding:0;}
+    .sheet{max-width:none;}
+    .prose,.score,.imgwrap{break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="brand">CaskSense</div>
+    <div class="eyebrow">${esc(L.note)}</div>
+    <div class="rule"></div>
+    <h1 class="title">${name}</h1>
+    ${meta ? `<div class="meta">${meta}</div>` : ""}
+    ${imageHtml}
+    ${narrativeHtml}
+    ${scoresHtml}
+    ${tagsHtml}
+    <div class="foot"><span>${esc(L.foot)}</span><a href="https://casksense.com">casksense.com</a></div>
+  </div>
+</body>
+</html>`;
+}
+```
+
+## SCHRITT 2 — Knopf in `client/src/labs/pages/LabsTasteDrams.tsx`
+STEP 0: In der Dram-Detailansicht von `selectedEntry` die Action-Buttons-Zeile finden (Bearbeiten / Nochmal verkosten / „…"). Prüfen, ob `i18n` im Scope ist.
+1. Imports oben ergänzen: `import { buildTastingNoteHtml } from "@/labs/utils/tastingNoteHtml";` und `FileText` aus lucide-react (falls nicht vorhanden).
+2. Funktion in der Komponente ergänzen:
+
+```ts
+const openTastingNote = () => {
+  const e: any = selectedEntry;
+  if (!e) return;
+  const html = buildTastingNoteHtml({
+    name: e.name || e.title || "Dram",
+    dateISO: e.createdAt ?? null,
+    subtitleParts: [e.region, e.distillery, e.age ? String(e.age) : null, (e.abv != null && e.abv !== "") ? `${e.abv}% vol` : null],
+    imageUrl: e.imageUrl ?? null,
+    narrative: (e.tastingNarrative || e.overallNotes || "").trim() || null,
+    scores: { nose: e.noseScore, taste: e.tasteScore, finish: e.finishScore, overall: e.personalScore },
+    tags: [],
+    locale: "de",
+  });
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank");
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+};
+```
+
+3. Neben den bestehenden Action-Buttons einen Knopf im gleichen Stil (`labs-btn-secondary`) hinzufügen: `FileText`-Icon + Label `t("drams.tastingNote", "Notiz")`, `onClick={openTastingNote}`.
+
+## VERIFIKATION
+- [ ] Build grün; Datei `tastingNoteHtml.ts` existiert und wird importiert.
+- [ ] Dram-Detail zeigt neuen „Notiz"-Knopf neben Bearbeiten / Nochmal verkosten.
+- [ ] Klick öffnet in neuem Tab die helle gebrandete Notiz (CaskSense-Kopf, Goldlinie, Name in Playfair, Datum/Region, Bild falls vorhanden, Prosa in Cormorant, Wertungs-Block Nase/Gaumen/Abgang/Gesamt, Fuß).
+- [ ] „Als PDF sichern" behält Creme-Hintergrund + Gold.
+- [ ] Dram ohne Prosa/Bild rendert trotzdem sauber.
+- [ ] Kein Commit/push. Bestätigen.
