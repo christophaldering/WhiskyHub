@@ -1,0 +1,167 @@
+# CaskSense — Phase 2a: Frei-Modus-Bewertung in die Liste verlagern
+
+## Kontext
+Datei: client/src/labs/pages/LabsLive.tsx, NUR der frei-Modus-Zweig (NICHT guidedMode).
+Heute hat dieser Zweig drei getrennte Teile: (1) eine Header-Karte mit Vor/Zurueck-Pfeilen,
+aktivem Dram-Namen und Indikator-Punkten; (2) darunter eine separate RatingFlowV2-Bewertung
+fuer den aktiven Dram; (3) ganz unten eine aufklappbare Liste aller Drams ("calibration-overview"),
+die nur Scores anzeigt und deren "Bewerten"-Buttons nach oben zur separaten Bewertung springen.
+
+Ziel: Die Bewertung wandert IN die Liste. Antippen einer Zeile klappt sie auf UND macht sie zum
+aktiven Dram; in der aufgeklappten Zeile erscheint RatingFlowV2 direkt (Auto-Save); zugeklappt
+steht der eigene Score in der Zeile. Header-Karte und separate Bewertung entfallen.
+
+Der Trick: Beim Aufklappen wird zusaetzlich setCurrentIndex(idx) gesetzt. Dadurch zeigen alle
+bestehenden abgeleiteten Variablen (currentWhisky, freeInitialData, displayName, isBlind,
+saveRatingData) automatisch auf die offene Zeile — KEIN Umbau dieser Logik noetig.
+
+## Safety-Tag zuerst
+Setze VOR jeder Aenderung:
+git tag pre-phase2a-liste-2026-06-21
+
+## SCHRITT 0 — Diagnose (NUR LESEN, noch nichts aendern)
+Oeffne client/src/labs/pages/LabsLive.tsx und bestaetige durch Anschauen:
+1. Z.1581: <div ref={setFreeChipSlotNode} /> — bleibt UNANGETASTET.
+2. Z.1582: <div className="labs-card-elevated p-5 mb-5 labs-fade-in labs-stagger-1"> oeffnet die
+   Header-Karte (prev/next-Buttons, Dram-Name-h2, Indikator-Punkte). Finde ihre schliessende </div>
+   — die letzte </div> direkt vor der Leerzeile vor {canRate ? ( (etwa Z.1660).
+3. Z.1663 beginnt {canRate ? ( mit RatingFlowV2; der : ( -Zweig ab etwa Z.1696 zeigt Status-/
+   AuthGate-Meldungen und endet mit ) : null} + </div> + )} (etwa Z.1729).
+4. Die Liste-Zeilen-<button> mit onClick={() => setExpandedCalIdx(isExpanded ? null : idx)}
+   (etwa Z.1788) und der <div ... data-testid={`calibration-detail-${idx}`}> (etwa Z.1826), dessen
+   Inhalt aktuell {rating ? (...) : (...)} ist (endet etwa Z.1885 mit )} vor seiner </div>).
+
+Melde mir die exakten Zeilennummern dieser fuenf Anker. WARTE auf mein "OK", bevor du etwas aenderst.
+
+## SCHRITT 1 — Plan bestaetigen
+Nach meinem "OK" fuehre genau die vier folgenden Edits aus. Keine weiteren Aenderungen.
+
+
+### EDIT 1 — Header-Karte entfernen
+Entferne die KOMPLETTE Header-Karte: von der oeffnenden
+<div className="labs-card-elevated p-5 mb-5 labs-fade-in labs-stagger-1"> (Z.1582)
+bis zu ihrer zugehoerigen schliessenden </div> (in Schritt 0 verifiziert, etwa Z.1660).
+Diese Karte enthaelt die prev/next-Buttons, das {currentIndex + 1} / {totalWhiskies}, den
+Dram-Namen-<h2> und die Indikator-Punkte (labs-live-dot-${i}).
+
+WICHTIG: Die Zeile direkt davor — <div ref={setFreeChipSlotNode} /> (Z.1581) — bleibt STEHEN.
+Nicht entfernen.
+
+
+### EDIT 2 — Separate Bewertung entfernen, Status-Block behalten
+
+>>> ALT (genau diesen Block suchen): >>>
+          {canRate ? (
+            <>
+              <RatingFlowV2
+                key={currentWhisky?.id}
+                chipInHeader
+                chipPortalTarget={freeChipSlotNode}
+                scale={mainScale}
+                whisky={{ name: displayName, region: currentWhisky?.region || undefined, cask: currentWhisky?.caskType || undefined, blind: isBlind }}
+                initialData={freeInitialData}
+                preferredMode={freeRatingMode}
+                showTisch={true}
+                autoSaveHint={true}
+                onChange={(draft) => {
+                  if (draft.mode) setFreeRatingMode(draft.mode);
+                  freeRatingDataRef.current = draft.data;
+                  saveRatingData(draft.data, freeformMemo);
+                }}
+                onDone={(data) => { saveRatingData(data, freeformMemo); }}
+                onBack={() => {}}
+              />
+              {VOICE_MEMOS_ENABLED && (
+                <div className="mt-3">
+                  <LabsVoiceMemoRecorder
+                    participantId={currentParticipant?.id || ""}
+                    memo={freeformMemo}
+                    onMemoChange={(memoData) => {
+                      setFreeformMemo(memoData);
+                      saveRatingData(freeRatingDataRef.current, memoData);
+                    }}
+                  />
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="labs-card-elevated p-6 text-center labs-fade-in labs-stagger-2">
+<<< ENDE ALT <<<
+
+>>> NEU (durch genau diese zwei Zeilen ersetzen): >>>
+          {!canRate && (
+            <div className="labs-card-elevated p-6 text-center labs-fade-in labs-stagger-2">
+<<< ENDE NEU <<<
+
+Der gesamte Inhalt danach (die {!currentParticipant ? ... : tasting.status === "draft" ? ... }-
+Statusmeldungen bis ) : null}, dann </div>, dann )} ) bleibt UNVERAENDERT. Das abschliessende
+)} schliesst jetzt korrekt das {!canRate && (.
+Hinweis: RatingFlowV2, VOICE_MEMOS_ENABLED, LabsVoiceMemoRecorder bleiben importiert/definiert —
+sie werden nur hier nicht mehr verwendet (RatingFlowV2 kommt in Edit 4 zurueck). Nichts loeschen.
+
+
+### EDIT 3 — Zeilen-Klick: Aufklappen synchronisiert currentIndex
+
+>>> ALT: >>>
+                          onClick={() => setExpandedCalIdx(isExpanded ? null : idx)}
+<<< ENDE ALT <<<
+
+>>> NEU: >>>
+                          onClick={() => {
+                            const nextExp = isExpanded ? null : idx;
+                            setExpandedCalIdx(nextExp);
+                            if (nextExp !== null) setCurrentIndex(nextExp);
+                          }}
+<<< ENDE NEU <<<
+
+
+### EDIT 4 — Aufgeklappte Zeile: RatingFlowV2 inline statt read-only-Anzeige
+Im <div ... data-testid={`calibration-detail-${idx}`}> ersetze den GESAMTEN inneren Ausdruck
+{rating ? ( ... ) : ( ... )} (die read-only-Balken + "Bearbeiten"-Button bzw. "Noch nicht bewertet"
++ "Jetzt bewerten"-Button) durch:
+
+>>> NEU (kompletter innerer Ausdruck): >>>
+                            {idx === currentIndex && canRate ? (
+                              <RatingFlowV2
+                                key={w.id}
+                                scale={mainScale}
+                                whisky={{ name: displayName, region: currentWhisky?.region || undefined, cask: currentWhisky?.caskType || undefined, blind: isBlind }}
+                                initialData={freeInitialData}
+                                preferredMode={freeRatingMode}
+                                showTisch={true}
+                                autoSaveHint={true}
+                                onChange={(draft) => {
+                                  if (draft.mode) setFreeRatingMode(draft.mode);
+                                  freeRatingDataRef.current = draft.data;
+                                  saveRatingData(draft.data, freeformMemo);
+                                }}
+                                onDone={(data) => { saveRatingData(data, freeformMemo); }}
+                                onBack={() => {}}
+                              />
+                            ) : (
+                              <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: 0, textAlign: "center", padding: "4px 0" }}>
+                                {!currentParticipant ? "Zum Bewerten anmelden" : "Bewertung nicht moeglich"}
+                              </p>
+                            )}
+<<< ENDE NEU <<<
+
+WICHTIG bei Edit 4:
+- KEIN chipInHeader, KEIN chipPortalTarget (der Phasen-Chip rendert jetzt inline in der Zeile).
+- key={w.id} (nicht currentWhisky) — sorgt fuer sauberes Re-Mount pro Zeile.
+- Die import-Zeile von RatingFlowV2 ist bereits vorhanden; nichts hinzufuegen.
+
+
+## SCHRITT 2 — Verifikation
+- Build (npm run build oder das Projekt-Build-Kommando) muss FEHLERFREI durchlaufen.
+- Bestaetige: <div ref={setFreeChipSlotNode} /> steht noch da (Edit 1 hat ihn nicht entfernt).
+- Bestaetige: Im frei-Zweig gibt es jetzt GENAU EIN <RatingFlowV2 (in der aufgeklappten Zeile),
+  und der {!canRate && (...)}-Statusblock ist intakt.
+- Keine shared/schema.ts-Aenderung, kein drizzle-kit, keine Migration.
+
+## ABSOLUTES COMMIT-VERBOT
+NICHT committen. NICHT git commit, NICHT git push, NICHT taggen (ausser dem Safety-Tag oben).
+Lass alle Aenderungen uncommitted im Working Tree. Ich (Christoph) committe selbst nach dem Test.
+Wiederhole am Ende kurz: "Keine Commits gemacht."
+
+## Rollback falls noetig
+git reset --hard pre-phase2a-liste-2026-06-21
