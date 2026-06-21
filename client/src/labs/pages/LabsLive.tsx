@@ -506,131 +506,7 @@ function GuidedStepView({
   const canRate = currentParticipant && tasting?.status === "open";
   const nextDramIdx = whiskyIndex + 1;
 
-  return (
-    <div className="labs-fade-in">
-      {entryBannerIdx !== null && (
-        <div
-          onClick={() => setEntryBannerIdx(null)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "10px 14px",
-            borderRadius: 12,
-            background: "rgba(200,134,26,0.08)",
-            border: "1px solid rgba(200,134,26,0.2)",
-            marginBottom: 16,
-            cursor: "pointer",
-            animation: "labsFadeIn 200ms ease both",
-          }}
-          data-testid="live-entry-midway-banner"
-        >
-          <Clock style={{ width: 16, height: 16, color: "#c8861a", flexShrink: 0 }} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>
-              {t("liveUi.joinedMidwayTitle", "Tasting already in progress")}
-            </div>
-            <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
-              {t("liveUi.joinedMidwayHint", "You're joining at dram {{n}} of {{total}}.", { n: entryBannerIdx + 1, total: totalWhiskies })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {revealMoment && (
-        <LabsRevealMoment
-          {...revealMoment}
-          onDismiss={() => {
-            revealMomentActiveRef.current = false;
-            setRevealMoment(null);
-            if (pendingIndexRef.current !== null) {
-              setLocalIndex(pendingIndexRef.current);
-              pendingIndexRef.current = null;
-              setFlowSaved(false);
-            }
-          }}
-        />
-      )}
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "8px 0",
-          marginBottom: 8,
-        }}
-        data-testid="guided-context-bar"
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-              color: "var(--labs-text-muted)",
-              textTransform: "uppercase",
-              letterSpacing: "0.04em",
-            }}
-            data-testid="guided-step-counter"
-          >
-            {t("m2.taste.rating.dramXofN", { x: localIndex + 1, n: totalWhiskies, defaultValue: `Dram ${localIndex + 1} of ${totalWhiskies}` })}
-          </span>
-          <ScaleBadge max={maxScore} size="sm" />
-          {tasting.blindMode && (
-            <span
-              className="labs-badge labs-badge-accent"
-              style={{ fontSize: 10, padding: "2px 8px" }}
-              data-testid="guided-blind-badge"
-            >
-              <EyeOff style={{ width: 10, height: 10, marginRight: 3, display: "inline" }} />
-              {t("m2.taste.rating.blind", "Blind")}
-            </span>
-          )}
-        </div>
-        <div ref={setChipSlotNode} style={{ display: "flex", alignItems: "center" }} />
-      </div>
-
-      <DramCarousel
-        chips={dramChips}
-        activeIndex={localIndex}
-        onChipTap={(idx) => {
-          if (idx <= hostMaxIndex) {
-            const rating = guidedMyRatings.find((r: any) => r.whiskyId === allWhiskies[idx]?.id);
-            setLocalIndex(idx);
-            setFlowSaved(false);
-            setDramTransitionKey(k => k + 1);
-            setEditRatingMode(null);
-            if (rating) {
-              setShowEditDialog(true);
-            }
-          }
-        }}
-        scaleMax={maxScore}
-        isBlind={isBlindStep}
-      />
-
-      {interruptBanner && (
-        <ResumeOrSkipBanner
-          title={t("m2.taste.rating.interruptTitle", "Incomplete rating")}
-          hint={t("m2.taste.rating.interruptAdvanced", "Host moved to the next dram")}
-          saveLabel={t("m2.taste.rating.interruptContinue", "Continue")}
-          skipLabel={t("m2.taste.rating.interruptSkip", "Skip")}
-          onSave={() => {
-            setInterruptBanner(null);
-            setLocalIndex(interruptBanner.toIndex);
-            setFlowSaved(false);
-            setDramTransitionKey(k => k + 1);
-          }}
-          onSkip={() => {
-            setInterruptBanner(null);
-            setLocalIndex(interruptBanner.toIndex);
-            setFlowSaved(false);
-            setDramTransitionKey(k => k + 1);
-          }}
-        />
-      )}
-
-      {canRate && !revealMoment ? (
+  const renderGuidedRating = () => (
         liveCooperOpenId === activeWhisky?.id ? (
           <ImpressionCapture
             whiskyName={isBlindStep ? undefined : displayName}
@@ -798,6 +674,134 @@ function GuidedStepView({
           )}
         </div>
         )
+  );
+
+  return (
+    <div className="labs-fade-in">
+      {entryBannerIdx !== null && (
+        <div
+          onClick={() => setEntryBannerIdx(null)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "10px 14px",
+            borderRadius: 12,
+            background: "rgba(200,134,26,0.08)",
+            border: "1px solid rgba(200,134,26,0.2)",
+            marginBottom: 16,
+            cursor: "pointer",
+            animation: "labsFadeIn 200ms ease both",
+          }}
+          data-testid="live-entry-midway-banner"
+        >
+          <Clock style={{ width: 16, height: 16, color: "#c8861a", flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--labs-text)" }}>
+              {t("liveUi.joinedMidwayTitle", "Tasting already in progress")}
+            </div>
+            <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+              {t("liveUi.joinedMidwayHint", "You're joining at dram {{n}} of {{total}}.", { n: entryBannerIdx + 1, total: totalWhiskies })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {revealMoment && (
+        <LabsRevealMoment
+          {...revealMoment}
+          onDismiss={() => {
+            revealMomentActiveRef.current = false;
+            setRevealMoment(null);
+            if (pendingIndexRef.current !== null) {
+              setLocalIndex(pendingIndexRef.current);
+              pendingIndexRef.current = null;
+              setFlowSaved(false);
+            }
+          }}
+        />
+      )}
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "8px 0",
+          marginBottom: 8,
+        }}
+        data-testid="guided-context-bar"
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: "var(--labs-text-muted)",
+              textTransform: "uppercase",
+              letterSpacing: "0.04em",
+            }}
+            data-testid="guided-step-counter"
+          >
+            {t("m2.taste.rating.dramXofN", { x: localIndex + 1, n: totalWhiskies, defaultValue: `Dram ${localIndex + 1} of ${totalWhiskies}` })}
+          </span>
+          <ScaleBadge max={maxScore} size="sm" />
+          {tasting.blindMode && (
+            <span
+              className="labs-badge labs-badge-accent"
+              style={{ fontSize: 10, padding: "2px 8px" }}
+              data-testid="guided-blind-badge"
+            >
+              <EyeOff style={{ width: 10, height: 10, marginRight: 3, display: "inline" }} />
+              {t("m2.taste.rating.blind", "Blind")}
+            </span>
+          )}
+        </div>
+        <div ref={setChipSlotNode} style={{ display: "flex", alignItems: "center" }} />
+      </div>
+
+      <DramCarousel
+        chips={dramChips}
+        activeIndex={localIndex}
+        onChipTap={(idx) => {
+          if (idx <= hostMaxIndex) {
+            const rating = guidedMyRatings.find((r: any) => r.whiskyId === allWhiskies[idx]?.id);
+            setLocalIndex(idx);
+            setFlowSaved(false);
+            setDramTransitionKey(k => k + 1);
+            setEditRatingMode(null);
+            if (rating) {
+              setShowEditDialog(true);
+            }
+          }
+        }}
+        scaleMax={maxScore}
+        isBlind={isBlindStep}
+      />
+
+      {interruptBanner && (
+        <ResumeOrSkipBanner
+          title={t("m2.taste.rating.interruptTitle", "Incomplete rating")}
+          hint={t("m2.taste.rating.interruptAdvanced", "Host moved to the next dram")}
+          saveLabel={t("m2.taste.rating.interruptContinue", "Continue")}
+          skipLabel={t("m2.taste.rating.interruptSkip", "Skip")}
+          onSave={() => {
+            setInterruptBanner(null);
+            setLocalIndex(interruptBanner.toIndex);
+            setFlowSaved(false);
+            setDramTransitionKey(k => k + 1);
+          }}
+          onSkip={() => {
+            setInterruptBanner(null);
+            setLocalIndex(interruptBanner.toIndex);
+            setFlowSaved(false);
+            setDramTransitionKey(k => k + 1);
+          }}
+        />
+      )}
+
+      {canRate && !revealMoment ? (
+        renderGuidedRating()
       ) : (
         <div className="labs-card-elevated p-6 text-center labs-fade-in labs-stagger-2">
           {!currentParticipant ? (
