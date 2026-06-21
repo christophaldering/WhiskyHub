@@ -2892,3 +2892,74 @@ a.labs-dram-item {
     display: none;
   }
 }
+
+/* ── Cooper-Glimmer & Chip ───────────────────────────────────── */
+.cooper-glimmer {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  display: grid;
+  place-items: center;
+}
+.cooper-glimmer-core {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%, #ffe9b0 0%, var(--labs-gold) 45%, var(--labs-amber) 100%);
+  box-shadow: 0 0 9px 2px rgba(212, 168, 71, 0.5);
+  animation: cooper-breathe 3.6s ease-in-out infinite;
+}
+.cooper-glimmer-halo {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(212, 168, 71, 0.28) 0%, rgba(212, 168, 71, 0) 65%);
+  animation: cooper-halo 3.6s ease-in-out infinite;
+}
+.cooper-glimmer-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(212, 168, 71, 0.4);
+  opacity: 0;
+  animation: cooper-echo 3.6s ease-out infinite;
+}
+.cooper-glimmer-ring.r2 { animation-delay: 1.8s; }
+@keyframes cooper-breathe {
+  0%, 100% { transform: scale(0.86); opacity: 0.85; }
+  50%      { transform: scale(1.08); opacity: 1; }
+}
+@keyframes cooper-halo {
+  0%, 100% { opacity: 0.5; transform: scale(0.9); }
+  50%      { opacity: 0.9; transform: scale(1.05); }
+}
+@keyframes cooper-echo {
+  0%   { transform: scale(0.5); opacity: 0.55; }
+  80%  { transform: scale(1.5); opacity: 0; }
+  100% { opacity: 0; }
+}
+.cooper-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 16px 6px 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--labs-gold) 45%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--labs-gold) 12%, transparent), color-mix(in srgb, var(--labs-gold) 4%, transparent));
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.2s, background 0.2s;
+}
+.cooper-chip:hover { border-color: color-mix(in srgb, var(--labs-gold) 65%, transparent); }
+.cooper-chip-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--labs-gold);
+  letter-spacing: 0.01em;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cooper-glimmer-core, .cooper-glimmer-halo, .cooper-glimmer-ring { animation: none; }
+  .cooper-glimmer-ring { display: none; }
+}
