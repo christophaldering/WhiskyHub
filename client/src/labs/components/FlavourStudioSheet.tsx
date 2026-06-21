@@ -130,7 +130,7 @@ interface VocabCategory {
   finish: string[];
 }
 
-function useVocabCategories(): VocabCategory[] {
+export function useVocabCategories(): VocabCategory[] {
   const { t } = useTranslation();
   return useMemo(() => CATEGORY_IDS.map((id) => ({
     id,
@@ -317,7 +317,7 @@ function findDescriptorHierarchy(termLower: string, isDE: boolean): DescriptorHi
 }
 
 
-function GuidedView({
+export function GuidedView({
   selected, onToggle, isDE,
 }: {
   selected: Set<string>;
@@ -763,7 +763,7 @@ function GuidedView({
   );
 }
 
-function CompactWheel({
+export function CompactWheel({
   categories, section, selected, onToggle,
 }: {
   categories: VocabCategory[];
@@ -884,7 +884,7 @@ function CompactWheel({
   );
 }
 
-function CompactCompass({
+export function CompactCompass({
   categories, section, selected, onToggle,
 }: {
   categories: VocabCategory[];
@@ -1039,7 +1039,7 @@ function CompactCompass({
   );
 }
 
-function CompactRadar({
+export function CompactRadar({
   categories, selected, onToggle, section,
 }: {
   categories: VocabCategory[];
@@ -1458,7 +1458,7 @@ function matchProfile(catWeights: Record<string, number>, isDE: boolean): { labe
   return best && best.score > 0 ? best : null;
 }
 
-function JourneyView({
+export function JourneyView({
   selected, onToggle, isDE,
 }: {
   selected: Set<string>;

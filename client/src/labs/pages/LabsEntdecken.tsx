@@ -30,6 +30,7 @@
         import LabsResearch from "@/labs/pages/LabsResearch";
         import LabsPairings from "@/labs/pages/LabsPairings";
         import LabsThemenspeicher from "@/labs/pages/LabsThemenspeicher";
+        import LabsAromaAtlas from "@/labs/pages/LabsAromaAtlas";
         import LabsAbout from "@/labs/pages/LabsAbout";
 
         type BibliothekSectionKey = "nachschlagewerk" | "tasting-wissen" | "rabbit-hole" | "ueber-casksense";
@@ -90,6 +91,7 @@
             descKey: "rabbitHole.themenspeicherDesc",
             descFb: "Themenspeicher",
             subs: [
+              { sub: "aroma-atlas", labelKey: "rabbitHole.aromaAtlasTitle", labelFb: "Aroma-Atlas", icon: MapIcon, Component: LabsAromaAtlas },
               { sub: "themenspeicher", labelKey: "rabbitHole.themenspeicherTitle", labelFb: "Themenspeicher", icon: Archive, Component: LabsThemenspeicher },
             ],
           },
