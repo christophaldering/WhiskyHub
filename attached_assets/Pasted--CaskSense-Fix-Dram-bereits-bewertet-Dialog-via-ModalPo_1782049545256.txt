@@ -1,0 +1,92 @@
+# CaskSense — Fix: "Dram bereits bewertet"-Dialog via ModalPortal (sichtbar im Viewport)
+
+## Problem
+Der Dialog "Dram bereits bewertet" (Bewertung bearbeiten / Nochmal verkosten) in
+client/src/labs/pages/LabsLive.tsx ist als position:fixed-Overlay gebaut, sitzt aber im
+GuidedStepView-Wrapper <div className="labs-fade-in"> (Z.509). Dessen Animation hinterlaesst ein
+transform, und ein transform-Vorfahre bricht position:fixed — der Dialog zentriert sich dann
+relativ zum langen Container statt zum Bildschirm und liegt bei langen Seiten ausserhalb des
+sichtbaren Bereichs. Fix: den Dialog durch die bestehende ModalPortal-Komponente rendern
+(createPortal an document.body), die Backdrop, Viewport-Zentrierung und Scroll-Lock mitbringt.
+
+## Safety-Tag zuerst
+git tag pre-editdialog-portal-2026-06-21
+
+## SCHRITT 0 — Diagnose (NUR LESEN)
+Bestaetige in LabsLive.tsx:
+- Z.816 beginnt {showEditDialog && ( gefolgt von einem aeusseren <div data-testid="edit-retaste-dialog-overlay"
+  onClick={() => setShowEditDialog(false)} style={{ position:"fixed", inset:0, ... display:flex, alignItems:center, justifyContent:center, padding:24 }}>.
+- Darin der innere <div data-testid="edit-retaste-dialog" onClick={(e)=>e.stopPropagation()} style={{ background:..., maxWidth:340, ... }}> mit <h3>Titel</h3> + zwei <button> (edit / retaste).
+- Der Block endet mit </div> (innerer Dialog) + </div> (aeusserer Overlay) + )}.
+- Pruefe, ob ModalPortal schon importiert ist (Datei client/src/labs/components/ModalPortal.tsx existiert,
+  default export, Props: open, onClose, testId, ...).
+Melde mir kurz "passt". WARTE auf mein "OK".
+
+## SCHRITT 1 — Edits (nach meinem "OK")
+
+### EDIT 1 — Import ergaenzen
+Fuege bei den labs/components-Imports diese Zeile hinzu (Pfadstil an die anderen Imports anpassen):
+import ModalPortal from "@/labs/components/ModalPortal";
+
+### EDIT 2 — Aeusseren Overlay-<div> durch ModalPortal ersetzen
+Den OEFFNENDEN aeusseren Overlay-Block ersetzen.
+
+>>> ALT (suchen): >>>
+        <div
+          data-testid="edit-retaste-dialog-overlay"
+          onClick={() => setShowEditDialog(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.6)",
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+        >
+<<< ENDE ALT <<<
+
+>>> NEU (ersetzen durch): >>>
+        <ModalPortal
+          open={showEditDialog}
+          onClose={() => setShowEditDialog(false)}
+          testId="edit-retaste-dialog-overlay"
+        >
+<<< ENDE NEU <<<
+
+### EDIT 3 — Schliessendes Overlay-Tag anpassen
+Der innere Dialog-<div> (data-testid="edit-retaste-dialog") und sein Inhalt (h3 + beide Buttons)
+bleiben KOMPLETT UNVERAENDERT. Nur das schliessende Tag des AEUSSEREN Overlays wird angepasst:
+Das </div>, das direkt vor dem abschliessenden )} dieses Blocks steht und den AEUSSEREN Overlay
+schloss, wird zu </ModalPortal>.
+
+Konkret die Endsequenz des Blocks:
+>>> ALT (suchen, die letzte Vorkommnis dieser Sequenz in diesem Dialog-Block): >>>
+          </div>
+        </div>
+      )}
+<<< ENDE ALT <<<
+>>> NEU (ersetzen durch): >>>
+          </div>
+        </ModalPortal>
+      )}
+<<< ENDE NEU <<<
+Hinweis: Das erste </div> schliesst weiterhin den inneren Dialog. Nur das zweite </div> (aeusserer
+Overlay) wird zu </ModalPortal>. Falls die Sequenz mehrfach vorkommt, identifiziere sie eindeutig
+ueber die Naehe zum data-testid="edit-retaste-dialog" und den retaste-Button darueber.
+
+## SCHRITT 2 — Verifikation
+- Build fehlerfrei.
+- showEditDialog oeffnet den Dialog jetzt mittig im Bildschirm (Viewport), auch bei langer Seite
+  und weit nach unten gescrollt. Overlay-Klick + Escape schliessen ihn. Beide Buttons funktionieren
+  wie zuvor (edit / retaste).
+- Keine schema/drizzle/Migration.
+
+## ABSOLUTES COMMIT-VERBOT
+NICHT committen, NICHT git push, NICHT taggen (ausser dem Safety-Tag). Working Tree uncommitted lassen.
+Am Ende bestaetigen: "Keine Commits gemacht."
+
+## Rollback
+git reset --hard pre-editdialog-portal-2026-06-21
