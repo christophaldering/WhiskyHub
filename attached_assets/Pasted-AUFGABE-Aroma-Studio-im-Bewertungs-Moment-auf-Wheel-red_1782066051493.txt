@@ -1,0 +1,74 @@
+AUFGABE: Aroma-Studio im Bewertungs-Moment auf "Wheel" reduzieren
+
+KONTEXT
+Im Bewertungs-Kontext bietet das Aroma-Studio sechs Werkzeuge (Guide, Journey, Wheel, Compass, Radar, Describe) — alle nur Oberflächen für dieselbe Term-Auswahl. Es soll nur noch das WHEEL angeboten werden (neben den Kategorie-Chips, die unverändert bleiben). Die übrigen View-Komponenten bleiben im Code (für eine spätere Rabbit-Hole-Verortung) — wir entfernen sie NICHT, wir nehmen sie nur aus den beiden Auswahl-Listen.
+Zwei Dateien:
+- client/src/labs/components/rating/FlavorTags.tsx (Liste studioViews)
+- client/src/labs/components/FlavourStudioSheet.tsx (Liste allOptions in SegmentedControl)
+
+REGELN
+- KEINE Commits, kein git push, kein drizzle-kit. Nur Arbeitsbaum.
+- NICHT anfassen: die View-Render-Switches in FlavourStudioSheet (die Zeilen `{view === "guide" && <GuidedView .../>}` usw.), die Imports der View-Komponenten, die Kategorie-Chips, irgendeine Logik. NUR die zwei Listen + die SegmentedControl-Ausblendung.
+
+================= STEP 0 — NUR DIAGNOSE =================
+1. FlavorTags.tsx: gib die studioViews-Definition aus (das Array mit guide/journey/wheel/compass/radar/describe, ~Z.266-272).
+2. FlavourStudioSheet.tsx: gib das allOptions-Array in SegmentedControl aus (~Z.200-207) und die return-Zeile der SegmentedControl-Funktion (~Z.228, "return (").
+3. Bestätige, dass die View-Render-Switches `{view === "wheel" && ...}` etc. (~Z.2129-2134) existieren und NICHT verändert werden.
+DANN WARTE auf mein OK.
+
+================= ÄNDERUNG 1 — FlavorTags studioViews =================
+>>> ALT >>>
+  const studioViews: { id: StudioView; label: string; icon: string }[] = [
+    { id: "guide", label: t("m2.taste.rating.toolGuide", "Guide"), icon: "📋" },
+    { id: "journey", label: t("m2.taste.rating.toolJourney", "Journey"), icon: "🔄" },
+    { id: "wheel", label: t("m2.taste.rating.toolWheel", "Wheel"), icon: "◎" },
+    { id: "compass", label: t("m2.taste.rating.toolCompass", "Compass"), icon: "◇" },
+    { id: "radar", label: t("ratingUi.radar"), icon: "⬡" },
+    { id: "describe", label: t("m2.taste.rating.toolDescribe", "Describe"), icon: "✏️" },
+  ];
+<<< ENDE ALT <<<
+>>> NEU >>>
+  // Bewertungs-Moment: bewusst nur das Wheel. Guide/Journey/Compass/Radar bleiben als
+  // Komponenten im Code erhalten (spaetere Rabbit-Hole-Verortung), Describe entfaellt (Cooper).
+  const studioViews: { id: StudioView; label: string; icon: string }[] = [
+    { id: "wheel", label: t("m2.taste.rating.toolWheel", "Wheel"), icon: "◎" },
+  ];
+<<< ENDE NEU <<<
+
+================= ÄNDERUNG 2 — FlavourStudioSheet allOptions =================
+>>> ALT >>>
+  const allOptions: { key: StudioView; label: string; icon?: string }[] = [
+    { key: "guide", label: t("m2.rating.studioGuide", "Guide") },
+    { key: "journey", label: t("m2.rating.studioJourney", "Journey") },
+    { key: "describe", label: t("m2.rating.studioDescribe", "Describe") },
+    { key: "wheel", label: t("m2.rating.studioWheel", "Wheel"), icon: "◎" },
+    { key: "compass", label: t("m2.rating.studioCompass", "Compass"), icon: "◇" },
+    { key: "radar", label: "Radar", icon: "⬡" },
+  ];
+<<< ENDE ALT <<<
+>>> NEU >>>
+  // Bewertungs-Moment: nur Wheel waehlbar. Uebrige Views bleiben als Komponenten erhalten.
+  const allOptions: { key: StudioView; label: string; icon?: string }[] = [
+    { key: "wheel", label: t("m2.rating.studioWheel", "Wheel"), icon: "◎" },
+  ];
+<<< ENDE NEU <<<
+
+================= ÄNDERUNG 3 — SegmentedControl bei einer View ausblenden =================
+Finde in der SegmentedControl-Funktion die Zeile, mit der das JSX beginnt (nach handleSelect):
+>>> ALT >>>
+  return (
+    <div ref={dropdownRef} style={{ position: "relative", marginBottom: "var(--labs-space-md)" }} data-testid="studio-segmented-control">
+<<< ENDE ALT <<<
+>>> NEU >>>
+  if (allOptions.length <= 1) return null;
+  return (
+    <div ref={dropdownRef} style={{ position: "relative", marginBottom: "var(--labs-space-md)" }} data-testid="studio-segmented-control">
+<<< ENDE NEU <<<
+
+================= VERIFIKATION =================
+1. studioViews (FlavorTags) und allOptions (Sheet) enthalten je GENAU einen Eintrag: wheel.
+2. Die View-Render-Switches (`{view === "guide" && ...}` etc.) sind UNVERAENDERT vorhanden.
+3. Die View-Komponenten-Imports sind UNVERAENDERT.
+4. SegmentedControl gibt bei einer View null zurueck (der early return steht NACH allen Hooks/useEffect, vor dem JSX-return).
+5. Kein Commit, kein git push, kein drizzle-kit. (Gilt ausdruecklich auch hier.)
+6. git diff --stat (nur Anzeige).
