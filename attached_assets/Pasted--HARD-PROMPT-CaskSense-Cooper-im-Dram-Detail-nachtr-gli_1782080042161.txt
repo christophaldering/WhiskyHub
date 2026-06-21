@@ -1,0 +1,119 @@
+# HARD PROMPT — CaskSense: Cooper im Dram-Detail (nachträglich schärfen)
+
+## Ziel
+Ein bereits bewerteter Dram im Dram-Detail (deepRate) springt direkt in den Bewertungs-Schritt und überspringt die Modus-Auswahl. Die Cooper-Pill lebt aber nur in der Auswahl. Folge: Im Dram-Detail fehlt Cooper. Wir machen die Cooper-Pill ZUSÄTZLICH im Bewertungs-Schritt sichtbar (neben der Modus-Pille) und schalten sie im Dram-Detail ein. Cooper ergänzt dann eine bestehende Bewertung, statt sie zu überschreiben.
+
+## WICHTIG — Verhaltensregeln
+- **SCHRITT 0 zuerst (NUR LESEN):** Öffne die beiden Dateien, finde die genannten Anker, bestätige dass sie exakt so vorhanden sind. Gib eine kurze Bestätigung + Mini-Plan aus. **Dann WARTE auf mein OK. Mache in Schritt 0 KEINE Änderungen.**
+- Erst nach meinem OK ausführen.
+- **KEIN commit. KEIN git. KEINE Schema-/drizzle-Änderung. KEINE Migration.** Nur die zwei genannten Dateien editieren.
+- Nichts anderes anfassen.
+
+---
+
+## SCHRITT 0 — Diagnose (nur lesen, dann warten)
+
+Datei A: `client/src/labs/components/rating/RatingFlowV2.tsx`
+- Bestätige, dass es diesen Block gibt (Definition von `chipSlot`):
+```
+  const chipSlot = chipInHeader
+    ? (chipPortalTarget ? createPortal(chipEl, chipPortalTarget) : null)
+    : chipEl;
+```
+- Bestätige, dass es **genau vier** Zeilen `        {chipSlot}` (8 Leerzeichen Einrückung) gibt, jeweils direkt unter `<div style={{ position: "relative" }}>` in den vier Zweigen `if (step === "rating" && mode === "guided" | "compact" | "quick" | "tisch")`.
+- Bestätige, dass `CooperChip` bereits importiert ist und `enableCooperIntro` bereits als Prop existiert.
+
+Datei B: `client/src/labs/pages/LabsTasteDrams.tsx`
+- Bestätige, dass es diesen Block gibt (deepRate-Einbindung):
+```
+          initialMode={initialDeepRateMode}
+          onDone={handleDeepRateDone}
+```
+
+**Wenn alles passt: kurze Bestätigung + Plan ausgeben und auf mein OK warten.**
+
+---
+
+## SCHRITT 1 — Datei A: ratingTopBar definieren
+
+In `client/src/labs/components/rating/RatingFlowV2.tsx`:
+
+Suche:
+>>> ALT >>>
+```
+  const chipSlot = chipInHeader
+    ? (chipPortalTarget ? createPortal(chipEl, chipPortalTarget) : null)
+    : chipEl;
+```
+<<< ENDE ALT <<<
+
+Ersetze durch:
+>>> NEU >>>
+```
+  const chipSlot = chipInHeader
+    ? (chipPortalTarget ? createPortal(chipEl, chipPortalTarget) : null)
+    : chipEl;
+
+  const ratingTopBar = enableCooperIntro ? (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+      }}
+    >
+      <CooperChip onClick={() => setStep("cooper")} />
+      {chipSlot}
+    </div>
+  ) : (
+    chipSlot
+  );
+```
+<<< ENDE NEU <<<
+
+---
+
+## SCHRITT 2 — Datei A: die vier Render-Stellen umstellen
+
+In derselben Datei: Ersetze **alle vier** Vorkommen der Zeile mit **8 Leerzeichen** Einrückung
+
+`        {chipSlot}`
+
+durch
+
+`        {ratingTopBar}`
+
+Diese vier stehen in den Zweigen `if (step === "rating" && mode === "guided" | "compact" | "quick" | "tisch")`, jeweils direkt unter `<div style={{ position: "relative" }}>`.
+
+**ACHTUNG — nicht verwechseln:** Die Zeile `{chipSlot}` mit **6 Leerzeichen** Einrückung innerhalb der neuen `ratingTopBar`-Definition (aus Schritt 1) bleibt **UNVERÄNDERT**. Nur die vier 8-Leerzeichen-Zeilen werden umgestellt. Nach dem Editieren muss es genau **vier** `{ratingTopBar}` und genau **ein** `{chipSlot}` (in der Definition) geben.
+
+---
+
+## SCHRITT 3 — Datei B: Cooper im Dram-Detail einschalten
+
+In `client/src/labs/pages/LabsTasteDrams.tsx`:
+
+Suche:
+>>> ALT >>>
+```
+          initialMode={initialDeepRateMode}
+          onDone={handleDeepRateDone}
+```
+<<< ENDE ALT <<<
+
+Ersetze durch:
+>>> NEU >>>
+```
+          initialMode={initialDeepRateMode}
+          enableCooperIntro={true}
+          onDone={handleDeepRateDone}
+```
+<<< ENDE NEU <<<
+
+---
+
+## VERIFIKATION
+- `client/src/labs/components/rating/RatingFlowV2.tsx`: enthält **eine** `const ratingTopBar =`-Definition, **vier** `{ratingTopBar}` und **ein** `{chipSlot}` (in der Definition).
+- `client/src/labs/pages/LabsTasteDrams.tsx`: enthält genau **ein** `enableCooperIntro={true}` direkt unter `initialMode={initialDeepRateMode}`.
+- TypeScript bleibt sauber (keine neuen Fehler).
+- **Nochmals: KEIN commit, KEIN git, KEINE Schema-/drizzle-Änderung. Nur diese zwei Dateien wurden editiert.**
