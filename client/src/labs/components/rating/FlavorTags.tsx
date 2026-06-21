@@ -343,13 +343,7 @@ export default function FlavorTags({
 
   return (
     <div data-testid={`flavor-tags-${phaseId}`} style={{ marginTop: SP.lg }}>
-      <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", marginBottom: SP.xs, fontFamily: FONT.body }}>
-        {labels.aromen}
-      </div>
-      <div style={{ fontSize: 14, color: "var(--labs-text-muted)", marginBottom: SP.md, fontFamily: FONT.body }}>
-        {labels.aromenSub}
-      </div>
-
+      {blind && (
       <div
         data-testid={`flavor-profile-badge-${phaseId}`}
         style={{
@@ -383,6 +377,7 @@ export default function FlavorTags({
           </span>
         )}
       </div>
+      )}
 
       {selected.length > 0 && (
         <div
@@ -427,21 +422,10 @@ export default function FlavorTags({
         subtitle={labels.aromenSub}
         isOpen={panel1Open}
         onToggle={() => { setPanel1Open((p) => !p); triggerHaptic("light"); }}
-        badge={primaryCount}
+        badge={primaryCount + secondaryCount}
         testId={`flavor-panel-primary-${phaseId}`}
       >
-        {primaryCategories.map(renderCategoryGroup)}
-      </CollapsiblePanel>
-
-      <CollapsiblePanel
-        title={`${t("v2.ratingMoreAromen", "Weitere Aromen & Bewertungsmodelle")} ▾`}
-        subtitle={t("v2.ratingMoreAromenSub", "Alle Kategorien und Expert-Tools")}
-        isOpen={panel2Open}
-        onToggle={() => { setPanel2Open((p) => !p); triggerHaptic("light"); }}
-        badge={secondaryCount}
-        testId={`flavor-panel-secondary-${phaseId}`}
-      >
-        {secondaryCategories.map(renderCategoryGroup)}
+        {sortedCategories.map(renderCategoryGroup)}
 
         <div
           style={{
@@ -458,7 +442,7 @@ export default function FlavorTags({
             letterSpacing: "0.05em",
             marginBottom: SP.sm,
           }}>
-            {t("v2.ratingStudioModels", "Bewertungsmodelle")}
+            {t("v2.ratingStudioWheel", "Flavour Wheel")}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {studioViews.map((view) => (
