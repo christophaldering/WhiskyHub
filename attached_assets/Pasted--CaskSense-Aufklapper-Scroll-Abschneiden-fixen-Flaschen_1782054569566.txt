@@ -1,0 +1,138 @@
+# CaskSense — Aufklapper: Scroll-Abschneiden fixen + Flaschen-Foto anzeigen
+
+## Kontext
+Zwei Verbesserungen an der aufklappbaren Bewertungs-Zeile (gilt fuer frei UND geführt, da beide
+LiveRatingRow nutzen):
+1. BUG: Der aufgeklappte Inhalt wird unten abgeschnitten (maxHeight: 999 + overflow hidden in
+   LiveRatingRow). Bei langem RatingFlowV2 (alle Phasen/Aromen/Notizen) sieht man das Ende nicht.
+2. FEATURE: Wenn ein Whisky ein Foto hat (imageUrl), oben im Aufklapper anzeigen — ABER NIE im
+   Blind-Modus (das Foto wuerde die Identitaet verraten).
+
+Dateien: client/src/labs/components/LiveRatingRow.tsx (Komponente) und
+client/src/labs/pages/LabsLive.tsx (zwei Aufrufstellen).
+
+## Safety-Tag zuerst
+git tag pre-aufklapper-fix-2026-06-21
+
+## SCHRITT 0 — Diagnose (NUR LESEN)
+- LiveRatingRow.tsx: Z.67 maxHeight: isExpanded ? 999 : 0; Z.69 overflow: "hidden". Funktions-Header
+  hat Props bis testIdPrefix + children. Aufklapp-Detail-<div> mit data-testid `${testIdPrefix}-detail-...`
+  enthaelt {children}.
+- LabsLive.tsx: zwei <LiveRatingRow>-Aufrufe — guided mit testIdPrefix="guided-row", frei mit onToggle,
+  das setExpandedCalIdx nutzt. Blind-Variablen: isBlindStep (guided-Scope), isBlind (frei-Scope).
+  w.imageUrl ist das Foto-Feld am Whisky.
+Melde "passt". WARTE auf mein "OK".
+
+## SCHRITT 1 — Edits (nach meinem "OK")
+
+### EDIT A1 — LiveRatingRow Import
+>>> ALT: >>>
+import { ChevronDown, Lock } from "lucide-react";
+import type { ReactNode } from "react";
+<<< ENDE ALT <<<
+>>> NEU: >>>
+import { ChevronDown, Lock } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+<<< ENDE NEU <<<
+
+### EDIT A2 — imageUrl-Prop + Expand-State (LiveRatingRow)
+>>> ALT: >>>
+  testIdPrefix = "calibration",
+  children,
+}: {
+<<< ENDE ALT <<<
+>>> NEU: >>>
+  testIdPrefix = "calibration",
+  imageUrl,
+  children,
+}: {
+<<< ENDE NEU <<<
+
+Und direkt danach (Typ-Block + Funktionsstart):
+>>> ALT: >>>
+  testIdPrefix?: string;
+  children: ReactNode;
+}) {
+<<< ENDE ALT <<<
+>>> NEU: >>>
+  testIdPrefix?: string;
+  imageUrl?: string;
+  children: ReactNode;
+}) {
+  const [fullyExpanded, setFullyExpanded] = useState(false);
+  useEffect(() => {
+    if (!isExpanded) { setFullyExpanded(false); return; }
+    const id = setTimeout(() => setFullyExpanded(true), 230);
+    return () => clearTimeout(id);
+  }, [isExpanded]);
+<<< ENDE NEU <<<
+
+### EDIT A3 — maxHeight clipping-frei machen (LiveRatingRow)
+>>> ALT: >>>
+          maxHeight: isExpanded ? 999 : 0,
+          opacity: isExpanded ? 1 : 0,
+          overflow: "hidden",
+<<< ENDE ALT <<<
+>>> NEU: >>>
+          maxHeight: !isExpanded ? 0 : (fullyExpanded ? "none" : 6000),
+          opacity: isExpanded ? 1 : 0,
+          overflow: isExpanded && fullyExpanded ? "visible" : "hidden",
+<<< ENDE NEU <<<
+(Beim Oeffnen slidet es mit 6000 auf, danach wird maxHeight "none" + overflow visible -> nie mehr
+abgeschnitten, egal wie lang der Inhalt.)
+
+### EDIT A4 — Foto oben im Aufklapper rendern (LiveRatingRow)
+>>> ALT: >>>
+        <div style={{ padding: "10px 10px 12px", borderTop: "1px solid var(--labs-border-subtle, var(--labs-border))", background: "var(--labs-surface-alt, rgba(255,255,255,0.02))" }} data-testid={`${testIdPrefix}-detail-${index}`}>
+          {children}
+        </div>
+<<< ENDE ALT <<<
+>>> NEU: >>>
+        <div style={{ padding: "10px 10px 12px", borderTop: "1px solid var(--labs-border-subtle, var(--labs-border))", background: "var(--labs-surface-alt, rgba(255,255,255,0.02))" }} data-testid={`${testIdPrefix}-detail-${index}`}>
+          {imageUrl && (
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+              <img src={imageUrl} alt={label} loading="lazy" style={{ maxHeight: 160, maxWidth: "55%", objectFit: "contain", borderRadius: 8 }} data-testid={`${testIdPrefix}-photo-${index}`} />
+            </div>
+          )}
+          {children}
+        </div>
+<<< ENDE NEU <<<
+
+### EDIT B1 — Guided-Aufruf: imageUrl (blind-sicher)
+>>> ALT: >>>
+              testIdPrefix="guided-row"
+<<< ENDE ALT <<<
+>>> NEU: >>>
+              testIdPrefix="guided-row"
+              imageUrl={isBlindStep ? undefined : w.imageUrl}
+<<< ENDE NEU <<<
+
+### EDIT B2 — Frei-Aufruf: imageUrl (blind-sicher)
+>>> ALT (eindeutig ueber setExpandedCalIdx): >>>
+                        isExpanded={isExpanded}
+                        onToggle={() => {
+                          const nextExp = isExpanded ? null : idx;
+                          setExpandedCalIdx(nextExp);
+<<< ENDE ALT <<<
+>>> NEU: >>>
+                        isExpanded={isExpanded}
+                        imageUrl={isBlind ? undefined : w.imageUrl}
+                        onToggle={() => {
+                          const nextExp = isExpanded ? null : idx;
+                          setExpandedCalIdx(nextExp);
+<<< ENDE NEU <<<
+
+## SCHRITT 2 — Verifikation
+- Build fehlerfrei.
+- Aufklappen einer langen Bewertung: bis zum Confirm-Button durchscrollbar, NICHTS abgeschnitten.
+- Whisky MIT Foto, NICHT blind: Foto erscheint oben im Aufklapper. Whisky OHNE Foto: kein Platzhalter.
+- Blind-Tasting: KEIN Foto (Identitaet bleibt verborgen) — wichtig.
+- Gilt in beiden Modi (frei + geführt).
+- Keine schema/drizzle/Migration.
+
+## ABSOLUTES COMMIT-VERBOT
+NICHT committen, NICHT git push, NICHT taggen (ausser dem Safety-Tag). Working Tree uncommitted lassen.
+Am Ende bestaetigen: "Keine Commits gemacht."
+
+## Rollback
+git reset --hard pre-aufklapper-fix-2026-06-21
