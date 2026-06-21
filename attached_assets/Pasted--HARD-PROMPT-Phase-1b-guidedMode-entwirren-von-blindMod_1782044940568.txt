@@ -1,0 +1,222 @@
+# HARD PROMPT — Phase 1b: guidedMode entwirren & von blindMode entkoppeln (LabsHost)
+
+ZIEL: Den „Geführtes Tasting"-Schalter zu einer eigenständigen Einstellung machen — unabhängig von blindMode und ohne sessionUiMode-Kopplung. Die „Tasting Experience"-Auswahl (flow/focus/journal) im Setup entfernen. Reveal-Reihenfolge bleibt unverändert erhalten.
+
+GRENZEN: Genau 1 Datei — `client/src/labs/pages/LabsHost.tsx`. Kein Commit/push, keine Schema-/Migrations-Änderung, kein drizzle-kit. DB-Spalte `sessionUiMode` bleibt (wird nur nicht mehr per UI gesetzt). Safety-Tag `pre-phase1b-guided-2026-06-21`.
+
+## STEP 0 — Diagnose, Plan nennen, dann erst editieren
+Bestätige diese 8 Stellen und prüfe nach den Edits, ob `setSessionUiMode` noch irgendwo aufgerufen wird (siehe HINWEIS am Ende):
+1. blindMode-Toggle mit `if (!v && guidedMode) setGuidedMode(false)` (~Z.3047)
+2. revealOrder-Select onChange im Setup mit `stepsCount`/`setSessionUiMode("focus")` (~Z.3077)
+3. guidedMode-Toggle im Setup, verschachtelt in `{sessionUiMode === "flow" && (...)}` innerhalb des blindMode-Blocks (~Z.3094)
+4. sessionUiMode-Selektor „Tasting Experience" im Setup (~Z.3201, `t("labs.host.tastingExperience")`)
+5. Save-Zeile `guidedMode: blindMode ? guidedMode : false` (~Z.2894)
+6. Settings-Panel revealOrder-Select onChange mit `patch.sessionUiMode = "focus"` (~Z.4827)
+7. Settings-Panel CustomRevealEditor onChange mit `patch.sessionUiMode = "focus"` (~Z.4839)
+8. Settings-Panel guidedMode-Toggle hinter `{((tasting.sessionUiMode...) === "flow" && (...)}` (~Z.4850)
+
+## EDIT 1 — blindMode-Toggle entkoppeln (Setup)
+```jsx
+          checked={blindMode}
+          onChange={(v: boolean) => {
+            setBlindMode(v);
+            if (!v && guidedMode) setGuidedMode(false);
+          }}
+```
+→
+```jsx
+          checked={blindMode}
+          onChange={(v: boolean) => {
+            setBlindMode(v);
+          }}
+```
+
+## EDIT 2 — revealOrder-Select onChange (Setup): sessionUiMode-Kopplung raus
+```jsx
+                setRevealOrder(v);
+                if (v !== "custom" && REVEAL_PRESETS_MAP[v]) {
+                  setCustomRevealSteps(REVEAL_PRESETS_MAP[v]);
+                }
+                const stepsCount = v === "custom" ? customRevealSteps.length : (REVEAL_PRESETS_MAP[v]?.length ?? 3);
+                if (stepsCount > 4 && sessionUiMode === "flow") {
+                  setSessionUiMode("focus");
+                }
+              }}
+```
+→
+```jsx
+                setRevealOrder(v);
+                if (v !== "custom" && REVEAL_PRESETS_MAP[v]) {
+                  setCustomRevealSteps(REVEAL_PRESETS_MAP[v]);
+                }
+              }}
+```
+
+## EDIT 3 — guidedMode-Toggle aus blindMode-Block HERAUSLÖSEN (Setup)
+```jsx
+            {revealOrder === "custom" && (
+              <CustomRevealEditor
+                steps={customRevealSteps}
+                onChange={(newSteps) => {
+                  setCustomRevealSteps(newSteps);
+                  if (newSteps.length > 4 && sessionUiMode === "flow") {
+                    setSessionUiMode("focus");
+                  }
+                }}
+              />
+            )}
+            {sessionUiMode === "flow" && (
+            <div className="mt-4">
+              <LabsToggle
+                checked={guidedMode}
+                onChange={(v: boolean) => {
+                  setGuidedMode(v);
+                  if (v && sessionUiMode === "flow") {
+                    setSessionUiMode("focus");
+                  }
+                }}
+                icon={<Compass className="w-5 h-5" style={{ color: guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+                label={t("labs.host.hostControlsPace")}
+                description={t("labs.host.hostControlsPaceDesc")}
+                testId="labs-host-toggle-guided"
+              />
+            </div>
+            )}
+          </div>
+        )}
+```
+→
+```jsx
+            {revealOrder === "custom" && (
+              <CustomRevealEditor
+                steps={customRevealSteps}
+                onChange={(newSteps) => {
+                  setCustomRevealSteps(newSteps);
+                }}
+              />
+            )}
+          </div>
+        )}
+
+        <LabsToggle
+          checked={guidedMode}
+          onChange={(v: boolean) => { setGuidedMode(v); }}
+          icon={<Compass className="w-5 h-5" style={{ color: guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+          label={t("labs.host.hostControlsPace")}
+          description={t("labs.host.hostControlsPaceDesc")}
+          testId="labs-host-toggle-guided"
+        />
+```
+
+## EDIT 4 — „Tasting Experience"-Selektor im Setup ENTFERNEN
+Lösche diesen Block ersatzlos:
+```jsx
+              <div>
+                <label className="labs-section-label">
+                  <Sliders className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
+                  {t("labs.host.tastingExperience")}
+                </label>
+                <p className="text-xs mb-2" style={{ color: "var(--labs-text-muted)" }}>
+                  {t("labs.host.expFreeDesc")}
+                </p>
+                <LabsSegmentedSelect
+                  value={sessionUiMode}
+                  options={[
+                    { value: "flow", label: t("labs.host.expFree"), desc: guidedMode ? t("labs.host.expFreeDisabled") : t("labs.host.expFreeDesc"), disabled: guidedMode },
+                    { value: "focus", label: t("labs.host.expOneAtATime"), desc: t("labs.host.expOneAtATimeDesc") },
+                    { value: "journal", label: t("labs.host.expDram"), desc: t("labs.host.expDramDesc") },
+                  ]}
+                  onChange={(val: string | number) => {
+                    const v = String(val);
+                    setSessionUiMode(v);
+                    if (v === "flow" && (revealOrder === "one-by-one" || (revealOrder === "custom" && customRevealSteps.length > 4))) {
+                      setRevealOrder("classic");
+                      setCustomRevealSteps(REVEAL_PRESETS_MAP.classic);
+                    }
+                  }}
+                />
+              </div>
+```
+
+## EDIT 5 — Save-Logik: guidedMode von blindMode lösen
+```jsx
+        guidedMode: blindMode ? guidedMode : false,
+```
+→
+```jsx
+        guidedMode,
+```
+
+## EDIT 6 — Settings-Panel revealOrder-Select onChange: sessionUiMode raus
+```jsx
+                      const patch: Record<string, unknown> = { revealOrder: key === "classic" ? null : JSON.stringify(REVEAL_PRESETS_MAP[key] || REVEAL_PRESETS_MAP.classic) };
+                      if (key === "one-by-one" && (tasting.sessionUiMode as string || "flow") === "flow") {
+                        patch.sessionUiMode = "focus";
+                      }
+                      patchDetails(patch);
+```
+→
+```jsx
+                      const patch: Record<string, unknown> = { revealOrder: key === "classic" ? null : JSON.stringify(REVEAL_PRESETS_MAP[key] || REVEAL_PRESETS_MAP.classic) };
+                      patchDetails(patch);
+```
+
+## EDIT 7 — Settings-Panel CustomRevealEditor onChange: sessionUiMode raus
+```jsx
+                      const patch: Record<string, unknown> = { revealOrder: JSON.stringify(newSteps) };
+                      if (newSteps.length > 4 && (tasting.sessionUiMode as string || "flow") === "flow") {
+                        patch.sessionUiMode = "focus";
+                      }
+                      patchDetails(patch);
+```
+→
+```jsx
+                      const patch: Record<string, unknown> = { revealOrder: JSON.stringify(newSteps) };
+                      patchDetails(patch);
+```
+
+## EDIT 8 — Settings-Panel guidedMode-Toggle: Gate + Kopplung raus
+```jsx
+          {((tasting.sessionUiMode as string) || "flow") === "flow" && (
+          <LabsToggle
+            checked={!!tasting.guidedMode}
+            onChange={async () => {
+              const newGuided = !tasting.guidedMode;
+              const patch: Record<string, unknown> = { guidedMode: newGuided };
+              if (newGuided && ((tasting.sessionUiMode as string) || "flow") === "flow") {
+                patch.sessionUiMode = "focus";
+              }
+              try { await patchDetails(patch); } catch {}
+            }}
+            icon={<Compass className="w-5 h-5" style={{ color: tasting.guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+            label={t("labs.host.hostControlsPace")}
+            description={t("labs.host.hostControlsPaceDesc")}
+            testId="labs-settings-toggle-guided"
+          />
+          )}
+```
+→
+```jsx
+          <LabsToggle
+            checked={!!tasting.guidedMode}
+            onChange={async () => {
+              try { await patchDetails({ guidedMode: !tasting.guidedMode }); } catch {}
+            }}
+            icon={<Compass className="w-5 h-5" style={{ color: tasting.guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+            label={t("labs.host.hostControlsPace")}
+            description={t("labs.host.hostControlsPaceDesc")}
+            testId="labs-settings-toggle-guided"
+          />
+```
+
+## HINWEIS — ungenutzter Setter
+Nach diesen Edits wird `setSessionUiMode` nirgends mehr aufgerufen (`sessionUiMode` selbst wird im Save noch gelesen — das ist gewollt). Falls der Build deswegen mit „unused" fehlschlägt, ist die EINZIGE erlaubte Zusatzänderung: die useState-Zeile `const [sessionUiMode, setSessionUiMode] = useState(...)` zu `const [sessionUiMode] = useState(...)` ändern (Setter weglassen). Sonst nichts anfassen.
+
+## VERIFIKATION
+- [ ] Build grün, keine TS-Fehler.
+- [ ] Setup-Wizard: „Geführtes Tasting"-Schalter erscheint IMMER (auch ohne Blind); „Tasting Experience"-Auswahl ist weg; Reveal-Reihenfolge (nur bei Blind) unverändert da.
+- [ ] Blind ein-/ausschalten beeinflusst „Geführtes Tasting" NICHT mehr.
+- [ ] Neues Tasting OHNE Blind + Geführt AN → speichert `guidedMode:true` (vorher wurde es auf false erzwungen).
+- [ ] Settings-Panel (laufendes Tasting): „Geführtes Tasting"-Schalter immer sichtbar, schaltet sauber, kein sessionUiMode-Schreibzugriff.
+- [ ] Reveal-Reihenfolge in beiden Bereichen weiterhin funktionsfähig.
+- [ ] KEIN Commit, KEIN push, KEIN drizzle-kit. Bestätigen.

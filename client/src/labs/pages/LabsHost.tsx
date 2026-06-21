@@ -2783,7 +2783,7 @@ function CreateTastingForm() {
   const [ratingScale, setRatingScale] = useState(draft?.ratingScale ?? 100);
   const [guidedMode, setGuidedMode] = useState(draft?.guidedMode ?? false);
   const [guestMode, setGuestMode] = useState(draft?.guestMode || "standard");
-  const [sessionUiMode, setSessionUiMode] = useState(draft?.sessionUiMode || "flow");
+  const [sessionUiMode] = useState(draft?.sessionUiMode || "flow");
   const [reflectionEnabled, setReflectionEnabled] = useState(draft?.reflectionEnabled ?? false);
   const [reflectionMode, setReflectionMode] = useState(draft?.reflectionMode || "standard");
   const [reflectionVisibility, setReflectionVisibility] = useState(draft?.reflectionVisibility || "named");
@@ -2891,7 +2891,7 @@ function CreateTastingForm() {
         blindMode,
         revealOrder: blindMode && revealOrder !== "classic" ? JSON.stringify(revealOrder === "custom" ? customRevealSteps : (REVEAL_PRESETS_MAP[revealOrder] || REVEAL_PRESETS_MAP.classic)) : null,
         ratingScale,
-        guidedMode: blindMode ? guidedMode : false,
+        guidedMode,
         guestMode,
         sessionUiMode: sessionUiMode || null,
         reflectionEnabled,
@@ -3045,7 +3045,6 @@ function CreateTastingForm() {
           checked={blindMode}
           onChange={(v: boolean) => {
             setBlindMode(v);
-            if (!v && guidedMode) setGuidedMode(false);
           }}
           icon={<EyeOff className="w-5 h-5" style={{ color: blindMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
           label={t("labs.host.blindTasting")}
@@ -3074,10 +3073,6 @@ function CreateTastingForm() {
                 if (v !== "custom" && REVEAL_PRESETS_MAP[v]) {
                   setCustomRevealSteps(REVEAL_PRESETS_MAP[v]);
                 }
-                const stepsCount = v === "custom" ? customRevealSteps.length : (REVEAL_PRESETS_MAP[v]?.length ?? 3);
-                if (stepsCount > 4 && sessionUiMode === "flow") {
-                  setSessionUiMode("focus");
-                }
               }}
             />
             {revealOrder === "custom" && (
@@ -3085,31 +3080,20 @@ function CreateTastingForm() {
                 steps={customRevealSteps}
                 onChange={(newSteps) => {
                   setCustomRevealSteps(newSteps);
-                  if (newSteps.length > 4 && sessionUiMode === "flow") {
-                    setSessionUiMode("focus");
-                  }
                 }}
               />
-            )}
-            {sessionUiMode === "flow" && (
-            <div className="mt-4">
-              <LabsToggle
-                checked={guidedMode}
-                onChange={(v: boolean) => {
-                  setGuidedMode(v);
-                  if (v && sessionUiMode === "flow") {
-                    setSessionUiMode("focus");
-                  }
-                }}
-                icon={<Compass className="w-5 h-5" style={{ color: guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
-                label={t("labs.host.hostControlsPace")}
-                description={t("labs.host.hostControlsPaceDesc")}
-                testId="labs-host-toggle-guided"
-              />
-            </div>
             )}
           </div>
         )}
+
+        <LabsToggle
+          checked={guidedMode}
+          onChange={(v: boolean) => { setGuidedMode(v); }}
+          icon={<Compass className="w-5 h-5" style={{ color: guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+          label={t("labs.host.hostControlsPace")}
+          description={t("labs.host.hostControlsPaceDesc")}
+          testId="labs-host-toggle-guided"
+        />
 
         <div>
           <label className="labs-section-label">
@@ -3195,32 +3179,6 @@ function CreateTastingForm() {
                     { value: "ultra", label: t("m2.host.guestUltra"), desc: t("m2.host.guestUltraDesc") },
                   ]}
                   onChange={setGuestMode}
-                />
-              </div>
-
-              <div>
-                <label className="labs-section-label">
-                  <Sliders className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
-                  {t("labs.host.tastingExperience")}
-                </label>
-                <p className="text-xs mb-2" style={{ color: "var(--labs-text-muted)" }}>
-                  {t("labs.host.expFreeDesc")}
-                </p>
-                <LabsSegmentedSelect
-                  value={sessionUiMode}
-                  options={[
-                    { value: "flow", label: t("labs.host.expFree"), desc: guidedMode ? t("labs.host.expFreeDisabled") : t("labs.host.expFreeDesc"), disabled: guidedMode },
-                    { value: "focus", label: t("labs.host.expOneAtATime"), desc: t("labs.host.expOneAtATimeDesc") },
-                    { value: "journal", label: t("labs.host.expDram"), desc: t("labs.host.expDramDesc") },
-                  ]}
-                  onChange={(val: string | number) => {
-                    const v = String(val);
-                    setSessionUiMode(v);
-                    if (v === "flow" && (revealOrder === "one-by-one" || (revealOrder === "custom" && customRevealSteps.length > 4))) {
-                      setRevealOrder("classic");
-                      setCustomRevealSteps(REVEAL_PRESETS_MAP.classic);
-                    }
-                  }}
                 />
               </div>
 
@@ -4824,9 +4782,6 @@ function TastingSetupSection({
                     } else {
                       setForceCustomReveal(false);
                       const patch: Record<string, unknown> = { revealOrder: key === "classic" ? null : JSON.stringify(REVEAL_PRESETS_MAP[key] || REVEAL_PRESETS_MAP.classic) };
-                      if (key === "one-by-one" && (tasting.sessionUiMode as string || "flow") === "flow") {
-                        patch.sessionUiMode = "focus";
-                      }
                       patchDetails(patch);
                     }
                   }}
@@ -4836,9 +4791,6 @@ function TastingSetupSection({
                     steps={currentSteps}
                     onChange={(newSteps) => {
                       const patch: Record<string, unknown> = { revealOrder: JSON.stringify(newSteps) };
-                      if (newSteps.length > 4 && (tasting.sessionUiMode as string || "flow") === "flow") {
-                        patch.sessionUiMode = "focus";
-                      }
                       patchDetails(patch);
                     }}
                   />
@@ -4847,23 +4799,16 @@ function TastingSetupSection({
             );
           })()}
 
-          {((tasting.sessionUiMode as string) || "flow") === "flow" && (
           <LabsToggle
             checked={!!tasting.guidedMode}
             onChange={async () => {
-              const newGuided = !tasting.guidedMode;
-              const patch: Record<string, unknown> = { guidedMode: newGuided };
-              if (newGuided && ((tasting.sessionUiMode as string) || "flow") === "flow") {
-                patch.sessionUiMode = "focus";
-              }
-              try { await patchDetails(patch); } catch {}
+              try { await patchDetails({ guidedMode: !tasting.guidedMode }); } catch {}
             }}
             icon={<Compass className="w-5 h-5" style={{ color: tasting.guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
             label={t("labs.host.hostControlsPace")}
             description={t("labs.host.hostControlsPaceDesc")}
             testId="labs-settings-toggle-guided"
           />
-          )}
 
           <div>
             <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
