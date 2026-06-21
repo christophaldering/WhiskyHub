@@ -1,0 +1,65 @@
+# CaskSense — Phase 3a: Guided-Bewertung in renderGuidedRating() kapseln (Refactor)
+
+## Kontext
+Datei: client/src/labs/pages/LabsLive.tsx, Komponente GuidedStepView (Funktion ab Z.203).
+Im JSX (open-Zustand) steht der canRate-Ternary:
+  {canRate && !revealMoment ? (
+     <COOPER_TERNARY>          // liveCooperOpenId === activeWhisky?.id ? <ImpressionCapture/> : <div>...RatingFlowV2...waiting-host...saveError...</div>
+  ) : (
+     <div ...AuthGate/closed...>
+  )}
+Ziel: den gesamten <COOPER_TERNARY>-Block (den ? (...)-Zweig des canRate-Ternarys) in eine lokale
+Render-Funktion renderGuidedRating() auslagern, die VOR dem return von GuidedStepView definiert wird,
+und an der bisherigen Stelle nur noch renderGuidedRating() aufrufen. REINER REFACTOR — die App sieht
+und verhaelt sich danach identisch. Vorbereitung fuer 3b (Liste).
+
+## Safety-Tag zuerst
+git tag pre-phase3a-extract-2026-06-21
+
+## SCHRITT 0 — Diagnose (NUR LESEN)
+Bestaetige in GuidedStepView:
+- Z.633 ca.: {canRate && !revealMoment ? ( oeffnet den Ternary.
+- Z.634 ca.: liveCooperOpenId === activeWhisky?.id ? ( beginnt den COOPER_TERNARY (= der ?-Zweig-Inhalt).
+- Der COOPER_TERNARY endet kurz vor dem ) : ( des canRate-Ternarys (ca. Z.800/801), gefolgt vom
+  <div className="labs-card-elevated p-6 text-center ...">-AuthGate-Zweig.
+- Pruefe, dass dieser Block KEINE React-Hooks enthaelt (nur JSX, ein IIFE (() => {...})() fuer initialData
+  ist ok) — er darf als Render-Funktion ausgelagert werden.
+Melde mir die exakte Start- und Endzeile des COOPER_TERNARY. WARTE auf mein "OK".
+
+## SCHRITT 1 — Refactor (nach meinem "OK")
+
+### EDIT 1 — Render-Funktion definieren
+Direkt VOR dem return ( von GuidedStepView (die return-Zeile mit <div className="labs-fade-in">)
+eine neue lokale const einfuegen:
+
+  const renderGuidedRating = () => (
+    <COOPER_TERNARY_HIER_EINFUEGEN>
+  );
+
+Dabei ist <COOPER_TERNARY_HIER_EINFUEGEN> EXAKT der in Schritt 0 identifizierte Block (von
+"liveCooperOpenId === activeWhisky?.id ? (" bis zu seiner schliessenden ")" vor dem ") : (" des
+canRate-Ternarys), 1:1 UNVERAENDERT uebernommen. Nichts am Inhalt aendern.
+
+### EDIT 2 — Aufrufstelle ersetzen
+Im canRate-Ternary den eben ausgelagerten Block durch den Funktionsaufruf ersetzen, sodass dort steht:
+
+      {canRate && !revealMoment ? (
+        renderGuidedRating()
+      ) : (
+        <div className="labs-card-elevated p-6 text-center labs-fade-in labs-stagger-2">
+
+(Der AuthGate/closed-Zweig nach ) : ( bleibt KOMPLETT unveraendert.)
+
+## SCHRITT 2 — Verifikation
+- Build fehlerfrei.
+- KEINE sichtbare Aenderung: Guided-Tasting oeffnen, bewerten, Cooper-Schaerfen, "Nochmal verkosten",
+  "Warte auf Host" — alles funktioniert exakt wie vorher.
+- renderGuidedRating wird genau an dieser einen Stelle aufgerufen.
+- Keine schema/drizzle/Migration.
+
+## ABSOLUTES COMMIT-VERBOT
+NICHT committen, NICHT git push, NICHT taggen (ausser dem Safety-Tag). Working Tree uncommitted lassen.
+Am Ende bestaetigen: "Keine Commits gemacht."
+
+## Rollback
+git reset --hard pre-phase3a-extract-2026-06-21
