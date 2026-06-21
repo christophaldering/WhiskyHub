@@ -335,10 +335,25 @@ export default function RatingFlowV2({
     ? (chipPortalTarget ? createPortal(chipEl, chipPortalTarget) : null)
     : chipEl;
 
+  const ratingTopBar = enableCooperIntro ? (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+      }}
+    >
+      <CooperChip onClick={() => setStep("cooper")} />
+      {chipSlot}
+    </div>
+  ) : (
+    chipSlot
+  );
+
   if (step === "rating" && mode === "guided") {
     return (
       <div style={{ position: "relative" }}>
-        {chipSlot}
+        {ratingTopBar}
         <GuidedRating
           labels={guidedLabels}
           whisky={{ ...whisky, blind: whisky.blind ?? false, flavorProfile: whisky.flavorProfile }}
@@ -357,7 +372,7 @@ export default function RatingFlowV2({
   if (step === "rating" && mode === "compact") {
     return (
       <div style={{ position: "relative" }}>
-        {chipSlot}
+        {ratingTopBar}
         <CompactRating
           labels={compactLabels}
           whisky={{ ...whisky, blind: whisky.blind ?? false, flavorProfile: whisky.flavorProfile }}
@@ -375,7 +390,7 @@ export default function RatingFlowV2({
   if (step === "rating" && mode === "quick") {
     return (
       <div style={{ position: "relative" }}>
-        {chipSlot}
+        {ratingTopBar}
         <QuickRating
           labels={quickLabels}
           whisky={{ ...whisky, blind: whisky.blind ?? false }}
@@ -394,7 +409,7 @@ export default function RatingFlowV2({
   if (step === "rating" && mode === "tisch") {
     return (
       <div style={{ position: "relative" }}>
-        {chipSlot}
+        {ratingTopBar}
         <TischRating
           labels={tischLabels}
           whisky={{ ...whisky, blind: whisky.blind ?? false }}

@@ -1000,6 +1000,7 @@ export default function LabsTasteDrams() {
           whisky={deepRateWhisky}
           initialData={deepRateInitialData}
           initialMode={initialDeepRateMode}
+          enableCooperIntro={true}
           onDone={handleDeepRateDone}
           onBack={() => {
             if (enteredViaDeepLink && selectedEntry.status === "draft" && typeof window !== "undefined" && window.history.length > 1) {
