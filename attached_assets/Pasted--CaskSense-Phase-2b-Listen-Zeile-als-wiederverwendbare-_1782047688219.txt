@@ -1,0 +1,182 @@
+# CaskSense — Phase 2b: Listen-Zeile als wiederverwendbare Komponente extrahieren
+
+## VORAUSSETZUNG
+Phase 2a MUSS durchgeschoben UND am Glas getestet sein. 2b extrahiert die Zeile in ihrem
+2a-Zustand (mit RatingFlowV2 im aufgeklappten Bereich). Laeuft 2b vor 2a, wird die falsche
+(alte) Zeile extrahiert. Im Zweifel zuerst pruefen, dass im calibration-detail-Bereich bereits
+ein <RatingFlowV2 inline steht (2a-Ergebnis).
+
+## Kontext
+Datei A (NEU): client/src/labs/components/LiveRatingRow.tsx
+Datei B (EDIT): client/src/labs/pages/LabsLive.tsx, frei-Modus-Zweig, die whiskies.map(...)
+in der calibration-overview-Liste.
+
+Ziel: Die optische Zeilen-HUELLE (Rahmen, Kopf-Button mit Nummer/Label/Score-Balken/Chevron,
+Aufklapp-Container) wird zur eigenen Komponente LiveRatingRow. Der AUFGEKLAPPTE INHALT
+(das RatingFlowV2-bzw.-Fallback-JSX aus 2a) bleibt im Parent und wird als children uebergeben.
+So bleibt die gesamte currentIndex-Logik im Parent, und die Huelle ist fuer Phase 3 (Geführt-Modus
+mit Sperre) wiederverwendbar — dafuer hat sie bereits ein optionales locked-Prop.
+
+## Safety-Tag zuerst
+git tag pre-phase2b-rowcomp-2026-06-21
+
+## SCHRITT 0 — Diagnose (NUR LESEN)
+In LabsLive.tsx, frei-Zweig: bestaetige, dass die whiskies.map-Zeile aktuell so aufgebaut ist:
+const rating = ... ; const overall = rating?.overall; const isActive = idx === currentIndex;
+const isExpanded = expandedCalIdx === idx; const idxRevealed = getFreeRevealedFields(idx);
+const idxNameHidden = ...; const label = ...; return ( <div key={w.id} style={...border...}>
+<button ...calibration-row...>Kopf</button> <div aria-hidden ...> <div data-testid=calibration-detail-...>
+{HIER STEHT DER 2a-INHALT: idx === currentIndex && canRate ? <RatingFlowV2.../> : <p>...</p>}
+</div></div></div> );
+Bestaetige zusaetzlich: maxScore ist im frei-Zweig definiert (const maxScore = mainScale.max).
+Melde mir kurz, dass 2a-Zustand vorliegt. WARTE auf mein "OK".
+
+## SCHRITT 1 — Plan bestaetigen
+Nach meinem "OK": Datei LiveRatingRow.tsx neu anlegen (EDIT 1), Import ergaenzen (EDIT 2),
+map-return ersetzen (EDIT 3). Keine weiteren Aenderungen.
+
+
+### EDIT 1 — Neue Datei client/src/labs/components/LiveRatingRow.tsx mit GENAU diesem Inhalt:
+
+import { ChevronDown, Lock } from "lucide-react";
+import type { ReactNode } from "react";
+
+export function LiveRatingRow({
+  index,
+  label,
+  overall,
+  maxScore,
+  isActive,
+  isExpanded,
+  locked = false,
+  onToggle,
+  testIdPrefix = "calibration",
+  children,
+}: {
+  index: number;
+  label: string;
+  overall: number | null | undefined;
+  maxScore: number;
+  isActive: boolean;
+  isExpanded: boolean;
+  locked?: boolean;
+  onToggle: () => void;
+  testIdPrefix?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div style={{ borderRadius: 8, overflow: "hidden", border: isActive ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border-subtle, var(--labs-border))", transition: "border-color 0.15s" }}>
+      <button
+        type="button"
+        onClick={locked ? undefined : onToggle}
+        disabled={locked}
+        style={{
+          width: "100%", display: "flex", alignItems: "center", gap: 10,
+          padding: "8px 10px", cursor: locked ? "default" : "pointer", fontFamily: "inherit",
+          background: isActive ? "var(--labs-accent-muted)" : "transparent",
+          border: "none",
+          opacity: locked ? 0.55 : 1,
+          transition: "all 0.15s",
+        }}
+        data-testid={`${testIdPrefix}-row-${index}`}
+      >
+        <span className="text-[11px] font-bold tabular-nums" style={{ color: "var(--labs-text-muted)", width: 18, textAlign: "center", flexShrink: 0 }}>
+          {index + 1}
+        </span>
+        <span className="text-xs font-medium truncate flex-1 text-left" style={{ color: isActive ? "var(--labs-accent)" : "var(--labs-text)" }}>
+          {label}
+        </span>
+        <div style={{ width: 60, height: 6, borderRadius: 3, background: "var(--labs-border)", flexShrink: 0, overflow: "hidden" }}>
+          {overall != null && (
+            <div style={{ width: `${(overall / maxScore) * 100}%`, height: "100%", borderRadius: 3, background: isActive ? "var(--labs-accent)" : "var(--labs-text-muted)", transition: "width 0.3s" }} />
+          )}
+        </div>
+        <span className="text-xs font-bold tabular-nums" style={{ color: overall != null ? (isActive ? "var(--labs-accent)" : "var(--labs-text)") : "var(--labs-text-muted)", width: 28, textAlign: "right", flexShrink: 0 }}>
+          {overall != null ? overall : "—"}
+        </span>
+        {locked ? (
+          <Lock style={{ width: 13, height: 13, flexShrink: 0, color: "var(--labs-text-muted)" }} />
+        ) : (
+          <ChevronDown style={{ width: 13, height: 13, flexShrink: 0, color: "var(--labs-text-muted)", transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }} />
+        )}
+      </button>
+      <div
+        aria-hidden={!isExpanded}
+        {...(!isExpanded ? { inert: "" as any } : {})}
+        style={{
+          maxHeight: isExpanded ? 999 : 0,
+          opacity: isExpanded ? 1 : 0,
+          overflow: "hidden",
+          transition: "max-height 200ms ease, opacity 200ms ease",
+          pointerEvents: isExpanded ? "auto" : "none",
+        }}
+      >
+        <div style={{ padding: "10px 10px 12px", borderTop: "1px solid var(--labs-border-subtle, var(--labs-border))", background: "var(--labs-surface-alt, rgba(255,255,255,0.02))" }} data-testid={`${testIdPrefix}-detail-${index}`}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+### EDIT 2 — Import in LabsLive.tsx ergaenzen
+Fuege bei den bestehenden labs/components-Imports diese Zeile hinzu:
+import { LiveRatingRow } from "@/labs/components/LiveRatingRow";
+(Falls das Projekt relative Pfade nutzt statt @/-Alias: passe den Pfad an die anderen
+components-Imports in dieser Datei an, z.B. "../components/LiveRatingRow".)
+
+### EDIT 3 — map-return durch LiveRatingRow ersetzen
+In der whiskies.map(...) im frei-Zweig: Die const-Berechnungen am Anfang (rating, overall,
+isActive, isExpanded, idxRevealed, idxNameHidden, label) bleiben UNVERAENDERT.
+
+Merke dir den AUFGEKLAPPTEN INHALT: das JSX, das aktuell INNERHALB von
+<div data-testid={`calibration-detail-${idx}`}> ... </div> steht (nach 2a:
+das {idx === currentIndex && canRate ? <RatingFlowV2 .../> : <p>...</p>}). Dieses JSX wird
+UNVERAENDERT 1:1 als children uebernommen — NICHT neu schreiben, NICHT anpassen.
+
+Ersetze dann die GESAMTE return-Struktur — von return ( <div key={w.id} style={...border...}>
+bis zur schliessenden </div> dieser aeusseren Box und dem ); — durch:
+
+      return (
+        <LiveRatingRow
+          key={w.id}
+          index={idx}
+          label={label}
+          overall={overall}
+          maxScore={maxScore}
+          isActive={isActive}
+          isExpanded={isExpanded}
+          onToggle={() => {
+            const nextExp = isExpanded ? null : idx;
+            setExpandedCalIdx(nextExp);
+            if (nextExp !== null) setCurrentIndex(nextExp);
+          }}
+        >
+          {/* HIER den oben gemerkten aufgeklappten INHALT 1:1 einsetzen */}
+        </LiveRatingRow>
+      );
+
+Wichtig:
+- Der Kommentar {/* HIER ... */} wird durch das gemerkte calibration-detail-INHALT-JSX ersetzt.
+- Die alte Huelle (aeussere <div>, der Kopf-<button>, der aria-hidden-Aufklapp-Container und der
+  innere data-testid=calibration-detail-<div>) entfaellt komplett — sie steckt jetzt in LiveRatingRow.
+- onToggle ist identisch mit dem bisherigen Klick-Handler aus 2a (setExpandedCalIdx + setCurrentIndex).
+
+
+## SCHRITT 2 — Verifikation
+- Build muss FEHLERFREI durchlaufen.
+- Optisch am Glas: Die Liste sieht IDENTISCH aus wie nach 2a (gleiche Zeilen, gleicher Rahmen,
+  gleicher Score-Balken, gleiches Auf-/Zuklappen, RatingFlowV2 inline beim Aufklappen). 2b ist ein
+  reiner Refactor ohne sichtbare Aenderung.
+- Bestaetige: LiveRatingRow wird genau an dieser einen Stelle verwendet; das locked-Prop wird in 2b
+  noch nirgends gesetzt (default false) — es ist nur Vorbereitung fuer Phase 3.
+- Keine shared/schema.ts-Aenderung, kein drizzle-kit, keine Migration.
+
+## ABSOLUTES COMMIT-VERBOT
+NICHT committen. NICHT git commit, NICHT git push, NICHT taggen (ausser dem Safety-Tag oben).
+Lass alle Aenderungen uncommitted im Working Tree. Ich (Christoph) committe selbst nach dem Test.
+Wiederhole am Ende kurz: "Keine Commits gemacht."
+
+## Rollback falls noetig
+git reset --hard pre-phase2b-rowcomp-2026-06-21
