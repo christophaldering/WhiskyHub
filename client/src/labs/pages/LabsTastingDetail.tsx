@@ -32,7 +32,6 @@ import {
   Settings,
   Compass,
   Globe,
-  Sliders,
   Gauge,
   RotateCcw,
   KeyRound,
@@ -1116,12 +1115,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 <div
                   className="px-4 py-3 flex items-center justify-between cursor-pointer"
                   onClick={() => {
-                    const newGuided = !tasting.guidedMode;
-                    const patch: Record<string, unknown> = { guidedMode: newGuided };
-                    if (newGuided && ((tasting.sessionUiMode as string) || "flow") === "flow") {
-                      patch.sessionUiMode = "focus";
-                    }
-                    patchTastingDetails(patch);
+                    patchTastingDetails({ guidedMode: !tasting.guidedMode });
                   }}
                   data-testid="labs-detail-toggle-guided"
                 >
@@ -1133,8 +1127,8 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                       <Compass className="w-4 h-4" style={{ color: tasting.guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />
                     </div>
                     <div>
-                      <p className="text-sm font-medium" style={{ color: "var(--labs-text)", margin: 0 }}>Host Controls the Pace</p>
-                      <p className="text-[11px]" style={{ color: "var(--labs-text-muted)", margin: 0 }}>Guide all guests through each dram</p>
+                      <p className="text-sm font-medium" style={{ color: "var(--labs-text)", margin: 0 }}>Geführtes Tasting</p>
+                      <p className="text-[11px]" style={{ color: "var(--labs-text-muted)", margin: 0 }}>An: Host schaltet die Drams nacheinander frei. Aus: jeder bewertet frei, in eigenem Tempo.</p>
                     </div>
                   </div>
                   <div
@@ -1146,42 +1140,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                   >
                     <div className="w-5 h-5 rounded-full transition-all" style={{ background: "var(--labs-bg)" }} />
                   </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold flex items-center gap-1 mb-2" style={{ color: "var(--labs-text-muted)" }}>
-                  <Sliders className="w-3 h-3" />
-                  Tasting Experience
-                </label>
-                <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
-                  {[
-                    { value: "flow", label: t("tastingDetail.free"), desc: tasting.guidedMode ? t("tastingDetail.notWithHostControls") : t("tastingDetail.exploreFreely"), disabled: !!tasting.guidedMode },
-                    { value: "focus", label: t("tastingDetail.oneAtATime"), desc: t("tastingDetail.focusMode") },
-                    { value: "journal", label: t("tastingDetail.dram"), desc: t("tastingDetail.guidedNotes") },
-                  ].map((opt) => {
-                    const active = ((tasting.sessionUiMode as string) || "flow") === opt.value;
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => !opt.disabled && patchTastingDetails({ sessionUiMode: opt.value || null })}
-                        className="rounded-lg transition-all text-center"
-                        style={{
-                          padding: "10px 4px",
-                          background: opt.disabled ? "var(--labs-surface)" : active ? "var(--labs-accent-muted)" : "var(--labs-surface)",
-                          border: `1.5px solid ${opt.disabled ? "var(--labs-border)" : active ? "var(--labs-accent)" : "var(--labs-border)"}`,
-                          cursor: opt.disabled ? "not-allowed" : "pointer",
-                          opacity: opt.disabled ? 0.4 : 1,
-                        }}
-                        disabled={!!opt.disabled}
-                        data-testid={`labs-detail-experience-${opt.value}`}
-                      >
-                        <div className="font-bold" style={{ fontSize: 14, color: opt.disabled ? "var(--labs-text-muted)" : active ? "var(--labs-accent)" : "var(--labs-text)" }}>{opt.label}</div>
-                        <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.2, marginTop: 2 }}>{opt.desc}</div>
-                      </button>
-                    );
-                  })}
                 </div>
               </div>
 

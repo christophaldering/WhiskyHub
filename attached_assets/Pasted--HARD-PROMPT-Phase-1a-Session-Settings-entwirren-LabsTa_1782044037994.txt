@@ -1,0 +1,91 @@
+# HARD PROMPT — Phase 1a: Session Settings entwirren (LabsTastingDetail)
+
+ZIEL: Die verwirrende „Tasting Experience"-Auswahl (flow/focus/journal) aus den Session Settings entfernen und den Tempo-Schalter klar benennen, sodass eindeutig ist: AUS = frei bewertbar, AN = Host führt.
+
+GRENZEN: Genau 1 Datei — `client/src/labs/pages/LabsTastingDetail.tsx`. Kein Commit/push, keine Schema-/Migrations-Änderung, kein drizzle-kit. DB-Spalte `sessionUiMode` bleibt unangetastet (wird nur nicht mehr geschrieben/angezeigt). Safety-Tag `pre-phase1a-settings-2026-06-21`.
+
+## STEP 0 — Diagnose, dann Plan nennen
+Bestätige in `LabsTastingDetail.tsx`:
+1. Den guidedMode-Toggle-Block mit `data-testid="labs-detail-toggle-guided"` (~Z.1117) inkl. onClick mit `patch.sessionUiMode = "focus"` (~Z.1121).
+2. Das Toggle-Label „Host Controls the Pace" (~Z.1135).
+3. Den „Tasting Experience"-Block mit den Optionen flow/focus/journal (`data-testid="labs-detail-experience-..."`, ~Z.1152–1186).
+Nenne den Plan, bevor du editierst.
+
+## EDIT 1 — guidedMode-onClick: sessionUiMode-Kopplung raus
+Ersetze:
+```tsx
+                  onClick={() => {
+                    const newGuided = !tasting.guidedMode;
+                    const patch: Record<string, unknown> = { guidedMode: newGuided };
+                    if (newGuided && ((tasting.sessionUiMode as string) || "flow") === "flow") {
+                      patch.sessionUiMode = "focus";
+                    }
+                    patchTastingDetails(patch);
+                  }}
+```
+durch:
+```tsx
+                  onClick={() => {
+                    patchTastingDetails({ guidedMode: !tasting.guidedMode });
+                  }}
+```
+
+## EDIT 2 — Toggle klar benennen
+Ersetze:
+```tsx
+                      <p className="text-sm font-medium" style={{ color: "var(--labs-text)", margin: 0 }}>Host Controls the Pace</p>
+                      <p className="text-[11px]" style={{ color: "var(--labs-text-muted)", margin: 0 }}>Guide all guests through each dram</p>
+```
+durch:
+```tsx
+                      <p className="text-sm font-medium" style={{ color: "var(--labs-text)", margin: 0 }}>Geführtes Tasting</p>
+                      <p className="text-[11px]" style={{ color: "var(--labs-text-muted)", margin: 0 }}>An: Host schaltet die Drams nacheinander frei. Aus: jeder bewertet frei, in eigenem Tempo.</p>
+```
+
+## EDIT 3 — „Tasting Experience"-Block (flow/focus/journal) ENTFERNEN
+Lösche diesen kompletten Block ersatzlos (er steht zwischen dem guidedMode-Toggle und dem „How Guests Join"-Block):
+```tsx
+              <div>
+                <label className="text-xs font-semibold flex items-center gap-1 mb-2" style={{ color: "var(--labs-text-muted)" }}>
+                  <Sliders className="w-3 h-3" />
+                  Tasting Experience
+                </label>
+                <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+                  {[
+                    { value: "flow", label: t("tastingDetail.free"), desc: tasting.guidedMode ? t("tastingDetail.notWithHostControls") : t("tastingDetail.exploreFreely"), disabled: !!tasting.guidedMode },
+                    { value: "focus", label: t("tastingDetail.oneAtATime"), desc: t("tastingDetail.focusMode") },
+                    { value: "journal", label: t("tastingDetail.dram"), desc: t("tastingDetail.guidedNotes") },
+                  ].map((opt) => {
+                    const active = ((tasting.sessionUiMode as string) || "flow") === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => !opt.disabled && patchTastingDetails({ sessionUiMode: opt.value || null })}
+                        className="rounded-lg transition-all text-center"
+                        style={{
+                          padding: "10px 4px",
+                          background: opt.disabled ? "var(--labs-surface)" : active ? "var(--labs-accent-muted)" : "var(--labs-surface)",
+                          border: `1.5px solid ${opt.disabled ? "var(--labs-border)" : active ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                          cursor: opt.disabled ? "not-allowed" : "pointer",
+                          opacity: opt.disabled ? 0.4 : 1,
+                        }}
+                        disabled={!!opt.disabled}
+                        data-testid={`labs-detail-experience-${opt.value}`}
+                      >
+                        <div className="font-bold" style={{ fontSize: 14, color: opt.disabled ? "var(--labs-text-muted)" : active ? "var(--labs-accent)" : "var(--labs-text)" }}>{opt.label}</div>
+                        <div style={{ fontSize: 11, color: "var(--labs-text-muted)", lineHeight: 1.2, marginTop: 2 }}>{opt.desc}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+```
+Falls `Sliders` danach in der Datei NIRGENDS mehr verwendet wird, entferne den `Sliders`-Import; wird es noch woanders genutzt, Import unverändert lassen.
+
+## VERIFIKATION
+- [ ] Build grün, keine TS-Fehler.
+- [ ] Session Settings zeigen den Schalter „Geführtes Tasting" mit klarer Beschreibung; die „Tasting Experience"-Auswahl (flow/focus/journal) ist weg.
+- [ ] „Geführtes Tasting" AUS → speichert `guidedMode:false`; AN → `guidedMode:true` (kein `sessionUiMode`-Schreibzugriff mehr).
+- [ ] „How Guests Join" und alle übrigen Settings unverändert vorhanden.
+- [ ] KEIN Commit, KEIN push, KEIN drizzle-kit. Bestätigen.
