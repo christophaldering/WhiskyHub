@@ -1579,121 +1579,8 @@ export default function LabsLive({ params }: LabsLiveProps) {
       ) : (
         <>
           <div ref={setFreeChipSlotNode} />
-          <div className="labs-card-elevated p-5 mb-5 labs-fade-in labs-stagger-1">
-            <div className="flex items-center justify-between mb-3">
-              <button
-                onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
-                disabled={currentIndex === 0}
-                className="w-9 h-9 rounded-full flex items-center justify-center transition-all"
-                style={{
-                  background: "var(--labs-surface)",
-                  color: currentIndex === 0 ? "var(--labs-border)" : "var(--labs-text)",
-                  opacity: currentIndex === 0 ? 0.3 : 1,
-                  border: "none",
-                  cursor: currentIndex === 0 ? "default" : "pointer",
-                }}
-                data-testid="labs-live-prev"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
 
-              <div className="text-center flex-1 px-3">
-                <p className="text-[11px] mb-1 font-medium" style={{ color: "var(--labs-text-muted)", letterSpacing: "0.05em" }}>
-                  {currentIndex + 1} / {totalWhiskies}
-                </p>
-                {currentWhisky?.imageUrl && !isBlind && (
-                  <img
-                    src={currentWhisky.imageUrl}
-                    alt={displayName}
-                    className="mx-auto mb-3 rounded-2xl object-cover"
-                    style={{ width: 110, height: 130, border: "1px solid var(--labs-border)", boxShadow: "0 4px 16px rgba(0,0,0,0.18)" }}
-                    data-testid="labs-live-whisky-thumb"
-                  />
-                )}
-                <h2
-                  className="labs-h3"
-                  data-testid="labs-live-whisky-name"
-                >
-                  {displayName}
-                </h2>
-                {displaySub && (
-                  <p className="text-xs mt-0.5" style={{ color: "var(--labs-text-muted)" }}>
-                    {displaySub}
-                  </p>
-                )}
-              </div>
-
-              <button
-                onClick={() => setCurrentIndex(Math.min(totalWhiskies - 1, currentIndex + 1))}
-                disabled={currentIndex >= totalWhiskies - 1}
-                className="w-9 h-9 rounded-full flex items-center justify-center transition-all"
-                style={{
-                  background: "var(--labs-surface)",
-                  color: currentIndex >= totalWhiskies - 1 ? "var(--labs-border)" : "var(--labs-text)",
-                  opacity: currentIndex >= totalWhiskies - 1 ? 0.3 : 1,
-                  border: "none",
-                  cursor: currentIndex >= totalWhiskies - 1 ? "default" : "pointer",
-                }}
-                data-testid="labs-live-next"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="flex items-center justify-center gap-1.5">
-              {whiskies.map((_: any, i: number) => (
-                <button
-                  key={i}
-                  className="rounded-full transition-all"
-                  style={{
-                    width: i === currentIndex ? 18 : 7,
-                    height: 7,
-                    background: i === currentIndex ? "var(--labs-accent)" : "var(--labs-border)",
-                    border: "none",
-                    cursor: "pointer",
-                    borderRadius: 4,
-                  }}
-                  onClick={() => setCurrentIndex(i)}
-                  data-testid={`labs-live-dot-${i}`}
-                />
-              ))}
-            </div>
-          </div>
-
-          {canRate ? (
-            <>
-              <RatingFlowV2
-                key={currentWhisky?.id}
-                chipInHeader
-                chipPortalTarget={freeChipSlotNode}
-                scale={mainScale}
-                whisky={{ name: displayName, region: currentWhisky?.region || undefined, cask: currentWhisky?.caskType || undefined, blind: isBlind }}
-                initialData={freeInitialData}
-                preferredMode={freeRatingMode}
-                showTisch={true}
-                autoSaveHint={true}
-                onChange={(draft) => {
-                  if (draft.mode) setFreeRatingMode(draft.mode);
-                  freeRatingDataRef.current = draft.data;
-                  saveRatingData(draft.data, freeformMemo);
-                }}
-                onDone={(data) => { saveRatingData(data, freeformMemo); }}
-                onBack={() => {}}
-              />
-              {VOICE_MEMOS_ENABLED && (
-                <div className="mt-3">
-                  <LabsVoiceMemoRecorder
-                    participantId={currentParticipant?.id || ""}
-                    memo={freeformMemo}
-                    onMemoChange={(memoData) => {
-                      setFreeformMemo(memoData);
-                      saveRatingData(freeRatingDataRef.current, memoData);
-                    }}
-                  />
-                </div>
-              )}
-            </>
-          ) : (
+          {!canRate && (
             <div className="labs-card-elevated p-6 text-center labs-fade-in labs-stagger-2">
               {!currentParticipant ? (
                 <AuthGateMessage
@@ -1785,7 +1672,11 @@ export default function LabsLive({ params }: LabsLiveProps) {
                       <div key={w.id} style={{ borderRadius: 8, overflow: "hidden", border: isActive ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border-subtle, var(--labs-border))", transition: "border-color 0.15s" }}>
                         <button
                           type="button"
-                          onClick={() => setExpandedCalIdx(isExpanded ? null : idx)}
+                          onClick={() => {
+                            const nextExp = isExpanded ? null : idx;
+                            setExpandedCalIdx(nextExp);
+                            if (nextExp !== null) setCurrentIndex(nextExp);
+                          }}
                           style={{
                             width: "100%", display: "flex", alignItems: "center", gap: 10,
                             padding: "8px 10px", cursor: "pointer", fontFamily: "inherit",
@@ -1825,63 +1716,27 @@ export default function LabsLive({ params }: LabsLiveProps) {
                           }}
                         >
                           <div style={{ padding: "10px 10px 12px", borderTop: "1px solid var(--labs-border-subtle, var(--labs-border))", background: "var(--labs-surface-alt, rgba(255,255,255,0.02))" }} data-testid={`calibration-detail-${idx}`}>
-                            {rating ? (
-                              <>
-                                <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-                                  {(["nose", "taste", "finish"] as const).map((dim) => {
-                                    const val = (rating as Record<string, number | null>)[dim];
-                                    const pct = val != null ? Math.max(0, Math.min(100, ((val - scaleMin) / scaleRange) * 100)) : 0;
-                                    return (
-                                      <div key={dim} style={{ flex: 1 }}>
-                                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                                          <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: "var(--labs-text-muted)" }}>
-                                            {dim}
-                                          </span>
-                                          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--labs-text-secondary)", fontVariantNumeric: "tabular-nums" }} data-testid={`cal-dim-${idx}-${dim}`}>
-                                            {val != null ? val : "—"}
-                                          </span>
-                                        </div>
-                                        <div style={{ height: 4, borderRadius: 2, background: "var(--labs-border)", overflow: "hidden" }}>
-                                          <div style={{ height: "100%", width: val != null ? `${pct}%` : "0%", borderRadius: 2, background: "var(--labs-accent)", transition: "width 0.3s ease" }} />
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => { setCurrentIndex(idx); setExpandedCalIdx(null); }}
-                                  data-testid={`calibration-edit-${idx}`}
-                                  style={{
-                                    display: "inline-flex", alignItems: "center", gap: 5,
-                                    fontSize: 11, fontWeight: 600, fontFamily: "inherit",
-                                    color: "var(--labs-accent)", background: "none",
-                                    border: "1px solid var(--labs-accent)", borderRadius: 6,
-                                    padding: "4px 10px", cursor: "pointer",
-                                  }}
-                                >
-                                  <Pencil style={{ width: 11, height: 11 }} />
-                                  Bearbeiten
-                                </button>
-                              </>
+                            {idx === currentIndex && canRate ? (
+                              <RatingFlowV2
+                                key={w.id}
+                                scale={mainScale}
+                                whisky={{ name: displayName, region: currentWhisky?.region || undefined, cask: currentWhisky?.caskType || undefined, blind: isBlind }}
+                                initialData={freeInitialData}
+                                preferredMode={freeRatingMode}
+                                showTisch={true}
+                                autoSaveHint={true}
+                                onChange={(draft) => {
+                                  if (draft.mode) setFreeRatingMode(draft.mode);
+                                  freeRatingDataRef.current = draft.data;
+                                  saveRatingData(draft.data, freeformMemo);
+                                }}
+                                onDone={(data) => { saveRatingData(data, freeformMemo); }}
+                                onBack={() => {}}
+                              />
                             ) : (
-                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>Noch nicht bewertet</span>
-                                <button
-                                  type="button"
-                                  onClick={() => { setCurrentIndex(idx); setExpandedCalIdx(null); }}
-                                  data-testid={`calibration-rate-${idx}`}
-                                  style={{
-                                    display: "inline-flex", alignItems: "center", gap: 5,
-                                    fontSize: 11, fontWeight: 600, fontFamily: "inherit",
-                                    color: "var(--labs-accent)", background: "none",
-                                    border: "1px solid var(--labs-accent)", borderRadius: 6,
-                                    padding: "4px 10px", cursor: "pointer",
-                                  }}
-                                >
-                                  Jetzt bewerten
-                                </button>
-                              </div>
+                              <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: 0, textAlign: "center", padding: "4px 0" }}>
+                                {!currentParticipant ? "Zum Bewerten anmelden" : "Bewertung nicht moeglich"}
+                              </p>
                             )}
                           </div>
                         </div>
