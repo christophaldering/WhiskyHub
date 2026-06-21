@@ -5053,7 +5053,14 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const goBack = useLabsBack("/labs/tastings");
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
-  const [forceDesktopView, setForceDesktopView] = useState(false);
+  const [forceDesktopView, setForceDesktopView] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return new URLSearchParams(window.location.search).get("manage") === "1";
+    } catch {
+      return false;
+    }
+  });
   const [codeCopied, setCodeCopied] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [showQr, setShowQr] = useState(false);

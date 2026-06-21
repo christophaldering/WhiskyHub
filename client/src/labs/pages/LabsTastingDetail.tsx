@@ -922,7 +922,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
             <div>
               <button
                 className="labs-btn-secondary w-full flex items-center justify-center gap-2"
-                onClick={() => navigate(`/labs/host/${tastingId}`)}
+                onClick={() => navigate(`/labs/host/${tastingId}?manage=1`)}
                 data-testid="labs-detail-manage"
               >
                 {t("tastingDetail.manageTasting", "Tasting verwalten")}
@@ -1913,7 +1913,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
               <button
                 type="button"
                 className="labs-btn-secondary"
-                onClick={() => navigate(`/labs/host/${tastingId}`)}
+                onClick={() => navigate(`/labs/host/${tastingId}?manage=1`)}
                 data-testid="host-action-manage-session-open"
                 style={{ fontSize: 12, padding: "6px 10px" }}
               >
@@ -2029,7 +2029,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 <button
                   type="button"
                   className="labs-btn-secondary"
-                  onClick={() => navigate(`/labs/cockpit/${tastingId}`)}
+                  onClick={() => navigate(`/labs/host/${tastingId}?manage=1`)}
                   data-testid="host-action-cockpit-open"
                   style={{ fontSize: 12, padding: "6px 10px" }}
                 >

@@ -1,0 +1,113 @@
+# HARD PROMPT — Drei Fixes: Stat-Overflow + Session-verwalten-Umweg + Cockpit-404
+
+GRENZEN: Genau 3 Dateien. Kein Commit/push, keine Schema-/Migrations-Änderung, kein drizzle-kit. Safety-Tag `pre-detail-nav-fixes-2026-06-21`.
+
+## STEP 0 — Diagnose, dann Plan nennen (vor jeder Änderung)
+Bestätige diese Stellen:
+1. `client/src/labs/components/TastingAnalysisSection.tsx`: `gridTemplateColumns: "repeat(4, 1fr)"` (~Z.771) + der Stat-Item-Style mit `padding: "12px 8px"` + das Label mit `letterSpacing: "0.06em"`.
+2. `client/src/labs/pages/LabsHost.tsx`: `const [forceDesktopView, setForceDesktopView] = useState(false);` (~Z.5056).
+3. `client/src/labs/pages/LabsTastingDetail.tsx`: drei Buttons mit den data-testids `labs-detail-manage`, `host-action-manage-session-open`, `host-action-cockpit-open`.
+
+## FIX 1 — Stat-Reihe läuft über den Rand (TastingAnalysisSection.tsx)
+(a) Grid darf schrumpfen:
+```tsx
+gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+```
+ersetzt `gridTemplateColumns: "repeat(4, 1fr)",`
+
+(b) Stat-Item-Container darf schrumpfen — diesen Style-Block:
+```tsx
+                      style={{
+                        padding: "12px 8px",
+                        borderRadius: 12,
+                        background: "var(--labs-surface-elevated)",
+                        border: "1px solid var(--labs-border)",
+                        textAlign: "center",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+```
+ersetzen durch (nur `minWidth: 0,` + `overflow: "hidden",` ergänzt):
+```tsx
+                      style={{
+                        padding: "12px 8px",
+                        borderRadius: 12,
+                        background: "var(--labs-surface-elevated)",
+                        border: "1px solid var(--labs-border)",
+                        textAlign: "center",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 4,
+                        minWidth: 0,
+                        overflow: "hidden",
+                      }}
+```
+
+(c) Label darf umbrechen — `letterSpacing: "0.06em",` ersetzen durch:
+```tsx
+                          letterSpacing: "0.06em",
+                          wordBreak: "break-word",
+```
+
+## FIX 2+3 — LabsHost liest `?manage=1` (LabsHost.tsx)
+`const [forceDesktopView, setForceDesktopView] = useState(false);` ersetzen durch:
+```tsx
+  const [forceDesktopView, setForceDesktopView] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return new URLSearchParams(window.location.search).get("manage") === "1";
+    } catch {
+      return false;
+    }
+  });
+```
+Wirkung: Mit `?manage=1` wird die MobileCompanion-Zwischenstufe übersprungen → bei `open`/`reveal` landet man direkt im Cockpit, sonst direkt in der Verwaltungs-/Settings-Ansicht.
+
+## FIX 2+3 — Drei Host-Buttons direkt zur Verwaltung (LabsTastingDetail.tsx)
+Jeweils nur das navigate-Ziel ändern; die data-testid-Zeile dient als eindeutiger Anker.
+
+(a) „Tasting verwalten":
+```tsx
+                onClick={() => navigate(`/labs/host/${tastingId}`)}
+                data-testid="labs-detail-manage"
+```
+→
+```tsx
+                onClick={() => navigate(`/labs/host/${tastingId}?manage=1`)}
+                data-testid="labs-detail-manage"
+```
+
+(b) „Session verwalten":
+```tsx
+                onClick={() => navigate(`/labs/host/${tastingId}`)}
+                data-testid="host-action-manage-session-open"
+```
+→
+```tsx
+                onClick={() => navigate(`/labs/host/${tastingId}?manage=1`)}
+                data-testid="host-action-manage-session-open"
+```
+
+(c) „Zum Cockpit" (war die kaputte Route `/labs/cockpit/...`):
+```tsx
+                  onClick={() => navigate(`/labs/cockpit/${tastingId}`)}
+                  data-testid="host-action-cockpit-open"
+```
+→
+```tsx
+                  onClick={() => navigate(`/labs/host/${tastingId}?manage=1`)}
+                  data-testid="host-action-cockpit-open"
+```
+
+WICHTIG: Den internen Redirect `navigate(\`/labs/host/${tastingId}\`)` (~Z.572, KEINE data-testid daneben) NICHT anfassen.
+
+## VERIFIKATION
+- [ ] Build grün, keine TS-Fehler.
+- [ ] (1) Auswertung-Kachel: Stat-Reihe (Whiskys·Bewertungen·Taster·Ø Score) passt in die Breite, nichts mehr über den Rand.
+- [ ] (3) „Zum Cockpit": keine „Page not found" mehr → landet bei laufendem/Reveal-Tasting direkt im Cockpit.
+- [ ] (2) „Session verwalten": landet direkt in der Verwaltung, ohne erst über die View-Results-Zwischenseite + „Alle Einstellungen" zu müssen.
+- [ ] Bestehender Pfad ohne `?manage=1` (z.B. direkter Aufruf von /labs/host) unverändert.
+- [ ] KEIN Commit, KEIN push, KEIN drizzle-kit. Bestätigen.

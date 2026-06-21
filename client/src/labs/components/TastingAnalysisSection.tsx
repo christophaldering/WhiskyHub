@@ -768,7 +768,7 @@ export default function TastingAnalysisSection({
                 data-testid="detail-results-stats-bar"
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
+                  gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
                   gap: 8,
                 }}
               >
@@ -813,6 +813,8 @@ export default function TastingAnalysisSection({
                         flexDirection: "column",
                         alignItems: "center",
                         gap: 4,
+                        minWidth: 0,
+                        overflow: "hidden",
                       }}
                     >
                       <Icon className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
@@ -834,6 +836,7 @@ export default function TastingAnalysisSection({
                           color: "var(--labs-text-muted)",
                           textTransform: "uppercase",
                           letterSpacing: "0.06em",
+                          wordBreak: "break-word",
                         }}
                       >
                         {s.label}
