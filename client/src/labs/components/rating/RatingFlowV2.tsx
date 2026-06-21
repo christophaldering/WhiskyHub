@@ -43,6 +43,8 @@ interface RatingFlowV2Props {
   chipPortalTarget?: HTMLElement | null;
   autoSaveHint?: boolean;
   enableCooperIntro?: boolean;
+  cooperStartPhase?: "voice" | "input";
+  participantId?: string;
 }
 
 type Step = "mode" | "cooper" | "rating";
@@ -65,6 +67,8 @@ export default function RatingFlowV2({
   chipPortalTarget,
   autoSaveHint,
   enableCooperIntro,
+  cooperStartPhase,
+  participantId,
 }: RatingFlowV2Props) {
   const { t } = useTranslation();
 
@@ -302,6 +306,8 @@ export default function RatingFlowV2({
     return (
       <ImpressionCapture
         whiskyName={whisky.name}
+        startPhase={cooperStartPhase}
+        participantId={participantId}
         onApply={(result) => {
           const inv = scale ? 1 / scale.step : 1;
           const convertScore = scale && scale.max !== 100

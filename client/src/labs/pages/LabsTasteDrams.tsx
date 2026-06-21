@@ -1001,6 +1001,8 @@ export default function LabsTasteDrams() {
           initialData={deepRateInitialData}
           initialMode={initialDeepRateMode}
           enableCooperIntro={true}
+          cooperStartPhase="voice"
+          participantId={session.pid ?? undefined}
           onDone={handleDeepRateDone}
           onBack={() => {
             if (enteredViaDeepLink && selectedEntry.status === "draft" && typeof window !== "undefined" && window.history.length > 1) {
