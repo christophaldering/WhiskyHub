@@ -9,6 +9,8 @@ import GuidedRating from "./GuidedRating";
 import CompactRating from "./CompactRating";
 import QuickRating from "./QuickRating";
 import TischRating from "./TischRating";
+import ImpressionCapture from "./ImpressionCapture";
+import { mapImpressionToRating } from "./mapImpressionToRating";
 
 export interface RatingFlowDraftState {
   mode: "guided" | "compact" | "quick" | "tisch" | null;
@@ -39,9 +41,10 @@ interface RatingFlowV2Props {
   chipInHeader?: boolean;
   chipPortalTarget?: HTMLElement | null;
   autoSaveHint?: boolean;
+  enableCooperIntro?: boolean;
 }
 
-type Step = "mode" | "rating";
+type Step = "mode" | "cooper" | "rating";
 
 export default function RatingFlowV2({
   whisky,
@@ -60,6 +63,7 @@ export default function RatingFlowV2({
   chipInHeader,
   chipPortalTarget,
   autoSaveHint,
+  enableCooperIntro,
 }: RatingFlowV2Props) {
   const { t } = useTranslation();
 
@@ -274,14 +278,56 @@ export default function RatingFlowV2({
 
   if (step === "mode") {
     return (
-      <RatingModeSelect
-        labels={modeLabels}
-        onSelect={handleModeSelect}
-        onBack={onBack}
-        hideQuick={hideQuick}
-        showTisch={showTisch}
-        tischIsNew={!!showTisch && !tischSeen}
-        showRememberToggle={!!onSetPreferredMode}
+      <>
+        {enableCooperIntro && (
+          <div style={{ padding: "32px 16px 0" }}>
+            <button
+              onClick={() => setStep("cooper")}
+              data-testid="rating-cooper-intro"
+              style={{
+                display: "block",
+                width: "100%",
+                padding: 18,
+                background: "color-mix(in srgb, var(--labs-gold) 10%, var(--labs-surface))",
+                border: "1px solid color-mix(in srgb, var(--labs-gold) 35%, transparent)",
+                borderRadius: 16,
+                cursor: "pointer",
+                textAlign: "left",
+                transition: "border-color 0.2s, background 0.2s",
+              }}
+            >
+              <span style={{ display: "block", fontSize: 18, fontWeight: 600, color: "var(--labs-gold)", marginBottom: 4 }}>
+                {t("v2.cooperIntroTitle", "Sprich mit Cooper")}
+              </span>
+              <span style={{ display: "block", fontSize: 13, color: "var(--labs-text-muted)", lineHeight: 1.45 }}>
+                {t("v2.cooperIntroDesc", "Lass dich im Gespr\u00e4ch durch den ersten Eindruck f\u00fchren \u2014 Cooper fasst ihn danach in Worte.")}
+              </span>
+            </button>
+          </div>
+        )}
+        <RatingModeSelect
+          labels={modeLabels}
+          onSelect={handleModeSelect}
+          onBack={onBack}
+          hideQuick={hideQuick}
+          showTisch={showTisch}
+          tischIsNew={!!showTisch && !tischSeen}
+          showRememberToggle={!!onSetPreferredMode}
+        />
+      </>
+    );
+  }
+
+  if (step === "cooper") {
+    return (
+      <ImpressionCapture
+        whiskyName={whisky.name}
+        onApply={(result) => {
+          setLiveData(mapImpressionToRating(result, { prev: liveData ?? initialData }));
+          setMode("compact");
+          setStep("rating");
+        }}
+        onSkip={() => setStep("mode")}
       />
     );
   }
