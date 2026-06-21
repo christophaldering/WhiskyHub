@@ -323,7 +323,12 @@ export default function RatingFlowV2({
       <ImpressionCapture
         whiskyName={whisky.name}
         onApply={(result) => {
-          setLiveData(mapImpressionToRating(result, { prev: liveData ?? initialData }));
+          const inv = scale ? 1 / scale.step : 1;
+          const convertScore = scale && scale.max !== 100
+            ? (v: number) => Math.round((v / 100) * scale.max * inv) / inv
+            : undefined;
+          const fallback = !scale || scale.max === 100 ? 75 : Math.round((scale.max * 0.75) / scale.step) * scale.step;
+          setLiveData(mapImpressionToRating(result, { prev: liveData ?? initialData, fallback, convertScore }));
           setMode("compact");
           setStep("rating");
         }}

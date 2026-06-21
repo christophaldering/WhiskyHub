@@ -1715,6 +1715,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                             key={w.id}
                             scale={mainScale}
                             whisky={{ name: displayName, region: currentWhisky?.region || undefined, cask: currentWhisky?.caskType || undefined, blind: isBlind }}
+                            enableCooperIntro={true}
                             initialData={freeInitialData}
                             preferredMode={freeRatingMode}
                             showTisch={true}
