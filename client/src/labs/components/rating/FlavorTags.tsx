@@ -263,13 +263,10 @@ export default function FlavorTags({
   const dimension: DimKey | undefined = PHASE_TO_DIM[phaseId];
   const studioDimension: DimKey | "overall" = dimension ?? "overall";
 
+  // Bewertungs-Moment: bewusst nur das Wheel. Guide/Journey/Compass/Radar bleiben als
+  // Komponenten im Code erhalten (spaetere Rabbit-Hole-Verortung), Describe entfaellt (Cooper).
   const studioViews: { id: StudioView; label: string; icon: string }[] = [
-    { id: "guide", label: t("m2.taste.rating.toolGuide", "Guide"), icon: "📋" },
-    { id: "journey", label: t("m2.taste.rating.toolJourney", "Journey"), icon: "🔄" },
     { id: "wheel", label: t("m2.taste.rating.toolWheel", "Wheel"), icon: "◎" },
-    { id: "compass", label: t("m2.taste.rating.toolCompass", "Compass"), icon: "◇" },
-    { id: "radar", label: t("ratingUi.radar"), icon: "⬡" },
-    { id: "describe", label: t("m2.taste.rating.toolDescribe", "Describe"), icon: "✏️" },
   ];
 
   const renderChip = (sub: { en: string; de: string; id: string }, catColor: string, catId: string) => {

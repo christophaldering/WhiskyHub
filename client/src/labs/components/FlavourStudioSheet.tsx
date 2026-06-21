@@ -197,13 +197,9 @@ function SegmentedControl({ value, onChange }: { value: StudioView; onChange: (v
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Bewertungs-Moment: nur Wheel waehlbar. Uebrige Views bleiben als Komponenten erhalten.
   const allOptions: { key: StudioView; label: string; icon?: string }[] = [
-    { key: "guide", label: t("m2.rating.studioGuide", "Guide") },
-    { key: "journey", label: t("m2.rating.studioJourney", "Journey") },
-    { key: "describe", label: t("m2.rating.studioDescribe", "Describe") },
     { key: "wheel", label: t("m2.rating.studioWheel", "Wheel"), icon: "◎" },
-    { key: "compass", label: t("m2.rating.studioCompass", "Compass"), icon: "◇" },
-    { key: "radar", label: "Radar", icon: "⬡" },
   ];
 
   const currentLabel = allOptions.find((o) => o.key === value)?.label || allOptions[0].label;
@@ -225,6 +221,7 @@ function SegmentedControl({ value, onChange }: { value: StudioView; onChange: (v
     triggerHaptic("light");
   };
 
+  if (allOptions.length <= 1) return null;
   return (
     <div ref={dropdownRef} style={{ position: "relative", marginBottom: "var(--labs-space-md)" }} data-testid="studio-segmented-control">
       <button
