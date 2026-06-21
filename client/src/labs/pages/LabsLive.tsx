@@ -15,6 +15,7 @@ import { formatScore } from "@/lib/utils";
 import { queryClient } from "@/lib/queryClient";
 import LabsVoiceMemoRecorder, { type LabsVoiceMemoData } from "@/labs/components/LabsVoiceMemoRecorder";
 import { LiveRatingRow } from "@/labs/components/LiveRatingRow";
+import ModalPortal from "@/labs/components/ModalPortal";
 import { InlineFlavorTags, parseTagsFromNotes, replaceTagsInNotes } from "@/labs/components/FlavorTagStrip";
 import { getEffectiveProfile } from "@/labs/data/flavor-data";
 import FlavourStudioSheet from "@/labs/components/FlavourStudioSheet";
@@ -814,19 +815,10 @@ function GuidedStepView({
       )}
 
       {showEditDialog && (
-        <div
-          data-testid="edit-retaste-dialog-overlay"
-          onClick={() => setShowEditDialog(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.6)",
-            zIndex: 100,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 24,
-          }}
+        <ModalPortal
+          open={showEditDialog}
+          onClose={() => setShowEditDialog(false)}
+          testId="edit-retaste-dialog-overlay"
         >
           <div
             data-testid="edit-retaste-dialog"
@@ -897,7 +889,7 @@ function GuidedStepView({
               {t("labs.editOrRetaste.retaste", "Nochmal verkosten")}
             </button>
           </div>
-        </div>
+        </ModalPortal>
       )}
 
       {draftSavedFlash && (
