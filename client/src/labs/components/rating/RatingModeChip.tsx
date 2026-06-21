@@ -57,7 +57,6 @@ export default function RatingModeChip({ mode, hideQuick, showTisch, labels, all
     ...(hideQuick ? [] : ["quick" as Mode]),
     ...(showTisch ? ["tisch" as Mode] : []),
     "compact",
-    "guided",
   ];
 
   const handlePick = (m: Mode) => {

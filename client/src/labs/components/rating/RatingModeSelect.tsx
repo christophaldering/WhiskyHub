@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
 import { SP, FONT, RADIUS, TOUCH_MIN } from "./theme";
 import { BackIcon } from "./icons";
 import PhaseSignature from "./PhaseSignature";
@@ -35,7 +34,6 @@ interface RatingModeSelectProps {
 }
 
 export default function RatingModeSelect({ labels, onSelect, onBack, hideQuick, showTisch, tischIsNew, showRememberToggle }: RatingModeSelectProps) {
-  const { t } = useTranslation();
   const [remember, setRemember] = useState(false);
   const allCards: Array<{
     mode: "guided" | "compact" | "quick" | "tisch";
@@ -47,11 +45,8 @@ export default function RatingModeSelect({ labels, onSelect, onBack, hideQuick, 
     { mode: "quick", title: labels.quick || "Quick", desc: labels.quickD || "Overall score only — two taps and done.", hint: labels.quickH || "When time is short.", phaseId: "overall" },
     ...(showTisch ? [{ mode: "tisch" as const, title: labels.tisch || "Tisch", desc: labels.tischD || "Ein Tap pro Phase.", hint: labels.tischH || "", phaseId: "finish" as const }] : []),
     { mode: "compact", title: labels.compact, desc: labels.compactD, hint: labels.compactH, phaseId: "palate" },
-    { mode: "guided", title: labels.guided, desc: labels.guidedD, hint: labels.guidedH, phaseId: "nose" },
   ];
   const cards = hideQuick ? allCards.filter(c => c.mode !== "quick") : allCards;
-  const singleCards = cards.filter((c) => c.mode !== "compact" && c.mode !== "guided");
-  const inDepthModes = cards.filter((c) => c.mode === "compact" || c.mode === "guided");
 
   return (
     <div className="labs-fade-in" style={{ padding: `${SP.xl}px ${SP.md}px` }}>
@@ -101,7 +96,7 @@ export default function RatingModeSelect({ labels, onSelect, onBack, hideQuick, 
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: SP.md }}>
-        {singleCards.map(({ mode, title, desc, hint, phaseId }) => {
+        {cards.map(({ mode, title, desc, hint, phaseId }) => {
           const accentVar = `var(--labs-phase-${phaseId})`;
           const dimVar = `var(--labs-phase-${phaseId}-dim)`;
           return (
@@ -184,71 +179,6 @@ export default function RatingModeSelect({ labels, onSelect, onBack, hideQuick, 
             </button>
           );
         })}
-
-        {inDepthModes.length > 0 && (
-          <div style={{
-            display: "flex",
-            gap: SP.md,
-            padding: SP.lg,
-            background: "var(--labs-surface)",
-            border: "1px solid var(--labs-border)",
-            borderRadius: RADIUS.lg,
-          }}>
-            <PhaseSignature phaseId="palate" size="large" />
-            <div style={{ flex: 1 }}>
-              <div style={{
-                fontFamily: FONT.display,
-                fontSize: 20,
-                fontWeight: 600,
-                color: "var(--labs-text)",
-                marginBottom: SP.xs,
-              }}>
-                {t("v2.ratingInDepthTitle", "In Depth")}
-              </div>
-              <div style={{
-                fontFamily: FONT.body,
-                fontSize: 14,
-                color: "var(--labs-text-muted)",
-                marginBottom: SP.md,
-                lineHeight: 1.5,
-              }}>
-                {t("v2.ratingInDepthDesc", "Alle vier Dimensionen \u2014 mit Aromen & Notizen.")}
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: SP.sm }}>
-                {inDepthModes.map((c) => (
-                  <button
-                    key={c.mode}
-                    data-testid={`rating-mode-${c.mode}`}
-                    onClick={() => onSelect(c.mode, showRememberToggle ? remember : undefined)}
-                    style={{
-                      padding: "10px 18px",
-                      borderRadius: RADIUS.full,
-                      border: "1px solid var(--labs-border)",
-                      background: "var(--labs-bg)",
-                      color: "var(--labs-text)",
-                      fontFamily: FONT.body,
-                      fontSize: 14,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      minHeight: TOUCH_MIN,
-                      transition: "border-color 0.2s, background 0.2s",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = "color-mix(in srgb, var(--labs-phase-palate) 40%, transparent)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = "var(--labs-border)";
-                    }}
-                  >
-                    {c.mode === "compact"
-                      ? t("v2.ratingLayoutAtOnce", "Auf einmal")
-                      : t("v2.ratingLayoutStepwise", "Schritt f\u00fcr Schritt")}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {showRememberToggle && (
