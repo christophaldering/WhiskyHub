@@ -223,6 +223,7 @@ function GuidedStepView({
 }) {
   const { t } = useTranslation();
   const [localIndex, setLocalIndex] = useState(whiskyIndex);
+  const [guidedExpandedIdx, setGuidedExpandedIdx] = useState<number | null>(whiskyIndex);
   const isHostViewer = currentParticipant?.id === tasting?.hostId;
   const [entryBannerIdx, setEntryBannerIdx] = useState<number | null>(
     !isHostViewer && whiskyIndex >= 1 ? whiskyIndex : null
@@ -529,8 +530,6 @@ function GuidedStepView({
             </button>
           )}
           <RatingFlowV2
-            chipInHeader
-            chipPortalTarget={chipSlotNode}
             scale={liveScale}
             whisky={{
               name: displayName,
@@ -722,62 +721,49 @@ function GuidedStepView({
         />
       )}
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "8px 0",
-          marginBottom: 8,
-        }}
-        data-testid="guided-context-bar"
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-              color: "var(--labs-text-muted)",
-              textTransform: "uppercase",
-              letterSpacing: "0.04em",
-            }}
-            data-testid="guided-step-counter"
-          >
-            {t("m2.taste.rating.dramXofN", { x: localIndex + 1, n: totalWhiskies, defaultValue: `Dram ${localIndex + 1} of ${totalWhiskies}` })}
-          </span>
-          <ScaleBadge max={maxScore} size="sm" />
-          {tasting.blindMode && (
-            <span
-              className="labs-badge labs-badge-accent"
-              style={{ fontSize: 10, padding: "2px 8px" }}
-              data-testid="guided-blind-badge"
-            >
-              <EyeOff style={{ width: 10, height: 10, marginRight: 3, display: "inline" }} />
-              {t("m2.taste.rating.blind", "Blind")}
-            </span>
-          )}
-        </div>
-        <div ref={setChipSlotNode} style={{ display: "flex", alignItems: "center" }} />
-      </div>
+      <div ref={setChipSlotNode} />
 
-      <DramCarousel
-        chips={dramChips}
-        activeIndex={localIndex}
-        onChipTap={(idx) => {
-          if (idx <= hostMaxIndex) {
-            const rating = guidedMyRatings.find((r: any) => r.whiskyId === allWhiskies[idx]?.id);
-            setLocalIndex(idx);
-            setFlowSaved(false);
-            setDramTransitionKey(k => k + 1);
-            setEditRatingMode(null);
-            if (rating) {
-              setShowEditDialog(true);
-            }
-          }
-        }}
-        scaleMax={maxScore}
-        isBlind={isBlindStep}
-      />
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }} data-testid="guided-rating-list">
+        {allWhiskies.map((w: any, idx: number) => {
+          const rating = guidedMyRatings.find((r: any) => r.whiskyId === w.id);
+          const overall = rating?.overall;
+          const isActive = idx === localIndex;
+          const isExpanded = guidedExpandedIdx === idx;
+          const locked = idx > hostMaxIndex;
+          const label = getDramName(idx);
+          return (
+            <LiveRatingRow
+              key={w.id}
+              index={idx}
+              label={label}
+              overall={overall}
+              maxScore={maxScore}
+              isActive={isActive}
+              isExpanded={isExpanded}
+              locked={locked}
+              testIdPrefix="guided-row"
+              onToggle={() => {
+                const nextExp = isExpanded ? null : idx;
+                setGuidedExpandedIdx(nextExp);
+                if (nextExp !== null) {
+                  setLocalIndex(idx);
+                  setFlowSaved(false);
+                  setDramTransitionKey((k) => k + 1);
+                  setEditRatingMode(null);
+                }
+              }}
+            >
+              {idx === localIndex && canRate && !revealMoment ? (
+                renderGuidedRating()
+              ) : (
+                <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: 0, textAlign: "center", padding: "4px 0" }}>
+                  {locked ? "Vom Host noch nicht freigegeben" : !currentParticipant ? "Zum Bewerten anmelden" : "Bewertung nicht moeglich"}
+                </p>
+              )}
+            </LiveRatingRow>
+          );
+        })}
+      </div>
 
       {interruptBanner && (
         <ResumeOrSkipBanner
@@ -800,9 +786,7 @@ function GuidedStepView({
         />
       )}
 
-      {canRate && !revealMoment ? (
-        renderGuidedRating()
-      ) : (
+      {!canRate && (
         <div className="labs-card-elevated p-6 text-center labs-fade-in labs-stagger-2">
           {!currentParticipant ? (
             <AuthGateMessage
