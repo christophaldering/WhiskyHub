@@ -742,6 +742,7 @@ function GuidedStepView({
               isExpanded={isExpanded}
               locked={locked}
               testIdPrefix="guided-row"
+              imageUrl={isBlindStep ? undefined : w.imageUrl}
               onToggle={() => {
                 const nextExp = isExpanded ? null : idx;
                 setGuidedExpandedIdx(nextExp);
@@ -1658,6 +1659,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                         maxScore={maxScore}
                         isActive={isActive}
                         isExpanded={isExpanded}
+                        imageUrl={isBlind ? undefined : w.imageUrl}
                         onToggle={() => {
                           const nextExp = isExpanded ? null : idx;
                           setExpandedCalIdx(nextExp);

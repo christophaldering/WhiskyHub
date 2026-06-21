@@ -1,5 +1,5 @@
 import { ChevronDown, Lock } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 export function LiveRatingRow({
   index,
@@ -11,6 +11,7 @@ export function LiveRatingRow({
   locked = false,
   onToggle,
   testIdPrefix = "calibration",
+  imageUrl,
   children,
 }: {
   index: number;
@@ -22,8 +23,15 @@ export function LiveRatingRow({
   locked?: boolean;
   onToggle: () => void;
   testIdPrefix?: string;
+  imageUrl?: string;
   children: ReactNode;
 }) {
+  const [fullyExpanded, setFullyExpanded] = useState(false);
+  useEffect(() => {
+    if (!isExpanded) { setFullyExpanded(false); return; }
+    const id = setTimeout(() => setFullyExpanded(true), 230);
+    return () => clearTimeout(id);
+  }, [isExpanded]);
   return (
     <div style={{ borderRadius: 8, overflow: "hidden", border: isActive ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border-subtle, var(--labs-border))", transition: "border-color 0.15s" }}>
       <button
@@ -64,14 +72,19 @@ export function LiveRatingRow({
         aria-hidden={!isExpanded}
         {...(!isExpanded ? { inert: "" as any } : {})}
         style={{
-          maxHeight: isExpanded ? 999 : 0,
+          maxHeight: !isExpanded ? 0 : (fullyExpanded ? "none" : 6000),
           opacity: isExpanded ? 1 : 0,
-          overflow: "hidden",
+          overflow: isExpanded && fullyExpanded ? "visible" : "hidden",
           transition: "max-height 200ms ease, opacity 200ms ease",
           pointerEvents: isExpanded ? "auto" : "none",
         }}
       >
         <div style={{ padding: "10px 10px 12px", borderTop: "1px solid var(--labs-border-subtle, var(--labs-border))", background: "var(--labs-surface-alt, rgba(255,255,255,0.02))" }} data-testid={`${testIdPrefix}-detail-${index}`}>
+          {imageUrl && (
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+              <img src={imageUrl} alt={label} loading="lazy" style={{ maxHeight: 160, maxWidth: "55%", objectFit: "contain", borderRadius: 8 }} data-testid={`${testIdPrefix}-photo-${index}`} />
+            </div>
+          )}
           {children}
         </div>
       </div>
