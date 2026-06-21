@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useLabsBack } from "@/labs/LabsLayout";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import GuestClaimPanel from "@/labs/components/GuestClaimPanel";
-import { Wine, ChevronLeft, ChevronRight, ChevronDown, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, Monitor, Sparkles, Settings, Pencil, RotateCcw, Download } from "lucide-react";
+import { Wine, ChevronLeft, ChevronRight, ChevronDown, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, Monitor, Sparkles, Settings, Pencil, RotateCcw, Download, UserPlus } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi, participantApi, participantUpdateApi } from "@/lib/api";
 import type { Participant } from "@shared/schema";
@@ -201,6 +201,58 @@ function GuidedComplete({ tastingId, presentationActive, storyAvailable, partici
   );
 }
 
+
+function GuestSaveBackButton({ participantId, tastingId, onBack }: { participantId?: string | null; tastingId: string; onBack: () => void }) {
+  const { data: me } = useQuery<Participant>({
+    queryKey: ["participant", participantId],
+    queryFn: () => participantApi.get(participantId!),
+    enabled: !!participantId,
+    staleTime: 5 * 60 * 1000,
+  });
+  const isGuest = !!me && me.experienceLevel === "guest" && !me.email;
+  const [showSave, setShowSave] = useState(false);
+
+  if (!isGuest) {
+    return (
+      <button
+        onClick={onBack}
+        className="labs-btn-ghost flex items-center gap-1 -ml-2"
+        style={{ color: "var(--labs-text-muted)" }}
+        data-testid="labs-live-back"
+      >
+        <ChevronLeft className="w-4 h-4" />
+        Tasting
+      </button>
+    );
+  }
+
+  return (
+    <>
+      <button
+        onClick={() => setShowSave(true)}
+        className="labs-btn-ghost flex items-center gap-1 -ml-2"
+        style={{ color: "var(--labs-accent)" }}
+        data-testid="labs-live-guest-save"
+      >
+        <UserPlus className="w-4 h-4" />
+        Konto sichern
+      </button>
+      <ModalPortal open={showSave} onClose={() => setShowSave(false)} testId="guest-save-sheet">
+        <div style={{ padding: 4 }}>
+          <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, color: "var(--labs-text)", margin: "0 0 6px" }}>
+            Bewertungen sichern
+          </p>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5, color: "var(--labs-text-muted)", margin: "0 0 16px" }}>
+            Erstelle ein Konto, um deine Bewertungen dieses Tastings dauerhaft zu behalten und später wiederzufinden.
+          </p>
+          {participantId && (
+            <GuestClaimPanel participantId={participantId} tastingId={tastingId} tone="app" />
+          )}
+        </div>
+      </ModalPortal>
+    </>
+  );
+}
 
 function GuidedStepView({
   tasting,
@@ -1308,21 +1360,17 @@ export default function LabsLive({ params }: LabsLiveProps) {
           <span className="labs-h3 tracking-tight" style={{ color: "var(--labs-accent)", fontSize: 15 }} data-testid="labs-live-wordmark-guided">CaskSense</span>
         </div>
         <div className="flex items-center justify-between mb-4">
-          <button
-            onClick={() => {
+          <GuestSaveBackButton
+            participantId={currentParticipant?.id}
+            tastingId={tastingId}
+            onBack={() => {
               if (guidedUnsavedRef.current) {
                 setShowGuidedLeaveConfirm(true);
               } else {
                 goBack();
               }
             }}
-            className="labs-btn-ghost flex items-center gap-1 -ml-2"
-            style={{ color: "var(--labs-text-muted)" }}
-            data-testid="labs-live-back"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Tasting
-          </button>
+          />
           <div className="flex items-center gap-2">
             {currentParticipant?.id === tasting.hostId && (
               <button
@@ -1484,15 +1532,11 @@ export default function LabsLive({ params }: LabsLiveProps) {
         <span className="labs-h3 tracking-tight" style={{ color: "var(--labs-accent)", fontSize: 15 }} data-testid="labs-live-wordmark">CaskSense</span>
       </div>
       <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={goBack}
-          className="labs-btn-ghost flex items-center gap-1 -ml-2"
-          style={{ color: "var(--labs-text-muted)" }}
-          data-testid="labs-live-back"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Tasting
-        </button>
+        <GuestSaveBackButton
+          participantId={currentParticipant?.id}
+          tastingId={tastingId}
+          onBack={goBack}
+        />
         <div className="flex items-center gap-2">
           {currentParticipant?.id === tasting.hostId && (
             <button
