@@ -1,0 +1,210 @@
+HARD PROMPT — CaskSense: Aroma-Eingänge entwirren (Schritt 1 von 4)
+
+Datei: client/src/labs/components/rating/FlavorTags.tsx
+Ziel: Im In-Depth-Aroma-Bereich stehen aktuell DREI verschachtelte „Choose aromas"-Blöcke übereinander (Sektion-Überschrift, abgeleiteter Profil-Chip, zwei getrennte Kategorie-Panels). Das wird zu EINEM klaren Pfad reduziert.
+
+═══════════════════════════════
+SCHRITT 0 — NUR DIAGNOSE, NICHTS ÄNDERN
+═══════════════════════════════
+Lies in client/src/labs/components/rating/FlavorTags.tsx und bestätige mir:
+1. Z.345–352: der return öffnet mit dem flavor-tags-Container, danach folgen ZWEI Überschrift-divs ({labels.aromen} und {labels.aromenSub}), danach das öffnende div der Profil-Box (data-testid=`flavor-profile-badge-${phaseId}`).
+2. Z.379–385: die Profil-Box endet mit dem {!blind && whiskyRegion && (...)}-span und einem schließenden </div>.
+3. Z.425–491: es gibt ZWEI CollapsiblePanel — panel1 (title `${labels.aromen} ▾`, badge primaryCount, rendert primaryCategories) und panel2 (title „Weitere Aromen & Bewertungsmodelle", badge secondaryCount, rendert secondaryCategories + darunter den Studio-Wheel-Block mit studioViews).
+4. Bestätige, dass sortedCategories, primaryCount, secondaryCount im Scope existieren.
+
+Gib mir das Ergebnis als kurze Liste und WARTE auf mein „OK". Mache in Schritt 0 KEINE Dateiänderung.
+
+═══════════════════════════════
+PLAN (erst nach meinem OK ausführen)
+═══════════════════════════════
+Drei Ersetzungen, alle in FlavorTags.tsx:
+- E1: Die zwei Sektion-Überschrift-divs entfernen (Doppelung mit dem Panel-Titel) UND die Profil-Box in {blind && (…)} wrappen → im Nicht-Blind-Fall erscheint sie gar nicht mehr (entfernt die sensorische Vorprägung „Sherried & Rich"); im Blind-Fall bleibt der „Blind"-Hinweis erhalten.
+- E2: Das blind-Wrap nach der Profil-Box mit )} schließen.
+- E3: Die zwei CollapsiblePanel zu EINEM zusammenführen: alle Kategorien (sortedCategories statt primary/secondary getrennt), badge = primaryCount + secondaryCount, und der Studio-Wheel-Block wandert in dieses eine Panel. Überschrift „Bewertungsmodelle" → „Flavour Wheel".
+
+Hinweis: panel2Open/setPanel2Open bleiben danach ungenutzt im Code — das ist OK (kein noUnusedLocals im Projekt), NICHT extra aufräumen, um die Änderung minimal zu halten.
+
+═══════════════════════════════
+E1
+═══════════════════════════════
+>>> ALT >>>
+    <div data-testid={`flavor-tags-${phaseId}`} style={{ marginTop: SP.lg }}>
+      <div style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)", marginBottom: SP.xs, fontFamily: FONT.body }}>
+        {labels.aromen}
+      </div>
+      <div style={{ fontSize: 14, color: "var(--labs-text-muted)", marginBottom: SP.md, fontFamily: FONT.body }}>
+        {labels.aromenSub}
+      </div>
+
+      <div
+        data-testid={`flavor-profile-badge-${phaseId}`}
+<<< ENDE ALT <<<
+>>> NEU >>>
+    <div data-testid={`flavor-tags-${phaseId}`} style={{ marginTop: SP.lg }}>
+      {blind && (
+      <div
+        data-testid={`flavor-profile-badge-${phaseId}`}
+<<< ENDE NEU <<<
+
+═══════════════════════════════
+E2
+═══════════════════════════════
+>>> ALT >>>
+        {!blind && whiskyRegion && (
+          <span style={{ fontSize: 12, color: "var(--labs-text-secondary)", marginLeft: "auto", fontFamily: FONT.body }}>
+            {whiskyRegion}
+          </span>
+        )}
+      </div>
+<<< ENDE ALT <<<
+>>> NEU >>>
+        {!blind && whiskyRegion && (
+          <span style={{ fontSize: 12, color: "var(--labs-text-secondary)", marginLeft: "auto", fontFamily: FONT.body }}>
+            {whiskyRegion}
+          </span>
+        )}
+      </div>
+      )}
+<<< ENDE NEU <<<
+
+═══════════════════════════════
+E3
+═══════════════════════════════
+>>> ALT >>>
+      <CollapsiblePanel
+        title={`${labels.aromen} ▾`}
+        subtitle={labels.aromenSub}
+        isOpen={panel1Open}
+        onToggle={() => { setPanel1Open((p) => !p); triggerHaptic("light"); }}
+        badge={primaryCount}
+        testId={`flavor-panel-primary-${phaseId}`}
+      >
+        {primaryCategories.map(renderCategoryGroup)}
+      </CollapsiblePanel>
+
+      <CollapsiblePanel
+        title={`${t("v2.ratingMoreAromen", "Weitere Aromen & Bewertungsmodelle")} ▾`}
+        subtitle={t("v2.ratingMoreAromenSub", "Alle Kategorien und Expert-Tools")}
+        isOpen={panel2Open}
+        onToggle={() => { setPanel2Open((p) => !p); triggerHaptic("light"); }}
+        badge={secondaryCount}
+        testId={`flavor-panel-secondary-${phaseId}`}
+      >
+        {secondaryCategories.map(renderCategoryGroup)}
+
+        <div
+          style={{
+            borderTop: "1px solid var(--labs-border)",
+            marginTop: SP.md,
+            paddingTop: SP.md,
+          }}
+        >
+          <div style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: "var(--labs-text-muted)",
+            textTransform: "uppercase" as const,
+            letterSpacing: "0.05em",
+            marginBottom: SP.sm,
+          }}>
+            {t("v2.ratingStudioModels", "Bewertungsmodelle")}
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {studioViews.map((view) => (
+              <button
+                key={view.id}
+                data-testid={`studio-view-btn-${phaseId}-${view.id}`}
+                onClick={() => handleStudioOpen(view.id)}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                  padding: "8px 14px",
+                  borderRadius: RADIUS.full,
+                  border: "1px solid var(--labs-border)",
+                  background: "var(--labs-surface)",
+                  color: "var(--labs-text-muted)",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  fontFamily: FONT.body,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+              >
+                <span style={{ fontSize: 13 }}>{view.icon}</span>
+                {view.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </CollapsiblePanel>
+<<< ENDE ALT <<<
+>>> NEU >>>
+      <CollapsiblePanel
+        title={`${labels.aromen} ▾`}
+        subtitle={labels.aromenSub}
+        isOpen={panel1Open}
+        onToggle={() => { setPanel1Open((p) => !p); triggerHaptic("light"); }}
+        badge={primaryCount + secondaryCount}
+        testId={`flavor-panel-primary-${phaseId}`}
+      >
+        {sortedCategories.map(renderCategoryGroup)}
+
+        <div
+          style={{
+            borderTop: "1px solid var(--labs-border)",
+            marginTop: SP.md,
+            paddingTop: SP.md,
+          }}
+        >
+          <div style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: "var(--labs-text-muted)",
+            textTransform: "uppercase" as const,
+            letterSpacing: "0.05em",
+            marginBottom: SP.sm,
+          }}>
+            {t("v2.ratingStudioWheel", "Flavour Wheel")}
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {studioViews.map((view) => (
+              <button
+                key={view.id}
+                data-testid={`studio-view-btn-${phaseId}-${view.id}`}
+                onClick={() => handleStudioOpen(view.id)}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                  padding: "8px 14px",
+                  borderRadius: RADIUS.full,
+                  border: "1px solid var(--labs-border)",
+                  background: "var(--labs-surface)",
+                  color: "var(--labs-text-muted)",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  fontFamily: FONT.body,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+              >
+                <span style={{ fontSize: 13 }}>{view.icon}</span>
+                {view.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </CollapsiblePanel>
+<<< ENDE NEU <<<
+
+═══════════════════════════════
+VERIFIKATION (nach den Ersetzungen)
+═══════════════════════════════
+1. FlavorTags.tsx hat jetzt nur noch EIN CollapsiblePanel (vorher zwei).
+2. Im return: keine zwei Überschrift-divs {labels.aromen}/{labels.aromenSub} mehr direkt unter dem Container; die Profil-Box steht in {blind && (…)}.
+3. Die JSX-Klammern stimmen: {blind && ( … )} ist sauber geöffnet (E1) und geschlossen (E2).
+4. Das eine Panel rendert {sortedCategories.map(renderCategoryGroup)} und enthält den Flavour-Wheel-Block.
+5. Build/HMR wirft keinen Fehler.
+
+WICHTIG: KEIN git commit, KEIN git push, KEINE Migration, KEIN drizzle-kit. Nur die Dateiänderung. Republish/Commit mache ICH (Christoph) selbst. Wiederhole: NICHT committen.
