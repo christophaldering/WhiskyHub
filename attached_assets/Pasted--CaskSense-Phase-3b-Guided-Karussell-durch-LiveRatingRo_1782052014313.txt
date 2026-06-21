@@ -1,0 +1,138 @@
+# CaskSense — Phase 3b: Guided-Karussell durch LiveRatingRow-Liste mit Sperre ersetzen
+
+## Kontext
+Datei: client/src/labs/pages/LabsLive.tsx, Komponente GuidedStepView.
+Nach 3a ist die Bewertung in renderGuidedRating() gekapselt (Z.509). Jetzt: Karussell + Header raus,
+stattdessen dieselbe LiveRatingRow-Liste wie im frei-Zweig, mit Sperre fuer noch nicht freigegebene
+Drams (locked = idx > hostMaxIndex). Die aufgeklappte (aktive, freigegebene) Zeile zeigt
+renderGuidedRating() inline. LiveRatingRow ist bereits importiert (Z.17).
+
+Trick wie im frei-Zweig: localIndex = die offene Zeile. Klick auf eine freigegebene Zeile setzt
+localIndex -> activeWhisky/myRating/initialData zeigen automatisch dorthin.
+
+## Safety-Tag zuerst
+git tag pre-phase3b-liste-2026-06-21
+
+## SCHRITT 0 — Diagnose (NUR LESEN)
+Bestaetige in GuidedStepView:
+- Z.532/533 in renderGuidedRating: die Props chipInHeader und chipPortalTarget={chipSlotNode} am RatingFlowV2.
+- Z.225: const [localIndex, setLocalIndex] = useState(whiskyIndex);
+- Header-Wrapper: <div ... data-testid="guided-context-bar"> ... </div> (enthaelt den DRAM-X-of-Y-Zaehler,
+  ggf. ein Blind-Badge, und am Ende <div ref={setChipSlotNode} ... />). Finde seine schliessende </div>.
+- <DramCarousel ... /> direkt danach (chips={dramChips}, onChipTap=...).
+- Der canRate-Ternary: {canRate && !revealMoment ? ( renderGuidedRating() ) : ( <div className="labs-card-elevated p-6 ...">...AuthGate/ratingsClosed...</div> )}
+- Helfer im Scope: allWhiskies, guidedMyRatings, getDramName, maxScore, hostMaxIndex, localIndex,
+  currentParticipant, canRate, revealMoment, setFlowSaved, setDramTransitionKey, setEditRatingMode.
+Melde mir die exakten Zeilen von guided-context-bar (Anfang+Ende), DramCarousel (Anfang+Ende) und
+dem canRate-Ternary. WARTE auf mein "OK".
+
+## SCHRITT 1 — Edits (nach meinem "OK")
+
+### EDIT 1 — chipInHeader inline machen (renderGuidedRating)
+Entferne in renderGuidedRating am RatingFlowV2 GENAU diese zwei Zeilen (der Chip rendert danach inline):
+>>> ALT (loeschen): >>>
+            chipInHeader
+            chipPortalTarget={chipSlotNode}
+<<< ENDE ALT <<<
+
+### EDIT 2 — Aufklapp-State einfuehren
+>>> ALT: >>>
+  const [localIndex, setLocalIndex] = useState(whiskyIndex);
+<<< ENDE ALT <<<
+>>> NEU: >>>
+  const [localIndex, setLocalIndex] = useState(whiskyIndex);
+  const [guidedExpandedIdx, setGuidedExpandedIdx] = useState<number | null>(whiskyIndex);
+<<< ENDE NEU <<<
+
+### EDIT 3 — Header-Wrapper entfernen, chipSlot behalten
+Ersetze den GESAMTEN <div data-testid="guided-context-bar"> ... </div>-Block (DRAM-X-of-Y-Zaehler +
+Blind-Badge + chipSlot) durch NUR diese eine Zeile:
+>>> NEU: >>>
+      <div ref={setChipSlotNode} />
+<<< ENDE NEU <<<
+(Der leere chipSlot-div bleibt erhalten, damit setChipSlotNode weiter benutzt wird. Sonst nichts.)
+
+### EDIT 4 — DramCarousel durch LiveRatingRow-Liste ersetzen
+Ersetze den GESAMTEN <DramCarousel ... /> Block durch:
+>>> NEU: >>>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }} data-testid="guided-rating-list">
+        {allWhiskies.map((w: any, idx: number) => {
+          const rating = guidedMyRatings.find((r: any) => r.whiskyId === w.id);
+          const overall = rating?.overall;
+          const isActive = idx === localIndex;
+          const isExpanded = guidedExpandedIdx === idx;
+          const locked = idx > hostMaxIndex;
+          const label = getDramName(idx);
+          return (
+            <LiveRatingRow
+              key={w.id}
+              index={idx}
+              label={label}
+              overall={overall}
+              maxScore={maxScore}
+              isActive={isActive}
+              isExpanded={isExpanded}
+              locked={locked}
+              testIdPrefix="guided-row"
+              onToggle={() => {
+                const nextExp = isExpanded ? null : idx;
+                setGuidedExpandedIdx(nextExp);
+                if (nextExp !== null) {
+                  setLocalIndex(idx);
+                  setFlowSaved(false);
+                  setDramTransitionKey((k) => k + 1);
+                  setEditRatingMode(null);
+                }
+              }}
+            >
+              {idx === localIndex && canRate && !revealMoment ? (
+                renderGuidedRating()
+              ) : (
+                <p style={{ fontSize: 11, color: "var(--labs-text-muted)", margin: 0, textAlign: "center", padding: "4px 0" }}>
+                  {locked ? "Vom Host noch nicht freigegeben" : !currentParticipant ? "Zum Bewerten anmelden" : "Bewertung nicht moeglich"}
+                </p>
+              )}
+            </LiveRatingRow>
+          );
+        })}
+      </div>
+<<< ENDE NEU <<<
+
+### EDIT 5 — canRate-Ternary auf reinen !canRate-Block reduzieren
+Die Bewertung steckt jetzt in der Zeile. Der Ternary oben braucht renderGuidedRating() nicht mehr.
+>>> ALT (suchen): >>>
+      {canRate && !revealMoment ? (
+        renderGuidedRating()
+      ) : (
+        <div className="labs-card-elevated p-6 text-center labs-fade-in labs-stagger-2">
+<<< ENDE ALT <<<
+>>> NEU (ersetzen durch): >>>
+      {!canRate && (
+        <div className="labs-card-elevated p-6 text-center labs-fade-in labs-stagger-2">
+<<< ENDE NEU <<<
+Der Inhalt danach (AuthGate / ratingsClosed) und das abschliessende )} bleiben unveraendert; das )}
+schliesst jetzt das {!canRate && (.
+
+## SCHRITT 2 — Verifikation
+- Build fehlerfrei.
+- Guided-Tasting (Host steuert Tempo) oeffnen:
+  * Liste aller Drams statt Karussell; gesperrte Drams (idx > vom Host freigegeben) zeigen ein Schloss
+    und lassen sich nicht aufklappen.
+  * Freigegebene Zeile antippen -> klappt auf, renderGuidedRating() (Cooper + Bewertung) erscheint inline,
+    Speichern/Auto-Save wie gehabt.
+  * Bereits bewertete Zeile zuklappen -> Overall-Score steht in der Zeile.
+  * Wenn der Host weiterschaltet, wird die naechste Zeile entsperrt.
+- Kein DRAM-X-of-Y-Header mehr; <div ref={setChipSlotNode} /> existiert noch (leer).
+- Keine schema/drizzle/Migration.
+
+## Hinweis (bewusst, kein Bug)
+Der edit/retaste-Dialog wird im Listen-Modell nicht mehr getriggert (Aufklappen zeigt die bestehende
+Bewertung direkt editierbar). Der Dialog-Code bleibt vorerst im Projekt. Falls "Nochmal verkosten"
+(Reset) vermisst wird, bauen wir es spaeter in die Zeile.
+
+## ABSOLUTES COMMIT-VERBOT
+NICHT committen, NICHT git push, NICHT taggen (ausser dem Safety-Tag). Working Tree uncommitted lassen.
+Am Ende bestaetigen: "Keine Commits gemacht."
+
+## Rollback
+git reset --hard pre-phase3b-liste-2026-06-21
