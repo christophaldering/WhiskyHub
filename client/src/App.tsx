@@ -96,6 +96,7 @@ const LabsTasteCollection = lazy(() => import("@/labs/pages/LabsTasteCollection"
 const LabsTasteWishlist = lazy(() => import("@/labs/pages/LabsTasteWishlist"));
 const LabsTasteDownloads = lazy(() => import("@/labs/pages/LabsTasteDownloads"));
 const LabsTasteSettings = lazy(() => import("@/labs/pages/LabsTasteSettings"));
+const LabsTasteCooper = lazy(() => import("@/labs/pages/LabsTasteCooper"));
 const LabsRecommendations = lazy(() => import("@/labs/pages/LabsRecommendations"));
 const LabsPairings = lazy(() => import("@/labs/pages/LabsPairings"));
 const LabsBenchmark = lazy(() => import("@/labs/pages/LabsBenchmark"));
@@ -767,6 +768,7 @@ function Router() {
               <Route path="/labs/taste/wishlist">{() => <RedirectWithQuery to="/labs/taste" query="tab=collection&sub=labs-link-collection-hub-wishlist" />}</Route>
               <Route path="/labs/taste/downloads">{() => <RedirectWithQuery to="/labs/taste" query="tab=analytics&sub=labs-link-analytics-hub-downloads" />}</Route>
               <Route path="/labs/taste/settings" component={LabsTasteSettings} />
+              <Route path="/labs/taste/cooper" component={LabsTasteCooper} />
               <Route path="/labs/taste/recommendations">{() => <RedirectWithQuery to="/labs/taste" query="tab=ai&sub=labs-link-ai-insights-recommendations" />}</Route>
               <Route path="/labs/taste/pairings" component={LabsPairings} />
               <Route path="/labs/taste/benchmark">{() => <RedirectWithQuery to="/labs/taste" query="tab=analytics&sub=benchmark" />}</Route>

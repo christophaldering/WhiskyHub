@@ -8,7 +8,7 @@ import { participantApi } from "@/lib/api";
 import {
   X, LogOut, User, Globe, Settings, Palette, Download,
   ArrowLeftRight, UserPlus, KeyRound, Mail, Eye, EyeOff,
-  Shield, ChevronLeft, Sun, Moon, CheckCircle2, Info, HandHeart,
+  Shield, ChevronLeft, Sun, Moon, CheckCircle2, Info, HandHeart, Sparkles,
 } from "lucide-react";
 import i18n from "@/lib/i18n";
 
@@ -778,6 +778,14 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
 
       <div style={{ height: 1, background: tv.border, margin: "8px 0" }} />
 
+      {isLabs ? (
+        <MenuButton theme={tv}
+          icon={<Sparkles style={{ width: 18, height: 18, color: tv.accent }} />}
+          label={t("m2.profile.cooper", "Cooper")}
+          onClick={() => { onClose(); navigate("/labs/taste/cooper"); }}
+          testId="m2-profile-cooper"
+        />
+      ) : null}
       <MenuButton theme={tv}
         icon={<Settings style={{ width: 18, height: 18, color: tv.accent }} />}
         label={t("m2.profile.settings", "Settings")}
