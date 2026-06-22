@@ -1002,6 +1002,7 @@ export default function LabsTasteDrams() {
           initialData={deepRateInitialData}
           initialMode={initialDeepRateMode}
           enableCooperIntro={true}
+          showTisch={true}
           cooperStartPhase={cooperPhase}
           participantId={session.pid ?? undefined}
           onDone={handleDeepRateDone}

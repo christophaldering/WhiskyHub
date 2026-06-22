@@ -966,6 +966,7 @@ export default function LabsSolo() {
           onSaveAsDraft={handleSaveAsDraft}
           preferredMode={preferredRatingModeFromProfile}
           onSetPreferredMode={handleSetPreferredMode}
+          showTisch={true}
         />
         )}
         {saveError && (

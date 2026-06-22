@@ -116,6 +116,20 @@ export default function RatingFlowV2({
     setStep("rating");
   }, [preferredMode, initialMode, hideQuick, showTisch, step, forceTischDiscovery]);
 
+  // Externe Live-Steuerung: Ein ECHTER Wechsel von preferredMode (z.B. der
+  // Modus-Chip im Tasting-Kopf) stellt den aktiven Modus sofort um — auch mitten
+  // in der Bewertung. Beim Mount (prev === current) passiert nichts; in Kontexten
+  // mit konstantem preferredMode feuert der Effekt nie.
+  const prevPreferredModeRef = useRef(preferredMode);
+  useEffect(() => {
+    if (preferredMode === prevPreferredModeRef.current) return;
+    prevPreferredModeRef.current = preferredMode;
+    if (!preferredMode) return;
+    if (preferredMode === "quick" && hideQuick) return;
+    if (preferredMode === "tisch" && !showTisch) return;
+    setMode(preferredMode);
+  }, [preferredMode, hideQuick, showTisch]);
+
   useEffect(() => {
     if (step === "mode" && showTisch && typeof localStorage !== "undefined") {
       try {
