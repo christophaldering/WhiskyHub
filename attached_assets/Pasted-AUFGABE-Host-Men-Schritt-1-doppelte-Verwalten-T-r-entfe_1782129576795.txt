@@ -1,0 +1,95 @@
+AUFGABE: Host-Menü Schritt 1 — doppelte "Verwalten"-Tür entfernen + "Recap" zu "Lineup" machen (zustandsabhängig).
+NUR diese eine Datei: client/src/labs/pages/LabsTastingDetail.tsx
+KEINE anderen Dateien. KEIN Schema, KEIN drizzle, KEINE Migration. KEIN Commit.
+
+Hintergrund:
+ • "Tasting verwalten" (oben) und "Manage session" (in Host-Aktionen) führen beide zum selben Ort. Im Draft ist "Manage session" damit redundant — wird dort ausgeblendet. In Live/Abgeschlossen bleibt sie (dort ist sie der einzige Zugang bzw. die Restart-Funktion).
+ • Die Lineup-Liste heißt im Code immer "Rückblick/Recap" — auch vor dem Tasting. Künftig: "Lineup" solange nicht abgeschlossen, "Rückblick" erst danach.
+
+═══════════════════════════════════════════
+STEP 0 — DIAGNOSE (NUR LESEN, NICHTS ÄNDERN)
+═══════════════════════════════════════════
+Öffne client/src/labs/pages/LabsTastingDetail.tsx und bestätige:
+  - es gibt:  {t("resultsUi.sectionRueckblickTitle", "Rückblick")} ({whiskyCount})
+  - es gibt:  {t("resultsUi.sectionRueckblickSubtitle", "Whisky für Whisky — was dabei war")}
+  - es gibt die Karte mit data-testid="host-action-manage-session", gefolgt (weiter unten) von data-testid="host-action-manage-tasters"
+  - die Variablen isDraft und isCompleted sind im Scope der Komponente definiert
+GIB MIR DIE BESTÄTIGUNG UND WARTE AUF MEIN "OK". Ändere noch nichts.
+
+═══════════════════════════════════════════
+EDIT 1 — Lineup/Rückblick-Titel zustandsabhängig
+═══════════════════════════════════════════
+>>> ALT >>>
+                  {t("resultsUi.sectionRueckblickTitle", "Rückblick")} ({whiskyCount})
+<<< ENDE ALT <<<
+>>> NEU >>>
+                  {(isCompleted
+                    ? t("resultsUi.sectionRueckblickTitle", "Rückblick")
+                    : t("tastingDetail.lineupTitle", "Lineup"))} ({whiskyCount})
+<<< ENDE NEU <<<
+
+═══════════════════════════════════════════
+EDIT 2 — Untertitel zustandsabhängig (kein Vergangenheitsbezug vor dem Tasting)
+═══════════════════════════════════════════
+>>> ALT >>>
+                  {t("resultsUi.sectionRueckblickSubtitle", "Whisky für Whisky — was dabei war")}
+<<< ENDE ALT <<<
+>>> NEU >>>
+                  {(isCompleted
+                    ? t("resultsUi.sectionRueckblickSubtitle", "Whisky für Whisky — was dabei war")
+                    : t("tastingDetail.lineupSubtitle", "Whisky für Whisky"))}
+<<< ENDE NEU <<<
+
+═══════════════════════════════════════════
+EDIT 3 — "Manage session"-Karte im Draft ausblenden (Anfang des Wrappers)
+═══════════════════════════════════════════
+>>> ALT >>>
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 12,
+            }}
+          >
+            <div
+              className="labs-card"
+              data-testid="host-action-manage-session"
+<<< ENDE ALT <<<
+>>> NEU >>>
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 12,
+            }}
+          >
+            {!isDraft && (
+            <div
+              className="labs-card"
+              data-testid="host-action-manage-session"
+<<< ENDE NEU <<<
+
+═══════════════════════════════════════════
+EDIT 4 — Wrapper schließen (vor der "Manage tasters"-Karte)
+═══════════════════════════════════════════
+>>> ALT >>>
+              </button>
+            </div>
+
+            <div
+              className="labs-card"
+              data-testid="host-action-manage-tasters"
+<<< ENDE ALT <<<
+>>> NEU >>>
+              </button>
+            </div>
+            )}
+
+            <div
+              className="labs-card"
+              data-testid="host-action-manage-tasters"
+<<< ENDE NEU <<<
+
+═══════════════════════════════════════════
+VERIFIKATION
+═══════════════════════════════════════════
+- Datei kompiliert ohne neue TypeScript-Fehler.
+- Im Draft ("Offen") erscheint die "Manage session"-Karte in den Host-Aktionen NICHT mehr; "Tasting verwalten" oben bleibt der einzige Einstieg.
+- Im Live- und im abgeschlossenen Zustand ist die Karte unverändert vorhanden (im Abgeschlossen-Zustand als "Tasting neu starten").
+- Die Whisky-Sektion heißt vor/während des Tastings "Lineup", erst nach Abschluss "Rückblick".
+
+WICHTIG: NICHT committen. NICHT pushen. KEIN drizzle-kit, KEINE Migration, KEIN Schema-Edit. Nur speichern und mir melden — ich committe/republishe selbst.
