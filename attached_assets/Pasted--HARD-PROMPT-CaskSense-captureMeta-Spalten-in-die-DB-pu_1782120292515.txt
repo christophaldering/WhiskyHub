@@ -1,0 +1,42 @@
+# HARD PROMPT — CaskSense: captureMeta-Spalten in die DB pushen (drizzle)
+
+## Ziel
+Die in der vorigen Etappe additiv ergänzten Spalten `capture_meta` (an `ratings` und `journal_entries`) in die Datenbank bringen. Rein additiv (ADD COLUMN), kein Datenverlust-Risiko. Ohne diesen Schritt werfen Speichervorgänge „column capture_meta does not exist".
+
+## WICHTIG — Verhaltensregeln
+- **Nur die unten genannten Shell-Befehle ausführen. KEINE Code-Datei ändern. KEIN commit, KEIN git push, KEIN `drizzle-kit generate`.**
+- Die **komplette Ausgabe** jedes Befehls zeigen.
+- **STOPP-Klausel:** Erwartet wird ausschließlich das Anlegen der zwei neuen Spalten `capture_meta`. Falls die drizzle-Ausgabe irgendetwas Destruktives erwähnt — `DROP TABLE`, `DROP COLUMN`, `delete column`, Tabellen-Truncate oder eine Warnung über Datenverlust an *anderen* Tabellen als den neuen `capture_meta`-Spalten — dann **NICHT fortfahren, sondern sofort die vollständige Ausgabe melden und auf meine Anweisung warten.**
+
+---
+
+## SCHRITT 0 — Vorprüfung (Schema-Stand)
+Bestätige, dass die Schema-Änderung im Workspace vorliegt:
+```
+grep -c "capture_meta" shared/schema.ts
+```
+**Erwartung: `2`** (je eine Spalte in `ratings` und `journalEntries`).
+- Wenn die Ausgabe **nicht 2** ist: STOPP und melden — dann ist die vorige Etappe (Schema-Edit) noch nicht im Workspace, und der Push darf nicht laufen.
+- Wenn `2`: weiter zu Schritt 1.
+
+---
+
+## SCHRITT 1 — Push ausführen
+```
+npx drizzle-kit push --force
+```
+- Vollständige Ausgabe zeigen.
+- **Erwartung:** zwei `ADD COLUMN`-Operationen für `capture_meta` (Tabellen `ratings`, `journal_entries`), sonst nichts Wesentliches.
+- Greift die STOPP-Klausel (siehe oben)? → melden, nicht weiter.
+
+---
+
+## SCHRITT 2 — Verifikation
+Bestätige, dass die Spalten jetzt in der Datenbank existieren:
+```
+npx drizzle-kit push --force
+```
+- Beim zweiten Lauf sollte drizzle melden, dass **keine Änderungen** mehr nötig sind („No changes detected" o. ä.). Das beweist, dass der erste Push die Spalten erfolgreich angelegt hat und das Schema nun mit der DB übereinstimmt.
+- Vollständige Ausgabe zeigen.
+
+**Nochmals: keine Datei-Änderung, kein commit, kein git push, kein `generate`. Nur die obigen Befehle.**
