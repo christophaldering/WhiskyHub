@@ -1173,7 +1173,7 @@ export default function LabsTasteDrams() {
         </div>
       ) : (
         <>
-          <div style={{ padding: "0 20px", marginBottom: 12, marginTop: 4 }}>
+          <div style={{ marginBottom: 12, marginTop: 4 }}>
             <div className="labs-segmented" style={{ marginBottom: 8 }}>
               {ORIGIN_KEYS.map(fk => (
                 <button key={fk} onClick={() => setOriginFilter(fk)}
@@ -1198,7 +1198,7 @@ export default function LabsTasteDrams() {
             </div>
           </div>
 
-          <div style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--labs-bg, #0e0b05)", padding: "8px 20px", borderBottom: "1px solid var(--labs-border)", maxWidth: "100%", boxSizing: "border-box" }}>
+          <div style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--labs-bg, #0e0b05)", padding: "8px 0", borderBottom: "1px solid var(--labs-border)", maxWidth: "100%", boxSizing: "border-box" }}>
             <div className="flex items-center gap-2" style={{ minWidth: 0, maxWidth: "100%" }}>
               <div className="relative" style={{ flex: "1 1 0", minWidth: 0 }}>
                 <Search className="absolute" style={{ left: 12, top: "50%", transform: "translateY(-50%)", width: 15, height: 15, color: "var(--labs-text-muted)" }} />
