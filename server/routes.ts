@@ -7040,6 +7040,16 @@ Aktualisiere das Ledger EHRLICH anhand des Gesprächs: untouched->touched sobald
           return res.status(400).json({ message: "Invalid rating mode. Must be guided, compact, quick or null." });
         }
       }
+      if (req.body.cooperEntryMode !== undefined) {
+        const c = req.body.cooperEntryMode;
+        if (c === null) {
+          updates.cooperEntryMode = null;
+        } else if (["auto", "voice", "type"].includes(String(c))) {
+          updates.cooperEntryMode = String(c);
+        } else {
+          return res.status(400).json({ message: "Invalid cooper entry mode. Must be auto, voice, type or null." });
+        }
+      }
 
       if (req.body.pin !== undefined) {
         if (!req.body.pin || req.body.pin.length < 4 || req.body.pin.length > 64) {
