@@ -1011,6 +1011,7 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
           display: flex;
           align-items: center;
           gap: 8px;
+          flex-shrink: 0;
         }
         .cockpit-progress-bar {
           height: 4px;
@@ -2534,7 +2535,7 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
             {t("cockpit.groupTitle", "Group Ratings")}
           </div>
           {activeWhisky && (
-            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text-muted)" }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text-muted)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "right", marginLeft: 8 }}>
               {isBlind ? `Dram ${blindLabel(effectiveDramIdx)}` : (activeWhisky.name || `Dram ${effectiveDramIdx + 1}`)}
             </span>
           )}
