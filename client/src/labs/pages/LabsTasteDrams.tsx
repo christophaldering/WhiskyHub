@@ -325,9 +325,6 @@ export default function LabsTasteDrams() {
     }
     const dir = sortDirection === "asc" ? 1 : -1;
     items.sort((a: any, b: any) => {
-      const da = a.status === "draft" ? 0 : 1;
-      const db = b.status === "draft" ? 0 : 1;
-      if (da !== db) return da - db;
       if (sortBy === "score") {
         const sa = a.personalScore ?? -1;
         const sb = b.personalScore ?? -1;
