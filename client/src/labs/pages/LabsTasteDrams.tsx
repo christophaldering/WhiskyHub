@@ -1178,10 +1178,10 @@ export default function LabsTasteDrams() {
               {ORIGIN_KEYS.map(fk => (
                 <button key={fk} onClick={() => setOriginFilter(fk)}
                   className={`labs-segmented-btn ${originFilter === fk ? "labs-segmented-btn-active" : ""}`}
-                  style={{ fontSize: 13, padding: "7px 8px" }}
+                  style={{ fontSize: 12, padding: "7px 5px" }}
                   data-testid={`labs-origin-${fk}`}>
                   {t(ORIGIN_I18N[fk])}
-                  <span style={{ marginLeft: 6, fontSize: 11, opacity: 0.6, fontVariantNumeric: "tabular-nums" }}>{originCounts[fk]}</span>
+                  <span style={{ marginLeft: 4, fontSize: 11, opacity: 0.6, fontVariantNumeric: "tabular-nums" }}>{originCounts[fk]}</span>
                 </button>
               ))}
             </div>
@@ -1189,10 +1189,10 @@ export default function LabsTasteDrams() {
               {STATUS_KEYS.map(sk => (
                 <button key={sk} onClick={() => setStatusFilter(sk)}
                   className={`labs-segmented-btn ${statusFilter === sk ? "labs-segmented-btn-active" : ""}`}
-                  style={{ fontSize: 13, padding: "7px 8px" }}
+                  style={{ fontSize: 12, padding: "7px 5px" }}
                   data-testid={`labs-status-${sk}`}>
                   {t(STATUS_I18N[sk], STATUS_FALLBACK[sk])}
-                  <span style={{ marginLeft: 6, fontSize: 11, opacity: 0.6, fontVariantNumeric: "tabular-nums" }}>{statusCounts[sk]}</span>
+                  <span style={{ marginLeft: 4, fontSize: 11, opacity: 0.6, fontVariantNumeric: "tabular-nums" }}>{statusCounts[sk]}</span>
                 </button>
               ))}
             </div>
@@ -1323,7 +1323,7 @@ export default function LabsTasteDrams() {
             </div>
           </div>
 
-          <div style={{ padding: "12px 20px 0" }}>
+          <div style={{ padding: "12px 0 0" }}>
             {isError ? (
               <div className="labs-card" style={{ padding: "40px 20px", textAlign: "center" }}>
                 <div style={{ width: 48, height: 48, borderRadius: "50%", background: "color-mix(in srgb, var(--labs-danger, #ef4444) 12%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
