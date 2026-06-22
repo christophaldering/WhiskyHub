@@ -1,0 +1,214 @@
+============================================================
+SICHERHEITSREGELN — GELTEN FÜR DEN GESAMTEN PROMPT, AUSNAHMSLOS
+============================================================
+1. Zuerst NUR Step 0 (Diagnose). KEINE Datei ändern, bis ich den Plan bestätigt habe.
+2. Plan zeigen und auf meine ausdrückliche Bestätigung warten, DANN erst ausführen.
+3. NICHT committen: kein git add, kein git commit, kein git push.
+4. KEINE Schema-Änderung, KEINE Migration, KEIN drizzle-kit (kein push/generate).
+5. Nur die unten genannten 4 Dateien anfassen — sonst nichts.
+6. .gitignore NICHT anfassen; die Migrations-SQL-Dateien bleiben unangetastet/getrackt.
+7. Alle Änderungen NUR im Arbeitsbaum lassen, damit Christoph selbst prüft + committet.
+Safety-Tag vorab in der Replit-Shell:  git tag pre-solo-cooper-flow-2026-06-23
+Rollback bei Bedarf:                    git reset --hard pre-solo-cooper-flow-2026-06-23
+============================================================
+
+HARD PROMPT — Solo "Eindruck festhalten" → Cooper eindampfen + Intro-Redesign
+
+Ziel in einem Satz: Den Solo-"Eindruck festhalten"-Pfad von 4 Screens auf 1 Schwelle
+verkürzen, die Eindruck-Intro neu texten, "Überspringen" → "Direkt bewerten" benennen,
+und einen immer sichtbaren "Wie funktioniert das?"-Link mit iconisierter 3-Punkt-Liste
+in die Cooper-Schwelle einbauen.
+
+Betroffene Dateien (4):
+- client/src/labs/components/rating/ImpressionHowItWorks.tsx   (NEU anlegen)
+- client/src/labs/components/rating/ImpressionCapture.tsx       (Text + Link einbauen)
+- client/src/labs/pages/LabsSolo.tsx                            (Hero + Gate aus Tile-Pfad)
+- client/src/lib/i18n.ts                                        (EN-Keys ergänzen)
+
+Vorab in der Replit-Shell:  git tag pre-solo-cooper-flow-2026-06-23
+
+============================================================
+STEP 0 — DIAGNOSE ZUERST, KEINE ÄNDERUNG. Bestätige durch Lesen:
+============================================================
+1. LabsSolo.tsx:
+   - Z.~32  Step-Union enthält "impressionIntro".
+   - Z.~21  import ImpressionIntro from "./solo/ImpressionIntro".
+   - Z.~360 startImpression() = setShowImpressionCapture(true); setStep("rating").
+   - Z.~395 handleContextDone() setzt ebenfalls showImpressionCapture(true)+step rating
+            (das ist der Identifikations-Pfad Foto/Barcode/Manuell/Sammlung — Gate MUSS dort bleiben).
+   - Z.~410 handleImpressionSkip() = setShowImpressionCapture(false); setCooperStarted(false).
+   - Z.~867 onImpression={() => setStep("impressionIntro")}.
+   - Z.~877 Branch  } else if (step === "impressionIntro") { content = <ImpressionIntro .../> }.
+   - Z.~912 Render: showImpressionCapture ? (cooperStarted ? <ImpressionCapture/> : <Wahl-Gate/>) : <RatingFlowV2/>.
+2. ImpressionCapture.tsx:
+   - importiert FONT, SP, RADIUS, TOUCH_MIN, LABS_THEME aus "./theme" (LABS_THEME = var(--labs-*), light/dark-sicher).
+   - Titel:  t("v2.impressionTitle", "Erster Eindruck").
+   - Voice-Phase (voice.status !== "connected"): Body t("v2.voiceIntro", "Nimm dein Glas. ..."),
+     Start-Button t("v2.voiceStart", "Gespräch mit Cooper beginnen"), darunter "Lieber tippen"
+     und t("v2.impressionSkip", "Überspringen").
+   - Input-Phase: Hinweis t("v2.impressionHint", ...), danach <textarea>; Skip ebenfalls t("v2.impressionSkip", ...).
+3. lucide-react ist ^0.545 — MessageCircle, Ear, CircleCheck existieren.
+4. STOPPE und zeige mir deinen Plan. In Step 0 nichts ändern.
+
+============================================================
+PLAN (erst nach meiner Bestätigung ausführen)
+============================================================
+
+--- EDIT A: NEUE DATEI client/src/labs/components/rating/ImpressionHowItWorks.tsx ---
+Lege exakt diesen Inhalt an:
+
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { MessageCircle, Ear, CircleCheck } from "lucide-react";
+import { FONT, SP, RADIUS, LABS_THEME } from "./theme";
+
+export default function ImpressionHowItWorks() {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+
+  const points = [
+    { Icon: MessageCircle,
+      lead: t("v2.impressionHow1Lead", "Du beginnst."),
+      text: t("v2.impressionHow1", "Sag oder tippe frei, was du wahrnimmst — roh, unfertig, in deinen eigenen Worten. Es gibt kein Richtig, Fachbegriffe brauchst du nicht.") },
+    { Icon: Ear,
+      lead: t("v2.impressionHow2Lead", "Cooper hört zu."),
+      text: t("v2.impressionHow2", "Er fragt nur dort behutsam nach, wo es dir hilft — und gibt dir nichts vor.") },
+    { Icon: CircleCheck,
+      lead: t("v2.impressionHow3Lead", "Du behältst das letzte Wort."),
+      text: t("v2.impressionHow3", "Aus deinen Worten wird deine Notiz und ein Wertungsvorschlag. Aufhören kannst du jederzeit.") },
+  ];
+
+  return (
+    <div style={{ marginBottom: SP.md }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        data-testid="impression-how-link"
+        style={{ background: "none", border: "none", color: LABS_THEME.gold, font: "inherit", fontFamily: FONT.body, fontSize: 14, cursor: "pointer", padding: 0, textDecoration: "underline", textUnderlineOffset: 3 }}
+      >
+        {t("v2.impressionHowLink", "Wie funktioniert das?")}
+      </button>
+
+      {open && (
+        <div style={{ marginTop: SP.sm, padding: SP.md, borderRadius: RADIUS.md, border: `1px solid ${LABS_THEME.border}`, background: LABS_THEME.bgCard }}>
+          <div style={{ fontFamily: FONT.display, fontSize: 16, color: LABS_THEME.text, marginBottom: SP.sm }}>
+            {t("v2.impressionHowTitle", "So funktioniert es")}
+          </div>
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: SP.sm }}>
+            {points.map(({ Icon, lead, text }, i) => (
+              <li key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                <span aria-hidden="true" style={{ flexShrink: 0, display: "flex", marginTop: 2, color: LABS_THEME.gold }}>
+                  <Icon size={22} strokeWidth={1.75} />
+                </span>
+                <span style={{ fontFamily: FONT.body, fontSize: 14, color: LABS_THEME.text, lineHeight: 1.5 }}>
+                  <span style={{ fontWeight: 600 }}>{lead} </span>
+                  <span style={{ color: LABS_THEME.muted }}>{text}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+--- EDIT B: ImpressionCapture.tsx ---
+B1. Import oben ergänzen (zu den bestehenden Imports):
+    import ImpressionHowItWorks from "./ImpressionHowItWorks";
+
+B2. Vier Fallback-Texte ändern (nur das 2. Argument von t(), Keys unverändert lassen):
+    - t("v2.impressionTitle", "Erster Eindruck")
+        -> t("v2.impressionTitle", "Dein erster Eindruck")
+    - t("v2.voiceIntro", "Nimm dein Glas. Wenn du so weit bist, erzähl Cooper frei, was dir auffällt.")
+        -> t("v2.voiceIntro", "Sprich frei, was dir begegnet — in deinen Worten, ohne Eile. Cooper hört zu.")
+    - t("v2.voiceStart", "Gespräch mit Cooper beginnen")
+        -> t("v2.voiceStart", "Mit Cooper sprechen")
+    - t("v2.impressionSkip", "Überspringen")   [ZWEI Vorkommen: Voice-Phase UND Input-Phase]
+        -> t("v2.impressionSkip", "Direkt bewerten")   [beide ändern]
+
+B3. <ImpressionHowItWorks /> an ZWEI Stellen einsetzen:
+    - Voice-Phase: direkt NACH dem Body-Div mit t("v2.voiceIntro", ...) und VOR dem
+      Start-Button (onClick={() => voice.connect()}).
+    - Input-Phase: direkt NACH dem Hinweis-Div mit t("v2.impressionHint", ...) und VOR dem <textarea>.
+
+--- EDIT C: LabsSolo.tsx — Hero + Wahl-Gate NUR aus dem "Eindruck festhalten"-Pfad ---
+C1. startImpression() um eine Zeile ergänzen, sodass der Tile-Pfad direkt in die
+    Cooper-Schwelle springt (Gate überspringen):
+        const startImpression = useCallback(() => {
+          setShowImpressionCapture(true);
+          setCooperStarted(true);        // <-- NEU: Wahl-Gate überspringen
+          setStep("rating");
+        }, []);
+
+C2. Tile direkt verdrahten (Hero raus):
+        onImpression={() => setStep("impressionIntro")}
+        ->  onImpression={startImpression}
+
+C3. handleContextDone() absichern, damit das Gate auf den Identifikations-Pfaden
+    (Foto/Barcode/Manuell/Sammlung) ERHALTEN bleibt:
+        In handleContextDone ergänzen:  setCooperStarted(false);
+        (direkt neben setShowImpressionCapture(true))
+
+C4. Hero-Branch entfernen:
+        } else if (step === "impressionIntro") {
+          content = <ImpressionIntro onStart={startImpression} onBack={() => setStep("capture")} />;
+        }
+    -> diesen else-if-Block ersatzlos löschen.
+
+C5. Ungenutzten Import entfernen:
+        import ImpressionIntro from "./solo/ImpressionIntro";   -> löschen.
+
+C6. "impressionIntro" aus der Step-Union (Z.~32) entfernen — NUR, wenn grep danach
+    keine weiteren Vorkommen von "impressionIntro" in LabsSolo.tsx zeigt.
+
+    WICHTIG: Das Wahl-Gate (der  cooperStarted ? <ImpressionCapture/> : <Wahl-Gate/>  Block)
+    bleibt im Code und wird NICHT gelöscht — es greift weiterhin für die Identifikations-Pfade.
+    ImpressionFirstHero.tsx und ImpressionIntro.tsx NICHT löschen (separat aufräumen).
+
+--- EDIT D: i18n.ts — Englische Keys ergänzen ---
+Hintergrund: Diese v2.*-Keys existieren bisher NUR als Inline-Fallback (Deutsch). Damit
+EN nicht weiter auf Deutsch zurückfällt, im ENGLISCHEN v2-Block (resources.en.v2, beginnt
+ca. Z.781) diese Paare ergänzen (Platzierung im Block beliebig):
+
+        impressionTitle: "Your first impression",
+        voiceIntro: "Speak freely about what you notice — in your own words, no rush. Cooper just listens.",
+        voiceStart: "Talk to Cooper",
+        impressionSkip: "Rate directly",
+        impressionHowLink: "How does this work?",
+        impressionHowTitle: "How it works",
+        impressionHow1Lead: "You begin.",
+        impressionHow1: "Say or type freely what you notice — raw, unfinished, in your own words. There's no right answer, and you don't need any jargon.",
+        impressionHow2Lead: "Cooper listens.",
+        impressionHow2: "He only asks gently where it helps you — and never puts words in your mouth.",
+        impressionHow3Lead: "You keep the last word.",
+        impressionHow3: "Your words become your note and a suggested score. You can stop anytime.",
+
+    Deutsch braucht KEINE i18n.ts-Änderung — die Inline-Fallbacks in EDIT A/B sind die DE-Quelle.
+    Falls ein Key (z.B. voiceStart) im EN-Block schon existiert: NICHT duplizieren, nur den Wert
+    auf den obigen setzen.
+
+============================================================
+VERIFIKATION
+============================================================
+- Neue Datei ImpressionHowItWorks.tsx existiert und wird in ImpressionCapture.tsx importiert + 2× gerendert.
+- grep -n 'impressionIntro' client/src/labs/pages/LabsSolo.tsx  -> 0 Treffer (Branch, Import, ggf. Union weg).
+- grep -n 'ImpressionIntro' client/src/labs/pages/LabsSolo.tsx  -> 0 Treffer.
+- grep -n 'setCooperStarted(true)'  in LabsSolo.tsx -> in startImpression vorhanden.
+- grep -n 'setCooperStarted(false)' in LabsSolo.tsx -> u.a. in handleContextDone vorhanden.
+- Der cooperStarted ? ... : <Wahl-Gate> Block ist UNVERÄNDERT vorhanden (nicht gelöscht).
+- grep -n 'v2.impressionSkip' ImpressionCapture.tsx -> beide Fallbacks = "Direkt bewerten".
+- Build/Typecheck läuft (npm run check bzw. tsc) ohne neue Fehler.
+- Manuell (am Gerät): Tastings -> Solo -> "Eindruck festhalten" landet OHNE Zwischen-Hero
+  und OHNE Wahl-Gate direkt auf "Dein erster Eindruck"; "Wie funktioniert das?" klappt die
+  3-Punkt-Liste mit Icons auf; "Direkt bewerten" springt in die Bewertung; Foto/Manuell-Pfad
+  zeigt das Wahl-Gate weiterhin.
+
+- NICHT committen. Kein git add, kein git commit, kein git push, kein Schema-/Migrations-
+  Befehl, kein drizzle-kit. Alle Änderungen NUR im Arbeitsbaum lassen, damit Christoph
+  selbst prüfen und committen kann.   (Commit-Verbot gilt ausdrücklich auch hier.)
+- .gitignore unverändert; die Migrations-SQL-Dateien unter migrations/ bleiben vollständig
+  getrackt (nichts entfernt/ignoriert) — dieser Prompt fasst sie ohnehin nicht an.
+
+Rollback bei Bedarf:  git reset --hard pre-solo-cooper-flow-2026-06-23
