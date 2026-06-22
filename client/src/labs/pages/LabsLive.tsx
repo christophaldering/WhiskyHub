@@ -1178,7 +1178,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
   });
 
   const debouncedSave = useCallback(
-    (newScores: typeof scores, newNotes: string) => {
+    (newScores: typeof scores, newNotes: string, narrative?: string) => {
       if (!currentParticipant || !currentWhisky || !tasting) return;
       if (tasting.status !== "open" && tasting.status !== "draft") return;
       hasUnsavedLiveRef.current = true;
@@ -1192,6 +1192,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
           participantId: currentParticipant.id,
           ...newScores,
           notes: newNotes,
+          ...(narrative ? { tastingNarrative: narrative } : {}),
         });
       }, 800);
     },
@@ -1216,7 +1217,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
     let combined = allNotes;
     if (memo?.transcript) combined = combined ? `${combined}\n${memo.transcript}` : memo.transcript;
     if (chipStr.length > 0) combined = combined ? `${combined}\n[FLAVOURS] ${chipStr.join(", ")} [/FLAVOURS]` : `[FLAVOURS] ${chipStr.join(", ")} [/FLAVOURS]`;
-    debouncedSave({ nose: sc.nose, taste: sc.palate, finish: sc.finish, overall: eff }, combined);
+    debouncedSave({ nose: sc.nose, taste: sc.palate, finish: sc.finish, overall: eff }, combined, data.narrative);
   }, [mainScale, debouncedSave]);
 
   // Vorhandene Bewertung -> RatingFlowV2-Format (Aromen aus [FLAVOURS] zuruecklesen).
