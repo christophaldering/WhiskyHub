@@ -1,0 +1,52 @@
+# HARD PROMPT — CaskSense: ratings.tasting_narrative (Etappe 1a)
+
+## Ziel
+Die ratings-Tabelle bekommt ein additives Feld `tasting_narrative`, damit Coopers Verkostungsnotiz auch im Gruppen-Tasting gespeichert werden kann. Der Endpoint akzeptiert das Feld automatisch (`insertRatingSchema` wird via `createInsertSchema(ratings)` generiert; `upsertRating` reicht `data` durch) — daher **nur eine Schema-Zeile**, keine Server-Änderung.
+
+## WICHTIG — Verhaltensregeln (angepasst)
+- **SCHRITT 0 zuerst (NUR LESEN):** Anker bestätigen, kurze Bestätigung ausgeben. **Dann WARTE auf mein OK.**
+- Erst nach meinem OK ausführen.
+- **Die Schema-Datei DARF editiert werden** — rein **additive** Spalte (kein Umbenennen, kein Löschen, keine Typänderung).
+- **KEIN `drizzle-kit` ausführen** (kein push, kein generate). Das mache ich anschließend manuell.
+- **KEIN commit. KEIN git.** Nur diese eine Datei.
+
+---
+
+## SCHRITT 0 — Diagnose (nur lesen, dann warten)
+
+`shared/schema.ts`: Bestätige in der **ratings**-Tabelle (erkennbar an `flavorTags` direkt darüber) den Block:
+```
+  flavorTags: text("flavor_tags").array().default([]),
+  rawImpression: text("raw_impression"),
+```
+Hinweis: `rawImpression: text("raw_impression"),` kommt im File **zweimal** vor (einmal in ratings, einmal in journalEntries). Wir ändern nur das Vorkommen, dem die `flavorTags`-Zeile **direkt vorausgeht** (= ratings).
+
+**Wenn das passt: kurze Bestätigung ausgeben und auf mein OK warten.**
+
+---
+
+## SCHRITT 1 — additive Spalte in der ratings-Tabelle
+
+Suche (eindeutig durch die `flavorTags`-Zeile):
+>>> ALT >>>
+```
+  flavorTags: text("flavor_tags").array().default([]),
+  rawImpression: text("raw_impression"),
+```
+<<< ENDE ALT <<<
+
+Ersetze durch:
+>>> NEU >>>
+```
+  flavorTags: text("flavor_tags").array().default([]),
+  rawImpression: text("raw_impression"),
+  tastingNarrative: text("tasting_narrative"),
+```
+<<< ENDE NEU <<<
+
+---
+
+## VERIFIKATION
+- `shared/schema.ts`: In der ratings-Tabelle steht jetzt `tastingNarrative: text("tasting_narrative"),` direkt unter `rawImpression`. Insgesamt gibt es jetzt **zwei** `tastingNarrative: text("tasting_narrative"),`-Zeilen im File (ratings + das bereits vorhandene in journalEntries) — das ist korrekt.
+- TypeScript bleibt sauber (keine neuen Fehler).
+- **Nochmals: KEIN `drizzle-kit`, KEINE Migration, KEIN commit, KEIN git. Nur diese eine Datei.**
