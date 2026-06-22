@@ -63,6 +63,8 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
   const [offeredTerms, setOfferedTerms] = useState<Set<string>>(new Set());
   const [adoptedTerms, setAdoptedTerms] = useState<Set<string>>(new Set());
   const rawImpressionRef = useRef("");
+  const mountTimeRef = useRef(Date.now());
+  const firstInputAtRef = useRef<number | null>(null);
 
   const threadRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -104,6 +106,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
 
   const handleStart = async () => {
     if (!canStart) return;
+    if (firstInputAtRef.current === null) firstInputAtRef.current = Date.now();
     const raw = text.trim();
     rawImpressionRef.current = raw;
     const firstTurns: ConverseTurn[] = [{ role: "taster", text: raw }];
@@ -202,7 +205,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
       ];
       recordVocabularyEvents(participantId, events);
     }
-    onApply({ ...result, narrative: narrative.trim() || undefined, captureMeta: { cooperTurns: transcript.filter((x) => x.role === "taster").length, cooperMode: intensity } });
+    onApply({ ...result, narrative: narrative.trim() || undefined, captureMeta: { cooperTurns: transcript.filter((x) => x.role === "taster").length, cooperMode: intensity, durationMs: Date.now() - mountTimeRef.current, firstInputLatencyMs: firstInputAtRef.current != null ? firstInputAtRef.current - mountTimeRef.current : undefined } });
   };
 
   const renderMirror = (r: ImpressionResult) => {
