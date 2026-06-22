@@ -313,6 +313,7 @@ export default function MeineWeltTastingsList({ filter, searchQuery = "" }: Prop
             const isHost =
               filter === "completed" ? !!tasting.isHost : tasting.hostId === participantId;
             const isLive = tasting.status === "open";
+            const showCover = !!tasting.coverImageUrl && (!tasting.blindMode || tasting.coverImageRevealed);
             const formattedDate = formatTastingDate(tasting.date);
             const showStoryBtn =
               filter === "completed" &&
@@ -338,12 +339,23 @@ export default function MeineWeltTastingsList({ filter, searchQuery = "" }: Prop
                     className={`labs-tasting-card-icon ${
                       isLive ? "labs-tasting-card-icon--live" : "labs-tasting-card-icon--default"
                     }`}
+                    style={showCover ? { padding: 0, overflow: "hidden" } : undefined}
                   >
-                    <Wine
-                      className={`labs-tasting-card-icon-sm ${
-                        isLive ? "labs-icon-success" : "labs-icon-accent"
-                      }`}
-                    />
+                    {showCover ? (
+                      <img
+                        src={tasting.coverImageUrl}
+                        alt=""
+                        loading="lazy"
+                        style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }}
+                        data-testid={`meine-welt-tasting-cover-${tasting.id}`}
+                      />
+                    ) : (
+                      <Wine
+                        className={`labs-tasting-card-icon-sm ${
+                          isLive ? "labs-icon-success" : "labs-icon-accent"
+                        }`}
+                      />
+                    )}
                   </div>
                   <div className="labs-tasting-card-body">
                     <div className="labs-tasting-card-title-row">

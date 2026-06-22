@@ -14214,6 +14214,8 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
             ratedCount: myRatings.length,
             myAvgOverall,
             coverImageUrl: tasting.coverImageUrl,
+            coverImageRevealed: tasting.coverImageRevealed,
+            blindMode: tasting.blindMode,
             ratingScale: tasting.ratingScale ?? 100,
             whiskies: whiskyDetails,
           };
