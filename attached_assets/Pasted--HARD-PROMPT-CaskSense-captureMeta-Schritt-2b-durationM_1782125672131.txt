@@ -1,0 +1,76 @@
+# HARD PROMPT — CaskSense: captureMeta Schritt 2b (durationMs + firstInputLatencyMs)
+
+## Ziel
+Zwei Zeit-Variablen zum Cooper-Eindruck mitschreiben: `durationMs` (vom Erscheinen des Eindruck-Dialogs bis zum Übernehmen) und `firstInputLatencyMs` (bis zur ersten abgeschickten Eingabe — nur im Tipp-/Gesprächsmodus sinnvoll, im Voice-Modus bewusst leer). Erweitert das bestehende `captureMeta`. **Eine Datei, rein clientseitig, kein Server, kein Schema.**
+
+## WICHTIG — Verhaltensregeln
+- **SCHRITT 0 zuerst (NUR LESEN):** Anker bestätigen, kurze Bestätigung + Mini-Plan. **Dann WARTE auf mein OK.**
+- **KEIN commit. KEIN git. KEINE Schema-/drizzle-Änderung.** Nur `client/src/labs/components/rating/ImpressionCapture.tsx`.
+
+---
+
+## SCHRITT 0 — Diagnose (nur lesen, dann warten)
+In `client/src/labs/components/rating/ImpressionCapture.tsx` bestätige:
+- `const rawImpressionRef = useRef("");`
+- den Anfang von `handleStart` mit `if (!canStart) return;` gefolgt von `const raw = text.trim();`
+- die bestehende `onApply(...)`-Zeile mit `captureMeta: { cooperTurns: transcript.filter((x) => x.role === "taster").length, cooperMode: intensity } });`
+
+**Wenn alles passt: kurze Bestätigung + Plan und auf mein OK warten.**
+
+---
+
+## SCHRITT 1 — Timer-Refs (nach `rawImpressionRef`)
+>>> ALT >>>
+```
+  const rawImpressionRef = useRef("");
+```
+<<< ENDE ALT <<<
+>>> NEU >>>
+```
+  const rawImpressionRef = useRef("");
+  const mountTimeRef = useRef(Date.now());
+  const firstInputAtRef = useRef<number | null>(null);
+```
+<<< ENDE NEU <<<
+
+---
+
+## SCHRITT 2 — Latenz-Stempel in `handleStart`
+>>> ALT >>>
+```
+  const handleStart = async () => {
+    if (!canStart) return;
+    const raw = text.trim();
+```
+<<< ENDE ALT <<<
+>>> NEU >>>
+```
+  const handleStart = async () => {
+    if (!canStart) return;
+    if (firstInputAtRef.current === null) firstInputAtRef.current = Date.now();
+    const raw = text.trim();
+```
+<<< ENDE NEU <<<
+
+---
+
+## SCHRITT 3 — durationMs + firstInputLatencyMs beim Apply
+>>> ALT >>>
+```
+captureMeta: { cooperTurns: transcript.filter((x) => x.role === "taster").length, cooperMode: intensity } });
+```
+<<< ENDE ALT <<<
+>>> NEU >>>
+```
+captureMeta: { cooperTurns: transcript.filter((x) => x.role === "taster").length, cooperMode: intensity, durationMs: Date.now() - mountTimeRef.current, firstInputLatencyMs: firstInputAtRef.current != null ? firstInputAtRef.current - mountTimeRef.current : undefined } });
+```
+<<< ENDE NEU <<<
+
+---
+
+## VERIFIKATION
+- `mountTimeRef` und `firstInputAtRef` sind deklariert.
+- `handleStart` setzt `firstInputAtRef` beim ersten Aufruf.
+- Die `onApply`-`captureMeta` enthält jetzt zusätzlich `durationMs` und `firstInputLatencyMs`.
+- TypeScript bleibt sauber.
+- **Nochmals: KEIN commit, KEIN git, KEINE Schema-/drizzle-Änderung. Eine editierte Datei.**
