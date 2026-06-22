@@ -472,6 +472,7 @@ export const ratings = pgTable("ratings", {
   notes: text("notes").default(""),
   flavorTags: text("flavor_tags").array().default([]),
   rawImpression: text("raw_impression"),
+  tastingNarrative: text("tasting_narrative"),
   guessAbv: real("guess_abv"),
   guessAge: text("guess_age"),
   normalizedScore: real("normalized_score"),
