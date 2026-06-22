@@ -1266,10 +1266,14 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
             <header style={{ marginBottom: 12, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
               <div>
                 <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--labs-text)", margin: 0, letterSpacing: "0.02em" }}>
-                  {t("resultsUi.sectionRueckblickTitle", "Rückblick")} ({whiskyCount})
+                  {(isCompleted
+                    ? t("resultsUi.sectionRueckblickTitle", "Rückblick")
+                    : t("tastingDetail.lineupTitle", "Lineup"))} ({whiskyCount})
                 </h2>
                 <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "2px 0 0", lineHeight: 1.4 }}>
-                  {t("resultsUi.sectionRueckblickSubtitle", "Whisky für Whisky — was dabei war")}
+                  {(isCompleted
+                    ? t("resultsUi.sectionRueckblickSubtitle", "Whisky für Whisky — was dabei war")
+                    : t("tastingDetail.lineupSubtitle", "Whisky für Whisky"))}
                 </p>
               </div>
               <div style={{ display: "flex", gap: 6, flexShrink: 0, flexWrap: "wrap" }}>
@@ -1836,6 +1840,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
               gap: 12,
             }}
           >
+            {!isDraft && (
             <div
               className="labs-card"
               data-testid="host-action-manage-session"
@@ -1878,6 +1883,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 {isCompleted ? t("tastingDetail.restartTasting") : t("tastingDetail.manageSession")}
               </button>
             </div>
+            )}
 
             <div
               className="labs-card"
