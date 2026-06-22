@@ -96,6 +96,13 @@ export default function RatingFlowV2({
 
   const [mode, setMode] = useState<"guided" | "compact" | "quick" | "tisch" | null>(resolvedInitialMode);
   const [step, setStep] = useState<Step>(resolvedInitialMode ? "rating" : "mode");
+  // Step the user was on before opening Cooper, so "Überspringen" returns there
+  // (back to rating when a mode is already active) instead of always bouncing to the mode grid.
+  const cooperReturnRef = useRef<Step>("mode");
+  const enterCooper = useCallback((from: Step) => {
+    cooperReturnRef.current = from;
+    setStep("cooper");
+  }, []);
   const [liveData, setLiveData] = useState<RatingData | undefined>(initialData);
   const liveDataRef = useRef<RatingData | undefined>(initialData);
   const userPickedModeRef = useRef<boolean>(!!resolvedInitialMode);
@@ -306,7 +313,7 @@ export default function RatingFlowV2({
       <>
         {enableCooperIntro && (
           <div style={{ padding: "32px 16px 0", display: "flex", justifyContent: "flex-start" }}>
-            <CooperChip onClick={() => setStep("cooper")} />
+            <CooperChip onClick={() => enterCooper("mode")} />
           </div>
         )}
         <RatingModeSelect
@@ -338,7 +345,7 @@ export default function RatingFlowV2({
           setMode("compact");
           setStep("rating");
         }}
-        onSkip={() => setStep("mode")}
+        onSkip={() => setStep(cooperReturnRef.current)}
       />
     );
   }
@@ -365,7 +372,7 @@ export default function RatingFlowV2({
     cooperAsRow ? (
       <button
         type="button"
-        onClick={() => setStep("cooper")}
+        onClick={() => enterCooper("rating")}
         data-testid="rating-cooper-row"
         style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", minHeight: 44, padding: "10px 16px", marginBottom: 12, borderRadius: 12, border: "1px solid var(--labs-accent)", background: "transparent", color: "var(--labs-accent)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600 }}
       >
@@ -380,7 +387,7 @@ export default function RatingFlowV2({
           justifyContent: "space-between",
         }}
       >
-        <CooperChip onClick={() => setStep("cooper")} />
+        <CooperChip onClick={() => enterCooper("rating")} />
         {chipSlot}
       </div>
     )
