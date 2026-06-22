@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useLabsBack } from "@/labs/LabsLayout";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import CoverImage16x9 from "@/labs/components/CoverImage16x9";
 import GuestClaimPanel from "@/labs/components/GuestClaimPanel";
 import { Wine, ChevronLeft, ChevronRight, ChevronDown, Eye, EyeOff, Check, Clock, Trophy, AlertTriangle, BarChart3, Monitor, Sparkles, Settings, Pencil, RotateCcw, Download, UserPlus } from "lucide-react";
 import { useAppStore } from "@/lib/store";
@@ -1666,6 +1667,12 @@ export default function LabsLive({ params }: LabsLiveProps) {
                 anyRevealed={Boolean((tasting as Tasting | undefined)?.revealedAt)}
                 hasHostUpload={Boolean(tasting?.handoutUrl)}
               />
+            </div>
+          )}
+
+          {tasting?.coverImageUrl && (!tasting?.blindMode || tasting?.coverImageRevealed) && (
+            <div className="mb-4" data-testid="live-tasting-cover">
+              <CoverImage16x9 src={tasting.coverImageUrl} rounded={16} testId="live-tasting-cover-img" />
             </div>
           )}
 
