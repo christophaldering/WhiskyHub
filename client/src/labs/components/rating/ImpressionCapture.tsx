@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { FONT, SP, RADIUS, TOUCH_MIN, LABS_THEME } from "./theme";
+import ImpressionHowItWorks from "./ImpressionHowItWorks";
 import {
   type ImpressionResult,
   type Ledger,
@@ -290,7 +291,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
       <div style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.xs }}>
         <span style={{ flexShrink: 0, display: "flex" }}><CooperBarrel size={30} glow={phase === "voice" && voice.status === "connected"} /></span>
         <div style={{ fontFamily: FONT.display, fontSize: 22, color: LABS_THEME.text }}>
-          {t("v2.impressionTitle", "Erster Eindruck")}
+          {t("v2.impressionTitle", "Dein erster Eindruck")}
         </div>
       </div>
 
@@ -299,8 +300,9 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
           {voice.status !== "connected" ? (
             <>
               <div style={{ fontFamily: FONT.serif, fontSize: 16, color: LABS_THEME.muted, marginBottom: SP.md, lineHeight: 1.45 }}>
-                {t("v2.voiceIntro", "Nimm dein Glas. Wenn du so weit bist, erz\u00e4hl Cooper frei, was dir auff\u00e4llt.")}
+                {t("v2.voiceIntro", "Sprich frei, was dir begegnet — in deinen Worten, ohne Eile. Cooper hört zu.")}
               </div>
+              <ImpressionHowItWorks />
               {voice.status === "error" && (
                 <div style={{ fontFamily: FONT.body, fontSize: 14, color: LABS_THEME.amber, marginBottom: SP.sm, lineHeight: 1.4 }}>
                   {voice.statusText}
@@ -311,7 +313,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
                 disabled={voice.status === "connecting" || voice.status === "token"}
                 style={{ width: "100%", minHeight: TOUCH_MIN, background: LABS_THEME.gold, color: "#1a1408", border: "none", borderRadius: RADIUS.md, fontFamily: FONT.body, fontSize: 16, fontWeight: 600, opacity: (voice.status === "connecting" || voice.status === "token") ? 0.6 : 1, cursor: (voice.status === "connecting" || voice.status === "token") ? "default" : "pointer" }}
               >
-                {(voice.status === "connecting" || voice.status === "token") ? t("v2.voiceConnecting", "Verbinde \u2026") : t("v2.voiceStart", "Gespr\u00e4ch mit Cooper beginnen")}
+                {(voice.status === "connecting" || voice.status === "token") ? t("v2.voiceConnecting", "Verbinde \u2026") : t("v2.voiceStart", "Mit Cooper sprechen")}
               </button>
               <div style={{ fontFamily: FONT.body, fontSize: 12, color: LABS_THEME.faint, marginTop: SP.sm, lineHeight: 1.4 }}>
                 {t("v2.voiceAiNote", "Coopers Stimme ist KI-generiert.")}
@@ -328,7 +330,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
                 onClick={() => { voice.disconnect(); onSkip(); }}
                 style={{ width: "100%", background: "transparent", border: "none", color: LABS_THEME.muted, fontFamily: FONT.body, fontSize: 14, textDecoration: "underline", textUnderlineOffset: 3, cursor: "pointer", padding: SP.sm }}
               >
-                {t("v2.impressionSkip", "\u00dcberspringen")}
+                {t("v2.impressionSkip", "Direkt bewerten")}
               </button>
             </>
           ) : (
@@ -376,6 +378,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
           <div style={{ fontFamily: FONT.serif, fontSize: 16, color: LABS_THEME.muted, marginBottom: SP.md, lineHeight: 1.45 }}>
             {t("v2.impressionHint", "Was nimmst du wahr? Tippe oder sprich frei \u2014 ein, zwei S\u00e4tze gen\u00fcgen. Den Rest ordnen wir gemeinsam.")}
           </div>
+          <ImpressionHowItWorks />
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -423,7 +426,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
               disabled={loading}
               style={{ minHeight: TOUCH_MIN, padding: `0 ${SP.md}px`, background: "transparent", color: LABS_THEME.muted, border: `1px solid ${LABS_THEME.border}`, borderRadius: RADIUS.md, fontFamily: FONT.body, fontSize: 16, cursor: loading ? "default" : "pointer" }}
             >
-              {t("v2.impressionSkip", "\u00dcberspringen")}
+              {t("v2.impressionSkip", "Direkt bewerten")}
             </button>
           </div>
           {onIdentifyFirst && (
