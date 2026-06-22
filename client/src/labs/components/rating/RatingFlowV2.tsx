@@ -257,6 +257,8 @@ export default function RatingFlowV2({
         tags: { ...(prev?.tags ?? { nose: [], palate: [], finish: [], overall: [] }), ...(data.tags ?? {}) },
         notes: { ...(prev?.notes ?? { nose: "", palate: "", finish: "", overall: "" }), ...(data.notes ?? {}) },
         overallExplicit: data.overallExplicit !== undefined ? data.overallExplicit : prev?.overallExplicit,
+        narrative: data.narrative ?? prev?.narrative,
+        rawImpression: data.rawImpression ?? prev?.rawImpression,
       };
       setLiveData(merged);
       liveDataRef.current = merged;
