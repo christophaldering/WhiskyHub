@@ -1,0 +1,94 @@
+AUFGABE: Tasting-Cover als Thumbnail in der Sessions-Liste anzeigen (statt des grauen Wine-Icons), wenn vorhanden und nicht-blind bzw. bereits enthüllt.
+Zwei Dateien:
+  A) client/src/labs/components/MeineWeltTastingsList.tsx
+  B) server/routes.ts
+KEINE anderen Dateien. KEIN Schema, KEIN drizzle, KEINE Migration. KEIN Commit.
+
+═══════════════════════════════════════════
+STEP 0 — DIAGNOSE (NUR LESEN, NICHTS ÄNDERN)
+═══════════════════════════════════════════
+A) In MeineWeltTastingsList.tsx bestätige:
+   - es gibt die Zeile:  const isLive = tasting.status === "open";
+   - es gibt den Icon-Block mit className `labs-tasting-card-icon` und darin ein <Wine .../>-Icon
+B) In server/routes.ts bestätige im Endpoint /api/participants/:id/tasting-history:
+   - das Mapping-return-Objekt enthält die Zeilen:
+       coverImageUrl: tasting.coverImageUrl,
+       ratingScale: tasting.ratingScale ?? 100,
+GIB MIR DIE BESTÄTIGUNG UND WARTE AUF MEIN "OK". Ändere noch nichts.
+
+═══════════════════════════════════════════
+EDIT 1 (Datei A) — Cover-Bedingung pro Karte
+═══════════════════════════════════════════
+>>> ALT >>>
+            const isLive = tasting.status === "open";
+<<< ENDE ALT <<<
+>>> NEU >>>
+            const isLive = tasting.status === "open";
+            const showCover = !!tasting.coverImageUrl && (!tasting.blindMode || tasting.coverImageRevealed);
+<<< ENDE NEU <<<
+
+═══════════════════════════════════════════
+EDIT 2 (Datei A) — Cover-Thumbnail statt Wine-Icon
+═══════════════════════════════════════════
+>>> ALT >>>
+                  <div
+                    className={`labs-tasting-card-icon ${
+                      isLive ? "labs-tasting-card-icon--live" : "labs-tasting-card-icon--default"
+                    }`}
+                  >
+                    <Wine
+                      className={`labs-tasting-card-icon-sm ${
+                        isLive ? "labs-icon-success" : "labs-icon-accent"
+                      }`}
+                    />
+                  </div>
+<<< ENDE ALT <<<
+>>> NEU >>>
+                  <div
+                    className={`labs-tasting-card-icon ${
+                      isLive ? "labs-tasting-card-icon--live" : "labs-tasting-card-icon--default"
+                    }`}
+                    style={showCover ? { padding: 0, overflow: "hidden" } : undefined}
+                  >
+                    {showCover ? (
+                      <img
+                        src={tasting.coverImageUrl}
+                        alt=""
+                        loading="lazy"
+                        style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }}
+                        data-testid={`meine-welt-tasting-cover-${tasting.id}`}
+                      />
+                    ) : (
+                      <Wine
+                        className={`labs-tasting-card-icon-sm ${
+                          isLive ? "labs-icon-success" : "labs-icon-accent"
+                        }`}
+                      />
+                    )}
+                  </div>
+<<< ENDE NEU <<<
+
+═══════════════════════════════════════════
+EDIT 3 (Datei B) — History-Endpoint: zwei Felder ergänzen
+HINWEIS: NUR die Stelle im Mapping, wo "coverImageUrl: tasting.coverImageUrl," DIREKT von "ratingScale: tasting.ratingScale ?? 100," gefolgt wird (im /tasting-history-Endpoint).
+═══════════════════════════════════════════
+>>> ALT >>>
+            coverImageUrl: tasting.coverImageUrl,
+            ratingScale: tasting.ratingScale ?? 100,
+<<< ENDE ALT <<<
+>>> NEU >>>
+            coverImageUrl: tasting.coverImageUrl,
+            coverImageRevealed: tasting.coverImageRevealed,
+            blindMode: tasting.blindMode,
+            ratingScale: tasting.ratingScale ?? 100,
+<<< ENDE NEU <<<
+
+═══════════════════════════════════════════
+VERIFIKATION
+═══════════════════════════════════════════
+- Beide Dateien kompilieren ohne neue TypeScript-Fehler.
+- In der Sessions-Liste (Meine Welt → Tastings & Drams) zeigen Tastings mit Cover ein kleines quadratisches Cover-Bild im Icon-Slot statt des Wein-Glas-Icons.
+- Blind-Tastings ohne Reveal zeigen weiterhin das Wein-Glas-Icon (kein vorzeitiges Cover).
+- Tastings ohne Cover zeigen unverändert das Wein-Glas-Icon.
+
+WICHTIG: NICHT committen. NICHT pushen. KEIN drizzle-kit, KEINE Migration, KEIN Schema-Edit. Nur speichern und mir melden — ich committe/republishe selbst.
