@@ -2963,3 +2963,16 @@ a.labs-dram-item {
   .cooper-glimmer-core, .cooper-glimmer-halo, .cooper-glimmer-ring { animation: none; }
   .cooper-glimmer-ring { display: none; }
 }
+
+/* ── Cooper-Fass (Icon) ──────────────────────────────────────── */
+.cooper-barrel-glow { opacity: 0; }
+.cooper-barrel.is-glowing .cooper-barrel-glow {
+  animation: cooper-glow-breathe 3.4s ease-in-out infinite;
+}
+@keyframes cooper-glow-breathe {
+  0%, 100% { opacity: 0.42; }
+  50%      { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cooper-barrel.is-glowing .cooper-barrel-glow { animation: none; opacity: 0.7; }
+}
