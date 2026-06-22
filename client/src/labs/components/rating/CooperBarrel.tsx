@@ -10,14 +10,15 @@ import { useId } from "react";
 interface CooperBarrelProps {
   size?: number; // Kantenlänge in px (default 28 — Chip-Größe)
   glow?: boolean; // false = ruhend, true = glimmend (innerer Schein atmet)
+  mono?: boolean; // true = alle Linien in currentColor (für farbige Flächen, z.B. accent-Button)
   className?: string;
 }
 
-export default function CooperBarrel({ size = 28, glow = false, className }: CooperBarrelProps) {
+export default function CooperBarrel({ size = 28, glow = false, mono = false, className }: CooperBarrelProps) {
   const gid = `cooper-glow-${useId().replace(/:/g, "")}`;
 
-  const strong = { stroke: "var(--labs-amber)" } as const; // Reifen, Außenkanten, Deckel, Boden
-  const stave = { stroke: "var(--labs-gold)" } as const; // innere Dauben
+  const strong = { stroke: mono ? "currentColor" : "var(--labs-amber)" } as const; // Reifen, Außenkanten, Deckel, Boden
+  const stave = { stroke: mono ? "currentColor" : "var(--labs-gold)" } as const; // innere Dauben
 
   return (
     <svg
@@ -53,7 +54,7 @@ export default function CooperBarrel({ size = 28, glow = false, className }: Coo
 
       <path d="M24 58C29 60.5 43 60.5 48 58" style={strong} strokeWidth="2" />
 
-      <ellipse cx="36" cy="20" rx="12" ry="3.8" style={{ ...strong, fill: "var(--labs-surface)" }} strokeWidth="2" />
+      <ellipse cx="36" cy="20" rx="12" ry="3.8" style={{ ...strong, fill: mono ? "none" : "var(--labs-surface)" }} strokeWidth="2" />
 
       <g style={strong} strokeWidth="2.4">
         <path d="M16 28C28 32 44 32 56 28" />

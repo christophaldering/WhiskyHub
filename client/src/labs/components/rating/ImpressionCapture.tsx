@@ -329,6 +329,9 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
             </>
           ) : (
             <>
+              <div style={{ fontFamily: FONT.serif, fontStyle: "italic", fontSize: 16, color: LABS_THEME.gold, textAlign: "center", marginBottom: SP.sm }}>
+                {t("v2.voiceSpeakFreely", "Sprich frei")}
+              </div>
               <LedgerConstellation data={voice.ledger as any} />
               <div
                 style={{ display: "flex", flexDirection: "column", maxHeight: 280, overflowY: "auto", maskImage: "linear-gradient(to bottom, transparent 0, black 36px)", WebkitMaskImage: "linear-gradient(to bottom, transparent 0, black 36px)", marginBottom: SP.md }}

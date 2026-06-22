@@ -22,6 +22,7 @@ import ImpressionIntro from "./solo/ImpressionIntro";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import type { RatingFlowDraftState } from "@/labs/components/rating/RatingFlowV2";
 import ImpressionCapture from "@/labs/components/rating/ImpressionCapture";
+import CooperBarrel from "@/labs/components/rating/CooperBarrel";
 import type { ImpressionResult } from "@/labs/components/rating/impressionApi";
 import { mapImpressionToRating } from "@/labs/components/rating/mapImpressionToRating";
 import type { RatingData } from "@/labs/components/rating/types";
@@ -930,10 +931,13 @@ export default function LabsSolo() {
                 type="button"
                 onClick={() => setCooperStarted(true)}
                 data-testid="solo-impression-choice-cooper"
-                style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, width: "100%", minHeight: 44, padding: "14px 18px", borderRadius: 14, border: "none", background: "var(--labs-accent)", color: "var(--labs-accent-dark)", cursor: "pointer", textAlign: "left" }}
+                style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 14, width: "100%", minHeight: 44, padding: "14px 18px", borderRadius: 14, border: "none", background: "var(--labs-accent)", color: "var(--labs-accent-dark)", cursor: "pointer", textAlign: "left" }}
               >
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 600 }}>{t("v2.impressionChoiceCooper", "Mit Cooper sprechen")}</span>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, opacity: 0.8 }}>{t("v2.impressionChoiceCooperHint", "Dein Eindruck, behutsam geschärft")}</span>
+                <span style={{ flexShrink: 0, display: "flex" }}><CooperBarrel size={32} mono /></span>
+                <span style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 600 }}>{t("v2.impressionChoiceCooper", "Mit Cooper sprechen")}</span>
+                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, opacity: 0.8 }}>{t("v2.impressionChoiceCooperHint", "Dein Eindruck, behutsam geschärft")}</span>
+                </span>
               </button>
               <button
                 type="button"
