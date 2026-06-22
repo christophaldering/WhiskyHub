@@ -1,0 +1,123 @@
+# HARD PROMPT — CaskSense: captureMeta Schritt 2c (Gruppe / LabsLive)
+
+## Ziel
+Die in 2a/2b erfassten Cooper-Verhaltensdaten (`cooperTurns`, `cooperMode`, `durationMs`, `firstInputLatencyMs`) auch im **Gruppen-Tasting** mitschreiben. Exakt derselbe Durchreich-Weg wie damals die narrative: `ImpressionResult.captureMeta` → `RatingData.captureMeta` → `mapImpressionToRating` → RatingFlowV2 → LabsLive-Speicherpfad → `ratings.captureMeta`. **Vier Dateien, rein clientseitig — Server und Schema akzeptieren `captureMeta` bereits.**
+
+## WICHTIG — Verhaltensregeln
+- **SCHRITT 0 zuerst (NUR LESEN):** Anker bestätigen, kurze Bestätigung + Mini-Plan. **Dann WARTE auf mein OK.**
+- **KEIN commit. KEIN git. KEINE Schema-/drizzle-Änderung.** Nur die vier genannten Dateien.
+
+---
+
+## SCHRITT 0 — Diagnose (nur lesen, dann warten)
+- `client/src/labs/components/rating/types.ts`: `rawImpression?: string;` gefolgt von `narrative?: string;`.
+- `client/src/labs/components/rating/mapImpressionToRating.ts`: `narrative: result.narrative ?? prev?.narrative,`.
+- `client/src/labs/components/rating/RatingFlowV2.tsx`: die `onDone({ ...data, narrative: ... })`-Zeile und der `handleChange`-Block mit `narrative:` + `rawImpression:`.
+- `client/src/labs/pages/LabsLive.tsx`: `GuidedSaveArgs` (endet auf `tastingNarrative?: string;` + `};`) und die mutArgs-Zeile `...(data.narrative ? { tastingNarrative: data.narrative } : {}),`.
+
+**Wenn alles passt: kurze Bestätigung + Plan und auf mein OK warten.**
+
+---
+
+## SCHRITT 1 — `types.ts`: RatingData + captureMeta
+>>> ALT >>>
+```
+  rawImpression?: string;
+  narrative?: string;
+```
+<<< ENDE ALT <<<
+>>> NEU >>>
+```
+  rawImpression?: string;
+  narrative?: string;
+  captureMeta?: Record<string, unknown>;
+```
+<<< ENDE NEU <<<
+
+---
+
+## SCHRITT 2 — `mapImpressionToRating.ts`: captureMeta durchreichen
+>>> ALT >>>
+```
+    narrative: result.narrative ?? prev?.narrative,
+```
+<<< ENDE ALT <<<
+>>> NEU >>>
+```
+    narrative: result.narrative ?? prev?.narrative,
+    captureMeta: result.captureMeta ?? prev?.captureMeta,
+```
+<<< ENDE NEU <<<
+
+---
+
+## SCHRITT 3 — `RatingFlowV2.tsx` (zwei Teil-Edits)
+
+(a) handleRatingDone:
+>>> ALT >>>
+```
+    onDone({ ...data, narrative: data.narrative ?? liveDataRef.current?.narrative });
+```
+<<< ENDE ALT <<<
+>>> NEU >>>
+```
+    onDone({ ...data, narrative: data.narrative ?? liveDataRef.current?.narrative, captureMeta: data.captureMeta ?? liveDataRef.current?.captureMeta });
+```
+<<< ENDE NEU <<<
+
+(b) handleChange:
+>>> ALT >>>
+```
+        narrative: data.narrative ?? prev?.narrative,
+        rawImpression: data.rawImpression ?? prev?.rawImpression,
+```
+<<< ENDE ALT <<<
+>>> NEU >>>
+```
+        narrative: data.narrative ?? prev?.narrative,
+        rawImpression: data.rawImpression ?? prev?.rawImpression,
+        captureMeta: data.captureMeta ?? prev?.captureMeta,
+```
+<<< ENDE NEU <<<
+
+---
+
+## SCHRITT 4 — `LabsLive.tsx` (zwei Teil-Edits)
+
+(a) GuidedSaveArgs-Typ:
+>>> ALT >>>
+```
+    tastingNarrative?: string;
+  };
+```
+<<< ENDE ALT <<<
+>>> NEU >>>
+```
+    tastingNarrative?: string;
+    captureMeta?: Record<string, unknown>;
+  };
+```
+<<< ENDE NEU <<<
+
+(b) mutArgs:
+>>> ALT >>>
+```
+                ...(data.narrative ? { tastingNarrative: data.narrative } : {}),
+```
+<<< ENDE ALT <<<
+>>> NEU >>>
+```
+                ...(data.narrative ? { tastingNarrative: data.narrative } : {}),
+                ...(data.captureMeta ? { captureMeta: data.captureMeta } : {}),
+```
+<<< ENDE NEU <<<
+
+---
+
+## VERIFIKATION
+- `types.ts`: `RatingData` hat `captureMeta?`.
+- `mapImpressionToRating.ts`: `captureMeta` wird durchgereicht.
+- `RatingFlowV2.tsx`: `captureMeta` in `onDone` und im `handleChange`-Merge.
+- `LabsLive.tsx`: `GuidedSaveArgs` hat `captureMeta?`, mutArgs hängt es konditional an.
+- TypeScript bleibt sauber.
+- **Nochmals: KEIN commit, KEIN git, KEINE Schema-/drizzle-Änderung. Vier editierte Dateien.**
