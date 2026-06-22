@@ -278,6 +278,7 @@ export default function LabsTasteDrams() {
           savedAt: w.myRating.updatedAt || w.myRating.createdAt || tasting.date || tasting.createdAt,
           source: "tasting" as const,
           tastingTitle: tasting.title,
+          tastingNarrative: w.myRating.tastingNarrative ?? null,
           noseNotes: parsedNotes.noseNotes,
           tasteNotes: parsedNotes.tasteNotes,
           finishNotes: parsedNotes.finishNotes,
@@ -885,6 +886,7 @@ export default function LabsTasteDrams() {
           <TastingNarrativeSection
             value={(selectedEntry as any).tastingNarrative}
             saving={narrativeMutation.isPending}
+            readOnly={selectedEntry.source === "tasting"}
             onSave={(text) => narrativeMutation.mutate({ id: selectedEntry.id, data: { tastingNarrative: text } })}
           />
 
@@ -1525,7 +1527,7 @@ function MetaBadge({ label, value }: { label: string; value: string }) {
   );
 }
 
-function TastingNarrativeSection({ value, onSave, saving }: { value?: string | null; onSave: (text: string) => void; saving?: boolean }) {
+function TastingNarrativeSection({ value, onSave, saving, readOnly }: { value?: string | null; onSave: (text: string) => void; saving?: boolean; readOnly?: boolean }) {
   const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value || "");
@@ -1538,7 +1540,7 @@ function TastingNarrativeSection({ value, onSave, saving }: { value?: string | n
         <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-accent)" }}>
           {t("drams.tastingNarrative", "Meine Verkostungsnotiz")}
         </div>
-        {!editing && (
+        {!editing && !readOnly && (
           <button onClick={() => { setDraft(value || ""); setEditing(true); }} style={{ fontSize: 12, color: "var(--labs-text-muted)", background: "transparent", border: "none", cursor: "pointer", padding: "4px 6px" }}>
             {t("common.edit", "Bearbeiten")}
           </button>
