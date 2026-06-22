@@ -246,7 +246,7 @@ export default function RatingFlowV2({
   }, [onChange, initialData, onSetPreferredMode]);
 
   const handleRatingDone = useCallback((data: RatingData) => {
-    onDone({ ...data, narrative: data.narrative ?? liveDataRef.current?.narrative });
+    onDone({ ...data, narrative: data.narrative ?? liveDataRef.current?.narrative, captureMeta: data.captureMeta ?? liveDataRef.current?.captureMeta });
   }, [onDone]);
 
   const handleChange = useCallback((phaseIndex: number, data: Partial<RatingData>) => {
@@ -259,6 +259,7 @@ export default function RatingFlowV2({
         overallExplicit: data.overallExplicit !== undefined ? data.overallExplicit : prev?.overallExplicit,
         narrative: data.narrative ?? prev?.narrative,
         rawImpression: data.rawImpression ?? prev?.rawImpression,
+        captureMeta: data.captureMeta ?? prev?.captureMeta,
       };
       setLiveData(merged);
       liveDataRef.current = merged;

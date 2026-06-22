@@ -28,4 +28,5 @@ export interface RatingData {
   overallExplicit?: boolean;
   rawImpression?: string;
   narrative?: string;
+  captureMeta?: Record<string, unknown>;
 }

@@ -498,6 +498,7 @@ function GuidedStepView({
     overall: number;
     notes: string;
     tastingNarrative?: string;
+    captureMeta?: Record<string, unknown>;
   };
   const [failedSaveArgs, setFailedSaveArgs] = useState<GuidedSaveArgs | null>(null);
 
@@ -650,6 +651,7 @@ function GuidedStepView({
                 overall: eff,
                 notes: combined,
                 ...(data.narrative ? { tastingNarrative: data.narrative } : {}),
+                ...(data.captureMeta ? { captureMeta: data.captureMeta } : {}),
               };
 
               try {
