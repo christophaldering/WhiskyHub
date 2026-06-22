@@ -32,6 +32,7 @@ import { TastingHandoutViewer } from "@/labs/components/TastingHandoutManager";
 import { AutoHandoutViewer } from "@/labs/components/AutoHandoutManager";
 import { useTastingEvents } from "@/labs/hooks/useTastingEvents";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
+import { useCooperStartPhase } from "@/labs/hooks/useCooperStartPhase";
 import type { RatingFlowDraftState } from "@/labs/components/rating/RatingFlowV2";
 import type { RatingData } from "@/labs/components/rating/types";
 import ImpressionCapture from "@/labs/components/rating/ImpressionCapture";
@@ -969,6 +970,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
   const { currentParticipant } = useAppStore();
   const [, navigate] = useLocation();
   const goBack = useLabsBack(`/labs/tastings/${tastingId}`);
+  const cooperPhase = useCooperStartPhase("input");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [freeChipSlotNode, setFreeChipSlotNode] = useState<HTMLDivElement | null>(null);
   const [activeDim, setActiveDim] = useState<ActiveTab>("nose");
@@ -1716,6 +1718,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                             scale={mainScale}
                             whisky={{ name: displayName, region: currentWhisky?.region || undefined, cask: currentWhisky?.caskType || undefined, blind: isBlind }}
                             enableCooperIntro={true}
+                            cooperStartPhase={cooperPhase}
                             initialData={freeInitialData}
                             preferredMode={freeRatingMode}
                             showTisch={true}

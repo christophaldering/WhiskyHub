@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
+import { useCooperStartPhase } from "@/labs/hooks/useCooperStartPhase";
 import { useIsEmbeddedInTastings } from "@/labs/embeddedTastingsContext";
 import { useLocation } from "wouter";
 import { useAppStore } from "@/lib/store";
@@ -114,6 +115,7 @@ async function ensureParticipantId(): Promise<string> {
 export default function LabsSolo() {
   const { t } = useTranslation();
   const goBack = useBackNavigation("/labs/tastings");
+  const cooperPhase = useCooperStartPhase("voice");
   const isEmbedded = useIsEmbeddedInTastings();
   const [, navigate] = useLocation();
 
@@ -904,7 +906,7 @@ export default function LabsSolo() {
         {showImpressionCapture ? (
           cooperStarted ? (
           <ImpressionCapture
-            startPhase="voice"
+            startPhase={cooperPhase}
             whiskyName={whisky?.name || undefined}
             onApply={handleImpressionApply}
             onSkip={handleImpressionSkip}

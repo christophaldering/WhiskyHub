@@ -23,6 +23,7 @@ import ContextDownloadBar from "@/labs/components/ContextDownloadBar";
 import { downloadCsvFromRows, downloadXlsxFromSheets, safeFileSegment } from "@/labs/utils/contextDownloads";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
+import { useCooperStartPhase } from "@/labs/hooks/useCooperStartPhase";
 import type { RatingData } from "@/labs/components/rating/types";
 import { buildTastingNoteHtml } from "@/labs/utils/tastingNoteHtml";
 
@@ -165,6 +166,7 @@ function buildDramsExportRows(items: readonly DramExportRecord[]): Record<string
 export default function LabsTasteDrams() {
   const { t } = useTranslation();
   const session = useSession();
+  const cooperPhase = useCooperStartPhase("voice");
   const [, navigate] = useLocation();
   const [originFilter, setOriginFilter] = useState<OriginFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -1001,7 +1003,7 @@ export default function LabsTasteDrams() {
           initialData={deepRateInitialData}
           initialMode={initialDeepRateMode}
           enableCooperIntro={true}
-          cooperStartPhase="voice"
+          cooperStartPhase={cooperPhase}
           participantId={session.pid ?? undefined}
           onDone={handleDeepRateDone}
           onBack={() => {
