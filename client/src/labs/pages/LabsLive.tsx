@@ -1777,6 +1777,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
                             scale={mainScale}
                             whisky={{ name: displayName, region: currentWhisky?.region || undefined, cask: currentWhisky?.caskType || undefined, blind: isBlind }}
                             enableCooperIntro={true}
+                            cooperAsRow={true}
                             cooperStartPhase={cooperPhase}
                             initialData={freeInitialData}
                             preferredMode={effectiveFreeMode}

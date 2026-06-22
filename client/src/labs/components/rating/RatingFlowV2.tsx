@@ -43,6 +43,7 @@ interface RatingFlowV2Props {
   chipPortalTarget?: HTMLElement | null;
   autoSaveHint?: boolean;
   enableCooperIntro?: boolean;
+  cooperAsRow?: boolean;
   cooperStartPhase?: "voice" | "input";
   participantId?: string;
 }
@@ -67,6 +68,7 @@ export default function RatingFlowV2({
   chipPortalTarget,
   autoSaveHint,
   enableCooperIntro,
+  cooperAsRow,
   cooperStartPhase,
   participantId,
 }: RatingFlowV2Props) {
@@ -345,16 +347,27 @@ export default function RatingFlowV2({
     : chipEl;
 
   const ratingTopBar = enableCooperIntro ? (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-      }}
-    >
-      <CooperChip onClick={() => setStep("cooper")} />
-      {chipSlot}
-    </div>
+    cooperAsRow ? (
+      <button
+        type="button"
+        onClick={() => setStep("cooper")}
+        data-testid="rating-cooper-row"
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", minHeight: 44, padding: "10px 16px", marginBottom: 12, borderRadius: 12, border: "1px solid var(--labs-accent)", background: "transparent", color: "var(--labs-accent)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600 }}
+      >
+        {t("v2.impressionSideDoor", "Mit Cooper schärfen")}
+      </button>
+    ) : (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <CooperChip onClick={() => setStep("cooper")} />
+        {chipSlot}
+      </div>
+    )
   ) : (
     chipSlot
   );
