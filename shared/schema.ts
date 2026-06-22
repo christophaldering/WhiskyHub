@@ -9,6 +9,12 @@ const tsvector = customType<{ data: string; driverData: string; notNull: false; 
   },
 });
 
+const vector = customType<{ data: number[]; driverData: string; notNull: false; default: false }>({
+  dataType() {
+    return "vector(1536)";
+  },
+});
+
 // --- Participants (lightweight auth: name + optional pin) ---
 export const participants = pgTable("participants", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -115,11 +121,13 @@ export const tastings = pgTable("tastings", {
   revealedAt: timestamp("revealed_at"),
   archivedAt: timestamp("archived_at"),
   searchVector: tsvector("search_vector"),
+  embedding: vector("embedding"),
 }, (t) => ({
   searchVectorIdx: index("idx_tastings_search_vector").using("gin", t.searchVector),
+  titleTrgmIdx: index("idx_tastings_title_trgm").using("gin", t.title.op("gin_trgm_ops")),
 }));
 
-export const insertTastingSchema = createInsertSchema(tastings).omit({ id: true, createdAt: true, openedAt: true, closedAt: true, revealedAt: true, archivedAt: true, searchVector: true });
+export const insertTastingSchema = createInsertSchema(tastings).omit({ id: true, createdAt: true, openedAt: true, closedAt: true, revealedAt: true, archivedAt: true, searchVector: true, embedding: true });
 export type InsertTasting = z.infer<typeof insertTastingSchema>;
 export type Tasting = typeof tastings.$inferSelect;
 
@@ -221,11 +229,14 @@ export const whiskies = pgTable("whiskies", {
   handoutVisibility: text("handout_visibility").default("always"), // "always" | "after_reveal"
   distilleryId: varchar("distillery_id"), // optional FK -> distilleries.id (kept nullable for back-compat)
   searchVector: tsvector("search_vector"),
+  embedding: vector("embedding"),
 }, (t) => ({
   searchVectorIdx: index("idx_whiskies_search_vector").using("gin", t.searchVector),
+  nameTrgmIdx: index("idx_whiskies_name_trgm").using("gin", t.name.op("gin_trgm_ops")),
+  distilleryTrgmIdx: index("idx_whiskies_distillery_trgm").using("gin", t.distillery.op("gin_trgm_ops")),
 }));
 
-export const insertWhiskySchema = createInsertSchema(whiskies).omit({ id: true, searchVector: true });
+export const insertWhiskySchema = createInsertSchema(whiskies).omit({ id: true, searchVector: true, embedding: true });
 export type InsertWhisky = z.infer<typeof insertWhiskySchema>;
 export type Whisky = typeof whiskies.$inferSelect;
 
@@ -1308,11 +1319,13 @@ export const distilleries = pgTable("distilleries", {
   lat: real("lat"),
   lng: real("lng"),
   searchVector: tsvector("search_vector"),
+  embedding: vector("embedding"),
 }, (t) => ({
   searchVectorIdx: index("idx_distilleries_search_vector").using("gin", t.searchVector),
+  nameTrgmIdx: index("idx_distilleries_name_trgm").using("gin", t.name.op("gin_trgm_ops")),
 }));
 
-export const insertDistillerySchema = createInsertSchema(distilleries).omit({ id: true, searchVector: true });
+export const insertDistillerySchema = createInsertSchema(distilleries).omit({ id: true, searchVector: true, embedding: true });
 export type InsertDistillery = z.infer<typeof insertDistillerySchema>;
 export type Distillery = typeof distilleries.$inferSelect;
 
@@ -1343,13 +1356,15 @@ export const lexicon = pgTable("lexicon", {
   definition: text("definition").notNull(),
   sortOrder: integer("sort_order").notNull().default(0),
   searchVector: tsvector("search_vector"),
+  embedding: vector("embedding"),
 }, (t) => ({
   localeIdx: index("idx_lexicon_locale").on(t.locale),
   localeTermUnique: uniqueIndex("idx_lexicon_locale_term_unique").on(t.locale, t.term),
   searchVectorIdx: index("idx_lexicon_search_vector").using("gin", t.searchVector),
+  termTrgmIdx: index("idx_lexicon_term_trgm").using("gin", t.term.op("gin_trgm_ops")),
 }));
 
-export const insertLexiconSchema = createInsertSchema(lexicon).omit({ id: true, searchVector: true });
+export const insertLexiconSchema = createInsertSchema(lexicon).omit({ id: true, searchVector: true, embedding: true });
 export type InsertLexicon = z.infer<typeof insertLexiconSchema>;
 export type LexiconRow = typeof lexicon.$inferSelect;
 
