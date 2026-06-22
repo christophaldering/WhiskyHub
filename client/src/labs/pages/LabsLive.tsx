@@ -33,6 +33,7 @@ import { TastingHandoutViewer } from "@/labs/components/TastingHandoutManager";
 import { AutoHandoutViewer } from "@/labs/components/AutoHandoutManager";
 import { useTastingEvents } from "@/labs/hooks/useTastingEvents";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
+import RatingModeChip from "@/labs/components/rating/RatingModeChip";
 import { useCooperStartPhase } from "@/labs/hooks/useCooperStartPhase";
 import type { RatingFlowDraftState } from "@/labs/components/rating/RatingFlowV2";
 import type { RatingData } from "@/labs/components/rating/types";
@@ -1049,7 +1050,33 @@ export default function LabsLive({ params }: LabsLiveProps) {
   const [scores, setScores] = useState({ nose: mid2, taste: mid2, finish: mid2, overall: mid2 });
   const [notes, setNotes] = useState("");
   const [freeformMemo, setFreeformMemo] = useState<LabsVoiceMemoData | null>(null);
-  const [freeRatingMode, setFreeRatingMode] = useState<"guided" | "compact" | "quick" | "tisch" | null>("tisch");
+  // Bewertungsform im freien Modus: eine uebergeordnete Quelle (Abend ?? Profil ?? Tisch).
+  // Quelle hier in LabsLive verfuegbar gemacht (Profil-Preference + Abend-State + Default-Handler);
+  // die Wahl sitzt im Tasting-Kopf (RatingModeChip). 1:1 wie in GuidedStepView.
+  const { data: participantData } = useQuery({
+    queryKey: ["participant", currentParticipant?.id],
+    queryFn: () => participantApi.get(currentParticipant!.id),
+    enabled: !!currentParticipant?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+  const rawPreferred = participantData?.preferredRatingMode;
+  const preferredRatingModeFromProfile: "guided" | "compact" | "quick" | "tisch" | null =
+    rawPreferred === "guided" || rawPreferred === "compact" || rawPreferred === "quick" || rawPreferred === "tisch" ? rawPreferred : null;
+  const [sessionRatingMode, setSessionRatingMode] = useState<"guided" | "compact" | "quick" | "tisch" | null>(null);
+  const { toast: liveToast } = useToast();
+  const handleSetPreferredMode = useCallback(async (m: "guided" | "compact" | "quick" | "tisch" | null) => {
+    if (!currentParticipant?.id) return;
+    try {
+      await participantUpdateApi.update(currentParticipant.id, { preferredRatingMode: m });
+      queryClient.invalidateQueries({ queryKey: ["participant", currentParticipant.id] });
+    } catch (err) {
+      liveToast({
+        title: t("v2.ratingModeSaveFailed", "Standard-Form konnte nicht gespeichert werden"),
+        variant: "destructive",
+      });
+    }
+  }, [currentParticipant?.id, liveToast, t]);
+  const effectiveFreeMode = sessionRatingMode ?? preferredRatingModeFromProfile ?? "tisch";
   const freeRatingDataRef = useRef<Partial<RatingData> | undefined>(undefined);
   const [overrideActive, setOverrideActive] = useState(false);
 
@@ -1694,6 +1721,27 @@ export default function LabsLive({ params }: LabsLiveProps) {
                     ({myAllRatings.length}/{whiskies.length} rated)
                   </span>
                 </div>
+                <div style={{ marginLeft: "auto" }}>
+                  <RatingModeChip
+                    mode={effectiveFreeMode}
+                    showTisch
+                    labels={{
+                      current: t("v2.ratingModeChipCurrent", "Modus"),
+                      title: t("v2.ratingModeChipTitle", "Bewertungsform wechseln"),
+                      guided: t("v2.ratingGuided", "Gefuehrt"),
+                      compact: t("v2.ratingCompact", "Kompakt"),
+                      quick: t("v2.ratingQuick", "Quick"),
+                      tisch: t("v2.ratingTisch", "Tisch"),
+                      setDefault: t("v2.ratingModeSetDefault", "Als Standard merken"),
+                      cancel: t("v2.back", "Zurueck"),
+                    }}
+                    allowSetDefault
+                    onSwitch={(next, makeDefault) => {
+                      setSessionRatingMode(next);
+                      if (makeDefault) handleSetPreferredMode(next);
+                    }}
+                  />
+                </div>
               </div>
               <div style={{ padding: "0 16px 16px" }}>
                 <div className="space-y-2">
@@ -1731,11 +1779,11 @@ export default function LabsLive({ params }: LabsLiveProps) {
                             enableCooperIntro={true}
                             cooperStartPhase={cooperPhase}
                             initialData={freeInitialData}
-                            preferredMode={freeRatingMode}
+                            preferredMode={effectiveFreeMode}
                             showTisch={true}
                             autoSaveHint={true}
                             onChange={(draft) => {
-                              if (draft.mode) setFreeRatingMode(draft.mode);
+                              if (draft.mode) setSessionRatingMode(draft.mode);
                               freeRatingDataRef.current = draft.data;
                               saveRatingData(draft.data, freeformMemo);
                             }}
