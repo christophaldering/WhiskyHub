@@ -14,6 +14,7 @@ import {
 } from "./impressionApi";
 import { recordVocabularyEvents } from "@/lib/vocabulary";
 import { useCooperVoice } from "./useCooperVoice";
+import CooperBarrel from "./CooperBarrel";
 
 interface ImpressionCaptureProps {
   whiskyName?: string;
@@ -286,8 +287,11 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
 
   return (
     <div style={{ padding: SP.md }}>
-      <div style={{ fontFamily: FONT.display, fontSize: 22, color: LABS_THEME.text, marginBottom: SP.xs }}>
-        {t("v2.impressionTitle", "Erster Eindruck")}
+      <div style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.xs }}>
+        <span style={{ flexShrink: 0, display: "flex" }}><CooperBarrel size={30} glow={phase === "voice" && voice.status === "connected"} /></span>
+        <div style={{ fontFamily: FONT.display, fontSize: 22, color: LABS_THEME.text }}>
+          {t("v2.impressionTitle", "Erster Eindruck")}
+        </div>
       </div>
 
       {phase === "voice" && (

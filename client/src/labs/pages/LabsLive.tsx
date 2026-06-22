@@ -38,6 +38,7 @@ import { useCooperStartPhase } from "@/labs/hooks/useCooperStartPhase";
 import type { RatingFlowDraftState } from "@/labs/components/rating/RatingFlowV2";
 import type { RatingData } from "@/labs/components/rating/types";
 import ImpressionCapture from "@/labs/components/rating/ImpressionCapture";
+import CooperBarrel from "@/labs/components/rating/CooperBarrel";
 import type { ImpressionResult } from "@/labs/components/rating/impressionApi";
 import { mapImpressionToRating } from "@/labs/components/rating/mapImpressionToRating";
 import DramCarousel from "@/labs/components/DramCarousel";
@@ -583,7 +584,8 @@ function GuidedStepView({
         <div key={`flow-${localIndex}-${dramTransitionKey}`} style={{ animation: "labsPopIn 300ms ease both" }}>
           {!myRating && activeWhisky && !(liveCooperInitial && liveCooperInitial.id === activeWhisky.id) && (
             <button type="button" onClick={() => { if (activeWhisky) setLiveCooperOpenId(activeWhisky.id); }} data-testid="live-cooper-sidedoor" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", minHeight: 44, padding: "10px 16px", marginBottom: 12, borderRadius: 12, border: "1px solid var(--labs-accent)", background: "transparent", color: "var(--labs-accent)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600 }}>
-              {t("v2.impressionSideDoor", "Mit Cooper schärfen")}
+              <span style={{ flexShrink: 0, display: "flex" }}><CooperBarrel size={22} mono /></span>
+              <span>{t("v2.impressionSideDoor", "Mit Cooper schärfen")}</span>
             </button>
           )}
           <RatingFlowV2

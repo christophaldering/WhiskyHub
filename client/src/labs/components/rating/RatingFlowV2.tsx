@@ -11,6 +11,7 @@ import QuickRating from "./QuickRating";
 import TischRating from "./TischRating";
 import ImpressionCapture from "./ImpressionCapture";
 import CooperChip from "./CooperChip";
+import CooperBarrel from "./CooperBarrel";
 import { mapImpressionToRating } from "./mapImpressionToRating";
 
 export interface RatingFlowDraftState {
@@ -354,7 +355,8 @@ export default function RatingFlowV2({
         data-testid="rating-cooper-row"
         style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", minHeight: 44, padding: "10px 16px", marginBottom: 12, borderRadius: 12, border: "1px solid var(--labs-accent)", background: "transparent", color: "var(--labs-accent)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600 }}
       >
-        {t("v2.impressionSideDoor", "Mit Cooper schärfen")}
+        <span style={{ flexShrink: 0, display: "flex" }}><CooperBarrel size={22} mono /></span>
+        <span>{t("v2.impressionSideDoor", "Mit Cooper schärfen")}</span>
       </button>
     ) : (
       <div
