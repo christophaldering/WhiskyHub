@@ -1,0 +1,146 @@
+# HARD PROMPT — CaskSense: Cooper-narrative im Gruppen-Tasting durchreichen (Etappe 1b)
+
+## Ziel
+Coopers Verkostungsnotiz (`narrative`) soll im Gruppen-Tasting bis in die gespeicherte Bewertung gelangen. Dafür: `RatingData` um optionales `narrative` erweitern, das Cooper-Mapping füllt es, `RatingFlowV2` bewahrt es beim Abschluss, und `LabsLive` schreibt es in die Bewertung (Feld `tastingNarrative`, seit 1a vorhanden).
+
+## WICHTIG — Verhaltensregeln
+- **SCHRITT 0 zuerst (NUR LESEN):** Anker in den vier Dateien bestätigen, kurze Bestätigung + Mini-Plan ausgeben. **Dann WARTE auf mein OK.**
+- Erst nach meinem OK ausführen.
+- **KEIN commit. KEIN git. KEINE Schema-/drizzle-Änderung.**
+- Nur die vier genannten Dateien editieren. Sonst nichts.
+
+---
+
+## SCHRITT 0 — Diagnose (nur lesen, dann warten)
+
+- `client/src/labs/components/rating/types.ts`: Bestätige das `RatingData`-Interface, das mit `rawImpression?: string;` und `}` endet.
+- `client/src/labs/components/rating/mapImpressionToRating.ts`: Bestätige das Ende des return-Objekts (`overall: prev?.notes?.overall || "",` → `},` → `};` → `}`).
+- `client/src/labs/components/rating/RatingFlowV2.tsx`: Bestätige `const handleRatingDone = useCallback((data: RatingData) => { onDone(data); }, [onDone]);` und dass `liveDataRef` existiert.
+- `client/src/labs/pages/LabsLive.tsx`: Bestätige den `GuidedSaveArgs`-Typ (endet mit `notes: string;` + `};`) und den `mutArgs`-Block (mit `overall: eff,` + `notes: combined,` + `};`).
+
+**Wenn alles passt: kurze Bestätigung + Plan ausgeben und auf mein OK warten.**
+
+---
+
+## SCHRITT 1 — `types.ts`: RatingData erweitern
+
+Suche:
+>>> ALT >>>
+```
+export interface RatingData {
+  scores: PhaseScores;
+  tags: PhaseTags;
+  notes: PhaseNotes;
+  overallExplicit?: boolean;
+  rawImpression?: string;
+}
+```
+<<< ENDE ALT <<<
+Ersetze durch:
+>>> NEU >>>
+```
+export interface RatingData {
+  scores: PhaseScores;
+  tags: PhaseTags;
+  notes: PhaseNotes;
+  overallExplicit?: boolean;
+  rawImpression?: string;
+  narrative?: string;
+}
+```
+<<< ENDE NEU <<<
+
+---
+
+## SCHRITT 2 — `mapImpressionToRating.ts`: narrative übernehmen
+
+Suche:
+>>> ALT >>>
+```
+      overall: prev?.notes?.overall || "",
+    },
+  };
+}
+```
+<<< ENDE ALT <<<
+Ersetze durch:
+>>> NEU >>>
+```
+      overall: prev?.notes?.overall || "",
+    },
+    narrative: result.narrative ?? prev?.narrative,
+  };
+}
+```
+<<< ENDE NEU <<<
+
+---
+
+## SCHRITT 3 — `RatingFlowV2.tsx`: narrative beim Abschluss bewahren
+
+Suche:
+>>> ALT >>>
+```
+  const handleRatingDone = useCallback((data: RatingData) => {
+    onDone(data);
+  }, [onDone]);
+```
+<<< ENDE ALT <<<
+Ersetze durch:
+>>> NEU >>>
+```
+  const handleRatingDone = useCallback((data: RatingData) => {
+    onDone({ ...data, narrative: data.narrative ?? liveDataRef.current?.narrative });
+  }, [onDone]);
+```
+<<< ENDE NEU <<<
+
+---
+
+## SCHRITT 4 — `LabsLive.tsx`: narrative in die Bewertung schreiben
+
+(a) `GuidedSaveArgs`-Typ. Suche:
+>>> ALT >>>
+```
+    overall: number;
+    notes: string;
+  };
+```
+<<< ENDE ALT <<<
+Ersetze durch:
+>>> NEU >>>
+```
+    overall: number;
+    notes: string;
+    tastingNarrative?: string;
+  };
+```
+<<< ENDE NEU <<<
+
+(b) `mutArgs`. Suche:
+>>> ALT >>>
+```
+                overall: eff,
+                notes: combined,
+              };
+```
+<<< ENDE ALT <<<
+Ersetze durch:
+>>> NEU >>>
+```
+                overall: eff,
+                notes: combined,
+                ...(data.narrative ? { tastingNarrative: data.narrative } : {}),
+              };
+```
+<<< ENDE NEU <<<
+
+---
+
+## VERIFIKATION
+- `types.ts`: `RatingData` hat `narrative?: string;`.
+- `mapImpressionToRating.ts`: return enthält `narrative: result.narrative ?? prev?.narrative,`.
+- `RatingFlowV2.tsx`: `handleRatingDone` reicht `narrative` aus `liveDataRef` durch.
+- `LabsLive.tsx`: `GuidedSaveArgs` hat `tastingNarrative?: string;`, und `mutArgs` setzt `tastingNarrative` bedingt aus `data.narrative`.
+- TypeScript bleibt sauber (keine neuen Fehler).
+- **Nochmals: KEIN commit, KEIN git, KEINE Schema-/drizzle-Änderung. Vier editierte Dateien, sonst nichts.**
