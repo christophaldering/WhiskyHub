@@ -1,0 +1,38 @@
+HARD PROMPT — Gruppen-Cooper-Notiz speichern (LabsLive freier Zweig)
+
+SICHERHEITSREGELN (für den GESAMTEN Prompt):
+1. Zuerst NUR Step 0 (Diagnose), keine Änderung, bis ich den Plan bestätige.
+2. Plan zeigen, auf meine Bestätigung warten, DANN ausführen.
+3. NICHT committen: kein git add, kein git commit, kein git push.
+4. KEINE Schema-/Migrations-Änderung, kein drizzle-kit — dieser Fix ist reiner Client-Code.
+5. Nur EINE Datei anfassen: client/src/labs/pages/LabsLive.tsx
+Safety-Tag vorab:  git tag pre-live-narrative-fix-2026-06-23
+Rollback:          git reset --hard pre-live-narrative-fix-2026-06-23
+
+STEP 0 — DIAGNOSE, bestätige durch Lesen (keine Änderung):
+1. In LabsLive.tsx ist debouncedSave (~Z.1180): (newScores, newNotes) => { ... rateMutation.mutate({ tastingId, whiskyId, participantId, ...newScores, notes: newNotes }) ... } — KEIN tastingNarrative im Payload.
+2. saveRatingData (~Z.1202) endet mit: debouncedSave({ nose..., taste..., finish..., overall: eff }, combined); — data.narrative wird NICHT weitergereicht.
+3. Der geführte Zweig (~Z.657) sendet tastingNarrative bereits korrekt; Server (/api/ratings -> upsertRating) macht ein PARTIELLES Update (fehlt das Feld, bleibt es unberührt).
+4. STOPP, zeig mir den Plan. In Step 0 nichts ändern.
+
+PLAN (erst nach meiner Bestätigung): Genau zwei Edits in LabsLive.tsx, sonst nichts.
+
+Edit 1 — debouncedSave um optionalen 3. Parameter erweitern und ins Payload aufnehmen:
+- Signatur: (newScores: typeof scores, newNotes: string)
+       ->   (newScores: typeof scores, newNotes: string, narrative?: string)
+- Im rateMutation.mutate({ ... })-Objekt direkt nach "notes: newNotes," ergänzen:
+       ...(narrative ? { tastingNarrative: narrative } : {}),
+
+Edit 2 — saveRatingData: die narrative durchreichen. Letzte Zeile
+   debouncedSave({ nose: sc.nose, taste: sc.palate, finish: sc.finish, overall: eff }, combined);
+->
+   debouncedSave({ nose: sc.nose, taste: sc.palate, finish: sc.finish, overall: eff }, combined, data.narrative);
+
+(Die übrigen debouncedSave(...)-Aufrufe mit 2 Argumenten bleiben gültig — 3. Param optional; ohne tastingNarrative im Payload lässt das partielle Update eine vorhandene Notiz unangetastet.)
+
+VERIFIKATION:
+- grep -n 'tastingNarrative' LabsLive.tsx -> jetzt auch im freien Zweig (debouncedSave-Payload), zusätzlich zum geführten (Z.657).
+- debouncedSave hat 3. Param narrative?; saveRatingData übergibt data.narrative.
+- Nur eine Datei geändert, ~3 Zeilen. Typecheck/Build ohne neue Fehler.
+- Manuell: Gruppen-Tasting (LabsLive, freier Zweig) -> mit Cooper sprechen -> Eindruck übernehmen -> Notiz erscheint danach im Dram-Detail (TastingNarrativeSection) und übersteht einen anschließenden Slider-Zug.
+- NICHT committen. Kein add/commit/push, kein drizzle-kit. Änderungen nur im Arbeitsbaum lassen.
