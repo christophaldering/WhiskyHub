@@ -16,10 +16,9 @@ import {
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy,
   Mic, Play as PlayIcon, Pause, ChevronDown, RotateCcw, Camera,
   ArrowUp, ArrowDown, SlidersHorizontal, Archive, Clock, FileEdit, MoreHorizontal,
-  Users, Smile, FileText,
+  Users, Smile, FileText, Download,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
-import ContextDownloadBar from "@/labs/components/ContextDownloadBar";
 import { downloadCsvFromRows, downloadXlsxFromSheets, safeFileSegment } from "@/labs/utils/contextDownloads";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
@@ -180,6 +179,7 @@ export default function LabsTasteDrams() {
   const [sortBy, setSortBy] = useState<SortBy>("saved");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -1140,54 +1140,27 @@ export default function LabsTasteDrams() {
         <div style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
           <div style={{ minWidth: 0, flex: "1 1 auto" }}>
             <h1 className="labs-h2" style={{ color: "var(--labs-text)", margin: 0 }} data-testid="labs-drams-title">{t("drams.title")}</h1>
-            <button
-              type="button"
-              onClick={() => navigate("/labs/solo")}
-              data-testid="link-labs-drams-capture-hint"
-              style={{
-                marginTop: 6,
-                padding: 0,
-                background: "transparent",
-                border: "none",
-                color: "var(--labs-text-muted)",
-                fontSize: 12,
-                cursor: "pointer",
-                textAlign: "left",
-              }}
-            >
-              {t("drams.captureHint", "Neue Drams erfasst du im Tastings-Tab unter Solo.")}
-              <span style={{ color: "var(--labs-accent)", marginLeft: 4 }}>{t("drams.captureHintCta", "Solo öffnen →")}</span>
-            </button>
+            {allItems.length === 0 && (
+              <button
+                type="button"
+                onClick={() => navigate("/labs/solo")}
+                data-testid="link-labs-drams-capture-hint"
+                style={{
+                  marginTop: 6,
+                  padding: 0,
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--labs-text-muted)",
+                  fontSize: 12,
+                  cursor: "pointer",
+                  textAlign: "left",
+                }}
+              >
+                {t("drams.captureHint", "Neue Drams erfasst du im Tastings-Tab unter Solo.")}
+                <span style={{ color: "var(--labs-accent)", marginLeft: 4 }}>{t("drams.captureHintCta", "Solo öffnen →")}</span>
+              </button>
+            )}
           </div>
-          {session.signedIn && session.pid && allItems.length > 0 && (
-            <ContextDownloadBar
-              testId="drams-download-bar"
-              align="end"
-              actions={[
-                {
-                  key: "csv",
-                  label: t("downloads.csv", { defaultValue: "CSV" }),
-                  testId: "button-drams-download-csv",
-                  run: () => downloadCsvFromRows(
-                    `casksense_journal_${safeFileSegment(new Date().toISOString().split("T")[0])}.csv`,
-                    buildDramsExportRows(filteredEntries as readonly DramExportRecord[]),
-                  ),
-                },
-                {
-                  key: "xlsx",
-                  label: t("downloads.excel", { defaultValue: "Excel" }),
-                  testId: "button-drams-download-xlsx",
-                  run: () => downloadXlsxFromSheets(
-                    `casksense_journal_${safeFileSegment(new Date().toISOString().split("T")[0])}.xlsx`,
-                    [{
-                      name: t("drams.title", { defaultValue: "Journal" }),
-                      rows: buildDramsExportRows(filteredEntries as readonly DramExportRecord[]),
-                    }],
-                  ),
-                },
-              ]}
-            />
-          )}
         </div>
       </div>
 
@@ -1228,18 +1201,7 @@ export default function LabsTasteDrams() {
             </div>
           </div>
 
-          <div style={{ padding: "0 20px", marginBottom: 8 }}>
-            <button
-              onClick={() => setViewState("trash")}
-              className="flex items-center gap-1.5"
-              style={{ fontSize: 12, color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer", padding: "4px 0" }}
-              data-testid="button-labs-open-trash"
-            >
-              <Trash2 className="w-3.5 h-3.5" /> {t("drams.trash")}
-            </button>
-          </div>
-
-          <div style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--labs-bg, #0e0b05)", padding: "8px 20px", borderBottom: "1px solid var(--labs-border)", maxWidth: "100%", boxSizing: "border-box", overflowX: "clip" }}>
+          <div style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--labs-bg, #0e0b05)", padding: "8px 20px", borderBottom: "1px solid var(--labs-border)", maxWidth: "100%", boxSizing: "border-box" }}>
             <div className="flex items-center gap-2" style={{ minWidth: 0, maxWidth: "100%" }}>
               <div className="relative" style={{ flex: "1 1 0", minWidth: 0 }}>
                 <Search className="absolute" style={{ left: 12, top: "50%", transform: "translateY(-50%)", width: 15, height: 15, color: "var(--labs-text-muted)" }} />
@@ -1254,7 +1216,7 @@ export default function LabsTasteDrams() {
               </div>
               <div className="relative" style={{ flexShrink: 0 }}>
                 <button
-                  onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
+                  onClick={() => { setSortDropdownOpen(!sortDropdownOpen); setMoreMenuOpen(false); }}
                   className="flex items-center gap-1.5"
                   style={{
                     padding: "8px 12px", fontSize: 13, fontWeight: 500, borderRadius: 10, cursor: "pointer",
@@ -1269,7 +1231,7 @@ export default function LabsTasteDrams() {
                 {sortDropdownOpen && (
                   <>
                     <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setSortDropdownOpen(false)} />
-                    <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 50, minWidth: 180, background: "var(--labs-card-bg, #1a1a2e)", border: "1px solid var(--labs-border, #2a2a4a)", borderRadius: 12, padding: 6, boxShadow: "0 12px 32px rgba(0,0,0,0.4)" }}>
+                    <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 50, minWidth: 180, background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)", borderRadius: 12, padding: 6, boxShadow: "0 12px 32px rgba(0,0,0,0.4)" }}>
                       <div style={{ padding: "6px 10px 4px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)" }}>{t("drams.sortBy")}</div>
                       {([
                         { key: "saved" as SortBy, label: t("drams.sortSaved") },
@@ -1305,6 +1267,58 @@ export default function LabsTasteDrams() {
                           <span style={{ marginLeft: sortDirection === opt.key ? 0 : 4 }}>{opt.label}</span>
                         </button>
                       ))}
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="relative" style={{ flexShrink: 0 }}>
+                <button
+                  onClick={() => { setMoreMenuOpen(!moreMenuOpen); setSortDropdownOpen(false); }}
+                  className="flex items-center justify-center"
+                  style={{
+                    width: 38, height: 38, borderRadius: 10, cursor: "pointer",
+                    background: "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))",
+                    border: "1px solid var(--labs-border)", color: "var(--labs-text-muted)",
+                  }}
+                  data-testid="button-more-menu"
+                  aria-label={t("common.more", "Mehr")}
+                >
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+                {moreMenuOpen && (
+                  <>
+                    <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setMoreMenuOpen(false)} />
+                    <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 50, minWidth: 180, background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)", borderRadius: 12, padding: 6, boxShadow: "0 12px 32px rgba(0,0,0,0.4)" }}>
+                      {allItems.length > 0 && (
+                        <>
+                          <div style={{ padding: "6px 10px 4px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)" }}>{t("drams.exportLabel", "Export")}</div>
+                          <button
+                            onClick={() => { setMoreMenuOpen(false); void downloadCsvFromRows(`casksense_journal_${safeFileSegment(new Date().toISOString().split("T")[0])}.csv`, buildDramsExportRows(filteredEntries as readonly DramExportRecord[])); }}
+                            className="w-full text-left flex items-center gap-2"
+                            style={{ fontSize: 13, padding: "8px 10px", borderRadius: 8, color: "var(--labs-text)", background: "transparent", border: "none", cursor: "pointer" }}
+                            data-testid="more-download-csv"
+                          >
+                            <FileText className="w-3.5 h-3.5" /> {t("downloads.csv", { defaultValue: "CSV" })}
+                          </button>
+                          <button
+                            onClick={() => { setMoreMenuOpen(false); void downloadXlsxFromSheets(`casksense_journal_${safeFileSegment(new Date().toISOString().split("T")[0])}.xlsx`, [{ name: t("drams.title", { defaultValue: "Journal" }), rows: buildDramsExportRows(filteredEntries as readonly DramExportRecord[]) }]); }}
+                            className="w-full text-left flex items-center gap-2"
+                            style={{ fontSize: 13, padding: "8px 10px", borderRadius: 8, color: "var(--labs-text)", background: "transparent", border: "none", cursor: "pointer" }}
+                            data-testid="more-download-xlsx"
+                          >
+                            <Download className="w-3.5 h-3.5" /> {t("downloads.excel", { defaultValue: "Excel" })}
+                          </button>
+                          <div style={{ height: 1, background: "var(--labs-border)", margin: "4px 0" }} />
+                        </>
+                      )}
+                      <button
+                        onClick={() => { setMoreMenuOpen(false); setViewState("trash"); }}
+                        className="w-full text-left flex items-center gap-2"
+                        style={{ fontSize: 13, padding: "8px 10px", borderRadius: 8, color: "var(--labs-text)", background: "transparent", border: "none", cursor: "pointer" }}
+                        data-testid="more-open-trash"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> {t("drams.trash")}
+                      </button>
                     </div>
                   </>
                 )}
