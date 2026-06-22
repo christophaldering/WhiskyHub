@@ -1,0 +1,44 @@
+AUFGABE: In der Drams-Liste die Sortierung korrigieren. Aktuell werden offene Drams (Status "draft") IMMER zwangsweise nach ganz oben sortiert und überstimmen damit die gewählte Sortierung. Folge: Im Filter "Alle" stehen oben lauter offene Solo-Drams, und neuere Tasting-Drams (die nie offen sind) rutschen nach unten — sie wirken wie "verschwunden". Diese Zwangs-Bevorzugung soll weg, damit rein nach dem gewählten Kriterium (saved/score/name) sortiert wird.
+
+Datei: client/src/labs/pages/LabsTasteDrams.tsx
+KEINE andere Datei. KEIN Schema, KEIN drizzle, KEINE Migration. KEIN Commit.
+
+═══════════════════════════════════════════
+STEP 0 — DIAGNOSE (NUR LESEN, NICHTS ÄNDERN)
+═══════════════════════════════════════════
+Bestätige, dass es in der filteredEntries-Sortierung (im useMemo) GENAU diese Stelle gibt:
+      const dir = sortDirection === "asc" ? 1 : -1;
+      items.sort((a: any, b: any) => {
+        const da = a.status === "draft" ? 0 : 1;
+        const db = b.status === "draft" ? 0 : 1;
+        if (da !== db) return da - db;
+        if (sortBy === "score") {
+GIB MIR DIE BESTÄTIGUNG UND WARTE AUF MEIN "OK". Ändere noch nichts.
+
+═══════════════════════════════════════════
+EDIT — die drei Draft-Vorrang-Zeilen entfernen
+═══════════════════════════════════════════
+>>> ALT >>>
+    const dir = sortDirection === "asc" ? 1 : -1;
+    items.sort((a: any, b: any) => {
+      const da = a.status === "draft" ? 0 : 1;
+      const db = b.status === "draft" ? 0 : 1;
+      if (da !== db) return da - db;
+      if (sortBy === "score") {
+<<< ENDE ALT <<<
+>>> NEU >>>
+    const dir = sortDirection === "asc" ? 1 : -1;
+    items.sort((a: any, b: any) => {
+      if (sortBy === "score") {
+<<< ENDE NEU <<<
+
+═══════════════════════════════════════════
+VERIFIKATION
+═══════════════════════════════════════════
+- Die Datei kompiliert ohne neue TypeScript-Fehler.
+- In der Sortier-Funktion steht NICHT mehr `a.status === "draft" ? 0`.
+- Die restliche sort-Logik (score / name / saved / Fallback createdAt) ist unverändert.
+- In der Drams-Liste, Filter "Alle", Sortierung "Zuletzt gespeichert" absteigend: Das jüngste Dram steht oben (z.B. Glenlivet 21.6.), unabhängig davon ob Solo/Tasting/offen/abgeschlossen.
+- Offene Drams bleiben über den "Offen"-Filter erreichbar.
+
+WICHTIG: NICHT committen. NICHT pushen. KEIN drizzle-kit, KEINE Migration, KEIN Schema-Edit. Nur speichern und mir melden — ich committe/republishe selbst.
