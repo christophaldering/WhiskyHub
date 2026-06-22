@@ -1,0 +1,123 @@
+HARD PROMPT — CaskSense: Modus live umschalten + Profile überall + Untertitel
+
+ZIEL
+(1) Ein Wechsel der Bewertungsform im Tasting-Kopf stellt den bereits aufgeklappten
+    Dram SOFORT um (heute wirkt er erst beim nächsten Öffnen).
+(2) "Profile" (intern tisch) wird auch im Solo und im Dram-Detail angeboten, damit
+    überall dieselbe Leiter Impression · Profile · In Depth gilt.
+(3) Der veraltete Untertitel "Beide Modi …" wird neutral (jetzt drei Stufen).
+Vier Änderungen in vier Dateien. KEIN Commit, kein drizzle, keine Migration.
+
+══════════════════════════════════════════════════════════
+SCHRITT 0 — DIAGNOSE (NUR LESEN)
+══════════════════════════════════════════════════════════
+Bestätige mit Ausgabe:
+1. RatingFlowV2.tsx: der mode-Sync-useEffect endet WORTGLEICH auf
+   `}, [preferredMode, initialMode, hideQuick, showTisch, step, forceTischDiscovery]);`
+   gefolgt von einer Leerzeile und `useEffect(() => {` (localStorage labs_tisch_seen).
+   `useRef` ist in der Datei bereits importiert/in Verwendung (userPickedModeRef).
+2. LabsSolo.tsx: der RatingFlowV2-Aufruf enthält die Zeilen
+   `preferredMode={preferredRatingModeFromProfile}` direkt gefolgt von
+   `onSetPreferredMode={handleSetPreferredMode}`. KEIN showTisch vorhanden.
+3. LabsTasteDrams.tsx: der RatingFlowV2-Aufruf enthält `initialMode={initialDeepRateMode}`
+   direkt gefolgt von `enableCooperIntro={true}`. KEIN showTisch vorhanden.
+4. i18n.ts: ratingModeSub existiert in EN (~Z.806) und DE (~Z.10652) mit den unten
+   zitierten ALT-Werten.
+Gib einen kurzen Plan aus und WARTE auf mein "OK".
+
+══════════════════════════════════════════════════════════
+DATEI 1 — client/src/labs/components/rating/RatingFlowV2.tsx
+══════════════════════════════════════════════════════════
+>>> ALT >>>
+  }, [preferredMode, initialMode, hideQuick, showTisch, step, forceTischDiscovery]);
+
+  useEffect(() => {
+    if (step === "mode" && showTisch && typeof localStorage !== "undefined") {
+<<< ENDE ALT <<<
+>>> NEU >>>
+  }, [preferredMode, initialMode, hideQuick, showTisch, step, forceTischDiscovery]);
+
+  // Externe Live-Steuerung: Ein ECHTER Wechsel von preferredMode (z.B. der
+  // Modus-Chip im Tasting-Kopf) stellt den aktiven Modus sofort um — auch mitten
+  // in der Bewertung. Beim Mount (prev === current) passiert nichts; in Kontexten
+  // mit konstantem preferredMode feuert der Effekt nie.
+  const prevPreferredModeRef = useRef(preferredMode);
+  useEffect(() => {
+    if (preferredMode === prevPreferredModeRef.current) return;
+    prevPreferredModeRef.current = preferredMode;
+    if (!preferredMode) return;
+    if (preferredMode === "quick" && hideQuick) return;
+    if (preferredMode === "tisch" && !showTisch) return;
+    setMode(preferredMode);
+  }, [preferredMode, hideQuick, showTisch]);
+
+  useEffect(() => {
+    if (step === "mode" && showTisch && typeof localStorage !== "undefined") {
+<<< ENDE NEU <<<
+
+══════════════════════════════════════════════════════════
+DATEI 2 — client/src/labs/pages/LabsSolo.tsx
+══════════════════════════════════════════════════════════
+>>> ALT >>>
+          preferredMode={preferredRatingModeFromProfile}
+          onSetPreferredMode={handleSetPreferredMode}
+<<< ENDE ALT <<<
+>>> NEU >>>
+          preferredMode={preferredRatingModeFromProfile}
+          onSetPreferredMode={handleSetPreferredMode}
+          showTisch={true}
+<<< ENDE NEU <<<
+
+══════════════════════════════════════════════════════════
+DATEI 3 — client/src/labs/pages/LabsTasteDrams.tsx
+══════════════════════════════════════════════════════════
+>>> ALT >>>
+          initialMode={initialDeepRateMode}
+          enableCooperIntro={true}
+<<< ENDE ALT <<<
+>>> NEU >>>
+          initialMode={initialDeepRateMode}
+          enableCooperIntro={true}
+          showTisch={true}
+<<< ENDE NEU <<<
+
+══════════════════════════════════════════════════════════
+DATEI 4 — client/src/lib/i18n.ts  (zwei Stellen)
+══════════════════════════════════════════════════════════
+EN:
+>>> ALT >>>
+        ratingModeSub: "Both modes capture Nose, Palate, Finish & Overall.",
+<<< ENDE ALT <<<
+>>> NEU >>>
+        ratingModeSub: "Choose how deep you want to go.",
+<<< ENDE NEU <<<
+
+DE:
+>>> ALT >>>
+        ratingModeSub: "Beide Modi erfassen Nase \u00b7 Gaumen \u00b7 Abgang \u00b7 Gesamt.",
+<<< ENDE ALT <<<
+>>> NEU >>>
+        ratingModeSub: "W\u00e4hle, wie tief du gehen m\u00f6chtest.",
+<<< ENDE NEU <<<
+
+══════════════════════════════════════════════════════════
+VERIFIKATION (lesend) — danach STOP
+══════════════════════════════════════════════════════════
+- `npx tsc --noEmit -p tsconfig.json` — keine NEUEN Fehler in den vier Dateien.
+  (Bekannte node/vite-client/baseUrl-Meldungen ignorieren.)
+- RatingFlowV2.tsx: neuer prevPreferredModeRef + zweiter useEffect mit
+  Dependencies [preferredMode, hideQuick, showTisch] vorhanden.
+- LabsSolo.tsx und LabsTasteDrams.tsx: je showTisch={true} im RatingFlowV2-Aufruf.
+- i18n.ts: ratingModeSub in EN und DE auf die neuen Werte gesetzt.
+- AM GLAS:
+  (a) Freies Tasting, Dram aufklappen, oben Modus wechseln (z.B. In Depth → Impression)
+      → die Bewertung darunter stellt sich SOFORT um.
+  (b) Solo-Verkostung und Dram-„Nochmal verkosten": in der Modus-Auswahl erscheinen
+      jetzt drei Stufen (Impression · Profile · In Depth).
+  (c) Über der Modus-Auswahl steht der neue, neutrale Untertitel.
+
+STRIKT VERBOTEN:
+- KEIN git add / commit / push. NICHT committen — nur Workspace-Dateien ändern.
+- KEIN drizzle-kit, keine Schema-Änderung, keine Migration.
+- Keine weiteren Stellen anfassen.
+Wenn Step 0 abweicht: NICHT raten — stoppen und mich fragen.
