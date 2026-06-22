@@ -1,0 +1,121 @@
+HARD PROMPT — CaskSense: Gruppe 2b — Cooper als dezente Zeile im freien Modus (Modus-Chip weg)
+
+ZIEL
+Im freien Live-Modus erscheint Cooper künftig nicht mehr als Pill mit Modus-Chip
+daneben, sondern als eine dezente, volle "Mit Cooper schärfen"-Zeile — optisch
+identisch zur bereits existierenden Seitentür im geführten Modus. Der Modus-Chip
+entfällt am Glas (er sitzt seit 2a im Tasting-Kopf). Die interne Cooper-Mechanik
+(enableCooperIntro → setStep("cooper") → cooperStartPhase) bleibt unverändert.
+Umgesetzt über eine neue, opt-in Prop `cooperAsRow`, gesetzt NUR im freien Modus —
+"Nochmal verkosten" (LabsTasteDrams) bleibt unberührt.
+
+══════════════════════════════════════════════════════════
+SCHRITT 0 — DIAGNOSE (NUR LESEN, NICHTS ÄNDERN)
+══════════════════════════════════════════════════════════
+Bestätige mit Ausgaben, BEVOR du etwas änderst:
+1. RatingFlowV2.tsx enthält die Props-Zeile `  enableCooperIntro?: boolean;` und in
+   der Destrukturierung die Zeile `  enableCooperIntro,`.
+2. RatingFlowV2.tsx enthält den ratingTopBar-Block (ALT unten) WORTGLEICH.
+3. RatingFlowV2 nutzt `t(...)` bereits (z.B. in chipLabels) — bestätigen.
+4. LabsLive.tsx: der freie RatingFlowV2-Aufruf enthält `enableCooperIntro={true}`
+   direkt gefolgt von `cooperStartPhase={cooperPhase}`.
+Gib einen kurzen Plan aus und WARTE auf mein "OK". Erst nach dem OK Schritt 1–4.
+
+══════════════════════════════════════════════════════════
+SCHRITT 1 — RatingFlowV2: Prop im Interface
+══════════════════════════════════════════════════════════
+>>> ALT >>>
+  enableCooperIntro?: boolean;
+<<< ENDE ALT <<<
+>>> NEU >>>
+  enableCooperIntro?: boolean;
+  cooperAsRow?: boolean;
+<<< ENDE NEU <<<
+
+══════════════════════════════════════════════════════════
+SCHRITT 2 — RatingFlowV2: Destrukturierung
+══════════════════════════════════════════════════════════
+>>> ALT >>>
+  enableCooperIntro,
+<<< ENDE ALT <<<
+>>> NEU >>>
+  enableCooperIntro,
+  cooperAsRow,
+<<< ENDE NEU <<<
+
+══════════════════════════════════════════════════════════
+SCHRITT 3 — RatingFlowV2: ratingTopBar um cooperAsRow-Zweig erweitern
+══════════════════════════════════════════════════════════
+>>> ALT >>>
+  const ratingTopBar = enableCooperIntro ? (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+      }}
+    >
+      <CooperChip onClick={() => setStep("cooper")} />
+      {chipSlot}
+    </div>
+  ) : (
+    chipSlot
+  );
+<<< ENDE ALT <<<
+>>> NEU >>>
+  const ratingTopBar = enableCooperIntro ? (
+    cooperAsRow ? (
+      <button
+        type="button"
+        onClick={() => setStep("cooper")}
+        data-testid="rating-cooper-row"
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", minHeight: 44, padding: "10px 16px", marginBottom: 12, borderRadius: 12, border: "1px solid var(--labs-accent)", background: "transparent", color: "var(--labs-accent)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600 }}
+      >
+        {t("v2.impressionSideDoor", "Mit Cooper schärfen")}
+      </button>
+    ) : (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <CooperChip onClick={() => setStep("cooper")} />
+        {chipSlot}
+      </div>
+    )
+  ) : (
+    chipSlot
+  );
+<<< ENDE NEU <<<
+
+══════════════════════════════════════════════════════════
+SCHRITT 4 — LabsLive: cooperAsRow im freien Aufruf setzen
+══════════════════════════════════════════════════════════
+>>> ALT >>>
+                            enableCooperIntro={true}
+                            cooperStartPhase={cooperPhase}
+<<< ENDE ALT <<<
+>>> NEU >>>
+                            enableCooperIntro={true}
+                            cooperAsRow={true}
+                            cooperStartPhase={cooperPhase}
+<<< ENDE NEU <<<
+
+══════════════════════════════════════════════════════════
+VERIFIKATION (lesend) — danach STOP
+══════════════════════════════════════════════════════════
+- `npx tsc --noEmit -p tsconfig.json` — keine NEUEN Fehler in RatingFlowV2.tsx /
+  LabsLive.tsx. (Bekannte node/vite-client/baseUrl-Meldungen ignorieren.)
+- grep "cooperAsRow" in RatingFlowV2.tsx → Interface + Destrukturierung + ratingTopBar.
+- grep "cooperAsRow" in LabsLive.tsx → genau 1 Treffer (freier Aufruf).
+- grep "rating-cooper-row" in RatingFlowV2.tsx → vorhanden.
+
+STRIKT VERBOTEN:
+- KEIN git add / commit / push. NICHT committen — nur Workspace-Dateien ändern.
+- KEIN drizzle-kit, keine Schema-Änderung, keine Migration.
+- Keine weiteren Dateien/Stellen anfassen. Insbesondere: den geführten Aufruf und die
+  bestehende Seitentür NICHT verändern; LabsTasteDrams.tsx (Nochmal verkosten) bleibt
+  unberührt (dort KEIN cooperAsRow → behält Pill + Modus-Chip).
+Wenn etwas vom Step-0-Befund abweicht: NICHT raten — stoppen und mich fragen.
