@@ -83,7 +83,7 @@ export default function RatingFlowV2({
       return true;
     }
   }, []);
-  const forceTischDiscovery = !!showTisch && !tischSeen && !initialMode;
+  const forceTischDiscovery = !!showTisch && !tischSeen && !initialMode && !preferredMode;
 
   const resolvedInitialMode = useMemo<"guided" | "compact" | "quick" | "tisch" | null>(() => {
     if (forceTischDiscovery) return null;
