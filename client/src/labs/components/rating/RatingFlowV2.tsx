@@ -246,7 +246,7 @@ export default function RatingFlowV2({
   }, [onChange, initialData, onSetPreferredMode]);
 
   const handleRatingDone = useCallback((data: RatingData) => {
-    onDone(data);
+    onDone({ ...data, narrative: data.narrative ?? liveDataRef.current?.narrative });
   }, [onDone]);
 
   const handleChange = useCallback((phaseIndex: number, data: Partial<RatingData>) => {

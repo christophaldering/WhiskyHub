@@ -27,4 +27,5 @@ export interface RatingData {
   notes: PhaseNotes;
   overallExplicit?: boolean;
   rawImpression?: string;
+  narrative?: string;
 }

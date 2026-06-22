@@ -37,5 +37,6 @@ export function mapImpressionToRating(result: ImpressionResult, opts: MapImpress
       finish: result.finish || prev?.notes?.finish || "",
       overall: prev?.notes?.overall || "",
     },
+    narrative: result.narrative ?? prev?.narrative,
   };
 }
