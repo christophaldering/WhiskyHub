@@ -311,7 +311,7 @@ export default function LabsTaste() {
     if (activeTab === "tastings") {
       const activeTile = TASTINGS_HUB_TILES.find((tile) => tile.filter === activeTastingsFilter);
       return (
-        <div data-testid="meine-welt-inline-tastings">
+        <div className="labs-tastings-inline-content" data-testid="meine-welt-inline-tastings">
           <HubTileGrid
             tiles={TASTINGS_LENS_TILES}
             t={t}
