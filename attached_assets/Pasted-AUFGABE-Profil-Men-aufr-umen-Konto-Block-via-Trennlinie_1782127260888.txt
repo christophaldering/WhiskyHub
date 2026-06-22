@@ -1,0 +1,97 @@
+AUFGABE: Profil-Menü aufräumen — Konto-Block via Trennlinie abtrennen + "Verify Email" nur bei unbestätigter E-Mail zeigen.
+
+NUR diese eine Datei: client/src/components/ProfileMenu.tsx
+KEINE anderen Dateien. KEIN Schema, KEIN drizzle, KEINE Migration. KEIN Commit.
+
+═══════════════════════════════════════════
+STEP 0 — DIAGNOSE (NUR LESEN, NICHTS ÄNDERN)
+═══════════════════════════════════════════
+Öffne client/src/components/ProfileMenu.tsx und bestätige, dass folgende drei Stellen exakt so existieren:
+  1. Eine Zeile:  const [session, setSession] = useState(getSession());
+  2. Ein useEffect-Block mit window.addEventListener("session-change", refreshSession)
+  3. Ein MenuButton mit label={t("m2.profile.verifyEmail", "Verify Email")}
+Bestätige außerdem, dass useState und useEffect bereits importiert sind (Zeile 1).
+GIB MIR DIE BESTÄTIGUNG UND WARTE AUF MEIN "OK". Ändere noch nichts.
+
+═══════════════════════════════════════════
+PLAN (erst nach meinem OK ausführen)
+═══════════════════════════════════════════
+Drei Edits, alle in ProfileMenu.tsx:
+  A) emailVerified-State ergänzen.
+  B) useEffect ergänzen, der den Verifizierungs-Status lädt (gleicher Endpoint wie LabsLayout).
+  C) Eine Trennlinie vor dem Konto-Block einfügen UND den Verify-Email-Button so wrappen, dass er nur erscheint, wenn die E-Mail unbestätigt ist.
+
+═══════════════════════════════════════════
+EDIT A — State ergänzen
+═══════════════════════════════════════════
+>>> ALT >>>
+  const [session, setSession] = useState(getSession());
+<<< ENDE ALT <<<
+>>> NEU >>>
+  const [session, setSession] = useState(getSession());
+  const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
+<<< ENDE NEU <<<
+
+═══════════════════════════════════════════
+EDIT B — Status-Fetch-useEffect ergänzen
+═══════════════════════════════════════════
+>>> ALT >>>
+  useEffect(() => {
+    window.addEventListener("session-change", refreshSession);
+    return () => window.removeEventListener("session-change", refreshSession);
+  }, [refreshSession]);
+<<< ENDE ALT <<<
+>>> NEU >>>
+  useEffect(() => {
+    window.addEventListener("session-change", refreshSession);
+    return () => window.removeEventListener("session-change", refreshSession);
+  }, [refreshSession]);
+
+  useEffect(() => {
+    const pid = session.pid;
+    if (!open || !pid) { setEmailVerified(null); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/participants/${pid}/verification-status`, { headers: { "x-participant-id": pid } });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setEmailVerified(!!data.emailVerified);
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, [open, session.pid]);
+<<< ENDE NEU <<<
+
+═══════════════════════════════════════════
+EDIT C — Trennlinie + bedingter Verify-Button
+═══════════════════════════════════════════
+>>> ALT >>>
+      <MenuButton theme={tv}
+        icon={<Mail style={{ width: 18, height: 18, color: tv.accent }} />}
+        label={t("m2.profile.verifyEmail", "Verify Email")}
+        onClick={() => { setView("verify-email"); setError(""); }}
+        testId="m2-profile-verify-email"
+      />
+<<< ENDE ALT <<<
+>>> NEU >>>
+      <div style={{ height: 1, background: tv.border, margin: "8px 0" }} />
+      {emailVerified === false && (
+        <MenuButton theme={tv}
+          icon={<Mail style={{ width: 18, height: 18, color: tv.accent }} />}
+          label={t("m2.profile.verifyEmail", "Verify Email")}
+          onClick={() => { setView("verify-email"); setError(""); }}
+          testId="m2-profile-verify-email"
+        />
+      )}
+<<< ENDE NEU <<<
+
+═══════════════════════════════════════════
+VERIFIKATION
+═══════════════════════════════════════════
+- Datei kompiliert ohne neue TypeScript-Fehler.
+- Im Profil-Menü erscheint jetzt eine Trennlinie zwischen "Language" und dem Konto-Bereich (Data & Export).
+- "Verify Email" erscheint NUR, wenn die E-Mail unbestätigt ist; bei bestätigter E-Mail ist es weg, die Trennlinie bleibt.
+- KEINE weiteren Dateien geändert.
+
+WICHTIG: NICHT committen. NICHT pushen. KEIN drizzle-kit, KEINE Migration, KEIN Schema-Edit. Nur die Datei speichern und mir den Abschluss melden — ich committe/republishe selbst.
