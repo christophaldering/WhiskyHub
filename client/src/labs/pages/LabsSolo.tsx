@@ -148,6 +148,7 @@ export default function LabsSolo() {
   const [cooperStarted, setCooperStarted] = useState(false);
   const rawImpressionRef = useRef<string>("");
   const narrativeRef = useRef<string>("");
+  const captureMetaRef = useRef<Record<string, unknown> | null>(null);
 
   const { data: participantData } = useQuery<Participant>({
     queryKey: ["participant", participantId],
@@ -344,6 +345,7 @@ export default function LabsSolo() {
     finalizedRef.current = false;
     rawImpressionRef.current = "";
     narrativeRef.current = "";
+    captureMetaRef.current = null;
     setStep("rating");
     saveSoloDraft({ step: "rating", whisky: null, ratingMode: null, ratingPhaseIndex: 0, ratingData: {}, fromCollection: false, serverDraftId: null });
     showDraftFlash();
@@ -397,6 +399,7 @@ export default function LabsSolo() {
   const handleImpressionApply = useCallback((result: ImpressionResult) => {
     rawImpressionRef.current = result.rawImpression || "";
     narrativeRef.current = result.narrative || "";
+    captureMetaRef.current = result.captureMeta || null;
     setRatingInitialData((prev) => mapImpressionToRating(result, { prev }));
     setRatingMode(preferredRatingModeFromProfile ?? "compact");
     setShowImpressionCapture(false);
@@ -441,6 +444,7 @@ export default function LabsSolo() {
       notes: data.notes.overall || "",
       ...(rawImpressionRef.current ? { rawImpression: rawImpressionRef.current } : {}),
       ...(narrativeRef.current ? { tastingNarrative: narrativeRef.current } : {}),
+      ...(captureMetaRef.current ? { captureMeta: captureMetaRef.current } : {}),
       source: "solo",
       status,
       ...(tastingContext ? { tastingContext: JSON.stringify(tastingContext) } : {}),
@@ -751,6 +755,7 @@ export default function LabsSolo() {
     setShowImpressionCapture(false);
     rawImpressionRef.current = "";
     narrativeRef.current = "";
+    captureMetaRef.current = null;
     finalizedRef.current = false;
     pendingNameRef.current = null;
     namingResolvedRef.current = false;

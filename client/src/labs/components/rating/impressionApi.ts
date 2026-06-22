@@ -20,6 +20,7 @@ export type ImpressionResult = {
   followUpKind: "aroma" | "dimension" | "evaluation" | "";
   followUpTerm: string;
   narrative?: string;
+  captureMeta?: { cooperTurns?: number; cooperMode?: string; entryModeUsed?: string; [key: string]: unknown };
   tookMs: number;
 };
 

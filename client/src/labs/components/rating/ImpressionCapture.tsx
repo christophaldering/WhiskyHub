@@ -202,7 +202,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
       ];
       recordVocabularyEvents(participantId, events);
     }
-    onApply({ ...result, narrative: narrative.trim() || undefined });
+    onApply({ ...result, narrative: narrative.trim() || undefined, captureMeta: { cooperTurns: transcript.filter((x) => x.role === "taster").length, cooperMode: intensity } });
   };
 
   const renderMirror = (r: ImpressionResult) => {
