@@ -1,0 +1,34 @@
+AUFGABE: In der "Meine Welt"-Ansicht (Tab "Tastings & Drams") nutzt die Liste darunter (Drams/Sessions/Handouts) nicht die volle Fensterbreite — sie ist seitlich doppelt eingerückt. Ursache: Der eingebettete Inhalt hat einen verschachtelten `labs-page`-Container (20px Seitenpadding + max-width), der NICHT neutralisiert wird, weil dem Wrapper die Klasse `labs-tastings-inline-content` fehlt. Die drei anderen Tab-Zweige (Sammlung/KI/Analyse) haben diese Klasse bereits; nur der "tastings"-Zweig nicht.
+
+Datei: client/src/labs/pages/LabsTaste.tsx
+KEINE andere Datei. KEIN Schema, KEIN drizzle, KEINE Migration. KEIN Commit.
+
+═══════════════════════════════════════════
+STEP 0 — DIAGNOSE (NUR LESEN, NICHTS ÄNDERN)
+═══════════════════════════════════════════
+Bestätige, dass es in der Funktion `renderInlineContent` im Zweig `if (activeTab === "tastings")` GENAU diese Zeile gibt (öffnender Wrapper-div, OHNE className):
+        <div data-testid="meine-welt-inline-tastings">
+Und bestätige, dass an anderen Stellen die Klasse "labs-tastings-inline-content" bereits verwendet wird (zur Bestätigung des Musters).
+GIB MIR DIE BESTÄTIGUNG UND WARTE AUF MEIN "OK". Ändere noch nichts.
+
+═══════════════════════════════════════════
+EDIT — Klasse ergänzen
+═══════════════════════════════════════════
+>>> ALT >>>
+      return (
+        <div data-testid="meine-welt-inline-tastings">
+<<< ENDE ALT <<<
+>>> NEU >>>
+      return (
+        <div className="labs-tastings-inline-content" data-testid="meine-welt-inline-tastings">
+<<< ENDE NEU <<<
+
+═══════════════════════════════════════════
+VERIFIKATION
+═══════════════════════════════════════════
+- Die Datei kompiliert ohne neue TypeScript-Fehler.
+- Der "tastings"-Zweig-Wrapper trägt jetzt className="labs-tastings-inline-content".
+- In "Meine Welt" → "Tastings & Drams": Die Drams-Liste (und Sessions/Handouts) nutzt nun dieselbe volle Breite wie der Kopfbereich/die Tab-Leiste darüber — keine doppelte seitliche Einrückung mehr.
+- Die anderen Tabs (Sammlung/KI/Analyse) sind unverändert.
+
+WICHTIG: NICHT committen. NICHT pushen. KEIN drizzle-kit, KEINE Migration, KEIN Schema-Edit. Nur speichern und mir melden — ich committe/republishe selbst.
