@@ -1,0 +1,145 @@
+# HARD PROMPT — CaskSense: captureMeta-Rohdaten-Fundament + Variablen-Charta
+
+## Ziel
+Ein erweiterbares Rohdaten-Feld `captureMeta` (jsonb) an `ratings` und `journal_entries`, plus die journal-Whitelists, plus eine Standing Directive in `replit.md`. Damit lassen sich künftig Verhaltens-/Zeitdaten (Dauer, Latenz, Cooper-Turns …) ohne weitere Migration mitschreiben. **Dieser Prompt legt nur das Gefäß an — es wird noch nichts befüllt.**
+
+## WICHTIG — Verhaltensregeln
+- **SCHRITT 0 zuerst (NUR LESEN):** Anker in `shared/schema.ts`, `server/routes.ts`, `replit.md` bestätigen, kurze Bestätigung + Mini-Plan ausgeben. **Dann WARTE auf mein OK.**
+- Erst nach meinem OK ausführen.
+- **KEIN commit. KEIN git.**
+- **Schema-Änderung ist hier erlaubt** (rein additive Spalte) — ABER **führe NIEMALS selbst `drizzle-kit` / `db push` / Migration aus.** Nur die Datei `shared/schema.ts` editieren. Den `drizzle-kit push --force` mache ich anschließend selbst in der Shell.
+- Nur die drei genannten Dateien editieren.
+
+---
+
+## SCHRITT 0 — Diagnose (nur lesen, dann warten)
+- `shared/schema.ts`: bestätige im `ratings`-Block `tastingNarrative: text("tasting_narrative"),` direkt gefolgt von `guessAbv: real("guess_abv"),`; und im `journalEntries`-Block `voiceMemoDuration: integer("voice_memo_duration"),` direkt gefolgt von `status: text("status").default("final").notNull(),`. Bestätige, dass `jsonb` bereits importiert ist.
+- `server/routes.ts`: bestätige die zwei Whitelist-Zeilen, die auf `"rawImpression", "tastingNarrative"]);` bzw. `"rawImpression", "tastingNarrative"];` enden.
+- `replit.md`: bestätige die Zeile `Gilt bis zum ausdrücklichen Widerruf durch den Nutzer.` gefolgt von Leerzeile und `## Overview`.
+
+**Wenn alles passt: kurze Bestätigung + Plan ausgeben und auf mein OK warten.**
+
+---
+
+## SCHRITT 1 — `shared/schema.ts`: captureMeta an `ratings`
+Suche:
+>>> ALT >>>
+```
+  tastingNarrative: text("tasting_narrative"),
+  guessAbv: real("guess_abv"),
+```
+<<< ENDE ALT <<<
+Ersetze durch:
+>>> NEU >>>
+```
+  tastingNarrative: text("tasting_narrative"),
+  captureMeta: jsonb("capture_meta").$type<{
+    durationMs?: number;
+    firstInputLatencyMs?: number;
+    revisionCount?: number;
+    entryModeUsed?: string;
+    cooperTurns?: number;
+    cooperMode?: string;
+    flightPosition?: number;
+    [key: string]: unknown;
+  }>(),
+  guessAbv: real("guess_abv"),
+```
+<<< ENDE NEU <<<
+
+---
+
+## SCHRITT 2 — `shared/schema.ts`: captureMeta an `journalEntries`
+Suche:
+>>> ALT >>>
+```
+  voiceMemoDuration: integer("voice_memo_duration"),
+  status: text("status").default("final").notNull(),
+```
+<<< ENDE ALT <<<
+Ersetze durch:
+>>> NEU >>>
+```
+  voiceMemoDuration: integer("voice_memo_duration"),
+  captureMeta: jsonb("capture_meta").$type<{
+    durationMs?: number;
+    firstInputLatencyMs?: number;
+    revisionCount?: number;
+    entryModeUsed?: string;
+    cooperTurns?: number;
+    cooperMode?: string;
+    flightPosition?: number;
+    [key: string]: unknown;
+  }>(),
+  status: text("status").default("final").notNull(),
+```
+<<< ENDE NEU <<<
+
+---
+
+## SCHRITT 3 — `server/routes.ts`: journal POST-Whitelist
+Suche (genau die Zeile, die so endet):
+>>> ALT >>>
+```
+"rawImpression", "tastingNarrative"]);
+```
+<<< ENDE ALT <<<
+Ersetze durch:
+>>> NEU >>>
+```
+"rawImpression", "tastingNarrative", "captureMeta"]);
+```
+<<< ENDE NEU <<<
+
+---
+
+## SCHRITT 4 — `server/routes.ts`: journal PATCH-Whitelist
+Suche:
+>>> ALT >>>
+```
+"rawImpression", "tastingNarrative"];
+```
+<<< ENDE ALT <<<
+Ersetze durch:
+>>> NEU >>>
+```
+"rawImpression", "tastingNarrative", "captureMeta"];
+```
+<<< ENDE NEU <<<
+
+---
+
+## SCHRITT 5 — `replit.md`: Rohdaten-Variablen-Charta
+Suche:
+>>> ALT >>>
+```
+Gilt bis zum ausdrücklichen Widerruf durch den Nutzer.
+
+## Overview
+```
+<<< ENDE ALT <<<
+Ersetze durch:
+>>> NEU >>>
+```
+Gilt bis zum ausdrücklichen Widerruf durch den Nutzer.
+
+## Rohdaten-Variablen-Charta (Standing Directive — until revoked, 22.06.2026)
+CaskSense ist im Kern ein psychometrisches Instrument. Spätere Analysen (Korrelation Taster-Persönlichkeit ↔ Whisky-Persönlichkeit) können nur Rohdaten auswerten, die heute schon erfasst wurden — nicht erfasste Verhaltens-/Zeitdaten sind rückwirkend unrekonstruierbar. Deshalb gilt: **so viele sinnvolle, unabhängige wie abhängige Variablen wie möglich von Anfang an mitschreiben**, auch wenn die Analyse erst später kommt.
+- **Pflicht-Schleife bei jeder Erweiterung:** Sobald eine Änderung einen Bewertungs- oder Verkostungs-Fluss berührt, kurz innehalten und prüfen: Fällt hier eine neue beobachtbare Größe an (Zeit, Verhalten, Kontext, Prozess)? Wenn ja UND erlaubt → ins Metadaten-Feld aufnehmen. Erfassen ist billig und additiv.
+- **Vehikel:** erweiterbares `captureMeta jsonb` an `ratings` und `journal_entries` (additiv, keine Migration pro neuer Variable). Typsichere Einzelspalten nur für Größen, die wirklich indiziert/gefiltert werden.
+- **Bekannte Felder in `captureMeta`:** `durationMs` (Flow-Start → Speichern), `firstInputLatencyMs` (Whisky sichtbar → erstes Wort/Slider), `revisionCount` (Wert-Korrekturen vor Speichern), `entryModeUsed` (Stimme/Text tatsächlich genutzt), `cooperTurns` (Gesprächstiefe), `cooperMode` (schnell/neugierig/rabbithole), `flightPosition` (wievielter Dram des Abends). Liste wächst — das `[key: string]: unknown` hält das Feld offen.
+- **Erlaubnis-Grenze:** `captureMeta` erfasst ausschließlich das eigene Verhalten des Nutzers an der eigenen Verkostung (Interaktions-Metadaten, kein Audio Dritter) — DSGVO-konform bei transparentem Datenschutzhinweis. Die Grenze ist exakt das §201-StGB-Thema: nichts heimlich AUFNEHMEN. Dauer/Latenz/Turns/Modus sind keine Aufnahme und damit unbedenklich.
+- Die eigentliche Korrelations-/Analyse-Engine wird bewusst SPÄTER gebaut (wenn genügend Rohdaten vorliegen). Diese Charta sichert nur, dass die Rohdaten bis dahin lückenlos anfallen.
+
+## Overview
+```
+<<< ENDE NEU <<<
+
+---
+
+## VERIFIKATION
+- `shared/schema.ts`: `captureMeta` erscheint **zweimal** (je einmal im `ratings`- und im `journalEntries`-Block).
+- `server/routes.ts`: beide journal-Whitelists enthalten jetzt `"captureMeta"`.
+- `replit.md`: der neue Abschnitt „Rohdaten-Variablen-Charta" steht zwischen Brand Visual Direction und Overview.
+- TypeScript bleibt sauber.
+- **Nochmals: KEIN commit, KEIN git, KEIN `drizzle-kit`/db-push. Drei editierte Dateien, sonst nichts.** Den Schema-Push mache ich danach selbst.
