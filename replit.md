@@ -46,6 +46,14 @@ Die LandingPage (`client/src/pages/landing-new.tsx`, Route `/`) MUSS visuell im 
 - Eyebrow-Labels: kleine, weit ausgesperrte Caps in Amber.
 - Bei jeder zukünftigen Änderung an der LandingPage: dieses Set bewahren, nicht einzelne Komponenten in einen anderen Stil zurückwandern lassen. Gilt bis zum ausdrücklichen Widerruf durch den Nutzer.
 
+## Rohdaten-Variablen-Charta (Standing Directive — until revoked, 22.06.2026)
+CaskSense ist im Kern ein psychometrisches Instrument. Spätere Analysen (Korrelation Taster-Persönlichkeit ↔ Whisky-Persönlichkeit) können nur Rohdaten auswerten, die heute schon erfasst wurden — nicht erfasste Verhaltens-/Zeitdaten sind rückwirkend unrekonstruierbar. Deshalb gilt: **so viele sinnvolle, unabhängige wie abhängige Variablen wie möglich von Anfang an mitschreiben**, auch wenn die Analyse erst später kommt.
+- **Pflicht-Schleife bei jeder Erweiterung:** Sobald eine Änderung einen Bewertungs- oder Verkostungs-Fluss berührt, kurz innehalten und prüfen: Fällt hier eine neue beobachtbare Größe an (Zeit, Verhalten, Kontext, Prozess)? Wenn ja UND erlaubt → ins Metadaten-Feld aufnehmen. Erfassen ist billig und additiv.
+- **Vehikel:** erweiterbares `captureMeta jsonb` an `ratings` und `journal_entries` (additiv, keine Migration pro neuer Variable). Typsichere Einzelspalten nur für Größen, die wirklich indiziert/gefiltert werden.
+- **Bekannte Felder in `captureMeta`:** `durationMs` (Flow-Start → Speichern), `firstInputLatencyMs` (Whisky sichtbar → erstes Wort/Slider), `revisionCount` (Wert-Korrekturen vor Speichern), `entryModeUsed` (Stimme/Text tatsächlich genutzt), `cooperTurns` (Gesprächstiefe), `cooperMode` (schnell/neugierig/rabbithole), `flightPosition` (wievielter Dram des Abends). Liste wächst — das `[key: string]: unknown` hält das Feld offen.
+- **Erlaubnis-Grenze:** `captureMeta` erfasst ausschließlich das eigene Verhalten des Nutzers an der eigenen Verkostung (Interaktions-Metadaten, kein Audio Dritter) — DSGVO-konform bei transparentem Datenschutzhinweis. Die Grenze ist exakt das §201-StGB-Thema: nichts heimlich AUFNEHMEN. Dauer/Latenz/Turns/Modus sind keine Aufnahme und damit unbedenklich.
+- Die eigentliche Korrelations-/Analyse-Engine wird bewusst SPÄTER gebaut (wenn genügend Rohdaten vorliegen). Diese Charta sichert nur, dass die Rohdaten bis dahin lückenlos anfallen.
+
 ## Overview
 CaskSense is a web application designed to facilitate collaborative whisky tastings. It enables users to create events, manage participants, and conduct structured whisky evaluations with features like tasting progression, multi-act reveals with analytics, and personalized tools such as a whisky journal. The project aims to establish a leading platform for structured whisky tasting, fostering a global community and providing advanced tools for whisky enthusiasts. Key capabilities include comprehensive whisky management, personalized analytics, and AI-powered integrations.
 

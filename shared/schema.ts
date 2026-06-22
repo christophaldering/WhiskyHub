@@ -473,6 +473,16 @@ export const ratings = pgTable("ratings", {
   flavorTags: text("flavor_tags").array().default([]),
   rawImpression: text("raw_impression"),
   tastingNarrative: text("tasting_narrative"),
+  captureMeta: jsonb("capture_meta").$type<{
+    durationMs?: number;
+    firstInputLatencyMs?: number;
+    revisionCount?: number;
+    entryModeUsed?: string;
+    cooperTurns?: number;
+    cooperMode?: string;
+    flightPosition?: number;
+    [key: string]: unknown;
+  }>(),
   guessAbv: real("guess_abv"),
   guessAge: text("guess_age"),
   normalizedScore: real("normalized_score"),
@@ -552,6 +562,16 @@ export const journalEntries = pgTable("journal_entries", {
   voiceMemoUrl: text("voice_memo_url"),
   voiceMemoTranscript: text("voice_memo_transcript"),
   voiceMemoDuration: integer("voice_memo_duration"),
+  captureMeta: jsonb("capture_meta").$type<{
+    durationMs?: number;
+    firstInputLatencyMs?: number;
+    revisionCount?: number;
+    entryModeUsed?: string;
+    cooperTurns?: number;
+    cooperMode?: string;
+    flightPosition?: number;
+    [key: string]: unknown;
+  }>(),
   status: text("status").default("final").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
