@@ -65,6 +65,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
   const { t } = useTranslation();
   const [location, navigate] = useLocation();
   const [session, setSession] = useState(getSession());
+  const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
   const [email, setEmail] = useState("");
   const [pin, setPin] = useState("");
   const [error, setErrorRaw] = useState("");
@@ -149,6 +150,21 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
     window.addEventListener("session-change", refreshSession);
     return () => window.removeEventListener("session-change", refreshSession);
   }, [refreshSession]);
+
+  useEffect(() => {
+    const pid = session.pid;
+    if (!open || !pid) { setEmailVerified(null); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/participants/${pid}/verification-status`, { headers: { "x-participant-id": pid } });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setEmailVerified(!!data.emailVerified);
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, [open, session.pid]);
 
   if (!open) return null;
 
@@ -832,12 +848,15 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         suffix={<span style={{ fontSize: 12, color: tv.muted, fontWeight: 600 }}>{i18n.language.toUpperCase()}</span>}
         testId="m2-profile-language"
       />
-      <MenuButton theme={tv}
-        icon={<Mail style={{ width: 18, height: 18, color: tv.accent }} />}
-        label={t("m2.profile.verifyEmail", "Verify Email")}
-        onClick={() => { setView("verify-email"); setError(""); }}
-        testId="m2-profile-verify-email"
-      />
+      <div style={{ height: 1, background: tv.border, margin: "8px 0" }} />
+      {emailVerified === false && (
+        <MenuButton theme={tv}
+          icon={<Mail style={{ width: 18, height: 18, color: tv.accent }} />}
+          label={t("m2.profile.verifyEmail", "Verify Email")}
+          onClick={() => { setView("verify-email"); setError(""); }}
+          testId="m2-profile-verify-email"
+        />
+      )}
       <MenuButton theme={tv}
         icon={<Download style={{ width: 18, height: 18, color: tv.accent }} />}
         label={t("m2.profile.dataExport", "Data & Export")}
