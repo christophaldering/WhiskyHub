@@ -1,0 +1,54 @@
+Aufgabe: Cooper-Adaptivität — „Automatisch" als neuer Standard-Ton, feste Ebenen bleiben Override.
+
+Ziel: Wenn der Nutzer keine feste Ebene gewählt hat (cooperLevel = null), passt Cooper seinen Ton an die Sprache des Tasters an, statt wie bisher auf „Connoisseur" zu fallen. Drei Teile: (A) Voice-Pfad bekommt eine adaptive Instruktion, (B) Text-Pfad bekommt eine adaptive Register-Zeile, (C) Einstellungen bekommen die Option „Automatisch" als Default. Explizit gewählte Ebenen (beginner/expert/connoisseur) überschreiben weiterhin.
+
+SICHERHEITSREGELN: KEINE Commits, KEIN Push, KEIN drizzle-kit, KEINE Schema-/Migrationsänderung (cooper_level existiert bereits, ist nullable). Reiner Code-/i18n-Change.
+
+Schritt 0 — Diagnose (NUR LESEN, dann auf mein OK warten):
+1. git tag pre-cooper-adaptive-2026-06-23 setzen.
+2. server/routes.ts Z. 5607–5613 zeigen (die drei Instructions + Selektor).
+3. server/routes.ts: die turnSystem-Vorlage im converse-Endpoint zeigen (um Z. 5774) — bestätige die Phrase "du schärfst die Wahrnehmung des Tasters, du urteilst nicht."
+4. server/routes.ts Z. 7088–7096 zeigen — bestätige, dass PATCH cooperLevel = null akzeptiert (auf null setzt).
+5. client/src/labs/pages/LabsTasteCooper.tsx Z. 12–13, 30–39, 62–67, 103–106 zeigen.
+
+Plan (erst nach OK):
+
+A) server/routes.ts — Voice-Pfad adaptiv.
+A1) Direkt vor der Zeile "const cooperLevel = ..." (nach beginnerInstructions) eine neue Konstante einfügen:
+      const adaptiveInstructions = "Du bist Cooper — benannt nach dem Küfer, der die Fässer baut, in denen Whisky reift. Kein abgehobener Kritiker, sondern ein Handwerker, der Holz, Zeit und Geduld kennt, und ein aufmerksamer Gesprächspartner.\n\nEbene: Automatisch. Du weißt noch nicht, mit wem du es zu tun hast — beginne neutral, ruhig und aufmerksam. Höre auf die Sprache des Tasters und passe dein Register laufend an: Benutzt er sicher Verkoster-Vokabular und differenziert, begegne ihm als Kenner — knapp, präzise, auf Augenhöhe, ohne Grundbegriffe zu erklären und ohne Ermutigung. Wirkt er unsicher, sucht nach Worten oder spricht alltagssprachlich, werde wärmer und geduldiger, erkläre einen Fachbegriff beiläufig in einem Halbsatz und nimm ihm die Angst, etwas 'falsch' zu sagen — ohne ihn zu bevormunden. Sage NIE laut, auf welcher Ebene du ihn einschätzt, und etikettiere ihn nicht; pass einzig deinen Ton an. Im Zweifel bleibst du zurückhaltend und neutral.\n\nDein Grundmodus ist Zuhören, nicht Reden. Erzähle NIE nach, was der Taster gesagt hat — weder wörtlich noch mit anderen Worten; kein Spiegeln, kein 'du sagst also'. Wenn du sprichst, dann knapp und in deinen eigenen Worten: hebe EINEN Punkt heraus oder stell eine einzige fokussierte Frage. Erkläre nie das Offensichtliche.\n\nDu dirigierst den Ablauf NICHT. Wann der Taster riecht, schnuppert, die Flasche ansieht oder den ersten Schluck nimmt — und ob überhaupt —, bestimmt allein er. Fordere ihn NIEMALS zu einer Handlung auf und gib nie den nächsten Schritt vor. Lass Pausen stehen; folge seinem Tempo, du setzt es nicht.\n\nStelle keine Aroma-Erwartung in den Raum und verrate nichts über die Flasche. Deine Beobachtungen beziehen sich auf den Taster, seine Worte und das Verkosten — nie auf den konkreten Whisky. Der erste Eindruck muss unverfälscht von ihm kommen; du schärfst seine Worte, du prägst sie nicht.\n\nSprich Deutsch, knapp, ruhig, gesprochen. Sobald zu einer Wahrnehmungs-Ecke etwas gesagt oder präzisiert wird, rufe das Tool update_ledger mit dem aktuellen Stand auf; die Ecke Affekt/Wertung soll vor einem Abschluss berührt sein. Wenn du eröffnest, begrüße kurz und warm und lade offen ein, frei zu erzählen, was auffällt — frage NICHT nach einer bestimmten Wahrnehmung oder Dimension.";
+A2) Selektor ersetzen.
+ALT:
+      const cooperLevel = ((auth.participant as any).cooperLevel === "beginner") ? "beginner" : ((auth.participant as any).cooperLevel === "expert") ? "expert" : "connoisseur";
+      const instructions = cooperLevel === "beginner" ? beginnerInstructions : cooperLevel === "expert" ? expertInstructions : connoisseurInstructions;
+NEU:
+      const rawLevel = (auth.participant as any).cooperLevel;
+      const cooperLevel = rawLevel === "beginner" ? "beginner" : rawLevel === "expert" ? "expert" : rawLevel === "connoisseur" ? "connoisseur" : "adaptive";
+      const instructions = cooperLevel === "beginner" ? beginnerInstructions : cooperLevel === "expert" ? expertInstructions : cooperLevel === "connoisseur" ? connoisseurInstructions : adaptiveInstructions;
+
+B) server/routes.ts — Text-Pfad adaptive Register-Zeile.
+Im turnSystem-Template direkt nach "du schärfst die Wahrnehmung des Tasters, du urteilst nicht." diesen Satz einfügen:
+ Passe dein Register an die Sprache des Tasters an: Benutzt er sicher Fachvokabular, begegne ihm als Kenner — knapp und präzise, ohne Grundbegriffe; wirkt er unsicher oder alltagssprachlich, sei wärmer und erkläre Begriffe beiläufig, ohne zu bevormunden. Sage nie laut, wie du ihn einschätzt; pass nur den Ton an. Im Zweifel zurückhaltend und neutral.
+(Nur diesen Satz einfügen, Rest des turnSystem unverändert.)
+
+C) client/src/labs/pages/LabsTasteCooper.tsx — Option „Automatisch" als Default.
+C1) Typ (Z.13): type CooperLevel = "auto" | "beginner" | "expert" | "connoisseur";
+C2) State-Default (Z.31): useState<CooperLevel>("auto")
+C3) Lade-Mapping (Z.39): setLevel(lv === "beginner" || lv === "expert" || lv === "connoisseur" ? lv : "auto");
+C4) levelMutation (Z.63): mutationFn: (lvl: CooperLevel) => participantUpdateApi.update(pid!, { cooperLevel: lvl === "auto" ? null : lvl }),
+C5) levelOptions (Z.103) — als ERSTEN Eintrag einfügen:
+      { value: "auto", label: t("v2.cooperPrefs.levelAuto", "Automatisch"), desc: t("v2.cooperPrefs.levelAutoDesc", "Cooper spürt an deiner Sprache, wie er mit dir reden soll — wärmer bei Unsicheren, knapper bei Kennern.") },
+
+D) client/src/lib/i18n.ts — EN-Pendants neben den vorhandenen cooperPrefs.level*-Keys im en-Block ergänzen:
+          levelAuto: "Automatic",
+          levelAutoDesc: "Cooper senses from your language how to speak with you — warmer for the unsure, sparser for connoisseurs.",
+(Falls die anderen levelBeginner/Expert/Connoisseur-Keys im en-Block liegen, dort daneben; sonst genügt der DE-Inline-Default.)
+
+Verifikation (grep zeigen):
+1. grep -n "adaptiveInstructions\|rawLevel\|=== \"adaptive\"" server/routes.ts → Instruktion + Selektor.
+2. grep -n "Passe dein Register" server/routes.ts → 1 Treffer (Text-Pfad).
+3. grep -n "\"auto\"\|levelAuto\|cooperLevel: lvl === \"auto\"" client/src/labs/pages/LabsTasteCooper.tsx → Typ/Default/Mapping/Mutation/Option.
+4. Typecheck sauber.
+5. Erklär kurz: cooperLevel null/auto → adaptiv (Voice+Text); explizit gesetzt → fester Ton (Override).
+6. git log --oneline -3 + git status → NICHTS committet/gepusht; Tag pre-cooper-adaptive-2026-06-23 existiert. Bestätige: "Keine Commits, kein Push, keine Schema-Änderung."
+
+Rollback: git reset --hard pre-cooper-adaptive-2026-06-23.
