@@ -304,7 +304,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
       <div style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.xs }}>
         <span style={{ flexShrink: 0, display: "flex" }}><CooperBarrel size={30} glow={phase === "voice" && voice.status === "connected"} /></span>
         <div style={{ fontFamily: FONT.display, fontSize: 22, color: LABS_THEME.text }}>
-          {t("v2.impressionTitle", "Dein erster Eindruck")}
+          {t("v2.impressionTitle", "Was nimmst du wahr?")}
         </div>
       </div>
 
@@ -312,9 +312,6 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
         <>
           {voice.status !== "connected" ? (
             <>
-              <div style={{ fontFamily: FONT.serif, fontSize: 16, color: LABS_THEME.muted, marginBottom: SP.md, lineHeight: 1.45 }}>
-                {t("v2.voiceIntro", "Sprich frei, was dir begegnet — in deinen Worten, ohne Eile. Cooper hört zu.")}
-              </div>
               <ImpressionHowItWorks />
               {voice.status === "error" && (
                 <div style={{ fontFamily: FONT.body, fontSize: 14, color: LABS_THEME.amber, marginBottom: SP.sm, lineHeight: 1.4 }}>

@@ -1,3 +1,27 @@
+REPLIT PROMPT 2 — Cooper-Screen: Überschrift + Merge (direkt ausführen)
+
+Direkt ausführen, keine Rückfrage. NUR diese 3 Dateien:
+  client/src/labs/components/rating/ImpressionCapture.tsx
+  client/src/labs/components/rating/ImpressionHowItWorks.tsx
+  client/src/lib/i18n.ts
+Kein commit/push, kein drizzle-kit, keine Notizdatei.
+
+== A) Überschrift ==
+A1. In ImpressionCapture.tsx den Fallback ändern:
+    {t("v2.impressionTitle", "Dein erster Eindruck")}   ->   {t("v2.impressionTitle", "Was nimmst du wahr?")}
+A2. In i18n.ts den Key v2.impressionTitle in BEIDEN Blöcken finden und setzen:
+    DE: "Was nimmst du wahr?"    EN: "What do you notice?"
+
+== B) Doppelte Unterzeile streichen (Voice-Phase) ==
+In ImpressionCapture.tsx diesen Block ENTFERNEN:
+              <div style={{ fontFamily: FONT.serif, fontSize: 16, color: LABS_THEME.muted, marginBottom: SP.md, lineHeight: 1.45 }}>
+                {t("v2.voiceIntro", "Sprich frei, was dir begegnet — in deinen Worten, ohne Eile. Cooper hört zu.")}
+              </div>
+(<ImpressionHowItWorks /> bleibt direkt danach stehen.)
+
+== C) Erklär-Block immer leise/kompakt (kein Aufklapper mehr) ==
+ImpressionHowItWorks.tsx KOMPLETT ersetzen durch:
+----------
 import { useTranslation } from "react-i18next";
 import { MessageCircle, Ear, CircleCheck } from "lucide-react";
 import { FONT, SP, LABS_THEME } from "./theme";
@@ -33,3 +57,9 @@ export default function ImpressionHowItWorks() {
     </ul>
   );
 }
+----------
+
+== D) optional ==
+In i18n.ts bei v2.impressionHint das führende "Was nimmst du wahr? " streichen (steht jetzt doppelt mit der Überschrift). Wenn unklar, weglassen.
+
+Danach Diff der 3 Dateien zeigen. NICHT committen.

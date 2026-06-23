@@ -936,7 +936,7 @@ const resources = {
           impressionBullet3: "Your impression leads — nothing is put in your mouth.",
           impressionBullet4: "You identify the whisky only afterwards.",
           impressionHowLink: "How does this work?",
-          impressionTitle: "Your first impression",
+          impressionTitle: "What do you notice?",
           voiceIntro: "Speak freely about what you notice — in your own words, no rush. Cooper just listens.",
           voiceStart: "Talk to Cooper",
           voiceLockedHint: "Talking to Cooper comes with a free account.",
