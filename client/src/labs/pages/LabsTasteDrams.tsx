@@ -9,6 +9,7 @@ import type { Participant } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
+import { downloadDramNotePdf } from "@/labs/utils/dramNotePdf";
 import type { JournalEntry } from "@shared/schema";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
 import {
@@ -885,6 +886,7 @@ export default function LabsTasteDrams() {
             saving={narrativeMutation.isPending}
             readOnly={selectedEntry.source === "tasting"}
             onSave={(text) => narrativeMutation.mutate({ id: selectedEntry.id, data: { tastingNarrative: text } })}
+            onDownload={() => downloadDramNotePdf({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore } })}
           />
 
           <FriendsAlsoRated
@@ -1539,7 +1541,7 @@ function MetaBadge({ label, value }: { label: string; value: string }) {
   );
 }
 
-function TastingNarrativeSection({ value, onSave, saving, readOnly }: { value?: string | null; onSave: (text: string) => void; saving?: boolean; readOnly?: boolean }) {
+function TastingNarrativeSection({ value, onSave, saving, readOnly, onDownload }: { value?: string | null; onSave: (text: string) => void; saving?: boolean; readOnly?: boolean; onDownload?: () => void }) {
   const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value || "");
@@ -1552,11 +1554,18 @@ function TastingNarrativeSection({ value, onSave, saving, readOnly }: { value?: 
         <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-accent)" }}>
           {t("drams.tastingNarrative", "Meine Verkostungsnotiz")}
         </div>
-        {!editing && !readOnly && (
-          <button onClick={() => { setDraft(value || ""); setEditing(true); }} style={{ fontSize: 12, color: "var(--labs-text-muted)", background: "transparent", border: "none", cursor: "pointer", padding: "4px 6px" }}>
-            {t("common.edit", "Bearbeiten")}
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          {has && onDownload && (
+            <button onClick={onDownload} style={{ fontSize: 12, color: "var(--labs-text-muted)", background: "transparent", border: "none", cursor: "pointer", padding: "4px 6px" }}>
+              {t("drams.downloadNote", "Herunterladen")}
+            </button>
+          )}
+          {!editing && !readOnly && (
+            <button onClick={() => { setDraft(value || ""); setEditing(true); }} style={{ fontSize: 12, color: "var(--labs-text-muted)", background: "transparent", border: "none", cursor: "pointer", padding: "4px 6px" }}>
+              {t("common.edit", "Bearbeiten")}
+            </button>
+          )}
+        </div>
       </div>
       {!editing ? (
         <div className="labs-serif" style={{ fontSize: 16, color: "var(--labs-text-secondary)", lineHeight: 1.65, whiteSpace: "pre-wrap" }}>{value}</div>
