@@ -6,6 +6,7 @@ export type DramNoteData = {
   dateISO?: string | null;
   narrative: string;
   scores?: { nose?: number | null; palate?: number | null; finish?: number | null; overall?: number | null };
+  photoDataUrl?: string | null;
 };
 
 const CHARCOAL: [number, number, number] = [11, 9, 6];
@@ -62,6 +63,20 @@ export async function downloadDramNotePdf(data: DramNoteData): Promise<void> {
     if (parts.length) { doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(AMBER[0], AMBER[1], AMBER[2]); doc.text(parts.join("   \u00b7   "), margin, y); y += 8; }
   }
   y += 2;
+
+  if (data.photoDataUrl) {
+    try {
+      const props = doc.getImageProperties(data.photoDataUrl);
+      const maxW = contentW; const maxH = 70;
+      let w = maxW; let h = (props.height / props.width) * w;
+      if (h > maxH) { h = maxH; w = (props.width / props.height) * h; }
+      ensure(h + 6);
+      const x = margin + (contentW - w) / 2;
+      const fmt = String(data.photoDataUrl).startsWith("data:image/png") ? "PNG" : "JPEG";
+      doc.addImage(data.photoDataUrl, fmt, x, y, w, h, undefined, "FAST");
+      y += h + 6;
+    } catch { /* Foto best-effort: bei Fehler ohne Foto weiter */ }
+  }
 
   for (const b of parseSections(data.narrative || "")) {
     if (b.header) { ensure(10); doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(GOLD[0], GOLD[1], GOLD[2]); doc.text(b.header, margin, y); y += 6; }

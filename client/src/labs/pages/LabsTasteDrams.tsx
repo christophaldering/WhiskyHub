@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useSession } from "@/lib/session";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
-import { journalApi, tastingHistoryApi, participantApi, participantUpdateApi } from "@/lib/api";
+import { journalApi, tastingHistoryApi, participantApi, participantUpdateApi, pidHeaders } from "@/lib/api";
 import type { Participant } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
@@ -47,6 +47,25 @@ const ORIGIN_I18N: Record<OriginFilter, string> = { all: "drams.tabAll", solo: "
 const STATUS_KEYS: StatusFilter[] = ["all", "open", "done"];
 const STATUS_I18N: Record<StatusFilter, string> = { all: "drams.statusAll", open: "drams.statusOpen", done: "drams.statusDone" };
 const STATUS_FALLBACK: Record<StatusFilter, string> = { all: "Alle", open: "Offen", done: "Abgeschlossen" };
+
+async function fetchFirstPhotoDataUrl(participantId: string, entryId: string): Promise<string | null> {
+  try {
+    const res = await fetch(`/api/journal/${participantId}/${entryId}/photos`, { headers: { ...pidHeaders() } });
+    if (!res.ok) return null;
+    const arr = await res.json();
+    const first = Array.isArray(arr) && arr.length ? arr[0]?.photoUrl : null;
+    if (!first) return null;
+    const imgRes = await fetch(first);
+    if (!imgRes.ok) return null;
+    const blob = await imgRes.blob();
+    return await new Promise<string | null>((resolve) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(typeof fr.result === "string" ? fr.result : null);
+      fr.onerror = () => resolve(null);
+      fr.readAsDataURL(blob);
+    });
+  } catch { return null; }
+}
 
 function isJsonScoreString(value: string): boolean {
   try {
@@ -886,7 +905,10 @@ export default function LabsTasteDrams() {
             saving={narrativeMutation.isPending}
             readOnly={selectedEntry.source === "tasting"}
             onSave={(text) => narrativeMutation.mutate({ id: selectedEntry.id, data: { tastingNarrative: text } })}
-            onDownload={() => downloadDramNotePdf({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore } })}
+            onDownload={async () => {
+              const photoDataUrl = await fetchFirstPhotoDataUrl(session.pid!, (selectedEntry as any).id);
+              await downloadDramNotePdf({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl });
+            }}
           />
 
           <FriendsAlsoRated
