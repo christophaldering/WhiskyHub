@@ -10,6 +10,7 @@ import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
 
 type CooperEntryMode = "auto" | "voice" | "type";
+type CooperLevel = "beginner" | "expert" | "connoisseur";
 
 export default function LabsTasteCooper() {
   const { t } = useTranslation();
@@ -26,11 +27,14 @@ export default function LabsTasteCooper() {
   });
 
   const [selected, setSelected] = useState<CooperEntryMode>("auto");
+  const [level, setLevel] = useState<CooperLevel>("connoisseur");
 
   useEffect(() => {
     if (participant) {
       const m = (participant as any).cooperEntryMode;
       setSelected(m === "voice" || m === "type" ? m : "auto");
+      const lv = (participant as any).cooperLevel;
+      setLevel(lv === "beginner" || lv === "expert" ? lv : "connoisseur");
     }
   }, [participant]);
 
@@ -50,6 +54,13 @@ export default function LabsTasteCooper() {
     setSelected(mode);
     if (pid) mutation.mutate(mode);
   };
+
+  const levelMutation = useMutation({
+    mutationFn: (lvl: CooperLevel) => participantUpdateApi.update(pid!, { cooperLevel: lvl }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["participant", pid] }); toast({ title: t("v2.cooperPrefs.saved", "Gespeichert") }); },
+    onError: () => { toast({ title: t("v2.cooperPrefs.saveError", "Konnte nicht gespeichert werden"), variant: "destructive" }); },
+  });
+  const pickLevel = (lvl: CooperLevel) => { setLevel(lvl); if (pid) levelMutation.mutate(lvl); };
 
   if (!currentParticipant) {
     return (
@@ -76,6 +87,12 @@ export default function LabsTasteCooper() {
     { value: "auto", icon: Wand2, label: t("v2.cooperPrefs.autoLabel", "Nach Situation"), desc: t("v2.cooperPrefs.autoDesc", "Bei Solo und einzelnen Drams beginnt Cooper im Gespr\u00e4ch, im Gruppen-Tasting beim Tippen.") },
     { value: "voice", icon: Mic, label: t("v2.cooperPrefs.voiceLabel", "Immer Stimme"), desc: t("v2.cooperPrefs.voiceDesc", "Cooper beginnt \u00fcberall im Sprach-Gespr\u00e4ch.") },
     { value: "type", icon: MessageSquare, label: t("v2.cooperPrefs.typeLabel", "Immer Tippen"), desc: t("v2.cooperPrefs.typeDesc", "Cooper beginnt \u00fcberall im Text-Dialog.") },
+  ];
+
+  const levelOptions: { value: CooperLevel; label: string; desc: string }[] = [
+    { value: "beginner", label: t("v2.cooperPrefs.levelBeginner", "Beginner"), desc: t("v2.cooperPrefs.levelBeginnerDesc", "Einfache Sprache, keine Fachbegriffe nötig — Cooper hilft behutsam beim Schärfen.") },
+    { value: "expert", label: t("v2.cooperPrefs.levelExpert", "Expert"), desc: t("v2.cooperPrefs.levelExpertDesc", "Setzt Verkoster-Vokabular voraus, normale Tiefe, auf Augenhöhe.") },
+    { value: "connoisseur", label: t("v2.cooperPrefs.levelConnoisseur", "Connoisseur"), desc: t("v2.cooperPrefs.levelConnoisseurDesc", "Maximale Zurückhaltung, feinste Nuancen, keine Ermutigung.") },
   ];
 
   return (
@@ -115,6 +132,27 @@ export default function LabsTasteCooper() {
           );
         })}
         <p className="text-xs" style={{ color: "var(--labs-text-muted)", marginTop: 2 }}>{t("v2.cooperPrefs.hint", "Im Moment selbst kannst du jederzeit zwischen Stimme und Tippen wechseln.")}</p>
+      </div>
+
+      <div className="labs-card p-5 flex flex-col gap-3">
+        <p className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{t("v2.cooperPrefs.levelTitle", "Coopers Ebene")}</p>
+        {levelOptions.map((opt) => {
+          const active = level === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => pickLevel(opt.value)}
+              data-testid={`cooper-level-${opt.value}`}
+              style={{ display: "flex", alignItems: "flex-start", gap: 12, textAlign: "left", width: "100%", padding: "14px 16px", borderRadius: 12, cursor: "pointer", background: active ? "var(--labs-gold-soft, rgba(212,168,71,0.12))" : "var(--labs-surface)", border: active ? "2px solid var(--labs-gold, #D4A847)" : "1px solid var(--labs-border)", transition: "border-color 150ms ease, background 150ms ease" }}
+            >
+              <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: active ? "var(--labs-gold, #D4A847)" : "var(--labs-text)" }}>{opt.label}</span>
+                <span style={{ fontSize: 12, color: "var(--labs-text-muted)", lineHeight: 1.4 }}>{opt.desc}</span>
+              </span>
+            </button>
+          );
+        })}
+        <p className="text-xs" style={{ color: "var(--labs-text-muted)", marginTop: 2 }}>{t("v2.cooperPrefs.levelHint", "Ändert nur, wie Cooper spricht — nie, was er über die Flasche weiß.")}</p>
       </div>
     </div>
   );

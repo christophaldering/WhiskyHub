@@ -7051,6 +7051,16 @@ Aktualisiere das Ledger EHRLICH anhand des Gesprächs: untouched->touched sobald
           return res.status(400).json({ message: "Invalid cooper entry mode. Must be auto, voice, type or null." });
         }
       }
+      if (req.body.cooperLevel !== undefined) {
+        const c = req.body.cooperLevel;
+        if (c === null) {
+          updates.cooperLevel = null;
+        } else if (["beginner", "expert", "connoisseur"].includes(String(c))) {
+          updates.cooperLevel = String(c);
+        } else {
+          return res.status(400).json({ message: "Invalid cooper level. Must be beginner, expert, connoisseur or null." });
+        }
+      }
 
       if (req.body.pin !== undefined) {
         if (!req.body.pin || req.body.pin.length < 4 || req.body.pin.length > 64) {
