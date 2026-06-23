@@ -51,7 +51,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
   const voice = useCooperVoice();
 
   const _pid = participantId || getParticipantId() || "";
-  const { data: _me } = useQuery<{ id: string; email?: string | null }>({
+  const { data: _me } = useQuery<{ id: string; email?: string | null; cooperDepth?: string | null }>({
     queryKey: ["impression-voice-me", _pid],
     queryFn: () => participantApi.get(_pid),
     enabled: !!_pid,
@@ -66,7 +66,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
-  const [intensity, setIntensity] = useState<Intensity>("neugierig");
+  const intensity: Intensity = ((_me as any)?.cooperDepth === "schnell" || (_me as any)?.cooperDepth === "rabbithole") ? (_me as any).cooperDepth : "neugierig";
   const [transcript, setTranscript] = useState<ConverseTurn[]>([]);
   const [ledger, setLedger] = useState<Ledger>(EMPTY_LEDGER);
   const [chips, setChips] = useState<string[]>([]);
@@ -429,27 +429,6 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
             rows={4}
             style={{ width: "100%", boxSizing: "border-box", background: LABS_THEME.inputBg, border: `1px solid ${LABS_THEME.border}`, borderRadius: RADIUS.md, color: LABS_THEME.text, fontFamily: FONT.body, fontSize: 16, lineHeight: 1.5, padding: SP.md, resize: "vertical", minHeight: 96, outline: "none" }}
           />
-
-          <div style={{ marginTop: SP.md }}>
-            <div style={{ fontFamily: FONT.body, fontSize: 12, color: LABS_THEME.faint, marginBottom: SP.xs }}>
-              {t("v2.impressionDepth", "Wie tief soll Cooper nachfragen?")}
-            </div>
-            <div style={{ display: "flex", gap: SP.xs }}>
-              {INTENSITIES.map((opt) => {
-                const active = intensity === opt.key;
-                return (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    onClick={() => setIntensity(opt.key)}
-                    style={{ flex: 1, minHeight: 36, borderRadius: RADIUS.md, border: `1px solid ${active ? LABS_THEME.gold : LABS_THEME.border}`, background: active ? "rgba(212,168,71,0.14)" : "transparent", color: active ? LABS_THEME.gold : LABS_THEME.muted, fontFamily: FONT.body, fontSize: 13, cursor: "pointer", transition: "all 180ms ease" }}
-                  >
-                    {t(`v2.impressionDepth_${opt.key}`, opt.label)}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
           {error && (
             <div style={{ fontFamily: FONT.body, fontSize: 14, color: LABS_THEME.amber, marginTop: SP.sm, lineHeight: 1.4 }}>

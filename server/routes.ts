@@ -7067,6 +7067,16 @@ Aktualisiere das Ledger EHRLICH anhand des Gesprächs: untouched->touched sobald
           return res.status(400).json({ message: "Invalid cooper level. Must be beginner, expert, connoisseur or null." });
         }
       }
+      if (req.body.cooperDepth !== undefined) {
+        const c = req.body.cooperDepth;
+        if (c === null) {
+          updates.cooperDepth = null;
+        } else if (["schnell", "neugierig", "rabbithole"].includes(String(c))) {
+          updates.cooperDepth = String(c);
+        } else {
+          return res.status(400).json({ message: "Invalid cooper depth. Must be schnell, neugierig, rabbithole or null." });
+        }
+      }
 
       if (req.body.pin !== undefined) {
         if (!req.body.pin || req.body.pin.length < 4 || req.body.pin.length > 64) {
