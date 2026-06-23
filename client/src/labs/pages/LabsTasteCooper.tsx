@@ -10,7 +10,7 @@ import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
 
 type CooperEntryMode = "auto" | "voice" | "type";
-type CooperLevel = "beginner" | "expert" | "connoisseur";
+type CooperLevel = "auto" | "beginner" | "expert" | "connoisseur";
 type CooperDepth = "schnell" | "neugierig" | "rabbithole";
 
 export default function LabsTasteCooper() {
@@ -28,7 +28,7 @@ export default function LabsTasteCooper() {
   });
 
   const [selected, setSelected] = useState<CooperEntryMode>("auto");
-  const [level, setLevel] = useState<CooperLevel>("connoisseur");
+  const [level, setLevel] = useState<CooperLevel>("auto");
   const [depth, setDepth] = useState<CooperDepth>("neugierig");
 
   useEffect(() => {
@@ -36,7 +36,7 @@ export default function LabsTasteCooper() {
       const m = (participant as any).cooperEntryMode;
       setSelected(m === "voice" || m === "type" ? m : "auto");
       const lv = (participant as any).cooperLevel;
-      setLevel(lv === "beginner" || lv === "expert" ? lv : "connoisseur");
+      setLevel(lv === "beginner" || lv === "expert" || lv === "connoisseur" ? lv : "auto");
       const dp = (participant as any).cooperDepth;
       setDepth(dp === "schnell" || dp === "rabbithole" ? dp : "neugierig");
     }
@@ -60,7 +60,7 @@ export default function LabsTasteCooper() {
   };
 
   const levelMutation = useMutation({
-    mutationFn: (lvl: CooperLevel) => participantUpdateApi.update(pid!, { cooperLevel: lvl }),
+    mutationFn: (lvl: CooperLevel) => participantUpdateApi.update(pid!, { cooperLevel: lvl === "auto" ? null : lvl }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["participant", pid] }); toast({ title: t("v2.cooperPrefs.saved", "Gespeichert") }); },
     onError: () => { toast({ title: t("v2.cooperPrefs.saveError", "Konnte nicht gespeichert werden"), variant: "destructive" }); },
   });
@@ -101,6 +101,7 @@ export default function LabsTasteCooper() {
   ];
 
   const levelOptions: { value: CooperLevel; label: string; desc: string }[] = [
+    { value: "auto", label: t("v2.cooperPrefs.levelAuto", "Automatisch"), desc: t("v2.cooperPrefs.levelAutoDesc", "Cooper spürt an deiner Sprache, wie er mit dir reden soll — wärmer bei Unsicheren, knapper bei Kennern.") },
     { value: "beginner", label: t("v2.cooperPrefs.levelBeginner", "Beginner"), desc: t("v2.cooperPrefs.levelBeginnerDesc", "Einfache Sprache, keine Fachbegriffe nötig — Cooper hilft behutsam beim Schärfen.") },
     { value: "expert", label: t("v2.cooperPrefs.levelExpert", "Expert"), desc: t("v2.cooperPrefs.levelExpertDesc", "Setzt Verkoster-Vokabular voraus, normale Tiefe, auf Augenhöhe.") },
     { value: "connoisseur", label: t("v2.cooperPrefs.levelConnoisseur", "Connoisseur"), desc: t("v2.cooperPrefs.levelConnoisseurDesc", "Maximale Zurückhaltung, feinste Nuancen, keine Ermutigung.") },
