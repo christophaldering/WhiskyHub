@@ -1,5 +1,6 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { useSession } from "@/lib/session";
+import { pidHeaders } from "@/lib/api";
 import { FONT, SP, RADIUS, TOUCH_MIN, LABS_THEME } from "@/labs/components/rating/theme";
 import { useCooperVoice, VOICES, LEDGER_CORNERS } from "@/labs/components/rating/useCooperVoice";
 import CooperGlimmer from "@/labs/components/rating/CooperGlimmer";
@@ -8,8 +9,39 @@ const CORNER_LABELS: Record<(typeof LEDGER_CORNERS)[number], string> = { nose: "
 
 export default function LabsVoiceProbe() {
   const session = useSession();
-  const { status, statusText, model, voice, setVoice, mode, setMode, ledger, transcript, busy, connect, disconnect, levelRef, speaking } = useCooperVoice();
+  const { status, statusText, model, voice, setVoice, mode, setMode, ledger, transcript, busy, connect, disconnect, levelRef, speaking } = useCooperVoice({ probe: true });
+  const [savedDefault, setSavedDefault] = useState<{ voice: string; mode: string } | null>(null);
+  const [saveMsg, setSaveMsg] = useState("");
+  const [saving, setSaving] = useState(false);
   const transcriptEndRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/cooper-defaults", { headers: { ...pidHeaders() } });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data?.voice) setVoice(data.voice);
+        if (data?.mode) setMode(data.mode);
+        setSavedDefault({ voice: data.voice, mode: data.mode });
+      } catch { /* noop */ }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const saveDefault = async () => {
+    setSaving(true);
+    setSaveMsg("");
+    try {
+      const res = await fetch("/api/admin/cooper-defaults", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ voice, mode }) });
+      if (!res.ok) { setSaveMsg("Fehler beim Speichern."); return; }
+      const data = await res.json();
+      setSavedDefault({ voice: data.voice, mode: data.mode });
+      setSaveMsg("Gespeichert");
+    } catch {
+      setSaveMsg("Fehler beim Speichern.");
+    } finally {
+      setSaving(false);
+    }
+  };
   useEffect(() => { transcriptEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [transcript.length]);
   const transcriptBlocks = transcript.reduce<{ role: "taster" | "mentor"; text: string }[]>((acc, t) => {
     const last = acc[acc.length - 1];
@@ -83,6 +115,29 @@ export default function LabsVoiceProbe() {
               </button>
             );
           })}
+        </div>
+      )}
+
+      {status !== "connected" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: SP.sm }}>
+          <div data-testid="text-current-default" style={{ fontFamily: FONT.body, fontSize: 13, color: LABS_THEME.faint }}>
+            {savedDefault
+              ? `Aktueller globaler Default: ${savedDefault.voice} · ${savedDefault.mode === "tiefsinnig" ? "Tiefsinnig" : "Flüssig"}`
+              : "Aktueller globaler Default: lädt …"}
+          </div>
+          <button
+            data-testid="button-save-default"
+            onClick={saveDefault}
+            disabled={saving}
+            style={{ minHeight: TOUCH_MIN, padding: `0 ${SP.lg}px`, alignSelf: "flex-start", background: "transparent", color: LABS_THEME.gold, border: `1px solid ${LABS_THEME.gold}`, borderRadius: RADIUS.md, fontFamily: FONT.body, fontSize: 15, cursor: saving ? "default" : "pointer", opacity: saving ? 0.5 : 1 }}
+          >
+            {saving ? "Speichert …" : "Als globalen Default speichern"}
+          </button>
+          {saveMsg && (
+            <div data-testid="text-save-msg" style={{ fontFamily: FONT.body, fontSize: 13, color: saveMsg === "Gespeichert" ? LABS_THEME.gold : "#d66" }}>
+              {saveMsg}
+            </div>
+          )}
         </div>
       )}
 

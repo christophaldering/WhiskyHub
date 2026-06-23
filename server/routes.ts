@@ -5631,8 +5631,15 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
         },
       }];
       const VOICES = ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse", "marin", "cedar"];
-      const voice = VOICES.includes(req.body?.voice) ? req.body.voice : "cedar";
-      const mode = ["fluessig", "tiefsinnig"].includes(req.body?.mode) ? req.body.mode : "tiefsinnig";
+      const MODES = ["fluessig", "tiefsinnig"];
+      const isAdminCaller = auth.participant.role === "admin";
+      const isProbe = req.body?.probe === true;
+      const gVoice = await storage.getAppSetting("cooper_default_voice");
+      const gMode = await storage.getAppSetting("cooper_default_mode");
+      const defVoice = (gVoice && VOICES.includes(gVoice)) ? gVoice : "cedar";
+      const defMode = (gMode && MODES.includes(gMode)) ? gMode : "tiefsinnig";
+      const voice = (isProbe && isAdminCaller && VOICES.includes(req.body?.voice)) ? req.body.voice : defVoice;
+      const mode = (isProbe && isAdminCaller && MODES.includes(req.body?.mode)) ? req.body.mode : defMode;
       const candidates = mode === "tiefsinnig" ? ["gpt-realtime-2", "gpt-realtime"] : ["gpt-realtime", "gpt-realtime-2"];
       const silenceMs = mode === "tiefsinnig" ? 1100 : 900;
       let lastErr = "";
@@ -5663,6 +5670,29 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
     } catch (e: any) {
       return res.status(500).json({ message: e?.message || String(e) });
     }
+  });
+
+  app.get("/api/admin/cooper-defaults", async (req: Request, res: Response) => {
+    const auth = await requireAuth(req);
+    if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+    if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+    const gV = await storage.getAppSetting("cooper_default_voice");
+    const gM = await storage.getAppSetting("cooper_default_mode");
+    return res.json({ voice: gV ?? "cedar", mode: gM ?? "tiefsinnig" });
+  });
+
+  app.post("/api/admin/cooper-defaults", async (req: Request, res: Response) => {
+    const auth = await requireAuth(req);
+    if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+    if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+    const VOICES = ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse", "marin", "cedar"];
+    const MODES = ["fluessig", "tiefsinnig"];
+    if (!VOICES.includes(req.body?.voice) || !MODES.includes(req.body?.mode)) {
+      return res.status(400).json({ message: "Invalid voice or mode." });
+    }
+    await storage.setAppSetting("cooper_default_voice", req.body.voice);
+    await storage.setAppSetting("cooper_default_mode", req.body.mode);
+    return res.json({ voice: req.body.voice, mode: req.body.mode });
   });
 
   app.post("/api/impression/converse", async (req: Request, res: Response) => {

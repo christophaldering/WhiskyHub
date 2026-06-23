@@ -11,7 +11,7 @@ export interface Ledger { nose: Corner; palate: Corner; finish: Corner; body: Co
 export const LEDGER_CORNERS = ["nose", "palate", "finish", "body", "intensity", "affect"] as const;
 export const EMPTY_LEDGER: Ledger = { nose: "untouched", palate: "untouched", finish: "untouched", body: "untouched", intensity: "untouched", affect: "untouched", vagueResolved: false };
 
-export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fluessig" | "tiefsinnig" }) {
+export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fluessig" | "tiefsinnig"; probe?: boolean }) {
   const [status, setStatus] = useState<Status>("idle");
   const [statusText, setStatusText] = useState("Bereit.");
   const [speaking, setSpeaking] = useState(false);
@@ -60,7 +60,7 @@ export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fl
     setLedger(EMPTY_LEDGER);
     setTranscript([]);
     try {
-      const tokenRes = await fetch("/api/voice-probe/token", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ voice, mode }) });
+      const tokenRes = await fetch("/api/voice-probe/token", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ voice, mode, probe: opts?.probe === true }) });
       const tokenText = await tokenRes.text();
       if (!tokenRes.ok) { fail(`Token ${tokenRes.status}: ${tokenText.slice(0, 300)}`); return; }
       let tokenData: any = {}; try { tokenData = JSON.parse(tokenText); } catch { /* noop */ }
