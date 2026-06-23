@@ -907,7 +907,7 @@ export default function LabsTasteDrams() {
             onSave={(text) => narrativeMutation.mutate({ id: selectedEntry.id, data: { tastingNarrative: text } })}
             onDownload={async () => {
               const photoDataUrl = await fetchFirstPhotoDataUrl(session.pid!, (selectedEntry as any).id);
-              await downloadDramNotePdf({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl });
+              await downloadDramNotePdf({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, tastingName: (selectedEntry as any).tastingTitle ?? null, tasterName: participantData?.name ?? session.name ?? null, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl });
             }}
           />
 
