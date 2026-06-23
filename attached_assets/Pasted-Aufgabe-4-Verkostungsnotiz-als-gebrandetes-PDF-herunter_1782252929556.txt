@@ -1,0 +1,112 @@
+Aufgabe: #4 — Verkostungsnotiz als gebrandetes PDF herunterladen (CaskSense, Datum, vier Abschnitte).
+
+Ansatz: clientseitig mit jsPDF + bestehendem saveJsPdf-Helfer. Neue Util + ein Download-Knopf in der Notiz-Sektion. KEIN Server, KEINE Schema-Änderung. Foto bewusst NICHT in dieser Stufe.
+
+SICHERHEITSREGELN: KEINE Commits, KEIN Push, KEIN drizzle-kit, KEINE Schema-Änderung.
+
+Schritt 0 — Diagnose (NUR LESEN, dann auf mein OK warten):
+1. git tag pre-dram-note-pdf-2026-06-23 setzen.
+2. client/src/lib/pdf.ts: bestätige Export saveJsPdf(doc, filename).
+3. client/src/labs/pages/LabsTasteDrams.tsx: zeig die Felder von selectedEntry, die wir brauchen — bestätige die EXAKTEN Namen für: Whisky-Name (whiskyName? title?), Datum (createdAt?), Scores (noseScore/tasteScore/finishScore/personalScore?), tastingNarrative. Zeig die Stelle Z. 883 (<TastingNarrativeSection ...>).
+4. jsPDF ist als Dependency vorhanden (grep package.json).
+
+Plan (erst nach OK):
+
+A) NEUE Datei client/src/labs/utils/dramNotePdf.ts:
+import jsPDF from "jspdf";
+import { saveJsPdf } from "@/lib/pdf";
+
+export type DramNoteData = {
+  whiskyName: string;
+  dateISO?: string | null;
+  narrative: string;
+  scores?: { nose?: number | null; palate?: number | null; finish?: number | null; overall?: number | null };
+};
+
+const CHARCOAL: [number, number, number] = [11, 9, 6];
+const GOLD: [number, number, number] = [212, 168, 71];
+const AMBER: [number, number, number] = [196, 122, 58];
+const MUTED: [number, number, number] = [120, 110, 95];
+const SECTIONS = ["Nase", "Gaumen", "Abgang", "Gesamteindruck"];
+
+function fmtDate(iso?: string | null): string {
+  if (!iso) return "";
+  try { return new Date(iso).toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Berlin" }); } catch { return ""; }
+}
+
+function parseSections(text: string): { header: string | null; body: string }[] {
+  const lines = text.split(/\r?\n/);
+  const blocks: { header: string | null; body: string }[] = [];
+  let cur: { header: string | null; body: string } | null = null;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (SECTIONS.includes(line)) { if (cur) blocks.push(cur); cur = { header: line, body: "" }; }
+    else { if (!cur) cur = { header: null, body: "" }; cur.body += (cur.body ? "\n" : "") + raw; }
+  }
+  if (cur) blocks.push(cur);
+  return blocks;
+}
+
+export async function downloadDramNotePdf(data: DramNoteData): Promise<void> {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 20;
+  const contentW = pageW - margin * 2;
+  let y = margin;
+  const ensure = (need: number) => { if (y + need > pageH - margin) { doc.addPage(); y = margin; } };
+
+  doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
+  doc.text("CASKSENSE", margin, y); y += 3;
+  doc.setDrawColor(GOLD[0], GOLD[1], GOLD[2]); doc.setLineWidth(0.6); doc.line(margin, y, margin + 28, y); y += 10;
+
+  doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
+  const titleLines = doc.splitTextToSize(data.whiskyName || "Verkostungsnotiz", contentW);
+  doc.text(titleLines, margin, y); y += titleLines.length * 9 + 1;
+
+  const dateStr = fmtDate(data.dateISO);
+  if (dateStr) { doc.setFont("helvetica", "italic"); doc.setFontSize(10); doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]); doc.text(dateStr, margin, y); y += 7; }
+
+  const s = data.scores;
+  if (s) {
+    const parts: string[] = [];
+    if (s.nose != null) parts.push(`Nase ${s.nose}`);
+    if (s.palate != null) parts.push(`Gaumen ${s.palate}`);
+    if (s.finish != null) parts.push(`Abgang ${s.finish}`);
+    if (s.overall != null) parts.push(`Gesamt ${s.overall}`);
+    if (parts.length) { doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(AMBER[0], AMBER[1], AMBER[2]); doc.text(parts.join("   \u00b7   "), margin, y); y += 8; }
+  }
+  y += 2;
+
+  for (const b of parseSections(data.narrative || "")) {
+    if (b.header) { ensure(10); doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(GOLD[0], GOLD[1], GOLD[2]); doc.text(b.header, margin, y); y += 6; }
+    const body = (b.body || "").trim();
+    if (body) {
+      doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
+      for (const ln of doc.splitTextToSize(body, contentW)) { ensure(6); doc.text(ln, margin, y); y += 5.6; }
+      y += 4;
+    }
+  }
+
+  const pages = doc.getNumberOfPages();
+  for (let i = 1; i <= pages; i++) { doc.setPage(i); doc.setFont("helvetica", "italic"); doc.setFontSize(8); doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]); doc.text("Where Tasting becomes Reflection \u00b7 casksense.com", pageW / 2, pageH - 10, { align: "center" }); }
+
+  const safe = (data.whiskyName || "Notiz").replace(/[^a-zA-Z0-9\u00c4\u00d6\u00dc\u00e4\u00f6\u00fc_-]+/g, "-").slice(0, 50);
+  await saveJsPdf(doc, `CaskSense-Verkostungsnotiz-${safe}.pdf`);
+}
+
+B) client/src/labs/pages/LabsTasteDrams.tsx:
+- Import: import { downloadDramNotePdf } from "@/labs/utils/dramNotePdf";
+- TastingNarrativeSection-Signatur um optionale Prop erweitern: onDownload?: () => void
+- In der Header-Zeile (neben „Bearbeiten") einen Knopf ergänzen, der NUR erscheint, wenn has && onDownload:
+  <button onClick={onDownload} style={{ fontSize: 12, color: "var(--labs-text-muted)", background: "transparent", border: "none", cursor: "pointer", padding: "4px 6px" }}>{t("drams.downloadNote", "Herunterladen")}</button>
+- Beim Aufruf <TastingNarrativeSection ...> (Z. 883) onDownload ergänzen (Feldnamen exakt aus Schritt 0 einsetzen):
+  onDownload={() => downloadDramNotePdf({ whiskyName: (selectedEntry as any).whiskyName ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore } })}
+
+Verifikation (zeig grep-Ausgaben):
+1. client/src/labs/utils/dramNotePdf.ts existiert; grep "downloadDramNotePdf".
+2. grep -n "downloadDramNotePdf\|drams.downloadNote\|onDownload" client/src/labs/pages/LabsTasteDrams.tsx → Import, Prop, Knopf, Aufruf.
+3. Typecheck sauber.
+4. git log --oneline -3 + git status → NICHTS committet/gepusht; Tag pre-dram-note-pdf-2026-06-23. Bestätige: "Keine Commits, kein Push, keine Schema-Änderung."
+
+Rollback: git reset --hard pre-dram-note-pdf-2026-06-23.
