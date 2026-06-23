@@ -18,7 +18,7 @@ export default function CooperIntro() {
     : t("v2.cooperIntroLong", "Cooper hilft dir, Wahrnehmung in Worte zu fassen \u2014 und mit den Worten \u00f6ffnet sich, was du schmeckst. So wird aus Verkosten Reflexion.");
 
   return (
-    <p style={{ fontFamily: FONT.serif, fontStyle: "italic", fontSize: 15, lineHeight: 1.5, color: LABS_THEME.muted, margin: 0, marginBottom: SP.md }}>
+    <p style={{ fontFamily: FONT.serif, fontStyle: "italic", fontSize: 19, lineHeight: 1.55, color: LABS_THEME.muted, margin: 0, marginBottom: SP.md }}>
       {text}
     </p>
   );
