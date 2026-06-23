@@ -1,0 +1,67 @@
+Aufgabe: Cooper-Einleitungszeile im Eindruck-Screen (Solo + Live), erstmals lang, danach verdichtet
+
+Kontext: Im ImpressionCapture-Screen (Voice- und Input-Phase) erklären die drei Punkte (ImpressionHowItWorks) den Ablauf, führen Cooper aber nirgends ein. Es fehlt eine ruhige Zeile, die Cooper als Reflexionspartner einordnet. Beim ersten Mal soll sie lang erscheinen, danach verdichtet. Überschrift „Was nimmst du wahr?" bleibt unverändert.
+
+WICHTIGE SICHERHEITSREGELN — gelten durchgehend:
+- KEINE Commits. KEIN git push. KEIN drizzle-kit. KEINE Schema-Änderungen, KEINE Migrationen.
+- Diese Aufgabe berührt KEINE .gitignore und KEINE DB. Falls du meinst, etwas an Schema/Migrationen ändern zu müssen: STOPP und melde dich.
+- Reiner Frontend-/i18n-Change.
+
+Schritt 0 — Diagnose (NUR LESEN, noch nichts ändern). Zeig mir die Ergebnisse, dann warte auf mein „OK":
+1. git tag pre-cooper-intro-2026-06-23 setzen (Sicherheitsmarke, kein Commit).
+2. Zeige die ersten 35 Zeilen von client/src/labs/components/rating/ImpressionHowItWorks.tsx.
+3. Zeige in client/src/labs/components/rating/ImpressionCapture.tsx die Zeilen 305–330 (Voice-Phase, <ImpressionHowItWorks />) und 419–432 (Input-Phase, impressionHint + <ImpressionHowItWorks />).
+4. Bestätige per grep, dass FONT.serif, LABS_THEME.muted, SP.md in client/src/labs/components/rating/theme.ts (oder theme) exportiert/vorhanden sind.
+5. Zeige in client/src/lib/i18n.ts die Zeilen 938–950 (EN-Block mit voiceIntro, impressionHow…).
+6. Bestätige per grep, dass v2.cooperIntroLong / v2.cooperIntroShort noch NICHT existieren.
+
+Plan (erst nach meinem OK ausführen):
+
+A) Neue Komponente client/src/labs/components/rating/CooperIntro.tsx:
+
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { FONT, SP, LABS_THEME } from "./theme";
+
+const SEEN_KEY = "labs_cooper_intro_seen";
+
+export default function CooperIntro() {
+  const { t } = useTranslation();
+  const [seen] = useState(() => {
+    try { return localStorage.getItem(SEEN_KEY) === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    if (!seen) { try { localStorage.setItem(SEEN_KEY, "1"); } catch { /* ignore */ } }
+  }, [seen]);
+
+  const text = seen
+    ? t("v2.cooperIntroShort", "Cooper hilft dir, Wahrnehmung in Worte zu fassen \u2014 und mit den Worten w\u00e4chst, was du wahrnimmst.")
+    : t("v2.cooperIntroLong", "Cooper hilft dir, Wahrnehmung in Worte zu fassen \u2014 und mit den Worten \u00f6ffnet sich, was du schmeckst. So wird aus Verkosten Reflexion.");
+
+  return (
+    <p style={{ fontFamily: FONT.serif, fontStyle: "italic", fontSize: 15, lineHeight: 1.5, color: LABS_THEME.muted, margin: 0, marginBottom: SP.md }}>
+      {text}
+    </p>
+  );
+}
+
+B) ImpressionHowItWorks.tsx: CooperIntro importieren und als erstes Element über die <ul> rendern. Konkret: Import ergänzen, und den return (<ul>…</ul>) umschließen zu return (<><CooperIntro /><ul>…</ul></>). Sonst nichts ändern. (Dadurch erscheint die Zeile automatisch in beiden Phasen — Voice und Input — konsistent.)
+
+C) Redundanz bereinigen (Input-Phase) in ImpressionCapture.tsx: Den impressionHint-Absatz (das <div> mit t("v2.impressionHint", …), ~Z. 421–423) ENTFERNEN. Begründung: Er wiederholt die Überschrift „Was nimmst du wahr?" und wird durch die neue Cooper-Zeile + die drei Punkte ersetzt. Die Überschrift selbst und alles andere bleiben unverändert.
+
+D) i18n client/src/lib/i18n.ts — nur EN: Im en-Block direkt nach voiceIntro (Z. 940) zwei Keys ergänzen:
+
+          cooperIntroLong: "Cooper helps you put perception into words \u2014 and as the words come, what you taste opens up. This is where tasting becomes reflection.",
+          cooperIntroShort: "Cooper helps you put perception into words \u2014 and as the words come, what you perceive grows.",
+
+KEINE deutschen i18n-Einträge anlegen — Deutsch läuft bewusst über die Inline-Defaults in CooperIntro.tsx (gleiche Konvention wie die bestehenden impressionHow…-Keys, die ebenfalls nur als Inline-Default existieren).
+
+Verifikation (zeig mir die grep-Ausgaben):
+1. client/src/labs/components/rating/CooperIntro.tsx existiert; enthält labs_cooper_intro_seen, cooperIntroLong, cooperIntroShort.
+2. grep -n "CooperIntro" client/src/labs/components/rating/ImpressionHowItWorks.tsx → Import + Verwendung vorhanden.
+3. grep -n "impressionHint" client/src/labs/components/rating/ImpressionCapture.tsx → KEIN Treffer mehr.
+4. grep -n "cooperIntroLong\|cooperIntroShort" client/src/lib/i18n.ts → genau 2 Treffer (beide im EN-Block).
+5. Build/Typecheck läuft sauber durch (npm run check oder euer TS-Check), keine fehlenden Imports.
+6. Commit-Verbot erneut bestätigen: git log --oneline -3 und git status zeigen — es wurde NICHTS committet und NICHT gepusht. Der Tag pre-cooper-intro-2026-06-23 existiert. Bestätige mir ausdrücklich: „Keine Commits, kein Push, keine Schema-/Migrationsänderung."
+
+Rollback bei Bedarf: git reset --hard pre-cooper-intro-2026-06-23.
