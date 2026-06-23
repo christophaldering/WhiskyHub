@@ -2976,3 +2976,14 @@ a.labs-dram-item {
 @media (prefers-reduced-motion: reduce) {
   .cooper-barrel.is-glowing .cooper-barrel-glow { animation: none; opacity: 0.9; }
 }
+.cooper-barrel.is-live .cooper-barrel-glow {
+  animation: none;
+  opacity: calc(0.42 + 0.58 * var(--cooper-level, 0));
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(calc(1 + 0.10 * var(--cooper-level, 0)));
+  transition: opacity 90ms linear, transform 90ms linear;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cooper-barrel.is-live .cooper-barrel-glow { transform: none; transition: opacity 120ms linear; }
+}

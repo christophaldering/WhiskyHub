@@ -10,11 +10,12 @@ import { useId } from "react";
 interface CooperBarrelProps {
   size?: number; // Kantenlänge in px (default 28 — Chip-Größe)
   glow?: boolean; // false = ruhend, true = glimmend (innerer Schein atmet)
+  live?: boolean; // true = Glut folgt --cooper-level (Stimm-Takt)
   mono?: boolean; // true = alle Linien in currentColor (für farbige Flächen, z.B. accent-Button)
   className?: string;
 }
 
-export default function CooperBarrel({ size = 28, glow = false, mono = false, className }: CooperBarrelProps) {
+export default function CooperBarrel({ size = 28, glow = false, live = false, mono = false, className }: CooperBarrelProps) {
   const gid = `cooper-glow-${useId().replace(/:/g, "")}`;
   const fid = `${gid}-blur`;
 
@@ -29,7 +30,7 @@ export default function CooperBarrel({ size = 28, glow = false, mono = false, cl
       fill="none"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={`cooper-barrel${glow ? " is-glowing" : ""}${className ? ` ${className}` : ""}`}
+      className={`cooper-barrel${glow ? " is-glowing" : ""}${live ? " is-live" : ""}${className ? ` ${className}` : ""}`}
       aria-hidden="true"
       style={{ overflow: "visible" }}
     >

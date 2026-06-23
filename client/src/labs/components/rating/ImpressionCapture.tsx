@@ -92,6 +92,29 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
     voiceEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [voice.transcript.length]);
 
+  const glowWrapRef = useRef<HTMLDivElement | null>(null);
+  const speakingRef = useRef(false);
+  speakingRef.current = voice.speaking;
+
+  useEffect(() => {
+    if (!(phase === "voice" && voice.status === "connected")) return;
+    let raf = 0; const t0 = performance.now();
+    const loop = (now: number) => {
+      const el = glowWrapRef.current;
+      if (el) {
+        let lvl = voice.levelRef?.current ?? 0;
+        if (lvl < 0.02 && speakingRef.current) {
+          const p = (now - t0) / 900;
+          lvl = 0.32 + 0.22 * (0.5 + 0.5 * Math.sin(p * Math.PI * 2));
+        }
+        el.style.setProperty("--cooper-level", lvl.toFixed(3));
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [phase, voice.status]);
+
   const voiceBlocks: ConverseTurn[] = [];
   for (const turn of voice.transcript) {
     const last = voiceBlocks[voiceBlocks.length - 1];
@@ -361,11 +384,11 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
               </button>
             </>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minHeight: "52vh" }}>
-              <LedgerConstellation data={voice.ledger as any} />
+            <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "var(--labs-bg)", display: "flex", flexDirection: "column", alignItems: "center", padding: "calc(env(safe-area-inset-top) + 24px) 20px calc(env(safe-area-inset-bottom) + 16px)", overflowY: "auto" }}>
+              {showTranscript && <LedgerConstellation data={voice.ledger as any} />}
 
               <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: SP.lg }}>
-                <CooperBarrel size={132} glow />
+                <div ref={glowWrapRef} style={{ display: "flex" }}><CooperBarrel size={176} live /></div>
                 <div style={{ fontFamily: FONT.serif, fontStyle: "italic", fontSize: 15, color: LABS_THEME.faint, textAlign: "center" }}>
                   {t("v2.voiceSpeakFreely", "Sprich frei")}
                 </div>
@@ -406,7 +429,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
                 disabled={loading}
                 style={{ width: "100%", minHeight: TOUCH_MIN, background: "transparent", color: LABS_THEME.gold, border: `1px solid ${LABS_THEME.gold}`, borderRadius: RADIUS.md, fontFamily: FONT.body, fontSize: 16, fontWeight: 600, opacity: loading ? 0.6 : 1, cursor: loading ? "default" : "pointer" }}
               >
-                {loading ? t("v2.impressionParsing", "Einen Moment \u2026") : t("v2.voiceFinish", "Ich bin fertig")}
+                {loading ? t("v2.impressionParsing", "Einen Moment \u2026") : t("v2.voiceFinish", "Das war's f\u00fcr mich")}
               </button>
               <div style={{ fontFamily: FONT.body, fontSize: 12, color: LABS_THEME.faint, marginTop: SP.sm, lineHeight: 1.4, textAlign: "center" }}>
                 {t("v2.voiceAiNote", "Coopers Stimme ist KI-generiert.")}
