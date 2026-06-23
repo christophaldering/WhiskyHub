@@ -939,6 +939,8 @@ const resources = {
           impressionTitle: "What do you notice?",
           voiceIntro: "Speak freely about what you notice — in your own words, no rush. Cooper just listens.",
           voiceStart: "Talk to Cooper",
+          voiceShowTranscript: "Show transcript",
+          voiceHideTranscript: "Hide transcript",
           voiceLockedHint: "Talking to Cooper comes with a free account.",
           voiceLockedCta: "Create an account",
           impressionSkip: "Rate directly",

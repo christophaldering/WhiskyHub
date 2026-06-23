@@ -70,6 +70,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
   const [transcript, setTranscript] = useState<ConverseTurn[]>([]);
   const [ledger, setLedger] = useState<Ledger>(EMPTY_LEDGER);
   const [chips, setChips] = useState<string[]>([]);
+  const [showTranscript, setShowTranscript] = useState(false);
   const [proposeClose, setProposeClose] = useState(false);
   const [result, setResult] = useState<ImpressionResult | null>(null);
   const [narrative, setNarrative] = useState("");
@@ -301,12 +302,14 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
 
   return (
     <div style={{ padding: SP.md }}>
+      {!(phase === "voice" && voice.status === "connected") && (
       <div style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.xs }}>
-        <span style={{ flexShrink: 0, display: "flex" }}><CooperBarrel size={30} glow={phase === "voice" && voice.status === "connected"} /></span>
+        <span style={{ flexShrink: 0, display: "flex" }}><CooperBarrel size={30} glow={false} /></span>
         <div style={{ fontFamily: FONT.display, fontSize: 22, color: LABS_THEME.text }}>
           {t("v2.impressionTitle", "Was nimmst du wahr?")}
         </div>
       </div>
+      )}
 
       {phase === "voice" && (
         <>
@@ -358,41 +361,57 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
               </button>
             </>
           ) : (
-            <>
-              <div style={{ fontFamily: FONT.serif, fontStyle: "italic", fontSize: 16, color: LABS_THEME.gold, textAlign: "center", marginBottom: SP.sm }}>
-                {t("v2.voiceSpeakFreely", "Sprich frei")}
-              </div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minHeight: "52vh" }}>
               <LedgerConstellation data={voice.ledger as any} />
-              <div
-                style={{ display: "flex", flexDirection: "column", maxHeight: 280, overflowY: "auto", maskImage: "linear-gradient(to bottom, transparent 0, black 36px)", WebkitMaskImage: "linear-gradient(to bottom, transparent 0, black 36px)", marginBottom: SP.md }}
-              >
-                {voice.transcript.length === 0 ? (
-                  <div style={{ fontFamily: FONT.body, fontSize: 14, color: LABS_THEME.faint, paddingTop: 36 }}>{t("v2.voiceWaiting", "\u2026 warte auf Stimme")}</div>
-                ) : (
-                  voiceBlocks.map((b, i) => (
-                    <div
-                      key={i}
-                      style={b.role === "mentor"
-                        ? { color: LABS_THEME.gold, fontFamily: FONT.serif, fontStyle: "italic", fontSize: 18, lineHeight: 1.5, marginTop: i === 0 ? 36 : SP.sm }
-                        : { color: LABS_THEME.text, fontFamily: FONT.body, fontSize: 16, lineHeight: 1.6, marginTop: i === 0 ? 36 : SP.sm }}
-                    >
-                      {b.text}
-                    </div>
-                  ))
-                )}
-                <div ref={voiceEndRef} />
+
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: SP.lg }}>
+                <CooperBarrel size={132} glow />
+                <div style={{ fontFamily: FONT.serif, fontStyle: "italic", fontSize: 15, color: LABS_THEME.faint, textAlign: "center" }}>
+                  {t("v2.voiceSpeakFreely", "Sprich frei")}
+                </div>
               </div>
+
+              {showTranscript && (
+                <div
+                  style={{ width: "100%", display: "flex", flexDirection: "column", maxHeight: 240, overflowY: "auto", maskImage: "linear-gradient(to bottom, transparent 0, black 36px)", WebkitMaskImage: "linear-gradient(to bottom, transparent 0, black 36px)", marginBottom: SP.sm }}
+                >
+                  {voice.transcript.length === 0 ? (
+                    <div style={{ fontFamily: FONT.body, fontSize: 14, color: LABS_THEME.faint, paddingTop: 36 }}>{t("v2.voiceWaiting", "\u2026 warte auf Stimme")}</div>
+                  ) : (
+                    voiceBlocks.map((b, i) => (
+                      <div
+                        key={i}
+                        style={b.role === "mentor"
+                          ? { color: LABS_THEME.gold, fontFamily: FONT.serif, fontStyle: "italic", fontSize: 18, lineHeight: 1.5, marginTop: i === 0 ? 36 : SP.sm }
+                          : { color: LABS_THEME.text, fontFamily: FONT.body, fontSize: 16, lineHeight: 1.6, marginTop: i === 0 ? 36 : SP.sm }}
+                      >
+                        {b.text}
+                      </div>
+                    ))
+                  )}
+                  <div ref={voiceEndRef} />
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setShowTranscript((v) => !v)}
+                style={{ background: "none", border: "none", color: LABS_THEME.faint, fontFamily: FONT.body, fontSize: 13, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3, padding: SP.xs, marginBottom: SP.sm }}
+              >
+                {showTranscript ? t("v2.voiceHideTranscript", "Mitschrift ausblenden") : t("v2.voiceShowTranscript", "Mitschrift anzeigen")}
+              </button>
+
               <button
                 onClick={handleVoiceFinish}
                 disabled={loading}
-                style={{ width: "100%", minHeight: TOUCH_MIN, background: LABS_THEME.gold, color: "#1a1408", border: "none", borderRadius: RADIUS.md, fontFamily: FONT.body, fontSize: 16, fontWeight: 600, opacity: loading ? 0.6 : 1, cursor: loading ? "default" : "pointer" }}
+                style={{ width: "100%", minHeight: TOUCH_MIN, background: "transparent", color: LABS_THEME.gold, border: `1px solid ${LABS_THEME.gold}`, borderRadius: RADIUS.md, fontFamily: FONT.body, fontSize: 16, fontWeight: 600, opacity: loading ? 0.6 : 1, cursor: loading ? "default" : "pointer" }}
               >
                 {loading ? t("v2.impressionParsing", "Einen Moment \u2026") : t("v2.voiceFinish", "Ich bin fertig")}
               </button>
-              <div style={{ fontFamily: FONT.body, fontSize: 12, color: LABS_THEME.faint, marginTop: SP.sm, lineHeight: 1.4 }}>
+              <div style={{ fontFamily: FONT.body, fontSize: 12, color: LABS_THEME.faint, marginTop: SP.sm, lineHeight: 1.4, textAlign: "center" }}>
                 {t("v2.voiceAiNote", "Coopers Stimme ist KI-generiert.")}
               </div>
-            </>
+            </div>
           )}
         </>
       )}
