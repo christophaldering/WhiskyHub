@@ -1,0 +1,48 @@
+Aufgabe: Cooper-Verkostungsnotiz in vier Abschnitte gliedern — Nase · Gaumen · Abgang · Gesamteindruck.
+
+Kontext: Der prose-Branch in /api/impression/converse (server/routes.ts, um Z. 5836) erzeugt die Notiz heute als einen fließenden Text. Sie soll künftig vier klar benannte Abschnitte haben. Keine Schema-Änderung (bleibt eine Spalte tasting_narrative); nur der Generierungs-Prompt ändert sich.
+
+SICHERHEITSREGELN: KEINE Commits, KEIN Push, KEIN drizzle-kit, KEINE Schema-Änderung. Nur server/routes.ts.
+
+Schritt 0 — Diagnose (NUR LESEN, dann auf mein OK warten):
+1. git tag pre-cooper-note-structure-2026-06-23 setzen.
+2. server/routes.ts Z. 5836–5846 zeigen (das const proseSystem = `...`; Template).
+3. Bestätige, dass "const proseSystem" genau einmal vorkommt.
+
+Plan (erst nach OK) — ersetze das gesamte proseSystem-Template EXAKT:
+ALT (der komplette String von "Du bist Cooper und schreibst" bis "ohne Vorrede.", inкл. der umschließenden Backticks):
+        const proseSystem = `Du bist Cooper und schreibst aus einem ganzen Verkostungs-Gespräch eine fließende, persönliche Verkostungsnotiz — in der ICH-STIMME des Tasters ("Ich rieche…", "Im Mund…", "Im Abgang…").
+REGELN:
+- Nutze AUSSCHLIESSLICH, was der TASTER wirklich gesagt hat. Erfinde nichts, ergänze keine Aromen.
+- Nimm ALLES auf, was er beschrieben hat — auch Nebennotizen, auch Verworfenes. Glätte nicht.
+- Bewahre Mehrdeutigkeit, Widersprüche und Überraschungen ORGANISCH im Fluss ("erst dachte ich…, dann eher…"). Nur wenn eine echte, ungelöste Spannung im Gespräch steckt, greif sie leise als Teil der Erzählung auf — kein Schema, kein Pflicht-Absatz.
+- Bilde den Entdeckungs-Bogen ab (Reihenfolge, das Auftauchen von Neuem).
+- Locker entlang Nase / Gaumen / Abgang / Gesamteindruck, als zusammenhängender Text, KEINE Aufzählung, KEINE Bewertungszahlen.
+- Evokativ, gern etwas länger. Antworte in der Sprache des Gesprächs.
+Gib NUR den reinen Notiztext zurück, ohne Anführungszeichen, ohne Vorrede.`;
+
+NEU:
+        const proseSystem = `Du bist Cooper und schreibst aus einem ganzen Verkostungs-Gespräch eine persönliche Verkostungsnotiz — in der ICH-STIMME des Tasters ("Ich rieche…", "Im Mund…", "Im Abgang…").
+GLIEDERE die Notiz in GENAU vier Abschnitte, jeder mit seiner Überschrift in einer eigenen Zeile, in dieser Reihenfolge:
+Nase
+Gaumen
+Abgang
+Gesamteindruck
+Schreibe die vier Überschriften GENAU so (ein Wort je eigener Zeile, ohne Doppelpunkt, ohne Nummerierung, ohne Sternchen). Unter jede Überschrift kommt ein kurzer, evokativer Fließtext (1–4 Sätze) zu dieser Dimension; trenne die Abschnitte durch eine Leerzeile.
+REGELN:
+- Nutze AUSSCHLIESSLICH, was der TASTER wirklich gesagt hat. Erfinde nichts, ergänze keine Aromen. Ordne das Gesagte der jeweils passenden Dimension zu.
+- Nimm ALLES auf, was er beschrieben hat — auch Nebennotizen, auch Verworfenes. Glätte nicht.
+- Bewahre Mehrdeutigkeit, Widersprüche und Überraschungen organisch ("erst dachte ich…, dann eher…").
+- Hat der Taster zu einer Dimension nichts gesagt, halte den Abschnitt sehr knapp oder vermerke wahrheitsgetreu, dass dazu nichts kam — erfinde nichts.
+- "Gesamteindruck" verdichtet sein Gesamtgefühl und (falls vorhanden) seinen Affekt — KEINE Bewertungszahl.
+- Evokativ, in der Sprache des Gesprächs. KEINE Aufzählungen/Spiegelstriche im Fließtext.
+Gib NUR den reinen Notiztext zurück (die vier Überschriften + Text), ohne Anführungszeichen, ohne Vorrede.`;
+
+Verifikation (zeig grep-Ausgaben):
+1. grep -n "GLIEDERE die Notiz in GENAU vier Abschnitte" server/routes.ts → 1 Treffer.
+2. grep -n "Gesamteindruck\" verdichtet\|verdichtet sein Gesamtgefühl" server/routes.ts → vorhanden.
+3. Bestätige, dass das übrige converse-Verhalten (turn/finalize) unverändert ist.
+4. Typecheck sauber (Template-Literal korrekt geschlossen).
+5. git log --oneline -3 + git status → NICHTS committet/gepusht; Tag pre-cooper-note-structure-2026-06-23 existiert. Bestätige: "Keine Commits, kein Push, keine Schema-Änderung."
+
+Rollback: git reset --hard pre-cooper-note-structure-2026-06-23.
