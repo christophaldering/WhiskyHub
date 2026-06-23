@@ -5595,7 +5595,8 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
     try {
       const auth = await requireAuth(req);
       if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
-      if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const voiceAllowed = auth.participant.role === "admin" || !!(auth.participant.email && auth.participant.email.trim());
+      if (!voiceAllowed) return res.status(403).json({ code: "registration_required", message: "Mit Cooper sprechen gibt es mit einem kostenlosen Konto. Melde dich an, um Coopers Stimme zu nutzen." });
 
       const rate = checkConverseRateLimit("voiceprobe:" + auth.participant.id);
       if (!rate.allowed) return res.status(429).json({ message: "Too many requests.", retryAfter: rate.retryAfterSeconds });

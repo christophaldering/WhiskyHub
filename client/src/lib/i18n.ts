@@ -939,6 +939,8 @@ const resources = {
           impressionTitle: "Your first impression",
           voiceIntro: "Speak freely about what you notice — in your own words, no rush. Cooper just listens.",
           voiceStart: "Talk to Cooper",
+          voiceLockedHint: "Talking to Cooper comes with a free account.",
+          voiceLockedCta: "Create an account",
           impressionSkip: "Rate directly",
           impressionHowTitle: "How it works",
           impressionHow1Lead: "You begin.",

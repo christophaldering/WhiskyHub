@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
+import { participantApi, getParticipantId } from "@/lib/api";
+import { useAppStore } from "@/lib/store";
 import { FONT, SP, RADIUS, TOUCH_MIN, LABS_THEME } from "./theme";
 import ImpressionHowItWorks from "./ImpressionHowItWorks";
 import {
@@ -46,6 +49,16 @@ const LEDGER_SLOTS: { key: keyof Omit<Ledger, "vagueResolved">; label: string }[
 export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdentifyFirst, participantId, startPhase }: ImpressionCaptureProps) {
   const { t, i18n } = useTranslation();
   const voice = useCooperVoice();
+
+  const _pid = participantId || getParticipantId() || "";
+  const { data: _me } = useQuery<{ id: string; email?: string | null }>({
+    queryKey: ["impression-voice-me", _pid],
+    queryFn: () => participantApi.get(_pid),
+    enabled: !!_pid,
+    staleTime: 5 * 60 * 1000,
+  });
+  const openAuthDialog = useAppStore((s) => s.openAuthDialog);
+  const voiceLocked = !!_me && !_me.email;
 
   const [phase, setPhase] = useState<Phase>(startPhase ?? "input");
   const [text, setText] = useState("");
@@ -308,16 +321,30 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
                   {voice.statusText}
                 </div>
               )}
-              <button
-                onClick={() => voice.connect()}
-                disabled={voice.status === "connecting" || voice.status === "token"}
-                style={{ width: "100%", minHeight: TOUCH_MIN, background: LABS_THEME.gold, color: "#1a1408", border: "none", borderRadius: RADIUS.md, fontFamily: FONT.body, fontSize: 16, fontWeight: 600, opacity: (voice.status === "connecting" || voice.status === "token") ? 0.6 : 1, cursor: (voice.status === "connecting" || voice.status === "token") ? "default" : "pointer" }}
-              >
-                {(voice.status === "connecting" || voice.status === "token") ? t("v2.voiceConnecting", "Verbinde \u2026") : t("v2.voiceStart", "Mit Cooper sprechen")}
-              </button>
-              <div style={{ fontFamily: FONT.body, fontSize: 12, color: LABS_THEME.faint, marginTop: SP.sm, lineHeight: 1.4 }}>
-                {t("v2.voiceAiNote", "Coopers Stimme ist KI-generiert.")}
-              </div>
+              {voiceLocked ? (
+                <div style={{ marginBottom: SP.md, padding: SP.md, borderRadius: RADIUS.md, border: `1px solid ${LABS_THEME.border}`, background: LABS_THEME.bgCard, textAlign: "center" }}>
+                  <div style={{ fontFamily: FONT.body, fontSize: 15, color: LABS_THEME.text, lineHeight: 1.5, marginBottom: SP.sm }}>
+                    {t("v2.voiceLockedHint", "Cooper zum Sprechen gibt es mit einem kostenlosen Konto.")}
+                  </div>
+                  <button type="button" onClick={() => openAuthDialog("register")} data-testid="impression-voice-signup"
+                    style={{ background: "none", border: "none", color: LABS_THEME.gold, fontFamily: FONT.body, fontSize: 15, fontWeight: 600, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3, minHeight: TOUCH_MIN }}>
+                    {t("v2.voiceLockedCta", "Konto erstellen")}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <button
+                    onClick={() => voice.connect()}
+                    disabled={voice.status === "connecting" || voice.status === "token"}
+                    style={{ width: "100%", minHeight: TOUCH_MIN, background: LABS_THEME.gold, color: "#1a1408", border: "none", borderRadius: RADIUS.md, fontFamily: FONT.body, fontSize: 16, fontWeight: 600, opacity: (voice.status === "connecting" || voice.status === "token") ? 0.6 : 1, cursor: (voice.status === "connecting" || voice.status === "token") ? "default" : "pointer" }}
+                  >
+                    {(voice.status === "connecting" || voice.status === "token") ? t("v2.voiceConnecting", "Verbinde \u2026") : t("v2.voiceStart", "Mit Cooper sprechen")}
+                  </button>
+                  <div style={{ fontFamily: FONT.body, fontSize: 12, color: LABS_THEME.faint, marginTop: SP.sm, lineHeight: 1.4 }}>
+                    {t("v2.voiceAiNote", "Coopers Stimme ist KI-generiert.")}
+                  </div>
+                </>
+              )}
               <button
                 type="button"
                 onClick={() => { voice.disconnect(); setPhase("input"); }}
