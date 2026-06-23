@@ -1,0 +1,65 @@
+Aufgabe: #4-Nachgang — optionales Dram-Foto ins Verkostungsnotiz-PDF einbetten (best-effort).
+
+Setzt auf #4 auf (client/src/labs/utils/dramNotePdf.ts existiert, Download-Knopf in LabsTasteDrams). Foto wird same-origin (/objects/...) geladen → DataURL → jsPDF addImage. Schlägt irgendetwas fehl, entsteht das PDF trotzdem ohne Foto.
+
+SICHERHEITSREGELN: KEINE Commits, KEIN Push, KEIN drizzle-kit, KEINE Schema-Änderung.
+
+Schritt 0 — Diagnose (NUR LESEN, dann auf mein OK warten):
+1. git tag pre-dram-note-photo-2026-06-23 setzen.
+2. Bestätige, dass client/src/labs/utils/dramNotePdf.ts existiert (downloadDramNotePdf + DramNoteData).
+3. client/src/labs/pages/LabsTasteDrams.tsx: bestätige (a) wie pidHeaders importiert/verfügbar ist, (b) die Variable mit der aktuellen participantId (pid o.ä.), (c) den onDownload-Aufruf aus #4.
+
+Plan (erst nach OK):
+
+A) dramNotePdf.ts — Foto-Parameter + Einbettung.
+A1) DramNoteData um Feld erweitern:
+    photoDataUrl?: string | null;
+A2) In downloadDramNotePdf NACH dem Scores-Block (vor der Abschnitts-Schleife "for (const b of parseSections(...)") einfügen:
+  if (data.photoDataUrl) {
+    try {
+      const props = doc.getImageProperties(data.photoDataUrl);
+      const maxW = contentW; const maxH = 70;
+      let w = maxW; let h = (props.height / props.width) * w;
+      if (h > maxH) { h = maxH; w = (props.width / props.height) * h; }
+      ensure(h + 6);
+      const x = margin + (contentW - w) / 2;
+      const fmt = String(data.photoDataUrl).startsWith("data:image/png") ? "PNG" : "JPEG";
+      doc.addImage(data.photoDataUrl, fmt, x, y, w, h, undefined, "FAST");
+      y += h + 6;
+    } catch { /* Foto best-effort: bei Fehler ohne Foto weiter */ }
+  }
+
+B) LabsTasteDrams.tsx — Foto laden + übergeben.
+B1) Helfer-Funktion (in der Datei, oben bei den anderen Helfern) einfügen:
+  async function fetchFirstPhotoDataUrl(participantId: string, entryId: string): Promise<string | null> {
+    try {
+      const res = await fetch(`/api/journal/${participantId}/${entryId}/photos`, { headers: { ...pidHeaders() } });
+      if (!res.ok) return null;
+      const arr = await res.json();
+      const first = Array.isArray(arr) && arr.length ? arr[0]?.photoUrl : null;
+      if (!first) return null;
+      const imgRes = await fetch(first);
+      if (!imgRes.ok) return null;
+      const blob = await imgRes.blob();
+      return await new Promise<string | null>((resolve) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(typeof fr.result === "string" ? fr.result : null);
+        fr.onerror = () => resolve(null);
+        fr.readAsDataURL(blob);
+      });
+    } catch { return null; }
+  }
+B2) Den onDownload-Handler aus #4 zu async machen und das Foto vorab laden (participantId-Variable exakt aus Schritt 0 einsetzen):
+  onDownload={async () => {
+    const photoDataUrl = await fetchFirstPhotoDataUrl(<participantIdVar>, (selectedEntry as any).id);
+    await downloadDramNotePdf({ whiskyName: (selectedEntry as any).whiskyName ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl });
+  }}
+(Falls pidHeaders in der Datei noch nicht importiert ist: aus demselben Modul importieren wie anderswo im Labs-Code, z. B. "@/lib/api" oder wo pidHeaders definiert ist — in Schritt 0 klären.)
+
+Verifikation (zeig grep-Ausgaben):
+1. grep -n "photoDataUrl\|getImageProperties\|addImage" client/src/labs/utils/dramNotePdf.ts.
+2. grep -n "fetchFirstPhotoDataUrl\|photoDataUrl" client/src/labs/pages/LabsTasteDrams.tsx.
+3. Typecheck sauber.
+4. git log --oneline -3 + git status → NICHTS committet/gepusht; Tag pre-dram-note-photo-2026-06-23. Bestätige: "Keine Commits, kein Push, keine Schema-Änderung."
+
+Rollback: git reset --hard pre-dram-note-photo-2026-06-23.
