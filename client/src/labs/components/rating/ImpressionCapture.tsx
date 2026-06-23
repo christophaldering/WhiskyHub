@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { participantApi, getParticipantId } from "@/lib/api";
@@ -383,12 +384,12 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
                 {t("v2.impressionSkip", "Direkt bewerten")}
               </button>
             </>
-          ) : (
+          ) : createPortal((
             <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "var(--labs-bg)", display: "flex", flexDirection: "column", alignItems: "center", padding: "calc(env(safe-area-inset-top) + 24px) 20px calc(env(safe-area-inset-bottom) + 16px)", overflowY: "auto" }}>
               {showTranscript && <LedgerConstellation data={voice.ledger as any} />}
 
               <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: SP.lg }}>
-                <div ref={glowWrapRef} style={{ display: "flex" }}><CooperBarrel size={176} live /></div>
+                <div ref={glowWrapRef} style={{ display: "flex" }}><CooperBarrel size={230} live /></div>
                 <div style={{ fontFamily: FONT.serif, fontStyle: "italic", fontSize: 15, color: LABS_THEME.faint, textAlign: "center" }}>
                   {t("v2.voiceSpeakFreely", "Sprich frei")}
                 </div>
@@ -435,7 +436,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
                 {t("v2.voiceAiNote", "Coopers Stimme ist KI-generiert.")}
               </div>
             </div>
-          )}
+          ), document.body)}
         </>
       )}
 
