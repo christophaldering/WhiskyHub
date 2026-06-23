@@ -1,0 +1,60 @@
+REPLIT PROMPT — Historische Gesamt-Werte härten (Import + Lese-Seite, 2 Dateien)
+
+SICHERHEITSREGELN (für den GESAMTEN Prompt):
+1. Zuerst NUR Step 0 (Diagnose), keine Änderung, bis ich den Plan bestätige.
+2. Plan zeigen, auf meine Bestätigung warten, DANN ausführen.
+3. NICHT committen: kein git add/commit/push. KEINE Schema-/Migrations-Änderung, kein drizzle-kit, KEINE DB-Schreibvorgänge.
+4. Nur diese 2 Dateien anfassen: server/historical-import.ts, server/storage.ts
+Safety-Tag vorab:  git tag pre-hist-total-hardening-2026-06-23
+Rollback:          git reset --hard pre-hist-total-hardening-2026-06-23
+
+STEP 0 — DIAGNOSE, bestätige durch Lesen (keine Änderung):
+A) server/historical-import.ts (~Z.382-393): pro Zeile werden gesetzt
+     totalScore: row.totalScore,
+     normalizedNose/Taste/Finish: row.<dim>Score * 10,
+     normalizedTotal: row.totalScore != null ? row.totalScore * 10 : null,
+   row.noseScore/tasteScore/finishScore stehen im selben Objekt bereit.
+B) server/storage.ts: drei Lese-Berechnungen für den normalisierten Gesamtwert:
+     Z.4635  .map(e => e.normalizedTotal ?? (e.totalScore != null ? e.totalScore * 10 : null))   (NICHT geclamped)
+     Z.4644  const winnerNorm = winner ? (winner.normalizedTotal ?? (winner.totalScore != null ? winner.totalScore * 10 : null)) : null;   (NICHT geclamped)
+     Z.4737  ... Math.min(v, 100) ...   (schon geclamped — VORBILD, nicht ändern)
+   STOPP, zeig mir den Plan.
+
+PLAN (erst nach Bestätigung): genau 4 gezielte Ersetzungen, sonst nichts.
+
+--- EDIT 1: server/historical-import.ts ---
+Ersetze
+    totalScore: row.totalScore,
+durch
+    totalScore: (row.noseScore != null && row.tasteScore != null && row.finishScore != null)
+      ? (row.noseScore + row.tasteScore + row.finishScore) / 3
+      : row.totalScore,
+
+Ersetze
+    normalizedTotal: row.totalScore != null ? row.totalScore * 10 : null,
+durch
+    normalizedTotal: (row.noseScore != null && row.tasteScore != null && row.finishScore != null)
+      ? Math.min((((row.noseScore + row.tasteScore + row.finishScore) / 3) * 10), 100)
+      : (row.totalScore != null ? Math.min(row.totalScore * 10, 100) : null),
+
+(totalRank, die *Rank- und *Score-Dimensionsfelder und alle anderen Felder NICHT anfassen.)
+
+--- EDIT 2: server/storage.ts (Lese-Seite clampen, Muster wie Z.4737) ---
+Ersetze (Z.4635)
+        .map(e => e.normalizedTotal ?? (e.totalScore != null ? e.totalScore * 10 : null))
+durch
+        .map(e => { const v = e.normalizedTotal ?? (e.totalScore != null ? e.totalScore * 10 : null); return v != null ? Math.min(v, 100) : null; })
+
+Ersetze (Z.4644)
+      const winnerNorm = winner ? (winner.normalizedTotal ?? (winner.totalScore != null ? winner.totalScore * 10 : null)) : null;
+durch
+      const winnerNorm = (() => { const v = winner ? (winner.normalizedTotal ?? (winner.totalScore != null ? winner.totalScore * 10 : null)) : null; return v != null ? Math.min(v, 100) : null; })();
+
+(Die bereits geclampte Stelle bei Z.4737 NICHT verändern. Die WHERE-/COALESCE-IS-NOT-NULL-Filter NICHT verändern.)
+
+VERIFIKATION:
+- Nur 2 Dateien geändert (historical-import.ts: 2 Felder; storage.ts: 2 Berechnungen).
+- grep -n 'totalScore \* 10' server/storage.ts -> alle drei Wert-Stellen jetzt mit Math.min(...,100) bzw. LEAST(...,100).
+- Typecheck/Build ohne neue Fehler. KEIN DB-Schreibvorgang in dieser Aufgabe.
+- Logik: künftige Importe leiten Gesamt aus den drei Dimensionen ab (≤100); Anzeige kann nie >100 zeigen.
+- NICHT committen, kein drizzle-kit.
