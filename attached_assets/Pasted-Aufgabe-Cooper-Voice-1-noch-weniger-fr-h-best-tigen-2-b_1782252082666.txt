@@ -1,0 +1,31 @@
+Aufgabe: Cooper-Voice — (1) noch weniger früh bestätigen, (2) bewachte Kenner-Hintertür (Vergleiche/Wissen erst spät & nur auf ausdrückliche Frage).
+
+SICHERHEITSREGELN: KEINE Commits, KEIN Push, KEIN drizzle-kit, KEINE Schema-Änderung. Nur server/routes.ts.
+
+Schritt 0 — Diagnose (NUR LESEN, dann auf mein OK warten):
+1. git tag pre-cooper-backdoor-2026-06-23 setzen.
+2. server/routes.ts: die Zeile mit "const continuerBlock = " zeigen und die Zeile "const instructions = baseInstr + ..." (um Z. 5616 und 5623).
+3. Bestätige, dass beide Strings genau einmal vorkommen.
+
+Plan (erst nach OK):
+
+A) #1 — continuerBlock um einen Satz verlängern. Ersetze EXAKT (Ende des continuerBlock-Strings):
+ALT:
+ Oft ist die beste Antwort, einfach zu schweigen und ihm Raum zu lassen.";
+NEU:
+ Oft ist die beste Antwort, einfach zu schweigen und ihm Raum zu lassen. Gerade früh im Gespräch hältst du dich mit jeder Art von Quittung zurück — auch ein beiläufiges 'ja', 'gut', 'okay' kann wie ein Gütesiegel wirken; ein Zuhör-Signal lädt zum Weitersprechen ein, es bestätigt nie, dass etwas 'richtig' war.";
+
+B) #2 — Hintertür. Ersetze EXAKT die instructions-Zeile:
+ALT:
+      const instructions = baseInstr + "\n\n" + continuerBlock + " " + (continuerByLevel[cooperLevel] || continuerByLevel.adaptive);
+NEU:
+      const backdoorBlock = "Wissen und Vergleiche — die Ausnahme: Solange der Taster seinen Eindruck noch bildet, bleibt alles oben strikt — keine Vergleiche, keine Aroma-Erwartung, nichts über die Flasche, auch nicht auf Nachfrage. NUR wenn BEIDE Bedingungen erfüllt sind — sein Eindruck ist erkennbar abgeschlossen UND er fragt ausdrücklich danach (etwa 'woran erinnert dich das?', 'was könnte das sein?', 'Vergleiche zu Regionen oder anderen Whiskys?') — darfst du dich darauf einlassen: als Reflexion auf seinen bereits geäußerten Eindruck, assoziativ und vorsichtig, nie als Vorgabe. Stütze dich auf dein allgemeines Wissen über Whisky, Regionen und Stile; erfinde aber keine Fakten über genau diese Flasche und tu nicht so, als wüsstest du, was im Glas ist. Im Zweifel, ob der Eindruck wirklich abgeschlossen ist, bleibst du noch zurückhaltend.";
+      const instructions = baseInstr + "\n\n" + continuerBlock + " " + (continuerByLevel[cooperLevel] || continuerByLevel.adaptive) + "\n\n" + backdoorBlock;
+
+Verifikation (zeig grep-Ausgaben):
+1. grep -n "Gütesiegel\|backdoorBlock\|Wissen und Vergleiche" server/routes.ts → beide Änderungen vorhanden.
+2. grep -n "const instructions = baseInstr" server/routes.ts → endet jetzt mit "+ backdoorBlock".
+3. Typecheck sauber (keine offenen Klammern/Strings).
+4. git log --oneline -3 + git status → NICHTS committet/gepusht; Tag pre-cooper-backdoor-2026-06-23 existiert. Bestätige: "Keine Commits, kein Push, keine Schema-Änderung."
+
+Rollback: git reset --hard pre-cooper-backdoor-2026-06-23.
