@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Camera, ImagePlus, PenLine, Barcode, Loader2, AlertTriangle, ArrowLeft, Library, ChevronRight, ScanLine, X, Layers } from "lucide-react";
-import { GlassIcon } from "@/labs/components/FlavourIcons";
+import CooperBarrel from "@/labs/components/rating/CooperBarrel";
 import { useLocation } from "wouter";
 import BottleRecognitionFeedback, { type BottleRecognitionResult } from "@/labs/components/BottleRecognitionFeedback";
 import { CollectionPicker, type SelectedWhisky } from "@/labs/components/CollectionPicker";
@@ -550,7 +550,7 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onIm
             display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
             background: "var(--labs-accent-muted)",
           }}>
-            <GlassIcon size={20} style={{ color: "var(--labs-accent)" }} />
+            <span style={{ color: "var(--labs-accent)", display: "flex" }}><CooperBarrel size={24} mono /></span>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
