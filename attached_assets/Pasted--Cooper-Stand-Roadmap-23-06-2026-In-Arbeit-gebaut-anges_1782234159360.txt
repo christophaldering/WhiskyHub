@@ -1,0 +1,37 @@
+## Cooper — Stand & Roadmap (23.06.2026)
+
+### In Arbeit (gebaut/angestoßen — On-Device verifizieren)
+- Cooper-Intro im Eindruck-Screen: CooperIntro.tsx oben in ImpressionHowItWorks (voice+input),
+  v2.impressionHint entfernt. Erst lang (Synthese), dann kurz V1, via localStorage labs_cooper_intro_seen.
+  EN-Keys v2.cooperIntroLong/Short. Tag: pre-cooper-intro-2026-06-23.
+- Glimmer-Bühne (verbundene Voice-Phase): Vollbild-Overlay ohne App-Nav; Cooper 132→176 + Prop live;
+  Glut pulst im Stimm-Takt (--cooper-level aus voice.levelRef per rAF, iOS-Fallback speaking);
+  Sternbild nur via Mitschrift-Schalter (zuschaltbar); Label „Ich bin fertig" → „Das war's für mich".
+  Tag: pre-glimmer-stage-2026-06-23.
+
+### Persona — Grundsätze
+- Cooper ist EINE Identität. Kein Charakter-Menü. „Persona-Auswahl" = wie derselbe Cooper sich verhält.
+- Konfigurieren → Adaptieren: feste Regler (Ebene/Tiefe/Einstieg) bleiben als OVERRIDE;
+  Adaptivität trägt langfristig die Hauptlast. Am Glas keine Wahl; Einstellungen = Override; Studio = Macht.
+
+### Roadmap-Reihenfolge (empfohlen)
+1. Admin-Cooper-Studio (Hebel): serverseitig globaler Default, KURATIERTE Regler statt freiem Textfeld.
+2. Adaptivität: Ebene aus erstem Taster-Turn ableiten (überschreibbar); Tiefe via Hard-Cap halb da.
+3. Kenner-Gedächtnis (Nachgang) — siehe unten.
+4. Register-Lernen für Schärfer — vorsichtige Ausbaustufe.
+
+### Cooper-Gedächtnis (JA zu beidem)
+- TRENNLINIE: Inhalts-Gedächtnis (was du schmeckst/bewertest, frühere Drams, DNA) NUR Kenner im Nachgang —
+  am Glas verboten (Nordstern). Schärfer höchstens Register-Gedächtnis (wer du als Taster bist), nie Inhalt.
+- Bau: per-Nutzer-Speicher serverseitig, nur in Kenner-Kontext injiziert; eigene DB; transparent + löschbar.
+- Vision: Entwicklungs-Gedächtnis (Vokabular/Wahrnehmung über Zeit) = Treibstoff der Reflexionsspirale.
+
+### Vorgemerkt
+- Facetten-Anregung („alle Facetten kurz tangieren"): als Cooper-Verhalten (adaptiv), NICHT als Sternbild.
+
+### Befunde (Code 23.06.)
+- Cooper-Voice/converse injiziert KEINE persönliche Historie; nur cooperLevel wählt feste Persona-Instruktion.
+- Spalten cooper_entry_mode/cooper_level/cooper_depth alle in schema.ts; PATCH nimmt alle drei;
+  Server nutzt level (Instruktionsset) + depth (hardCap 3/6/10). cooper_depth ging 23.06. direkt via Publishing live.
+- LabsTasteCooper.tsx: 3 Regler (Einstieg / Ebene beginner·expert·connoisseur / Tiefe). Stimmenwahl Admin-only.
+- useCooperVoice exportiert levelRef + speaking (Glimm-Quelle).
