@@ -13,6 +13,10 @@ export default function LabsVoiceProbe() {
   const [savedDefault, setSavedDefault] = useState<{ voice: string; mode: string } | null>(null);
   const [saveMsg, setSaveMsg] = useState("");
   const [saving, setSaving] = useState(false);
+  const [memory, setMemory] = useState<string | null>(null);
+  const [memoryUpdatedAt, setMemoryUpdatedAt] = useState<string | null>(null);
+  const [memBusy, setMemBusy] = useState(false);
+  const [memMsg, setMemMsg] = useState("");
   const transcriptEndRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     (async () => {
@@ -40,6 +44,47 @@ export default function LabsVoiceProbe() {
       setSaveMsg("Fehler beim Speichern.");
     } finally {
       setSaving(false);
+    }
+  };
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/cooper/memory", { headers: { ...pidHeaders() } });
+        if (!res.ok) return;
+        const data = await res.json();
+        setMemory(data?.memory ?? null);
+        setMemoryUpdatedAt(data?.updatedAt ?? null);
+      } catch { /* noop */ }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const generateMemory = async () => {
+    setMemBusy(true);
+    setMemMsg("");
+    try {
+      const res = await fetch("/api/cooper/memory/generate", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() } });
+      if (!res.ok) { setMemMsg("Fehler beim Erzeugen."); return; }
+      const data = await res.json();
+      setMemory(data?.memory ?? null);
+      setMemoryUpdatedAt(data?.updatedAt ?? null);
+    } catch {
+      setMemMsg("Fehler beim Erzeugen.");
+    } finally {
+      setMemBusy(false);
+    }
+  };
+  const deleteMemory = async () => {
+    setMemBusy(true);
+    setMemMsg("");
+    try {
+      const res = await fetch("/api/cooper/memory", { method: "DELETE", headers: { ...pidHeaders() } });
+      if (!res.ok) { setMemMsg("Fehler beim Löschen."); return; }
+      setMemory(null);
+      setMemoryUpdatedAt(null);
+    } catch {
+      setMemMsg("Fehler beim Löschen.");
+    } finally {
+      setMemBusy(false);
     }
   };
   useEffect(() => { transcriptEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [transcript.length]);
@@ -209,6 +254,43 @@ export default function LabsVoiceProbe() {
         >
           Trennen
         </button>
+      </div>
+
+      <div style={{ marginTop: SP.lg, paddingTop: SP.lg, borderTop: `1px solid ${LABS_THEME.border}`, display: "flex", flexDirection: "column", gap: SP.md }}>
+        <div style={{ fontFamily: FONT.serif, fontSize: 22, color: LABS_THEME.gold }}>Sensorisches Gedächtnis (Test)</div>
+        <div style={{ fontSize: 12, color: LABS_THEME.faint, lineHeight: 1.5 }}>
+          Phase 1: Nur zur Prüfung. Cooper nutzt dies noch nicht — später ausschließlich im Nachgang (Kenner), nie am Glas.
+        </div>
+        <div
+          data-testid="text-cooper-memory"
+          style={{ background: LABS_THEME.card, border: `1px solid ${LABS_THEME.border}`, borderRadius: RADIUS.md, padding: SP.md, fontFamily: FONT.serif, fontSize: 16, lineHeight: 1.7, color: memory ? LABS_THEME.text : LABS_THEME.muted, whiteSpace: "pre-wrap" }}
+        >
+          {memory || "Noch nicht erzeugt."}
+        </div>
+        {memoryUpdatedAt && (
+          <div style={{ fontSize: 11, color: LABS_THEME.faint }}>
+            Zuletzt verdichtet: {new Date(memoryUpdatedAt).toLocaleString("de-DE")}
+          </div>
+        )}
+        {memMsg && <div style={{ fontSize: 12, color: "#d66" }}>{memMsg}</div>}
+        <div style={{ display: "flex", gap: SP.md }}>
+          <button
+            data-testid="button-generate-memory"
+            onClick={generateMemory}
+            disabled={memBusy}
+            style={{ flex: 1, minHeight: TOUCH_MIN, background: LABS_THEME.gold, color: "#1a1408", border: "none", borderRadius: RADIUS.md, fontFamily: FONT.body, fontSize: 15, fontWeight: 600, cursor: memBusy ? "default" : "pointer", opacity: memBusy ? 0.5 : 1 }}
+          >
+            {memBusy ? "Verdichte …" : "Neu erzeugen"}
+          </button>
+          <button
+            data-testid="button-delete-memory"
+            onClick={deleteMemory}
+            disabled={memBusy || !memory}
+            style={{ flex: 1, minHeight: TOUCH_MIN, background: "transparent", color: LABS_THEME.muted, border: `1px solid ${LABS_THEME.border}`, borderRadius: RADIUS.md, fontFamily: FONT.body, fontSize: 15, cursor: memBusy || !memory ? "default" : "pointer", opacity: memBusy || !memory ? 0.5 : 1 }}
+          >
+            Löschen
+          </button>
+        </div>
       </div>
     </div>
   );

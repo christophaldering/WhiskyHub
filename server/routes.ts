@@ -5697,6 +5697,82 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
     return res.json({ voice: req.body.voice, mode: req.body.mode });
   });
 
+  // ===== COOPER: Sensorisches Gedächtnis (Phase 1 — erzeugen/ansehen/löschen, KEINE Cooper-Einspeisung) =====
+  app.get("/api/cooper/memory", async (req: Request, res: Response) => {
+    const auth = await requireAuth(req);
+    if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+    return res.json({
+      memory: (auth.participant as any).cooperMemory ?? null,
+      updatedAt: (auth.participant as any).cooperMemoryUpdatedAt ?? null,
+    });
+  });
+
+  app.post("/api/cooper/memory/generate", async (req: Request, res: Response) => {
+    const auth = await requireAuth(req);
+    if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+    const rate = checkConverseRateLimit("coopermem:" + auth.participant.id);
+    if (!rate.allowed) return res.status(429).json({ message: "Too many requests.", retryAfter: rate.retryAfterSeconds });
+    try {
+      const [entries, stats, vocab] = await Promise.all([
+        storage.getJournalEntries(auth.participant.id),
+        storage.getParticipantStats(auth.participant.id),
+        storage.getVocabularyAdoption(auth.participant.id),
+      ]);
+
+      const recent = [...entries]
+        .sort((a, b) => {
+          const ta = (a as any).createdAt ? new Date((a as any).createdAt).getTime() : 0;
+          const tb = (b as any).createdAt ? new Date((b as any).createdAt).getTime() : 0;
+          return tb - ta;
+        })
+        .slice(0, 60);
+
+      const serializedEntries = recent.map((e: any) => {
+        const ym = e.createdAt ? new Date(e.createdAt).toISOString().slice(0, 7) : "????-??";
+        const title = String(e.name || e.title || "?").slice(0, 80);
+        const scores = `N${e.noseScore ?? "-"}/G${e.tasteScore ?? "-"}/A${e.finishScore ?? "-"}/Ø${e.personalScore ?? "-"}`;
+        const tags = Array.isArray(e.tags) ? e.tags.slice(0, 12).join(", ") : "";
+        const narrative = e.tastingNarrative ? String(e.tastingNarrative).slice(0, 400) : "";
+        return `${ym} | ${title} | ${scores}${tags ? ` | Tags: ${tags}` : ""}${narrative ? ` | ${narrative}` : ""}`;
+      }).join("\n");
+
+      const topVocab = vocab.slice(0, 40).map((v: any) => v.term).filter(Boolean).join(", ");
+
+      const statsLine = `Drams gesamt: ${stats.totalRatings}; Journal-Einträge: ${stats.totalJournalEntries}; höchste Gesamtnote: ${stats.highestOverall}; Bewertungs-Stabilität: ${stats.ratingStabilityScore ?? "-"}; Explorations-Index: ${stats.explorationIndex ?? "-"}`;
+
+      const userContent = `STATS:\n${statsLine}\n\nHÄUFIGSTE BEGRIFFE:\n${topVocab || "(keine)"}\n\nVERKOSTUNGEN (jüngste zuerst):\n${serializedEntries || "(keine)"}`;
+
+      const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL });
+      const completion = await openai.chat.completions.create({
+        model: "gpt-5-mini",
+        max_completion_tokens: 900,
+        reasoning_effort: "minimal",
+        messages: [
+          { role: "system", content: "Du destillierst aus den Verkostungs-Daten EINER Person ein kompaktes 'Sensorisches Gedächtnis' — ein Porträt, WER sie als Taster ist. NUR aus den gelieferten Daten; erfinde nichts, ergänze keine Aromen. Schreibe in der zweiten Person ('Du neigst zu…'), Deutsch, 150–250 Wörter, zusammenhängender Text (KEINE Aufzählung). Erfasse: wiederkehrende Aromen/Noten, Gaumen-Tendenzen, wie sich dein Vokabular und deine Wahrnehmung über die Zeit verschieben, auffällige Vorlieben und blinde Flecken. Bleib konkret und beobachtend, nicht schmeichelnd." },
+          { role: "user", content: userContent },
+        ],
+      } as any);
+
+      const text = (completion.choices?.[0]?.message?.content || "").trim();
+      if (!text) return res.status(502).json({ message: "Leere Antwort vom Modell." });
+
+      const now = new Date();
+      const memUpdate: Record<string, any> = { cooperMemory: text, cooperMemoryUpdatedAt: now };
+      await storage.updateParticipant(auth.participant.id, memUpdate);
+      return res.json({ memory: text, updatedAt: now });
+    } catch (e: any) {
+      return res.status(500).json({ message: e?.message || "Fehler beim Erzeugen." });
+    }
+  });
+
+  app.delete("/api/cooper/memory", async (req: Request, res: Response) => {
+    const auth = await requireAuth(req);
+    if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+    const memClear: Record<string, any> = { cooperMemory: null, cooperMemoryUpdatedAt: null };
+    await storage.updateParticipant(auth.participant.id, memClear);
+    return res.json({ ok: true });
+  });
+
   app.post("/api/impression/converse", async (req: Request, res: Response) => {
     const startMs = Date.now();
     try {
