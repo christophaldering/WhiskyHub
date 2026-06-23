@@ -1,0 +1,81 @@
+REPLIT PROMPT — Cooper-Glut intensivieren + falsches Icon im Solo-Tile tauschen
+
+SICHERHEITSREGELN (für den GESAMTEN Prompt):
+1. Zuerst NUR Step 0 (kurz lesen), dann Plan zeigen, auf mein OK warten, DANN ausführen.
+2. NICHT committen: kein git add/commit/push. KEINE Schema-/Migrations-Änderung, kein drizzle-kit.
+3. Nur diese 3 Dateien anfassen:
+   client/src/labs/components/rating/CooperBarrel.tsx
+   client/src/labs/labs-theme.css
+   client/src/labs/pages/solo/SoloCaptureScreen.tsx
+Safety-Tag vorab:  git tag pre-cooper-glow-icon-2026-06-23
+Rollback:          git reset --hard pre-cooper-glow-icon-2026-06-23
+
+STEP 0 — bestätige durch Lesen:
+- CooperBarrel.tsx: const gid = ...; eine <radialGradient id={gid}> + <ellipse className="cooper-barrel-glow" ... rx="13" ry="16" ...>.
+- labs-theme.css: @keyframes cooper-glow-breathe mit 0.42 / 1.
+- SoloCaptureScreen.tsx Z.553: <GlassIcon size={20} style={{ color: "var(--labs-accent)" }} /> im "Eindruck festhalten"-Tile; GlassIcon-Import aus "@/labs/components/FlavourIcons".
+- STOPP, Plan zeigen.
+
+PLAN (nach OK):
+
+=== EDIT 1: CooperBarrel.tsx — Glut viel kräftiger (größer, heller, Bloom) ===
+1a. Direkt nach der gid-Zeile (const gid = ...;) ergänzen:
+    const fid = `${gid}-blur`;
+
+1b. Am <svg ...>-Element ein style ergänzen, damit der Bloom nicht abgeschnitten wird:
+    style={{ overflow: "visible" }}
+
+1c. Den defs+ellipse-Block ersetzen.
+OLD:
+      <defs>
+        <radialGradient id={gid} cx="50%" cy="54%" r="60%">
+          <stop offset="0%" style={{ stopColor: "#f6bc64", stopOpacity: 1 }} />
+          <stop offset="48%" style={{ stopColor: "#e0922e", stopOpacity: 0.5 }} />
+          <stop offset="100%" style={{ stopColor: "#e0922e", stopOpacity: 0 }} />
+        </radialGradient>
+      </defs>
+
+      <ellipse className="cooper-barrel-glow" cx="36" cy="40" rx="13" ry="16" fill={`url(#${gid})`} />
+NEW:
+      <defs>
+        <radialGradient id={gid} cx="50%" cy="52%" r="62%">
+          <stop offset="0%" style={{ stopColor: "#ffd98a", stopOpacity: 1 }} />
+          <stop offset="38%" style={{ stopColor: "#f6b94e", stopOpacity: 0.9 }} />
+          <stop offset="72%" style={{ stopColor: "#e0922e", stopOpacity: 0.38 }} />
+          <stop offset="100%" style={{ stopColor: "#e0922e", stopOpacity: 0 }} />
+        </radialGradient>
+        <filter id={fid} x="-70%" y="-70%" width="240%" height="240%">
+          <feGaussianBlur stdDeviation="2.4" />
+        </filter>
+      </defs>
+
+      <ellipse className="cooper-barrel-glow" cx="36" cy="40" rx="23" ry="25" fill={`url(#${gid})`} filter={`url(#${fid})`} />
+
+=== EDIT 2: labs-theme.css — Atem-Untergrenze deutlich anheben ===
+OLD:
+@keyframes cooper-glow-breathe {
+  0%, 100% { opacity: 0.42; }
+  50%      { opacity: 1; }
+}
+NEW:
+@keyframes cooper-glow-breathe {
+  0%, 100% { opacity: 0.72; }
+  50%      { opacity: 1; }
+}
+Und in der prefers-reduced-motion-Regel den Wert von 0.7 auf 0.9 anheben:
+  .cooper-barrel.is-glowing .cooper-barrel-glow { animation: none; opacity: 0.9; }
+
+=== EDIT 3: SoloCaptureScreen.tsx — Glas durch Cooper-Fass ersetzen ===
+3a. Import ergänzen (oben bei den Imports):
+    import CooperBarrel from "@/labs/components/rating/CooperBarrel";
+3b. Ersetze (Z.553)
+    <GlassIcon size={20} style={{ color: "var(--labs-accent)" }} />
+durch
+    <span style={{ color: "var(--labs-accent)", display: "flex" }}><CooperBarrel size={24} mono /></span>
+3c. Wenn GlassIcon danach in dieser Datei NICHT mehr verwendet wird, den GlassIcon-Import entfernen.
+
+VERIFIKATION:
+- 3 Dateien geändert. Typecheck/Build ohne neue Fehler.
+- Im verbundenen Voice-Eindruck (dunkel) glüht das Fass jetzt deutlich/atmend; im Ruhezustand weiter unsichtbar (opacity 0).
+- Im Solo "Wege ins Glas" trägt "Eindruck festhalten" jetzt das Cooper-Fass statt des Glases.
+- NICHT committen, kein drizzle-kit.
