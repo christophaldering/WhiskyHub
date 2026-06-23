@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { MessageCircle, Ear, CircleCheck } from "lucide-react";
 import { FONT, SP, LABS_THEME } from "./theme";
+import CooperIntro from "./CooperIntro";
 
 export default function ImpressionHowItWorks() {
   const { t } = useTranslation();
@@ -18,6 +19,8 @@ export default function ImpressionHowItWorks() {
   ];
 
   return (
+    <>
+    <CooperIntro />
     <ul style={{ listStyle: "none", padding: 0, margin: 0, marginBottom: SP.md, display: "flex", flexDirection: "column", gap: SP.sm }}>
       {points.map(({ Icon, lead, text }, i) => (
         <li key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
@@ -31,5 +34,6 @@ export default function ImpressionHowItWorks() {
         </li>
       ))}
     </ul>
+    </>
   );
 }

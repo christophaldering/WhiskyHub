@@ -938,6 +938,8 @@ const resources = {
           impressionHowLink: "How does this work?",
           impressionTitle: "What do you notice?",
           voiceIntro: "Speak freely about what you notice — in your own words, no rush. Cooper just listens.",
+          cooperIntroLong: "Cooper helps you put perception into words \u2014 and as the words come, what you taste opens up. This is where tasting becomes reflection.",
+          cooperIntroShort: "Cooper helps you put perception into words \u2014 and as the words come, what you perceive grows.",
           voiceStart: "Talk to Cooper",
           voiceShowTranscript: "Show transcript",
           voiceHideTranscript: "Hide transcript",

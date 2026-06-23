@@ -418,9 +418,6 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
 
       {phase === "input" && (
         <>
-          <div style={{ fontFamily: FONT.serif, fontSize: 16, color: LABS_THEME.muted, marginBottom: SP.md, lineHeight: 1.45 }}>
-            {t("v2.impressionHint", "Was nimmst du wahr? Tippe oder sprich frei \u2014 ein, zwei S\u00e4tze gen\u00fcgen. Den Rest ordnen wir gemeinsam.")}
-          </div>
           <ImpressionHowItWorks />
           <textarea
             value={text}
