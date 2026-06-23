@@ -391,7 +391,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
               <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: SP.lg }}>
                 <div ref={glowWrapRef} style={{ display: "flex" }}><CooperBarrel size={230} live /></div>
                 <div style={{ fontFamily: FONT.serif, fontStyle: "italic", fontSize: 15, color: LABS_THEME.faint, textAlign: "center" }}>
-                  {t("v2.voiceSpeakFreely", "Sprich frei")}
+                  {t("v2.voiceSpeakFreely", "Worte f\u00fcr das, was du wahrnimmst")}
                 </div>
               </div>
 

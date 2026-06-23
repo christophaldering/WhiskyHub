@@ -941,6 +941,7 @@ const resources = {
           cooperIntroLong: "Cooper helps you put perception into words \u2014 and as the words come, what you taste opens up. This is where tasting becomes reflection.",
           cooperIntroShort: "Cooper helps you put perception into words \u2014 and as the words come, what you perceive grows.",
           voiceStart: "Talk to Cooper",
+          voiceSpeakFreely: "Words for what you notice",
           voiceShowTranscript: "Show transcript",
           voiceHideTranscript: "Hide transcript",
           voiceLockedHint: "Talking to Cooper comes with a free account.",
