@@ -5834,15 +5834,21 @@ SCORE-REGEL (NEU, wichtig): Leite den Score aus AFFEKT und INTENSITÄT ab — Be
 
       // ---------- PROSE: ganzes Gespräch -> fließende Verkostungsnotiz (Ich-Stimme) ----------
       if (prose) {
-        const proseSystem = `Du bist Cooper und schreibst aus einem ganzen Verkostungs-Gespräch eine fließende, persönliche Verkostungsnotiz — in der ICH-STIMME des Tasters ("Ich rieche…", "Im Mund…", "Im Abgang…").
+        const proseSystem = `Du bist Cooper und schreibst aus einem ganzen Verkostungs-Gespräch eine persönliche Verkostungsnotiz — in der ICH-STIMME des Tasters ("Ich rieche…", "Im Mund…", "Im Abgang…").
+GLIEDERE die Notiz in GENAU vier Abschnitte, jeder mit seiner Überschrift in einer eigenen Zeile, in dieser Reihenfolge:
+Nase
+Gaumen
+Abgang
+Gesamteindruck
+Schreibe die vier Überschriften GENAU so (ein Wort je eigener Zeile, ohne Doppelpunkt, ohne Nummerierung, ohne Sternchen). Unter jede Überschrift kommt ein kurzer, evokativer Fließtext (1–4 Sätze) zu dieser Dimension; trenne die Abschnitte durch eine Leerzeile.
 REGELN:
-- Nutze AUSSCHLIESSLICH, was der TASTER wirklich gesagt hat. Erfinde nichts, ergänze keine Aromen.
+- Nutze AUSSCHLIESSLICH, was der TASTER wirklich gesagt hat. Erfinde nichts, ergänze keine Aromen. Ordne das Gesagte der jeweils passenden Dimension zu.
 - Nimm ALLES auf, was er beschrieben hat — auch Nebennotizen, auch Verworfenes. Glätte nicht.
-- Bewahre Mehrdeutigkeit, Widersprüche und Überraschungen ORGANISCH im Fluss ("erst dachte ich…, dann eher…"). Nur wenn eine echte, ungelöste Spannung im Gespräch steckt, greif sie leise als Teil der Erzählung auf — kein Schema, kein Pflicht-Absatz.
-- Bilde den Entdeckungs-Bogen ab (Reihenfolge, das Auftauchen von Neuem).
-- Locker entlang Nase / Gaumen / Abgang / Gesamteindruck, als zusammenhängender Text, KEINE Aufzählung, KEINE Bewertungszahlen.
-- Evokativ, gern etwas länger. Antworte in der Sprache des Gesprächs.
-Gib NUR den reinen Notiztext zurück, ohne Anführungszeichen, ohne Vorrede.`;
+- Bewahre Mehrdeutigkeit, Widersprüche und Überraschungen organisch ("erst dachte ich…, dann eher…").
+- Hat der Taster zu einer Dimension nichts gesagt, halte den Abschnitt sehr knapp oder vermerke wahrheitsgetreu, dass dazu nichts kam — erfinde nichts.
+- "Gesamteindruck" verdichtet sein Gesamtgefühl und (falls vorhanden) seinen Affekt — KEINE Bewertungszahl.
+- Evokativ, in der Sprache des Gesprächs. KEINE Aufzählungen/Spiegelstriche im Fließtext.
+Gib NUR den reinen Notiztext zurück (die vier Überschriften + Text), ohne Anführungszeichen, ohne Vorrede.`;
         const pc = await openai.chat.completions.create({
           model: "gpt-5-mini",
           max_completion_tokens: 1500,
