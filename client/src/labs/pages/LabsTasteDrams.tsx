@@ -183,7 +183,7 @@ function buildDramsExportRows(items: readonly DramExportRecord[]): Record<string
 }
 
 export default function LabsTasteDrams() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const session = useSession();
   const cooperPhase = useCooperStartPhase("voice");
   const [, navigate] = useLocation();
@@ -1341,6 +1341,7 @@ export default function LabsTasteDrams() {
                           <div style={{ height: 1, background: "var(--labs-border)", margin: "4px 0" }} />
                         </>
                       )}
+                      <div style={{ padding: "6px 10px 4px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)" }}>{i18n.language?.toLowerCase().startsWith("de") ? "Verwalten" : "Manage"}</div>
                       <button
                         onClick={() => { setMoreMenuOpen(false); setViewState("trash"); }}
                         className="w-full text-left flex items-center gap-2"
