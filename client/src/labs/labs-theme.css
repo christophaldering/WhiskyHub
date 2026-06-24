@@ -2967,11 +2967,13 @@ a.labs-dram-item {
 /* ── Cooper-Fass (Icon) ──────────────────────────────────────── */
 .cooper-barrel-glow { opacity: 0; }
 .cooper-barrel.is-glowing .cooper-barrel-glow {
-  animation: cooper-glow-breathe 3.4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cooper-glow-breathe 3.2s ease-in-out infinite;
 }
 @keyframes cooper-glow-breathe {
-  0%, 100% { opacity: 0.72; }
-  50%      { opacity: 1; }
+  0%, 100% { opacity: 0.82; transform: scale(0.96); }
+  50%      { opacity: 1; transform: scale(1.10); }
 }
 @media (prefers-reduced-motion: reduce) {
   .cooper-barrel.is-glowing .cooper-barrel-glow { animation: none; opacity: 0.9; }

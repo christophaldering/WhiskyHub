@@ -42,7 +42,7 @@ export default function CooperBarrel({ size = 28, glow = false, live = false, mo
           <stop offset="100%" style={{ stopColor: "#e0922e", stopOpacity: 0 }} />
         </radialGradient>
         <filter id={fid} x="-70%" y="-70%" width="240%" height="240%">
-          <feGaussianBlur stdDeviation="2.4" />
+          <feGaussianBlur stdDeviation="3.2" />
         </filter>
       </defs>
 
