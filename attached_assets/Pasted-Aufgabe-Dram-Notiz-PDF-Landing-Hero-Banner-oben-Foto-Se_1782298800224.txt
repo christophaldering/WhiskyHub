@@ -1,3 +1,15 @@
+Aufgabe: Dram-Notiz-PDF — Landing-Hero-Banner oben + Foto-Seitenverhältnis-Fix. Nur client/src/labs/utils/dramNotePdf.ts ändern.
+
+VORAUSSETZUNG: Die Datei client/src/assets/images/pdf-hero.jpg MUSS existieren (vom Nutzer hochgeladen). Prüfe das zuerst — falls sie fehlt: STOPP und melde es, NICHT bauen.
+
+SICHERHEITSREGELN: KEINE Commits, KEIN Push, KEIN drizzle-kit, KEINE Schema-Änderung.
+
+Vorbereitung: git tag pre-pdf-hero-2026-06-24 setzen.
+
+Schritt 0: Prüfe `ls client/src/assets/images/pdf-hero.jpg`. Existiert sie nicht → STOPP. Existiert sie → führe aus:
+
+client/src/labs/utils/dramNotePdf.ts — gesamten Inhalt durch exakt Folgendes ersetzen:
+
 import jsPDF from "jspdf";
 import pdfHeroUrl from "@/assets/images/pdf-hero.jpg";
 
@@ -164,3 +176,11 @@ export function openDramNotePdf(data: DramNoteData): void {
   }
   setTimeout(() => { URL.revokeObjectURL(url); }, 60000);
 }
+
+Verifikation:
+1. ls client/src/assets/images/pdf-hero.jpg  (vorhanden)
+2. grep -n "pdfHeroUrl\|heroDataUrl\|maxH = 95\|openDramNotePdf" client/src/labs/utils/dramNotePdf.ts
+3. Typecheck sauber.
+4. git status → nichts committet; Tag pre-pdf-hero-2026-06-24 gesetzt. Bestätige: "Keine Commits, kein Push, keine Schema-Änderung."
+
+Rollback: git reset --hard pre-pdf-hero-2026-06-24.
