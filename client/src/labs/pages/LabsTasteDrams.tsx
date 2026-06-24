@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -10,7 +9,7 @@ import type { Participant } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
-import { renderDramNotePdf } from "@/labs/utils/dramNotePdf";
+import { openDramNotePdf } from "@/labs/utils/dramNotePdf";
 import type { JournalEntry } from "@shared/schema";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
 import {
@@ -195,10 +194,6 @@ export default function LabsTasteDrams() {
   const [editForm, setEditForm] = useState<Record<string, any>>({});
   const [deleteTarget, setDeleteTarget] = useState<JournalEntry | null>(null);
   const [notePhotoDataUrl, setNotePhotoDataUrl] = useState<string | null>(null);
-  const [notePdfRendering, setNotePdfRendering] = useState(false);
-  const [notePdf, setNotePdf] = useState<{ previewDataUrl: string; blobUrl: string } | null>(null);
-  const notePdfUrlRef = useRef<string | null>(null);
-  useEffect(() => () => { if (notePdfUrlRef.current) URL.revokeObjectURL(notePdfUrlRef.current); }, []);
   const [detailMoreMenuOpen, setDetailMoreMenuOpen] = useState(false);
   useEffect(() => { setDetailMoreMenuOpen(false); }, [selectedEntry?.id, viewState]);
   const [search, setSearch] = useState("");
@@ -921,26 +916,8 @@ export default function LabsTasteDrams() {
             saving={narrativeMutation.isPending}
             readOnly={selectedEntry.source === "tasting"}
             onSave={(text) => narrativeMutation.mutate({ id: selectedEntry.id, data: { tastingNarrative: text } })}
-            onDownload={async () => {
-              if (notePdfRendering) return;
-              setNotePdf((prev) => { if (prev?.blobUrl) URL.revokeObjectURL(prev.blobUrl); return null; });
-              setNotePdfRendering(true);
-              try {
-                const res = await renderDramNotePdf({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, tastingName: (selectedEntry as any).tastingTitle ?? null, tasterName: participantData?.name ?? session.name ?? null, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl: notePhotoDataUrl });
-                setNotePdf(res);
-                notePdfUrlRef.current = res.blobUrl;
-              } catch { dramsToast({ title: t("drams.pdfError", "PDF konnte nicht erstellt werden"), variant: "destructive" }); }
-              finally { setNotePdfRendering(false); }
-            }}
+            onDownload={() => openDramNotePdf({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, tastingName: (selectedEntry as any).tastingTitle ?? null, tasterName: participantData?.name ?? session.name ?? null, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl: notePhotoDataUrl })}
           />
-
-          {notePdfRendering && createPortal(
-            <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(11,9,6,0.92)", display: "flex", alignItems: "center", justifyContent: "center", color: "#f5ede0", fontSize: 15 }}>
-              {t("drams.pdfRendering", "PDF wird erzeugt \u2026")}
-            </div>, document.body)}
-          {notePdf && (
-            <NotePdfPreviewOverlay previewDataUrl={notePdf.previewDataUrl} blobUrl={notePdf.blobUrl} onClose={() => { notePdfUrlRef.current = null; setNotePdf(null); }} />
-          )}
 
           <FriendsAlsoRated
             pid={session.pid || ""}
@@ -1591,34 +1568,6 @@ function MetaBadge({ label, value }: { label: string; value: string }) {
       <span style={{ color: "var(--labs-text-muted)" }}>{label}: </span>
       <span style={{ color: "var(--labs-text)", fontWeight: 500 }}>{value}</span>
     </div>
-  );
-}
-
-function NotePdfPreviewOverlay({ previewDataUrl, blobUrl, onClose }: { previewDataUrl: string; blobUrl: string; onClose: () => void }) {
-  const { t } = useTranslation();
-  const openPdf = () => {
-    const win = window.open(blobUrl, "_blank");
-    if (!win) {
-      const a = document.createElement("a");
-      a.href = blobUrl; a.target = "_blank"; a.rel = "noopener";
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    }
-  };
-  return createPortal(
-    <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(11,9,6,0.92)", display: "flex", flexDirection: "column" }}>
-      <div style={{ flex: 1, overflow: "auto", padding: 16, display: "flex", justifyContent: "center", alignItems: "flex-start" }}>
-        <img src={previewDataUrl} alt={t("drams.pdfPreviewAlt", "PDF-Vorschau")} style={{ width: "100%", maxWidth: 520, height: "auto", borderRadius: 4, boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }} />
-      </div>
-      <div style={{ display: "flex", gap: 12, padding: "16px 20px", paddingBottom: "calc(16px + env(safe-area-inset-bottom))", background: "rgba(11,9,6,0.7)" }}>
-        <button onClick={openPdf} style={{ flex: 1, padding: "14px 16px", fontSize: 15, fontWeight: 600, borderRadius: 10, background: "var(--labs-accent)", color: "#0b0906", border: "none", cursor: "pointer" }}>
-          {t("drams.savePdf", "Speichern / Teilen")}
-        </button>
-        <button onClick={onClose} style={{ padding: "14px 18px", fontSize: 15, borderRadius: 10, background: "transparent", color: "#f5ede0", border: "1px solid rgba(245,237,224,0.3)", cursor: "pointer" }}>
-          {t("common.close", "Schlie\u00dfen")}
-        </button>
-      </div>
-    </div>,
-    document.body
   );
 }
 

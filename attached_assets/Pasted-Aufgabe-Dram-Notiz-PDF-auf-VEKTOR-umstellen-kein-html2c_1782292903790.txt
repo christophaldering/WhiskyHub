@@ -1,3 +1,13 @@
+Aufgabe: Dram-Notiz-PDF auf VEKTOR umstellen (kein html2canvas → behebt leeres PDF auf iOS). Synchron, direkt in neuem Tab öffnen. Overlay komplett entfernen. Nur diese zwei Dateien ändern: client/src/labs/utils/dramNotePdf.ts und client/src/labs/pages/LabsTasteDrams.tsx.
+
+SICHERHEITSREGELN (zwingend): KEINE git commits, KEIN git push, KEIN drizzle-kit, KEINE Schema-Änderung. Wenn etwas unklar ist, NICHT raten — stattdessen melden.
+
+Vorbereitung:
+- git tag pre-pdf-vector-2026-06-24 setzen (für Rollback).
+
+Führe dann BEIDE Schritte aus (keine Rückfrage nötig, der Plan ist final):
+
+=== SCHRITT A: client/src/labs/utils/dramNotePdf.ts — gesamten Dateiinhalt durch exakt Folgendes ersetzen: ===
 import jsPDF from "jspdf";
 
 export type DramNoteData = {
@@ -140,3 +150,41 @@ export function openDramNotePdf(data: DramNoteData): void {
   }
   setTimeout(() => { URL.revokeObjectURL(url); }, 60000);
 }
+
+=== SCHRITT B: client/src/labs/pages/LabsTasteDrams.tsx — folgende Änderungen vornehmen: ===
+B1) Import ändern: aus
+  import { renderDramNotePdf } from "@/labs/utils/dramNotePdf";
+mache
+  import { openDramNotePdf } from "@/labs/utils/dramNotePdf";
+
+B2) Die Zeile
+  import { createPortal } from "react-dom";
+ENTFERNEN. (Falls createPortal danach noch irgendwo in der Datei genutzt würde, NICHT entfernen, sondern melden — sollte aber ungenutzt sein.)
+
+B3) Den onDownload-Handler des <TastingNarrativeSection ... /> (aktuell ein async-Handler, der renderDramNotePdf aufruft und setNotePdf/setNotePdfRendering setzt) KOMPLETT ersetzen durch diesen synchronen Direkt-Öffner (Felder unverändert übernehmen):
+            onDownload={() => openDramNotePdf({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, tastingName: (selectedEntry as any).tastingTitle ?? null, tasterName: participantData?.name ?? session.name ?? null, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl: notePhotoDataUrl })}
+
+B4) Die drei States ENTFERNEN: notePdfRendering, notePdf, notePdfUrlRef (die useState/useRef-Deklarationen).
+
+B5) Den useEffect ENTFERNEN, der beim Unmount notePdfUrlRef.current via URL.revokeObjectURL freigibt.
+
+B6) Die beiden Render-Blöcke ENTFERNEN:
+   - {notePdfRendering && createPortal( ... "PDF wird erzeugt" ... , document.body)}
+   - {notePdf && ( <NotePdfPreviewOverlay ... /> )}
+   Danach steht dort wieder nur das schließende /> des TastingNarrativeSection, gefolgt von <FriendsAlsoRated.
+
+B7) Die gesamte Komponenten-Funktion NotePdfPreviewOverlay ENTFERNEN (Definition inklusive createPortal-Rückgabe).
+
+B8) BEHALTEN (nicht anfassen): der State notePhotoDataUrl und der useEffect, der das Foto via fetchFirstPhotoDataUrl vorab lädt. Er liefert weiterhin photoDataUrl an openDramNotePdf.
+
+=== VERIFIKATION (Ausgaben zeigen): ===
+1. grep -n "openDramNotePdf\|buildDramNotePdfDoc\|html2canvas\|saveJsPdf" client/src/labs/utils/dramNotePdf.ts
+   → openDramNotePdf + buildDramNotePdfDoc vorhanden; html2canvas und saveJsPdf = KEINE Treffer.
+2. grep -nE "notePdfRendering|notePdfUrlRef|notePdf\b|NotePdfPreviewOverlay|renderDramNotePdf|createPortal" client/src/labs/pages/LabsTasteDrams.tsx
+   → KEINE Treffer.
+3. grep -n "openDramNotePdf\|notePhotoDataUrl" client/src/labs/pages/LabsTasteDrams.tsx
+   → beide vorhanden.
+4. Typecheck muss sauber sein.
+5. git status zeigen und bestätigen: nichts committet, kein Push, keine Schema-Änderung; Tag pre-pdf-vector-2026-06-24 ist gesetzt.
+
+Rollback bei Problemen: git reset --hard pre-pdf-vector-2026-06-24.
