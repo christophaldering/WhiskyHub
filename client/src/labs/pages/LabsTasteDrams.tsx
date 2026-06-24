@@ -193,6 +193,7 @@ export default function LabsTasteDrams() {
   const [viewState, setViewState] = useState<ViewState>("list");
   const [editForm, setEditForm] = useState<Record<string, any>>({});
   const [deleteTarget, setDeleteTarget] = useState<JournalEntry | null>(null);
+  const [notePhotoDataUrl, setNotePhotoDataUrl] = useState<string | null>(null);
   const [detailMoreMenuOpen, setDetailMoreMenuOpen] = useState(false);
   useEffect(() => { setDetailMoreMenuOpen(false); }, [selectedEntry?.id, viewState]);
   const [search, setSearch] = useState("");
@@ -266,6 +267,16 @@ export default function LabsTasteDrams() {
     url.searchParams.delete("entry");
     window.history.replaceState({}, "", url.pathname + (url.search || "") + url.hash);
   }, [journal, isLoading]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setNotePhotoDataUrl(null);
+    const e: any = selectedEntry;
+    if (e && session.pid && e.source !== "tasting" && e.id) {
+      fetchFirstPhotoDataUrl(session.pid, e.id).then((d) => { if (!cancelled) setNotePhotoDataUrl(d); }).catch(() => {});
+    }
+    return () => { cancelled = true; };
+  }, [selectedEntry?.id, session.pid]);
 
   const { data: tastingHistory } = useQuery({
     queryKey: ["tasting-history", session.pid],
@@ -905,9 +916,8 @@ export default function LabsTasteDrams() {
             saving={narrativeMutation.isPending}
             readOnly={selectedEntry.source === "tasting"}
             onSave={(text) => narrativeMutation.mutate({ id: selectedEntry.id, data: { tastingNarrative: text } })}
-            onDownload={async () => {
-              const photoDataUrl = await fetchFirstPhotoDataUrl(session.pid!, (selectedEntry as any).id);
-              await downloadDramNotePdf({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, tastingName: (selectedEntry as any).tastingTitle ?? null, tasterName: participantData?.name ?? session.name ?? null, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl });
+            onDownload={() => {
+              void downloadDramNotePdf({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, tastingName: (selectedEntry as any).tastingTitle ?? null, tasterName: participantData?.name ?? session.name ?? null, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl: notePhotoDataUrl });
             }}
           />
 

@@ -2,6 +2,12 @@ export function isAndroid(): boolean {
   return /Android/i.test(navigator.userAgent);
 }
 
+export function isIOS(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  return /iP(hone|ad|od)/i.test(ua) || ((navigator as any).platform === "MacIntel" && (navigator as any).maxTouchPoints > 1);
+}
+
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -32,7 +38,7 @@ export async function downloadBlobAndroid(blob: Blob, filename: string): Promise
 }
 
 export async function downloadBlob(blob: Blob, filename: string): Promise<void> {
-  if (isAndroid()) {
+  if (isAndroid() || isIOS()) {
     await downloadBlobAndroid(blob, filename);
     return;
   }
