@@ -79,15 +79,15 @@ export default function RatingModeChip({ mode, hideQuick, showTisch, labels, all
         onClick={() => setOpen((v) => !v)}
         style={{
           display: "inline-flex",
-          alignItems: "center",
-          gap: 6,
-          padding: "6px 10px",
+          flexDirection: "column",
+          alignItems: "flex-start",
+          gap: 1,
+          padding: "5px 12px",
           borderRadius: RADIUS.full,
           background: "var(--labs-surface-elevated)",
           border: "1px solid var(--labs-border)",
           color: "var(--labs-text-secondary)",
           fontFamily: FONT.body,
-          fontSize: 11,
           cursor: "pointer",
           minHeight: 28,
           whiteSpace: "nowrap",
@@ -96,9 +96,11 @@ export default function RatingModeChip({ mode, hideQuick, showTisch, labels, all
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <span style={{ opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em", fontSize: 9 }}>{labels.current}</span>
-        <span style={{ color: "var(--labs-text)", fontWeight: 600 }}>{labelFor(mode)}</span>
-        <span style={{ fontSize: 9, opacity: 0.5 }}>▾</span>
+        <span style={{ opacity: 0.55, textTransform: "uppercase", letterSpacing: "0.07em", fontSize: 8, lineHeight: 1.2 }}>{labels.current}</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <span style={{ color: "var(--labs-text)", fontWeight: 600, fontSize: 12, lineHeight: 1.15 }}>{labelFor(mode)}</span>
+          <span style={{ fontSize: 8, opacity: 0.5 }}>▾</span>
+        </span>
       </button>
 
       {open && (

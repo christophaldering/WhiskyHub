@@ -1,0 +1,71 @@
+Aufgabe: RatingModeChip — Inhalt stapeln (Label oben, Wert+Pfeil darunter), behebt das Quetschen/abgeschnittenen Pfeil. Nur client/src/labs/components/rating/RatingModeChip.tsx.
+
+SICHERHEITSREGELN: KEINE Commits, KEIN Push, KEIN drizzle-kit, KEINE Schema-Änderung.
+
+git tag pre-modechip-stack-2026-06-24 setzen. Dann ersetze EXAKT den gesamten <button>…</button>-Block:
+
+      <button
+        data-testid="chip-rating-mode"
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          padding: "6px 10px",
+          borderRadius: RADIUS.full,
+          background: "var(--labs-surface-elevated)",
+          border: "1px solid var(--labs-border)",
+          color: "var(--labs-text-secondary)",
+          fontFamily: FONT.body,
+          fontSize: 11,
+          cursor: "pointer",
+          minHeight: 28,
+          whiteSpace: "nowrap",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+        }}
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        <span style={{ opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em", fontSize: 9 }}>{labels.current}</span>
+        <span style={{ color: "var(--labs-text)", fontWeight: 600 }}>{labelFor(mode)}</span>
+        <span style={{ fontSize: 9, opacity: 0.5 }}>▾</span>
+      </button>
+
+durch:
+
+      <button
+        data-testid="chip-rating-mode"
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          display: "inline-flex",
+          flexDirection: "column",
+          alignItems: "flex-start",
+          gap: 1,
+          padding: "5px 12px",
+          borderRadius: RADIUS.full,
+          background: "var(--labs-surface-elevated)",
+          border: "1px solid var(--labs-border)",
+          color: "var(--labs-text-secondary)",
+          fontFamily: FONT.body,
+          cursor: "pointer",
+          minHeight: 28,
+          whiteSpace: "nowrap",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+        }}
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        <span style={{ opacity: 0.55, textTransform: "uppercase", letterSpacing: "0.07em", fontSize: 8, lineHeight: 1.2 }}>{labels.current}</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <span style={{ color: "var(--labs-text)", fontWeight: 600, fontSize: 12, lineHeight: 1.15 }}>{labelFor(mode)}</span>
+          <span style={{ fontSize: 8, opacity: 0.5 }}>▾</span>
+        </span>
+      </button>
+
+Verifikation:
+1. grep -n "flexDirection: \"column\"" client/src/labs/components/rating/RatingModeChip.tsx  (1 Treffer)
+2. grep -c "gap: 6," client/src/labs/components/rating/RatingModeChip.tsx  (0)
+3. Typecheck sauber.
+4. git status → nichts committet/gepusht. Bestätige: "Keine Commits, kein Push, keine Schema-Änderung."
+
+Rollback: git reset --hard pre-modechip-stack-2026-06-24.
