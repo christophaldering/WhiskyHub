@@ -96,7 +96,7 @@ export default function RatingModeChip({ mode, hideQuick, showTisch, labels, all
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <span style={{ opacity: 0.7 }}>{labels.current}:</span>
+        <span style={{ opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.05em", fontSize: 9 }}>{labels.current}</span>
         <span style={{ color: "var(--labs-text)", fontWeight: 600 }}>{labelFor(mode)}</span>
         <span style={{ fontSize: 9, opacity: 0.5 }}>▾</span>
       </button>
