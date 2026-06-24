@@ -940,7 +940,7 @@ const resources = {
           voiceIntro: "Speak freely about what you notice — in your own words, no rush. Cooper just listens.",
           cooperIntroLong: "With words, what you taste opens up. Cooper doesn't write for you \u2014 he helps you find your own words, and grows quieter as you grow surer. This is how tasting becomes reflection.",
           cooperIntroShort: "Your words, sharpened \u2014 not replaced. The surer you become, the quieter Cooper grows.",
-          voiceStart: "Talk to Cooper",
+          voiceStart: "Reflect with Cooper",
           voiceSpeakFreely: "Words for what you notice",
           voiceShowTranscript: "Show transcript",
           voiceHideTranscript: "Hide transcript",

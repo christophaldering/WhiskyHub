@@ -362,7 +362,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
                     disabled={voice.status === "connecting" || voice.status === "token"}
                     style={{ width: "100%", minHeight: TOUCH_MIN, background: LABS_THEME.gold, color: "#1a1408", border: "none", borderRadius: RADIUS.md, fontFamily: FONT.body, fontSize: 16, fontWeight: 600, opacity: (voice.status === "connecting" || voice.status === "token") ? 0.6 : 1, cursor: (voice.status === "connecting" || voice.status === "token") ? "default" : "pointer" }}
                   >
-                    {(voice.status === "connecting" || voice.status === "token") ? t("v2.voiceConnecting", "Verbinde \u2026") : t("v2.voiceStart", "Mit Cooper sprechen")}
+                    {(voice.status === "connecting" || voice.status === "token") ? t("v2.voiceConnecting", "Verbinde \u2026") : t("v2.voiceStart", "Mit Cooper reflektieren")}
                   </button>
                   <div style={{ fontFamily: FONT.body, fontSize: 12, color: LABS_THEME.faint, marginTop: SP.sm, lineHeight: 1.4 }}>
                     {t("v2.voiceAiNote", "Coopers Stimme ist KI-generiert.")}
