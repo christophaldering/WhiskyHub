@@ -1349,16 +1349,9 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         <div style={{ fontSize: 13, color: tv.text, marginTop: 10, lineHeight: 1.5 }}>{L.appInfoTagline}</div>
       </div>
       <MenuButton theme={tv}
-        icon={<Info style={{ width: 18, height: 18, color: tv.accent }} />}
-        label={L.appInfoStory}
-        onClick={() => { onClose(); navigate("/labs/explore?tab=bibliothek&section=ueber-casksense&sub=about"); }}
-        testId="m2-appinfo-story"
-      />
-      <div style={{ height: 8 }} />
-      <MenuButton theme={tv}
         icon={<HandHeart style={{ width: 18, height: 18, color: tv.accent }} />}
         label={L.support}
-        onClick={() => { onClose(); navigate("/labs/explore?tab=bibliothek&section=ueber-casksense&sub=about"); }}
+        onClick={() => { window.open("https://www.paypal.com/giving/campaigns?campaign_id=XGB4YN3CQEMFE", "_blank", "noopener,noreferrer"); }}
         testId="m2-appinfo-support"
       />
       <div style={{ height: 8 }} />
