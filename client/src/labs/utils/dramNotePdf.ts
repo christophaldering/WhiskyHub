@@ -1,6 +1,5 @@
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import { saveJsPdf } from "@/lib/pdf";
 import heroWhisky from "@/assets/images/hero-whisky.png";
 
 export type DramNoteData = {
@@ -28,7 +27,7 @@ function fmtDateTime(iso?: string|null): string {
 function esc(s: string): string { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 function parseSections(text: string){ const lines=(text||"").split(/\r?\n/); const out:{header:string|null;body:string}[]=[]; let cur:{header:string|null;body:string}|null=null; for(const raw of lines){const line=raw.trim(); if(SECTIONS.includes(line)){if(cur)out.push(cur);cur={header:line,body:""};} else {if(!cur)cur={header:null,body:""}; cur.body+=(cur.body?"\n":"")+raw;}} if(cur)out.push(cur); return out; }
 
-export async function downloadDramNotePdf(data: DramNoteData): Promise<void> {
+export async function renderDramNotePdf(data: DramNoteData): Promise<{ previewDataUrl: string; blobUrl: string }> {
   const blocks = parseSections(data.narrative);
   const s = data.scores || {};
   const scoreItems = [
@@ -100,7 +99,8 @@ export async function downloadDramNotePdf(data: DramNoteData): Promise<void> {
     const imgH = (canvas.height / canvas.width) * imgW;
     if (imgH <= pageH) { doc.addImage(imgData,"JPEG",0,0,imgW,imgH); }
     else { let remaining=imgH; let position=0; while(remaining>0){ doc.addImage(imgData,"JPEG",0,position,imgW,imgH); remaining-=pageH; if(remaining>0){ doc.addPage(); position-=pageH; } } }
-    const safe = (data.whiskyName||"Notiz").replace(/[^a-zA-Z0-9\u00c4\u00d6\u00dc\u00e4\u00f6\u00fc_-]+/g,"-").slice(0,50);
-    await saveJsPdf(doc, "CaskSense-Verkostungsnotiz-"+safe+".pdf");
+    const raw = doc.output("blob");
+    const blob = raw.type === "application/pdf" ? raw : new Blob([raw], { type: "application/pdf" });
+    return { previewDataUrl: imgData, blobUrl: URL.createObjectURL(blob) };
   } finally { document.body.removeChild(node); }
 }
