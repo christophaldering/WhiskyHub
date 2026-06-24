@@ -8,11 +8,12 @@ import { participantApi } from "@/lib/api";
 import {
   X, LogOut, User, Globe, Settings, Palette, Download,
   ArrowLeftRight, UserPlus, KeyRound, Mail, Eye, EyeOff,
-  Shield, ChevronLeft, Sun, Moon, CheckCircle2, Info, HandHeart, Sparkles,
+  Shield, ChevronLeft, Sun, Moon, CheckCircle2, Info, HandHeart, Sparkles, FileText,
 } from "lucide-react";
 import i18n from "@/lib/i18n";
+import { APP_VERSION } from "@shared/version";
 
-type MenuView = "main" | "forgot-pin" | "reset-pin" | "verify-email" | "guest";
+type MenuView = "main" | "forgot-pin" | "reset-pin" | "verify-email" | "guest" | "app-info";
 
 interface M2ProfileMenuProps {
   open: boolean;
@@ -242,6 +243,24 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
 
   const isLabs = location.startsWith("/labs");
   const tv = isLabs ? labsV : v;
+  const isDe = (i18n.language || "").toLowerCase().startsWith("de");
+  const L = isDe ? {
+    cooper: "Cooper", secSettings: "Einstellungen", settings: "Einstellungen",
+    theme: "Theme", themeLight: "Hell", themeDark: "Dunkel", language: "Sprache",
+    secAccount: "Konto & Daten", verifyEmail: "E-Mail bestätigen", dataExport: "Daten & Export",
+    secApp: "App", about: "Über CaskSense", support: "Projekt unterstützen",
+    admin: "Admin", switchClassic: "Klassische Ansicht", back: "Zurück",
+    appInfoVersion: "Version", appInfoTagline: "Ein privates Hobbyprojekt — aus Freude an Whisky und Technik.",
+    appInfoStory: "Die ganze Geschichte von CaskSense", appInfoImpressum: "Impressum", appInfoPrivacy: "Datenschutz",
+  } : {
+    cooper: "Cooper", secSettings: "Settings", settings: "Settings",
+    theme: "Theme", themeLight: "Light", themeDark: "Dark", language: "Language",
+    secAccount: "Account & Data", verifyEmail: "Verify Email", dataExport: "Data & Export",
+    secApp: "App", about: "About CaskSense", support: "Support the project",
+    admin: "Admin", switchClassic: "Switch to Classic UI", back: "Back",
+    appInfoVersion: "Version", appInfoTagline: "A private hobby project — for the love of whisky and tech.",
+    appInfoStory: "The full story behind CaskSense", appInfoImpressum: "Imprint", appInfoPrivacy: "Privacy",
+  };
 
   const handleRegister = async () => {
     if (!regName.trim() || !regEmail.trim() || !regPin.trim()) {
@@ -797,14 +816,17 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
       {isLabs ? (
         <MenuButton theme={tv}
           icon={<Sparkles style={{ width: 18, height: 18, color: tv.accent }} />}
-          label={t("m2.profile.cooper", "Cooper")}
+          label={L.cooper}
           onClick={() => { onClose(); navigate("/labs/taste/cooper"); }}
           testId="m2-profile-cooper"
         />
       ) : null}
+
+      <div style={{ height: 1, background: tv.border, margin: "8px 0" }} />
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: tv.muted, padding: "2px 4px 6px" }}>{L.secSettings}</div>
       <MenuButton theme={tv}
         icon={<Settings style={{ width: 18, height: 18, color: tv.accent }} />}
-        label={t("m2.profile.settings", "Settings")}
+        label={L.settings}
         onClick={() => { onClose(); navigate(isLabs ? "/labs/taste/settings" : "/m2/taste/settings"); }}
         testId="m2-profile-settings"
       />
@@ -813,13 +835,11 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
           icon={labsTheme === "dark"
             ? <Sun style={{ width: 18, height: 18, color: tv.accent }} />
             : <Moon style={{ width: 18, height: 18, color: tv.accent }} />}
-          label={t("m2.profile.theme", "Theme")}
+          label={L.theme}
           onClick={toggleLabsTheme}
           suffix={
             <span style={{ fontSize: 12, color: tv.muted, fontWeight: 600 }}>
-              {labsTheme === "dark"
-                ? t("m2.profile.themeLight", "Light")
-                : t("m2.profile.themeDark", "Dark")}
+              {labsTheme === "dark" ? L.themeLight : L.themeDark}
             </span>
           }
           testId="m2-profile-theme"
@@ -829,13 +849,11 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
           icon={currentTheme === "dark-warm"
             ? <Sun style={{ width: 18, height: 18, color: tv.accent }} />
             : <Moon style={{ width: 18, height: 18, color: tv.accent }} />}
-          label={t("m2.profile.theme", "Theme")}
+          label={L.theme}
           onClick={toggleTheme}
           suffix={
             <span style={{ fontSize: 12, color: tv.muted, fontWeight: 600 }}>
-              {currentTheme === "dark-warm"
-                ? t("m2.profile.themeLight", "Light")
-                : t("m2.profile.themeDark", "Dark")}
+              {currentTheme === "dark-warm" ? L.themeLight : L.themeDark}
             </span>
           }
           testId="m2-profile-theme"
@@ -843,59 +861,55 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
       )}
       <MenuButton theme={tv}
         icon={<Globe style={{ width: 18, height: 18, color: tv.accent }} />}
-        label={t("m2.profile.language", "Language")}
+        label={L.language}
         onClick={toggleLanguage}
         suffix={<span style={{ fontSize: 12, color: tv.muted, fontWeight: 600 }}>{i18n.language.toUpperCase()}</span>}
         testId="m2-profile-language"
       />
+
       <div style={{ height: 1, background: tv.border, margin: "8px 0" }} />
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: tv.muted, padding: "2px 4px 6px" }}>{L.secAccount}</div>
       {emailVerified === false && (
         <MenuButton theme={tv}
           icon={<Mail style={{ width: 18, height: 18, color: tv.accent }} />}
-          label={t("m2.profile.verifyEmail", "Verify Email")}
+          label={L.verifyEmail}
           onClick={() => { setView("verify-email"); setError(""); }}
           testId="m2-profile-verify-email"
         />
       )}
       <MenuButton theme={tv}
         icon={<Download style={{ width: 18, height: 18, color: tv.accent }} />}
-        label={t("m2.profile.dataExport", "Data & Export")}
+        label={L.dataExport}
         onClick={() => { onClose(); navigate(isLabs ? "/labs/taste/downloads" : "/m2/taste/downloads"); }}
         testId="m2-profile-data"
+      />
+
+      <div style={{ height: 1, background: tv.border, margin: "8px 0" }} />
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: tv.muted, padding: "2px 4px 6px" }}>{L.secApp}</div>
+      <MenuButton theme={tv}
+        icon={<Info style={{ width: 18, height: 18, color: tv.accent }} />}
+        label={L.about}
+        onClick={() => { setView("app-info"); setError(""); }}
+        testId="m2-profile-about"
       />
       {session.role === "admin" && (
         <>
           <MenuButton theme={tv}
             icon={<Shield style={{ width: 18, height: 18, color: tv.accent }} />}
-            label={t("m2.profile.admin", "Admin")}
+            label={L.admin}
             onClick={() => { onClose(); navigate(isLabs ? "/labs/admin" : "/m2/admin"); }}
             testId="m2-profile-admin"
           />
           {!isLabs && (
             <MenuButton theme={tv}
               icon={<ArrowLeftRight style={{ width: 18, height: 18, color: tv.accent }} />}
-              label={t("m2.profile.switchClassic", "Switch to Classic UI")}
+              label={L.switchClassic}
               onClick={() => { onClose(); window.location.href = "/tasting"; }}
               testId="m2-profile-classic"
             />
           )}
         </>
       )}
-
-      <div style={{ height: 1, background: tv.border, margin: "8px 0" }} />
-
-      <MenuButton theme={tv}
-        icon={<Info style={{ width: 18, height: 18, color: tv.accent }} />}
-        label={t("m2.profile.about", "About CaskSense")}
-        onClick={() => { onClose(); navigate(isLabs ? "/labs/about" : "/m2/discover/about"); }}
-        testId="m2-profile-about"
-      />
-      <MenuButton theme={tv}
-        icon={<HandHeart style={{ width: 18, height: 18, color: tv.accent }} />}
-        label={t("m2.profile.support", "Support Us")}
-        onClick={() => { onClose(); navigate(isLabs ? "/labs/about#support" : "/m2/discover/about"); }}
-        testId="m2-profile-support"
-      />
 
       <div style={{ height: 8 }} />
 
@@ -1326,12 +1340,50 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
     </>
   );
 
+  const renderAppInfoView = () => (
+    <div>
+      {renderBackButton(L.back)}
+      <div style={{ padding: "4px 4px 14px" }}>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, color: tv.text }}>CaskSense</div>
+        <div style={{ fontSize: 12, color: tv.muted, marginTop: 2 }}>{L.appInfoVersion} {APP_VERSION}</div>
+        <div style={{ fontSize: 13, color: tv.text, marginTop: 10, lineHeight: 1.5 }}>{L.appInfoTagline}</div>
+      </div>
+      <MenuButton theme={tv}
+        icon={<Info style={{ width: 18, height: 18, color: tv.accent }} />}
+        label={L.appInfoStory}
+        onClick={() => { onClose(); navigate("/labs/explore?tab=bibliothek&section=ueber-casksense&sub=about"); }}
+        testId="m2-appinfo-story"
+      />
+      <div style={{ height: 8 }} />
+      <MenuButton theme={tv}
+        icon={<HandHeart style={{ width: 18, height: 18, color: tv.accent }} />}
+        label={L.support}
+        onClick={() => { onClose(); navigate("/labs/explore?tab=bibliothek&section=ueber-casksense&sub=about"); }}
+        testId="m2-appinfo-support"
+      />
+      <div style={{ height: 8 }} />
+      <MenuButton theme={tv}
+        icon={<FileText style={{ width: 18, height: 18, color: tv.accent }} />}
+        label={L.appInfoImpressum}
+        onClick={() => { window.open("/impressum", "_blank"); }}
+        testId="m2-appinfo-impressum"
+      />
+      <MenuButton theme={tv}
+        icon={<Shield style={{ width: 18, height: 18, color: tv.accent }} />}
+        label={L.appInfoPrivacy}
+        onClick={() => { window.open("/privacy", "_blank"); }}
+        testId="m2-appinfo-privacy"
+      />
+    </div>
+  );
+
   const renderContent = () => {
     switch (view) {
       case "forgot-pin": return renderForgotPinView();
       case "reset-pin": return renderResetPinView();
       case "verify-email": return renderVerifyEmailView();
       case "guest": return renderGuestView();
+      case "app-info": return renderAppInfoView();
       default:
         return session.signedIn ? renderSignedInView() : renderSignedOutView();
     }
@@ -1376,6 +1428,8 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
               ? t("m2.resetPin.title", "Enter Reset Code")
               : view === "verify-email"
               ? t("m2.verify.title", "Verify Email")
+              : view === "app-info"
+              ? L.about
               : t("m2.guest.title", "Joyn as Guest")}
           </h2>
           <button
