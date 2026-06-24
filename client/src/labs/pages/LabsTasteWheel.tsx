@@ -263,16 +263,18 @@ function VocabularyHarvest({ pid }: { pid: string }) {
   }, [community, stats.terms]);
 
   const growth = useMemo(() => {
-    if (stats.terms.length < 2) return [] as { month: string; count: number }[];
-    const byMonth = new Map<string, number>();
+    if (stats.terms.length < 2) return [] as { month: string; count: number; self: number }[];
+    const allByMonth = new Map<string, number>();
+    const selfByMonth = new Map<string, number>();
     for (const tm of stats.terms) {
       const d = new Date(tm.first);
       const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      byMonth.set(k, (byMonth.get(k) || 0) + 1);
+      allByMonth.set(k, (allByMonth.get(k) || 0) + 1);
+      if (tm.self) selfByMonth.set(k, (selfByMonth.get(k) || 0) + 1);
     }
-    const keys = Array.from(byMonth.keys()).sort();
-    let cum = 0;
-    return keys.map((k) => { cum += byMonth.get(k)!; const [y, m] = k.split("-"); return { month: `${m}/${y.slice(2)}`, count: cum }; });
+    const keys = Array.from(allByMonth.keys()).sort();
+    let cumAll = 0; let cumSelf = 0;
+    return keys.map((k) => { cumAll += allByMonth.get(k) || 0; cumSelf += selfByMonth.get(k) || 0; const [y, m] = k.split("-"); return { month: `${m}/${y.slice(2)}`, count: cumAll, self: cumSelf }; });
   }, [stats.terms]);
 
   const gap = useMemo(() => {
@@ -309,7 +311,8 @@ function VocabularyHarvest({ pid }: { pid: string }) {
           )}
           <div className="flex flex-wrap gap-2 mt-2">
             {stats.terms.map((w, i) => (
-              <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 11px", borderRadius: 9999, fontSize: 13, fontFamily: "inherit", color: "var(--labs-text)", background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)" }} data-testid={`vocab-term-${i}`}>
+              <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 11px", borderRadius: 9999, fontSize: 13, fontFamily: "inherit", color: "var(--labs-text)", background: "var(--labs-surface-elevated)", border: w.self ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border)" }} data-testid={`vocab-term-${i}`}>
+                {w.self && <span style={{ width: 5, height: 5, borderRadius: 9999, background: "var(--labs-accent)", display: "inline-block", flexShrink: 0 }} />}
                 {w.term}
                 {w.useCount > 1 && <span style={{ color: "var(--labs-text-muted)", fontSize: 11 }}>·{w.useCount}</span>}
               </span>
@@ -324,10 +327,12 @@ function VocabularyHarvest({ pid }: { pid: string }) {
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--labs-border-subtle)" vertical={false} />
                     <XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} axisLine={false} tickLine={false} />
                     <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: "var(--labs-text-muted)" }} axisLine={false} tickLine={false} width={28} />
-                    <Line type="monotone" dataKey="count" stroke="var(--labs-accent)" strokeWidth={2} dot={{ r: 3, fill: "var(--labs-accent)" }} />
+                    <Line type="monotone" dataKey="count" stroke="var(--labs-border)" strokeWidth={1.5} dot={false} />
+                    <Line type="monotone" dataKey="self" stroke="var(--labs-accent)" strokeWidth={2.5} dot={{ r: 3, fill: "var(--labs-accent)" }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
+              <p className="text-xs mt-2" style={{ color: "var(--labs-text-muted)", lineHeight: 1.5 }}>{t("labs.vocab.growthCaption", "Gold: Worte, die du selbst gefunden hast. Je mehr es werden, desto stiller wird Cooper.")}</p>
             </div>
           )}
 
