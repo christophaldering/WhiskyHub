@@ -197,6 +197,8 @@ export default function LabsTasteDrams() {
   const [notePhotoDataUrl, setNotePhotoDataUrl] = useState<string | null>(null);
   const [notePdfRendering, setNotePdfRendering] = useState(false);
   const [notePdf, setNotePdf] = useState<{ previewDataUrl: string; blobUrl: string } | null>(null);
+  const notePdfUrlRef = useRef<string | null>(null);
+  useEffect(() => () => { if (notePdfUrlRef.current) URL.revokeObjectURL(notePdfUrlRef.current); }, []);
   const [detailMoreMenuOpen, setDetailMoreMenuOpen] = useState(false);
   useEffect(() => { setDetailMoreMenuOpen(false); }, [selectedEntry?.id, viewState]);
   const [search, setSearch] = useState("");
@@ -921,11 +923,13 @@ export default function LabsTasteDrams() {
             onSave={(text) => narrativeMutation.mutate({ id: selectedEntry.id, data: { tastingNarrative: text } })}
             onDownload={async () => {
               if (notePdfRendering) return;
+              setNotePdf((prev) => { if (prev?.blobUrl) URL.revokeObjectURL(prev.blobUrl); return null; });
               setNotePdfRendering(true);
               try {
                 const res = await renderDramNotePdf({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, tastingName: (selectedEntry as any).tastingTitle ?? null, tasterName: participantData?.name ?? session.name ?? null, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl: notePhotoDataUrl });
                 setNotePdf(res);
-              } catch { /* Render fehlgeschlagen */ }
+                notePdfUrlRef.current = res.blobUrl;
+              } catch { dramsToast({ title: t("drams.pdfError", "PDF konnte nicht erstellt werden"), variant: "destructive" }); }
               finally { setNotePdfRendering(false); }
             }}
           />
@@ -935,7 +939,7 @@ export default function LabsTasteDrams() {
               {t("drams.pdfRendering", "PDF wird erzeugt \u2026")}
             </div>, document.body)}
           {notePdf && (
-            <NotePdfPreviewOverlay previewDataUrl={notePdf.previewDataUrl} blobUrl={notePdf.blobUrl} onClose={() => { URL.revokeObjectURL(notePdf.blobUrl); setNotePdf(null); }} />
+            <NotePdfPreviewOverlay previewDataUrl={notePdf.previewDataUrl} blobUrl={notePdf.blobUrl} onClose={() => { notePdfUrlRef.current = null; setNotePdf(null); }} />
           )}
 
           <FriendsAlsoRated
