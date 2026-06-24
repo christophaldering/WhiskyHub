@@ -1973,6 +1973,7 @@ const resources = {
         descriptors: "Descriptors",
         description: "Description",
         fromTasting: "From tasting:",
+        narrativeProvenance: "Condensed from your own words in conversation.",
         deleteDram: "Delete Dram",
         deleteDesc: "This entry will be moved to the trash. You can restore it within 30 days.",
         trashEmpty: "Trash is empty",

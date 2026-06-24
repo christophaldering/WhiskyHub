@@ -1600,7 +1600,10 @@ function TastingNarrativeSection({ value, onSave, saving, readOnly, onDownload }
         </div>
       </div>
       {!editing ? (
-        <div className="labs-serif" style={{ fontSize: 16, color: "var(--labs-text-secondary)", lineHeight: 1.65, whiteSpace: "pre-wrap" }}>{value}</div>
+        <>
+          <div className="labs-serif" style={{ fontSize: 16, color: "var(--labs-text-secondary)", lineHeight: 1.65, whiteSpace: "pre-wrap" }}>{value}</div>
+          <div style={{ marginTop: 8, fontSize: 11, fontStyle: "italic", color: "var(--labs-text-muted)" }}>{t("drams.narrativeProvenance", "Aus deinen eigenen Worten im Gespr\u00e4ch verdichtet.")}</div>
+        </>
       ) : (
         <>
           <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={8}
