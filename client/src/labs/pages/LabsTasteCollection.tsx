@@ -41,10 +41,12 @@ function buildCollectionExportRows(items: WhiskybaseCollectionItem[]): Record<st
     StatedAge: e.statedAge ?? "",
     ABV: e.abv ?? "",
     CaskType: e.caskType ?? "",
+    Size: e.size ?? "",
     DistilledYear: e.distilledYear ?? "",
     CommunityRating: e.communityRating ?? "",
     PersonalRating: e.personalRating ?? "",
     PricePaid: e.pricePaid ?? "",
+    EstimatedPrice: e.estimatedPrice ?? "",
     Currency: e.currency ?? "",
     Notes: e.notes ?? "",
     AddedAt: e.addedAt ?? "",
@@ -327,12 +329,10 @@ export default function LabsTasteCollection() {
   };
 
   const downloadCsv = (itemsToExport: WhiskybaseCollectionItem[]) => {
-    const headers = ["Name", "Brand", "Distillery", "Age", "ABV", "Status", "Series", "Cask", "Size", "Rating", "Price Paid", "Currency", "Estimated Price", "Added"];
-    const rows = itemsToExport.map(i => [i.name, i.brand || "", i.distillery || "", i.statedAge || "", i.abv || "", i.status || "", i.bottlingSeries || "", i.caskType || "", i.size || "", i.communityRating?.toFixed(1) || "", i.pricePaid?.toFixed(2) || "", i.currency || "", i.estimatedPrice?.toFixed(2) || "", i.addedAt || ""]);
-    const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `whisky-collection-${new Date().toISOString().split("T")[0]}.csv`; a.click(); URL.revokeObjectURL(url);
+    downloadCsvFromRows(
+      `casksense_collection_${safeFileSegment(new Date().toISOString().split("T")[0])}.csv`,
+      buildCollectionExportRows(itemsToExport),
+    );
   };
 
   const getExportItems = (): WhiskybaseCollectionItem[] => selectMode && selectedIds.size > 0 ? filtered.filter(i => selectedIds.has(i.id)) : filtered;

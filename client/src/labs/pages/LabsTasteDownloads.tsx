@@ -5,7 +5,7 @@ import { useSession } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
 import { tastingApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import TastingDownloadGrid from "@/labs/components/TastingDownloadGrid";
 import {
   getStoryPdfAvailable,
@@ -35,6 +35,7 @@ const EXPORT_CARDS: ExportCard[] = [
 export default function LabsTasteDownloads() {
   const { t, i18n } = useTranslation();
   const [, navigate] = useLocation();
+  const goBack = useBackNavigation("/labs/taste/profile");
   const { toast } = useToast();
   const session = useSession();
   const participantId = session.pid;
@@ -95,7 +96,9 @@ export default function LabsTasteDownloads() {
     <div className="labs-page" data-testid="labs-taste-downloads-page">
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
-      <MeineWeltActionBar active="analytics" />
+      <div className="flex items-center gap-3 mb-4">
+        <button onClick={goBack} className="labs-btn-ghost flex items-center gap-1 -ml-2" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-profile"><ChevronLeft className="w-4 h-4" /> Profile</button>
+      </div>
       <div className="flex items-center gap-2 mb-1">
         <Download className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
         <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="labs-downloads-title">{t("downloads.title", "Downloads & Export")}</h1>

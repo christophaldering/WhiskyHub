@@ -766,7 +766,7 @@ function Router() {
               <Route path="/labs/taste/drams">{() => <RedirectWithQuery to="/labs/taste" query="" />}</Route>
               <Route path="/labs/taste/collection">{() => <RedirectWithQuery to="/labs/taste" query="tab=collection&sub=labs-link-collection-hub-bottles" />}</Route>
               <Route path="/labs/taste/wishlist">{() => <RedirectWithQuery to="/labs/taste" query="tab=collection&sub=labs-link-collection-hub-wishlist" />}</Route>
-              <Route path="/labs/taste/downloads">{() => <RedirectWithQuery to="/labs/taste" query="tab=analytics&sub=labs-link-analytics-hub-downloads" />}</Route>
+              <Route path="/labs/taste/downloads" component={LabsTasteDownloads} />
               <Route path="/labs/taste/settings" component={LabsTasteSettings} />
               <Route path="/labs/taste/cooper" component={LabsTasteCooper} />
               <Route path="/labs/taste/recommendations">{() => <RedirectWithQuery to="/labs/taste" query="tab=ai&sub=labs-link-ai-insights-recommendations" />}</Route>
