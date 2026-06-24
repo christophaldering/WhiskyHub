@@ -123,6 +123,12 @@ export default function LabsTasteCooper() {
         </div>
       </div>
 
+      <div className="labs-card p-5">
+        <p className="labs-serif" style={{ fontSize: 16, lineHeight: 1.6, color: "var(--labs-text-secondary)", fontStyle: "italic", margin: 0 }}>
+          {t("v2.cooperPrefs.positioning", "Die meisten KI-Werkzeuge laden zum kognitiven Outsourcing ein \u2014 sie nehmen dir das Denken ab. Cooper ist f\u00fcr das Gegenteil gebaut: Er schmeckt, denkt und urteilt nie f\u00fcr dich, sondern hilft dir, deine eigene Wahrnehmung in deine eigenen Worte zu fassen. Je sicherer du wirst, desto stiller wird er \u2014 sein Ziel ist nicht, unentbehrlich zu werden, sondern dich zu sch\u00e4rfen.")}
+        </p>
+      </div>
+
       <div className="labs-card p-5 flex flex-col gap-3">
         <p className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{t("v2.cooperPrefs.entryTitle", "Einstieg")}</p>
         {options.map((opt) => {
