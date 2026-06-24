@@ -17,7 +17,7 @@ import {
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy,
   Mic, Play as PlayIcon, Pause, ChevronDown, RotateCcw, Camera,
   ArrowUp, ArrowDown, SlidersHorizontal, Archive, Clock, FileEdit, MoreHorizontal,
-  Users, Smile, FileText, Download,
+  Users, Smile, FileText, Download, Share2,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { downloadCsvFromRows, downloadXlsxFromSheets, safeFileSegment } from "@/labs/utils/contextDownloads";
@@ -195,6 +195,7 @@ export default function LabsTasteDrams() {
   const [deleteTarget, setDeleteTarget] = useState<JournalEntry | null>(null);
   const [notePhotoDataUrl, setNotePhotoDataUrl] = useState<string | null>(null);
   const [detailMoreMenuOpen, setDetailMoreMenuOpen] = useState(false);
+  const [shareMenuOpen, setShareMenuOpen] = useState(false);
   useEffect(() => { setDetailMoreMenuOpen(false); }, [selectedEntry?.id, viewState]);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("saved");
@@ -690,8 +691,9 @@ export default function LabsTasteDrams() {
           <button onClick={handleBack} className="labs-btn-ghost flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }} data-testid="button-labs-back-drams">
             <ChevronLeft className="w-4 h-4" /> {t("drams.drams")}
           </button>
-          {isSoloEntry(selectedEntry) && (
-            <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center">
+            {isSoloEntry(selectedEntry) && (
+              <>
               <button onClick={() => handleEdit(selectedEntry)} className="labs-btn-secondary flex items-center gap-1.5" style={{ padding: "6px 12px", fontSize: 13 }} data-testid="button-labs-edit-dram">
                 <Pencil className="w-3.5 h-3.5" /> {t("drams.edit")}
               </button>
@@ -785,8 +787,36 @@ export default function LabsTasteDrams() {
                   </>
                 )}
               </div>
+              </>
+            )}
+            <div style={{ position: "relative" }}>
+              <button
+                onClick={() => setShareMenuOpen(v => !v)}
+                className="labs-btn-ghost flex items-center justify-center"
+                style={{ padding: "6px 8px", color: "var(--labs-text-muted)" }}
+                aria-label={i18n.language?.toLowerCase().startsWith("de") ? "Teilen" : "Share"}
+                data-testid="button-labs-share-dram"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+              {shareMenuOpen && (
+                <>
+                  <div onClick={() => setShareMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 10 }} />
+                  <div style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, zIndex: 11, minWidth: 180, background: "var(--labs-surface-elevated, var(--labs-bg-elevated, var(--labs-bg)))", border: "1px solid var(--labs-border)", borderRadius: 12, boxShadow: "0 12px 32px rgba(0,0,0,0.4)", padding: 6 }} data-testid="menu-labs-share">
+                    <div style={{ padding: "6px 10px 4px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)" }}>{i18n.language?.toLowerCase().startsWith("de") ? "Teilen" : "Share"}</div>
+                    <button
+                      onClick={() => { setShareMenuOpen(false); openDramNotePdf({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, tastingName: (selectedEntry as any).tastingTitle ?? null, tasterName: participantData?.name ?? session.name ?? null, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl: notePhotoDataUrl }); }}
+                      className="w-full text-left flex items-center gap-2"
+                      style={{ fontSize: 13, padding: "8px 10px", borderRadius: 8, color: "var(--labs-text)", background: "transparent", border: "none", cursor: "pointer" }}
+                      data-testid="share-note-pdf"
+                    >
+                      <FileText className="w-3.5 h-3.5" /> {i18n.language?.toLowerCase().startsWith("de") ? "Notiz als PDF" : "Note as PDF"}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
-          )}
+          </div>
         </div>
         {showNextDraftButton && (
           <div className="flex justify-end mb-4">
@@ -916,7 +946,6 @@ export default function LabsTasteDrams() {
             saving={narrativeMutation.isPending}
             readOnly={selectedEntry.source === "tasting"}
             onSave={(text) => narrativeMutation.mutate({ id: selectedEntry.id, data: { tastingNarrative: text } })}
-            onDownload={() => openDramNotePdf({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, tastingName: (selectedEntry as any).tastingTitle ?? null, tasterName: participantData?.name ?? session.name ?? null, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl: notePhotoDataUrl })}
           />
 
           <FriendsAlsoRated
