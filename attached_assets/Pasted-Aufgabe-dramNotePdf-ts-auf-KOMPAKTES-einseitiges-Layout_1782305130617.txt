@@ -1,3 +1,9 @@
+Aufgabe: dramNotePdf.ts auf KOMPAKTES einseitiges Layout umstellen (kleines schwebendes Banner + kleines Foto, durchschnittliche Notiz passt auf 1 Seite). Asset pdf-hero.jpg ist vorhanden. Nur client/src/labs/utils/dramNotePdf.ts.
+
+SICHERHEITSREGELN: KEINE Commits, KEIN Push, KEIN drizzle-kit, KEINE Schema-Änderung.
+
+git tag pre-pdf-onepage-2026-06-24 setzen. Dann gesamten Inhalt von client/src/labs/utils/dramNotePdf.ts durch exakt Folgendes ersetzen:
+
 import jsPDF from "jspdf";
 import pdfHeroUrl from "@/assets/images/pdf-hero.jpg";
 
@@ -162,3 +168,11 @@ export function openDramNotePdf(data: DramNoteData): void {
   }
   setTimeout(() => { URL.revokeObjectURL(url); }, 60000);
 }
+
+Verifikation:
+1. grep -n "CONTENT_W = 130\|HW = 50\|maxW = 70\|maxH = 46" client/src/labs/utils/dramNotePdf.ts  (alle vorhanden)
+2. grep -c "addImage(heroDataUrl" client/src/labs/utils/dramNotePdf.ts  (1)
+3. Typecheck sauber.
+4. git status → nichts committet/gepusht. Bestätige: "Keine Commits, kein Push, keine Schema-Änderung."
+
+Rollback: git reset --hard pre-pdf-onepage-2026-06-24.
