@@ -8679,7 +8679,7 @@ const resources = {
       },
       makingOf: {
         title: "The Making of CaskSense",
-        subtitle: "20 days, 1,625 commits, and the story behind every feature.",
+        subtitle: "Months of work, thousands of commits, and the story behind every feature.",
         error: "Something went wrong",
         journey: "The Journey",
         statDays: "Days",
@@ -18505,7 +18505,7 @@ const resources = {
       },
       makingOf: {
         title: "The Making of CaskSense",
-        subtitle: "20 Tage, 1.625 Commits und die Geschichte hinter jedem Feature.",
+        subtitle: "Monate Arbeit, tausende Commits — und die Geschichte hinter jedem Feature.",
         error: "Etwas ist schiefgelaufen",
         journey: "Die Reise",
         statDays: "Tage",

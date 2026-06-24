@@ -23069,7 +23069,7 @@ User's style request: ${sanitizedPrompt}`;
       titleFallback: "The Independent Bottling",
       dateRange: "22. – 23. Mär 2026",
       narrativeKey: "makingOf.ch12.narrative",
-      narrativeFallback: "Independent bottlers select exceptional casks and present them unfiltered, at full strength. This is where CaskSense stands now — an independent bottling of months of work, presented as-is to the world. The Making-Of page you're reading was opened to everyone, live stats replaced hardcoded numbers, and the platform now tells its own story through real data. Not a finished product, but a living one — growing with every tasting, every rating, every new member.",
+      narrativeFallback: "Independent bottlers select exceptional casks and present them unfiltered, at full strength. An independent bottling of months of work, presented as-is to the world. The Making-Of page you're reading was opened to everyone, live stats replaced hardcoded numbers, and the platform now tells its own story through real data. Not a finished product, but a living one — growing with every tasting, every rating, every new member.",
       stats: { commits: 80, features: 12 },
       color: "#1F1008",
       milestones: [
@@ -23082,6 +23082,69 @@ User's style request: ${sanitizedPrompt}`;
       ],
       isDown: false,
       lesson: "The best software, like the best whisky, is never truly finished — it just keeps getting better with time."
+    },
+    {
+      id: "ch13",
+      chapter: 13,
+      titleKey: "makingOf.ch13.title",
+      titleFallback: "The Maturing",
+      dateRange: "Apr – Mai 2026",
+      narrativeKey: "makingOf.ch13.narrative",
+      narrativeFallback: "Whisky earns its character slowly, in the dark, while no one watches. These were CaskSense's maturing months. Instant bottle identification from a single photo, an AI that could answer questions about your own tasting history with cited sources, a search that understood meaning and not just words, and a voice co-host for hosts running live sessions. The platform grew quietly more intelligent — but always in service of the glass, never instead of it.",
+      stats: { commits: 190, features: 34 },
+      color: "#C47A3A",
+      milestones: [
+        "Check: instant bottle identification from a photo",
+        "Frag CaskSense: AI answers with cited sources",
+        "Hybrid global search (full-text, fuzzy, semantic)",
+        "Voice Co-Host for live tasting hosts",
+        "Connoisseur reports & tasting AI reports",
+        "Storybuilder CMS foundations"
+      ],
+      isDown: false,
+      lesson: "Intelligence should deepen the senses, never replace them."
+    },
+    {
+      id: "ch14",
+      chapter: 14,
+      titleKey: "makingOf.ch14.title",
+      titleFallback: "The Cooper's Hand",
+      dateRange: "14. – 18. Jun 2026",
+      narrativeKey: "makingOf.ch14.narrative",
+      narrativeFallback: "A cooper shapes the cask that shapes the whisky — unseen, yet present in every drop. So came Cooper, a tasting companion built on a single principle: never taste for you. At the glass he holds back, offering a word only once your own impression stands, helping you sharpen it without ever dictating it. From a halting first impression he could draw out a tasting note in your own voice — yours to keep, yours to edit.",
+      stats: { commits: 120, features: 16 },
+      color: "#D4A847",
+      milestones: [
+        "Cooper: the tasting companion arrives",
+        "Socratic sharpening — no facts at the glass",
+        "Tasting notes distilled in your own voice",
+        "Entry modes: voice or type, your choice",
+        "Two minds: the Sharpener and the Connoisseur",
+        "Score derived from feeling, not fluency"
+      ],
+      isDown: false,
+      lesson: "The finest companion helps you trust your own palate."
+    },
+    {
+      id: "ch15",
+      chapter: 15,
+      titleKey: "makingOf.ch15.title",
+      titleFallback: "What Lingers",
+      dateRange: "19. – 24. Jun 2026",
+      narrativeKey: "makingOf.ch15.narrative",
+      narrativeFallback: "The finish is what lingers — and what makes you reflect. In these days the philosophy found its name. Cooper learned to speak: a quiet glow that listens more than it talks and grows stiller as you grow surer. The vocabulary mirror began to honour not how many words you collected, but how many you found yourself. And CaskSense took a stand against cognitive outsourcing — a tool built not to think for you, but to leave you sharper. Where tasting becomes reflection.",
+      stats: { commits: 95, features: 14 },
+      color: "#E0B85A",
+      milestones: [
+        "Cooper's voice & the Glimmer stage",
+        "Adaptive register — Cooper reads the taster",
+        "Vocabulary mirror: your own words, celebrated",
+        "Branded tasting-note PDF in your voice",
+        "A named stand against cognitive outsourcing",
+        "The story continues..."
+      ],
+      isDown: false,
+      lesson: "What you taste is fleeting; the words you find are yours to keep."
     }
   ];
 
@@ -23097,10 +23160,10 @@ User's style request: ${sanitizedPrompt}`;
       const totalDays = Math.ceil((Date.now() - new Date("2026-02-14").getTime()) / (1000 * 60 * 60 * 24));
       const stats = {
         totalDays,
-        totalCommits: 2850,
-        featuresBuilt: 320,
-        rollbacksSurvived: 9,
-        linesOfCode: "95k+",
+        totalCommits: 3380,
+        featuresBuilt: 388,
+        rollbacksSurvived: 11,
+        linesOfCode: "120k+",
         languages: 2,
         firstCommit: "2026-02-14",
         latestCommit: new Date().toISOString().slice(0, 10),
