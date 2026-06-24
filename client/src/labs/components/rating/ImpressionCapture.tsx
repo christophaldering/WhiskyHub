@@ -327,8 +327,8 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
   return (
     <div style={{ padding: SP.md }}>
       {!(phase === "voice" && voice.status === "connected") && (
-      <div style={{ display: "flex", alignItems: "center", gap: SP.sm, marginBottom: SP.xs }}>
-        <span style={{ flexShrink: 0, display: "flex" }}><CooperBarrel size={30} glow={false} /></span>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: SP.xs, marginBottom: SP.xs }}>
+        <span style={{ flexShrink: 0, display: "flex" }}><CooperBarrel size={44} glow /></span>
         <div style={{ fontFamily: FONT.display, fontSize: 22, color: LABS_THEME.text }}>
           {t("v2.impressionTitle", "Was nimmst du wahr?")}
         </div>
