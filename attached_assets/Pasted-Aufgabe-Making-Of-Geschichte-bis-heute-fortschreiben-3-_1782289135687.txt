@@ -1,0 +1,109 @@
+Aufgabe: "Making Of"-Geschichte bis heute fortschreiben — 3 neue Kapitel (Apr–Jun 2026) + veralteten Untertitel/Stats auffrischen.
+
+SICHERHEITSREGELN: KEINE Commits, KEIN Push, KEIN drizzle-kit, KEINE Schema-Änderung. Nur server/routes.ts und client/src/lib/i18n.ts.
+
+Schritt 0 — Diagnose (NUR LESEN, dann auf mein OK warten):
+1. git tag pre-makingof-chapters-2026-06-24 setzen.
+2. server/routes.ts: die ch12-Schlusszeilen + Array-Ende zeigen (grep -n "never truly finished\|^  \];" server/routes.ts) und das Stats-Objekt (grep -n "totalCommits: 2850\|featuresBuilt: 320\|rollbacksSurvived: 9\|linesOfCode: \"95k" server/routes.ts).
+3. i18n: Untertitel finden — grep -n "1,625\|1.625\|20 days\|20 Tage" client/src/lib/i18n.ts (EN und DE).
+
+Plan (erst nach OK):
+
+A) server/routes.ts — ch12 entschärfen ("stands now" raus). Ersetze EXAKT:
+This is where CaskSense stands now — an independent bottling of months of work, presented as-is to the world.
+durch:
+An independent bottling of months of work, presented as-is to the world.
+
+B) server/routes.ts — drei Kapitel einfügen. Ersetze EXAKT:
+      lesson: "The best software, like the best whisky, is never truly finished — it just keeps getting better with time."
+    }
+  ];
+durch:
+      lesson: "The best software, like the best whisky, is never truly finished — it just keeps getting better with time."
+    },
+    {
+      id: "ch13",
+      chapter: 13,
+      titleKey: "makingOf.ch13.title",
+      titleFallback: "The Maturing",
+      dateRange: "Apr – Mai 2026",
+      narrativeKey: "makingOf.ch13.narrative",
+      narrativeFallback: "Whisky earns its character slowly, in the dark, while no one watches. These were CaskSense's maturing months. Instant bottle identification from a single photo, an AI that could answer questions about your own tasting history with cited sources, a search that understood meaning and not just words, and a voice co-host for hosts running live sessions. The platform grew quietly more intelligent — but always in service of the glass, never instead of it.",
+      stats: { commits: 190, features: 34 },
+      color: "#C47A3A",
+      milestones: [
+        "Check: instant bottle identification from a photo",
+        "Frag CaskSense: AI answers with cited sources",
+        "Hybrid global search (full-text, fuzzy, semantic)",
+        "Voice Co-Host for live tasting hosts",
+        "Connoisseur reports & tasting AI reports",
+        "Storybuilder CMS foundations"
+      ],
+      isDown: false,
+      lesson: "Intelligence should deepen the senses, never replace them."
+    },
+    {
+      id: "ch14",
+      chapter: 14,
+      titleKey: "makingOf.ch14.title",
+      titleFallback: "The Cooper's Hand",
+      dateRange: "14. – 18. Jun 2026",
+      narrativeKey: "makingOf.ch14.narrative",
+      narrativeFallback: "A cooper shapes the cask that shapes the whisky — unseen, yet present in every drop. So came Cooper, a tasting companion built on a single principle: never taste for you. At the glass he holds back, offering a word only once your own impression stands, helping you sharpen it without ever dictating it. From a halting first impression he could draw out a tasting note in your own voice — yours to keep, yours to edit.",
+      stats: { commits: 120, features: 16 },
+      color: "#D4A847",
+      milestones: [
+        "Cooper: the tasting companion arrives",
+        "Socratic sharpening — no facts at the glass",
+        "Tasting notes distilled in your own voice",
+        "Entry modes: voice or type, your choice",
+        "Two minds: the Sharpener and the Connoisseur",
+        "Score derived from feeling, not fluency"
+      ],
+      isDown: false,
+      lesson: "The finest companion helps you trust your own palate."
+    },
+    {
+      id: "ch15",
+      chapter: 15,
+      titleKey: "makingOf.ch15.title",
+      titleFallback: "What Lingers",
+      dateRange: "19. – 24. Jun 2026",
+      narrativeKey: "makingOf.ch15.narrative",
+      narrativeFallback: "The finish is what lingers — and what makes you reflect. In these days the philosophy found its name. Cooper learned to speak: a quiet glow that listens more than it talks and grows stiller as you grow surer. The vocabulary mirror began to honour not how many words you collected, but how many you found yourself. And CaskSense took a stand against cognitive outsourcing — a tool built not to think for you, but to leave you sharper. Where tasting becomes reflection.",
+      stats: { commits: 95, features: 14 },
+      color: "#E0B85A",
+      milestones: [
+        "Cooper's voice & the Glimmer stage",
+        "Adaptive register — Cooper reads the taster",
+        "Vocabulary mirror: your own words, celebrated",
+        "Branded tasting-note PDF in your voice",
+        "A named stand against cognitive outsourcing",
+        "The story continues..."
+      ],
+      isDown: false,
+      lesson: "What you taste is fleeting; the words you find are yours to keep."
+    }
+  ];
+
+C) server/routes.ts — Stats auffrischen (kuratiert). Ersetze einzeln:
+  totalCommits: 2850,        → totalCommits: 3380,
+  featuresBuilt: 320,        → featuresBuilt: 388,
+  rollbacksSurvived: 9,      → rollbacksSurvived: 11,
+  linesOfCode: "95k+",       → linesOfCode: "120k+",
+
+D) i18n.ts — Untertitel (EN + DE) auffrischen.
+EN: ersetze "20 days, 1,625 commits, and the story behind every feature."
+durch "Months of work, thousands of commits, and the story behind every feature."
+DE: die analoge deutsche Zeile (aus Step-0-grep) sinngemäß ersetzen durch
+"Monate Arbeit, tausende Commits — und die Geschichte hinter jedem Feature."
+
+Verifikation (zeig grep-Ausgaben):
+1. grep -n "id: \"ch13\"\|id: \"ch14\"\|id: \"ch15\"\|What Lingers\|Cooper's Hand\|The Maturing" server/routes.ts
+2. grep -n "totalCommits: 3380\|linesOfCode: \"120k" server/routes.ts
+3. grep -n "stands now" server/routes.ts  (darf NICHTS mehr zeigen)
+4. grep -n "1,625\|1.625" client/src/lib/i18n.ts  (darf NICHTS mehr zeigen)
+5. Typecheck sauber.
+6. git log --oneline -3 + git status → NICHTS committet/gepusht; Tag pre-makingof-chapters-2026-06-24. Bestätige: "Keine Commits, kein Push, keine Schema-Änderung."
+
+Rollback: git reset --hard pre-makingof-chapters-2026-06-24.
