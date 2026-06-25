@@ -856,6 +856,22 @@ export async function registerRoutes(
     return { authorized: false, status: 403, message: "Forbidden" };
   };
 
+  const requireWhiskyHostOrAdmin = async (
+    req: Request,
+    whiskyId: string,
+  ): Promise<{ authorized: true } | { authorized: false; status: number; message: string }> => {
+    const whisky = await storage.getWhisky(whiskyId);
+    if (!whisky) return { authorized: false, status: 404, message: "Not found" };
+    const requesterId = req.headers["x-participant-id"] as string | undefined;
+    if (requesterId) {
+      const tasting = await storage.getTasting(whisky.tastingId);
+      if (tasting && requesterId === tasting.hostId) return { authorized: true };
+      const requester = await storage.getParticipant(requesterId);
+      if (requester?.role === "admin") return { authorized: true };
+    }
+    return { authorized: false, status: 403, message: "Only the host can edit this whisky" };
+  };
+
   // ===== HEALTH & VERSION =====
 
   app.get("/health", (_req, res) => {
@@ -3359,6 +3375,8 @@ export async function registerRoutes(
 
   app.patch("/api/whiskies/:id", async (req, res) => {
     if (await rejectIfWhiskyArchived(req.params.id, res)) return;
+    const auth = await requireWhiskyHostOrAdmin(req, req.params.id);
+    if (!auth.authorized) return res.status(auth.status).json({ message: auth.message });
     const body = { ...req.body };
     if (body.abv !== undefined) body.abv = (typeof body.abv === "string" ? parseFloat(body.abv) : body.abv) || null;
     if (body.abv === "" || body.abv === 0) body.abv = null;
@@ -3431,6 +3449,8 @@ export async function registerRoutes(
   app.delete("/api/whiskies/:id", async (req, res) => {
     try {
       if (await rejectIfWhiskyArchived(req.params.id, res)) return;
+      const auth = await requireWhiskyHostOrAdmin(req, req.params.id);
+      if (!auth.authorized) return res.status(auth.status).json({ message: auth.message });
       const whisky = await storage.getWhisky(req.params.id);
       if (!whisky) return res.status(404).json({ message: "Not found" });
       if (whisky.imageUrl && whisky.imageUrl.startsWith("/uploads/")) {
@@ -5178,6 +5198,8 @@ Respond with JSON exactly in this shape (one entry per item, in the same order):
   }, async (req: any, res: any) => {
     try {
       if (await rejectIfWhiskyArchived(req.params.id, res)) return;
+      const auth = await requireWhiskyHostOrAdmin(req, req.params.id);
+      if (!auth.authorized) return res.status(auth.status).json({ message: auth.message });
       if (!req.file) return res.status(400).json({ message: "No image file provided" });
       const whisky = await storage.getWhisky(req.params.id);
       if (!whisky) return res.status(404).json({ message: "Not found" });
@@ -5214,6 +5236,8 @@ Respond with JSON exactly in this shape (one entry per item, in the same order):
 
   app.delete("/api/whiskies/:id/image", async (req, res) => {
     if (await rejectIfWhiskyArchived(req.params.id, res)) return;
+    const auth = await requireWhiskyHostOrAdmin(req, req.params.id);
+    if (!auth.authorized) return res.status(auth.status).json({ message: auth.message });
     const whisky = await storage.getWhisky(req.params.id);
     if (!whisky) return res.status(404).json({ message: "Not found" });
     if (whisky.imageUrl) {
@@ -12419,6 +12443,10 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
   app.patch("/api/journal/:participantId/:id", async (req, res) => {
     try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId || requesterId !== req.params.participantId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
       const allowed = ["title", "name", "distillery", "region", "country", "age", "abv", "caskType", "peatLevel", "bottler", "noseNotes", "tasteNotes", "finishNotes", "notes", "personalScore", "noseScore", "tasteScore", "finishScore", "mood", "occasion", "tastingContext", "imageUrl", "status", "whiskybaseId", "price", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration", "rawImpression", "tastingNarrative", "captureMeta"];
       const textKeys = ["title", "name", "distillery", "noseNotes", "tasteNotes", "finishNotes", "notes", "mood", "occasion", "tastingContext", "region", "country", "peatLevel", "bottler"];
       const filtered: any = {};
@@ -12531,6 +12559,10 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
     });
   }, async (req: any, res: any) => {
     try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId || requesterId !== req.params.participantId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
       if (!req.file) return res.status(400).json({ message: "No image file provided" });
       const imageUrl = await uploadBufferToObjectStorage(objectStorage, req.file.buffer, req.file.mimetype);
       const entry = await storage.updateJournalEntry(req.params.id, req.params.participantId, { imageUrl });

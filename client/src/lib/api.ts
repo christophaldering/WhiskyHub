@@ -151,7 +151,7 @@ export const whiskyApi = {
   uploadImage: async (id: string, file: File) => {
     const formData = new FormData();
     formData.append("image", file);
-    const res = await fetch(`${API_BASE}/whiskies/${id}/image`, { method: "POST", body: formData });
+    const res = await fetch(`${API_BASE}/whiskies/${id}/image`, { method: "POST", headers: pidHeaders(), body: formData });
     if (!res.ok) {
       const error = await res.json().catch(() => ({ message: res.statusText }));
       throw new Error(error.message || "Upload failed");
