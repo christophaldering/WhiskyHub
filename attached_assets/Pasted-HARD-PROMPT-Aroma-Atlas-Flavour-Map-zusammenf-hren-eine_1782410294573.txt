@@ -1,0 +1,119 @@
+HARD PROMPT — Aroma-Atlas & Flavour Map zusammenführen (eine Aromen-Welt)
+
+KONTEXT: In der App gibt es zwei fast identische "stöbere durch die Aromenwelt"-Flächen: die "Flavour Map" (im Whiskies-Tab + als Tab im Lexikon, Komponente VocabularyContent in LabsVocabulary.tsx, eigene Wheel/Compass/Radar + Sammel-Tray) und den "Aroma-Atlas" (im Rabbit Hole, Komponente LabsAromaAtlas.tsx, 5 Linsen über die geteilten FlavourStudioSheet-Komponenten, ohne Tray). Beide sollen zu EINER Fläche werden: der Aroma-Atlas, der künftig bei den Nachschlagewerken wohnt. Die dritte Fläche "Aromen & Wortschatz" (LabsTasteWheel, Meine Welt → Analyse) ist persönlich/bewertet und wird NICHT angefasst.
+
+ZIEL-ROUTE des Atlas (kanonisch): /labs/explore?tab=bibliothek&section=nachschlagewerk&sub=aroma-atlas
+
+═══════════════════════════════════════════
+STEP 0 — DIAGNOSE & PLAN (NICHTS ändern, bevor ich "go" sage)
+═══════════════════════════════════════════
+Setze ZUERST einen Rollback-Tag:
+   git tag pre-aroma-merge-2026-06-25
+
+Dann VERIFIZIERE (read-only) und melde mir:
+1. grep -rn "VocabularyContent\|LabsVocabulary" client/src   → bestätige: NUR client/src/labs/pages/LabsLexicon.tsx importiert VocabularyContent; KEINE Route rendert LabsVocabulary (default export). 
+2. grep -rn "FlavourWheel\|StyleCompass\|AromaRadar" client/src | grep -v "Compact\|FlavourStudioSheet"  → bestätige: diese hauseigenen Komponenten leben NUR in LabsVocabulary.tsx (sonst nirgends importiert).
+3. grep -rn "flavour-map\|flavourMap\|view=flavour-map" client/src  → liste ALLE Fundstellen, damit wir nichts übersehen.
+4. In client/src/labs/pages/LabsEntdecken.tsx: bestätige, dass die Imports MapIcon, Compass, LabsLexicon, EmbeddedExploreProvider AUCH außerhalb der flavour-map-Stellen genutzt werden (MapIcon: rabbit-hole aroma-atlas-Eintrag, den wir verschieben; Compass: tasting-wissen "guide"; LabsLexicon: nachschlagewerk "lexikon"; EmbeddedExploreProvider: Zeile ~774). → Diese Imports bleiben ALLE erhalten.
+
+Präsentiere mir dann einen kurzen Plan (welche Dateien, welche Edits). WARTE auf mein "go". KEINE Änderungen vorher.
+
+═══════════════════════════════════════════
+STEP 1 — LabsEntdecken.tsx: Atlas zu Nachschlagewerk, raus aus Rabbit Hole
+═══════════════════════════════════════════
+In BIBLIOTHEK_TILES, Sektion "nachschlagewerk", subs-Array: füge DIREKT NACH dem "lexikon"-Eintrag ein:
+   { sub: "aroma-atlas", labelKey: "rabbitHole.aromaAtlasTitle", labelFb: "Aroma-Atlas", icon: MapIcon, Component: LabsAromaAtlas },
+Ändere die descFb der Sektion "nachschlagewerk" von "Lexikon, Destillerien, Bottlers" → "Lexikon, Aroma-Atlas, Destillerien, Bottlers".
+
+In Sektion "rabbit-hole", subs-Array: ENTFERNE den "aroma-atlas"-Eintrag komplett (nur "themenspeicher" bleibt).
+Ändere die descFb der Sektion "rabbit-hole" von "Aroma-Atlas & Themenspeicher" → "Themenspeicher".
+(Der Import von LabsAromaAtlas bleibt — wird jetzt von nachschlagewerk genutzt.)
+
+═══════════════════════════════════════════
+STEP 2 — LabsEntdecken.tsx: Whiskies-"Flavour Map"-Pille + Render entfernen (VORSICHT, JSX)
+═══════════════════════════════════════════
+(a) Im Typ WhiskyHubPreset: entferne das Glied  | "flavourMap"
+(b) In WHISKY_PILLS: entferne das Pillen-Objekt mit preset: "flavourMap" (view "flavour-map", "Flavour profiles visualised") komplett.
+(c) In applyWhiskyHubPreset: entferne den Block
+       if (preset === "flavourMap") { return; }
+(d) Im Block der Whiskies-Pillen (activePillView): ändere
+       const activePillView = whiskyView === "flavour-map"
+         ? "flavour-map"
+         : sort === "most" ? "most-tasted" : sort === "alpha" ? "a-z" : "top-rated";
+    zu
+       const activePillView = sort === "most" ? "most-tasted" : sort === "alpha" ? "a-z" : "top-rated";
+(e) Entferne den GESAMTEN Render-Block:
+       {whiskyView === "flavour-map" && (
+         <div data-testid="explore-inline-whiskies-flavour-map">
+           <EmbeddedExploreProvider>
+             <LabsLexicon forceTab="flavour-map" />
+           </EmbeddedExploreProvider>
+         </div>
+       )}
+(f) Direkt darunter beginnt:  {whiskyView !== "flavour-map" && (  gefolgt von  <>  ... und WEIT unten schließt es mit  </>  dann  )}  — das umschließt die gesamte Whisky-Liste/Suche/Gruppen. ENTFERNE NUR diese Hülle (die öffnende Zeile {whiskyView !== "flavour-map" && ( und das <> sowie das zugehörige schließende </> und )} ), sodass der Inhalt UNVERÄNDERT, aber unbedingt gerendert wird. Finde die passende schließende Klammer sorgfältig. Danach: stelle sicher, dass das JSX balanciert ist und der Build durchläuft.
+(g) whiskyView/setWhiskyView: NUR entfernen, wenn es danach trivial sauber ist. Falls es in URL-Snapshot/useEffect-Deps verflochten ist, LASS es stehen (harmlos). Im Zweifel stehen lassen.
+(h) Imports MapIcon, Compass, LabsLexicon, EmbeddedExploreProvider NICHT entfernen (siehe Step 0).
+
+═══════════════════════════════════════════
+STEP 3 — Alte "Flavour Map"-Türen auf den Atlas umbiegen
+═══════════════════════════════════════════
+client/src/App.tsx:
+  - In der Redirect-Map: "/vocabulary": "/labs/explore?tab=whiskies&view=flavour-map"
+      → "/vocabulary": "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=aroma-atlas"
+  - Route /m2/discover/vocabulary: <Redirect to="/labs/discover/lexicon?tab=flavour-map" />
+      → <Redirect to="/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=aroma-atlas" />
+  - Route /labs/discover/flavour-map: <RedirectWithQuery to="/labs/explore" query="tab=whiskies&view=flavour-map" />
+      → query="tab=bibliothek&section=nachschlagewerk&sub=aroma-atlas"
+  - Route /labs/discover/vocabulary: gleiche Änderung der query wie eben.
+client/src/labs/components/LabsGlobalSearch.tsx (~Z.89): das Sucheintrag-Objekt mit route "/labs/explore?tab=whiskies&view=flavour-map"
+      → route "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=aroma-atlas"
+  (label/keywords dürfen bleiben.)
+
+═══════════════════════════════════════════
+STEP 4 — LabsLexicon.tsx: Flavour-Map-Tab komplett entfernen
+═══════════════════════════════════════════
+  - Entferne den Import:  import { VocabularyContent } from "./LabsVocabulary";
+  - type TabId: von  "dictionary" | "templates" | "flavour-map"  →  "dictionary" | "templates"
+  - Funktionssignatur: von  export default function LabsLexicon({ forceTab }: { forceTab?: TabId } = {})  →  export default function LabsLexicon()
+  - resolvedTab: von  const resolvedTab: TabId = forceTab ?? (tabParam === "templates" ? "templates" : tabParam === "flavour-map" ? "flavour-map" : "dictionary");
+      →  const resolvedTab: TabId = tabParam === "templates" ? "templates" : "dictionary";
+  - tabs-Array: entferne den Eintrag  { id: "flavour-map", label: t("bibliothek.tabFlavourMap", "Flavour Map") },
+  - Entferne  const hideChrome = forceTab === "flavour-map";  UND den gesamten folgenden Block  if (hideChrome) { return ( <div ...><VocabularyContent /></div> ); }
+  - Entferne die Zeile  {activeTab === "flavour-map" && <VocabularyContent />}
+  - Optional (Kosmetik, nur wenn schnell): in der Subtitle-Fallback "Dictionary, tasting templates & flavour visualisations" das ", & flavour visualisations" entfernen.
+
+═══════════════════════════════════════════
+STEP 5 — Tote Doppel-Datei löschen
+═══════════════════════════════════════════
+Wenn Step 0 (1)+(2) bestätigt hat, dass LabsVocabulary.tsx nirgends sonst genutzt wird:
+  git rm client/src/labs/pages/LabsVocabulary.tsx
+(bzw. Datei löschen). Damit verschwinden die doppelten FlavourWheel/StyleCompass/AromaRadar + MyNotesTray.
+
+═══════════════════════════════════════════
+STEP 6 — Sammel-Notizzettel an den Atlas hängen (flüchtig!)
+═══════════════════════════════════════════
+In client/src/labs/pages/LabsAromaAtlas.tsx: der State explored (Set<string>) + toggle existieren bereits. Füge UNTEN (nach dem Linsen-View-div, vor dem schließenden Wrapper) einen schlichten Sammel-Tray hinzu, der NUR erscheint, wenn explored.size > 0:
+  - Überschrift via t("atlas.collectedTitle", "Gesammelt") + Anzahl.
+  - Die gesammelten Begriffe als Chips (Optik wie die Linsen-Buttons), jeder Chip mit einem kleinen ✕ (lucide X) der toggle(term) aufruft (entfernt).
+  - Ein "Alle löschen"-Knopf via t("common.clearAll", "Alle löschen"), der setExplored(new Set()) setzt.
+  - Optional ein Kopieren-Knopf (lucide Copy), der die Begriffe als kommagetrennten Text in die Zwischenablage legt.
+  - Füge dem äußeren labs-page-div unten genug paddingBottom hinzu (z.B. 120), wenn der Tray sichtbar ist, damit nichts verdeckt wird.
+WICHTIG: KEINE Persistenz, KEIN API-Call, KEIN localStorage, NICHTS Richtung vocabulary_adoption. Der Notizzettel bleibt rein lokal/flüchtig (der bestehende Kommentar "wird NIRGENDS gespeichert" muss wahr bleiben). i18n-Keys nur als t(key, fallback) — KEINE Änderungen an i18n.ts nötig.
+
+═══════════════════════════════════════════
+VERIFIKATION (zeig mir die Ergebnisse)
+═══════════════════════════════════════════
+  - grep -rn "VocabularyContent\|LabsVocabulary" client/src   → MUSS leer sein.
+  - grep -rn "forceTab" client/src/labs/pages/LabsLexicon.tsx  → MUSS leer sein.
+  - grep -rn "flavourMap\|view=flavour-map" client/src  → KEINE Treffer mehr in App.tsx, LabsEntdecken.tsx, LabsGlobalSearch.tsx (ein verbliebener i18n-Label-Key "tabFlavourMap" in i18n.ts ist ok/egal).
+  - grep -rn "sub=aroma-atlas" client/src  → Treffer in App.tsx (mehrfach) + LabsGlobalSearch.tsx.
+  - In LabsEntdecken.tsx: "aroma-atlas" steht jetzt in der nachschlagewerk-subs, NICHT mehr in rabbit-hole-subs.
+  - Build läuft sauber durch (npm run build bzw. der Typecheck-Befehl des Projekts) — KEINE TS-Fehler, JSX balanciert.
+
+NICHT TUN — ausdrücklich verboten:
+  - KEIN git commit, KEIN git push.
+  - KEIN drizzle-kit, KEINE Schema-Änderung, KEINE Migration (rein Frontend, keine DB nötig).
+  - NICHTS an LabsTasteWheel.tsx (Analyse "Aromen & Wortschatz") ändern.
+  - Die Cooper-/vocabulary_adoption-Pipeline NICHT berühren.
+Wenn etwas unklar ist oder ein Edit nicht sauber passt: STOPP und frag mich, statt zu raten.
+Rollback bei Bedarf: git reset --hard pre-aroma-merge-2026-06-25
