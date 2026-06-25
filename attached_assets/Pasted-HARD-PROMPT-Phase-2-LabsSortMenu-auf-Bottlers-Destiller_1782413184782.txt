@@ -1,0 +1,100 @@
+HARD PROMPT — Phase 2: LabsSortMenu auf Bottlers, Destillerien, History ausrollen
+
+KONTEXT: Wir setzen die in Phase 1 gebaute gemeinsame Komponente client/src/labs/components/LabsSortMenu.tsx jetzt auf drei weiteren Listen ein und ersetzen dort die uneinheitlichen Sortier-Steuerelemente (native <select> bzw. winzige Text-Umschalter) durch das einheitliche "Sortieren ▾"-Dropdown. Zusätzlich bekommt LabsSortMenu eine optionale align-Prop (Menü links/rechts ausrichten), damit es auch rechts in einer Zeile nicht über den Rand läuft.
+
+═══════════════════════════════════════════
+STEP 0 — DIAGNOSE & PLAN (NICHTS ändern, bevor ich "go" sage)
+═══════════════════════════════════════════
+Setze zuerst:  git tag pre-sortmenu-phase2-2026-06-25
+Dann bestätige (read-only) und melde:
+1. client/src/labs/components/LabsSortMenu.tsx existiert (aus Phase 1) und exportiert default eine Komponente mit Props options/value/onChange/label/testIdPrefix.
+2. LabsHistory.tsx: State `sortMode`/`setSortMode` (Typ SortMode), Array `sortOptions: {value,label}[]`, und ein <select data-testid="historical-sort"> in einer Flex-Zeile neben der Suche. Prüfe, ob `ArrowUpDown` (lucide) in dieser Datei NUR für das Sortier-Icon genutzt wird.
+3. LabsBottlers.tsx: State `sortBy`/`setSortBy` ("name"|"founded"), Sortier-Umschalter als zwei kleine <button> in einem justify-between-Row mit "{filtered.length} found".
+4. LabsDistilleries.tsx: State `sortBy`/`setSortBy` ("name"|"founded"|"region"), Sortier-Umschalter als drei kleine <button> (links in einem justify-between-Row).
+5. Alle drei Dateien nutzen bereits `t` aus useTranslation.
+Präsentiere kurz den Plan, dann WARTE auf mein "go".
+
+═══════════════════════════════════════════
+STEP 1 — LabsSortMenu um optionale align-Prop erweitern (additiv)
+═══════════════════════════════════════════
+In client/src/labs/components/LabsSortMenu.tsx:
+(a) In der Props-Signatur und im Typ ergänze eine optionale Prop:  align?: "left" | "right";  mit Default  align = "left"  in der Destrukturierung.
+(b) Im Style des Menü-divs (data-testid `${testIdPrefix}-dropdown-menu`): ersetze das feste  left: 0,  durch eine bedingte Ausrichtung:
+       ...(align === "right" ? { right: 0 } : { left: 0 }),
+    (also: die Zeile `left: 0,` entfernen und stattdessen den Spread einfügen, damit bei align="right" `right: 0` statt `left: 0` gilt.)
+Alles andere an der Komponente bleibt unverändert. Bestehende Aufrufer (Entdecken) nutzen den Default "left" → keine Änderung dort.
+
+═══════════════════════════════════════════
+STEP 2 — LabsHistory.tsx
+═══════════════════════════════════════════
+(a) Import ergänzen:  import LabsSortMenu from "@/labs/components/LabsSortMenu";
+(b) Ersetze den GESAMTEN <div style={{ position: "relative", flexShrink: 0 }}> … <select data-testid="historical-sort"> … </select> … </div>-Block durch:
+
+          <div style={{ flexShrink: 0 }}>
+            <LabsSortMenu
+              options={sortOptions}
+              value={sortMode}
+              onChange={(v) => setSortMode(v as SortMode)}
+              align="right"
+              testIdPrefix="history-sort"
+            />
+          </div>
+
+(c) Wenn `ArrowUpDown` (lucide) danach in dieser Datei NICHT mehr verwendet wird: aus dem Import entfernen.
+
+═══════════════════════════════════════════
+STEP 3 — LabsBottlers.tsx
+═══════════════════════════════════════════
+(a) Import ergänzen:  import LabsSortMenu from "@/labs/components/LabsSortMenu";
+(b) Ersetze den Sortier-Umschalter-Block (das <div style={{ display: "flex", gap: 4 }}> mit den zwei (["name","founded"]).map-Buttons) durch:
+
+          <LabsSortMenu
+            options={[
+              { value: "name", label: "A\u2013Z" },
+              { value: "founded", label: t("discover.sortFounded", "Gegründet") },
+            ]}
+            value={sortBy}
+            onChange={(v) => setSortBy(v as "name" | "founded")}
+            align="right"
+            testIdPrefix="bottler-sort"
+          />
+
+Den umgebenden justify-between-Row mit "{filtered.length} found" NICHT verändern (nur den inneren Sortier-Button-Block ersetzen).
+
+═══════════════════════════════════════════
+STEP 4 — LabsDistilleries.tsx
+═══════════════════════════════════════════
+(a) Import ergänzen:  import LabsSortMenu from "@/labs/components/LabsSortMenu";
+(b) Ersetze den Sortier-Umschalter-Block (das <div style={{ display: "flex", gap: 2 }}> mit den drei (["name","founded","region"]).map-Buttons) durch:
+
+              <LabsSortMenu
+                options={[
+                  { value: "name", label: "A\u2013Z" },
+                  { value: "founded", label: t("discover.sortFounded", "Gegründet") },
+                  { value: "region", label: t("discover.sortRegion", "Region") },
+                ]}
+                value={sortBy}
+                onChange={(v) => setSortBy(v as "name" | "founded" | "region")}
+                testIdPrefix="distillery-sort"
+              />
+
+(Hier KEINE align-Prop — das Steuerelement sitzt links, Default "left" passt.)
+
+═══════════════════════════════════════════
+VERIFIKATION (zeig mir die Ergebnisse)
+═══════════════════════════════════════════
+  - grep -n "align" client/src/labs/components/LabsSortMenu.tsx → align-Prop vorhanden.
+  - grep -rn "LabsSortMenu" client/src/labs/pages/LabsHistory.tsx client/src/labs/pages/LabsBottlers.tsx client/src/labs/pages/LabsDistilleries.tsx → in allen dreien importiert + verwendet.
+  - grep -n "historical-sort\b" client/src/labs/pages/LabsHistory.tsx → KEIN <select> mehr (nur noch history-sort-dropdown-* aus der Komponente).
+  - grep -n "labs-sort-name\|labs-sort-founded\|labs-sort-region" client/src/labs/pages/LabsBottlers.tsx client/src/labs/pages/LabsDistilleries.tsx → KEINE alten Sort-Buttons mehr.
+  - States sortMode/sortBy + ihre Sortier-Logik (useMemo/switch) bleiben unverändert.
+  - Build/Typecheck läuft sauber durch — keine TS-Fehler.
+  - Funktion je Seite: Dropdown öffnet/schließt, Auswahl ändert die Sortierung, aktuelle Wahl mit Häkchen, Außenklick schließt, Menü läuft nicht über den Bildschirmrand.
+
+NICHT TUN — ausdrücklich verboten:
+  - KEIN git commit, KEIN git push.
+  - KEIN drizzle-kit, KEINE Schema-/Migrationsänderung (reines Frontend).
+  - NUR diese vier Dateien anfassen (LabsSortMenu.tsx + die drei Seiten). Filter-/Such-/Länder-Logik NICHT verändern.
+  - Die Sortier-Logik (wie sortiert wird) NICHT ändern — nur das Steuerelement austauschen.
+Bei Unklarheit oder wenn ein Edit nicht sauber passt: STOPP und frag, statt zu raten.
+Rollback: git reset --hard pre-sortmenu-phase2-2026-06-25
