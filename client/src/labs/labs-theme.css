@@ -1729,7 +1729,9 @@ a.labs-dram-item {
   font-size: 13px;
   text-align: center;
   white-space: normal;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  -webkit-hyphens: auto;
   line-height: 1.25;
 }
 

@@ -62,7 +62,7 @@ export default function MeineWeltActionBar({ active, onSelect, showHubHeader = t
             <Sparkles className="w-5 h-5 labs-icon-accent" />
           </div>
           <span className="labs-action-bar-label">{t("myTastePage.tileAiInsights", "AI Insights")}</span>
-          <span className="labs-action-bar-sublabel">{t("myTastePage.tileAiInsightsDesc", "Reports & Empfehlungen")}</span>
+          <span className="labs-action-bar-sublabel">{t("myTastePage.tileAiInsightsDesc", "Reports & Analysen")}</span>
         </button>
         <button
           type="button"
