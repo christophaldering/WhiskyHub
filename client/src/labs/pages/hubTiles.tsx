@@ -96,6 +96,15 @@ export const COLLECTION_HUB_TILES: HubTileDef[] = [
     href: "/labs/taste/wishlist",
     testId: "labs-link-collection-hub-wishlist",
   },
+  {
+    icon: Library,
+    labelKey: "myTastePage.aiInsightsHub.collectionAnalysis",
+    labelFallback: "Collection Analysis",
+    descKey: "myTastePage.aiInsightsHub.collectionAnalysisDesc",
+    descFallback: "Patterns in your bottle collection",
+    href: "/labs/taste/collection-analysis",
+    testId: "labs-link-ai-insights-collection-analysis",
+  },
 ];
 
 export const AI_INSIGHTS_HUB_TILES: HubTileDef[] = [
@@ -109,15 +118,6 @@ export const AI_INSIGHTS_HUB_TILES: HubTileDef[] = [
     testId: "labs-link-ai-insights-connoisseur",
   },
   {
-    icon: Activity,
-    labelKey: "myTastePage.whiskyDna",
-    labelFallback: "Whisky DNA",
-    descKey: "myTastePage.aiInsightsHub.dnaDesc",
-    descFallback: "The fingerprint of your taste",
-    href: "/labs/taste/dna",
-    testId: "labs-link-ai-insights-dna",
-  },
-  {
     icon: Sparkles,
     labelKey: "myTastePage.recommendations",
     labelFallback: "Recommendations",
@@ -126,15 +126,6 @@ export const AI_INSIGHTS_HUB_TILES: HubTileDef[] = [
     href: "/labs/taste/recommendations",
     testId: "labs-link-ai-insights-recommendations",
     hidden: true,
-  },
-  {
-    icon: Library,
-    labelKey: "myTastePage.aiInsightsHub.collectionAnalysis",
-    labelFallback: "Collection Analysis",
-    descKey: "myTastePage.aiInsightsHub.collectionAnalysisDesc",
-    descFallback: "Patterns in your bottle collection",
-    href: "/labs/taste/collection-analysis",
-    testId: "labs-link-ai-insights-collection-analysis",
   },
   {
     icon: Compass,
@@ -166,6 +157,15 @@ export const ANALYTICS_HUB_TILES: HubTileDef[] = [
     descFallback: "Your rating statistics & trends",
     href: "/labs/taste/analytics",
     testId: "labs-link-analytics-hub-analytics",
+  },
+  {
+    icon: Activity,
+    labelKey: "myTastePage.whiskyDna",
+    labelFallback: "Whisky DNA",
+    descKey: "myTastePage.aiInsightsHub.dnaDesc",
+    descFallback: "The fingerprint of your taste",
+    href: "/labs/taste/dna",
+    testId: "labs-link-ai-insights-dna",
   },
   {
     icon: PieChart,

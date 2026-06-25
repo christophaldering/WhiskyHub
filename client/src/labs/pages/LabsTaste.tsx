@@ -401,6 +401,7 @@ export default function LabsTaste() {
             <EmbeddedMeineWeltProvider>
               {effectiveCollectionTile === "labs-link-collection-hub-bottles" && <LabsTasteCollection />}
               {effectiveCollectionTile === "labs-link-collection-hub-wishlist" && <LabsTasteWishlist />}
+              {effectiveCollectionTile === "labs-link-ai-insights-collection-analysis" && <LabsCollectionAnalysis />}
             </EmbeddedMeineWeltProvider>
           </HubTileCollapsible>
         </div>
@@ -431,9 +432,7 @@ export default function LabsTaste() {
           >
             <EmbeddedMeineWeltProvider>
               {activeAITile === "labs-link-ai-insights-connoisseur" && <LabsConnoisseur />}
-              {activeAITile === "labs-link-ai-insights-dna" && <LabsWhiskyDNA />}
               {activeAITile === "labs-link-ai-insights-recommendations" && <LabsRecommendations />}
-              {activeAITile === "labs-link-ai-insights-collection-analysis" && <LabsCollectionAnalysis />}
               {activeAITile === "labs-link-ai-insights-ai-curation" && <LabsAICuration />}
               {activeAITile === "labs-link-ai-insights-ai-images" && <LabsAiImages />}
             </EmbeddedMeineWeltProvider>
@@ -469,6 +468,7 @@ export default function LabsTaste() {
         >
           <EmbeddedMeineWeltProvider>
             {activeAnalyticsTile === "labs-link-analytics-hub-analytics" && <LabsTasteAnalytics />}
+            {activeAnalyticsTile === "labs-link-ai-insights-dna" && <LabsWhiskyDNA />}
             {activeAnalyticsTile === "labs-link-analytics-hub-wheel" && <LabsTasteWheel />}
             {activeAnalyticsTile === "labs-link-analytics-hub-compare" && <LabsCompareBenchmark />}
             {activeAnalyticsTile === "labs-link-analytics-hub-palate" && <LabsTasteProfile />}

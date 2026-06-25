@@ -761,7 +761,7 @@ function Router() {
               <Route path="/labs/taste/profile">{() => <RedirectWithQuery to="/labs/taste" query="tab=analytics&sub=labs-link-analytics-hub-palate" />}</Route>
               <Route path="/labs/taste/analytics">{() => <RedirectWithQuery to="/labs/taste" query="tab=analytics&sub=labs-link-analytics-hub-analytics" />}</Route>
               <Route path="/labs/taste/wheel">{() => <RedirectWithQuery to="/labs/taste" query="tab=analytics&sub=labs-link-analytics-hub-wheel" />}</Route>
-              <Route path="/labs/taste/dna">{() => <RedirectWithQuery to="/labs/taste" query="tab=ai&sub=labs-link-ai-insights-dna" />}</Route>
+              <Route path="/labs/taste/dna">{() => <RedirectWithQuery to="/labs/taste" query="tab=analytics&sub=labs-link-ai-insights-dna" />}</Route>
               <Route path="/labs/taste/compare">{() => <RedirectWithQuery to="/labs/taste" query="tab=analytics&sub=labs-link-analytics-hub-compare" />}</Route>
               <Route path="/labs/taste/drams">{() => <RedirectWithQuery to="/labs/taste" query="" />}</Route>
               <Route path="/labs/taste/collection">{() => <RedirectWithQuery to="/labs/taste" query="tab=collection&sub=labs-link-collection-hub-bottles" />}</Route>
@@ -772,7 +772,7 @@ function Router() {
               <Route path="/labs/taste/recommendations">{() => <RedirectWithQuery to="/labs/taste" query="tab=ai&sub=labs-link-ai-insights-recommendations" />}</Route>
               <Route path="/labs/taste/pairings" component={LabsPairings} />
               <Route path="/labs/taste/benchmark">{() => <RedirectWithQuery to="/labs/taste" query="tab=analytics&sub=benchmark" />}</Route>
-              <Route path="/labs/taste/collection-analysis">{() => <RedirectWithQuery to="/labs/taste" query="tab=ai&sub=labs-link-ai-insights-collection-analysis" />}</Route>
+              <Route path="/labs/taste/collection-analysis">{() => <RedirectWithQuery to="/labs/taste" query="tab=collection&sub=labs-link-ai-insights-collection-analysis" />}</Route>
               <Route path="/labs/taste/connoisseur">{() => <RedirectWithQuery to="/labs/taste" query="tab=ai&sub=labs-link-ai-insights-connoisseur" />}</Route>
               <Route path="/labs/taste/ai-curation">{() => <RedirectWithQuery to="/labs/taste" query="tab=ai&sub=labs-link-ai-insights-ai-curation" />}</Route>
               <Route path="/labs/taste/collection-hub">{() => <Redirect to="/labs/taste?tab=collection" />}</Route>
