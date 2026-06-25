@@ -31,9 +31,8 @@
         import LabsPairings from "@/labs/pages/LabsPairings";
         import LabsThemenspeicher from "@/labs/pages/LabsThemenspeicher";
         import LabsAromaAtlas from "@/labs/pages/LabsAromaAtlas";
-        import LabsAbout from "@/labs/pages/LabsAbout";
 
-        type BibliothekSectionKey = "nachschlagewerk" | "tasting-wissen" | "rabbit-hole" | "ueber-casksense";
+        type BibliothekSectionKey = "nachschlagewerk" | "tasting-wissen" | "rabbit-hole";
 
         interface BibliothekSubDef {
           sub: string;
@@ -86,24 +85,13 @@
           {
             key: "rabbit-hole",
             icon: Archive,
-            labelKey: "rabbitHole.themenspeicherTitle",
+            labelKey: "rabbitHole.title",
             labelFb: "Rabbit Hole",
-            descKey: "rabbitHole.themenspeicherDesc",
-            descFb: "Themenspeicher",
+            descKey: "rabbitHole.subtitle",
+            descFb: "Aroma-Atlas & Themenspeicher",
             subs: [
               { sub: "aroma-atlas", labelKey: "rabbitHole.aromaAtlasTitle", labelFb: "Aroma-Atlas", icon: MapIcon, Component: LabsAromaAtlas },
               { sub: "themenspeicher", labelKey: "rabbitHole.themenspeicherTitle", labelFb: "Themenspeicher", icon: Archive, Component: LabsThemenspeicher },
-            ],
-          },
-          {
-            key: "ueber-casksense",
-            icon: Info,
-            labelKey: "about.title",
-            labelFb: "Über CaskSense",
-            descKey: "m2.discover.aboutSubtitle",
-            descFb: "The story behind CaskSense",
-            subs: [
-              { sub: "about", labelKey: "about.title", labelFb: "About", icon: Info, Component: LabsAbout },
             ],
           },
         ];
@@ -265,7 +253,7 @@
               return {
                 tab: (tab === "whiskies" || tab === "bibliothek") ? tab as "whiskies" | "bibliothek" : null,
                 view,
-                section: (section === "nachschlagewerk" || section === "tasting-wissen" || section === "rabbit-hole" || section === "ueber-casksense") ? section as BibliothekSectionKey : null,
+                section: (section === "nachschlagewerk" || section === "tasting-wissen" || section === "rabbit-hole") ? section as BibliothekSectionKey : null,
                 sub,
               };
             } catch {}
