@@ -1,0 +1,134 @@
+HARD PROMPT — Phase 3: LabsSortMenu auf Drams, Sammlung, KI-Bilder — versteckte Richtungs-Schalter zu benannten Modi auflösen
+
+KONTEXT: Letzter Schritt der Sortier-Vereinheitlichung. Drei Seiten bekommen das gemeinsame LabsSortMenu (client/src/labs/components/LabsSortMenu.tsx). Wichtig: Drams hat heute ein zweiteiliges Dropdown (Feld + separate Richtung), Sammlung hat ein Pfeil-Umschalten — beide werden zu FLACHEN benannten Modi. Die Sortier-LOGIK (useMemo, liest sortBy/sortDirection) bleibt unverändert; wir setzen sortBy/sortDirection nur über benannte Modi statt über getrennte Schalter.
+
+═══════════════════════════════════════════
+STEP 0 — DIAGNOSE & PLAN (NICHTS ändern, bevor ich "go" sage)
+═══════════════════════════════════════════
+Setze zuerst:  git tag pre-sortmenu-phase3-2026-06-25
+Bestätige (read-only) und melde:
+1. LabsTasteDrams.tsx: State sortBy ("date"|"score"|"name"|"saved"), sortDirection, sortDropdownOpen; das eigene Dropdown mit data-testid="button-sort-dropdown" (+ Block `{sortDropdownOpen && (…)}`); resetAllFilters ruft setSortDropdownOpen(false); der More-Menu-Button-onClick ruft setSortDropdownOpen(false). Prüfe, ob die Icons ArrowDown/ArrowUp/Check (lucide) außerhalb dieses Sort-Dropdowns noch genutzt werden.
+2. LabsTasteCollection.tsx: State sortBy ("name"|"rating"|"price"|"added"), sortDirection, Konstante sortDefaults; Sortier-Pillen-Zeile mit t("collectionUi.sortLabel") + den labs-sort-*-Buttons.
+3. LabsAiImages.tsx: State sort ("desc"|"asc"); <select data-testid="select-ai-images-sort"> in einer Flex-Zeile neben der Suche.
+4. i18n.ts: es gibt eine englische und eine deutsche Übersetzungs-Sektion, beide enthalten ein Objekt `collectionUi`. Es gibt noch KEIN Objekt `sortModes`.
+Präsentiere kurz den Plan, dann WARTE auf mein "go".
+
+═══════════════════════════════════════════
+STEP 1 — i18n: gemeinsamen sortModes-Block anlegen (EN + DE)
+═══════════════════════════════════════════
+In client/src/lib/i18n.ts. Füge in der ENGLISCHEN Sektion direkt nach dem `collectionUi`-Objekt ein neues Geschwister-Objekt ein:
+      sortModes: {
+        savedRecent: "Recently saved",
+        bestRated: "Best rated",
+        az: "A\u2013Z",
+        newest: "Newest first",
+        oldest: "Oldest first",
+        priceHighLow: "Price: high \u2192 low",
+        priceLowHigh: "Price: low \u2192 high",
+        addedRecent: "Recently added",
+      },
+Und in der DEUTSCHEN Sektion direkt nach deren `collectionUi`-Objekt:
+      sortModes: {
+        savedRecent: "Zuletzt gespeichert",
+        bestRated: "Beste Bewertung",
+        az: "A\u2013Z",
+        newest: "Neueste zuerst",
+        oldest: "\u00c4lteste zuerst",
+        priceHighLow: "Preis: hoch \u2192 niedrig",
+        priceLowHigh: "Preis: niedrig \u2192 hoch",
+        addedRecent: "Zuletzt hinzugef\u00fcgt",
+      },
+Achte auf gültiges JSON/JS (Komma davor/danach korrekt).
+
+═══════════════════════════════════════════
+STEP 2 — LabsTasteDrams.tsx
+═══════════════════════════════════════════
+(a) Import ergänzen:  import LabsSortMenu from "@/labs/components/LabsSortMenu";
+(b) Vor dem return (bei den abgeleiteten Werten) einfügen:
+      const dramsSortOptions = [
+        { value: "saved", label: t("sortModes.savedRecent", "Zuletzt gespeichert") },
+        { value: "score", label: t("sortModes.bestRated", "Beste Bewertung") },
+        { value: "name", label: t("sortModes.az", "A\u2013Z") },
+        { value: "date", label: t("sortModes.newest", "Neueste zuerst") },
+      ];
+(c) Ersetze den GESAMTEN ersten <div className="relative" style={{ flexShrink: 0 }}>…</div>-Block, der data-testid="button-sort-dropdown" und den `{sortDropdownOpen && (…)}`-Menüteil enthält, durch:
+
+              <div style={{ flexShrink: 0 }}>
+                <LabsSortMenu
+                  options={dramsSortOptions}
+                  value={sortBy}
+                  onChange={(v) => { setSortBy(v as SortBy); setSortDirection(v === "name" ? "asc" : "desc"); }}
+                  align="right"
+                  testIdPrefix="drams-sort"
+                />
+              </div>
+
+(d) Entferne die State-Zeile  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
+(e) In resetAllFilters: entferne den Aufruf  setSortDropdownOpen(false);  (die anderen Resets bleiben).
+(f) Im More-Menu-Button-onClick: entferne  setSortDropdownOpen(false);  (setMoreMenuOpen(!moreMenuOpen) bleibt).
+(g) Entferne ArrowDown/ArrowUp/Check aus dem lucide-Import NUR, wenn sie laut Step-0-Prüfung nirgends sonst in der Datei genutzt werden. Falls unsicher → Import stehen lassen (Build-Korrektheit geht vor Aufräumen).
+
+═══════════════════════════════════════════
+STEP 3 — LabsTasteCollection.tsx
+═══════════════════════════════════════════
+(a) Import ergänzen:  import LabsSortMenu from "@/labs/components/LabsSortMenu";
+(b) Vor dem return einfügen:
+      const collectionSortOptions = [
+        { value: "name", label: t("sortModes.az", "A\u2013Z") },
+        { value: "rating", label: t("sortModes.bestRated", "Beste Bewertung") },
+        { value: "price-desc", label: t("sortModes.priceHighLow", "Preis: hoch \u2192 niedrig") },
+        { value: "price-asc", label: t("sortModes.priceLowHigh", "Preis: niedrig \u2192 hoch") },
+        { value: "added", label: t("sortModes.addedRecent", "Zuletzt hinzugef\u00fcgt") },
+      ];
+      const collectionSortValue = sortBy === "price" ? (sortDirection === "asc" ? "price-asc" : "price-desc") : sortBy;
+(c) Ersetze die GESAMTE Sortier-Pillen-Zeile (das <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1" …> mit der t("collectionUi.sortLabel")-Span und den labs-sort-*-Buttons) durch:
+
+      <div className="mb-3">
+        <LabsSortMenu
+          options={collectionSortOptions}
+          value={collectionSortValue}
+          onChange={(v) => {
+            if (v === "price-desc") { setSortBy("price"); setSortDirection("desc"); }
+            else if (v === "price-asc") { setSortBy("price"); setSortDirection("asc"); }
+            else { setSortBy(v as SortKey); setSortDirection(sortDefaults[v as SortKey]); }
+          }}
+          testIdPrefix="collection-sort"
+        />
+      </div>
+
+(sortDefaults, sortBy/sortDirection und der Sortier-useMemo bleiben unverändert.)
+
+═══════════════════════════════════════════
+STEP 4 — LabsAiImages.tsx
+═══════════════════════════════════════════
+(a) Import ergänzen:  import LabsSortMenu from "@/labs/components/LabsSortMenu";
+(b) Ersetze das <select data-testid="select-ai-images-sort">…</select> durch:
+
+        <LabsSortMenu
+          options={[
+            { value: "desc", label: t("sortModes.newest", "Neueste zuerst") },
+            { value: "asc", label: t("sortModes.oldest", "\u00c4lteste zuerst") },
+          ]}
+          value={sort}
+          onChange={(v) => setSort(v === "asc" ? "asc" : "desc")}
+          align="right"
+          testIdPrefix="ai-images-sort"
+        />
+
+═══════════════════════════════════════════
+VERIFIKATION (zeig mir die Ergebnisse)
+═══════════════════════════════════════════
+  - grep -n "sortModes" client/src/lib/i18n.ts → in BEIDEN Sektionen (EN+DE) vorhanden.
+  - grep -rn "LabsSortMenu" client/src/labs/pages/LabsTasteDrams.tsx client/src/labs/pages/LabsTasteCollection.tsx client/src/labs/pages/LabsAiImages.tsx → überall importiert + genutzt.
+  - grep -n "button-sort-dropdown\|sortDropdownOpen\|select-ai-images-sort\|labs-sort-name\|labs-sort-price" client/src/labs/pages/LabsTasteDrams.tsx client/src/labs/pages/LabsTasteCollection.tsx client/src/labs/pages/LabsAiImages.tsx → KEINE Treffer mehr (altes Sort-UI weg).
+  - Sortier-Logik (useMemo/switch in Drams & Collection) inhaltlich unverändert; sortBy/sortDirection/sortDefaults bleiben.
+  - Build/Typecheck läuft sauber durch — keine TS-Fehler (besonders: keine ungenutzten sortDropdownOpen-Referenzen, keine ungenutzten Importe).
+  - Funktion je Seite: Dropdown öffnet/schließt, jeder Modus sortiert korrekt (inkl. Sammlung Preis hoch/niedrig), aktuelle Wahl mit Häkchen, Außenklick schließt, kein Rand-Überlauf.
+
+NICHT TUN — ausdrücklich verboten:
+  - KEIN git commit, KEIN git push.
+  - KEIN drizzle-kit, KEINE Schema-/Migrationsänderung (reines Frontend).
+  - NUR diese Dateien anfassen: i18n.ts + LabsTasteDrams.tsx + LabsTasteCollection.tsx + LabsAiImages.tsx (+ LabsSortMenu.tsx NICHT nötig, bleibt unverändert).
+  - Filter/Status/Suche-Logik NICHT verändern. Die Sortier-Berechnung NICHT ändern — nur das Steuerelement + die Modus-Zuordnung.
+Bei Unklarheit oder wenn ein Edit nicht sauber passt: STOPP und frag, statt zu raten.
+Rollback: git reset --hard pre-sortmenu-phase3-2026-06-25
