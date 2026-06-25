@@ -245,7 +245,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
   const tv = isLabs ? labsV : v;
   const isDe = (i18n.language || "").toLowerCase().startsWith("de");
   const L = isDe ? {
-    cooper: "Cooper", secSettings: "Einstellungen", settings: "Einstellungen",
+    cooper: "Cooper", cooperStudio: "Cooper-Studio", secSettings: "Einstellungen", settings: "Einstellungen",
     theme: "Theme", themeLight: "Hell", themeDark: "Dunkel", language: "Sprache",
     secAccount: "Konto & Daten", verifyEmail: "E-Mail bestätigen", dataExport: "Daten & Export",
     secApp: "App", about: "Über CaskSense", support: "Projekt unterstützen",
@@ -253,7 +253,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
     appInfoVersion: "Version", appInfoTagline: "Ein privates Hobbyprojekt — aus Freude an Whisky und Technik.",
     appInfoStory: "Die ganze Geschichte von CaskSense", appInfoImpressum: "Impressum", appInfoPrivacy: "Datenschutz",
   } : {
-    cooper: "Cooper", secSettings: "Settings", settings: "Settings",
+    cooper: "Cooper", cooperStudio: "Cooper-Studio", secSettings: "Settings", settings: "Settings",
     theme: "Theme", themeLight: "Light", themeDark: "Dark", language: "Language",
     secAccount: "Account & Data", verifyEmail: "Verify Email", dataExport: "Data & Export",
     secApp: "App", about: "About CaskSense", support: "Support the project",
@@ -819,6 +819,14 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
           label={L.cooper}
           onClick={() => { onClose(); navigate("/labs/taste/cooper"); }}
           testId="m2-profile-cooper"
+        />
+      ) : null}
+      {isLabs && session.role === "admin" ? (
+        <MenuButton theme={tv}
+          icon={<Shield style={{ width: 18, height: 18, color: tv.accent }} />}
+          label={L.cooperStudio}
+          onClick={() => { onClose(); navigate("/labs/voice-probe"); }}
+          testId="m2-profile-cooper-studio"
         />
       ) : null}
 
