@@ -1,0 +1,186 @@
+HARD PROMPT — Cooper-Studio Stufe 2: drei kuratierte Persona-Regler (Zurückhaltung · Funken · Wärme), global, wirken auf Stimme UND Tippen
+
+KONTEXT: Cooper-Studio Stufe 1 (Stimme + Modus als globaler Default) ist live. Jetzt drei kuratierte Regler, mit denen ein Admin Coopers Grundton zentral feinjustiert — ohne Code/Hard Prompt je Nuance. Gespeichert als appSettings-Keys (cooper_persona_reserve/spark/warmth), je 3 Stufen. "Ausgewogen" (=mid) speist NICHTS ein → Default-Verhalten unverändert. Die Regler verschieben nur Ton/Redseligkeit INNERHALB der bestehenden harten Leitplanken (nie dirigieren, nie Flasche verraten, nie bloßes Beschreiben loben). Reines Frontend+Backend, KEIN Schema-Change (appSettings ist Key-Value), KEIN drizzle.
+
+═══════════════════════════════════════════
+STEP 0 — DIAGNOSE & PLAN (nichts ändern bis "go")
+═══════════════════════════════════════════
+Setze zuerst:  git tag pre-cooper-studio-stufe2-2026-06-25
+Bestätige (read-only) und melde:
+1. server/routes.ts: Voice-instructions werden bei der Zeile `const instructions = baseInstr + "\n\n" + continuerBlock + " " + (continuerByLevel[cooperLevel] || continuerByLevel.adaptive) + "\n\n" + backdoorBlock;` zusammengebaut. Die Converse-Persona ist das Template `const turnSystem = \`Du bist Cooper, ein erfahrener Verkostungs-Begleiter …` und enthält die Stelle `du urteilst nicht. Passe dein Register`. GET/POST `/api/admin/cooper-defaults` lesen/schreiben cooper_default_voice/mode. storage.getAppSetting/setAppSetting existieren. Module-Scope-Helfer wie `function getDefaultSetting` stehen oben auf Spalte 0.
+2. client/src/labs/pages/LabsVoiceProbe.tsx: admin-only Screen, lädt cooper-defaults in useEffect, speichert via saveDefault (POST voice+mode), hat Chip-Reihen für VOICES und Modus.
+Präsentiere kurz den Plan, dann WARTE auf mein "go".
+
+═══════════════════════════════════════════
+STEP 1 — server/routes.ts: Modul-Helfer (Spalte 0, NICHT in registerRoutes)
+═══════════════════════════════════════════
+Füge DIREKT ÜBER `function getDefaultSetting(key: string): string {` auf Modul-Ebene ein:
+
+function cooperPersonaKnobFragment(reserve?: string | null, spark?: string | null, warmth?: string | null): string {
+  const parts: string[] = [];
+  if (reserve === "still") parts.push("Halte dich noch stärker zurück als ohnehin — Schweigen ist die Regel, ein Anstoß die seltene Ausnahme; sprich nur, wenn es den Taster wirklich weiterbringt.");
+  else if (reserve === "gespraechig") parts.push("Du darfst etwas häufiger einen kurzen Anstoß oder eine Frage setzen als sonst, bleibst aber knapp und drängst nie — der Taster führt weiterhin.");
+  if (spark === "nuechtern") parts.push("Verzichte fast ganz auf überraschende Bilder oder eigenwillige Beobachtungen; bleibe schlicht, sachlich und klar.");
+  else if (spark === "verspielt") parts.push("Lass etwas häufiger einen überraschenden Funken zu — ein unerwartetes Bild, eine eigenwillige Metapher, einen Hauch trockenen Humor —, immer bezogen auf den Taster oder das Verkosten, nie auf die Flasche.");
+  if (warmth === "neutral") parts.push("Bleibe betont sachlich und nüchtern im Ton und verzichte auf Wärme-Signale, ohne kalt zu wirken.");
+  else if (warmth === "warm") parts.push("Lass etwas mehr Wärme und Zugewandtheit durchklingen, ohne ins Loben des bloßen Beschreibens oder ins Beschwichtigen zu kippen.");
+  if (parts.length === 0) return "";
+  return "Feinjustierung deines Tons (verschiebt nur die Nuance innerhalb der obigen Leitplanken und hebt nichts davon auf): " + parts.join(" ");
+}
+
+═══════════════════════════════════════════
+STEP 2 — Voice-instructions erweitern
+═══════════════════════════════════════════
+Ersetze die EINE Zeile
+  const instructions = baseInstr + "\n\n" + continuerBlock + " " + (continuerByLevel[cooperLevel] || continuerByLevel.adaptive) + "\n\n" + backdoorBlock;
+durch:
+  const pReserveV = await storage.getAppSetting("cooper_persona_reserve");
+  const pSparkV = await storage.getAppSetting("cooper_persona_spark");
+  const pWarmthV = await storage.getAppSetting("cooper_persona_warmth");
+  const knobV = cooperPersonaKnobFragment(pReserveV, pSparkV, pWarmthV);
+  const instructions = baseInstr + "\n\n" + continuerBlock + " " + (continuerByLevel[cooperLevel] || continuerByLevel.adaptive) + "\n\n" + backdoorBlock + (knobV ? "\n\n" + knobV : "");
+
+═══════════════════════════════════════════
+STEP 3 — Converse-turnSystem erweitern
+═══════════════════════════════════════════
+(a) Füge UNMITTELBAR VOR der Zeile `const turnSystem = \`Du bist Cooper, ein erfahrener Verkostungs-Begleiter` ein:
+  const pReserveC = await storage.getAppSetting("cooper_persona_reserve");
+  const pSparkC = await storage.getAppSetting("cooper_persona_spark");
+  const pWarmthC = await storage.getAppSetting("cooper_persona_warmth");
+  const knobC = cooperPersonaKnobFragment(pReserveC, pSparkC, pWarmthC);
+  const knobInsC = knobC ? " " + knobC : "";
+(b) Ersetze im turnSystem-Template die Stelle
+  du urteilst nicht. Passe dein Register
+durch
+  du urteilst nicht.${knobInsC} Passe dein Register
+(Nur dieses eine Vorkommen; der Rest des Templates bleibt unverändert.)
+
+═══════════════════════════════════════════
+STEP 4 — Endpoints erweitern (/api/admin/cooper-defaults)
+═══════════════════════════════════════════
+GET: ersetze
+  const gV = await storage.getAppSetting("cooper_default_voice");
+  const gM = await storage.getAppSetting("cooper_default_mode");
+  return res.json({ voice: gV ?? "cedar", mode: gM ?? "tiefsinnig" });
+durch
+  const gV = await storage.getAppSetting("cooper_default_voice");
+  const gM = await storage.getAppSetting("cooper_default_mode");
+  const pR = await storage.getAppSetting("cooper_persona_reserve");
+  const pS = await storage.getAppSetting("cooper_persona_spark");
+  const pW = await storage.getAppSetting("cooper_persona_warmth");
+  return res.json({ voice: gV ?? "cedar", mode: gM ?? "tiefsinnig", reserve: pR ?? "mid", spark: pS ?? "mid", warmth: pW ?? "mid" });
+
+POST: ersetze den Block ab `const VOICES = [...]` bis `return res.json({ voice: req.body.voice, mode: req.body.mode });` durch:
+  const VOICES = ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse", "marin", "cedar"];
+  const MODES = ["fluessig", "tiefsinnig"];
+  if (!VOICES.includes(req.body?.voice) || !MODES.includes(req.body?.mode)) {
+    return res.status(400).json({ message: "Invalid voice or mode." });
+  }
+  const RESERVE = ["still", "mid", "gespraechig"];
+  const SPARK = ["nuechtern", "mid", "verspielt"];
+  const WARMTH = ["neutral", "mid", "warm"];
+  const reserve = RESERVE.includes(req.body?.reserve) ? req.body.reserve : "mid";
+  const spark = SPARK.includes(req.body?.spark) ? req.body.spark : "mid";
+  const warmth = WARMTH.includes(req.body?.warmth) ? req.body.warmth : "mid";
+  await storage.setAppSetting("cooper_default_voice", req.body.voice);
+  await storage.setAppSetting("cooper_default_mode", req.body.mode);
+  await storage.setAppSetting("cooper_persona_reserve", reserve);
+  await storage.setAppSetting("cooper_persona_spark", spark);
+  await storage.setAppSetting("cooper_persona_warmth", warmth);
+  return res.json({ voice: req.body.voice, mode: req.body.mode, reserve, spark, warmth });
+
+═══════════════════════════════════════════
+STEP 5 — client/src/labs/pages/LabsVoiceProbe.tsx
+═══════════════════════════════════════════
+(a) Direkt unter der Zeile mit `const CORNER_LABELS` ergänze:
+const RES_LABEL: Record<string, string> = { still: "Sehr still", mid: "Ausgewogen", gespraechig: "Gesprächiger" };
+const SPK_LABEL: Record<string, string> = { nuechtern: "Nüchtern", mid: "Ausgewogen", verspielt: "Verspielt" };
+const WRM_LABEL: Record<string, string> = { neutral: "Neutral", mid: "Ausgewogen", warm: "Warm" };
+
+(b) Ersetze die savedDefault-State-Zeile durch:
+  const [savedDefault, setSavedDefault] = useState<{ voice: string; mode: string; reserve: string; spark: string; warmth: string } | null>(null);
+  const [reserve, setReserve] = useState("mid");
+  const [spark, setSpark] = useState("mid");
+  const [warmth, setWarmth] = useState("mid");
+
+(c) Im Lade-useEffect ersetze den Block
+        if (data?.voice) setVoice(data.voice);
+        if (data?.mode) setMode(data.mode);
+        setSavedDefault({ voice: data.voice, mode: data.mode });
+durch:
+        if (data?.voice) setVoice(data.voice);
+        if (data?.mode) setMode(data.mode);
+        if (data?.reserve) setReserve(data.reserve);
+        if (data?.spark) setSpark(data.spark);
+        if (data?.warmth) setWarmth(data.warmth);
+        setSavedDefault({ voice: data.voice, mode: data.mode, reserve: data.reserve, spark: data.spark, warmth: data.warmth });
+
+(d) In saveDefault ersetze die fetch-Body-Zeile durch:
+      const res = await fetch("/api/admin/cooper-defaults", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ voice, mode, reserve, spark, warmth }) });
+   und die darauf folgende setSavedDefault-Zeile durch:
+      setSavedDefault({ voice: data.voice, mode: data.mode, reserve: data.reserve, spark: data.spark, warmth: data.warmth });
+
+(e) Füge NACH dem Modus-Chip-Block (dem `{status !== "connected" && ( … [["fluessig","Flüssig"],["tiefsinnig","Tiefsinnig"]] … )}`) und VOR dem Speichern-Block (`{status !== "connected" && ( <div … text-current-default …`) diesen neuen Block ein:
+      {status !== "connected" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: SP.md }}>
+          {[
+            { key: "reserve", label: "Zurückhaltung", value: reserve, setter: setReserve, opts: [["still", "Sehr still"], ["mid", "Ausgewogen"], ["gespraechig", "Gesprächiger"]] },
+            { key: "spark", label: "Funken", value: spark, setter: setSpark, opts: [["nuechtern", "Nüchtern"], ["mid", "Ausgewogen"], ["verspielt", "Verspielt"]] },
+            { key: "warmth", label: "Wärme", value: warmth, setter: setWarmth, opts: [["neutral", "Neutral"], ["mid", "Ausgewogen"], ["warm", "Warm"]] },
+          ].map((knob) => (
+            <div key={knob.key} style={{ display: "flex", flexDirection: "column", gap: SP.xs }}>
+              <div style={{ fontFamily: FONT.body, fontSize: 12, color: LABS_THEME.faint, textTransform: "uppercase", letterSpacing: 1 }}>{knob.label}</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: SP.sm }}>
+                {knob.opts.map(([val, lab]) => {
+                  const active = knob.value === val;
+                  return (
+                    <button
+                      key={val}
+                      data-testid={`chip-${knob.key}-${val}`}
+                      onClick={() => knob.setter(val)}
+                      style={{ minHeight: 36, padding: `0 ${SP.md}px`, borderRadius: RADIUS.full, border: `1px solid ${active ? LABS_THEME.gold : LABS_THEME.border}`, background: active ? "rgba(212,168,71,0.14)" : "transparent", color: active ? LABS_THEME.gold : LABS_THEME.muted, fontFamily: FONT.body, fontSize: 14, cursor: "pointer" }}
+                    >
+                      {lab}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+          <div style={{ fontFamily: FONT.body, fontSize: 12, color: LABS_THEME.faint, lineHeight: 1.5 }}>
+            Speichern und neu verbinden, um die Justierung zu hören. „Ausgewogen" überall = Coopers Grundverhalten.
+          </div>
+        </div>
+      )}
+
+(f) Im Speichern-Block ersetze den text-current-default-<div> durch (zweite Zeile mit Ton-Zusammenfassung):
+          <div data-testid="text-current-default" style={{ fontFamily: FONT.body, fontSize: 13, color: LABS_THEME.faint }}>
+            {savedDefault
+              ? `Aktueller globaler Default: ${savedDefault.voice} · ${savedDefault.mode === "tiefsinnig" ? "Tiefsinnig" : "Flüssig"}`
+              : "Aktueller globaler Default: lädt …"}
+          </div>
+          {savedDefault && (
+            <div style={{ fontFamily: FONT.body, fontSize: 12, color: LABS_THEME.faint }}>
+              Ton: Zurückhaltung {RES_LABEL[savedDefault.reserve] ?? savedDefault.reserve} · Funken {SPK_LABEL[savedDefault.spark] ?? savedDefault.spark} · Wärme {WRM_LABEL[savedDefault.warmth] ?? savedDefault.warmth}
+            </div>
+          )}
+
+(g) Kosmetik: ersetze die Überschrift „Realtime-Sprach-Durchstich" durch „Cooper-Studio" und die darunterstehende Beschreibungszeile durch: „Stimme, Modus und Coopers Grundton zentral justieren. Isolierter Admin-Test. Beim Verbinden wird die Mikrofon-Erlaubnis abgefragt."
+
+═══════════════════════════════════════════
+VERIFIKATION (zeig mir die Ergebnisse)
+═══════════════════════════════════════════
+  - grep -n "function cooperPersonaKnobFragment" server/routes.ts → genau 1 Treffer, Spalte 0 (Modul-Ebene).
+  - grep -n "knobV\|knobInsC\|cooper_persona_reserve\|cooper_persona_spark\|cooper_persona_warmth" server/routes.ts → Voice hängt knobV an, Converse nutzt knobInsC nach „du urteilst nicht.", GET+POST lesen/schreiben die drei Keys.
+  - grep -n "chip-reserve-\|chip-spark-\|chip-warmth-\|setReserve\|setSpark\|setWarmth" client/src/labs/pages/LabsVoiceProbe.tsx → State, Chips, POST-Body vorhanden.
+  - Build/Typecheck grün.
+  - Logik-Check: alle drei auf „Ausgewogen"/mid → cooperPersonaKnobFragment liefert "" → instructions/turnSystem identisch zu vorher (kein Verhaltenswechsel im Default). Nicht-mid → genau eine kuratierte Zeile pro Regler wird angehängt.
+
+NICHT TUN — ausdrücklich verboten:
+  - KEIN git commit, KEIN git push.
+  - KEIN drizzle-kit, KEINE Schema-/Migrationsänderung (appSettings ist Key-Value — neue Keys brauchen nichts).
+  - Die harten Leitplanken in den Persona-Blöcken NICHT verändern; nur die in diesem Prompt genannten Stellen anfassen.
+  - NUR zwei Dateien: server/routes.ts und client/src/labs/pages/LabsVoiceProbe.tsx.
+  - Den „Sensorisches Gedächtnis"-Block NICHT anfassen.
+Bei Unklarheit oder wenn ein Anker nicht exakt passt: STOPP und frag, statt zu raten.
+Rollback: git reset --hard pre-cooper-studio-stufe2-2026-06-25
