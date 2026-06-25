@@ -1,0 +1,122 @@
+WICHTIG: Lies erst alles. KEINE Commits, KEIN git push, KEIN drizzle-kit, KEINE Schema-Änderungen, KEINE Migrationen. Es wird AUSSCHLIESSLICH EINE Datei angefasst: client/src/labs/pages/hubTiles.tsx.
+
+SICHERHEITS-TAG ZUERST (Shell):
+  git tag pre-etappe1-meinewelt-2026-06-25
+
+SCHRITT 0 — DIAGNOSE (nur lesen, zeigen):
+  In client/src/labs/pages/hubTiles.tsx bestätige:
+  - interface HubTileDef { ... testId: string; role?: HubTileRole; }
+  - function HubTileGrid({ tiles, ... }) mit: const useSingleRow = ...; const mobileCols = tiles.length ...; String(tiles.length); {tiles.map((tile) => (
+  - AI_INSIGHTS_HUB_TILES enthält die Kacheln mit testId "labs-link-ai-insights-recommendations" und "labs-link-ai-insights-ai-images"
+  - ANALYTICS_HUB_TILES Reihenfolge: analytics, wheel, compare, palate
+  Zeig kurz, was du gefunden hast, dann führe die Edits unten exakt aus.
+
+ZIEL: Empfehlungen + KI-Bilder aus dem Kachel-Raster ausblenden (Route/Deep-Link bleiben!), Vergleichen ans Ende des Analyse-Rasters. Umsetzung über ein hidden-Flag, das im gemeinsamen HubTileGrid gefiltert wird — die Deep-Link-Mengen AI_SUB_IDS/ANALYTICS_SUB_IDS (aus den Roh-Arrays) bleiben unberührt.
+
+EDIT 1 — hidden-Flag zum Typ:
+FINDE:
+  testId: string;
+  role?: HubTileRole;
+}
+ERSETZE DURCH:
+  testId: string;
+  role?: HubTileRole;
+  hidden?: boolean;
+}
+
+EDIT 2 — Filter in HubTileGrid einführen:
+FINDE:
+  const useSingleRow = variant === "single-row" || variant === "four-row";
+ERSETZE DURCH:
+  const visibleTiles = tiles.filter((tile) => !tile.hidden);
+  const useSingleRow = variant === "single-row" || variant === "four-row";
+
+EDIT 3 — Spaltenzahl auf sichtbare Kacheln:
+FINDE:
+  const mobileCols = tiles.length >= 5 ? 3 : tiles.length;
+ERSETZE DURCH:
+  const mobileCols = visibleTiles.length >= 5 ? 3 : visibleTiles.length;
+
+EDIT 4 — Grid-Spalten auf sichtbare Kacheln:
+FINDE:
+        ["--hub-cols" as string]: String(tiles.length),
+ERSETZE DURCH:
+        ["--hub-cols" as string]: String(visibleTiles.length),
+
+EDIT 5 — Render über sichtbare Kacheln:
+FINDE:
+      {tiles.map((tile) => (
+ERSETZE DURCH:
+      {visibleTiles.map((tile) => (
+
+EDIT 6 — Empfehlungen ausblenden:
+FINDE:
+    href: "/labs/taste/recommendations",
+    testId: "labs-link-ai-insights-recommendations",
+  },
+ERSETZE DURCH:
+    href: "/labs/taste/recommendations",
+    testId: "labs-link-ai-insights-recommendations",
+    hidden: true,
+  },
+
+EDIT 7 — KI-Bilder ausblenden:
+FINDE:
+    href: "/labs/taste/ai-images",
+    testId: "labs-link-ai-insights-ai-images",
+  },
+ERSETZE DURCH:
+    href: "/labs/taste/ai-images",
+    testId: "labs-link-ai-insights-ai-images",
+    hidden: true,
+  },
+
+EDIT 8 — Vergleichen ans Ende (mit Palate tauschen). FINDE den Compare-Block direkt gefolgt vom Palate-Block:
+  {
+    icon: GitCompareArrows,
+    labelKey: "myTastePage.analyticsHub.vergleichen",
+    labelFallback: "Vergleichen",
+    descKey: "myTastePage.analyticsHub.vergleichenDesc",
+    descFallback: "Deine Drams & externe Daten",
+    href: "/labs/taste/compare",
+    testId: "labs-link-analytics-hub-compare",
+  },
+  {
+    icon: Activity,
+    labelKey: "myTastePage.analyticsHub.palate",
+    labelFallback: "Your Profile / Palate",
+    descKey: "myTastePage.analyticsHub.palateDesc",
+    descFallback: "Your CaskSense flavor profile",
+    href: "/labs/taste/profile",
+    testId: "labs-link-analytics-hub-palate",
+  },
+ERSETZE DURCH (Palate zuerst, Compare zuletzt):
+  {
+    icon: Activity,
+    labelKey: "myTastePage.analyticsHub.palate",
+    labelFallback: "Your Profile / Palate",
+    descKey: "myTastePage.analyticsHub.palateDesc",
+    descFallback: "Your CaskSense flavor profile",
+    href: "/labs/taste/profile",
+    testId: "labs-link-analytics-hub-palate",
+  },
+  {
+    icon: GitCompareArrows,
+    labelKey: "myTastePage.analyticsHub.vergleichen",
+    labelFallback: "Vergleichen",
+    descKey: "myTastePage.analyticsHub.vergleichenDesc",
+    descFallback: "Deine Drams & externe Daten",
+    href: "/labs/taste/compare",
+    testId: "labs-link-analytics-hub-compare",
+  },
+
+VERIFIKATION (nur lesen, zeigen):
+  1. grep -c "hidden?: boolean" client/src/labs/pages/hubTiles.tsx            → 1
+  2. grep -c "const visibleTiles = tiles.filter" client/src/labs/pages/hubTiles.tsx → 1
+  3. grep -c "visibleTiles.map" client/src/labs/pages/hubTiles.tsx            → 1
+  4. grep -c "hidden: true" client/src/labs/pages/hubTiles.tsx                → 2
+  5. grep -n "tiles.map" client/src/labs/pages/hubTiles.tsx                   → es darf KEIN "{tiles.map((tile)" mehr geben (nur visibleTiles.map)
+  6. grep -n "labs-link-analytics-hub-palate\|labs-link-analytics-hub-compare" client/src/labs/pages/hubTiles.tsx → palate-Zeile MUSS VOR compare-Zeile stehen
+  7. npx tsc --noEmit → keine NEUEN Fehler in hubTiles.tsx (Umgebungs-Rauschen zu @types/node/vite ist ok)
+
+ERINNERUNG ZUM SCHLUSS: KEIN commit, KEIN push, KEIN drizzle-kit, KEINE Schema-/Migrationsänderung. Nur hubTiles.tsx wurde angefasst. Zeig mir die Verifikations-Ergebnisse.

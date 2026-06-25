@@ -17,6 +17,7 @@ export interface HubTileDef {
   href?: string;
   testId: string;
   role?: HubTileRole;
+  hidden?: boolean;
 }
 
 export type TastingsHubFilter = "active" | "completed";
@@ -124,6 +125,7 @@ export const AI_INSIGHTS_HUB_TILES: HubTileDef[] = [
     descFallback: "Personalized whisky picks for you",
     href: "/labs/taste/recommendations",
     testId: "labs-link-ai-insights-recommendations",
+    hidden: true,
   },
   {
     icon: Library,
@@ -151,6 +153,7 @@ export const AI_INSIGHTS_HUB_TILES: HubTileDef[] = [
     descFallback: "Galerie deiner KI-Cover",
     href: "/labs/taste/ai-images",
     testId: "labs-link-ai-insights-ai-images",
+    hidden: true,
   },
 ];
 
@@ -174,15 +177,6 @@ export const ANALYTICS_HUB_TILES: HubTileDef[] = [
     testId: "labs-link-analytics-hub-wheel",
   },
   {
-    icon: GitCompareArrows,
-    labelKey: "myTastePage.analyticsHub.vergleichen",
-    labelFallback: "Vergleichen",
-    descKey: "myTastePage.analyticsHub.vergleichenDesc",
-    descFallback: "Deine Drams & externe Daten",
-    href: "/labs/taste/compare",
-    testId: "labs-link-analytics-hub-compare",
-  },
-  {
     icon: Activity,
     labelKey: "myTastePage.analyticsHub.palate",
     labelFallback: "Your Profile / Palate",
@@ -190,6 +184,15 @@ export const ANALYTICS_HUB_TILES: HubTileDef[] = [
     descFallback: "Your CaskSense flavor profile",
     href: "/labs/taste/profile",
     testId: "labs-link-analytics-hub-palate",
+  },
+  {
+    icon: GitCompareArrows,
+    labelKey: "myTastePage.analyticsHub.vergleichen",
+    labelFallback: "Vergleichen",
+    descKey: "myTastePage.analyticsHub.vergleichenDesc",
+    descFallback: "Deine Drams & externe Daten",
+    href: "/labs/taste/compare",
+    testId: "labs-link-analytics-hub-compare",
   },
 ];
 
@@ -340,6 +343,7 @@ export function HubTileGrid({
   role?: HubTileRole;
   tileBadges?: Record<string, number>;
 }) {
+  const visibleTiles = tiles.filter((tile) => !tile.hidden);
   const useSingleRow = variant === "single-row" || variant === "four-row";
   const className =
     variant === "auto"
@@ -347,16 +351,16 @@ export function HubTileGrid({
       : useSingleRow
         ? "labs-hub-tile-grid labs-hub-tile-grid--single-row"
         : "labs-hub-tile-grid";
-  const mobileCols = tiles.length >= 5 ? 3 : tiles.length;
+  const mobileCols = visibleTiles.length >= 5 ? 3 : visibleTiles.length;
   const style = useSingleRow
     ? ({
-        ["--hub-cols" as string]: String(tiles.length),
+        ["--hub-cols" as string]: String(visibleTiles.length),
         ["--hub-mobile-cols" as string]: String(mobileCols),
       } as React.CSSProperties)
     : undefined;
   return (
     <div className={className} style={style}>
-      {tiles.map((tile) => (
+      {visibleTiles.map((tile) => (
         <HubTileCard
           key={tile.testId}
           tile={tile}
