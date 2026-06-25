@@ -13,6 +13,7 @@ import { openDramNotePdf } from "@/labs/utils/dramNotePdf";
 import type { JournalEntry } from "@shared/schema";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
 import LabsSortMenu from "@/labs/components/LabsSortMenu";
+import LabsSegmented from "@/labs/components/LabsSegmented";
 import {
   BookOpen, Star, Plus, ChevronLeft, Pencil, Trash2, Check,
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy,
@@ -376,6 +377,9 @@ export default function LabsTasteDrams() {
     });
     return items;
   }, [journal, tastingWhiskies, originFilter, statusFilter, search, sortBy, sortDirection]);
+
+  const originOptions = ORIGIN_KEYS.map((fk) => ({ value: fk, label: t(ORIGIN_I18N[fk]), count: originCounts[fk] }));
+  const statusOptions = STATUS_KEYS.map((sk) => ({ value: sk, label: t(STATUS_I18N[sk], STATUS_FALLBACK[sk]), count: statusCounts[sk] }));
 
   const dramsSortOptions = [
     { value: "saved", label: t("sortModes.savedRecent", "Zuletzt gespeichert") },
@@ -1243,28 +1247,20 @@ export default function LabsTasteDrams() {
       ) : (
         <>
           <div style={{ marginBottom: 12, marginTop: 4 }}>
-            <div className="labs-segmented" style={{ marginBottom: 8 }}>
-              {ORIGIN_KEYS.map(fk => (
-                <button key={fk} onClick={() => setOriginFilter(fk)}
-                  className={`labs-segmented-btn ${originFilter === fk ? "labs-segmented-btn-active" : ""}`}
-                  style={{ fontSize: 12, padding: "7px 5px" }}
-                  data-testid={`labs-origin-${fk}`}>
-                  {t(ORIGIN_I18N[fk])}
-                  <span style={{ marginLeft: 4, fontSize: 11, opacity: 0.6, fontVariantNumeric: "tabular-nums" }}>{originCounts[fk]}</span>
-                </button>
-              ))}
-            </div>
-            <div className="labs-segmented" style={{ marginBottom: 0 }}>
-              {STATUS_KEYS.map(sk => (
-                <button key={sk} onClick={() => setStatusFilter(sk)}
-                  className={`labs-segmented-btn ${statusFilter === sk ? "labs-segmented-btn-active" : ""}`}
-                  style={{ fontSize: 12, padding: "7px 5px" }}
-                  data-testid={`labs-status-${sk}`}>
-                  {t(STATUS_I18N[sk], STATUS_FALLBACK[sk])}
-                  <span style={{ marginLeft: 4, fontSize: 11, opacity: 0.6, fontVariantNumeric: "tabular-nums" }}>{statusCounts[sk]}</span>
-                </button>
-              ))}
-            </div>
+            <LabsSegmented
+              options={originOptions}
+              value={originFilter}
+              onChange={(v) => setOriginFilter(v as OriginFilter)}
+              testIdPrefix="labs-origin"
+              style={{ marginBottom: 8 }}
+            />
+            <LabsSegmented
+              options={statusOptions}
+              value={statusFilter}
+              onChange={(v) => setStatusFilter(v as StatusFilter)}
+              testIdPrefix="labs-status"
+              style={{ marginBottom: 0 }}
+            />
           </div>
 
           <div style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--labs-bg, #0e0b05)", padding: "8px 0", borderBottom: "1px solid var(--labs-border)", maxWidth: "100%", boxSizing: "border-box" }}>

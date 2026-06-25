@@ -8,6 +8,7 @@ import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useLocation } from "wouter";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import LabsSortMenu from "@/labs/components/LabsSortMenu";
+import LabsSegmented from "@/labs/components/LabsSegmented";
 import {
   Upload, Search, Trash2, Archive, Loader2, Check,
   Star, RefreshCw, Sparkles, X, CheckSquare,
@@ -283,6 +284,13 @@ export default function LabsTasteCollection() {
     return result;
   }, [items, statusFilter, search, sortBy, sortDirection]);
 
+  const statusLabel = (s: string | null) => s === "open" ? t("collectionUi.open") : s === "closed" ? t("collectionUi.closed") : s === "empty" ? t("collectionUi.empty") : (s || "");
+
+  const collectionStatusOptions = (["all", "open", "closed", "empty"] as StatusFilter[]).map((sf) => ({
+    value: sf,
+    label: sf === "all" ? t("collectionUi.filterAll") : statusLabel(sf),
+  }));
+
   const collectionSortOptions = [
     { value: "name", label: t("sortModes.az", "A\u2013Z") },
     { value: "rating", label: t("sortModes.bestRated", "Beste Bewertung") },
@@ -321,7 +329,6 @@ export default function LabsTasteCollection() {
   const hasCollection = items.length > 0;
 
   const statusColor = (s: string | null) => s === "open" ? "var(--labs-success)" : s === "closed" ? "var(--labs-info)" : "var(--labs-text-muted)";
-  const statusLabel = (s: string | null) => s === "open" ? t("collectionUi.open") : s === "closed" ? t("collectionUi.closed") : s === "empty" ? t("collectionUi.empty") : (s || "");
 
   const cycleStatus = (item: WhiskybaseCollectionItem) => {
     const currentIdx = STATUS_CYCLE.indexOf(item.status || "closed");
@@ -704,12 +711,13 @@ export default function LabsTasteCollection() {
         </div>
       </div>
 
-      <div className="flex gap-1.5 mb-2 overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: "touch" }}>
-        {(["all", "open", "closed", "empty"] as StatusFilter[]).map(sf => (
-          <button key={sf} onClick={() => setStatusFilter(sf)}
-            style={{ padding: "5px 12px", fontSize: 11, fontWeight: statusFilter === sf ? 600 : 400, color: statusFilter === sf ? "var(--labs-accent)" : "var(--labs-text-muted)", background: statusFilter === sf ? "var(--labs-accent-muted)" : "transparent", border: `1px solid ${statusFilter === sf ? "var(--labs-accent)" : "var(--labs-border)"}`, borderRadius: 16, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
-            data-testid={`labs-status-${sf}`}>{sf === "all" ? t("collectionUi.filterAll") : statusLabel(sf)}</button>
-        ))}
+      <div className="mb-2">
+        <LabsSegmented
+          options={collectionStatusOptions}
+          value={statusFilter}
+          onChange={(v) => setStatusFilter(v as StatusFilter)}
+          testIdPrefix="labs-status"
+        />
       </div>
       <div className="mb-3">
         <LabsSortMenu
