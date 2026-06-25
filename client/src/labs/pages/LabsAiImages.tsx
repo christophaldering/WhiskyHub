@@ -4,6 +4,7 @@ import { useSearch, useLocation } from "wouter";
 import { Loader2, Search, Trash2, Globe, Lock, Image as ImageIcon, Copy, Check, ImagePlus } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import ModalPortal from "@/labs/components/ModalPortal";
+import LabsSortMenu from "@/labs/components/LabsSortMenu";
 
 type AiImage = {
   id: string;
@@ -217,16 +218,16 @@ export default function LabsAiImages() {
             data-testid="input-ai-images-search"
           />
         </div>
-        <select
-          className="labs-input text-sm"
+        <LabsSortMenu
+          options={[
+            { value: "desc", label: t("sortModes.newest", "Neueste zuerst") },
+            { value: "asc", label: t("sortModes.oldest", "\u00c4lteste zuerst") },
+          ]}
           value={sort}
-          onChange={(e) => setSort(e.target.value === "asc" ? "asc" : "desc")}
-          data-testid="select-ai-images-sort"
-          aria-label={t("labs.aiImages.sortLabel")}
-        >
-          <option value="desc">{t("labs.aiImages.sortNewest")}</option>
-          <option value="asc">{t("labs.aiImages.sortOldest")}</option>
-        </select>
+          onChange={(v) => setSort(v === "asc" ? "asc" : "desc")}
+          align="right"
+          testIdPrefix="ai-images-sort"
+        />
       </div>
 
       {error && (

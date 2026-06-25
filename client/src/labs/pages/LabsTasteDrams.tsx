@@ -12,11 +12,12 @@ import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import { openDramNotePdf } from "@/labs/utils/dramNotePdf";
 import type { JournalEntry } from "@shared/schema";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
+import LabsSortMenu from "@/labs/components/LabsSortMenu";
 import {
   BookOpen, Star, Plus, ChevronLeft, Pencil, Trash2, Check,
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy,
   Mic, Play as PlayIcon, Pause, ChevronDown, RotateCcw, Camera,
-  ArrowUp, ArrowDown, SlidersHorizontal, Archive, Clock, FileEdit, MoreHorizontal,
+  SlidersHorizontal, Archive, Clock, FileEdit, MoreHorizontal,
   Users, Smile, FileText, Download, Share2,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
@@ -200,7 +201,6 @@ export default function LabsTasteDrams() {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("saved");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
@@ -342,7 +342,7 @@ export default function LabsTasteDrams() {
 
   const resetAllFilters = () => {
     setOriginFilter("all"); setStatusFilter("all"); setSearch("");
-    setSortBy("saved"); setSortDirection("desc"); setSortDropdownOpen(false);
+    setSortBy("saved"); setSortDirection("desc");
   };
 
   const filteredEntries = useMemo(() => {
@@ -376,6 +376,13 @@ export default function LabsTasteDrams() {
     });
     return items;
   }, [journal, tastingWhiskies, originFilter, statusFilter, search, sortBy, sortDirection]);
+
+  const dramsSortOptions = [
+    { value: "saved", label: t("sortModes.savedRecent", "Zuletzt gespeichert") },
+    { value: "score", label: t("sortModes.bestRated", "Beste Bewertung") },
+    { value: "name", label: t("sortModes.az", "A\u2013Z") },
+    { value: "date", label: t("sortModes.newest", "Neueste zuerst") },
+  ];
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => journalApi.update(session.pid!, id, data),
@@ -1273,66 +1280,18 @@ export default function LabsTasteDrams() {
                   </button>
                 )}
               </div>
-              <div className="relative" style={{ flexShrink: 0 }}>
-                <button
-                  onClick={() => { setSortDropdownOpen(!sortDropdownOpen); setMoreMenuOpen(false); }}
-                  className="flex items-center gap-1.5"
-                  style={{
-                    padding: "8px 12px", fontSize: 13, fontWeight: 500, borderRadius: 10, cursor: "pointer",
-                    background: "var(--labs-surface-elevated, var(--labs-card-bg, rgba(255,255,255,0.045)))",
-                    border: "1px solid var(--labs-border)", color: "var(--labs-text-muted)", whiteSpace: "nowrap",
-                  }}
-                  data-testid="button-sort-dropdown"
-                >
-                  {sortDirection === "desc" ? <ArrowDown className="w-3.5 h-3.5" /> : <ArrowUp className="w-3.5 h-3.5" />}
-                  {t("drams.sortAction", "Sortieren")}
-                </button>
-                {sortDropdownOpen && (
-                  <>
-                    <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setSortDropdownOpen(false)} />
-                    <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 50, minWidth: 180, background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border)", borderRadius: 12, padding: 6, boxShadow: "0 12px 32px rgba(0,0,0,0.4)" }}>
-                      <div style={{ padding: "6px 10px 4px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)" }}>{t("drams.sortBy")}</div>
-                      {([
-                        { key: "saved" as SortBy, label: t("drams.sortSaved") },
-                        { key: "date" as SortBy, label: t("drams.sortDate") },
-                        { key: "score" as SortBy, label: t("drams.sortScore") },
-                        { key: "name" as SortBy, label: t("drams.sortName") },
-                      ]).map(opt => (
-                        <button
-                          key={opt.key}
-                          onClick={() => { setSortBy(opt.key); setSortDropdownOpen(false); }}
-                          className="w-full text-left flex items-center gap-2"
-                          style={{ fontSize: 13, padding: "8px 10px", borderRadius: 8, color: sortBy === opt.key ? "var(--labs-accent, #f59e0b)" : "var(--labs-text, #e2e2e2)", background: sortBy === opt.key ? "rgba(245,158,11,0.08)" : "transparent", border: "none", cursor: "pointer", transition: "background 0.15s" }}
-                          data-testid={`sort-option-${opt.key}`}
-                        >
-                          {sortBy === opt.key && <Check className="w-3.5 h-3.5" />}
-                          <span style={{ marginLeft: sortBy === opt.key ? 0 : 18 }}>{opt.label}</span>
-                        </button>
-                      ))}
-                      <div style={{ height: 1, background: "var(--labs-border)", margin: "4px 0" }} />
-                      <div style={{ padding: "6px 10px 4px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)" }}>{t("drams.direction")}</div>
-                      {([
-                        { key: "desc" as SortDirection, label: t("drams.descending"), icon: <ArrowDown className="w-3.5 h-3.5" /> },
-                        { key: "asc" as SortDirection, label: t("drams.ascending"), icon: <ArrowUp className="w-3.5 h-3.5" /> },
-                      ]).map(opt => (
-                        <button
-                          key={opt.key}
-                          onClick={() => { setSortDirection(opt.key); setSortDropdownOpen(false); }}
-                          className="w-full text-left flex items-center gap-2"
-                          style={{ fontSize: 13, padding: "8px 10px", borderRadius: 8, color: sortDirection === opt.key ? "var(--labs-accent, #f59e0b)" : "var(--labs-text, #e2e2e2)", background: sortDirection === opt.key ? "rgba(245,158,11,0.08)" : "transparent", border: "none", cursor: "pointer", transition: "background 0.15s" }}
-                          data-testid={`sort-direction-${opt.key}`}
-                        >
-                          {sortDirection === opt.key ? opt.icon : <span style={{ width: 14 }} />}
-                          <span style={{ marginLeft: sortDirection === opt.key ? 0 : 4 }}>{opt.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
+              <div style={{ flexShrink: 0 }}>
+                <LabsSortMenu
+                  options={dramsSortOptions}
+                  value={sortBy}
+                  onChange={(v) => { setSortBy(v as SortBy); setSortDirection(v === "name" ? "asc" : "desc"); }}
+                  align="right"
+                  testIdPrefix="drams-sort"
+                />
               </div>
               <div className="relative" style={{ flexShrink: 0 }}>
                 <button
-                  onClick={() => { setMoreMenuOpen(!moreMenuOpen); setSortDropdownOpen(false); }}
+                  onClick={() => { setMoreMenuOpen(!moreMenuOpen); }}
                   className="flex items-center justify-center"
                   style={{
                     width: 38, height: 38, borderRadius: 10, cursor: "pointer",

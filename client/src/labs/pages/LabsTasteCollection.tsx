@@ -7,6 +7,7 @@ import { useSession } from "@/lib/session";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useLocation } from "wouter";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
+import LabsSortMenu from "@/labs/components/LabsSortMenu";
 import {
   Upload, Search, Trash2, Archive, Loader2, Check,
   Star, RefreshCw, Sparkles, X, CheckSquare,
@@ -281,6 +282,15 @@ export default function LabsTasteCollection() {
     });
     return result;
   }, [items, statusFilter, search, sortBy, sortDirection]);
+
+  const collectionSortOptions = [
+    { value: "name", label: t("sortModes.az", "A\u2013Z") },
+    { value: "rating", label: t("sortModes.bestRated", "Beste Bewertung") },
+    { value: "price-desc", label: t("sortModes.priceHighLow", "Preis: hoch \u2192 niedrig") },
+    { value: "price-asc", label: t("sortModes.priceLowHigh", "Preis: niedrig \u2192 hoch") },
+    { value: "added", label: t("sortModes.addedRecent", "Zuletzt hinzugef\u00fcgt") },
+  ];
+  const collectionSortValue = sortBy === "price" ? (sortDirection === "asc" ? "price-asc" : "price-desc") : sortBy;
 
   const stats = useMemo(() => {
     const all = items as WhiskybaseCollectionItem[];
@@ -701,16 +711,17 @@ export default function LabsTasteCollection() {
             data-testid={`labs-status-${sf}`}>{sf === "all" ? t("collectionUi.filterAll") : statusLabel(sf)}</button>
         ))}
       </div>
-      <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: "touch", marginTop: 2 }}>
-        <span style={{ fontSize: 11, color: "var(--labs-text-muted)", whiteSpace: "nowrap", flexShrink: 0 }}>{t("collectionUi.sortLabel")}:</span>
-        {(["name", "rating", "price", "added"] as SortKey[]).map(sk => (
-          <button key={sk} onClick={() => { if (sortBy === sk) { setSortDirection(d => d === "asc" ? "desc" : "asc"); } else { setSortBy(sk); setSortDirection(sortDefaults[sk]); } }}
-            style={{ padding: "5px 10px", fontSize: 11, fontWeight: sortBy === sk ? 600 : 400, color: sortBy === sk ? "var(--labs-accent)" : "var(--labs-text-muted)", background: sortBy === sk ? "var(--labs-accent-muted)" : "transparent", border: `1px solid ${sortBy === sk ? "var(--labs-accent)" : "var(--labs-border)"}`, borderRadius: 16, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", gap: 3 }}
-            data-testid={`labs-sort-${sk}`}>
-            <span>{t(`collectionUi.sort_${sk}`)}</span>
-            {sortBy === sk && <span style={{ fontSize: 10 }}>{sortDirection === "asc" ? "↑" : "↓"}</span>}
-          </button>
-        ))}
+      <div className="mb-3">
+        <LabsSortMenu
+          options={collectionSortOptions}
+          value={collectionSortValue}
+          onChange={(v) => {
+            if (v === "price-desc") { setSortBy("price"); setSortDirection("desc"); }
+            else if (v === "price-asc") { setSortBy("price"); setSortDirection("asc"); }
+            else { setSortBy(v as SortKey); setSortDirection(sortDefaults[v as SortKey]); }
+          }}
+          testIdPrefix="collection-sort"
+        />
       </div>
 
       {selectMode && selectedIds.size > 0 && (

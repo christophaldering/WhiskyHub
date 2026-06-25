@@ -9631,6 +9631,16 @@ const resources = {
         importDetailsHide: "Hide affected bottles",
         importDetailsLocalEdits: "Local edits to be overwritten",
       },
+      sortModes: {
+        savedRecent: "Recently saved",
+        bestRated: "Best rated",
+        az: "A\u2013Z",
+        newest: "Newest first",
+        oldest: "Oldest first",
+        priceHighLow: "Price: high \u2192 low",
+        priceLowHigh: "Price: low \u2192 high",
+        addedRecent: "Recently added",
+      },
       bottleSplitUi: {
         claims: "Claims",
         namePlaceholder: "Name *",
@@ -19456,6 +19466,16 @@ const resources = {
         importDetailsShow: "Betroffene Flaschen anzeigen",
         importDetailsHide: "Betroffene Flaschen ausblenden",
         importDetailsLocalEdits: "Lokale Bearbeitungen werden überschrieben",
+      },
+      sortModes: {
+        savedRecent: "Zuletzt gespeichert",
+        bestRated: "Beste Bewertung",
+        az: "A\u2013Z",
+        newest: "Neueste zuerst",
+        oldest: "\u00c4lteste zuerst",
+        priceHighLow: "Preis: hoch \u2192 niedrig",
+        priceLowHigh: "Preis: niedrig \u2192 hoch",
+        addedRecent: "Zuletzt hinzugef\u00fcgt",
       },
       bottleSplitUi: {
         claims: "Claims",
