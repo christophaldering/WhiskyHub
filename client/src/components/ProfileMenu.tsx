@@ -13,7 +13,7 @@ import {
 import i18n from "@/lib/i18n";
 import { APP_VERSION } from "@shared/version";
 
-type MenuView = "main" | "forgot-pin" | "reset-pin" | "verify-email" | "guest" | "app-info";
+type MenuView = "main" | "forgot-pin" | "reset-pin" | "verify-email" | "guest";
 
 interface M2ProfileMenuProps {
   open: boolean;
@@ -889,8 +889,14 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
       <MenuButton theme={tv}
         icon={<Info style={{ width: 18, height: 18, color: tv.accent }} />}
         label={L.about}
-        onClick={() => { setView("app-info"); setError(""); }}
+        onClick={() => { onClose(); navigate("/labs/about"); }}
         testId="m2-profile-about"
+      />
+      <MenuButton theme={tv}
+        icon={<HandHeart style={{ width: 18, height: 18, color: tv.accent }} />}
+        label={L.support}
+        onClick={() => { window.open("https://www.paypal.com/giving/campaigns?campaign_id=XGB4YN3CQEMFE", "_blank", "noopener,noreferrer"); }}
+        testId="m2-profile-support"
       />
       {session.role === "admin" && (
         <>
@@ -935,6 +941,15 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         <LogOut style={{ width: 18, height: 18 }} />
         {t("m2.profile.signOut", "Sign Out")}
       </button>
+      <div style={{ height: 1, background: tv.border, margin: "16px 0 8px" }} />
+      <div style={{ textAlign: "center", padding: "0 4px 4px" }}>
+        <div style={{ fontSize: 11, color: tv.muted }}>CaskSense · {L.appInfoVersion} {APP_VERSION}</div>
+        <div style={{ fontSize: 11, marginTop: 4 }}>
+          <button onClick={() => { window.open("/impressum", "_blank"); }} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: tv.muted, textDecoration: "underline" }} data-testid="m2-profile-impressum">{L.appInfoImpressum}</button>
+          <span style={{ color: tv.muted }}> · </span>
+          <button onClick={() => { window.open("/privacy", "_blank"); }} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: tv.muted, textDecoration: "underline" }} data-testid="m2-profile-privacy">{L.appInfoPrivacy}</button>
+        </div>
+      </div>
     </div>
   );
 
@@ -1340,43 +1355,12 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
     </>
   );
 
-  const renderAppInfoView = () => (
-    <div>
-      {renderBackButton(L.back)}
-      <div style={{ padding: "4px 4px 14px" }}>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, color: tv.text }}>CaskSense</div>
-        <div style={{ fontSize: 12, color: tv.muted, marginTop: 2 }}>{L.appInfoVersion} {APP_VERSION}</div>
-        <div style={{ fontSize: 13, color: tv.text, marginTop: 10, lineHeight: 1.5 }}>{L.appInfoTagline}</div>
-      </div>
-      <MenuButton theme={tv}
-        icon={<HandHeart style={{ width: 18, height: 18, color: tv.accent }} />}
-        label={L.support}
-        onClick={() => { window.open("https://www.paypal.com/giving/campaigns?campaign_id=XGB4YN3CQEMFE", "_blank", "noopener,noreferrer"); }}
-        testId="m2-appinfo-support"
-      />
-      <div style={{ height: 8 }} />
-      <MenuButton theme={tv}
-        icon={<FileText style={{ width: 18, height: 18, color: tv.accent }} />}
-        label={L.appInfoImpressum}
-        onClick={() => { window.open("/impressum", "_blank"); }}
-        testId="m2-appinfo-impressum"
-      />
-      <MenuButton theme={tv}
-        icon={<Shield style={{ width: 18, height: 18, color: tv.accent }} />}
-        label={L.appInfoPrivacy}
-        onClick={() => { window.open("/privacy", "_blank"); }}
-        testId="m2-appinfo-privacy"
-      />
-    </div>
-  );
-
   const renderContent = () => {
     switch (view) {
       case "forgot-pin": return renderForgotPinView();
       case "reset-pin": return renderResetPinView();
       case "verify-email": return renderVerifyEmailView();
       case "guest": return renderGuestView();
-      case "app-info": return renderAppInfoView();
       default:
         return session.signedIn ? renderSignedInView() : renderSignedOutView();
     }
@@ -1421,8 +1405,6 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
               ? t("m2.resetPin.title", "Enter Reset Code")
               : view === "verify-email"
               ? t("m2.verify.title", "Verify Email")
-              : view === "app-info"
-              ? L.about
               : t("m2.guest.title", "Joyn as Guest")}
           </h2>
           <button
