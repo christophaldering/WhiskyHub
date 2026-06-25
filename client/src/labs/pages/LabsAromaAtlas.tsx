@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Map } from "lucide-react";
+import { Map, X, Copy } from "lucide-react";
 import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 import {
   useVocabCategories,
@@ -39,8 +39,14 @@ export default function LabsAromaAtlas() {
     });
   };
 
+  const exploredList = Array.from(explored);
+
   return (
-    <div className="labs-page" data-testid="labs-aroma-atlas-page">
+    <div
+      className="labs-page"
+      data-testid="labs-aroma-atlas-page"
+      style={exploredList.length > 0 ? { paddingBottom: 120 } : undefined}
+    >
       <DiscoverActionBar active="bibliothek" />
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
@@ -104,6 +110,67 @@ export default function LabsAromaAtlas() {
           <CompactRadar categories={categories} section="overall" selected={explored} onToggle={toggle} />
         )}
       </div>
+
+      {exploredList.length > 0 && (
+        <div
+          data-testid="atlas-collected-tray"
+          style={{ marginTop: 28, paddingTop: 16, borderTop: "1px solid var(--labs-border)" }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, gap: 8 }}>
+            <span className="labs-serif" style={{ fontSize: 15, fontWeight: 600, color: "var(--labs-text)" }} data-testid="text-atlas-collected-title">
+              {t("atlas.collectedTitle", "Gesammelt")} ({exploredList.length})
+            </span>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => { navigator.clipboard?.writeText(exploredList.join(", ")); }}
+                data-testid="button-atlas-copy"
+                className="labs-btn-ghost"
+                style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, padding: "6px 10px" }}
+              >
+                <Copy style={{ width: 14, height: 14 }} />
+                {t("common.copy", "Kopieren")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setExplored(new Set())}
+                data-testid="button-atlas-clear-all"
+                className="labs-btn-ghost"
+                style={{ fontSize: 12, padding: "6px 10px" }}
+              >
+                {t("common.clearAll", "Alle löschen")}
+              </button>
+            </div>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {exploredList.map((term) => (
+              <button
+                key={term}
+                type="button"
+                onClick={() => toggle(term)}
+                data-testid={`atlas-collected-chip-${term}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "6px 12px",
+                  borderRadius: 999,
+                  border: "1px solid var(--labs-gold)",
+                  background: "color-mix(in srgb, var(--labs-gold) 14%, transparent)",
+                  color: "var(--labs-gold)",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                {term}
+                <X style={{ width: 13, height: 13 }} />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

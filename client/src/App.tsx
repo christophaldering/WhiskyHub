@@ -403,7 +403,7 @@ function SmartRedirectToLabs() {
     "/my-taste/export": "/labs/taste/downloads",
     "/my-taste/knowledge": "/labs/taste",
     "/my-taste/community": "/labs/community",
-    "/vocabulary": "/labs/explore?tab=whiskies&view=flavour-map",
+    "/vocabulary": "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=aroma-atlas",
     "/ai-curation": "/labs/taste/ai-curation",
     "/guide": "/labs/explore?tab=bibliothek&section=tasting-wissen&sub=guide",
     "/research": "/labs/explore?tab=bibliothek&section=tasting-wissen&sub=research",
@@ -627,7 +627,7 @@ function Router() {
         <Route path="/m2/discover/guide">{() => <Redirect to="/labs/discover/guide" />}</Route>
         <Route path="/m2/discover/research">{() => <Redirect to="/labs/discover/research" />}</Route>
         <Route path="/m2/discover/rabbit-hole">{() => <Redirect to="/labs/discover/rabbit-hole/themenspeicher" />}</Route>
-        <Route path="/m2/discover/vocabulary">{() => <Redirect to="/labs/discover/lexicon?tab=flavour-map" />}</Route>
+        <Route path="/m2/discover/vocabulary">{() => <Redirect to="/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=aroma-atlas" />}</Route>
         <Route path="/m2/discover/about">{() => <Redirect to="/labs/about" />}</Route>
         <Route path="/m2/discover/donate">{() => <Redirect to="/labs/about#support" />}</Route>
         <Route path="/m2/discover/activity">{() => <Redirect to="/labs/activity" />}</Route>
@@ -754,8 +754,8 @@ function Router() {
                 <Redirect to="/labs/discover/research/statistische-methoden" />
               </Route>
               <Route path="/labs/discover/background">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=tasting-wissen&sub=hintergrund" />}</Route>
-              <Route path="/labs/discover/flavour-map">{() => <RedirectWithQuery to="/labs/explore" query="tab=whiskies&view=flavour-map" />}</Route>
-              <Route path="/labs/discover/vocabulary">{() => <RedirectWithQuery to="/labs/explore" query="tab=whiskies&view=flavour-map" />}</Route>
+              <Route path="/labs/discover/flavour-map">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=nachschlagewerk&sub=aroma-atlas" />}</Route>
+              <Route path="/labs/discover/vocabulary">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=nachschlagewerk&sub=aroma-atlas" />}</Route>
               <Route path="/labs/discover">{() => <Redirect to="/labs/explore" />}</Route>
               <Route path="/labs/entdecken">{() => <Redirect to="/labs/explore" />}</Route>
               <Route path="/labs/taste/profile">{() => <RedirectWithQuery to="/labs/taste" query="tab=analytics&sub=labs-link-analytics-hub-palate" />}</Route>

@@ -5,9 +5,8 @@ import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 import { Search, BookOpen, Wine, FlameKindling, MapPin, Factory, Package, ChevronDown } from "lucide-react";
 import { lexiconData, categoryLabelsEn, categoryLabelsDe, type LexiconEntry, type LexiconCategory } from "@/labs/data/lexiconData";
 import { TemplatesContent } from "./LabsTemplates";
-import { VocabularyContent } from "./LabsVocabulary";
 
-type TabId = "dictionary" | "templates" | "flavour-map";
+type TabId = "dictionary" | "templates";
 
 const iconMap: Record<string, React.ElementType> = {
   tastingTerms: Wine, flavorCategories: FlameKindling, regions: MapPin, productionMethods: Factory, caskTypes: Package,
@@ -86,13 +85,13 @@ function DictionaryContent() {
   );
 }
 
-export default function LabsLexicon({ forceTab }: { forceTab?: TabId } = {}) {
+export default function LabsLexicon() {
   const { t } = useTranslation();
   const searchStr = useSearch();
   const params = new URLSearchParams(searchStr);
   const tabParam = params.get("tab");
   const [, navigate] = useLocation();
-  const resolvedTab: TabId = forceTab ?? (tabParam === "templates" ? "templates" : tabParam === "flavour-map" ? "flavour-map" : "dictionary");
+  const resolvedTab: TabId = tabParam === "templates" ? "templates" : "dictionary";
   const [activeTab, setActiveTab] = useState<TabId>(resolvedTab);
 
   useEffect(() => {
@@ -109,18 +108,7 @@ export default function LabsLexicon({ forceTab }: { forceTab?: TabId } = {}) {
   const tabs: { id: TabId; label: string }[] = [
     { id: "dictionary", label: t("bibliothek.tabDictionary", "Dictionary") },
     { id: "templates", label: t("bibliothek.tabTemplates", "Templates") },
-    { id: "flavour-map", label: t("bibliothek.tabFlavourMap", "Flavour Map") },
   ];
-
-  const hideChrome = forceTab === "flavour-map";
-
-  if (hideChrome) {
-    return (
-      <div className="labs-page" data-testid="labs-discover-lexicon-page">
-        <VocabularyContent />
-      </div>
-    );
-  }
 
   return (
     <div className="labs-page" data-testid="labs-discover-lexicon-page">
@@ -133,7 +121,7 @@ export default function LabsLexicon({ forceTab }: { forceTab?: TabId } = {}) {
         </h1>
       </div>
       <p style={{ fontSize: 13, color: "var(--labs-text-muted)", margin: "0 0 16px" }}>
-        {t("bibliothek.lexiconSubtitle", "Dictionary, tasting templates & flavour visualisations")}
+        {t("bibliothek.lexiconSubtitle", "Dictionary, tasting templates")}
       </p>
 
       <div style={{ display: "flex", borderRadius: 10, border: "1px solid var(--labs-border)", overflow: "hidden", background: "var(--labs-surface-elevated)", marginBottom: 20 }} data-testid="lexicon-tabs">
@@ -162,7 +150,6 @@ export default function LabsLexicon({ forceTab }: { forceTab?: TabId } = {}) {
 
       {activeTab === "dictionary" && <DictionaryContent />}
       {activeTab === "templates" && <TemplatesContent />}
-      {activeTab === "flavour-map" && <VocabularyContent />}
     </div>
   );
 }

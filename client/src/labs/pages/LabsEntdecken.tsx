@@ -59,9 +59,10 @@
             labelKey: "explore.bibliothek.nachschlagewerkTitle",
             labelFb: "Nach­schlage­werk",
             descKey: "explore.bibliothek.nachschlagewerkDesc",
-            descFb: "Lexikon, Destillerien, Bottlers",
+            descFb: "Lexikon, Aroma-Atlas, Destillerien, Bottlers",
             subs: [
               { sub: "lexikon", labelKey: "discover.lexicon", labelFb: "Lexikon", icon: BookOpen, Component: LabsLexicon },
+              { sub: "aroma-atlas", labelKey: "rabbitHole.aromaAtlasTitle", labelFb: "Aroma-Atlas", icon: MapIcon, Component: LabsAromaAtlas },
               { sub: "destillerien", labelKey: "discover.distilleries", labelFb: "Destillerien", icon: Factory, Component: LabsDistilleries },
               { sub: "bottlers", labelKey: "discover.bottlers", labelFb: "Bottlers", icon: Package, Component: LabsBottlers },
               { sub: "community-handouts", labelKey: "bibliothek.communityHandouts", labelFb: "Community Handouts", icon: Globe, Component: () => <LabsHandoutLibrary mode="community-readonly" /> },
@@ -88,9 +89,8 @@
             labelKey: "rabbitHole.title",
             labelFb: "Rabbit Hole",
             descKey: "rabbitHole.subtitle",
-            descFb: "Aroma-Atlas & Themenspeicher",
+            descFb: "Themenspeicher",
             subs: [
-              { sub: "aroma-atlas", labelKey: "rabbitHole.aromaAtlasTitle", labelFb: "Aroma-Atlas", icon: MapIcon, Component: LabsAromaAtlas },
               { sub: "themenspeicher", labelKey: "rabbitHole.themenspeicherTitle", labelFb: "Themenspeicher", icon: Archive, Component: LabsThemenspeicher },
             ],
           },
@@ -100,8 +100,7 @@
         type WhiskyHubPreset =
           | "topRated"
           | "mostTasted"
-          | "alpha"
-          | "flavourMap";
+          | "alpha";
 
         const WHISKY_PILLS: {
           preset: WhiskyHubPreset;
@@ -117,7 +116,6 @@
           { preset: "topRated", view: "top-rated", icon: Star, labelKey: "explore.hub.topTitle", labelFb: "Top Rated", subKey: "explore.hub.topDesc", subFb: "Highest avg scores", iconVariant: "accent", iconColor: "var(--labs-accent)" },
           { preset: "mostTasted", view: "most-tasted", icon: Activity, labelKey: "explore.hub.mostTitle", labelFb: "Most Tasted", subKey: "explore.hub.mostDesc", subFb: "What the community pours often", iconVariant: "accent", iconColor: "var(--labs-accent)" },
           { preset: "alpha", view: "a-z", icon: List, labelKey: "discover.sortAlpha", labelFb: "A-Z", subKey: "explore.hub.distilleryDesc", subFb: "All distilleries A\u2013Z", iconVariant: "surface", iconColor: "var(--labs-text-secondary)" },
-          { preset: "flavourMap", view: "flavour-map", icon: Compass, labelKey: "explore.hub.flavourTitle", labelFb: "Flavour Map", subKey: "explore.hub.flavourDesc", subFb: "Flavour profiles visualised", iconVariant: "success", iconColor: "var(--labs-success, #4ade80)" },
         ];
 
         type DistilleryGroup = {
@@ -643,9 +641,6 @@
           const applyWhiskyHubPreset = useCallback((preset: WhiskyHubPreset) => {
             const pill = WHISKY_PILLS.find(p => p.preset === preset);
             if (pill) setWhiskyView(pill.view);
-            if (preset === "flavourMap") {
-              return;
-            }
             if (preset === "topRated") {
               setSort("avg"); setSortDirection("desc");
             } else if (preset === "mostTasted") {
@@ -785,13 +780,11 @@
               <div className="labs-fade-in labs-stagger-2" style={{ marginBottom: 32 }}>
                 <div data-testid="explore-whiskies-pills" style={{ marginBottom: 14 }}>
                   {(() => {
-                    const activePillView = whiskyView === "flavour-map"
-                      ? "flavour-map"
-                      : sort === "most"
-                        ? "most-tasted"
-                        : sort === "alpha"
-                          ? "a-z"
-                          : "top-rated";
+                    const activePillView = sort === "most"
+                      ? "most-tasted"
+                      : sort === "alpha"
+                        ? "a-z"
+                        : "top-rated";
                     return (
                       <div className="labs-action-bar">
                         {WHISKY_PILLS.map((pill) => {
@@ -823,18 +816,6 @@
                     );
                   })()}
                 </div>
-
-                {whiskyView === "flavour-map" && (
-                  <div data-testid="explore-inline-whiskies-flavour-map">
-                    <EmbeddedExploreProvider>
-                      <LabsLexicon forceTab="flavour-map" />
-                    </EmbeddedExploreProvider>
-                  </div>
-                )}
-
-                {whiskyView !== "flavour-map" && (
-                <>
-
 
                 <div>
                   <div style={{ position: "relative", marginBottom: 10 }}>
@@ -1382,8 +1363,6 @@
                     </button>
                   )}
                 </div>
-                </>
-                )}
               </div>
               )}
             </div>
