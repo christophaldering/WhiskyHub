@@ -10,7 +10,6 @@ import { useAppStore } from "@/lib/store";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import { tastingApi, tastingHistoryApi, journalApi } from "@/lib/api";
-import { RecentRatedList, buildRecentRatedItems } from "@/labs/components/RecentRatedList";
 import {
   AI_INSIGHTS_HUB_TILES,
   ANALYTICS_HUB_TILES,
@@ -292,10 +291,6 @@ export default function LabsTaste() {
     }
   }, [activeTastingsFilter, activeTastingsData, historyData, journalData]);
 
-  const recentItems = useMemo(
-    () => buildRecentRatedItems(historyData, journalData, { participantId: currentParticipant?.id, preferredRatingScale: currentParticipant?.preferredRatingScale ?? 100 }),
-    [historyData, journalData, currentParticipant?.id, currentParticipant?.preferredRatingScale],
-  );
 
   if (!currentParticipant) {
     return (
@@ -382,8 +377,7 @@ export default function LabsTaste() {
       );
     }
     if (activeTab === "collection") {
-      const activeTile = COLLECTION_HUB_TILES.find((tile) => tile.testId === activeCollectionTile);
-      const activeTestId = activeTile?.testId;
+      const effectiveCollectionTile = activeCollectionTile ?? "labs-link-collection-hub-bottles";
       return (
         <div data-testid="meine-welt-inline-collection">
           <HubTileGrid
@@ -392,39 +386,23 @@ export default function LabsTaste() {
             testIdPrefix="meine-welt"
             variant="single-row"
             role="nav"
-            activeTestId={activeTestId}
+            activeTestId={effectiveCollectionTile}
             onTileClick={(tile) =>
               setActiveCollectionTile((prev) => (prev === tile.testId ? null : tile.testId))
             }
           />
           <HubTileCollapsible
-            open={activeCollectionTile !== null}
+            open
             innerRef={inlineContentRef}
             className="labs-tastings-inline-content"
             style={{ marginTop: 16 }}
-            testId={
-              activeCollectionTile
-                ? `meine-welt-collection-inline-${activeCollectionTile}`
-                : undefined
-            }
+            testId={`meine-welt-collection-inline-${effectiveCollectionTile}`}
           >
             <EmbeddedMeineWeltProvider>
-              {activeCollectionTile === "labs-link-collection-hub-bottles" && <LabsTasteCollection />}
-              {activeCollectionTile === "labs-link-collection-hub-wishlist" && <LabsTasteWishlist />}
+              {effectiveCollectionTile === "labs-link-collection-hub-bottles" && <LabsTasteCollection />}
+              {effectiveCollectionTile === "labs-link-collection-hub-wishlist" && <LabsTasteWishlist />}
             </EmbeddedMeineWeltProvider>
           </HubTileCollapsible>
-          {!activeCollectionTile && (
-            <div style={{ marginTop: 24 }}>
-              <RecentRatedList
-                items={recentItems}
-                limit={12}
-                sectionTestId="meine-welt-recent-section"
-                viewAllHref="/labs/taste/drams"
-                headerVariant="meine-welt"
-                hideViewAll
-              />
-            </div>
-          )}
         </div>
       );
     }
