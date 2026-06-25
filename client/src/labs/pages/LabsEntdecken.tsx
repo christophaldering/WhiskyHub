@@ -828,7 +828,6 @@
                                 <PillIcon className="w-5 h-5" style={{ color: pill.iconColor }} strokeWidth={1.8} />
                               </div>
                               <span className="labs-action-bar-label">{t(pill.labelKey, pill.labelFb)}</span>
-                              <span className="labs-action-bar-sublabel">{t(pill.subKey, pill.subFb)}</span>
                             </button>
                           );
                         })}
