@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
+import LabsSortMenu from "@/labs/components/LabsSortMenu";
 import { useAppStore } from "@/lib/store";
 import { SuggestEntryDialog } from "@/components/suggest-entry-dialog";
 import { Building2, MapPin, Calendar, ChevronDown, List, Map as MapIcon, ExternalLink } from "lucide-react";
@@ -136,11 +137,16 @@ export default function LabsDistilleries() {
         <>
           <input type="text" placeholder={t("discover.searchDistilleries", "Search distilleries...")} value={search} onChange={(e) => setSearch(e.target.value)} className="labs-input" style={{ width: "100%", boxSizing: "border-box" }} data-testid="input-search-distilleries" />
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0 0" }}>
-            <div style={{ display: "flex", gap: 2 }}>
-              {(["name", "founded", "region"] as const).map((s) => (
-                <button key={s} onClick={() => setSortBy(s)} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: sortBy === s ? "var(--labs-surface-elevated)" : "transparent", color: sortBy === s ? "var(--labs-accent)" : "var(--labs-text-muted)", fontSize: 11, fontWeight: 500, cursor: "pointer" }} data-testid={`labs-sort-${s}`}>{s === "name" ? "A–Z" : s === "founded" ? "Founded" : "Region"}</button>
-              ))}
-            </div>
+            <LabsSortMenu
+              options={[
+                { value: "name", label: "A\u2013Z" },
+                { value: "founded", label: t("discover.sortFounded", "Gegründet") },
+                { value: "region", label: t("discover.sortRegion", "Region") },
+              ]}
+              value={sortBy}
+              onChange={(v) => setSortBy(v as "name" | "founded" | "region")}
+              testIdPrefix="distillery-sort"
+            />
           </div>
           <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "8px 0" }}>
             {COUNTRIES.map((c) => (

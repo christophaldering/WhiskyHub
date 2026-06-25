@@ -10,9 +10,10 @@ import { formatScore } from "@/lib/utils";
 import { getParticipantId } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { SkeletonList } from "@/labs/components/LabsSkeleton";
+import LabsSortMenu from "@/labs/components/LabsSortMenu";
 import {
   Search, Wine, Trophy, Calendar, BarChart3,
-  ArrowUpDown, ChevronLeft, ChevronRight, Archive, Sparkles, RefreshCw,
+  ChevronLeft, ChevronRight, Archive, Sparkles, RefreshCw,
   LogIn, MapPin, Flame, Droplets, TrendingUp,
   Loader2, UserCheck, Users,
 } from "lucide-react";
@@ -198,17 +199,14 @@ function LabsHistoryList() {
               data-testid="historical-search"
             />
           </div>
-          <div style={{ position: "relative", flexShrink: 0 }}>
-            <ArrowUpDown size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--labs-text-muted)", pointerEvents: "none" }} />
-            <select
+          <div style={{ flexShrink: 0 }}>
+            <LabsSortMenu
+              options={sortOptions}
               value={sortMode}
-              onChange={(e) => setSortMode(e.target.value as SortMode)}
-              className="labs-input"
-              style={{ paddingLeft: 28, paddingRight: 32, appearance: "none", cursor: "pointer" }}
-              data-testid="historical-sort"
-            >
-              {sortOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-            </select>
+              onChange={(v) => setSortMode(v as SortMode)}
+              align="right"
+              testIdPrefix="history-sort"
+            />
           </div>
       </div>
 

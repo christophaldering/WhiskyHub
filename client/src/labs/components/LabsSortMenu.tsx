@@ -9,12 +9,14 @@ export default function LabsSortMenu({
   onChange,
   label,
   testIdPrefix = "sort",
+  align = "left",
 }: {
   options: LabsSortOption[];
   value: string;
   onChange: (value: string) => void;
   label?: string;
   testIdPrefix?: string;
+  align?: "left" | "right";
 }) {
   const [open, setOpen] = useState(false);
   const current = options.find((o) => o.value === value) ?? options[0];
@@ -49,7 +51,8 @@ export default function LabsSortMenu({
             <div
               data-testid={`${testIdPrefix}-dropdown-menu`}
               style={{
-                position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 41,
+                position: "absolute", top: "calc(100% + 6px)", zIndex: 41,
+                ...(align === "right" ? { right: 0 } : { left: 0 }),
                 minWidth: 220, background: "var(--labs-surface-elevated)",
                 border: "1px solid var(--labs-border)", borderRadius: 12,
                 boxShadow: "0 8px 24px rgba(0,0,0,0.18)", overflow: "hidden",

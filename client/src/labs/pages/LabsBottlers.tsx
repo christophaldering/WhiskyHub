@@ -1,5 +1,6 @@
 import { useState, useMemo, lazy, Suspense } from "react";
 import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
+import LabsSortMenu from "@/labs/components/LabsSortMenu";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
@@ -123,11 +124,16 @@ export default function LabsBottlers() {
       </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{filtered.length} found</span>
-        <div style={{ display: "flex", gap: 4 }}>
-          {(["name", "founded"] as const).map((s) => (
-            <button key={s} onClick={() => setSortBy(s)} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: sortBy === s ? "var(--labs-surface-elevated)" : "transparent", color: sortBy === s ? "var(--labs-accent)" : "var(--labs-text-muted)", fontSize: 11, fontWeight: 500, cursor: "pointer" }} data-testid={`labs-sort-${s}`}>{s === "name" ? "A\u2013Z" : "Founded"}</button>
-          ))}
-        </div>
+        <LabsSortMenu
+          options={[
+            { value: "name", label: "A\u2013Z" },
+            { value: "founded", label: t("discover.sortFounded", "Gegründet") },
+          ]}
+          value={sortBy}
+          onChange={(v) => setSortBy(v as "name" | "founded")}
+          align="right"
+          testIdPrefix="bottler-sort"
+        />
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {filtered.map((b) => <Card key={b.id} b={b} />)}
