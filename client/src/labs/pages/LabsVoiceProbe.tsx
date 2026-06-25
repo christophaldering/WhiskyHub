@@ -6,11 +6,17 @@ import { useCooperVoice, VOICES, LEDGER_CORNERS } from "@/labs/components/rating
 import CooperGlimmer from "@/labs/components/rating/CooperGlimmer";
 
 const CORNER_LABELS: Record<(typeof LEDGER_CORNERS)[number], string> = { nose: "Nase", palate: "Gaumen", finish: "Abgang", body: "Körper", intensity: "Intensität", affect: "Wertung" };
+const RES_LABEL: Record<string, string> = { still: "Sehr still", mid: "Ausgewogen", gespraechig: "Gesprächiger" };
+const SPK_LABEL: Record<string, string> = { nuechtern: "Nüchtern", mid: "Ausgewogen", verspielt: "Verspielt" };
+const WRM_LABEL: Record<string, string> = { neutral: "Neutral", mid: "Ausgewogen", warm: "Warm" };
 
 export default function LabsVoiceProbe() {
   const session = useSession();
   const { status, statusText, model, voice, setVoice, mode, setMode, ledger, transcript, busy, connect, disconnect, levelRef, speaking } = useCooperVoice({ probe: true });
-  const [savedDefault, setSavedDefault] = useState<{ voice: string; mode: string } | null>(null);
+  const [savedDefault, setSavedDefault] = useState<{ voice: string; mode: string; reserve: string; spark: string; warmth: string } | null>(null);
+  const [reserve, setReserve] = useState("mid");
+  const [spark, setSpark] = useState("mid");
+  const [warmth, setWarmth] = useState("mid");
   const [saveMsg, setSaveMsg] = useState("");
   const [saving, setSaving] = useState(false);
   const [memory, setMemory] = useState<string | null>(null);
@@ -26,7 +32,10 @@ export default function LabsVoiceProbe() {
         const data = await res.json();
         if (data?.voice) setVoice(data.voice);
         if (data?.mode) setMode(data.mode);
-        setSavedDefault({ voice: data.voice, mode: data.mode });
+        if (data?.reserve) setReserve(data.reserve);
+        if (data?.spark) setSpark(data.spark);
+        if (data?.warmth) setWarmth(data.warmth);
+        setSavedDefault({ voice: data.voice, mode: data.mode, reserve: data.reserve, spark: data.spark, warmth: data.warmth });
       } catch { /* noop */ }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -35,10 +44,10 @@ export default function LabsVoiceProbe() {
     setSaving(true);
     setSaveMsg("");
     try {
-      const res = await fetch("/api/admin/cooper-defaults", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ voice, mode }) });
+      const res = await fetch("/api/admin/cooper-defaults", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ voice, mode, reserve, spark, warmth }) });
       if (!res.ok) { setSaveMsg("Fehler beim Speichern."); return; }
       const data = await res.json();
-      setSavedDefault({ voice: data.voice, mode: data.mode });
+      setSavedDefault({ voice: data.voice, mode: data.mode, reserve: data.reserve, spark: data.spark, warmth: data.warmth });
       setSaveMsg("Gespeichert");
     } catch {
       setSaveMsg("Fehler beim Speichern.");
@@ -109,9 +118,9 @@ export default function LabsVoiceProbe() {
     <div style={{ minHeight: "100vh", background: LABS_THEME.bg, color: LABS_THEME.text, fontFamily: FONT.body, padding: SP.lg, display: "flex", flexDirection: "column", gap: SP.lg, maxWidth: 560, margin: "0 auto" }}>
       {status !== "connected" && (
         <>
-          <div style={{ fontFamily: FONT.serif, fontSize: 24, color: LABS_THEME.gold }}>Realtime-Sprach-Durchstich</div>
+          <div style={{ fontFamily: FONT.serif, fontSize: 24, color: LABS_THEME.gold }}>Cooper-Studio</div>
           <div style={{ fontSize: 13, color: LABS_THEME.faint, lineHeight: 1.5 }}>
-            Isolierter Admin-Test. Kein Bezug zum Eindruck-/Cooper-Flow. Beim Verbinden wird die Mikrofon-Erlaubnis abgefragt.
+            Stimme, Modus und Coopers Grundton zentral justieren. Isolierter Admin-Test. Beim Verbinden wird die Mikrofon-Erlaubnis abgefragt.
           </div>
         </>
       )}
@@ -164,12 +173,49 @@ export default function LabsVoiceProbe() {
       )}
 
       {status !== "connected" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: SP.md }}>
+          {[
+            { key: "reserve", label: "Zurückhaltung", value: reserve, setter: setReserve, opts: [["still", "Sehr still"], ["mid", "Ausgewogen"], ["gespraechig", "Gesprächiger"]] },
+            { key: "spark", label: "Funken", value: spark, setter: setSpark, opts: [["nuechtern", "Nüchtern"], ["mid", "Ausgewogen"], ["verspielt", "Verspielt"]] },
+            { key: "warmth", label: "Wärme", value: warmth, setter: setWarmth, opts: [["neutral", "Neutral"], ["mid", "Ausgewogen"], ["warm", "Warm"]] },
+          ].map((knob) => (
+            <div key={knob.key} style={{ display: "flex", flexDirection: "column", gap: SP.xs }}>
+              <div style={{ fontFamily: FONT.body, fontSize: 12, color: LABS_THEME.faint, textTransform: "uppercase", letterSpacing: 1 }}>{knob.label}</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: SP.sm }}>
+                {knob.opts.map(([val, lab]) => {
+                  const active = knob.value === val;
+                  return (
+                    <button
+                      key={val}
+                      data-testid={`chip-${knob.key}-${val}`}
+                      onClick={() => knob.setter(val)}
+                      style={{ minHeight: 36, padding: `0 ${SP.md}px`, borderRadius: RADIUS.full, border: `1px solid ${active ? LABS_THEME.gold : LABS_THEME.border}`, background: active ? "rgba(212,168,71,0.14)" : "transparent", color: active ? LABS_THEME.gold : LABS_THEME.muted, fontFamily: FONT.body, fontSize: 14, cursor: "pointer" }}
+                    >
+                      {lab}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+          <div style={{ fontFamily: FONT.body, fontSize: 12, color: LABS_THEME.faint, lineHeight: 1.5 }}>
+            Speichern und neu verbinden, um die Justierung zu hören. „Ausgewogen" überall = Coopers Grundverhalten.
+          </div>
+        </div>
+      )}
+
+      {status !== "connected" && (
         <div style={{ display: "flex", flexDirection: "column", gap: SP.sm }}>
           <div data-testid="text-current-default" style={{ fontFamily: FONT.body, fontSize: 13, color: LABS_THEME.faint }}>
             {savedDefault
               ? `Aktueller globaler Default: ${savedDefault.voice} · ${savedDefault.mode === "tiefsinnig" ? "Tiefsinnig" : "Flüssig"}`
               : "Aktueller globaler Default: lädt …"}
           </div>
+          {savedDefault && (
+            <div style={{ fontFamily: FONT.body, fontSize: 12, color: LABS_THEME.faint }}>
+              Ton: Zurückhaltung {RES_LABEL[savedDefault.reserve] ?? savedDefault.reserve} · Funken {SPK_LABEL[savedDefault.spark] ?? savedDefault.spark} · Wärme {WRM_LABEL[savedDefault.warmth] ?? savedDefault.warmth}
+            </div>
+          )}
           <button
             data-testid="button-save-default"
             onClick={saveDefault}

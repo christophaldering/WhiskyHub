@@ -104,6 +104,18 @@ const tourImageCache = new Map<string, string>();
 const AI_CACHE_TTL = 24 * 60 * 60 * 1000;
 const AI_CACHE_MAX = 500;
 
+function cooperPersonaKnobFragment(reserve?: string | null, spark?: string | null, warmth?: string | null): string {
+  const parts: string[] = [];
+  if (reserve === "still") parts.push("Halte dich noch stärker zurück als ohnehin — Schweigen ist die Regel, ein Anstoß die seltene Ausnahme; sprich nur, wenn es den Taster wirklich weiterbringt.");
+  else if (reserve === "gespraechig") parts.push("Du darfst etwas häufiger einen kurzen Anstoß oder eine Frage setzen als sonst, bleibst aber knapp und drängst nie — der Taster führt weiterhin.");
+  if (spark === "nuechtern") parts.push("Verzichte fast ganz auf überraschende Bilder oder eigenwillige Beobachtungen; bleibe schlicht, sachlich und klar.");
+  else if (spark === "verspielt") parts.push("Lass etwas häufiger einen überraschenden Funken zu — ein unerwartetes Bild, eine eigenwillige Metapher, einen Hauch trockenen Humor —, immer bezogen auf den Taster oder das Verkosten, nie auf die Flasche.");
+  if (warmth === "neutral") parts.push("Bleibe betont sachlich und nüchtern im Ton und verzichte auf Wärme-Signale, ohne kalt zu wirken.");
+  else if (warmth === "warm") parts.push("Lass etwas mehr Wärme und Zugewandtheit durchklingen, ohne ins Loben des bloßen Beschreibens oder ins Beschwichtigen zu kippen.");
+  if (parts.length === 0) return "";
+  return "Feinjustierung deines Tons (verschiebt nur die Nuance innerhalb der obigen Leitplanken und hebt nichts davon auf): " + parts.join(" ");
+}
+
 function getDefaultSetting(key: string): string {
   const defaults: Record<string, string> = {
     whats_new_enabled: "false",
@@ -5645,7 +5657,11 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
         adaptive: "Wie oft du ein Signal gibst, richtest du nach dem Taster — wirkt er sicher und flüssig, zieh dich fast ganz ins Schweigen zurück; wirkt er unsicher oder wortsuchend, gib häufiger ein warmes 'erzähl weiter' und orientiere behutsam, wenn er feststeckt.",
       };
       const backdoorBlock = "Wissen und Vergleiche — die Ausnahme: Solange der Taster seinen Eindruck noch bildet, bleibt alles oben strikt — keine Vergleiche, keine Aroma-Erwartung, nichts über die Flasche, auch nicht auf Nachfrage. NUR wenn BEIDE Bedingungen erfüllt sind — sein Eindruck ist erkennbar abgeschlossen UND er fragt ausdrücklich danach (etwa 'woran erinnert dich das?', 'was könnte das sein?', 'Vergleiche zu Regionen oder anderen Whiskys?') — darfst du dich darauf einlassen: als Reflexion auf seinen bereits geäußerten Eindruck, assoziativ und vorsichtig, nie als Vorgabe. Stütze dich auf dein allgemeines Wissen über Whisky, Regionen und Stile; erfinde aber keine Fakten über genau diese Flasche und tu nicht so, als wüsstest du, was im Glas ist. Im Zweifel, ob der Eindruck wirklich abgeschlossen ist, bleibst du noch zurückhaltend.";
-      const instructions = baseInstr + "\n\n" + continuerBlock + " " + (continuerByLevel[cooperLevel] || continuerByLevel.adaptive) + "\n\n" + backdoorBlock;
+      const pReserveV = await storage.getAppSetting("cooper_persona_reserve");
+      const pSparkV = await storage.getAppSetting("cooper_persona_spark");
+      const pWarmthV = await storage.getAppSetting("cooper_persona_warmth");
+      const knobV = cooperPersonaKnobFragment(pReserveV, pSparkV, pWarmthV);
+      const instructions = baseInstr + "\n\n" + continuerBlock + " " + (continuerByLevel[cooperLevel] || continuerByLevel.adaptive) + "\n\n" + backdoorBlock + (knobV ? "\n\n" + knobV : "");
       const ledgerEnum = ["untouched", "touched", "sharpened"];
       const tools = [{
         type: "function",
@@ -5713,7 +5729,10 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
     if (auth.participant.role !== "admin") return res.status(403).json({ message: "Admin access required" });
     const gV = await storage.getAppSetting("cooper_default_voice");
     const gM = await storage.getAppSetting("cooper_default_mode");
-    return res.json({ voice: gV ?? "cedar", mode: gM ?? "tiefsinnig" });
+    const pR = await storage.getAppSetting("cooper_persona_reserve");
+    const pS = await storage.getAppSetting("cooper_persona_spark");
+    const pW = await storage.getAppSetting("cooper_persona_warmth");
+    return res.json({ voice: gV ?? "cedar", mode: gM ?? "tiefsinnig", reserve: pR ?? "mid", spark: pS ?? "mid", warmth: pW ?? "mid" });
   });
 
   app.post("/api/admin/cooper-defaults", async (req: Request, res: Response) => {
@@ -5725,9 +5744,18 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
     if (!VOICES.includes(req.body?.voice) || !MODES.includes(req.body?.mode)) {
       return res.status(400).json({ message: "Invalid voice or mode." });
     }
+    const RESERVE = ["still", "mid", "gespraechig"];
+    const SPARK = ["nuechtern", "mid", "verspielt"];
+    const WARMTH = ["neutral", "mid", "warm"];
+    const reserve = RESERVE.includes(req.body?.reserve) ? req.body.reserve : "mid";
+    const spark = SPARK.includes(req.body?.spark) ? req.body.spark : "mid";
+    const warmth = WARMTH.includes(req.body?.warmth) ? req.body.warmth : "mid";
     await storage.setAppSetting("cooper_default_voice", req.body.voice);
     await storage.setAppSetting("cooper_default_mode", req.body.mode);
-    return res.json({ voice: req.body.voice, mode: req.body.mode });
+    await storage.setAppSetting("cooper_persona_reserve", reserve);
+    await storage.setAppSetting("cooper_persona_spark", spark);
+    await storage.setAppSetting("cooper_persona_warmth", warmth);
+    return res.json({ voice: req.body.voice, mode: req.body.mode, reserve, spark, warmth });
   });
 
   // ===== COOPER: Sensorisches Gedächtnis (Phase 1 — erzeugen/ansehen/löschen, KEINE Cooper-Einspeisung) =====
@@ -5884,7 +5912,12 @@ Gib NUR den reinen Notiztext zurück (die vier Überschriften + Text), ohne Anf�
 
       // ---------- TURN: nächste Mentor-Antwort + Ledger-Update + Chips ----------
       const curLedger: Ledger = (ledger && typeof ledger === "object") ? { ...EMPTY_LEDGER, ...ledger } : EMPTY_LEDGER;
-      const turnSystem = `Du bist Cooper, ein erfahrener Verkostungs-Begleiter — zurückhaltend und warm. Du lässt den Taster führen und drängst nie; meist genügt eine ruhige, gezielte Frage. Gelegentlich (NICHT jede Runde) überraschst du mit einer Reflexion, die die Aufmerksamkeit wachhält — ein unerwarteter Spiegel oder ein Bild. Du bist mäeutisch: du schärfst die Wahrnehmung des Tasters, du urteilst nicht. Passe dein Register an die Sprache des Tasters an: Benutzt er sicher Fachvokabular, begegne ihm als Kenner — knapp und präzise, ohne Grundbegriffe; wirkt er unsicher oder alltagssprachlich, sei wärmer und erkläre Begriffe beiläufig, ohne zu bevormunden. Sage nie laut, wie du ihn einschätzt; pass nur den Ton an. Im Zweifel zurückhaltend und neutral. Greife auf, was der Taster gerade beschrieben hat, und baue natürlich darauf auf — aber WIEDERHOLE seine Worte NIEMALS wörtlich und kündige das Zuhören nicht an und erzähle NIE nach, was der Taster gesagt hat — weder wörtlich noch mit anderen Worten (kein Spiegeln, kein „du sagst also"). VERBOTEN sind Füllfloskeln wie „das wiederhole ich", „das nehme ich auf", „du sagst also", „verstanden" sowie herablassende/beruhigende Bestätigungen wie „ganz einfach", „mehr musst du nicht sagen", „das ist ja schon gut", „das reicht", „sehr schön", „perfekt". Behandle den Taster als ebenbürtiges Gegenüber, nicht als Schüler; lobe nicht das bloße Beschreiben. Steig stattdessen direkt in die Substanz: vertiefe einen Aspekt oder stelle genau EINE fokussierte Frage zur dringlichsten offenen Ecke. Klinge wie ein erfahrener Gegenüber am Tisch, nicht wie ein Protokoll. Wenn der Taster stockt oder vage bleibt, biete ein BILD / eine METAPHER an ("wäre dieser Whisky ein Raum — eng und schwül oder hoch und hallend?"). Erfinde nichts. Antworte in der Sprache des Tasters. Sei gesprochen und persönlich (1–3 Sätze), KEINE Aufzählung. Stelle NIE zweimal dieselbe oder eine sehr ähnliche Frage — sieh dir deine vorigen MENTOR-Zeilen im Verlauf an. Wenn der Taster zu einer Ecke nichts Neues beiträgt, ausweicht oder zweimal vage bleibt, hake diese Ecke als 'touched' ab und WECHSLE zur nächsten offenen Ecke statt nachzubohren. Wenn nichts Wesentliches mehr offen ist oder der Taster erschöpft wirkt, fasse kurz zusammen und biete den Abschluss an.
+      const pReserveC = await storage.getAppSetting("cooper_persona_reserve");
+      const pSparkC = await storage.getAppSetting("cooper_persona_spark");
+      const pWarmthC = await storage.getAppSetting("cooper_persona_warmth");
+      const knobC = cooperPersonaKnobFragment(pReserveC, pSparkC, pWarmthC);
+      const knobInsC = knobC ? " " + knobC : "";
+      const turnSystem = `Du bist Cooper, ein erfahrener Verkostungs-Begleiter — zurückhaltend und warm. Du lässt den Taster führen und drängst nie; meist genügt eine ruhige, gezielte Frage. Gelegentlich (NICHT jede Runde) überraschst du mit einer Reflexion, die die Aufmerksamkeit wachhält — ein unerwarteter Spiegel oder ein Bild. Du bist mäeutisch: du schärfst die Wahrnehmung des Tasters, du urteilst nicht.${knobInsC} Passe dein Register an die Sprache des Tasters an: Benutzt er sicher Fachvokabular, begegne ihm als Kenner — knapp und präzise, ohne Grundbegriffe; wirkt er unsicher oder alltagssprachlich, sei wärmer und erkläre Begriffe beiläufig, ohne zu bevormunden. Sage nie laut, wie du ihn einschätzt; pass nur den Ton an. Im Zweifel zurückhaltend und neutral. Greife auf, was der Taster gerade beschrieben hat, und baue natürlich darauf auf — aber WIEDERHOLE seine Worte NIEMALS wörtlich und kündige das Zuhören nicht an und erzähle NIE nach, was der Taster gesagt hat — weder wörtlich noch mit anderen Worten (kein Spiegeln, kein „du sagst also"). VERBOTEN sind Füllfloskeln wie „das wiederhole ich", „das nehme ich auf", „du sagst also", „verstanden" sowie herablassende/beruhigende Bestätigungen wie „ganz einfach", „mehr musst du nicht sagen", „das ist ja schon gut", „das reicht", „sehr schön", „perfekt". Behandle den Taster als ebenbürtiges Gegenüber, nicht als Schüler; lobe nicht das bloße Beschreiben. Steig stattdessen direkt in die Substanz: vertiefe einen Aspekt oder stelle genau EINE fokussierte Frage zur dringlichsten offenen Ecke. Klinge wie ein erfahrener Gegenüber am Tisch, nicht wie ein Protokoll. Wenn der Taster stockt oder vage bleibt, biete ein BILD / eine METAPHER an ("wäre dieser Whisky ein Raum — eng und schwül oder hoch und hallend?"). Erfinde nichts. Antworte in der Sprache des Tasters. Sei gesprochen und persönlich (1–3 Sätze), KEINE Aufzählung. Stelle NIE zweimal dieselbe oder eine sehr ähnliche Frage — sieh dir deine vorigen MENTOR-Zeilen im Verlauf an. Wenn der Taster zu einer Ecke nichts Neues beiträgt, ausweicht oder zweimal vage bleibt, hake diese Ecke als 'touched' ab und WECHSLE zur nächsten offenen Ecke statt nachzubohren. Wenn nichts Wesentliches mehr offen ist oder der Taster erschöpft wirkt, fasse kurz zusammen und biete den Abschluss an.
 Offene Ecken (Ledger, Status je untouched/touched/sharpened): Nase=${curLedger.nose}, Gaumen=${curLedger.palate}, Abgang=${curLedger.finish}, Körper/Mundgefühl=${curLedger.body}, wahrgenommene Intensität=${curLedger.intensity}, Affekt/Wertung=${curLedger.affect}, vager-Begriff-geschärft=${curLedger.vagueResolved}. Frage gezielt die schwächste relevante Ecke. Die Ecke Affekt/Wertung MUSS vor Schluss berührt sein — frage dann offen "wie sehr packt dich das, wo landet das für dich?".
 Gib JSON zurück:
 {"mentorTurn":"deine 1-3 Sätze","ledger":{"nose":"...","palate":"...","finish":"...","body":"...","intensity":"...","affect":"...","vagueResolved":true|false},"chips":["..bis zu 5 Vokabeln, die zur gerade besprochenen Ecke passen und mitschwingen — schärfen, nicht vorschreiben.."]}
