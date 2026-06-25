@@ -1,0 +1,81 @@
+HARD PROMPT — KI/Analyse-Kacheln neu einsortieren: Whisky-DNA → Analyse, Sammlungs-Analyse → Sammlung
+
+KONTEXT: Die "KI"-Kachel im Meine-Welt-Hub enthält zwei Punkte, die in Wahrheit Statistik sind (kein GPT): Whisky-DNA (berechneter Fingerabdruck) und Sammlungs-Analyse (Karten/Prozente/Zähler). Wir sortieren sie dorthin, wo sie thematisch hingehören: Whisky-DNA → Analyse, Sammlungs-Analyse → Sammlung. KI behält nur echte KI (Connoisseur Report, KI-Kuratierung). WICHTIG: Die testIds der verschobenen Kacheln bleiben UNVERÄNDERT — daran hängen Deep-Links, die sich über tabForSub selbst auf den richtigen Tab beziehen.
+
+═══════════════════════════════════════════
+STEP 0 — DIAGNOSE & PLAN (NICHTS ändern, bevor ich "go" sage)
+═══════════════════════════════════════════
+Setze zuerst:  git tag pre-ki-analyse-recat-2026-06-25
+Bestätige (read-only) und melde:
+1. client/src/labs/pages/hubTiles.tsx: AI_INSIGHTS_HUB_TILES enthält die Objekte mit testId "labs-link-ai-insights-dna" (Whisky DNA, icon Activity, href /labs/taste/dna) und "labs-link-ai-insights-collection-analysis" (Collection Analysis, icon Library, href /labs/taste/collection-analysis). ANALYTICS_HUB_TILES und COLLECTION_HUB_TILES existieren.
+2. client/src/labs/pages/LabsTaste.tsx: im AI-Block stehen die Zeilen `{activeAITile === "labs-link-ai-insights-dna" && <LabsWhiskyDNA />}` und `{activeAITile === "labs-link-ai-insights-collection-analysis" && <LabsCollectionAnalysis />}`. Im Analytics-Block stehen `{activeAnalyticsTile === "labs-link-analytics-hub-..." && <... />}`. Im Collection-Block stehen `{effectiveCollectionTile === "labs-link-collection-hub-bottles" && <LabsTasteCollection />}` etc. Die Imports LabsWhiskyDNA und LabsCollectionAnalysis sind vorhanden.
+3. tabForSub(sub) erschließt den Tab aus der sub-testId (COLLECTION_SUB_IDS/AI_SUB_IDS/ANALYTICS_SUB_IDS) — d.h. nach dem Verschieben landet ein Deep-Link automatisch im richtigen Tab.
+Präsentiere kurz den Plan, dann WARTE auf mein "go".
+
+═══════════════════════════════════════════
+STEP 1 — hubTiles.tsx: Kachel-Objekte verschieben (testIds NICHT ändern)
+═══════════════════════════════════════════
+(a) Entferne aus AI_INSIGHTS_HUB_TILES das gesamte Objekt mit testId "labs-link-ai-insights-dna".
+(b) Füge dieses Objekt in ANALYTICS_HUB_TILES ein, DIREKT NACH dem ersten Eintrag (testId "labs-link-analytics-hub-analytics"):
+      {
+        icon: Activity,
+        labelKey: "myTastePage.whiskyDna",
+        labelFallback: "Whisky DNA",
+        descKey: "myTastePage.aiInsightsHub.dnaDesc",
+        descFallback: "The fingerprint of your taste",
+        href: "/labs/taste/dna",
+        testId: "labs-link-ai-insights-dna",
+      },
+(c) Entferne aus AI_INSIGHTS_HUB_TILES das gesamte Objekt mit testId "labs-link-ai-insights-collection-analysis".
+(d) Füge dieses Objekt in COLLECTION_HUB_TILES ans ENDE (nach "labs-link-collection-hub-wishlist") ein:
+      {
+        icon: Library,
+        labelKey: "myTastePage.aiInsightsHub.collectionAnalysis",
+        labelFallback: "Collection Analysis",
+        descKey: "myTastePage.aiInsightsHub.collectionAnalysisDesc",
+        descFallback: "Patterns in your bottle collection",
+        href: "/labs/taste/collection-analysis",
+        testId: "labs-link-ai-insights-collection-analysis",
+      },
+Stelle sicher, dass die Icons Activity und Library weiterhin importiert sind (sie waren es schon — gleiche Datei).
+Danach enthält AI_INSIGHTS_HUB_TILES sichtbar nur noch: Connoisseur Report, KI-Kuratierung (plus die versteckten Recommendations/AI-Bilder). NICHT an den hidden-Flags ändern.
+
+═══════════════════════════════════════════
+STEP 2 — LabsTaste.tsx: Render-Bedingungen mitverschieben
+═══════════════════════════════════════════
+(a) Im AI-Block ENTFERNE diese zwei Zeilen:
+      {activeAITile === "labs-link-ai-insights-dna" && <LabsWhiskyDNA />}
+      {activeAITile === "labs-link-ai-insights-collection-analysis" && <LabsCollectionAnalysis />}
+(b) Im Analytics-Block (die Liste mit `activeAnalyticsTile === "labs-link-analytics-hub-..."`) FÜGE HINZU:
+      {activeAnalyticsTile === "labs-link-ai-insights-dna" && <LabsWhiskyDNA />}
+(c) Im Collection-Block (die Liste mit `effectiveCollectionTile === "labs-link-collection-hub-..."`) FÜGE HINZU:
+      {effectiveCollectionTile === "labs-link-ai-insights-collection-analysis" && <LabsCollectionAnalysis />}
+Die Imports LabsWhiskyDNA und LabsCollectionAnalysis bleiben (werden jetzt von den neuen Stellen genutzt).
+
+═══════════════════════════════════════════
+STEP 3 — Deep-Links aufräumen (tab= an neuen Ort anpassen; rein kosmetisch, da tabForSub selbst korrigiert)
+═══════════════════════════════════════════
+client/src/App.tsx:
+  - Route /labs/taste/dna: query="tab=ai&sub=labs-link-ai-insights-dna"  →  query="tab=analytics&sub=labs-link-ai-insights-dna"
+  - Route /labs/taste/collection-analysis: query="tab=ai&sub=labs-link-ai-insights-collection-analysis"  →  query="tab=collection&sub=labs-link-ai-insights-collection-analysis"
+client/src/labs/insights/engine.ts (zwei Stellen):
+  - `tab=ai&sub=labs-link-ai-insights-dna`  →  `tab=analytics&sub=labs-link-ai-insights-dna`  (beide Vorkommen)
+KEINE testIds umbenennen. KEINE anderen Deep-Links anfassen.
+
+═══════════════════════════════════════════
+VERIFIKATION (zeig mir die Ergebnisse)
+═══════════════════════════════════════════
+  - grep -n "labs-link-ai-insights-dna\|labs-link-ai-insights-collection-analysis" client/src/labs/pages/hubTiles.tsx → DNA jetzt in ANALYTICS_HUB_TILES, Collection-Analysis in COLLECTION_HUB_TILES, beide NICHT mehr in AI_INSIGHTS_HUB_TILES.
+  - AI_INSIGHTS_HUB_TILES sichtbar nur noch Connoisseur + KI-Kuratierung.
+  - LabsTaste.tsx: die zwei Render-Zeilen sind aus dem AI-Block raus; DNA-Render im Analytics-Block, Collection-Analysis-Render im Collection-Block.
+  - grep -rn "tab=ai&sub=labs-link-ai-insights-dna\|tab=ai&sub=labs-link-ai-insights-collection-analysis" client/src → KEINE Treffer mehr (auf analytics/collection umgestellt).
+  - Build/Typecheck läuft sauber durch.
+  - Funktion: KI zeigt nur Connoisseur + Kuratierung; Analyse zeigt Whisky-DNA (öffnet die DNA-Ansicht); Sammlung zeigt Sammlungs-Analyse (öffnet die Analyse). Bestehende Direkt-Links zu /labs/taste/dna und /labs/taste/collection-analysis landen weiterhin korrekt.
+
+NICHT TUN — ausdrücklich verboten:
+  - KEIN git commit, KEIN git push.
+  - KEIN drizzle-kit, KEINE Schema-/Migrationsänderung (reines Frontend).
+  - KEINE testIds umbenennen, KEINE hidden-Flags ändern, KEINE Logik in den Seiten (DNA/Collection-Analysis/Analytics) verändern.
+  - NUR diese Dateien: hubTiles.tsx, LabsTaste.tsx, App.tsx, insights/engine.ts.
+Bei Unklarheit oder wenn ein Edit nicht sauber passt: STOPP und frag, statt zu raten.
+Rollback: git reset --hard pre-ki-analyse-recat-2026-06-25
