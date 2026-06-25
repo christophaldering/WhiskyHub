@@ -1644,20 +1644,6 @@ a.labs-dram-item {
   min-height: calc(1.25em * 2);
 }
 
-/* Meine Welt: schlankere Bereichs-Leiste — Untertitel raus, kompakter (scoped, reversibel) */
-.labs-action-bar--meine-welt .labs-action-bar-item {
-  padding: 9px 6px;
-  gap: 5px;
-}
-.labs-action-bar--meine-welt .labs-action-bar-icon {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-}
-.labs-action-bar--meine-welt .labs-action-bar-sublabel {
-  display: none;
-}
-
 .labs-action-bar-item--active {
   background: color-mix(in srgb, var(--labs-accent) 10%, var(--labs-surface));
 }
