@@ -1,6 +1,7 @@
 import { useState, useMemo, lazy, Suspense } from "react";
 import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 import LabsSortMenu from "@/labs/components/LabsSortMenu";
+import LabsFilterChips from "@/labs/components/LabsFilterChips";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
@@ -117,10 +118,17 @@ export default function LabsBottlers() {
       <p style={{ fontSize: 12, color: "var(--labs-text-muted)", margin: "0 0 16px" }}>{isLoading ? t("discover.loading", "Loading...") : t("discover.bottlersSubtitle", { count: bottlersList.length })}</p>
 
       <input type="text" placeholder="Search bottlers..." value={search} onChange={(e) => setSearch(e.target.value)} className="labs-input" style={{ width: "100%", boxSizing: "border-box" }} data-testid="input-search-bottlers" />
-      <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "12px 0" }}>
-        {countries.map((c) => (
-          <button key={c} onClick={() => setCountry(c)} style={{ padding: "5px 12px", borderRadius: 20, border: `1px solid ${country === c ? "var(--labs-accent)" : "var(--labs-border)"}`, background: country === c ? "var(--labs-accent)" : "transparent", color: country === c ? "var(--labs-bg)" : "var(--labs-text-muted)", fontSize: 11, fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap" }} data-testid={`labs-chip-bottler-${c.toLowerCase()}`}>{c}</button>
-        ))}
+      <div style={{ padding: "12px 0" }}>
+        <LabsFilterChips
+          label={t("discover.filterCountry", "Land")}
+          options={countries.map((c) => ({ value: c, label: c === "All" ? t("discover.filterAll", "Alle") : c }))}
+          value={[country]}
+          onChange={(vals) => setCountry(vals[0] ?? "All")}
+          neutralValue="All"
+          searchable
+          searchPlaceholder={t("discover.searchPlaceholder", "Suchen\u2026")}
+          testIdPrefix="bottler-country"
+        />
       </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>{filtered.length} found</span>

@@ -4,6 +4,7 @@ import { useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import DiscoverActionBar from "@/labs/components/DiscoverActionBar";
 import LabsSortMenu from "@/labs/components/LabsSortMenu";
+import LabsFilterChips from "@/labs/components/LabsFilterChips";
 import { useAppStore } from "@/lib/store";
 import { SuggestEntryDialog } from "@/components/suggest-entry-dialog";
 import { Building2, MapPin, Calendar, ChevronDown, List, Map as MapIcon, ExternalLink } from "lucide-react";
@@ -148,10 +149,15 @@ export default function LabsDistilleries() {
               testIdPrefix="distillery-sort"
             />
           </div>
-          <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "8px 0" }}>
-            {COUNTRIES.map((c) => (
-              <button key={c} onClick={() => setCountry(c)} style={{ padding: "5px 12px", borderRadius: 20, border: `1px solid ${country === c ? "var(--labs-accent)" : "var(--labs-border)"}`, background: country === c ? "var(--labs-accent)" : "transparent", color: country === c ? "var(--labs-bg)" : "var(--labs-text-muted)", fontSize: 11, fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap" }} data-testid={`labs-chip-${c.toLowerCase()}`}>{c}</button>
-            ))}
+          <div style={{ padding: "8px 0" }}>
+            <LabsFilterChips
+              label={t("discover.filterCountry", "Land")}
+              options={COUNTRIES.map((c) => ({ value: c, label: c === "All" ? t("discover.filterAll", "Alle") : c }))}
+              value={[country]}
+              onChange={(vals) => setCountry(vals[0] ?? "All")}
+              neutralValue="All"
+              testIdPrefix="distillery-country"
+            />
           </div>
           <div style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 10 }}>{t("discover.found", "{{count}} found", { count: filtered.length })}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
