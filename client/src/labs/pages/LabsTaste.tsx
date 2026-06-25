@@ -312,17 +312,28 @@ export default function LabsTaste() {
       const activeTile = TASTINGS_HUB_TILES.find((tile) => tile.filter === activeTastingsFilter);
       return (
         <div className="labs-tastings-inline-content" data-testid="meine-welt-inline-tastings">
-          <HubTileGrid
-            tiles={TASTINGS_LENS_TILES}
-            t={t}
-            testIdPrefix="meine-welt"
-            variant="single-row"
-            role="nav"
-            activeTestId={`tile-tastings-lens-${activeTastingsLens}`}
-            onTileClick={(tile) =>
-              setActiveTastingsLens(tile.testId.replace("tile-tastings-lens-", "") as "drams" | "sessions" | "handouts")
-            }
-          />
+          <div className="labs-segmented" role="tablist" data-testid="meine-welt-tastings-lens-switcher" style={{ marginBottom: 4 }}>
+            {TASTINGS_LENS_TILES.map((tile) => {
+              const lens = tile.testId.replace("tile-tastings-lens-", "") as "drams" | "sessions" | "handouts";
+              const LensIcon = tile.icon;
+              const isActive = activeTastingsLens === lens;
+              return (
+                <button
+                  key={tile.testId}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => setActiveTastingsLens(lens)}
+                  className={`labs-segmented-btn ${isActive ? "labs-segmented-btn-active" : ""}`}
+                  style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+                  data-testid={`meine-welt-${tile.testId}`}
+                >
+                  <LensIcon className="w-4 h-4" />
+                  {t(tile.labelKey, tile.labelFallback)}
+                </button>
+              );
+            })}
+          </div>
           {activeTastingsLens === "drams" ? (
             <div style={{ marginTop: 16 }} data-testid="meine-welt-tastings-lens-drams">
               <EmbeddedMeineWeltProvider>
