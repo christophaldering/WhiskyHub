@@ -330,6 +330,7 @@
             };
           });
           const [expandedFilter, setExpandedFilter] = useState<EntdeckenFilterDimension | null>(null);
+          const [sortOpen, setSortOpen] = useState(false);
           const filterDropdownRef = useRef<HTMLDivElement>(null);
 
           const filterPanelRef = useRef<HTMLDivElement>(null);
@@ -650,6 +651,12 @@
             }
           }, []);
 
+          const currentSortPill =
+            WHISKY_PILLS.find(p =>
+              (sort === "most" && p.preset === "mostTasted") ||
+              (sort === "alpha" && p.preset === "alpha")
+            ) ?? WHISKY_PILLS.find(p => p.preset === "topRated") ?? WHISKY_PILLS[0];
+
           useEffect(() => {
             if (prevWhiskyCountRef.current !== null && prevWhiskyCountRef.current !== whiskies.length) {
               setCountAnimating(true);
@@ -778,43 +785,66 @@
 
               {activeView === "whiskies" && (
               <div className="labs-fade-in labs-stagger-2" style={{ marginBottom: 32 }}>
-                <div data-testid="explore-whiskies-pills" style={{ marginBottom: 14 }}>
-                  {(() => {
-                    const activePillView = sort === "most"
-                      ? "most-tasted"
-                      : sort === "alpha"
-                        ? "a-z"
-                        : "top-rated";
-                    return (
-                      <div className="labs-action-bar">
-                        {WHISKY_PILLS.map((pill) => {
-                          const isActive = pill.view === activePillView;
-                          const PillIcon = pill.icon;
-                          return (
-                            <button
-                              key={pill.view}
-                              type="button"
-                              onClick={() => {
-                                if (isActive) {
-                                  applyWhiskyHubPreset("topRated");
-                                } else {
-                                  applyWhiskyHubPreset(pill.preset);
-                                }
-                              }}
-                              className={`labs-action-bar-item labs-action-bar-item--button${isActive ? " labs-action-bar-item--active" : ""}`}
-                              data-testid={`pill-explore-whiskies-${pill.view}`}
-                              aria-pressed={isActive}
-                            >
-                              <div className={`labs-action-bar-icon labs-action-bar-icon--${pill.iconVariant}`}>
-                                <PillIcon className="w-5 h-5" style={{ color: pill.iconColor }} strokeWidth={1.8} />
-                              </div>
-                              <span className="labs-action-bar-label">{t(pill.labelKey, pill.labelFb)}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
+                <div data-testid="explore-whiskies-sort" style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 11, fontWeight: 500, color: "var(--labs-text-muted)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    {t("discover.sortLabel", "Sortieren")}
+                  </div>
+                  <div style={{ position: "relative", display: "inline-block" }}>
+                    <button
+                      type="button"
+                      onClick={() => { setExpandedFilter(null); setSortOpen(o => !o); }}
+                      data-testid="sort-dropdown-trigger"
+                      style={{
+                        minHeight: 44, padding: "0 16px", borderRadius: 22,
+                        border: "1px solid var(--labs-border)", cursor: "pointer",
+                        background: "var(--labs-surface)", color: "var(--labs-text)",
+                        fontSize: 14, fontWeight: 500, fontFamily: "inherit",
+                        display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
+                      }}
+                    >
+                      <SlidersHorizontal className="w-3.5 h-3.5" style={{ opacity: 0.7 }} />
+                      {t(currentSortPill.labelKey, currentSortPill.labelFb)}
+                      <ChevronDown className="w-3.5 h-3.5" style={{ opacity: 0.6, transform: sortOpen ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
+                    </button>
+                    {sortOpen && (
+                      <>
+                        <div onClick={() => setSortOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
+                        <div
+                          data-testid="sort-dropdown-menu"
+                          style={{
+                            position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 41,
+                            minWidth: 220, background: "var(--labs-surface-elevated)",
+                            border: "1px solid var(--labs-border)", borderRadius: 12,
+                            boxShadow: "0 8px 24px rgba(0,0,0,0.18)", overflow: "hidden",
+                          }}
+                        >
+                          {WHISKY_PILLS.map((pill, idx) => {
+                            const isCurrent = pill.preset === currentSortPill.preset;
+                            return (
+                              <button
+                                key={pill.preset}
+                                type="button"
+                                onClick={() => { applyWhiskyHubPreset(pill.preset); setSortOpen(false); }}
+                                data-testid={`sort-option-${pill.view}`}
+                                style={{
+                                  width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+                                  gap: 10, padding: "12px 16px",
+                                  background: isCurrent ? "color-mix(in srgb, var(--labs-accent) 12%, transparent)" : "transparent",
+                                  color: "var(--labs-text)", border: "none",
+                                  borderBottom: idx < WHISKY_PILLS.length - 1 ? "1px solid var(--labs-border)" : "none",
+                                  fontSize: 14, fontWeight: isCurrent ? 600 : 500, fontFamily: "inherit",
+                                  cursor: "pointer", textAlign: "left",
+                                }}
+                              >
+                                {t(pill.labelKey, pill.labelFb)}
+                                {isCurrent && <Check className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 <div>
@@ -859,6 +889,7 @@
                           <button
                             key={dim.key}
                             onClick={() => {
+                              setSortOpen(false);
                               setExpandedFilter(isExpanded ? null : dim.key);
                               setFilterSearch("");
                             }}
