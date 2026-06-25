@@ -1574,6 +1574,15 @@ a.labs-dram-item {
   border-left: 1px solid var(--labs-border-subtle);
 }
 
+/* Circle: sechs gleichrangige Erst-Ebenen-Punkte als ein 2×3-Feld, ohne Zwischenfächer */
+.labs-action-bar--grid-2x3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+.labs-action-bar--grid-2x3 .labs-action-bar-item + .labs-action-bar-item {
+  border-left: none;
+}
+
 @media (hover: hover) {
   .labs-action-bar-item:hover {
     background: var(--labs-surface-hover);

@@ -471,8 +471,6 @@ export default function LabsCircle() {
     );
   };
 
-  const tilesRow1 = tiles.slice(0, 3);
-  const tilesRow2 = tiles.slice(3, 6);
 
   return (
     <div className="labs-page labs-fade-in">
@@ -521,11 +519,8 @@ export default function LabsCircle() {
       </div>
 
       <div className="labs-fade-in" style={{ marginBottom: 20, display: "flex", flexDirection: "column", gap: 8 }}>
-        <div className="labs-action-bar">
-          {tilesRow1.map(renderTile)}
-        </div>
-        <div className="labs-action-bar">
-          {tilesRow2.map(renderTile)}
+        <div className="labs-action-bar labs-action-bar--grid-2x3">
+          {tiles.map(renderTile)}
         </div>
       </div>
 
