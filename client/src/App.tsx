@@ -410,13 +410,13 @@ function SmartRedirectToLabs() {
     "/discover": "/labs/explore",
     "/discover/guide": "/labs/explore?tab=bibliothek&section=tasting-wissen&sub=guide",
     "/discover/templates": "/labs/discover/lexicon?tab=templates",
-    "/discover/about": "/labs/explore?tab=bibliothek&section=ueber-casksense&sub=about",
+    "/discover/about": "/labs/about",
     "/discover/rabbit-hole": "/labs/explore?tab=bibliothek&section=rabbit-hole&sub=themenspeicher",
     "/discover/lexicon": "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=lexikon",
     "/discover/community": "/labs/community",
     "/discover/distilleries": "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=destillerien",
     "/discover/bottlers": "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=bottlers",
-    "/discover/donate": "/labs/explore?tab=bibliothek&section=ueber-casksense&sub=about",
+    "/discover/donate": "/labs/about",
     "/discover/activity": "/labs/activity",
     "/discover/recommendations": "/labs/taste/recommendations",
     "/discover/database": "/labs/explore",
@@ -429,7 +429,7 @@ function SmartRedirectToLabs() {
     "/tasting/join": "/labs/join",
     "/profile": "/labs/taste",
     "/profile/account": "/labs/taste/settings",
-    "/profile/help": "/labs/explore?tab=bibliothek&section=ueber-casksense&sub=about",
+    "/profile/help": "/labs/about",
     "/news": "/labs/activity",
     "/badges": "/labs/taste",
     "/flavor-profile": "/labs/taste/profile",
@@ -461,10 +461,10 @@ function SmartRedirectToLabs() {
     "/distilleries": "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=destillerien",
     "/distillery-map": "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=destillerien",
     "/bottlers": "/labs/explore?tab=bibliothek&section=nachschlagewerk&sub=bottlers",
-    "/help": "/labs/explore?tab=bibliothek&section=ueber-casksense&sub=about",
-    "/about": "/labs/explore?tab=bibliothek&section=ueber-casksense&sub=about",
-    "/features": "/labs/explore?tab=bibliothek&section=ueber-casksense&sub=about",
-    "/donate": "/labs/explore?tab=bibliothek&section=ueber-casksense&sub=about",
+    "/help": "/labs/about",
+    "/about": "/labs/about",
+    "/features": "/labs/about",
+    "/donate": "/labs/about",
     "/reminders": "/labs/tastings",
     "/simple-host": "/labs/host",
   };
@@ -788,8 +788,8 @@ function Router() {
               <Route path="/labs/circle" component={LabsCircle} />
               <Route path="/labs/solo">{() => <RedirectWithQuery to="/labs/tastings" query="tab=solo" />}</Route>
               <Route path="/labs/fair-mode" component={LabsFairMode} />
-              <Route path="/labs/about">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=ueber-casksense&sub=about" />}</Route>
-              <Route path="/labs/donate">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=ueber-casksense&sub=about" />}</Route>
+              <Route path="/labs/about" component={LabsAbout} />
+              <Route path="/labs/donate">{() => <Redirect to="/labs/about" />}</Route>
               <Route path="/labs/impressum" component={LabsImpressum} />
               <Route path="/labs/privacy" component={LabsPrivacy} />
               <Route path="/labs/terms" component={LabsTerms} />
