@@ -1,0 +1,79 @@
+WICHTIG: Lies erst alles. KEINE Commits, KEIN git push, KEIN drizzle-kit, KEINE Schema-/Migrationsänderung. Zwei Dateien: client/src/labs/labs-theme.css und client/src/labs/pages/LabsTaste.tsx.
+
+SICHERHEITS-TAG ZUERST (Shell):
+  git tag pre-harmonize-revert-2026-06-25
+
+SCHRITT 0 — DIAGNOSE (nur lesen, zeigen):
+  1. labs-theme.css: bestätige den Block mit Kommentar "Meine Welt: schlankere Bereichs-Leiste" + die drei .labs-action-bar--meine-welt-Regeln (zwischen der .labs-action-bar-sublabel-Regel und ".labs-action-bar-item--active {").
+  2. LabsTaste.tsx: bestätige in renderInlineContent() unter `if (activeTab === "tastings")` den Block <div className="labs-segmented" ... data-testid="meine-welt-tastings-lens-switcher"> ... </div> (der Linsen-Pillen-Umschalter). Zeig kurz, was du gefunden hast.
+
+EDIT 1 — client/src/labs/labs-theme.css: den eingefügten Slim-Block restlos entfernen.
+FINDE:
+}
+
+/* Meine Welt: schlankere Bereichs-Leiste — Untertitel raus, kompakter (scoped, reversibel) */
+.labs-action-bar--meine-welt .labs-action-bar-item {
+  padding: 9px 6px;
+  gap: 5px;
+}
+.labs-action-bar--meine-welt .labs-action-bar-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+}
+.labs-action-bar--meine-welt .labs-action-bar-sublabel {
+  display: none;
+}
+
+.labs-action-bar-item--active {
+ERSETZE DURCH:
+}
+
+.labs-action-bar-item--active {
+
+EDIT 2 — client/src/labs/pages/LabsTaste.tsx: Pillen-Umschalter zurück auf den Karten-Stil (HubTileGrid), exakt wie die anderen Tabs.
+FINDE:
+          <div className="labs-segmented" role="tablist" data-testid="meine-welt-tastings-lens-switcher" style={{ marginBottom: 4 }}>
+            {TASTINGS_LENS_TILES.map((tile) => {
+              const lens = tile.testId.replace("tile-tastings-lens-", "") as "drams" | "sessions" | "handouts";
+              const LensIcon = tile.icon;
+              const isActive = activeTastingsLens === lens;
+              return (
+                <button
+                  key={tile.testId}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => setActiveTastingsLens(lens)}
+                  className={`labs-segmented-btn ${isActive ? "labs-segmented-btn-active" : ""}`}
+                  style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+                  data-testid={`meine-welt-${tile.testId}`}
+                >
+                  <LensIcon className="w-4 h-4" />
+                  {t(tile.labelKey, tile.labelFallback)}
+                </button>
+              );
+            })}
+          </div>
+ERSETZE DURCH:
+          <HubTileGrid
+            tiles={TASTINGS_LENS_TILES}
+            t={t}
+            testIdPrefix="meine-welt"
+            variant="single-row"
+            role="nav"
+            activeTestId={`tile-tastings-lens-${activeTastingsLens}`}
+            onTileClick={(tile) =>
+              setActiveTastingsLens(tile.testId.replace("tile-tastings-lens-", "") as "drams" | "sessions" | "handouts")
+            }
+          />
+
+VERIFIKATION (nur lesen, zeigen):
+  1. grep -c "labs-action-bar--meine-welt" client/src/labs/labs-theme.css → 0
+  2. grep -c "padding: 12px 6px 10px;" client/src/labs/labs-theme.css → 1 (Basis unverändert)
+  3. grep -c "meine-welt-tastings-lens-switcher" client/src/labs/pages/LabsTaste.tsx → 0
+  4. grep -c "labs-segmented" client/src/labs/pages/LabsTaste.tsx → 0 (Pillen weg)
+  5. grep -c "tiles={TASTINGS_LENS_TILES}" client/src/labs/pages/LabsTaste.tsx → 1 (Karten zurück)
+  6. npx tsc --noEmit → keine NEUEN Fehler in den zwei Dateien
+
+ERINNERUNG ZUM SCHLUSS: KEIN commit, KEIN push, KEIN drizzle-kit, KEINE Schema-/Migrationsänderung. Nur die zwei genannten Stellen. Zeig mir die Verifikations-Ergebnisse.
