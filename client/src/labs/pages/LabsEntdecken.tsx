@@ -20,6 +20,7 @@
           Map as MapIcon, FlaskConical, Heart, Info, Globe, Package,
           SlidersHorizontal, Factory, Microscope, Utensils,
         } from "lucide-react";
+        import LabsSortMenu from "@/labs/components/LabsSortMenu";
         import LabsLexicon from "@/labs/pages/LabsLexicon";
         import LabsDistilleries from "@/labs/pages/LabsDistilleries";
         import LabsBottlers from "@/labs/pages/LabsBottlers";
@@ -330,7 +331,6 @@
             };
           });
           const [expandedFilter, setExpandedFilter] = useState<EntdeckenFilterDimension | null>(null);
-          const [sortOpen, setSortOpen] = useState(false);
           const filterDropdownRef = useRef<HTMLDivElement>(null);
 
           const filterPanelRef = useRef<HTMLDivElement>(null);
@@ -651,11 +651,8 @@
             }
           }, []);
 
-          const currentSortPill =
-            WHISKY_PILLS.find(p =>
-              (sort === "most" && p.preset === "mostTasted") ||
-              (sort === "alpha" && p.preset === "alpha")
-            ) ?? WHISKY_PILLS.find(p => p.preset === "topRated") ?? WHISKY_PILLS[0];
+          const whiskySortOptions = WHISKY_PILLS.map((p) => ({ value: p.preset, label: t(p.labelKey, p.labelFb) }));
+          const currentSortValue = sort === "most" ? "mostTasted" : sort === "alpha" ? "alpha" : "topRated";
 
           useEffect(() => {
             if (prevWhiskyCountRef.current !== null && prevWhiskyCountRef.current !== whiskies.length) {
@@ -786,65 +783,13 @@
               {activeView === "whiskies" && (
               <div className="labs-fade-in labs-stagger-2" style={{ marginBottom: 32 }}>
                 <div data-testid="explore-whiskies-sort" style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 11, fontWeight: 500, color: "var(--labs-text-muted)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                    {t("discover.sortLabel", "Sortieren")}
-                  </div>
-                  <div style={{ position: "relative", display: "inline-block" }}>
-                    <button
-                      type="button"
-                      onClick={() => { setExpandedFilter(null); setSortOpen(o => !o); }}
-                      data-testid="sort-dropdown-trigger"
-                      style={{
-                        minHeight: 44, padding: "0 16px", borderRadius: 22,
-                        border: "1px solid var(--labs-border)", cursor: "pointer",
-                        background: "var(--labs-surface)", color: "var(--labs-text)",
-                        fontSize: 14, fontWeight: 500, fontFamily: "inherit",
-                        display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
-                      }}
-                    >
-                      <SlidersHorizontal className="w-3.5 h-3.5" style={{ opacity: 0.7 }} />
-                      {t(currentSortPill.labelKey, currentSortPill.labelFb)}
-                      <ChevronDown className="w-3.5 h-3.5" style={{ opacity: 0.6, transform: sortOpen ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
-                    </button>
-                    {sortOpen && (
-                      <>
-                        <div onClick={() => setSortOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
-                        <div
-                          data-testid="sort-dropdown-menu"
-                          style={{
-                            position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 41,
-                            minWidth: 220, background: "var(--labs-surface-elevated)",
-                            border: "1px solid var(--labs-border)", borderRadius: 12,
-                            boxShadow: "0 8px 24px rgba(0,0,0,0.18)", overflow: "hidden",
-                          }}
-                        >
-                          {WHISKY_PILLS.map((pill, idx) => {
-                            const isCurrent = pill.preset === currentSortPill.preset;
-                            return (
-                              <button
-                                key={pill.preset}
-                                type="button"
-                                onClick={() => { applyWhiskyHubPreset(pill.preset); setSortOpen(false); }}
-                                data-testid={`sort-option-${pill.view}`}
-                                style={{
-                                  width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-                                  gap: 10, padding: "12px 16px",
-                                  background: isCurrent ? "color-mix(in srgb, var(--labs-accent) 12%, transparent)" : "transparent",
-                                  color: "var(--labs-text)", border: "none",
-                                  borderBottom: idx < WHISKY_PILLS.length - 1 ? "1px solid var(--labs-border)" : "none",
-                                  fontSize: 14, fontWeight: isCurrent ? 600 : 500, fontFamily: "inherit",
-                                  cursor: "pointer", textAlign: "left",
-                                }}
-                              >
-                                {t(pill.labelKey, pill.labelFb)}
-                                {isCurrent && <Check className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  <LabsSortMenu
+                    label={t("discover.sortLabel", "Sortieren")}
+                    options={whiskySortOptions}
+                    value={currentSortValue}
+                    onChange={(v) => applyWhiskyHubPreset(v as WhiskyHubPreset)}
+                    testIdPrefix="whisky-sort"
+                  />
                 </div>
 
                 <div>
@@ -889,7 +834,6 @@
                           <button
                             key={dim.key}
                             onClick={() => {
-                              setSortOpen(false);
                               setExpandedFilter(isExpanded ? null : dim.key);
                               setFilterSearch("");
                             }}
