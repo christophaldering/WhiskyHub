@@ -1,0 +1,78 @@
+CaskSense — Entdecken/Bibliothek: (1) "2× Themenspeicher" beheben, (2) "Über CaskSense"-Sektion entfernen.
+Datei: client/src/labs/pages/LabsEntdecken.tsx  (NUR diese Datei)
+
+═══ SICHERHEIT ZUERST ═══
+Rollback-Tag setzen:  git tag pre-entdecken-bibliothek-2026-06-25
+VERBOTEN im gesamten Auftrag: kein git commit, kein git push, kein drizzle-kit, keine Schema-/Migrations-Änderung. Nur Datei-Edits.
+
+═══ SCHRITT 0 — DIAGNOSE (nur lesen) ═══
+Öffne client/src/labs/pages/LabsEntdecken.tsx und bestätige:
+- Array BIBLIOTHEK_TILES enthält eine Sektion mit `key: "rabbit-hole"` (labelKey "rabbitHole.themenspeicherTitle") und darin einen Unterpunkt `sub: "themenspeicher"` (ebenfalls labelKey "rabbitHole.themenspeicherTitle").
+- Array enthält eine Sektion mit `key: "ueber-casksense"` (rendert LabsAbout).
+- Import `import LabsAbout from "@/labs/pages/LabsAbout";` existiert und wird NUR in dieser ueber-casksense-Sektion verwendet.
+- `ueber-casksense` taucht im Typ `BibliothekSectionKey` und in der section-Auflösung (~Z.268) auf.
+Gib mir Ist-Stand + Plan. Warte auf mein "go".
+
+═══ SCHRITT 1 — ÄNDERN (erst nach "go") ═══
+
+1a) DUPLIKAT beheben — ersetze in der rabbit-hole-Sektion GENAU diese 5 Zeilen:
+
+            icon: Archive,
+            labelKey: "rabbitHole.themenspeicherTitle",
+            labelFb: "Rabbit Hole",
+            descKey: "rabbitHole.themenspeicherDesc",
+            descFb: "Themenspeicher",
+
+   DURCH:
+
+            icon: Archive,
+            labelKey: "rabbitHole.title",
+            labelFb: "Rabbit Hole",
+            descKey: "rabbitHole.subtitle",
+            descFb: "Aroma-Atlas & Themenspeicher",
+
+   (Der Unterpunkt `sub: "themenspeicher"` mit labelKey "rabbitHole.themenspeicherTitle" bleibt UNVERÄNDERT.)
+
+1b) "Über CaskSense"-Sektion entfernen — lösche GENAU diesen Block KOMPLETT (inkl. abschließendem Komma):
+
+          {
+            key: "ueber-casksense",
+            icon: Info,
+            labelKey: "about.title",
+            labelFb: "Über CaskSense",
+            descKey: "m2.discover.aboutSubtitle",
+            descFb: "The story behind CaskSense",
+            subs: [
+              { sub: "about", labelKey: "about.title", labelFb: "About", icon: Info, Component: LabsAbout },
+            ],
+          },
+
+1c) Typ bereinigen — ersetze:
+
+        type BibliothekSectionKey = "nachschlagewerk" | "tasting-wissen" | "rabbit-hole" | "ueber-casksense";
+
+   DURCH:
+
+        type BibliothekSectionKey = "nachschlagewerk" | "tasting-wissen" | "rabbit-hole";
+
+1d) section-Auflösung bereinigen — ersetze:
+
+                section: (section === "nachschlagewerk" || section === "tasting-wissen" || section === "rabbit-hole" || section === "ueber-casksense") ? section as BibliothekSectionKey : null,
+
+   DURCH:
+
+                section: (section === "nachschlagewerk" || section === "tasting-wissen" || section === "rabbit-hole") ? section as BibliothekSectionKey : null,
+
+1e) Ungenutzten Import entfernen — lösche die Zeile:
+
+        import LabsAbout from "@/labs/pages/LabsAbout";
+
+   (Die Datei LabsAbout.tsx NICHT löschen — sie wird über ihre eigene Route weiter genutzt. Nur den Import hier.)
+   (Falls dadurch der Icon-Import `Info` ungenutzt wird: einfach lassen, ist unkritisch.)
+
+═══ SCHRITT 2 — VERIFIKATION (zeig mir die Ausgabe) ═══
+- grep -n "ueber-casksense\|LabsAbout" client/src/labs/pages/LabsEntdecken.tsx        → MUSS 0 Treffer sein
+- grep -c "rabbitHole.themenspeicherTitle" client/src/labs/pages/LabsEntdecken.tsx    → MUSS genau 1 sein (nur noch der Unterpunkt)
+- grep -n "rabbitHole.title\|rabbitHole.subtitle" client/src/labs/pages/LabsEntdecken.tsx → je 1 Treffer (die Sektion)
+- Projekt-Typecheck/Build (npm run check bzw. tsc --noEmit) → KEINE Fehler
+ERINNERUNG: kein commit, kein push, kein drizzle, keine Schema-Änderung.
