@@ -1,0 +1,116 @@
+HARD PROMPT — Entdecken/Whiskies: Sortier-Reihe → "Sortieren ▾"-Dropdown (Filter-Look)
+
+KONTEXT: Im Whiskies-Tab (client/src/labs/pages/LabsEntdecken.tsx) steht über der Suche eine Reihe großer Icon-Karten (Top bewertet / Meist verkostet / A-Z, CSS-Klasse "labs-action-bar"). Diese Karten SORTIEREN nur (sie filtern nichts), sehen aber aus wie ein Eingrenzungs-Schritt. Sie sollen durch EIN kompaktes "Sortieren ▾"-Dropdown ersetzt werden, das exakt wie die Filter-Pillen darunter (Region/Distillery/Kategorie) aussieht. NUR diese eine Datei wird angefasst.
+
+═══════════════════════════════════════════
+STEP 0 — DIAGNOSE & PLAN (NICHTS ändern, bevor ich "go" sage)
+═══════════════════════════════════════════
+Setze zuerst:  git tag pre-sort-dropdown-2026-06-25
+Dann bestätige (read-only) und melde:
+1. In LabsEntdecken.tsx existiert der zu ersetzende Block: <div data-testid="explore-whiskies-pills" ...> … {(() => { const activePillView = …; return (<div className="labs-action-bar">{WHISKY_PILLS.map(…)}</div>); })()} … </div>  (aktuell ca. Z.781–818).
+2. Bestätige, dass "labs-action-bar" in DIESER Datei NUR an dieser Stelle vorkommt (grep -n "labs-action-bar" client/src/labs/pages/LabsEntdecken.tsx).
+3. Bestätige vorhanden: State `sort` (Werte "avg"/"most"/"alpha") + `setSort`, `sortDirection`/`setSortDirection`, die Funktion `applyWhiskyHubPreset(preset)` (setzt sort+direction), das Array `WHISKY_PILLS` (3 Einträge: topRated/mostTasted/alpha), und dass die Icons SlidersHorizontal, ChevronDown, Check bereits aus "lucide-react" importiert sind.
+Präsentiere kurz den Plan, dann WARTE auf mein "go".
+
+═══════════════════════════════════════════
+STEP 1 — State + Helfer ergänzen
+═══════════════════════════════════════════
+(a) Bei den übrigen UI-States (in der Nähe von `const [expandedFilter, setExpandedFilter] = useState…`) hinzufügen:
+      const [sortOpen, setSortOpen] = useState(false);
+(b) Innerhalb der Komponente, NACH der Deklaration von `sort` und `WHISKY_PILLS` (z.B. direkt vor dem return), einen Helfer für die aktuelle Sortier-Pille:
+      const currentSortPill =
+        WHISKY_PILLS.find(p =>
+          (sort === "most" && p.preset === "mostTasted") ||
+          (sort === "alpha" && p.preset === "alpha")
+        ) ?? WHISKY_PILLS.find(p => p.preset === "topRated") ?? WHISKY_PILLS[0];
+
+═══════════════════════════════════════════
+STEP 2 — Sortier-Block ERSETZEN
+═══════════════════════════════════════════
+Ersetze den GESAMTEN Block <div data-testid="explore-whiskies-pills" …>…</div> (Z.781–818, die labs-action-bar-IIFE) durch EXAKT dieses Markup:
+
+                <div data-testid="explore-whiskies-sort" style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 11, fontWeight: 500, color: "var(--labs-text-muted)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    {t("discover.sortLabel", "Sortieren")}
+                  </div>
+                  <div style={{ position: "relative", display: "inline-block" }}>
+                    <button
+                      type="button"
+                      onClick={() => { setExpandedFilter(null); setSortOpen(o => !o); }}
+                      data-testid="sort-dropdown-trigger"
+                      style={{
+                        minHeight: 44, padding: "0 16px", borderRadius: 22,
+                        border: "1px solid var(--labs-border)", cursor: "pointer",
+                        background: "var(--labs-surface)", color: "var(--labs-text)",
+                        fontSize: 14, fontWeight: 500, fontFamily: "inherit",
+                        display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
+                      }}
+                    >
+                      <SlidersHorizontal className="w-3.5 h-3.5" style={{ opacity: 0.7 }} />
+                      {t(currentSortPill.labelKey, currentSortPill.labelFb)}
+                      <ChevronDown className="w-3.5 h-3.5" style={{ opacity: 0.6, transform: sortOpen ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
+                    </button>
+                    {sortOpen && (
+                      <>
+                        <div onClick={() => setSortOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
+                        <div
+                          data-testid="sort-dropdown-menu"
+                          style={{
+                            position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 41,
+                            minWidth: 220, background: "var(--labs-surface-elevated)",
+                            border: "1px solid var(--labs-border)", borderRadius: 12,
+                            boxShadow: "0 8px 24px rgba(0,0,0,0.18)", overflow: "hidden",
+                          }}
+                        >
+                          {WHISKY_PILLS.map((pill, idx) => {
+                            const isCurrent = pill.preset === currentSortPill.preset;
+                            return (
+                              <button
+                                key={pill.preset}
+                                type="button"
+                                onClick={() => { applyWhiskyHubPreset(pill.preset); setSortOpen(false); }}
+                                data-testid={`sort-option-${pill.view}`}
+                                style={{
+                                  width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+                                  gap: 10, padding: "12px 16px",
+                                  background: isCurrent ? "color-mix(in srgb, var(--labs-accent) 12%, transparent)" : "transparent",
+                                  color: "var(--labs-text)", border: "none",
+                                  borderBottom: idx < WHISKY_PILLS.length - 1 ? "1px solid var(--labs-border)" : "none",
+                                  fontSize: 14, fontWeight: isCurrent ? 600 : 500, fontFamily: "inherit",
+                                  cursor: "pointer", textAlign: "left",
+                                }}
+                              >
+                                {t(pill.labelKey, pill.labelFb)}
+                                {isCurrent && <Check className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+═══════════════════════════════════════════
+STEP 3 — Filter & Sort gegenseitig schließen
+═══════════════════════════════════════════
+Im onClick der Filter-Pillen (ENTDECKEN_FILTER_DIMENSIONS.map, der Handler mit `setExpandedFilter(isExpanded ? null : dim.key); setFilterSearch("");`) ergänze als erste Zeile:
+      setSortOpen(false);
+(So ist nie Sort-Menü UND Filter-Panel gleichzeitig offen.)
+
+═══════════════════════════════════════════
+VERIFIKATION (zeig mir die Ergebnisse)
+═══════════════════════════════════════════
+  - grep -n "labs-action-bar" client/src/labs/pages/LabsEntdecken.tsx  → KEINE Treffer mehr.
+  - grep -n "explore-whiskies-sort\|sort-dropdown-trigger\|sort-dropdown-menu" client/src/labs/pages/LabsEntdecken.tsx  → vorhanden.
+  - WHISKY_PILLS, applyWhiskyHubPreset, sort/setSort/sortDirection bleiben vorhanden und unverändert in ihrer Logik.
+  - Build läuft sauber durch (Projekt-Typecheck/Build) — keine TS-Fehler, JSX balanciert.
+  - Funktion: Dropdown öffnet/schließt, Auswahl ändert die Sortierung (Liste ordnet um), aktuelle Wahl ist mit Häkchen markiert, Außenklick schließt.
+
+NICHT TUN — ausdrücklich verboten:
+  - KEIN git commit, KEIN git push.
+  - KEIN drizzle-kit, KEINE Schema-/Migrationsänderung (reines Frontend).
+  - NUR client/src/labs/pages/LabsEntdecken.tsx anfassen. Filter-Logik (toggleFilter, filterValues, Panels) NICHT verändern außer der einen Zeile in Step 3.
+  - WHISKY_PILLS NICHT löschen (wird als Datenquelle gebraucht).
+Bei Unklarheit oder wenn ein Edit nicht sauber passt: STOPP und frag, statt zu raten.
+Rollback: git reset --hard pre-sort-dropdown-2026-06-25
