@@ -1,0 +1,54 @@
+HARD PROMPT — Cooper-Gedächtnis: PDF-Export entfernen, nur Text behalten (keine Report-Dopplung)
+
+KONTEXT: Der gebrandete Cooper-Gedächtnis-PDF konkurriert mit dem Connoisseur-Report. Wir nehmen ihn zurück: in client/src/labs/pages/LabsTasteCooper.tsx den PDF-Knopf + die PDF-Handler + den Import entfernen (nur „Als Text" bleibt), und die nun verwaiste Datei client/src/lib/cooperMemoryPdf.ts löschen. Reines Frontend, kein Schema/keine API.
+
+STEP 0 — DIAGNOSE (nichts ändern bis "go"):
+Bestätige (read-only): LabsTasteCooper.tsx importiert in Zeile 6 `{ downloadCooperMemoryPdf, buildCooperMemoryPdfBlobUrl } from "@/lib/cooperMemoryPdf"`; hat die Handler `downloadMemPdf` + `previewMemPdf`; und im Button-Block einen zweiten Button „PDF ansehen" (testid cooper-memory-preview-pdf). `downloadMemTxt` bleibt. cooperMemoryPdf wird sonst nirgends importiert. Melde kurz, dann WARTE auf "go".
+
+STEP 1 — Import entfernen
+Lösche EXAKT die Zeile
+import { downloadCooperMemoryPdf, buildCooperMemoryPdfBlobUrl } from "@/lib/cooperMemoryPdf";
+
+STEP 2 — PDF-Handler entfernen
+Lösche EXAKT den Block
+  const downloadMemPdf = async () => {
+    if (!memText) return;
+    try { await downloadCooperMemoryPdf(memText, memUpdatedAt, (participant as any)?.name); }
+    catch { toast({ description: "PDF konnte nicht erstellt werden.", variant: "destructive" }); }
+  };
+  const previewMemPdf = () => {
+    if (!memText) return;
+    const w = window.open("", "_blank");
+    buildCooperMemoryPdfBlobUrl(memText, memUpdatedAt, (participant as any)?.name)
+      .then((url) => { if (w) { w.location.href = url; } else { void downloadMemPdf(); } })
+      .catch(() => { try { w?.close(); } catch {} void downloadMemPdf(); });
+  };
+
+STEP 3 — „PDF ansehen"-Button entfernen (nur diesen zweiten Button)
+Ersetze EXAKT
+            <button onClick={downloadMemTxt} data-testid="cooper-memory-download-txt"
+              style={{ flex: 1, minHeight: 40, borderRadius: 10, cursor: "pointer", background: "transparent", color: "var(--labs-text)", fontSize: 13, border: "1px solid var(--labs-border)" }}>
+              Als Text
+            </button>
+            <button onClick={previewMemPdf} data-testid="cooper-memory-preview-pdf"
+              style={{ flex: 1, minHeight: 40, borderRadius: 10, cursor: "pointer", background: "transparent", color: "var(--labs-text)", fontSize: 13, border: "1px solid var(--labs-border)" }}>
+              PDF ansehen
+            </button>
+durch
+            <button onClick={downloadMemTxt} data-testid="cooper-memory-download-txt"
+              style={{ flex: 1, minHeight: 40, borderRadius: 10, cursor: "pointer", background: "transparent", color: "var(--labs-text)", fontSize: 13, border: "1px solid var(--labs-border)" }}>
+              Als Text
+            </button>
+
+STEP 4 — Verwaiste Datei löschen
+Lösche die Datei client/src/lib/cooperMemoryPdf.ts
+
+VERIFIKATION (zeig mir):
+  - grep -c "cooperMemoryPdf" client/src/labs/pages/LabsTasteCooper.tsx → 0
+  - grep -c "previewMemPdf\|downloadMemPdf\|PDF ansehen" client/src/labs/pages/LabsTasteCooper.tsx → 0
+  - grep -c "downloadMemTxt" client/src/labs/pages/LabsTasteCooper.tsx → 2 (Handler + Button)
+  - ls client/src/lib/cooperMemoryPdf.ts → existiert nicht mehr
+  - Build grün. Im Cooper-Bereich nur noch „Als Text"; der Connoisseur-Report bleibt das einzige gebrandete Palate-Artefakt.
+
+NICHT TUN: KEIN commit/push, KEIN drizzle/Schema, NUR diese eine Datei + die Löschung. `downloadMemTxt`/Staleness-Hinweis NICHT anfassen. Bei nicht-exaktem Match: STOPP und frag.
+Rollback: git reset --hard <letzter Checkpoint>

@@ -161,10 +161,10 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
 
   return (
     <div style={{ padding: `${SP.md}px`, paddingBottom: 200 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: SP.lg }}>
-        <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: SP.sm, marginBottom: SP.lg }}>
+        <div style={{ minWidth: 0, flex: "1 1 auto" }}>
           {!whisky.blind && whisky.name && (
-            <div style={{ fontFamily: FONT.display, fontSize: 20, fontWeight: 600, color: "var(--labs-text)" }}>
+            <div style={{ fontFamily: FONT.display, fontSize: 20, fontWeight: 600, color: "var(--labs-text)", overflowWrap: "anywhere" }}>
               {whisky.name}
             </div>
           )}
@@ -172,7 +172,7 @@ export default function CompactRating({ labels, whisky, initialData, onDone, onB
             <div style={{ fontSize: 13, color: "var(--labs-text-muted)", fontFamily: FONT.body }}>{whisky.region}</div>
           )}
         </div>
-        <div style={{ textAlign: "right" }}>
+        <div style={{ textAlign: "right", flexShrink: 0 }}>
           <div
             data-testid="compact-overall-avg"
             style={{
