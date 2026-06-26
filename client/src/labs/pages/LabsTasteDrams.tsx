@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import { openDramNotePdf } from "@/labs/utils/dramNotePdf";
+import { openDramNoteHtml } from "@/labs/utils/dramNoteHtml";
 import DramHistoryTimeline from "@/labs/components/DramHistoryTimeline";
 import type { JournalEntry } from "@shared/schema";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
@@ -20,7 +21,7 @@ import {
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy,
   Mic, Play as PlayIcon, Pause, ChevronDown, RotateCcw, Camera,
   SlidersHorizontal, Archive, Clock, FileEdit, MoreHorizontal,
-  Users, Smile, FileText, Download, Share2,
+  Users, Smile, FileText, Download, Share2, Globe,
 } from "lucide-react";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { downloadCsvFromRows, downloadXlsxFromSheets, safeFileSegment } from "@/labs/utils/contextDownloads";
@@ -823,6 +824,14 @@ export default function LabsTasteDrams() {
                     >
                       <FileText className="w-3.5 h-3.5" /> {i18n.language?.toLowerCase().startsWith("de") ? "Notiz als PDF" : "Note as PDF"}
                     </button>
+                    <button
+                      onClick={() => { setShareMenuOpen(false); openDramNoteHtml({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, tastingName: (selectedEntry as any).tastingTitle ?? null, tasterName: participantData?.name ?? session.name ?? null, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl: notePhotoDataUrl }, i18n.language?.toLowerCase().startsWith("de")); }}
+                      className="w-full text-left flex items-center gap-2"
+                      style={{ fontSize: 13, padding: "8px 10px", borderRadius: 8, color: "var(--labs-text)", background: "transparent", border: "none", cursor: "pointer" }}
+                      data-testid="share-note-html"
+                    >
+                      <Globe className="w-3.5 h-3.5" /> {i18n.language?.toLowerCase().startsWith("de") ? "Notiz als Webseite" : "Note as web page"}
+                    </button>
                   </div>
                 </>
               )}
@@ -957,6 +966,7 @@ export default function LabsTasteDrams() {
             saving={narrativeMutation.isPending}
             readOnly={selectedEntry.source === "tasting"}
             onSave={(text) => narrativeMutation.mutate({ id: selectedEntry.id, data: { tastingNarrative: text } })}
+            onDownload={() => openDramNotePdf({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, tastingName: (selectedEntry as any).tastingTitle ?? null, tasterName: participantData?.name ?? session.name ?? null, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl: notePhotoDataUrl })}
           />
 
           <DramHistoryTimeline entry={selectedEntry as any} allItems={allItems as any} />
