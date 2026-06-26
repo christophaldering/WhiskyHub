@@ -5765,6 +5765,7 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
     return res.json({
       memory: (auth.participant as any).cooperMemory ?? null,
       updatedAt: (auth.participant as any).cooperMemoryUpdatedAt ?? null,
+      enabled: (auth.participant as any).cooperMemoryEnabled === true,
     });
   });
 
@@ -7256,6 +7257,9 @@ Aktualisiere das Ledger EHRLICH anhand des Gesprächs: untouched->touched sobald
         } else {
           return res.status(400).json({ message: "Invalid cooper depth. Must be schnell, neugierig, rabbithole or null." });
         }
+      }
+      if (req.body.cooperMemoryEnabled !== undefined) {
+        updates.cooperMemoryEnabled = req.body.cooperMemoryEnabled === true;
       }
 
       if (req.body.pin !== undefined) {
@@ -28895,10 +28899,17 @@ Do not invent specific ratings, tasting names or events that are not in the sour
 
       const trimmedHistory = conversationHistory.slice(-10);
       const baseSys = (locale === "de" ? sysDe : sysEn) + (locale === "de" ? tastingHintDe : tastingHintEn);
+      const memOptIn = (auth.participant as any).cooperMemoryEnabled === true;
+      const memText = (auth.participant as any).cooperMemory;
       const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
         { role: "system", content: baseSys },
         { role: "system", content: (locale === "de" ? "Verfuegbare Quellen:\n" : "Available sources:\n") + sourcesBlock },
         { role: "system", content: (locale === "de" ? "Nutzerkontext (zuletzt verkostet):\n" : "User context (recently tasted):\n") + userContextBlock },
+        ...((memOptIn && memText)
+          ? [{ role: "system" as const, content: (locale === "de"
+              ? "Was du aus früheren Verkostungen über diesen Taster weißt — stütze dich darauf, aber erfinde nichts darüber hinaus und zitiere es nicht wörtlich:\n"
+              : "What you know about this taster from earlier tastings — rely on it, but invent nothing beyond it and don't quote it verbatim:\n") + memText }]
+          : []),
         ...trimmedHistory,
         { role: "user", content: question },
       ];
