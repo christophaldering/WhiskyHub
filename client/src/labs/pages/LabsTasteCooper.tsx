@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, Sparkles, Mic, MessageSquare, Wand2 } from "lucide-react";
 import { participantApi, participantUpdateApi, pidHeaders } from "@/lib/api";
+import { downloadCooperMemoryPdf } from "@/lib/cooperMemoryPdf";
+import { downloadBlob } from "@/lib/download";
 import { useAppStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
@@ -39,6 +41,18 @@ export default function LabsTasteCooper() {
     })();
   }, [pid]);
   const memStale = !!memUpdatedAt && Date.now() - new Date(memUpdatedAt).getTime() > 30 * 86400000;
+  const [introSeen, setIntroSeen] = useState(() => { try { return localStorage.getItem("labs_cooper_area_intro_seen") === "1"; } catch { return false; } });
+  const dismissIntro = () => { try { localStorage.setItem("labs_cooper_area_intro_seen", "1"); } catch {} setIntroSeen(true); };
+  const downloadMemTxt = async () => {
+    if (!memText) return;
+    try { await downloadBlob(new Blob([memText], { type: "text/plain;charset=utf-8" }), "casksense-sensorisches-gedaechtnis.txt"); }
+    catch { toast({ description: "Download fehlgeschlagen.", variant: "destructive" }); }
+  };
+  const downloadMemPdf = async () => {
+    if (!memText) return;
+    try { await downloadCooperMemoryPdf(memText, memUpdatedAt, (participant as any)?.name); }
+    catch { toast({ description: "PDF konnte nicht erstellt werden.", variant: "destructive" }); }
+  };
   const toggleMemEnabled = async () => {
     const next = !memEnabled;
     setMemEnabled(next);
@@ -167,6 +181,19 @@ export default function LabsTasteCooper() {
         </div>
       </div>
 
+      {!introSeen && (
+        <div className="labs-card p-5 flex flex-col gap-3" data-testid="cooper-area-intro">
+          <p className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Hallo, ich bin Cooper.</p>
+          <p className="text-xs" style={{ color: "var(--labs-text-muted)", lineHeight: 1.6 }}>
+            Aus deinen Verkostungen entsteht nach und nach ein Bild von dir — dein Sensorisches Gedächtnis. Es liegt nur in deinem Bereich. Du entscheidest, ob ich im Nachgang darauf zurückgreife, und kannst es jederzeit ansehen, herunterladen oder löschen.
+          </p>
+          <button onClick={dismissIntro} data-testid="cooper-area-intro-dismiss"
+            style={{ alignSelf: "flex-start", minHeight: 40, padding: "0 16px", borderRadius: 10, cursor: "pointer", background: "var(--labs-gold, #D4A847)", color: "#0B0906", fontSize: 14, fontWeight: 600, border: "none" }}>
+            Verstanden
+          </button>
+        </div>
+      )}
+
       <div className="labs-card p-5">
         <p className="labs-serif" style={{ fontSize: 16, lineHeight: 1.6, color: "var(--labs-text-secondary)", fontStyle: "italic", margin: 0 }}>
           {t("v2.cooperPrefs.positioning", "Die meisten KI-Werkzeuge laden zum kognitiven Outsourcing ein \u2014 sie nehmen dir das Denken ab. Cooper ist f\u00fcr das Gegenteil gebaut: Er schmeckt, denkt und urteilt nie f\u00fcr dich, sondern hilft dir, deine eigene Wahrnehmung in deine eigenen Worte zu fassen. Je sicherer du wirst, desto stiller wird er \u2014 sein Ziel ist nicht, unentbehrlich zu werden, sondern dich zu sch\u00e4rfen.")}
@@ -271,6 +298,18 @@ export default function LabsTasteCooper() {
             Löschen
           </button>
         </div>
+        {memText && (
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={downloadMemTxt} data-testid="cooper-memory-download-txt"
+              style={{ flex: 1, minHeight: 40, borderRadius: 10, cursor: "pointer", background: "transparent", color: "var(--labs-text)", fontSize: 13, border: "1px solid var(--labs-border)" }}>
+              Als Text
+            </button>
+            <button onClick={downloadMemPdf} data-testid="cooper-memory-download-pdf"
+              style={{ flex: 1, minHeight: 40, borderRadius: 10, cursor: "pointer", background: "transparent", color: "var(--labs-text)", fontSize: 13, border: "1px solid var(--labs-border)" }}>
+              Als PDF
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
