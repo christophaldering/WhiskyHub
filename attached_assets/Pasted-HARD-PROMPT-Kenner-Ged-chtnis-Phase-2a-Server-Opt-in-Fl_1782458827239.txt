@@ -1,0 +1,80 @@
+HARD PROMPT — Kenner-Gedächtnis Phase 2a (Server): Opt-in-Flag + Einbindung ins Frag CaskSense
+
+KONTEXT: Das pro Nutzer gespeicherte "Sensorische Gedächtnis" (cooper_memory) wird bisher nur erzeugt/angezeigt/gelöscht, nirgends genutzt. Wir binden es AUSSCHLIESSLICH in den Kenner-Kontext POST /api/labs/ask ein — und nur, wenn der Nutzer ausdrücklich zugestimmt hat (neues Opt-in-Flag). converse/Voice (Schärfer am Glas) bleibt unangetastet. Additive Schema-Spalte → danach EINMAL manuell `npx drizzle-kit push --force` in der Replit-Shell. Zwei Dateien: shared/schema.ts, server/routes.ts.
+
+STEP 0 — DIAGNOSE (nichts ändern bis "go"):
+Bestätige (read-only): shared/schema.ts hat in der Participants-Tabelle die Zeilen `cooperMemory: text("cooper_memory"),` und `cooperMemoryUpdatedAt: timestamp("cooper_memory_updated_at"),` (boolean ist oben importiert). server/routes.ts: GET /api/cooper/memory gibt {memory, updatedAt} zurück; im PATCH der Participants endet der cooperDepth-Block mit der Meldung "Invalid cooper depth…"; in POST /api/labs/ask existiert das messages-Array mit drei system-Einträgen, dann ...trimmedHistory, dann user. Melde kurz, dann WARTE auf "go".
+
+STEP 1 — shared/schema.ts: Opt-in-Spalte (additiv)
+Ersetze
+  cooperMemory: text("cooper_memory"),
+  cooperMemoryUpdatedAt: timestamp("cooper_memory_updated_at"),
+durch
+  cooperMemory: text("cooper_memory"),
+  cooperMemoryUpdatedAt: timestamp("cooper_memory_updated_at"),
+  cooperMemoryEnabled: boolean("cooper_memory_enabled").default(false),
+
+STEP 2 — server/routes.ts: GET /api/cooper/memory um enabled erweitern
+Ersetze
+    return res.json({
+      memory: (auth.participant as any).cooperMemory ?? null,
+      updatedAt: (auth.participant as any).cooperMemoryUpdatedAt ?? null,
+    });
+durch
+    return res.json({
+      memory: (auth.participant as any).cooperMemory ?? null,
+      updatedAt: (auth.participant as any).cooperMemoryUpdatedAt ?? null,
+      enabled: (auth.participant as any).cooperMemoryEnabled === true,
+    });
+
+STEP 3 — server/routes.ts: PATCH-Whitelist um cooperMemoryEnabled erweitern
+Ersetze
+          return res.status(400).json({ message: "Invalid cooper depth. Must be schnell, neugierig, rabbithole or null." });
+        }
+      }
+durch
+          return res.status(400).json({ message: "Invalid cooper depth. Must be schnell, neugierig, rabbithole or null." });
+        }
+      }
+      if (req.body.cooperMemoryEnabled !== undefined) {
+        updates.cooperMemoryEnabled = req.body.cooperMemoryEnabled === true;
+      }
+
+STEP 4 — server/routes.ts: Gedächtnis in /api/labs/ask einspeisen (nur bei Opt-in)
+Ersetze
+      const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
+        { role: "system", content: baseSys },
+        { role: "system", content: (locale === "de" ? "Verfuegbare Quellen:\n" : "Available sources:\n") + sourcesBlock },
+        { role: "system", content: (locale === "de" ? "Nutzerkontext (zuletzt verkostet):\n" : "User context (recently tasted):\n") + userContextBlock },
+        ...trimmedHistory,
+        { role: "user", content: question },
+      ];
+durch
+      const memOptIn = (auth.participant as any).cooperMemoryEnabled === true;
+      const memText = (auth.participant as any).cooperMemory;
+      const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
+        { role: "system", content: baseSys },
+        { role: "system", content: (locale === "de" ? "Verfuegbare Quellen:\n" : "Available sources:\n") + sourcesBlock },
+        { role: "system", content: (locale === "de" ? "Nutzerkontext (zuletzt verkostet):\n" : "User context (recently tasted):\n") + userContextBlock },
+        ...((memOptIn && memText)
+          ? [{ role: "system" as const, content: (locale === "de"
+              ? "Was du aus früheren Verkostungen über diesen Taster weißt — stütze dich darauf, aber erfinde nichts darüber hinaus und zitiere es nicht wörtlich:\n"
+              : "What you know about this taster from earlier tastings — rely on it, but invent nothing beyond it and don't quote it verbatim:\n") + memText }]
+          : []),
+        ...trimmedHistory,
+        { role: "user", content: question },
+      ];
+
+VERIFIKATION (zeig mir):
+  - grep -n "cooperMemoryEnabled" shared/schema.ts → 1 Treffer (neue Spalte).
+  - grep -c "cooperMemoryEnabled" server/routes.ts → 3 (GET, PATCH, ask).
+  - grep -n "Was du aus früheren Verkostungen über diesen Taster weißt" server/routes.ts → 1 (nur im ask).
+  - grep -c "cooperMemory" server/routes.ts im converse-Bereich (POST /api/impression/converse) → 0 (Schärfer unberührt).
+  - Build/Typecheck grün.
+
+NICHT TUN:
+  - KEIN git commit, KEIN git push.
+  - KEIN drizzle-kit AUSFÜHREN (nur Schema-Zeile editieren; den push mache ich danach manuell).
+  - converse/Voice-Persona NICHT anfassen; nur die 4 genannten Stellen.
+Bei nicht-exaktem Match: STOPP und frag.
+Rollback: git reset --hard <letzter Checkpoint vor diesem Lauf>
