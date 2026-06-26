@@ -245,7 +245,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
   const tv = isLabs ? labsV : v;
   const isDe = (i18n.language || "").toLowerCase().startsWith("de");
   const L = isDe ? {
-    cooper: "Cooper", cooperStudio: "Cooper-Studio", secSettings: "Einstellungen", settings: "Einstellungen",
+    cooper: "Cooper", cooperStudio: "Cooper-Studio", secCooper: "Cooper", secSettings: "Einstellungen", secAppearance: "Darstellung", secAdmin: "Admin", settings: "Einstellungen",
     theme: "Theme", themeLight: "Hell", themeDark: "Dunkel", language: "Sprache",
     secAccount: "Konto & Daten", verifyEmail: "E-Mail bestätigen", dataExport: "Daten & Export",
     secApp: "App", about: "Über CaskSense", support: "Projekt unterstützen",
@@ -253,7 +253,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
     appInfoVersion: "Version", appInfoTagline: "Ein privates Hobbyprojekt — aus Freude an Whisky und Technik.",
     appInfoStory: "Die ganze Geschichte von CaskSense", appInfoImpressum: "Impressum", appInfoPrivacy: "Datenschutz",
   } : {
-    cooper: "Cooper", cooperStudio: "Cooper-Studio", secSettings: "Settings", settings: "Settings",
+    cooper: "Cooper", cooperStudio: "Cooper-Studio", secCooper: "Cooper", secSettings: "Settings", secAppearance: "Appearance", secAdmin: "Admin", settings: "Settings",
     theme: "Theme", themeLight: "Light", themeDark: "Dark", language: "Language",
     secAccount: "Account & Data", verifyEmail: "Verify Email", dataExport: "Data & Export",
     secApp: "App", about: "About CaskSense", support: "Support the project",
@@ -812,6 +812,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
 
 
       <div style={{ height: 1, background: tv.border, margin: "8px 0" }} />
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: tv.muted, padding: "2px 4px 6px" }}>{L.secCooper}</div>
 
       {isLabs ? (
         <MenuButton theme={tv}
@@ -838,6 +839,9 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         onClick={() => { onClose(); navigate(isLabs ? "/labs/taste/settings" : "/m2/taste/settings"); }}
         testId="m2-profile-settings"
       />
+
+      <div style={{ height: 1, background: tv.border, margin: "8px 0" }} />
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: tv.muted, padding: "2px 4px 6px" }}>{L.secAppearance}</div>
       {isLabs ? (
         <MenuButton theme={tv}
           icon={labsTheme === "dark"
@@ -908,6 +912,8 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
       />
       {session.role === "admin" && (
         <>
+          <div style={{ height: 1, background: tv.border, margin: "8px 0" }} />
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: tv.muted, padding: "2px 4px 6px" }}>{L.secAdmin}</div>
           <MenuButton theme={tv}
             icon={<Shield style={{ width: 18, height: 18, color: tv.accent }} />}
             label={L.admin}
