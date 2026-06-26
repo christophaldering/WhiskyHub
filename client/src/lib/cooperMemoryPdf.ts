@@ -32,7 +32,7 @@ function fmtDate(iso: string | null): string {
   catch { return ""; }
 }
 
-export async function downloadCooperMemoryPdf(memoryText: string, updatedAt: string | null, participantName?: string): Promise<void> {
+async function buildDoc(memoryText: string, updatedAt: string | null, participantName?: string): Promise<jsPDF> {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageW = 210, pageH = 297, mx = 22, contentW = pageW - mx * 2, cx = pageW / 2;
   const bg = () => { doc.setFillColor(...BG); doc.rect(0, 0, pageW, pageH, "F"); };
@@ -75,5 +75,16 @@ export async function downloadCooperMemoryPdf(memoryText: string, updatedAt: str
     doc.text(`${p}`, pageW - mx, pageH - 12, { align: "right" });
   }
 
+  return doc;
+}
+
+export async function downloadCooperMemoryPdf(memoryText: string, updatedAt: string | null, participantName?: string): Promise<void> {
+  const doc = await buildDoc(memoryText, updatedAt, participantName);
   await saveJsPdf(doc, "casksense-sensorisches-gedaechtnis.pdf");
+}
+
+export async function buildCooperMemoryPdfBlobUrl(memoryText: string, updatedAt: string | null, participantName?: string): Promise<string> {
+  const doc = await buildDoc(memoryText, updatedAt, participantName);
+  const blob = doc.output("blob");
+  return URL.createObjectURL(blob);
 }
