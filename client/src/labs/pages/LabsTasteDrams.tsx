@@ -12,6 +12,7 @@ import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import { openDramNotePdf } from "@/labs/utils/dramNotePdf";
 import { openDramNoteHtml } from "@/labs/utils/dramNoteHtml";
 import DramHistoryTimeline from "@/labs/components/DramHistoryTimeline";
+import DramTimeTravel from "@/labs/components/DramTimeTravel";
 import type { JournalEntry } from "@shared/schema";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
 import LabsSortMenu from "@/labs/components/LabsSortMenu";
@@ -33,7 +34,7 @@ import { buildTastingNoteHtml } from "@/labs/utils/tastingNoteHtml";
 
 type OriginFilter = "all" | "solo" | "tasting";
 type StatusFilter = "all" | "open" | "done";
-type ViewState = "list" | "detail" | "edit" | "trash" | "deepRate";
+type ViewState = "list" | "detail" | "edit" | "trash" | "deepRate" | "timetravel";
 type SortBy = "date" | "score" | "name" | "saved";
 type SortDirection = "asc" | "desc";
 
@@ -603,6 +604,15 @@ export default function LabsTasteDrams() {
     if (hasTasteNotes || hasFinishNotes) return false;
     return true;
   };
+
+  if (viewState === "timetravel") {
+    return (
+      <>
+        <MeineWeltActionBar active="collection" />
+        <DramTimeTravel allItems={allItems as any} onBack={() => setViewState("list")} />
+      </>
+    );
+  }
 
   if (viewState === "trash") {
     return (
@@ -1222,6 +1232,12 @@ export default function LabsTasteDrams() {
         <div style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
           <div style={{ minWidth: 0, flex: "1 1 auto" }}>
             <h1 className="labs-h2" style={{ color: "var(--labs-text)", margin: 0 }} data-testid="labs-drams-title">{t("drams.title")}</h1>
+            {allItems.length >= 3 && (
+              <button type="button" onClick={() => setViewState("timetravel")} data-testid="button-labs-timetravel"
+                style={{ marginTop: 8, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 999, background: "var(--labs-accent-muted, rgba(212,168,71,0.12))", color: "var(--labs-accent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 30%, transparent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                <Clock className="w-3.5 h-3.5" /> {i18n.language?.toLowerCase().startsWith("de") ? "Zeitreise" : "Time travel"}
+              </button>
+            )}
             {allItems.length === 0 && (
               <button
                 type="button"
