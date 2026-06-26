@@ -6650,6 +6650,10 @@ Aktualisiere das Ledger EHRLICH anhand des Gesprächs: untouched->touched sobald
       }
 
       const maxScale = tasting.ratingScale || 100;
+      const clampScale = (v: number | null | undefined): number | null => {
+        if (v == null) return null;
+        return Math.max(0, Math.min(v, maxScale));
+      };
       const normalizeDim = (v: number | null | undefined): number | null => {
         if (v == null) return null;
         const clamped = Math.max(0, Math.min(v, maxScale));
@@ -6661,7 +6665,14 @@ Aktualisiere das Ledger EHRLICH anhand des Gesprächs: untouched->touched sobald
       const normalizedTaste = normalizeDim(data.taste);
       const normalizedFinish = normalizeDim(data.finish);
 
-      const rating = await storage.upsertRating({ ...data, normalizedScore, normalizedNose, normalizedTaste, normalizedFinish });
+      const rating = await storage.upsertRating({
+        ...data,
+        nose: clampScale(data.nose),
+        taste: clampScale(data.taste),
+        finish: clampScale(data.finish),
+        overall: clampScale(data.overall),
+        normalizedScore, normalizedNose, normalizedTaste, normalizedFinish,
+      });
       if (process.env.LABS_DEBUG) console.log(`[LABS] Rating submitted: participant=${data.participantId} whisky=${data.whiskyId} overall=${data.overall} normalized=${normalizedScore} tasting=${data.tastingId}`);
       res.json(rating);
       storage.updateParticipantIndices(data.participantId).catch(() => {});
