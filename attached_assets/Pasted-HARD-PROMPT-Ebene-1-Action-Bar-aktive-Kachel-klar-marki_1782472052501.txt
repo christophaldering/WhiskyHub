@@ -1,0 +1,51 @@
+HARD PROMPT — Ebene-1 Action-Bar: aktive Kachel klar markieren (Unterstrich + Tönung + goldenes Icon)
+
+KONTEXT: In client/src/labs/labs-theme.css markiert die aktive Top-Kachel heute nur per goldenem Label; die Tönung wird durch `.labs-action-bar-item--button { background: transparent }` überschrieben. Wir ersetzen den Aktiv-Regelblock: kräftigere Tönung (mit höherer Spezifität, damit --button sie nicht killt), goldener Unterstrich-Balken, und stärkeres goldenes Icon-Feld. Ebene 2/3 unangetastet. Reines CSS, eine Datei.
+
+STEP 0 — DIAGNOSE (nichts ändern bis "go"):
+Bestätige (read-only): In labs-theme.css existiert der Block
+.labs-action-bar-item--active {
+  background: color-mix(in srgb, var(--labs-accent) 10%, var(--labs-surface));
+}
+
+.labs-action-bar-item--active .labs-action-bar-label {
+  color: var(--labs-accent);
+}
+und danach folgt `.labs-action-bar-item--button { background: transparent; ... }`. Melde kurz, dann WARTE auf "go".
+
+STEP 1 — Aktiv-Regelblock ersetzen
+Ersetze EXAKT
+.labs-action-bar-item--active {
+  background: color-mix(in srgb, var(--labs-accent) 10%, var(--labs-surface));
+}
+
+.labs-action-bar-item--active .labs-action-bar-label {
+  color: var(--labs-accent);
+}
+durch
+.labs-action-bar-item--active {
+  background: color-mix(in srgb, var(--labs-accent) 18%, var(--labs-surface));
+  box-shadow: inset 0 -3px 0 var(--labs-accent);
+}
+
+/* Höhere Spezifität, damit --button { background: transparent } die Tönung nicht überschreibt */
+.labs-action-bar-item--button.labs-action-bar-item--active {
+  background: color-mix(in srgb, var(--labs-accent) 18%, var(--labs-surface));
+}
+
+.labs-action-bar-item--active .labs-action-bar-label {
+  color: var(--labs-accent);
+}
+
+.labs-action-bar-item--active .labs-action-bar-icon--accent {
+  background: color-mix(in srgb, var(--labs-accent) 30%, var(--labs-surface));
+}
+
+VERIFIKATION (zeig mir):
+  - grep -c "box-shadow: inset 0 -3px 0 var(--labs-accent)" client/src/labs/labs-theme.css → 1
+  - grep -c "labs-action-bar-item--button.labs-action-bar-item--active" client/src/labs/labs-theme.css → 1
+  - grep -c "var(--labs-accent) 10%, var(--labs-surface)" client/src/labs/labs-theme.css → 0
+  - Aktive Top-Kachel zeigt jetzt: goldener Unterstrich-Balken + sichtbare Tönung + goldenes Label + kräftigeres goldenes Icon-Feld. Ebene 2/3 unverändert.
+
+NICHT TUN: KEIN commit/push, KEIN drizzle/Schema, NUR diese eine CSS-Datei, keine anderen Regeln. Bei nicht-exaktem Match: STOPP und frag.
+Rollback: git reset --hard <letzter Checkpoint>
