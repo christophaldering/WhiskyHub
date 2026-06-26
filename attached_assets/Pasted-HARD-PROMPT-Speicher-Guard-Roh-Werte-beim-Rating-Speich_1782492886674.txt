@@ -1,0 +1,43 @@
+HARD PROMPT — Speicher-Guard: Roh-Werte beim Rating-Speichern auf die Skala clampen
+
+KONTEXT: server/routes.ts, POST /api/ratings (~6633). Die normalized_*-Spalten sind bereits sicher (normalizeDim clampt auf 0–100). ABER die Roh-Spalten (overall/nose/taste/finish) werden via `...data` ungeclampt gespeichert → ein Rohwert über der Skala wäre möglich. Der host-ratings-Pfad macht es bereits richtig mit einem clampScale-Helfer. Wir spiegeln dasselbe Muster in den Hauptpfad. Eine Datei, KEINE Schema/Routen/API-Form-Änderung.
+
+STEP 0 — DIAGNOSE (nichts ändern, dann auf "go" warten):
+Bestätige read-only, dass in POST /api/ratings genau 1× existiert:
+  - die zwei Zeilen `const maxScale = tasting.ratingScale || 100;` direkt gefolgt von `const normalizeDim = (v: number | null | undefined): number | null => {`
+  - die Zeile `const rating = await storage.upsertRating({ ...data, normalizedScore, normalizedNose, normalizedTaste, normalizedFinish });`
+Kurze Meldung, dann STOPP.
+
+STEP 1 — clampScale-Helfer ergänzen
+Ersetze EXAKT:
+      const maxScale = tasting.ratingScale || 100;
+      const normalizeDim = (v: number | null | undefined): number | null => {
+durch:
+      const maxScale = tasting.ratingScale || 100;
+      const clampScale = (v: number | null | undefined): number | null => {
+        if (v == null) return null;
+        return Math.max(0, Math.min(v, maxScale));
+      };
+      const normalizeDim = (v: number | null | undefined): number | null => {
+
+STEP 2 — Roh-Spalten beim Upsert clampen
+Ersetze EXAKT:
+      const rating = await storage.upsertRating({ ...data, normalizedScore, normalizedNose, normalizedTaste, normalizedFinish });
+durch:
+      const rating = await storage.upsertRating({
+        ...data,
+        nose: clampScale(data.nose),
+        taste: clampScale(data.taste),
+        finish: clampScale(data.finish),
+        overall: clampScale(data.overall),
+        normalizedScore, normalizedNose, normalizedTaste, normalizedFinish,
+      });
+
+VERIFIKATION (zeig mir):
+  - grep -c "const clampScale" server/routes.ts                          → 2
+  - grep -c "nose: clampScale(data.nose)" server/routes.ts               → 1
+  - grep -c "...data, normalizedScore, normalizedNose, normalizedTaste, normalizedFinish });" server/routes.ts → 0
+  - Build grün.
+
+VERBOTEN: KEIN git commit/push, KEIN drizzle/Schema, KEINE anderen Endpoints. Nur diese zwei Stellen in POST /api/ratings. Bei nicht-exaktem Match: STOPP und frag. NICHT committen, NICHT pushen.
+Rollback: git reset --hard <Checkpoint vor diesem Lauf>
