@@ -28909,6 +28909,10 @@ Do not invent specific ratings, tasting names or events that are not in the sour
           ? [{ role: "system" as const, content: (locale === "de"
               ? "Was du aus früheren Verkostungen über diesen Taster weißt — stütze dich darauf, aber erfinde nichts darüber hinaus und zitiere es nicht wörtlich:\n"
               : "What you know about this taster from earlier tastings — rely on it, but invent nothing beyond it and don't quote it verbatim:\n") + memText }]
+          : (!memOptIn && memText)
+          ? [{ role: "system" as const, content: (locale === "de"
+              ? "Hinweis: Dieser Nutzer hat ein persönliches Cooper-Gedächtnis (ein Profil aus früheren Verkostungen), aber NICHT für diese Antwort freigegeben. Greife NICHT darauf zurück. Wenn die Frage auf seine eigenen Vorlieben oder sein Profil zielt und der Nutzerkontext nicht ausreicht, antworte mit EINEM freundlichen Satz, dass du auf sein Profil nur zugreifst, wenn er Coopers Gedächtnis im Cooper-Bereich aktiviert — statt einer leeren oder ausweichenden Antwort."
+              : "Note: This user has a personal Cooper memory (a profile from earlier tastings) but has NOT enabled it for this answer. Do NOT draw on it. If the question targets their own preferences or profile and the user context is insufficient, reply with ONE friendly sentence that you only access their profile when they enable Cooper's memory in the Cooper area — instead of an empty or evasive answer.") }]
           : []),
         ...trimmedHistory,
         { role: "user", content: question },
