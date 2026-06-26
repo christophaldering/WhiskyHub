@@ -1,0 +1,52 @@
+HARD PROMPT — Drams-Filter: zweite Status-Leiste → "Offen"-Schalter (Chip-Sprache)
+
+KONTEXT: In client/src/labs/pages/LabsTasteDrams.tsx stehen zwei LabsSegmented-Leisten (Herkunft + Status). Wir ersetzen NUR die zweite (Status) durch einen einzelnen „Offen"-Toggle-Chip im etablierten Stil von LabsFilterChips (44px, Radius 22, aktiv var(--labs-accent)/var(--labs-on-accent), inaktiv var(--labs-surface)). Der Status-State (statusFilter: "all"|"open"|"done") bleibt unverändert; der Toggle setzt nur "open"/"all". Filter-Logik, hasAnyFilter und Reset bleiben unangetastet. Eine Datei, reines Frontend.
+
+STEP 0 — DIAGNOSE (nichts ändern bis "go"):
+Bestätige (read-only): Es gibt die zweite Leiste `<LabsSegmented options={statusOptions} value={statusFilter} onChange={(v) => setStatusFilter(v as StatusFilter)} testIdPrefix="labs-status" style={{ marginBottom: 0 }} />` und die Zeile `const statusOptions = STATUS_KEYS.map(...)`. `STATUS_I18N`, `STATUS_FALLBACK`, `statusCounts` sind im Scope. Melde kurz, dann WARTE auf "go".
+
+STEP 1 — Zweite Leiste durch „Offen"-Schalter ersetzen
+Ersetze EXAKT
+            <LabsSegmented
+              options={statusOptions}
+              value={statusFilter}
+              onChange={(v) => setStatusFilter(v as StatusFilter)}
+              testIdPrefix="labs-status"
+              style={{ marginBottom: 0 }}
+            />
+durch
+            <button
+              type="button"
+              onClick={() => setStatusFilter(statusFilter === "open" ? "all" : "open")}
+              data-testid="labs-status-open-toggle"
+              aria-pressed={statusFilter === "open"}
+              style={{
+                minHeight: 44, padding: "0 16px", borderRadius: 22,
+                border: statusFilter === "open" ? "1.5px solid var(--labs-accent)" : "1px solid var(--labs-border)",
+                cursor: "pointer",
+                background: statusFilter === "open" ? "var(--labs-accent)" : "var(--labs-surface)",
+                color: statusFilter === "open" ? "var(--labs-on-accent)" : "var(--labs-text)",
+                fontSize: 14, fontWeight: statusFilter === "open" ? 600 : 500, fontFamily: "inherit",
+                display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
+              }}
+            >
+              {t(STATUS_I18N.open, STATUS_FALLBACK.open)}
+              {typeof statusCounts.open === "number" && (
+                <span style={{ fontSize: 12, opacity: statusFilter === "open" ? 0.9 : 0.6, fontVariantNumeric: "tabular-nums" }}>
+                  {statusCounts.open}
+                </span>
+              )}
+            </button>
+
+STEP 2 — Ungenutzte statusOptions-Zeile entfernen (Aufräumen)
+Lösche EXAKT die Zeile
+  const statusOptions = STATUS_KEYS.map((sk) => ({ value: sk, label: t(STATUS_I18N[sk], STATUS_FALLBACK[sk]), count: statusCounts[sk] }));
+
+VERIFIKATION (zeig mir):
+  - grep -c "labs-status-open-toggle" client/src/labs/pages/LabsTasteDrams.tsx → 1
+  - grep -c "statusOptions" client/src/labs/pages/LabsTasteDrams.tsx → 0
+  - grep -c "LabsSegmented" client/src/labs/pages/LabsTasteDrams.tsx → 2 (Import + Herkunfts-Leiste)
+  - Build grün. Herkunft bleibt als Leiste; darunter ein einzelner „Offen N"-Chip (gold wenn aktiv), kein doppeltes „Alle" mehr.
+
+NICHT TUN: KEIN commit/push, KEIN drizzle/Schema, NUR diese Datei. statusFilter-Typ/Filter-Logik/hasAnyFilter/Reset NICHT anfassen. Bei nicht-exaktem Match: STOPP und frag.
+Rollback: git reset --hard <letzter Checkpoint>
