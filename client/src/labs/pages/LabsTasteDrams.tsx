@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
 import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
 import { openDramNotePdf } from "@/labs/utils/dramNotePdf";
+import DramHistoryTimeline from "@/labs/components/DramHistoryTimeline";
 import type { JournalEntry } from "@shared/schema";
 import { getStatusConfig } from "@/labs/utils/statusConfig";
 import LabsSortMenu from "@/labs/components/LabsSortMenu";
@@ -957,6 +958,8 @@ export default function LabsTasteDrams() {
             readOnly={selectedEntry.source === "tasting"}
             onSave={(text) => narrativeMutation.mutate({ id: selectedEntry.id, data: { tastingNarrative: text } })}
           />
+
+          <DramHistoryTimeline entry={selectedEntry as any} allItems={allItems as any} />
 
           <FriendsAlsoRated
             pid={session.pid || ""}
