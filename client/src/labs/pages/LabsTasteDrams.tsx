@@ -719,41 +719,6 @@ export default function LabsTasteDrams() {
               <button onClick={() => handleEdit(selectedEntry)} className="labs-btn-secondary flex items-center gap-1.5" style={{ padding: "6px 12px", fontSize: 13 }} data-testid="button-labs-edit-dram">
                 <Pencil className="w-3.5 h-3.5" /> {t("drams.edit")}
               </button>
-              <button onClick={openTastingNote} className="labs-btn-secondary flex items-center gap-1.5" style={{ padding: "6px 12px", fontSize: 13 }} data-testid="button-labs-tasting-note">
-                <FileText className="w-3.5 h-3.5" /> {t("drams.tastingNote", "Notiz")}
-              </button>
-              {selectedEntry.status === "final" && isQuickRating(selectedEntry) && (
-                <button
-                  onClick={() => setViewState("deepRate")}
-                  className="labs-btn-secondary flex items-center gap-1.5"
-                  style={{ padding: "6px 12px", fontSize: 13 }}
-                  data-testid="button-labs-deep-rate-dram"
-                >
-                  <SlidersHorizontal className="w-3.5 h-3.5" /> {t("labs.deepRate.button", "Ausführlich bewerten")}
-                </button>
-              )}
-              {selectedEntry.status === "final" && (
-                <button
-                  onClick={() => {
-                    const retasteData = {
-                      name: selectedEntry.name || selectedEntry.title || "",
-                      distillery: selectedEntry.distillery || "",
-                      country: selectedEntry.country || "",
-                      region: selectedEntry.region || "",
-                      age: selectedEntry.age || "",
-                      abv: selectedEntry.abv || "",
-                      caskType: selectedEntry.caskType || "",
-                    };
-                    sessionStorage.setItem("cs_retaste_context", JSON.stringify(retasteData));
-                    navigate("/labs/solo");
-                  }}
-                  className="labs-btn-secondary flex items-center gap-1.5"
-                  style={{ padding: "6px 12px", fontSize: 13 }}
-                  data-testid="button-labs-retaste-dram"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" /> {t("labs.editOrRetaste.retaste", "Nochmal verkosten")}
-                </button>
-              )}
               <div style={{ position: "relative" }}>
                 <button
                   onClick={() => setDetailMoreMenuOpen(v => !v)}
@@ -785,6 +750,16 @@ export default function LabsTasteDrams() {
                       }}
                       data-testid="menu-labs-more"
                     >
+                      {selectedEntry.status === "final" && isQuickRating(selectedEntry) && (
+                        <button onClick={() => { setDetailMoreMenuOpen(false); setViewState("deepRate"); }} className="flex items-center gap-1.5 w-full" style={{ padding: "8px 12px", fontSize: 13, color: "var(--labs-text)", background: "transparent", border: "none", borderRadius: 6, cursor: "pointer", textAlign: "left" }} data-testid="button-labs-deep-rate-dram">
+                          <SlidersHorizontal className="w-3.5 h-3.5" /> {t("labs.deepRate.button", "Ausführlich bewerten")}
+                        </button>
+                      )}
+                      {selectedEntry.status === "final" && (
+                        <button onClick={() => { setDetailMoreMenuOpen(false); const retasteData = { name: selectedEntry.name || selectedEntry.title || "", distillery: selectedEntry.distillery || "", country: selectedEntry.country || "", region: selectedEntry.region || "", age: selectedEntry.age || "", abv: selectedEntry.abv || "", caskType: selectedEntry.caskType || "" }; sessionStorage.setItem("cs_retaste_context", JSON.stringify(retasteData)); navigate("/labs/solo"); }} className="flex items-center gap-1.5 w-full" style={{ padding: "8px 12px", fontSize: 13, color: "var(--labs-text)", background: "transparent", border: "none", borderRadius: 6, cursor: "pointer", textAlign: "left" }} data-testid="button-labs-retaste-dram">
+                          <RotateCcw className="w-3.5 h-3.5" /> {t("labs.editOrRetaste.retaste", "Nochmal verkosten")}
+                        </button>
+                      )}
                       <button
                         onClick={() => {
                           setDetailMoreMenuOpen(false);
@@ -811,41 +786,6 @@ export default function LabsTasteDrams() {
               </div>
               </>
             )}
-            <div style={{ position: "relative" }}>
-              <button
-                onClick={() => setShareMenuOpen(v => !v)}
-                className="labs-btn-ghost flex items-center justify-center"
-                style={{ padding: "6px 8px", color: "var(--labs-text-muted)" }}
-                aria-label={i18n.language?.toLowerCase().startsWith("de") ? "Teilen" : "Share"}
-                data-testid="button-labs-share-dram"
-              >
-                <Share2 className="w-4 h-4" />
-              </button>
-              {shareMenuOpen && (
-                <>
-                  <div onClick={() => setShareMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 10 }} />
-                  <div style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, zIndex: 11, minWidth: 180, background: "var(--labs-surface-elevated, var(--labs-bg-elevated, var(--labs-bg)))", border: "1px solid var(--labs-border)", borderRadius: 12, boxShadow: "0 12px 32px rgba(0,0,0,0.4)", padding: 6 }} data-testid="menu-labs-share">
-                    <div style={{ padding: "6px 10px 4px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)" }}>{i18n.language?.toLowerCase().startsWith("de") ? "Teilen" : "Share"}</div>
-                    <button
-                      onClick={() => { setShareMenuOpen(false); openDramNotePdf({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, tastingName: (selectedEntry as any).tastingTitle ?? null, tasterName: participantData?.name ?? session.name ?? null, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl: notePhotoDataUrl }); }}
-                      className="w-full text-left flex items-center gap-2"
-                      style={{ fontSize: 13, padding: "8px 10px", borderRadius: 8, color: "var(--labs-text)", background: "transparent", border: "none", cursor: "pointer" }}
-                      data-testid="share-note-pdf"
-                    >
-                      <FileText className="w-3.5 h-3.5" /> {i18n.language?.toLowerCase().startsWith("de") ? "Notiz als PDF" : "Note as PDF"}
-                    </button>
-                    <button
-                      onClick={() => { setShareMenuOpen(false); openDramNoteHtml({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, tastingName: (selectedEntry as any).tastingTitle ?? null, tasterName: participantData?.name ?? session.name ?? null, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl: notePhotoDataUrl }, i18n.language?.toLowerCase().startsWith("de")); }}
-                      className="w-full text-left flex items-center gap-2"
-                      style={{ fontSize: 13, padding: "8px 10px", borderRadius: 8, color: "var(--labs-text)", background: "transparent", border: "none", cursor: "pointer" }}
-                      data-testid="share-note-html"
-                    >
-                      <Globe className="w-3.5 h-3.5" /> {i18n.language?.toLowerCase().startsWith("de") ? "Notiz als Webseite" : "Note as web page"}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
           </div>
         </div>
         {showNextDraftButton && (
@@ -977,6 +917,7 @@ export default function LabsTasteDrams() {
             readOnly={selectedEntry.source === "tasting"}
             onSave={(text) => narrativeMutation.mutate({ id: selectedEntry.id, data: { tastingNarrative: text } })}
             onDownload={() => openDramNotePdf({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, tastingName: (selectedEntry as any).tastingTitle ?? null, tasterName: participantData?.name ?? session.name ?? null, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl: notePhotoDataUrl })}
+            onDownloadHtml={() => openDramNoteHtml({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, tastingName: (selectedEntry as any).tastingTitle ?? null, tasterName: participantData?.name ?? session.name ?? null, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl: notePhotoDataUrl }, i18n.language?.toLowerCase().startsWith("de"))}
           />
 
           <DramHistoryTimeline entry={selectedEntry as any} allItems={allItems as any} />
@@ -1599,9 +1540,10 @@ function MetaBadge({ label, value }: { label: string; value: string }) {
   );
 }
 
-function TastingNarrativeSection({ value, onSave, saving, readOnly, onDownload }: { value?: string | null; onSave: (text: string) => void; saving?: boolean; readOnly?: boolean; onDownload?: () => void }) {
+function TastingNarrativeSection({ value, onSave, saving, readOnly, onDownload, onDownloadHtml }: { value?: string | null; onSave: (text: string) => void; saving?: boolean; readOnly?: boolean; onDownload?: () => void; onDownloadHtml?: () => void }) {
   const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
+  const [dlOpen, setDlOpen] = useState(false);
   const [draft, setDraft] = useState(value || "");
   useEffect(() => { setDraft(value || ""); }, [value]);
   const has = !!(value && value.trim());
@@ -1613,10 +1555,29 @@ function TastingNarrativeSection({ value, onSave, saving, readOnly, onDownload }
           {t("drams.tastingNarrative", "Meine Verkostungsnotiz")}
         </div>
         <div className="flex items-center gap-1">
-          {has && onDownload && (
-            <button onClick={onDownload} style={{ fontSize: 12, color: "var(--labs-text-muted)", background: "transparent", border: "none", cursor: "pointer", padding: "4px 6px" }}>
-              {t("drams.downloadNote", "Herunterladen")}
-            </button>
+          {has && (onDownload || onDownloadHtml) && (
+            <div style={{ position: "relative" }}>
+              <button onClick={() => setDlOpen((v) => !v)} style={{ fontSize: 12, color: "var(--labs-text-muted)", background: "transparent", border: "none", cursor: "pointer", padding: "4px 6px", display: "inline-flex", alignItems: "center", gap: 4 }} data-testid="button-note-download">
+                {t("drams.downloadNote", "Herunterladen")} <ChevronDown style={{ width: 12, height: 12 }} />
+              </button>
+              {dlOpen && (
+                <>
+                  <div onClick={() => setDlOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 10 }} />
+                  <div style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, zIndex: 11, minWidth: 150, background: "var(--labs-surface-elevated, var(--labs-bg-elevated, var(--labs-bg)))", border: "1px solid var(--labs-border)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.25)", padding: 4 }} data-testid="menu-note-download">
+                    {onDownload && (
+                      <button onClick={() => { setDlOpen(false); onDownload(); }} className="w-full text-left flex items-center gap-2" style={{ fontSize: 13, padding: "8px 10px", borderRadius: 6, color: "var(--labs-text)", background: "transparent", border: "none", cursor: "pointer" }} data-testid="note-download-pdf">
+                        <FileText style={{ width: 14, height: 14 }} /> {t("drams.noteAsPdf", "Als PDF")}
+                      </button>
+                    )}
+                    {onDownloadHtml && (
+                      <button onClick={() => { setDlOpen(false); onDownloadHtml(); }} className="w-full text-left flex items-center gap-2" style={{ fontSize: 13, padding: "8px 10px", borderRadius: 6, color: "var(--labs-text)", background: "transparent", border: "none", cursor: "pointer" }} data-testid="note-download-html">
+                        <Globe style={{ width: 14, height: 14 }} /> {t("drams.noteAsWeb", "Als Webseite")}
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           )}
           {!editing && !readOnly && (
             <button onClick={() => { setDraft(value || ""); setEditing(true); }} style={{ fontSize: 12, color: "var(--labs-text-muted)", background: "transparent", border: "none", cursor: "pointer", padding: "4px 6px" }}>
