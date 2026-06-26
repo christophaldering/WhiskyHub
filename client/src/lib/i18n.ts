@@ -5004,8 +5004,8 @@ const resources = {
       myTastePage: {
         title: "My World",
         subtitle: "Your personal whisky collection & insights",
-        tileMyTastings: "My Tastings",
-        tileMyTastingsDesc: "Search & history",
+        tileMyTastings: "Tastings & Drams",
+        tileMyTastingsDesc: "Drams, Sessions & Handouts",
         tileMyCollection: "Collection",
         tileMyCollectionDesc: "Bottles & Wishlist",
         tileYourPalate: "Palate",
@@ -14836,8 +14836,8 @@ const resources = {
       myTastePage: {
         title: "Meine Welt",
         subtitle: "Dein persönliches Whisky-Universum",
-        tileMyTastings: "Meine Tastings",
-        tileMyTastingsDesc: "Suchen & Verlauf",
+        tileMyTastings: "Tastings & Drams",
+        tileMyTastingsDesc: "Drams, Sessions & Handouts",
         tileMyCollection: "Sammlung",
         tileMyCollectionDesc: "Flaschen & Wunschliste",
         tileYourPalate: "Gaumen",
