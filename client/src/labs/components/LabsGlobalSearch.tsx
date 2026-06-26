@@ -1355,6 +1355,21 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
           padding: "8px 16px 32px",
         }}
       >
+        {!hasQuery && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 12, padding: "32px 20px 24px", color: "var(--labs-text-secondary)" }}>
+            <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--labs-accent-muted)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Search style={{ width: 24, height: 24, color: "var(--labs-accent)" }} />
+            </div>
+            <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 22, color: "var(--labs-text)" }}>
+              {isDe ? "Suche" : "Search"}
+            </div>
+            <div style={{ fontSize: 14, lineHeight: 1.5, maxWidth: 380 }}>
+              {isDe
+                ? "Schnell zum Ziel: Finde Whiskys, Seiten und Begriffe und spring direkt zum Eintrag. Für Fragen, Erklärungen und alles über deine eigenen Verkostungen wechsle zu Cooper."
+                : "Straight to the point: find whiskies, pages and terms and jump right to the entry. For questions, explanations and anything about your own tastings, switch to Cooper."}
+            </div>
+          </div>
+        )}
         {!hasQuery && recentSearches.length > 0 && (
           <div style={{ marginBottom: 24, animation: "labsFadeIn 300ms cubic-bezier(0.2, 0.8, 0.4, 1) both" }}>
             <div
