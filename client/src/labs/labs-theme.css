@@ -1654,11 +1654,21 @@ a.labs-dram-item {
 }
 
 .labs-action-bar-item--active {
-  background: color-mix(in srgb, var(--labs-accent) 10%, var(--labs-surface));
+  background: color-mix(in srgb, var(--labs-accent) 18%, var(--labs-surface));
+  box-shadow: inset 0 -3px 0 var(--labs-accent);
+}
+
+/* Höhere Spezifität, damit --button { background: transparent } die Tönung nicht überschreibt */
+.labs-action-bar-item--button.labs-action-bar-item--active {
+  background: color-mix(in srgb, var(--labs-accent) 18%, var(--labs-surface));
 }
 
 .labs-action-bar-item--active .labs-action-bar-label {
   color: var(--labs-accent);
+}
+
+.labs-action-bar-item--active .labs-action-bar-icon--accent {
+  background: color-mix(in srgb, var(--labs-accent) 30%, var(--labs-surface));
 }
 
 .labs-action-bar-item--button {
