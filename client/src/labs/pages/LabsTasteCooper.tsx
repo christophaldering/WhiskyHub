@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, Sparkles, Mic, MessageSquare, Wand2 } from "lucide-react";
-import { participantApi, participantUpdateApi } from "@/lib/api";
+import { participantApi, participantUpdateApi, pidHeaders } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
@@ -20,6 +20,50 @@ export default function LabsTasteCooper() {
   const { toast } = useToast();
   const goBack = useBackNavigation("/labs/taste/profile");
   const pid = currentParticipant?.id;
+
+  const [memText, setMemText] = useState<string | null>(null);
+  const [memUpdatedAt, setMemUpdatedAt] = useState<string | null>(null);
+  const [memEnabled, setMemEnabled] = useState(false);
+  const [memBusy, setMemBusy] = useState(false);
+  useEffect(() => {
+    if (!pid) return;
+    (async () => {
+      try {
+        const res = await fetch("/api/cooper/memory", { headers: { ...pidHeaders() } });
+        if (!res.ok) return;
+        const data = await res.json();
+        setMemText(data?.memory ?? null);
+        setMemUpdatedAt(data?.updatedAt ?? null);
+        setMemEnabled(data?.enabled === true);
+      } catch {}
+    })();
+  }, [pid]);
+  const memStale = !!memUpdatedAt && Date.now() - new Date(memUpdatedAt).getTime() > 30 * 86400000;
+  const toggleMemEnabled = async () => {
+    const next = !memEnabled;
+    setMemEnabled(next);
+    try { await participantUpdateApi.update(pid!, { cooperMemoryEnabled: next } as any); }
+    catch { setMemEnabled(!next); toast({ description: "Konnte Einstellung nicht speichern.", variant: "destructive" }); }
+  };
+  const regenMem = async () => {
+    setMemBusy(true);
+    try {
+      const res = await fetch("/api/cooper/memory/generate", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() } });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Fehler");
+      setMemText(data?.memory ?? null); setMemUpdatedAt(data?.updatedAt ?? null);
+    } catch (e: any) { toast({ description: e?.message || "Konnte nicht verdichten.", variant: "destructive" }); }
+    finally { setMemBusy(false); }
+  };
+  const deleteMem = async () => {
+    setMemBusy(true);
+    try {
+      const res = await fetch("/api/cooper/memory", { method: "DELETE", headers: { ...pidHeaders() } });
+      if (!res.ok) throw new Error();
+      setMemText(null); setMemUpdatedAt(null);
+    } catch { toast({ description: "Konnte nicht löschen.", variant: "destructive" }); }
+    finally { setMemBusy(false); }
+  };
 
   const { data: participant, isLoading } = useQuery({
     queryKey: ["participant", pid],
@@ -197,6 +241,36 @@ export default function LabsTasteCooper() {
             </button>
           );
         })}
+      </div>
+
+      <div className="labs-card p-5 flex flex-col gap-3">
+        <p className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Was Cooper über dich weiß</p>
+        <p className="text-xs" style={{ color: "var(--labs-text-muted)", lineHeight: 1.5 }}>
+          Ein Porträt aus deinen bisherigen Verkostungen. Cooper greift im Nachgang (Fragen &amp; Entdecken) darauf zurück — nie im Moment am Glas.
+        </p>
+        <button onClick={toggleMemEnabled} data-testid="cooper-memory-optin"
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, width: "100%", padding: "14px 16px", borderRadius: 12, cursor: "pointer", background: memEnabled ? "var(--labs-gold-soft, rgba(212,168,71,0.12))" : "var(--labs-surface)", border: memEnabled ? "2px solid var(--labs-gold, #D4A847)" : "1px solid var(--labs-border)" }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: memEnabled ? "var(--labs-gold, #D4A847)" : "var(--labs-text)" }}>Cooper darf sich erinnern</span>
+          <span style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>{memEnabled ? "An" : "Aus"}</span>
+        </button>
+        <div data-testid="cooper-memory-text" style={{ background: "var(--labs-surface)", border: "1px solid var(--labs-border)", borderRadius: 12, padding: 14, fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-wrap", color: memText ? "var(--labs-text)" : "var(--labs-text-muted)" }}>
+          {memText || "Noch nicht erzeugt."}
+        </div>
+        {memUpdatedAt && (
+          <p className="text-xs" style={{ color: memStale ? "var(--labs-gold, #D4A847)" : "var(--labs-text-muted)" }}>
+            {memStale ? "Vielleicht veraltet — " : "Zuletzt verdichtet: "}{new Date(memUpdatedAt).toLocaleDateString("de-DE")}{memStale ? ". Neu verdichten?" : ""}
+          </p>
+        )}
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={regenMem} disabled={memBusy} data-testid="cooper-memory-generate"
+            style={{ flex: 1, minHeight: 44, borderRadius: 12, cursor: memBusy ? "default" : "pointer", background: "var(--labs-gold, #D4A847)", color: "#0B0906", fontSize: 14, fontWeight: 600, border: "none", opacity: memBusy ? 0.5 : 1 }}>
+            {memText ? "Aktualisieren" : "Erzeugen"}
+          </button>
+          <button onClick={deleteMem} disabled={memBusy || !memText} data-testid="cooper-memory-delete"
+            style={{ flex: 1, minHeight: 44, borderRadius: 12, cursor: (memBusy || !memText) ? "default" : "pointer", background: "transparent", color: "var(--labs-text-muted)", fontSize: 14, border: "1px solid var(--labs-border)", opacity: (memBusy || !memText) ? 0.5 : 1 }}>
+            Löschen
+          </button>
+        </div>
       </div>
     </div>
   );
