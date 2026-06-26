@@ -24286,14 +24286,14 @@ Rules:
         if (!ci.name) continue;
         if (ci.name.toLowerCase().trim() === whiskyName && (ci.distillery || "").toLowerCase().trim() === whiskyDistillery) {
           if (ci.personalRating != null && ci.personalRating > 0) {
-            crossOverallScores.push(ci.personalRating);
+            crossOverallScores.push(clampNormalized(ci.personalRating));
           }
         }
       }
 
       if (journalEntry) {
         if (journalEntry.personalScore != null && journalEntry.personalScore > 0) {
-          crossOverallScores.push(journalEntry.personalScore);
+          crossOverallScores.push(clampNormalized(journalEntry.personalScore));
         }
       }
 
@@ -24304,11 +24304,11 @@ Rules:
           const hName = (he.whiskyNameRaw || he.distilleryRaw || "").toLowerCase().trim();
           const hDist = (he.distilleryRaw || "").toLowerCase().trim();
           if (hName === whiskyName && hDist === whiskyDistillery) {
-            if (he.normalizedTotal != null) crossOverallScores.push(he.normalizedTotal);
-            else if (he.totalScore != null) crossOverallScores.push(he.totalScore * 10);
-            if (he.normalizedNose != null) crossNoseScores.push(he.normalizedNose);
-            if (he.normalizedTaste != null) crossTasteScores.push(he.normalizedTaste);
-            if (he.normalizedFinish != null) crossFinishScores.push(he.normalizedFinish);
+            if (he.normalizedTotal != null) crossOverallScores.push(clampNormalized(he.normalizedTotal));
+            else if (he.totalScore != null) crossOverallScores.push(clampNormalized(he.totalScore * 10));
+            if (he.normalizedNose != null) crossNoseScores.push(clampNormalized(he.normalizedNose));
+            if (he.normalizedTaste != null) crossTasteScores.push(clampNormalized(he.normalizedTaste));
+            if (he.normalizedFinish != null) crossFinishScores.push(clampNormalized(he.normalizedFinish));
           }
         }
       } catch (histErr) {
