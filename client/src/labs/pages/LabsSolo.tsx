@@ -507,7 +507,7 @@ export default function LabsSolo() {
         try {
           const imgFormData = new FormData();
           imgFormData.append("image", imgToUpload);
-          await fetch(`/api/journal/${participantId}/${entryId}/image`, { method: "POST", body: imgFormData });
+          await fetch(`/api/journal/${participantId}/${entryId}/image`, { method: "POST", headers: { "x-participant-id": participantId }, body: imgFormData });
         } catch {}
         setSoloImageFile(null);
         pendingImageRef.current = null;
@@ -574,7 +574,7 @@ export default function LabsSolo() {
           try {
             const imgFormData = new FormData();
             imgFormData.append("image", soloImageFile);
-            await fetch(`/api/journal/${participantId}/${entry.id}/image`, { method: "POST", body: imgFormData });
+            await fetch(`/api/journal/${participantId}/${entry.id}/image`, { method: "POST", headers: { "x-participant-id": participantId }, body: imgFormData });
           } catch {}
           setSoloImageFile(null);
         }
@@ -645,7 +645,7 @@ export default function LabsSolo() {
           if (entry?.id) {
             const imgFormData = new FormData();
             imgFormData.append("image", imgToUpload);
-            await fetch(`/api/journal/${participantId}/${entry.id}/image`, { method: "POST", body: imgFormData });
+            await fetch(`/api/journal/${participantId}/${entry.id}/image`, { method: "POST", headers: { "x-participant-id": participantId }, body: imgFormData });
           }
         } catch {}
         setSoloImageFile(null);
