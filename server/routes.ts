@@ -24365,7 +24365,12 @@ Rules:
           country: histEntry.normalizedCountry || histEntry.countryRaw || null,
           category: histEntry.normalizedType || histEntry.typeRaw || null,
           age: histEntry.ageRaw || null,
-          abv: histEntry.alcoholRaw || null,
+          abv: (() => {
+            const raw = String(histEntry.alcoholRaw ?? "").replace(",", ".");
+            const m = raw.match(/[0-9]+(\.[0-9]+)?/);
+            const v = m ? parseFloat(m[0]) : NaN;
+            return Number.isFinite(v) && v >= 20 && v <= 96 ? v : null;
+          })(),
           caskType: histEntry.normalizedCask || histEntry.caskRaw || null,
           imageUrl: null,
           source: "historical",
