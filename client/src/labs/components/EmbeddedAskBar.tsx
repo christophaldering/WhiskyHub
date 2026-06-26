@@ -303,7 +303,7 @@ export default function EmbeddedAskBar({ tastingId, tastingTitle, isParticipant,
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: "var(--labs-text)" }}>
-            {isDe ? "Frag CaskSense zu diesem Tasting" : "Ask CaskSense about this tasting"}
+            {isDe ? "Frag Cooper zu diesem Tasting" : "Ask Cooper about this tasting"}
           </div>
           <div style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>
             {tastingTitle

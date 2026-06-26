@@ -8,6 +8,7 @@ import {
   GraduationCap, Calendar, History, Activity, Info, Gift, Shield, Lock,
   ArrowRight, MessageCircle, Loader2, Check, Minus,
 } from "lucide-react";
+import CooperBarrel from "@/labs/components/rating/CooperBarrel";
 import { triggerHaptic } from "@/labs/hooks/useHaptic";
 import StatsChartCard, { type StatsToolPayload } from "./StatsChartCard";
 
@@ -829,7 +830,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={mode === "ask"
-                ? (isDe ? "Frag CaskSense..." : "Ask CaskSense...")
+                ? (isDe ? "Frag Cooper …" : "Ask Cooper …")
                 : t("search.placeholder", isDe ? "Whiskys, Seiten, Begriffe suchen..." : "Search whiskies, pages, terms...")}
               autoComplete="off"
               autoCorrect="off"
@@ -969,8 +970,8 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
               fontFamily: "inherit",
             }}
           >
-            <Sparkles style={{ width: 14, height: 14 }} />
-            {isDe ? "Frag CaskSense" : "Ask CaskSense"}
+            <CooperBarrel size={14} mono />
+            Cooper
           </button>
         </div>
       </div>
@@ -1017,10 +1018,15 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
                   justifyContent: "center",
                 }}
               >
-                <Sparkles style={{ width: 26, height: 26, color: "var(--labs-accent)" }} />
+                <CooperBarrel size={26} />
               </div>
               <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 22, color: "var(--labs-text)" }}>
-                {isDe ? "Frag CaskSense" : "Ask CaskSense"}
+                Cooper
+              </div>
+              <div style={{ fontFamily: "'EB Garamond', serif", fontStyle: "italic", fontSize: 15, lineHeight: 1.5, color: "var(--labs-text-secondary)", maxWidth: 380 }}>
+                {isDe
+                  ? "Hier weiß ich, was ich über Whisky und über dich weiß. Am Glas halte ich mich bewusst raus — dort gehört der erste Eindruck dir."
+                  : "Here I draw on what I know about whisky and about you. At the glass I deliberately stay out — there, the first impression is yours."}
               </div>
               <div style={{ fontSize: 14, lineHeight: 1.5, maxWidth: 380 }}>
                 {isDe
