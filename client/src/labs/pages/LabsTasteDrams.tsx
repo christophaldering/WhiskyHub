@@ -379,7 +379,6 @@ export default function LabsTasteDrams() {
   }, [journal, tastingWhiskies, originFilter, statusFilter, search, sortBy, sortDirection]);
 
   const originOptions = ORIGIN_KEYS.map((fk) => ({ value: fk, label: t(ORIGIN_I18N[fk]), count: originCounts[fk] }));
-  const statusOptions = STATUS_KEYS.map((sk) => ({ value: sk, label: t(STATUS_I18N[sk], STATUS_FALLBACK[sk]), count: statusCounts[sk] }));
 
   const dramsSortOptions = [
     { value: "saved", label: t("sortModes.savedRecent", "Zuletzt gespeichert") },
@@ -1254,13 +1253,28 @@ export default function LabsTasteDrams() {
               testIdPrefix="labs-origin"
               style={{ marginBottom: 8 }}
             />
-            <LabsSegmented
-              options={statusOptions}
-              value={statusFilter}
-              onChange={(v) => setStatusFilter(v as StatusFilter)}
-              testIdPrefix="labs-status"
-              style={{ marginBottom: 0 }}
-            />
+            <button
+              type="button"
+              onClick={() => setStatusFilter(statusFilter === "open" ? "all" : "open")}
+              data-testid="labs-status-open-toggle"
+              aria-pressed={statusFilter === "open"}
+              style={{
+                minHeight: 44, padding: "0 16px", borderRadius: 22,
+                border: statusFilter === "open" ? "1.5px solid var(--labs-accent)" : "1px solid var(--labs-border)",
+                cursor: "pointer",
+                background: statusFilter === "open" ? "var(--labs-accent)" : "var(--labs-surface)",
+                color: statusFilter === "open" ? "var(--labs-on-accent)" : "var(--labs-text)",
+                fontSize: 14, fontWeight: statusFilter === "open" ? 600 : 500, fontFamily: "inherit",
+                display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
+              }}
+            >
+              {t(STATUS_I18N.open, STATUS_FALLBACK.open)}
+              {typeof statusCounts.open === "number" && (
+                <span style={{ fontSize: 12, opacity: statusFilter === "open" ? 0.9 : 0.6, fontVariantNumeric: "tabular-nums" }}>
+                  {statusCounts.open}
+                </span>
+              )}
+            </button>
           </div>
 
           <div style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--labs-bg, #0e0b05)", padding: "8px 0", borderBottom: "1px solid var(--labs-border)", maxWidth: "100%", boxSizing: "border-box" }}>
