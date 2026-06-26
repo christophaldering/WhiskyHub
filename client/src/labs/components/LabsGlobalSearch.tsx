@@ -1092,7 +1092,7 @@ export default function LabsGlobalSearch({ open, onClose }: LabsGlobalSearchProp
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "var(--labs-text-secondary)", textTransform: "uppercase", letterSpacing: 0.4 }}>
                     <Minus style={{ width: 14, height: 14 }} />
-                    {isDe ? "Geht (noch) nicht" : "Not (yet) supported"}
+                    {isDe ? "Nicht Coopers Feld" : "Not Cooper's domain"}
                   </div>
                   <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.55, color: "var(--labs-text-secondary)" }}>
                     {(isDe
