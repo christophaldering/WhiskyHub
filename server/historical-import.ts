@@ -96,6 +96,19 @@ function cellToString(val: any): string | null {
   return String(val).trim() || null;
 }
 
+// ABV-Zelle normalisieren: Excel-Prozentzellen liegen als Bruch vor (0.505 = 50,5 %).
+// Werte zwischen 0 und 1 werden mit 100 skaliert; alles andere bleibt unveraendert.
+function normalizeAbvCell(val: any): string | null {
+  const s = cellToString(val);
+  if (s == null) return null;
+  const m = s.replace(",", ".").match(/[0-9]+(\.[0-9]+)?/);
+  if (!m) return s;
+  let v = parseFloat(m[0]);
+  if (!Number.isFinite(v)) return s;
+  if (v > 0 && v < 1) v = v * 100;
+  return String(parseFloat(v.toFixed(2)));
+}
+
 function cellToNumber(val: any): number | null {
   if (val == null) return null;
   if (typeof val === "object" && "result" in val) val = val.result;
@@ -248,7 +261,7 @@ async function parseExcelFile(filePath: string): Promise<{
       distillery: cellToString(getVal("distillery")),
       whiskyName: cellToString(getVal("whiskyName")),
       age: cellToString(getVal("age")),
-      alcohol: cellToString(getVal("alcohol")),
+      alcohol: normalizeAbvCell(getVal("alcohol")),
       price: cellToString(getVal("price")),
       country: cellToString(getVal("country")),
       region: cellToString(getVal("region")),
