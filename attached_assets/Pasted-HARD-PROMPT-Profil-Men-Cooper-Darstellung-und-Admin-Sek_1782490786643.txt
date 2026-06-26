@@ -1,0 +1,86 @@
+HARD PROMPT — Profil-Menü: Cooper-, Darstellung- und Admin-Sektion abtrennen
+
+KONTEXT: client/src/components/ProfileMenu.tsx, Haupt-Menü (eingeloggt). Cooper bekommt eine eigene Überschrift, Theme+Sprache wandern aus "Einstellungen" in einen neuen Block "Darstellung", Admin bekommt eine eigene Sektion unten. Nur Sektions-Header + Labels, KEINE Items verschoben außer durch die neuen Header, KEINE Logik/Routen/Schema.
+
+STEP 0 — DIAGNOSE (nichts ändern, dann auf "go" warten):
+Bestätige read-only, dass es je genau 1× gibt:
+  - `secSettings: "Einstellungen", settings: "Einstellungen",`
+  - `secSettings: "Settings", settings: "Settings",`
+  - `label={L.cooper}`
+  - `testId="m2-profile-settings"`
+  - `{session.role === "admin" && (` gefolgt von `label={L.admin}`
+Kurze Meldung, dann STOPP.
+
+STEP 1 — Labels DE
+Ersetze EXAKT:
+    cooper: "Cooper", cooperStudio: "Cooper-Studio", secSettings: "Einstellungen", settings: "Einstellungen",
+durch:
+    cooper: "Cooper", cooperStudio: "Cooper-Studio", secCooper: "Cooper", secSettings: "Einstellungen", secAppearance: "Darstellung", secAdmin: "Admin", settings: "Einstellungen",
+
+STEP 2 — Labels EN
+Ersetze EXAKT:
+    cooper: "Cooper", cooperStudio: "Cooper-Studio", secSettings: "Settings", settings: "Settings",
+durch:
+    cooper: "Cooper", cooperStudio: "Cooper-Studio", secCooper: "Cooper", secSettings: "Settings", secAppearance: "Appearance", secAdmin: "Admin", settings: "Settings",
+
+STEP 3 — COOPER-Überschrift einfügen
+Ersetze EXAKT:
+      <div style={{ height: 1, background: tv.border, margin: "8px 0" }} />
+
+      {isLabs ? (
+        <MenuButton theme={tv}
+          icon={<Sparkles style={{ width: 18, height: 18, color: tv.accent }} />}
+          label={L.cooper}
+durch:
+      <div style={{ height: 1, background: tv.border, margin: "8px 0" }} />
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: tv.muted, padding: "2px 4px 6px" }}>{L.secCooper}</div>
+
+      {isLabs ? (
+        <MenuButton theme={tv}
+          icon={<Sparkles style={{ width: 18, height: 18, color: tv.accent }} />}
+          label={L.cooper}
+
+STEP 4 — DARSTELLUNG-Block zwischen Settings und Theme
+Ersetze EXAKT:
+        testId="m2-profile-settings"
+      />
+      {isLabs ? (
+        <MenuButton theme={tv}
+          icon={labsTheme === "dark"
+durch:
+        testId="m2-profile-settings"
+      />
+
+      <div style={{ height: 1, background: tv.border, margin: "8px 0" }} />
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: tv.muted, padding: "2px 4px 6px" }}>{L.secAppearance}</div>
+      {isLabs ? (
+        <MenuButton theme={tv}
+          icon={labsTheme === "dark"
+
+STEP 5 — ADMIN-Sektion abtrennen
+Ersetze EXAKT:
+      {session.role === "admin" && (
+        <>
+          <MenuButton theme={tv}
+            icon={<Shield style={{ width: 18, height: 18, color: tv.accent }} />}
+            label={L.admin}
+durch:
+      {session.role === "admin" && (
+        <>
+          <div style={{ height: 1, background: tv.border, margin: "8px 0" }} />
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: tv.muted, padding: "2px 4px 6px" }}>{L.secAdmin}</div>
+          <MenuButton theme={tv}
+            icon={<Shield style={{ width: 18, height: 18, color: tv.accent }} />}
+            label={L.admin}
+
+VERIFIKATION (zeig mir):
+  - grep -c "secCooper:" client/src/components/ProfileMenu.tsx      → 2
+  - grep -c "secAppearance:" client/src/components/ProfileMenu.tsx  → 2
+  - grep -c "secAdmin:" client/src/components/ProfileMenu.tsx       → 2
+  - grep -c "{L.secCooper}" client/src/components/ProfileMenu.tsx   → 1
+  - grep -c "{L.secAppearance}" client/src/components/ProfileMenu.tsx → 1
+  - grep -c "{L.secAdmin}" client/src/components/ProfileMenu.tsx    → 1
+  - Build grün. Menü zeigt COOPER / EINSTELLUNGEN / DARSTELLUNG / KONTO & DATEN / APP / ADMIN.
+
+VERBOTEN: KEIN git commit/push, KEIN drizzle/Schema, KEINE Item-/Routen-Änderung. Nur diese fünf Stellen in ProfileMenu.tsx. Bei nicht-exaktem Match: STOPP und frag. Nochmal: NICHT committen, NICHT pushen.
+Rollback: git reset --hard <Checkpoint vor diesem Lauf>
