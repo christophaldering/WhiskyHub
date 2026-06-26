@@ -23970,7 +23970,7 @@ Rules:
         ageBand?: string | null; abvBand?: string | null;
         price?: number | null; wbScore?: number | null; distilledYear?: string | null;
       }, scores: number[], noseScores: number[], tasteScores: number[], finishScores: number[], isTasting: boolean) => {
-        const avg = (arr: number[]) => arr.length > 0 ? parseFloat((arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1)) : null;
+        const avg = (arr: number[]) => arr.length > 0 ? parseFloat(Math.max(0, Math.min(100, arr.reduce((a, b) => a + b, 0) / arr.length)).toFixed(1)) : null;
         const existing = whiskyMap.get(key);
         if (existing) {
           existing._allScores.push(...scores);
@@ -24032,10 +24032,14 @@ Rules:
       for (const w of allWhiskies) {
         const key = `${(w.name || "").toLowerCase()}::${(w.distillery || "").toLowerCase()}`;
         const whiskyRatings = allRatingsData.filter(r => r.whiskyId === w.id);
-        const overallScores = whiskyRatings.map(r => r.overall).filter((v): v is number => v != null && v > 0);
-        const noseScores = whiskyRatings.map(r => r.nose).filter((v): v is number => v != null && v > 0);
-        const tasteScores = whiskyRatings.map(r => r.taste).filter((v): v is number => v != null && v > 0);
-        const finishScores = whiskyRatings.map(r => r.finish).filter((v): v is number => v != null && v > 0);
+        const normScore = (raw: any, normalized: any): number | null => {
+          const v = normalized != null ? Number(normalized) : (raw != null ? Number(raw) : null);
+          return v != null && !Number.isNaN(v) ? Math.max(0, Math.min(100, v)) : null;
+        };
+        const overallScores = whiskyRatings.map(r => normScore((r as any).overall, (r as any).normalizedScore)).filter((v): v is number => v != null && v > 0);
+        const noseScores = whiskyRatings.map(r => normScore((r as any).nose, (r as any).normalizedNose)).filter((v): v is number => v != null && v > 0);
+        const tasteScores = whiskyRatings.map(r => normScore((r as any).taste, (r as any).normalizedTaste)).filter((v): v is number => v != null && v > 0);
+        const finishScores = whiskyRatings.map(r => normScore((r as any).finish, (r as any).normalizedFinish)).filter((v): v is number => v != null && v > 0);
         mergeIntoMap(key, {
           id: w.id, name: w.name || "", distillery: w.distillery, region: w.region,
           country: w.country, category: w.category, age: w.age, abv: w.abv != null ? String(w.abv) : null,
