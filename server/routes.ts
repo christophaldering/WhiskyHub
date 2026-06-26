@@ -29127,7 +29127,8 @@ Do not invent specific ratings, tasting names or events that are not in the sour
             latestPayloadByName.set(p.name, p);
           }
           const dedupedToolPayloads = Array.from(latestPayloadByName.values());
-          res.write(`data: ${JSON.stringify({ done: true, sources: finalSources, knowledgeMode: resolvedMode, toolPayloads: dedupedToolPayloads })}\n\n`);
+          const sourcesForClient = resolvedMode === "general" ? [] : finalSources;
+          res.write(`data: ${JSON.stringify({ done: true, sources: sourcesForClient, knowledgeMode: resolvedMode, toolPayloads: dedupedToolPayloads })}\n\n`);
           res.end();
         }
       } catch (aiErr: unknown) {
