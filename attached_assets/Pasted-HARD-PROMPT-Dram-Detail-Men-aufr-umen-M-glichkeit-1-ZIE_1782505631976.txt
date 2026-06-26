@@ -1,0 +1,200 @@
+HARD PROMPT — Dram-Detail-Menü aufräumen (Möglichkeit 1)
+
+ZIEL: In der Dram-Detail-Ansicht die verstreuten Bedien-Elemente konsolidieren.
+- Obere Zeile: nur noch "Bearbeiten" (Dram-Daten) + ein ⋯-Menü
+  (Ausführlich bewerten · Nochmal verkosten · Löschen).
+- Notiz-Aktionen wandern AN die Verkostungsnotiz: dort "Bearbeiten" + "Herunterladen ⌄"
+  (Als PDF · Als Webseite).
+- ENTFERNT: der obere "Notiz"-Knopf, das separate Teilen-Icon (Share), die doppelte
+  PDF-Funktion.
+Nur EINE Datei: client/src/labs/pages/LabsTasteDrams.tsx. KEIN Schema, KEIN drizzle,
+KEINE Migration. (noUnusedLocals ist aus — etwaige tote Reste brechen den Build nicht.)
+
+ROLLBACK-TAG ZUERST:
+  git tag pre-dramdetail-menu-2026-06-26
+
+STEP 0 — DIAGNOSE (nur lesen). Bestätige per Ausgabe:
+  a) Obere Aktionszeile (~719-757): Buttons "Bearbeiten" (button-labs-edit-dram),
+     "Notiz" (button-labs-tasting-note), "Ausführlich bewerten" (button-labs-deep-rate-dram),
+     "Nochmal verkosten" (button-labs-retaste-dram).
+  b) ⋯-Menü (menu-labs-more, ~788) enthält aktuell NUR Löschen.
+  c) Share-Block (button-labs-share-dram, ~814-887) mit PDF/HTML.
+  d) TastingNarrativeSection (~1602): Prop onDownload, Button "Herunterladen" + "Bearbeiten".
+  Zeig a–d + PLAN, dann STOPP und warte auf mein "OK".
+
+NACH MEINEM OK — genau diese Edits:
+
+== EDIT A: Drei Standalone-Knöpfe entfernen (Notiz + Ausführlich + Nochmal) ==
+SUCHE (exakt) und ersetze durch LEERSTRING:
+              <button onClick={openTastingNote} className="labs-btn-secondary flex items-center gap-1.5" style={{ padding: "6px 12px", fontSize: 13 }} data-testid="button-labs-tasting-note">
+                <FileText className="w-3.5 h-3.5" /> {t("drams.tastingNote", "Notiz")}
+              </button>
+              {selectedEntry.status === "final" && isQuickRating(selectedEntry) && (
+                <button
+                  onClick={() => setViewState("deepRate")}
+                  className="labs-btn-secondary flex items-center gap-1.5"
+                  style={{ padding: "6px 12px", fontSize: 13 }}
+                  data-testid="button-labs-deep-rate-dram"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5" /> {t("labs.deepRate.button", "Ausführlich bewerten")}
+                </button>
+              )}
+              {selectedEntry.status === "final" && (
+                <button
+                  onClick={() => {
+                    const retasteData = {
+                      name: selectedEntry.name || selectedEntry.title || "",
+                      distillery: selectedEntry.distillery || "",
+                      country: selectedEntry.country || "",
+                      region: selectedEntry.region || "",
+                      age: selectedEntry.age || "",
+                      abv: selectedEntry.abv || "",
+                      caskType: selectedEntry.caskType || "",
+                    };
+                    sessionStorage.setItem("cs_retaste_context", JSON.stringify(retasteData));
+                    navigate("/labs/solo");
+                  }}
+                  className="labs-btn-secondary flex items-center gap-1.5"
+                  style={{ padding: "6px 12px", fontSize: 13 }}
+                  data-testid="button-labs-retaste-dram"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" /> {t("labs.editOrRetaste.retaste", "Nochmal verkosten")}
+                </button>
+              )}
+
+== EDIT B: ⋯-Menü erweitern (Ausführlich + Nochmal VOR Löschen einfügen) ==
+SUCHE (exakt):
+                      data-testid="menu-labs-more"
+                    >
+                      <button
+                        onClick={() => {
+                          setDetailMoreMenuOpen(false);
+                          setDeleteTarget(selectedEntry);
+                        }}
+ERSETZE:
+                      data-testid="menu-labs-more"
+                    >
+                      {selectedEntry.status === "final" && isQuickRating(selectedEntry) && (
+                        <button onClick={() => { setDetailMoreMenuOpen(false); setViewState("deepRate"); }} className="flex items-center gap-1.5 w-full" style={{ padding: "8px 12px", fontSize: 13, color: "var(--labs-text)", background: "transparent", border: "none", borderRadius: 6, cursor: "pointer", textAlign: "left" }} data-testid="button-labs-deep-rate-dram">
+                          <SlidersHorizontal className="w-3.5 h-3.5" /> {t("labs.deepRate.button", "Ausführlich bewerten")}
+                        </button>
+                      )}
+                      {selectedEntry.status === "final" && (
+                        <button onClick={() => { setDetailMoreMenuOpen(false); const retasteData = { name: selectedEntry.name || selectedEntry.title || "", distillery: selectedEntry.distillery || "", country: selectedEntry.country || "", region: selectedEntry.region || "", age: selectedEntry.age || "", abv: selectedEntry.abv || "", caskType: selectedEntry.caskType || "" }; sessionStorage.setItem("cs_retaste_context", JSON.stringify(retasteData)); navigate("/labs/solo"); }} className="flex items-center gap-1.5 w-full" style={{ padding: "8px 12px", fontSize: 13, color: "var(--labs-text)", background: "transparent", border: "none", borderRadius: 6, cursor: "pointer", textAlign: "left" }} data-testid="button-labs-retaste-dram">
+                          <RotateCcw className="w-3.5 h-3.5" /> {t("labs.editOrRetaste.retaste", "Nochmal verkosten")}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          setDetailMoreMenuOpen(false);
+                          setDeleteTarget(selectedEntry);
+                        }}
+
+== EDIT C: Share-Block ENTFERNEN ==
+SUCHE (exakt) und ersetze durch LEERSTRING:
+            <div style={{ position: "relative" }}>
+              <button
+                onClick={() => setShareMenuOpen(v => !v)}
+                className="labs-btn-ghost flex items-center justify-center"
+                style={{ padding: "6px 8px", color: "var(--labs-text-muted)" }}
+                aria-label={i18n.language?.toLowerCase().startsWith("de") ? "Teilen" : "Share"}
+                data-testid="button-labs-share-dram"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+              {shareMenuOpen && (
+                <>
+                  <div onClick={() => setShareMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 10 }} />
+                  <div style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, zIndex: 11, minWidth: 180, background: "var(--labs-surface-elevated, var(--labs-bg-elevated, var(--labs-bg)))", border: "1px solid var(--labs-border)", borderRadius: 12, boxShadow: "0 12px 32px rgba(0,0,0,0.4)", padding: 6 }} data-testid="menu-labs-share">
+                    <div style={{ padding: "6px 10px 4px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--labs-text-muted)" }}>{i18n.language?.toLowerCase().startsWith("de") ? "Teilen" : "Share"}</div>
+                    <button
+                      onClick={() => { setShareMenuOpen(false); openDramNotePdf({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, tastingName: (selectedEntry as any).tastingTitle ?? null, tasterName: participantData?.name ?? session.name ?? null, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl: notePhotoDataUrl }); }}
+                      className="w-full text-left flex items-center gap-2"
+                      style={{ fontSize: 13, padding: "8px 10px", borderRadius: 8, color: "var(--labs-text)", background: "transparent", border: "none", cursor: "pointer" }}
+                      data-testid="share-note-pdf"
+                    >
+                      <FileText className="w-3.5 h-3.5" /> {i18n.language?.toLowerCase().startsWith("de") ? "Notiz als PDF" : "Note as PDF"}
+                    </button>
+                    <button
+                      onClick={() => { setShareMenuOpen(false); openDramNoteHtml({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, tastingName: (selectedEntry as any).tastingTitle ?? null, tasterName: participantData?.name ?? session.name ?? null, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl: notePhotoDataUrl }, i18n.language?.toLowerCase().startsWith("de")); }}
+                      className="w-full text-left flex items-center gap-2"
+                      style={{ fontSize: 13, padding: "8px 10px", borderRadius: 8, color: "var(--labs-text)", background: "transparent", border: "none", cursor: "pointer" }}
+                      data-testid="share-note-html"
+                    >
+                      <Globe className="w-3.5 h-3.5" /> {i18n.language?.toLowerCase().startsWith("de") ? "Notiz als Webseite" : "Note as web page"}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
+== EDIT D: TastingNarrativeSection — Prop onDownloadHtml ergänzen ==
+SUCHE (exakt):
+function TastingNarrativeSection({ value, onSave, saving, readOnly, onDownload }: { value?: string | null; onSave: (text: string) => void; saving?: boolean; readOnly?: boolean; onDownload?: () => void }) {
+ERSETZE:
+function TastingNarrativeSection({ value, onSave, saving, readOnly, onDownload, onDownloadHtml }: { value?: string | null; onSave: (text: string) => void; saving?: boolean; readOnly?: boolean; onDownload?: () => void; onDownloadHtml?: () => void }) {
+
+== EDIT E: dlOpen-State ergänzen ==
+SUCHE (exakt):
+  const { t } = useTranslation();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value || "");
+ERSETZE:
+  const { t } = useTranslation();
+  const [editing, setEditing] = useState(false);
+  const [dlOpen, setDlOpen] = useState(false);
+  const [draft, setDraft] = useState(value || "");
+
+== EDIT F: Download-Knopf → Dropdown (PDF + Webseite) ==
+SUCHE (exakt):
+          {has && onDownload && (
+            <button onClick={onDownload} style={{ fontSize: 12, color: "var(--labs-text-muted)", background: "transparent", border: "none", cursor: "pointer", padding: "4px 6px" }}>
+              {t("drams.downloadNote", "Herunterladen")}
+            </button>
+          )}
+ERSETZE:
+          {has && (onDownload || onDownloadHtml) && (
+            <div style={{ position: "relative" }}>
+              <button onClick={() => setDlOpen((v) => !v)} style={{ fontSize: 12, color: "var(--labs-text-muted)", background: "transparent", border: "none", cursor: "pointer", padding: "4px 6px", display: "inline-flex", alignItems: "center", gap: 4 }} data-testid="button-note-download">
+                {t("drams.downloadNote", "Herunterladen")} <ChevronDown style={{ width: 12, height: 12 }} />
+              </button>
+              {dlOpen && (
+                <>
+                  <div onClick={() => setDlOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 10 }} />
+                  <div style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, zIndex: 11, minWidth: 150, background: "var(--labs-surface-elevated, var(--labs-bg-elevated, var(--labs-bg)))", border: "1px solid var(--labs-border)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.25)", padding: 4 }} data-testid="menu-note-download">
+                    {onDownload && (
+                      <button onClick={() => { setDlOpen(false); onDownload(); }} className="w-full text-left flex items-center gap-2" style={{ fontSize: 13, padding: "8px 10px", borderRadius: 6, color: "var(--labs-text)", background: "transparent", border: "none", cursor: "pointer" }} data-testid="note-download-pdf">
+                        <FileText style={{ width: 14, height: 14 }} /> {t("drams.noteAsPdf", "Als PDF")}
+                      </button>
+                    )}
+                    {onDownloadHtml && (
+                      <button onClick={() => { setDlOpen(false); onDownloadHtml(); }} className="w-full text-left flex items-center gap-2" style={{ fontSize: 13, padding: "8px 10px", borderRadius: 6, color: "var(--labs-text)", background: "transparent", border: "none", cursor: "pointer" }} data-testid="note-download-html">
+                        <Globe style={{ width: 14, height: 14 }} /> {t("drams.noteAsWeb", "Als Webseite")}
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+== EDIT G: Aufrufstelle — onDownloadHtml mitgeben ==
+SUCHE (exakt):
+            onDownload={() => openDramNotePdf({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, tastingName: (selectedEntry as any).tastingTitle ?? null, tasterName: participantData?.name ?? session.name ?? null, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl: notePhotoDataUrl })}
+          />
+ERSETZE:
+            onDownload={() => openDramNotePdf({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, tastingName: (selectedEntry as any).tastingTitle ?? null, tasterName: participantData?.name ?? session.name ?? null, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl: notePhotoDataUrl })}
+            onDownloadHtml={() => openDramNoteHtml({ whiskyName: (selectedEntry as any).name ?? (selectedEntry as any).title ?? "", dateISO: (selectedEntry as any).createdAt, tastingName: (selectedEntry as any).tastingTitle ?? null, tasterName: participantData?.name ?? session.name ?? null, narrative: (selectedEntry as any).tastingNarrative ?? "", scores: { nose: (selectedEntry as any).noseScore, palate: (selectedEntry as any).tasteScore, finish: (selectedEntry as any).finishScore, overall: (selectedEntry as any).personalScore }, photoDataUrl: notePhotoDataUrl }, i18n.language?.toLowerCase().startsWith("de"))}
+          />
+
+VERIFIKATION (nur Ausgabe, NICHT committen/pushen):
+  grep -c "button-labs-tasting-note" client/src/labs/pages/LabsTasteDrams.tsx   # 0
+  grep -c "button-labs-share-dram" client/src/labs/pages/LabsTasteDrams.tsx     # 0
+  grep -c "button-labs-deep-rate-dram" client/src/labs/pages/LabsTasteDrams.tsx # 1
+  grep -c "button-labs-retaste-dram" client/src/labs/pages/LabsTasteDrams.tsx   # 1
+  grep -c "menu-note-download" client/src/labs/pages/LabsTasteDrams.tsx         # 1
+  grep -c "onDownloadHtml" client/src/labs/pages/LabsTasteDrams.tsx             # >= 4
+  Danach: tsc/Build-Check, dass die Datei fehlerfrei kompiliert.
+
+COMMIT-VERBOT (nochmal): NICHT git add, NICHT git commit, NICHT git push, NICHT drizzle,
+KEINE Schema-Änderung. Nur die Datei ändern + Verifikations-Ausgabe zeigen. Push mache ich selbst.
