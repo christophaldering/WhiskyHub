@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, Sparkles, Mic, MessageSquare, Wand2 } from "lucide-react";
 import { participantApi, participantUpdateApi, pidHeaders } from "@/lib/api";
-import { downloadCooperMemoryPdf, buildCooperMemoryPdfBlobUrl } from "@/lib/cooperMemoryPdf";
 import { downloadBlob } from "@/lib/download";
 import { useAppStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
@@ -47,18 +46,6 @@ export default function LabsTasteCooper() {
     if (!memText) return;
     try { await downloadBlob(new Blob([memText], { type: "text/plain;charset=utf-8" }), "casksense-sensorisches-gedaechtnis.txt"); }
     catch { toast({ description: "Download fehlgeschlagen.", variant: "destructive" }); }
-  };
-  const downloadMemPdf = async () => {
-    if (!memText) return;
-    try { await downloadCooperMemoryPdf(memText, memUpdatedAt, (participant as any)?.name); }
-    catch { toast({ description: "PDF konnte nicht erstellt werden.", variant: "destructive" }); }
-  };
-  const previewMemPdf = () => {
-    if (!memText) return;
-    const w = window.open("", "_blank");
-    buildCooperMemoryPdfBlobUrl(memText, memUpdatedAt, (participant as any)?.name)
-      .then((url) => { if (w) { w.location.href = url; } else { void downloadMemPdf(); } })
-      .catch(() => { try { w?.close(); } catch {} void downloadMemPdf(); });
   };
   const toggleMemEnabled = async () => {
     const next = !memEnabled;
@@ -310,10 +297,6 @@ export default function LabsTasteCooper() {
             <button onClick={downloadMemTxt} data-testid="cooper-memory-download-txt"
               style={{ flex: 1, minHeight: 40, borderRadius: 10, cursor: "pointer", background: "transparent", color: "var(--labs-text)", fontSize: 13, border: "1px solid var(--labs-border)" }}>
               Als Text
-            </button>
-            <button onClick={previewMemPdf} data-testid="cooper-memory-preview-pdf"
-              style={{ flex: 1, minHeight: 40, borderRadius: 10, cursor: "pointer", background: "transparent", color: "var(--labs-text)", fontSize: 13, border: "1px solid var(--labs-border)" }}>
-              PDF ansehen
             </button>
           </div>
         )}
