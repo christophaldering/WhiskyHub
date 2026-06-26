@@ -1,0 +1,51 @@
+HARD PROMPT — Import-Fix: ABV beim Historie-Import normalisieren (Bruch → Prozent)
+
+KONTEXT: server/historical-import.ts liest die Alkohol-Zelle via cellToString. Excel speichert Prozent-Zellen als Bruch (50,5 % → 0.505), der so roh nach alcohol_raw geschrieben wird (Ursache der 382 korrigierten Werte). Wir fügen einen Helfer hinzu, der einen Wert zwischen 0 und 1 mit 100 multipliziert, und nutzen ihn für die Alkohol-Spalte. EINE Datei, KEIN Schema/Migration, KEINE anderen Felder.
+
+STEP 0 — DIAGNOSE (nichts ändern, dann auf "go" warten):
+Bestätige read-only, dass es genau 1× gibt:
+  - die Funktion `function cellToString(val: any): string | null {`
+  - die Zeile `      alcohol: cellToString(getVal("alcohol")),`
+Kurze Meldung, dann STOPP.
+
+STEP 1 — Helfer hinzufügen
+Ersetze EXAKT:
+function cellToString(val: any): string | null {
+  if (val == null) return null;
+  if (typeof val === "object" && "result" in val) return String(val.result);
+  return String(val).trim() || null;
+}
+durch:
+function cellToString(val: any): string | null {
+  if (val == null) return null;
+  if (typeof val === "object" && "result" in val) return String(val.result);
+  return String(val).trim() || null;
+}
+
+// ABV-Zelle normalisieren: Excel-Prozentzellen liegen als Bruch vor (0.505 = 50,5 %).
+// Werte zwischen 0 und 1 werden mit 100 skaliert; alles andere bleibt unveraendert.
+function normalizeAbvCell(val: any): string | null {
+  const s = cellToString(val);
+  if (s == null) return null;
+  const m = s.replace(",", ".").match(/[0-9]+(\.[0-9]+)?/);
+  if (!m) return s;
+  let v = parseFloat(m[0]);
+  if (!Number.isFinite(v)) return s;
+  if (v > 0 && v < 1) v = v * 100;
+  return String(parseFloat(v.toFixed(2)));
+}
+
+STEP 2 — Alkohol-Spalte umstellen
+Ersetze EXAKT:
+      alcohol: cellToString(getVal("alcohol")),
+durch:
+      alcohol: normalizeAbvCell(getVal("alcohol")),
+
+VERIFIKATION (zeig mir die Ausgaben):
+  - grep -c "function normalizeAbvCell" server/historical-import.ts                  → 1
+  - grep -c "alcohol: normalizeAbvCell(getVal(\"alcohol\"))" server/historical-import.ts → 1
+  - grep -c "alcohol: cellToString(getVal(\"alcohol\"))" server/historical-import.ts  → 0
+  - Build grün.
+
+VERBOTEN: KEIN git commit/push, KEIN drizzle/Schema/Migration, KEINE weiteren Felder/Dateien. Nur diese zwei Stellen in server/historical-import.ts. Bei nicht-exaktem Match: STOPP und frag. Nochmal: NICHT committen, NICHT pushen.
+Rollback: git reset --hard <Checkpoint vor diesem Lauf>
