@@ -716,9 +716,6 @@ export default function LabsTasteDrams() {
           <div className="flex gap-2 items-center">
             {isSoloEntry(selectedEntry) && (
               <>
-              <button onClick={() => handleEdit(selectedEntry)} className="labs-btn-secondary flex items-center gap-1.5" style={{ padding: "6px 12px", fontSize: 13 }} data-testid="button-labs-edit-dram">
-                <Pencil className="w-3.5 h-3.5" /> {t("drams.edit")}
-              </button>
               <div style={{ position: "relative" }}>
                 <button
                   onClick={() => setDetailMoreMenuOpen(v => !v)}
@@ -750,6 +747,9 @@ export default function LabsTasteDrams() {
                       }}
                       data-testid="menu-labs-more"
                     >
+                      <button onClick={() => { setDetailMoreMenuOpen(false); handleEdit(selectedEntry); }} className="flex items-center gap-1.5 w-full" style={{ padding: "8px 12px", fontSize: 13, color: "var(--labs-text)", background: "transparent", border: "none", borderRadius: 6, cursor: "pointer", textAlign: "left" }} data-testid="button-labs-edit-dram">
+                        <Pencil className="w-3.5 h-3.5" /> {t("drams.editData", "Daten bearbeiten")}
+                      </button>
                       {selectedEntry.status === "final" && isQuickRating(selectedEntry) && (
                         <button onClick={() => { setDetailMoreMenuOpen(false); setViewState("deepRate"); }} className="flex items-center gap-1.5 w-full" style={{ padding: "8px 12px", fontSize: 13, color: "var(--labs-text)", background: "transparent", border: "none", borderRadius: 6, cursor: "pointer", textAlign: "left" }} data-testid="button-labs-deep-rate-dram">
                           <SlidersHorizontal className="w-3.5 h-3.5" /> {t("labs.deepRate.button", "Ausführlich bewerten")}
