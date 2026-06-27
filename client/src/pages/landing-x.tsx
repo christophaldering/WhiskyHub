@@ -325,10 +325,10 @@ function HeroSection() {
       </FadeUp>
       <FadeUp delay={0.5}>
         <div style={{ display: "flex", gap: 14, alignItems: "center", justifyContent: "center", flexWrap: "wrap", marginBottom: 16, position: "relative", zIndex: 2 }}>
-          <Link href="/labs/onboarding" data-testid="cta-hero-solo" style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "16px 36px", background: ACCENT, color: v.bg, fontFamily: font.body, fontSize: 15, fontWeight: 600, borderRadius: 50, textDecoration: "none", boxShadow: `0 4px 24px ${ACCENT}30, 0 1px 3px rgba(0,0,0,0.2)`, letterSpacing: "0.01em" }}>
+          <Link href="/labs/tastings?tab=solo" data-testid="cta-hero-solo" style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "16px 36px", background: ACCENT, color: v.bg, fontFamily: font.body, fontSize: 15, fontWeight: 600, borderRadius: 50, textDecoration: "none", boxShadow: `0 4px 24px ${ACCENT}30, 0 1px 3px rgba(0,0,0,0.2)`, letterSpacing: "0.01em" }}>
             <Wine style={{ width: 17, height: 17 }} />{tx("Solo verkosten", "Taste solo")}
           </Link>
-          <Link href="/labs/join" data-testid="cta-hero-join" style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "16px 36px", background: `${ACCENT}10`, color: v.text, fontFamily: font.body, fontSize: 15, fontWeight: 600, borderRadius: 50, border: `1.5px solid ${ACCENT}55`, textDecoration: "none", letterSpacing: "0.01em" }}>
+          <Link href="/labs/tastings?tab=join" data-testid="cta-hero-join" style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "16px 36px", background: `${ACCENT}10`, color: v.text, fontFamily: font.body, fontSize: 15, fontWeight: 600, borderRadius: 50, border: `1.5px solid ${ACCENT}55`, textDecoration: "none", letterSpacing: "0.01em" }}>
             <Users style={{ width: 17, height: 17, color: ACCENT }} />{tx("Einem Tasting beitreten", "Join a tasting")}
           </Link>
         </div>
@@ -508,10 +508,10 @@ function StanceSection() {
         </FadeUp>
         <FadeUp delay={0.2}>
           <div style={{ display: "flex", gap: 14, alignItems: "center", justifyContent: "center", flexWrap: "wrap" }}>
-            <Link href="/labs/onboarding" data-testid="cta-footer-solo" style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "15px 34px", background: ACCENT, color: v.bg, fontFamily: font.body, fontSize: 15, fontWeight: 600, borderRadius: 50, textDecoration: "none", boxShadow: `0 4px 24px ${ACCENT}30, 0 1px 3px rgba(0,0,0,0.2)`, letterSpacing: "0.01em" }}>
+            <Link href="/labs/tastings?tab=solo" data-testid="cta-footer-solo" style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "15px 34px", background: ACCENT, color: v.bg, fontFamily: font.body, fontSize: 15, fontWeight: 600, borderRadius: 50, textDecoration: "none", boxShadow: `0 4px 24px ${ACCENT}30, 0 1px 3px rgba(0,0,0,0.2)`, letterSpacing: "0.01em" }}>
               <Wine style={{ width: 17, height: 17 }} />{tx("Solo verkosten", "Taste solo")}
             </Link>
-            <Link href="/labs/join" data-testid="cta-footer-join" style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "15px 34px", background: `${ACCENT}10`, color: v.text, fontFamily: font.body, fontSize: 15, fontWeight: 600, borderRadius: 50, border: `1.5px solid ${ACCENT}55`, textDecoration: "none", letterSpacing: "0.01em" }}>
+            <Link href="/labs/tastings?tab=join" data-testid="cta-footer-join" style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "15px 34px", background: `${ACCENT}10`, color: v.text, fontFamily: font.body, fontSize: 15, fontWeight: 600, borderRadius: 50, border: `1.5px solid ${ACCENT}55`, textDecoration: "none", letterSpacing: "0.01em" }}>
               <Users style={{ width: 17, height: 17, color: ACCENT }} />{tx("Einem Tasting beitreten", "Join a tasting")}
             </Link>
           </div>
