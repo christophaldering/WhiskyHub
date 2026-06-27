@@ -2914,15 +2914,22 @@ const resources = {
         supportIntro: "100% of your donation goes directly to the Christina-Kleintjes-Hospiz-Stiftung via PayPal Giving Fund — no fees, no detours.",
         blocks: [
           { heading: "How CaskSense came to be", lines: [] },
-          { lines: ["As a psychologist, I've spent years studying perception, judgments, and decision-making processes. I'm fascinated by how differently people experience the same situation — and how much context, expectation, and experience shape our judgments."] },
-          { lines: ["At whisky tastings with friends, it became clear: this is exactly what's happening — only more immediately. Two people drink the same dram and describe different worlds. A label changes the experience. Blindness creates surprise. Consensus emerges — or doesn't."] },
+          { lines: ["As a German Diplom-Psychologe specialising in management diagnostics and the assessment of top executives, I've spent over 35 years studying perception, judgment, and decision-making. I'm fascinated by how differently people experience the same situation — and how much context, expectation, and experience shape our judgments."] },
+          { lines: ["At whisky tastings with friends, it became clear: this is exactly what happens — only more immediately. Two people, the same dram, two different worlds. And in the comparison you see where we meet and where we don't — that's the fascinating part."] },
           { lines: ["What I know from diagnostics — inter-rater agreement, scale usage, individual differences — was suddenly no longer in studies, but in the room. With laughter, discussion, and a glass in hand."] },
           { lines: ["CaskSense is an attempt to capture that moment.", "Not as a measurement instrument for personality.", "But as a reflection instrument for perception."], italic: true },
-          { lines: ["The platform captures ratings in a structured way, uses robust statistical methods like median comparisons and measures of dispersion, and makes patterns visible — always transparent, always without ranking logic, always without pigeonholes. No types, no labels. Only dimensions and tendencies."] },
+          { lines: ["The platform captures ratings in a structured way, uses robust statistics rather than gut feeling — median comparisons, measures of dispersion — and makes patterns visible. Always transparent, always without pigeonholes. Scores describe the dram and your impression, never the person. No types, no labels. Only dimensions and tendencies."] },
+          { heading: "Cask, Sense, Cooper — the name says it all", lines: [] },
+          { lines: ["The name is no coincidence."] },
+          { lines: ["Cask is the barrel — and much of what you later taste is born in the cask: colour, sweetness, spice, depth. Tracing that is the real cask-sensory work."] },
+          { lines: ["Sense means both: the sense you perceive with — and the sense that emerges when you put what you perceive into words."] },
+          { lines: ["And Cooper? A cooper is the barrel-maker — he builds the cask but doesn't fill it. He shapes the vessel in which something can mature."], italic: true },
+          { lines: ["That's exactly how Cooper is meant as a companion: he never tells you what you taste. He builds, with you, the vessel for your own perception — and your impression matures inside it. The maturing stays with you."] },
           { lines: ["I'm not interested in who is \"right\".", "I'm interested in how differently we experience — and what can be discovered in the process."], italic: true },
           { lines: ["CaskSense was born from curiosity, not from a business model. From the joy of building something that connects two passions: understanding people and enjoying whisky."] },
+          { lines: ["And it's deliberately still in the making. Much already works, some is still being refined — and what you experience in real tastings helps shape the direction. That's exactly what this phase is for."] },
           { lines: ["Perhaps in the end it's quite simple:", "A space where perception becomes visible."] },
-          { lines: ["And a good dram to go with it."], italic: true }
+          { lines: ["Where tasting becomes reflection.", "And a good dram to go with it."], italic: true }
         ]
       },
       whisky: {
@@ -12746,15 +12753,22 @@ const resources = {
         supportIntro: "100 % deiner Spende fließen über den PayPal Giving Fund direkt an die Christina-Kleintjes-Hospiz-Stiftung — keine Gebühren, keine Umwege.",
         blocks: [
           { heading: "Wie CaskSense entstanden ist", lines: [] },
-          { lines: ["Als Psychologe beschäftige ich mich seit Jahren mit Wahrnehmung, Urteilen und Entscheidungsprozessen. Mich interessiert, wie unterschiedlich Menschen dieselbe Situation erleben – und wie sehr Kontext, Erwartung und Erfahrung unser Urteil formen."] },
-          { lines: ["Bei Whisky-Tastings mit Freunden wurde mir klar: Hier zeigt sich genau das – nur unmittelbarer. Zwei Menschen trinken denselben Dram und beschreiben unterschiedliche Welten. Ein Etikett verändert das Erlebnis. Blindheit schafft Überraschung. Konsens entsteht – oder auch nicht."] },
+          { lines: ["Als Diplom-Psychologe mit Schwerpunkt Management-Diagnostik und der Beurteilung von Top-Executives beschäftige ich mich seit über 35 Jahren mit Wahrnehmung, Urteilen und Entscheidungsprozessen. Mich interessiert, wie unterschiedlich Menschen dieselbe Situation erleben – und wie sehr Kontext, Erwartung und Erfahrung unser Urteil formen."] },
+          { lines: ["Bei Whisky-Tastings mit Freunden wurde mir klar: Hier zeigt sich genau das – nur unmittelbarer. Zwei Menschen, derselbe Dram, zwei verschiedene Welten. Und im Vergleich wird sichtbar, wo wir uns treffen und wo nicht – genau das ist der spannende Teil."] },
           { lines: ["Was ich aus der Diagnostik kenne – Beurteilerübereinstimmung, Skalennutzung, individuelle Unterschiede – stand plötzlich nicht mehr in Studien, sondern im Raum. Mit Lachen, Diskussion und einem Glas in der Hand."] },
           { lines: ["CaskSense ist der Versuch, diesen Moment festzuhalten.", "Nicht als Messinstrument für Persönlichkeit.", "Sondern als Reflexionsinstrument für Wahrnehmung."], italic: true },
-          { lines: ["Die Plattform erfasst Bewertungen strukturiert, nutzt robuste statistische Verfahren wie Medianvergleiche und Streuungsmaße und macht Muster sichtbar – immer transparent, immer ohne Ranglogik, immer ohne Schubladen. Keine Typen, keine Etiketten. Nur Dimensionen und Tendenzen."] },
-          { lines: ["Mich interessiert nicht, wer \u201Erecht\u201C hat.", "Mich interessiert, wie unterschiedlich wir erleben – und was sich dabei erkennen lässt."], italic: true },
+          { lines: ["Die Plattform erfasst Bewertungen strukturiert, nutzt robuste Statistik statt Bauchgefühl – Medianvergleiche, Streuungsmaße – und macht Muster sichtbar. Immer transparent, immer ohne Schubladen. Punkte beschreiben den Dram und deinen Eindruck, nie den Menschen. Keine Typen, keine Etiketten. Nur Dimensionen und Tendenzen."] },
+          { heading: "Cask, Sense, Cooper – der Name ist Programm", lines: [] },
+          { lines: ["Der Name ist kein Zufall."] },
+          { lines: ["Cask ist das Fass – und im Fass entsteht ein großer Teil dessen, was du später schmeckst: Farbe, Süße, Würze, Tiefe. Dem nachzuspüren, ist die eigentliche Fass-Sensorik."] },
+          { lines: ["Sense meint beides: den Sinn, mit dem du wahrnimmst – und den Sinn, der entsteht, wenn du das Wahrgenommene in Worte fasst."] },
+          { lines: ["Und Cooper? Ein Cooper ist der Böttcher – er baut das Fass, aber füllt es nicht. Er formt das Gefäß, in dem etwas reifen kann."], italic: true },
+          { lines: ["Genau so ist Cooper als Begleiter gedacht: Er sagt dir nie, was du schmeckst. Er baut mit dir das Gefäß für deine eigene Wahrnehmung – und darin reift dein Eindruck. Die Reifung bleibt bei dir."] },
+          { lines: ["Mich interessiert nicht, wer „recht“ hat.", "Mich interessiert, wie unterschiedlich wir erleben – und was sich dabei erkennen lässt."], italic: true },
           { lines: ["CaskSense ist aus Neugier entstanden, nicht aus einem Geschäftsmodell. Aus der Freude, etwas zu bauen, das zwei Leidenschaften verbindet: Menschen verstehen und Whisky genießen."] },
+          { lines: ["Und es ist bewusst noch im Werden. Vieles funktioniert schon, manches wird noch geschärft – und was du in echten Tastings erlebst, formt die Richtung mit. Genau dafür ist diese Phase da."] },
           { lines: ["Vielleicht ist es am Ende ganz einfach:", "Ein Raum, in dem Wahrnehmung sichtbar wird."] },
-          { lines: ["Und ein guter Dram dazu."], italic: true }
+          { lines: ["Where tasting becomes reflection.", "Und ein guter Dram dazu."], italic: true }
         ]
       },
       whisky: {
