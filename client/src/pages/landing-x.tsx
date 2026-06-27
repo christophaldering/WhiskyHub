@@ -7,6 +7,9 @@ import { v } from "@/lib/themeVars";
 import { useAppStore } from "@/lib/store";
 import { getSession } from "@/lib/session";
 import heroImage from "@/assets/images/hero-whisky.png";
+import arc1 from "@/assets/images/arc-1-erleben.png";
+import arc2 from "@/assets/images/arc-2-vergleich.png";
+import arc3 from "@/assets/images/arc-3-muster.png";
 
 const ACCENT = "#C9A961";
 const ACCENT_DIM = "#8E7640";
@@ -1123,18 +1126,21 @@ function ArcSection() {
   const steps = [
     {
       num: "01",
+      img: arc1,
       eyebrow: "Erleben wird Benennen",
       title: "Aus einem Schluck werden Worte.",
       body: "Cooper sitzt mit dir am Glas — allein oder in der Runde — und hilft dir, deinen flüchtigen Eindruck in eigene Worte zu fassen. Nichts wird vorgegeben, alles geschärft. Das Benennen vertieft das Erleben.",
     },
     {
       num: "02",
+      img: arc2,
       eyebrow: "Benennen wird Vergleichen",
       title: "Aus Worten wird Vergleich.",
       body: "Genau diese Worte machen Vergleich erst möglich — in drei Kreisen, die nach außen wachsen: du über die Zeit, deine Runde am Tisch und die ganze Community.",
     },
     {
       num: "03",
+      img: arc3,
       eyebrow: "Vergleichen wird Erkennen",
       title: "Aus Vergleich werden Muster.",
       body: "Aus tausenden Eindrücken wächst eine Datenbank — und mit ihr Muster: wie dein Gaumen tickt, und welche Whiskys sich ähneln oder unterscheiden. Leise im Hintergrund, ernsthaft gemeint.",
@@ -1143,7 +1149,7 @@ function ArcSection() {
 
   return (
     <section style={{ padding: "96px 24px" }} data-testid="section-arc">
-      <div style={{ ...container, maxWidth: 720 }}>
+      <div style={{ ...container, maxWidth: 920 }}>
         <FadeUp>
           <p
             style={{
@@ -1159,34 +1165,54 @@ function ArcSection() {
             }}
             data-testid="arc-thesis"
           >
-            Jeder Schluck ist ein flüchtiger Eindruck. CaskSense verwandelt ihn in Worte, und aus Worten werden Vergleich und Erkenntnis: über die Zeit, in der Runde, in der ganzen Community.          </p>
+            Ein guter Whisky verdient mehr als »lecker«. CaskSense hilft dir, den flüchtigen
+            Moment am Glas in eigene Worte zu fassen — und macht aus diesen Worten Vergleich
+            und Muster: für dich, deine Runde und eine wachsende Community.
+          </p>
         </FadeUp>
         {steps.map((s, i) => (
           <FadeUp key={i} delay={i * 0.1}>
             <div
               style={{
-                display: "flex",
-                gap: 24,
-                alignItems: "flex-start",
-                paddingBottom: i < steps.length - 1 ? 56 : 0,
-                marginBottom: i < steps.length - 1 ? 56 : 0,
+                display: "grid",
+                gap: 40,
+                alignItems: "center",
+                gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+                paddingBottom: i < steps.length - 1 ? 64 : 0,
+                marginBottom: i < steps.length - 1 ? 64 : 0,
                 borderBottom: i < steps.length - 1 ? `1px solid ${v.border}` : "none",
               }}
             >
-              <span
+              <img
+                src={s.img}
+                alt=""
                 style={{
-                  fontFamily: font.display,
-                  fontSize: "clamp(28px, 5vw, 44px)",
-                  fontWeight: 400,
-                  color: `${ACCENT}55`,
-                  lineHeight: 1,
-                  flexShrink: 0,
-                  width: 56,
+                  width: "100%",
+                  height: "auto",
+                  display: "block",
+                  borderRadius: 18,
+                  aspectRatio: "1 / 1",
+                  objectFit: "cover",
+                  maskImage:
+                    "radial-gradient(ellipse 88% 88% at 50% 50%, black 66%, transparent 100%)",
+                  WebkitMaskImage:
+                    "radial-gradient(ellipse 88% 88% at 50% 50%, black 66%, transparent 100%)",
                 }}
-              >
-                {s.num}
-              </span>
+              />
               <div>
+                <span
+                  style={{
+                    fontFamily: font.display,
+                    fontSize: "clamp(30px, 5vw, 46px)",
+                    fontWeight: 400,
+                    color: `${ACCENT}40`,
+                    lineHeight: 1,
+                    display: "block",
+                    marginBottom: 16,
+                  }}
+                >
+                  {s.num}
+                </span>
                 <p
                   style={{
                     fontFamily: font.body,
