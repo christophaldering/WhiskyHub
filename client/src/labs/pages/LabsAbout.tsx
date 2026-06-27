@@ -63,18 +63,18 @@ export default function LabsAbout() {
         .cs-about .ab-badge{width:38px;height:38px;border-radius:50%;background:var(--labs-accent-muted);border:1px solid rgba(201,167,108,0.3);display:flex;align-items:center;justify-content:center;color:var(--labs-accent);flex-shrink:0;}
         .cs-about .ab-h2{font-family:${FD};font-size:21px;font-weight:600;color:var(--labs-accent);margin:0;line-height:1.25;}
         .cs-about .ab-pull{margin:22px 0;padding:18px 20px 18px 22px;border-left:3px solid var(--labs-accent);background:linear-gradient(90deg,var(--labs-accent-glow),transparent);border-radius:0 12px 12px 0;}
-        .cs-about .ab-pull p{font-family:${FM};font-style:italic;font-size:20px;line-height:1.45;color:#ecdcbb;margin:0;}
+        .cs-about .ab-pull p{font-family:${FM};font-style:italic;font-size:20px;line-height:1.45;color:var(--labs-text);margin:0;}
         .cs-about .ab-pull p + p{margin-top:4px;}
         .cs-about .ab-tri-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:18px 0 6px;}
-        .cs-about .ab-tri{background:var(--labs-card,#241f1a);border:1px solid var(--labs-border);border-radius:14px;padding:16px 8px;text-align:center;}
+        .cs-about .ab-tri{background:var(--labs-surface);border:1px solid var(--labs-border);border-radius:14px;padding:16px 8px;text-align:center;}
         .cs-about .ab-tri-ring{width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(201,167,108,0.4);display:flex;align-items:center;justify-content:center;color:var(--labs-accent);margin:0 auto 9px;}
         .cs-about .ab-tri-w{font-family:${FD};font-size:15px;font-weight:600;color:var(--labs-text);}
         .cs-about .ab-tri-g{font-family:${FU};font-size:10.5px;color:var(--labs-text-muted);margin-top:3px;}
-        .cs-about .ab-cooper{margin:18px 0;background:var(--labs-card,#241f1a);border:1px solid var(--labs-border);border-radius:16px;padding:18px;}
+        .cs-about .ab-cooper{margin:18px 0;background:var(--labs-surface);border:1px solid var(--labs-border);border-radius:16px;padding:18px;}
         .cs-about .ab-coopline{display:flex;gap:11px;align-items:flex-start;}
         .cs-about .ab-coopdot{width:30px;height:30px;border-radius:50%;background:var(--labs-accent-muted);border:1px solid rgba(201,167,108,0.4);display:flex;align-items:center;justify-content:center;color:var(--labs-accent);flex-shrink:0;}
         .cs-about .ab-coopname{font-family:${FU};font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--labs-accent);opacity:0.85;margin-bottom:3px;}
-        .cs-about .ab-coopq{font-family:${FM};font-style:italic;font-size:18px;line-height:1.4;color:#ecdcbb;}
+        .cs-about .ab-coopq{font-family:${FM};font-style:italic;font-size:18px;line-height:1.4;color:var(--labs-text);}
         .cs-about .ab-coopcap{font-family:${FU};font-size:11.5px;line-height:1.6;color:var(--labs-text-muted);margin:13px 0 0;padding-top:13px;border-top:1px solid var(--labs-border-subtle,var(--labs-border));}
         .cs-about .ab-chips{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px;}
         .cs-about .ab-chip{font-family:${FU};font-size:12px;color:var(--labs-accent);background:var(--labs-accent-muted);border:1px solid rgba(201,167,108,0.3);border-radius:50px;padding:5px 13px;}
