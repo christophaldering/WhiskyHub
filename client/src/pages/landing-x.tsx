@@ -1144,6 +1144,23 @@ function ArcSection() {
   return (
     <section style={{ padding: "96px 24px" }} data-testid="section-arc">
       <div style={{ ...container, maxWidth: 720 }}>
+        <FadeUp>
+          <p
+            style={{
+              fontFamily: font.display,
+              fontSize: "clamp(23px, 3.4vw, 34px)",
+              fontWeight: 400,
+              color: v.text,
+              lineHeight: 1.4,
+              letterSpacing: "-0.01em",
+              textAlign: "center",
+              maxWidth: 640,
+              margin: "0 auto 80px",
+            }}
+            data-testid="arc-thesis"
+          >
+            Jeder Schluck ist ein flüchtiger Eindruck. CaskSense verwandelt ihn in Worte, und aus Worten werden Vergleich und Erkenntnis: über die Zeit, in der Runde, in der ganzen Community.          </p>
+        </FadeUp>
         {steps.map((s, i) => (
           <FadeUp key={i} delay={i * 0.1}>
             <div
