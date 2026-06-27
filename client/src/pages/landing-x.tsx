@@ -393,29 +393,6 @@ function HeroSection() {
         </p>
       </FadeUp>
 
-      <FadeUp delay={0.45}>
-        <div
-          style={{
-            fontFamily: font.body,
-            fontSize: "clamp(14px, 1.5vw, 17px)",
-            lineHeight: 1.5,
-            fontWeight: 300,
-            maxWidth: 440,
-            margin: "0 auto 44px",
-            position: "relative",
-            zIndex: 2,
-            textAlign: "center",
-          }}
-        >
-          <p style={{ color: v.mutedLight, margin: "0 0 2px" }}>
-            Ein ruhiger Begleiter am Glas, der dir hilft, deinen Eindruck zu schärfen und festzuhalten.
-          </p>
-          <p style={{ color: "rgba(201,151,43,0.85)", margin: 0 }}>
-            Allein oder in der Runde.
-          </p>
-        </div>
-      </FadeUp>
-
       <FadeUp delay={0.6}>
         <div
           style={{
@@ -429,7 +406,7 @@ function HeroSection() {
         >
           <Link
             href="/labs/onboarding"
-            data-testid="cta-hero-primary"
+            data-testid="cta-solo-cooper"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -447,45 +424,27 @@ function HeroSection() {
               letterSpacing: "0.01em",
             }}
           >
-            {t("landing.hero.startTasting")}
+            Solo verkosten — mit Cooper
             <ChevronRight style={{ width: 17, height: 17 }} />
           </Link>
 
           <JoinCodeInput />
 
-          <a
-            href="/story"
-            data-testid="link-story-hero"
+          <Link
+            href="/labs/onboarding"
+            data-testid="link-host"
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "11px 22px",
-              borderRadius: 50,
-              border: `1.5px solid ${ACCENT}55`,
-              background: `${ACCENT}10`,
-              color: v.text,
               fontFamily: font.body,
               fontSize: 13,
               fontWeight: 500,
-              letterSpacing: "0.04em",
+              color: v.muted,
               textDecoration: "none",
-              transition: "background 0.2s, border-color 0.2s, transform 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = `${ACCENT}1f`;
-              e.currentTarget.style.borderColor = `${ACCENT}88`;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = `${ACCENT}10`;
-              e.currentTarget.style.borderColor = `${ACCENT}55`;
+              letterSpacing: "0.03em",
+              paddingTop: 4,
             }}
           >
-            <span style={{ color: v.text }}>
-              {t("landing.storyCta.label", "Die CaskSense-Story")}
-            </span>
-            <ChevronRight style={{ width: 14, height: 14, color: ACCENT }} />
-          </a>
+            Oder selbst ein Tasting hosten
+          </Link>
 
         </div>
       </FadeUp>
@@ -1160,76 +1119,134 @@ function Footer() {
   );
 }
 
-function CooperSection() {
+function ArcSection() {
+  const steps = [
+    {
+      num: "01",
+      eyebrow: "Erleben wird Benennen",
+      title: "Aus einem Schluck werden Worte.",
+      body: "Cooper sitzt mit dir am Glas — allein oder in der Runde — und hilft dir, deinen flüchtigen Eindruck in eigene Worte zu fassen. Nichts wird vorgegeben, alles geschärft. Das Benennen vertieft das Erleben.",
+    },
+    {
+      num: "02",
+      eyebrow: "Benennen wird Vergleichen",
+      title: "Aus Worten wird Vergleich.",
+      body: "Genau diese Worte machen Vergleich erst möglich — in drei Kreisen, die nach außen wachsen: du über die Zeit, deine Runde am Tisch und die ganze Community.",
+    },
+    {
+      num: "03",
+      eyebrow: "Vergleichen wird Erkennen",
+      title: "Aus Vergleich werden Muster.",
+      body: "Aus tausenden Eindrücken wächst eine Datenbank — und mit ihr Muster: wie dein Gaumen tickt, und welche Whiskys sich ähneln oder unterscheiden. Leise im Hintergrund, ernsthaft gemeint.",
+    },
+  ];
+
   return (
-    <section style={{ padding: "80px 24px" }} data-testid="section-cooper">
-      <div style={{ ...container, maxWidth: 680, textAlign: "center" }}>
-        <FadeUp>
-          <p style={{ fontFamily: font.body, fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: ACCENT_DIM, marginBottom: 16 }}>
-            Dein Begleiter am Glas
-          </p>
-        </FadeUp>
-        <FadeUp delay={0.1}>
-          <h2 style={{ fontFamily: font.display, fontSize: "clamp(26px, 4vw, 40px)", fontWeight: 400, color: v.text, letterSpacing: "-0.01em", lineHeight: 1.2, marginBottom: 24 }}>
-            Cooper hört zu — und trifft dich da, wo du stehst.
-          </h2>
-        </FadeUp>
-        <FadeUp delay={0.2}>
-          <p style={{ fontFamily: font.body, fontSize: "clamp(15px, 1.6vw, 18px)", lineHeight: 1.7, color: v.muted, maxWidth: 560, margin: "0 auto 16px" }}>
-            Er sagt dir nicht, was du schmecken sollst. Ein nüchternes Gegenüber, das spürt, ob du nach Worten suchst oder sie längst hast, und dort fragt, wo es weiterführt — und deinen ersten Eindruck schärft, ohne ihn vorzugeben.
-          </p>
-        </FadeUp>
-        <FadeUp delay={0.3}>
-          <p style={{ fontFamily: font.display, fontSize: "clamp(16px, 1.8vw, 20px)", fontStyle: "italic", color: "rgba(201,151,43,0.9)", maxWidth: 560, margin: "0 auto" }}>
-            Per Stimme oder Text — am Ende eine Notiz, auf der Grundlage deiner Worte.
-          </p>
-        </FadeUp>
+    <section style={{ padding: "96px 24px" }} data-testid="section-arc">
+      <div style={{ ...container, maxWidth: 720 }}>
+        {steps.map((s, i) => (
+          <FadeUp key={i} delay={i * 0.1}>
+            <div
+              style={{
+                display: "flex",
+                gap: 24,
+                alignItems: "flex-start",
+                paddingBottom: i < steps.length - 1 ? 56 : 0,
+                marginBottom: i < steps.length - 1 ? 56 : 0,
+                borderBottom: i < steps.length - 1 ? `1px solid ${v.border}` : "none",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: font.display,
+                  fontSize: "clamp(28px, 5vw, 44px)",
+                  fontWeight: 400,
+                  color: `${ACCENT}55`,
+                  lineHeight: 1,
+                  flexShrink: 0,
+                  width: 56,
+                }}
+              >
+                {s.num}
+              </span>
+              <div>
+                <p
+                  style={{
+                    fontFamily: font.body,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    color: ACCENT_DIM,
+                    marginBottom: 12,
+                  }}
+                >
+                  {s.eyebrow}
+                </p>
+                <h2
+                  style={{
+                    fontFamily: font.display,
+                    fontSize: "clamp(24px, 3.4vw, 34px)",
+                    fontWeight: 400,
+                    color: v.text,
+                    letterSpacing: "-0.01em",
+                    lineHeight: 1.2,
+                    marginBottom: 14,
+                  }}
+                >
+                  {s.title}
+                </h2>
+                <p
+                  style={{
+                    fontFamily: font.body,
+                    fontSize: "clamp(15px, 1.6vw, 17px)",
+                    lineHeight: 1.7,
+                    color: v.muted,
+                  }}
+                >
+                  {s.body}
+                </p>
+              </div>
+            </div>
+          </FadeUp>
+        ))}
       </div>
     </section>
   );
 }
 
-function LanguageSection() {
+function StanceSection() {
   return (
-    <section style={{ padding: "80px 24px" }} data-testid="section-language">
-      <div style={{ ...container, maxWidth: 680, textAlign: "center" }}>
+    <section style={{ padding: "80px 24px 96px" }} data-testid="section-stance">
+      <div style={{ ...container, maxWidth: 620, textAlign: "center" }}>
         <FadeUp>
-          <p style={{ fontFamily: font.body, fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: ACCENT_DIM, marginBottom: 16 }}>
-            Präzision in Worten
-          </p>
-        </FadeUp>
-        <FadeUp delay={0.1}>
-          <h2 style={{ fontFamily: font.display, fontSize: "clamp(26px, 4vw, 40px)", fontWeight: 400, color: v.text, letterSpacing: "-0.01em", lineHeight: 1.2, marginBottom: 24 }}>
-            Schmecken können viele. Es treffsicher in Worte zu fassen, ist die Kunst.
+          <h2
+            style={{
+              fontFamily: font.display,
+              fontSize: "clamp(22px, 3vw, 30px)",
+              fontWeight: 400,
+              fontStyle: "italic",
+              color: v.text,
+              letterSpacing: "-0.01em",
+              lineHeight: 1.3,
+              marginBottom: 18,
+            }}
+          >
+            Ein privates Projekt aus Leidenschaft.
           </h2>
         </FadeUp>
-        <FadeUp delay={0.2}>
-          <p style={{ fontFamily: font.body, fontSize: "clamp(15px, 1.6vw, 18px)", lineHeight: 1.7, color: v.muted, maxWidth: 560, margin: "0 auto" }}>
-            CaskSense erweitert deinen Sprachraum für Whisky — aus einem wachsenden Vokabular an Aromen und Eindrücken. Wer anfängt, findet erste Worte; wer Erfahrung hat, schärft und differenziert. Kein Lehrbuch, ein Sparringspartner.
-          </p>
-        </FadeUp>
-      </div>
-    </section>
-  );
-}
-
-function OverTimeSection() {
-  return (
-    <section style={{ padding: "80px 24px" }} data-testid="section-overtime">
-      <div style={{ ...container, maxWidth: 680, textAlign: "center" }}>
-        <FadeUp>
-          <p style={{ fontFamily: font.body, fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: ACCENT_DIM, marginBottom: 16 }}>
-            Über die Zeit
-          </p>
-        </FadeUp>
         <FadeUp delay={0.1}>
-          <h2 style={{ fontFamily: font.display, fontSize: "clamp(26px, 4vw, 40px)", fontWeight: 400, color: v.text, letterSpacing: "-0.01em", lineHeight: 1.2, marginBottom: 24 }}>
-            Dein Geschmack hat eine Geschichte.
-          </h2>
-        </FadeUp>
-        <FadeUp delay={0.2}>
-          <p style={{ fontFamily: font.body, fontSize: "clamp(15px, 1.6vw, 18px)", lineHeight: 1.7, color: v.muted, maxWidth: 560, margin: "0 auto" }}>
-            Wie sich ein Whisky beim zweiten Mal anders zeigt. Wie sich dein Profil über Monate verdichtet. Die Zeitreise erzählt deinen Weg — aus deinen eigenen Eindrücken.
+          <p
+            style={{
+              fontFamily: font.body,
+              fontSize: "clamp(15px, 1.6vw, 17px)",
+              lineHeight: 1.7,
+              color: v.muted,
+              maxWidth: 480,
+              margin: "0 auto",
+            }}
+          >
+            Keine kommerzielle Absicht, kein Tracking, keine Werbung. CaskSense entsteht, weil Whisky es verdient, ernst genommen zu werden — Schluck für Schluck, Wort für Wort.
           </p>
         </FadeUp>
       </div>
@@ -1271,13 +1288,9 @@ export default function LandingNew() {
         }}
       />
       <HeroSection />
-      <CooperSection />
-      <LanguageSection />
-      <OverTimeSection />
-      <FeaturesSection />
-      <BenchmarkSection />
+      <ArcSection />
       <LiveStatsSection />
-      <CTASection />
+      <StanceSection />
       <Footer />
     </div>
   );
