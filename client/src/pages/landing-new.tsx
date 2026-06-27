@@ -454,7 +454,7 @@ function HeroSection() {
           <JoinCodeInput />
 
           <a
-            href="/story"
+            href="/labs/about"
             data-testid="link-story-hero"
             style={{
               display: "inline-flex",

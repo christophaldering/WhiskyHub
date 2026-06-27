@@ -1,0 +1,128 @@
+═══════════════════════════════════════════════════════════════════════════════
+HARD PROMPT — About-Story final + Entdopplung (i18n.ts + landing-new.tsx)
+═══════════════════════════════════════════════════════════════════════════════
+ROLLBACK: cd /home/claude/WhiskyHub && git rev-parse HEAD
+          cp client/src/lib/i18n.ts /tmp/i18n.backup.ts
+          cp client/src/pages/landing-new.tsx /tmp/ln.backup.tsx
+
+WAS GETAN WIRD: NUR diese 2 Dateien.
+  i18n.ts:        about.blocks (DE+EN) ersetzen  +  tote landing.story-Blöcke löschen
+  landing-new.tsx: href "/story" → "/labs/about"
+WAS NICHT: kein commit/push/drizzle/build, keine andere Datei.
+
+SCHRITT 1 — i18n.ts (Skript):
+python3 - << 'PY'
+path='client/src/lib/i18n.ts'; s=open(path,encoding='utf-8').read()
+
+NEW_DE='''blocks: [
+          { heading: "Wie CaskSense entstanden ist", lines: [] },
+          { lines: ["Als Diplom-Psychologe mit Schwerpunkt Management-Diagnostik und der Beurteilung von Top-Executives beschäftige ich mich seit über 35 Jahren mit Wahrnehmung, Urteilen und Entscheidungsprozessen. Mich interessiert, wie unterschiedlich Menschen dieselbe Situation erleben – und wie sehr Kontext, Erwartung und Erfahrung unser Urteil formen."] },
+          { lines: ["Bei Whisky-Tastings mit Freunden wurde mir klar: Hier zeigt sich genau das – nur unmittelbarer. Zwei Menschen, derselbe Dram, zwei verschiedene Welten. Und im Vergleich wird sichtbar, wo wir uns treffen und wo nicht – genau das ist der spannende Teil."] },
+          { lines: ["Was ich aus der Diagnostik kenne – Beurteilerübereinstimmung, Skalennutzung, individuelle Unterschiede – stand plötzlich nicht mehr in Studien, sondern im Raum. Mit Lachen, Diskussion und einem Glas in der Hand."] },
+          { lines: ["CaskSense ist der Versuch, diesen Moment festzuhalten.", "Nicht als Messinstrument für Persönlichkeit.", "Sondern als Reflexionsinstrument für Wahrnehmung."], italic: true },
+          { lines: ["Die Plattform erfasst Bewertungen strukturiert, nutzt robuste Statistik statt Bauchgefühl – Medianvergleiche, Streuungsmaße – und macht Muster sichtbar. Immer transparent, immer ohne Schubladen. Punkte beschreiben den Dram und deinen Eindruck, nie den Menschen. Keine Typen, keine Etiketten. Nur Dimensionen und Tendenzen."] },
+          { heading: "Cask, Sense, Cooper – der Name ist Programm", lines: [] },
+          { lines: ["Der Name ist kein Zufall."] },
+          { lines: ["Cask ist das Fass – und im Fass entsteht ein großer Teil dessen, was du später schmeckst: Farbe, Süße, Würze, Tiefe. Dem nachzuspüren, ist die eigentliche Fass-Sensorik."] },
+          { lines: ["Sense meint beides: den Sinn, mit dem du wahrnimmst – und den Sinn, der entsteht, wenn du das Wahrgenommene in Worte fasst."] },
+          { lines: ["Und Cooper? Ein Cooper ist der Böttcher – er baut das Fass, aber füllt es nicht. Er formt das Gefäß, in dem etwas reifen kann."], italic: true },
+          { lines: ["Genau so ist Cooper als Begleiter gedacht: Er sagt dir nie, was du schmeckst. Er baut mit dir das Gefäß für deine eigene Wahrnehmung – und darin reift dein Eindruck. Die Reifung bleibt bei dir."] },
+          { lines: ["Mich interessiert nicht, wer „recht“ hat.", "Mich interessiert, wie unterschiedlich wir erleben – und was sich dabei erkennen lässt."], italic: true },
+          { lines: ["CaskSense ist aus Neugier entstanden, nicht aus einem Geschäftsmodell. Aus der Freude, etwas zu bauen, das zwei Leidenschaften verbindet: Menschen verstehen und Whisky genießen."] },
+          { lines: ["Und es ist bewusst noch im Werden. Vieles funktioniert schon, manches wird noch geschärft – und was du in echten Tastings erlebst, formt die Richtung mit. Genau dafür ist diese Phase da."] },
+          { lines: ["Vielleicht ist es am Ende ganz einfach:", "Ein Raum, in dem Wahrnehmung sichtbar wird."] },
+          { lines: ["Where tasting becomes reflection.", "Und ein guter Dram dazu."], italic: true }
+        ]'''
+
+NEW_EN='''blocks: [
+          { heading: "How CaskSense came to be", lines: [] },
+          { lines: ["As an industrial psychologist specialising in management diagnostics and the assessment of top executives, I've spent over 35 years studying perception, judgment, and decision-making. I'm fascinated by how differently people experience the same situation — and how much context, expectation, and experience shape our judgments."] },
+          { lines: ["At whisky tastings with friends, it became clear: this is exactly what happens — only more immediately. Two people, the same dram, two different worlds. And in the comparison you see where we meet and where we don't — that's the fascinating part."] },
+          { lines: ["What I know from diagnostics — inter-rater agreement, scale usage, individual differences — was suddenly no longer in studies, but in the room. With laughter, discussion, and a glass in hand."] },
+          { lines: ["CaskSense is an attempt to capture that moment.", "Not as a measurement instrument for personality.", "But as a reflection instrument for perception."], italic: true },
+          { lines: ["The platform captures ratings in a structured way, uses robust statistics rather than gut feeling — median comparisons, measures of dispersion — and makes patterns visible. Always transparent, always without pigeonholes. Scores describe the dram and your impression, never the person. No types, no labels. Only dimensions and tendencies."] },
+          { heading: "Cask, Sense, Cooper — the name says it all", lines: [] },
+          { lines: ["The name is no coincidence."] },
+          { lines: ["Cask is the barrel — and much of what you later taste is born in the cask: colour, sweetness, spice, depth. Tracing that is the real cask-sensory work."] },
+          { lines: ["Sense means both: the sense you perceive with — and the sense that emerges when you put what you perceive into words."] },
+          { lines: ["And Cooper? A cooper is the barrel-maker — he builds the cask but doesn't fill it. He shapes the vessel in which something can mature."], italic: true },
+          { lines: ["That's exactly how Cooper is meant as a companion: he never tells you what you taste. He builds, with you, the vessel for your own perception — and your impression matures inside it. The maturing stays with you."] },
+          { lines: ["I'm not interested in who is \\"right\\".", "I'm interested in how differently we experience — and what can be discovered in the process."], italic: true },
+          { lines: ["CaskSense was born from curiosity, not from a business model. From the joy of building something that connects two passions: understanding people and enjoying whisky."] },
+          { lines: ["And it's deliberately still in the making. Much already works, some is still being refined — and what you experience in real tastings helps shape the direction. That's exactly what this phase is for."] },
+          { lines: ["Perhaps in the end it's quite simple:", "A space where perception becomes visible."] },
+          { lines: ["Where tasting becomes reflection.", "And a good dram to go with it."], italic: true }
+        ]'''
+
+def splice(text,anchor,nb):
+    a=text.find(anchor)
+    if a==-1: raise SystemExit("ANKER FEHLT: "+anchor[:40])
+    start=text.find('blocks: [',a); bp=text.find('[',start)
+    depth=0;i=bp;ins=False;esc=False;q=''
+    while i<len(text):
+        c=text[i]
+        if ins:
+            if esc:esc=False
+            elif c=='\\':esc=True
+            elif c==q:ins=False
+        else:
+            if c in ('"',"'"):ins=True;q=c
+            elif c=='[':depth+=1
+            elif c==']':
+                depth-=1
+                if depth==0:break
+        i+=1
+    return text[:start]+nb+text[i+1:]
+
+def del_story(text,label):
+    li=text.find(label)
+    if li==-1: print("  (landing.story bereits weg:",label[:24],")"); return text
+    sp=text.rfind('story: {',0,li); bp=text.find('{',sp)
+    depth=0;i=bp;ins=False;esc=False;q=''
+    while i<len(text):
+        c=text[i]
+        if ins:
+            if esc:esc=False
+            elif c=='\\':esc=True
+            elif c==q:ins=False
+        else:
+            if c in ('"',"'"):ins=True;q=c
+            elif c=='{':depth+=1
+            elif c=='}':
+                depth-=1
+                if depth==0:break
+        i+=1
+    j=i+1
+    if j<len(text) and text[j]==',': j+=1
+    ls=text.rfind('\n',0,sp); k=j
+    if k<len(text) and text[k]=='\n': k+=1
+    return text[:ls]+text[k:]
+
+s=splice(s,'fließen über den PayPal Giving Fund direkt an die Christina-Kleintjes',NEW_DE)
+s=splice(s,'100% of your donation goes directly to the Christina-Kleintjes',NEW_EN)
+s=del_story(s,'Wo Psychologie auf Whisky trifft')
+s=del_story(s,'Where psychology meets whisky')
+open(path,'w',encoding='utf-8').write(s); print("i18n.ts: OK")
+PY
+
+SCHRITT 2 — landing-new.tsx (Link):
+  sed -i 's#href="/story"#href="/labs/about"#' client/src/pages/landing-new.tsx
+
+SCHRITT 3 — SYNTAX-CHECK (beide, Pflicht):
+  npx esbuild client/src/lib/i18n.ts --bundle=false --outfile=/tmp/a.js --log-level=warning; echo "i18n EXIT: $?"          # 0
+  npx esbuild client/src/pages/landing-new.tsx --bundle=false --outfile=/tmp/b.js --log-level=warning; echo "ln EXIT: $?"  # 0
+
+SCHRITT 4 — VERIFIKATION (einzeln):
+  F=client/src/lib/i18n.ts
+  grep -c 'As an industrial psychologist specialising' $F      # 1
+  grep -c 'Cask, Sense, Cooper – der Name ist Programm' $F     # 1
+  grep -c 'the name says it all' $F                            # 1
+  grep -c 'Wo Psychologie auf Whisky trifft' $F                # 0  (tote Story weg)
+  grep -c 'Where psychology meets whisky' $F                   # 0  (tote Story weg)
+  grep -c 'href="/story"' client/src/pages/landing-new.tsx     # 0
+  grep -c 'href="/labs/about"' client/src/pages/landing-new.tsx # 1
+
+ERFOLG (beide EXIT 0, Greps stimmen) → "About final + entdoppelt, grün." NICHTS publishen.
+FEHLSCHLAG → cp /tmp/i18n.backup.ts client/src/lib/i18n.ts ; cp /tmp/ln.backup.tsx client/src/pages/landing-new.tsx ; Fehler posten.
+PUBLISH macht der Nutzer → /labs/about prüfen (DE/EN), und auf der Startseite den „Die CaskSense-Story"-Button testen.
+═══════════════════════════════════════════════════════════════════════════════
