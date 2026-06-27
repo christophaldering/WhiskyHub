@@ -1,0 +1,61 @@
+═══════════════════════════════════════════════════════════════════════════════
+HARD PROMPT — /tour live schalten + auf landing-x verlinken
+═══════════════════════════════════════════════════════════════════════════════
+ROLLBACK: vorher `git tag pre-tour` setzen.
+
+DREI ÄNDERUNGEN — sonst NICHTS:
+
+1) NEUE DATEI: client/public/tour/index.html
+   → Inhalt = die beigefügte Datei "tour index" (tour_index.html), 1:1.
+   (Selbst-enthaltene HTML mit eingebetteten Screenshots; ~838 KB.)
+
+2) server/index.ts — direkt NACH den beiden Story-Zeilen
+     app.get("/story", sendStory);
+     app.get("/story/", sendStory);
+     }
+   und VOR
+     if (process.env.NODE_ENV === "production") {
+   diesen Block einfügen:
+
+    {
+      const path = await import("path");
+      const fs = await import("fs");
+      const here =
+        typeof __dirname !== "undefined"
+          ? __dirname
+          : (import.meta as { dirname?: string }).dirname ?? process.cwd();
+      const tourDevPath = path.resolve(here, "..", "client", "public", "tour", "index.html");
+      const tourProdPath = path.resolve(here, "public", "tour", "index.html");
+      const sendTour = (_req: Request, res: Response) => {
+        const candidate = fs.existsSync(tourProdPath) ? tourProdPath : tourDevPath;
+        try {
+          const html = fs.readFileSync(candidate, "utf-8");
+          res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+          res.setHeader("Content-Type", "text/html; charset=utf-8");
+          res.send(html);
+        } catch (e) {
+          res.status(500).send("Tour unavailable");
+        }
+      };
+      app.get("/tour", sendTour);
+      app.get("/tour/", sendTour);
+    }
+
+3) client/src/pages/landing-x.tsx
+   → komplett ersetzen durch die beigefügte Datei "landing-x" (landing-x.tsx).
+   (Enthält den Header-Link „Funktionen" und den Stance-Button „Was kann CaskSense?",
+    beide als <a href="/tour"> = volle Navigation zur statischen Seite.)
+
+NICHT: kein commit/push, kein build, kein drizzle, keine andere Datei.
+
+CHECK:
+  npx esbuild client/src/pages/landing-x.tsx --bundle=false --outfile=/tmp/x.js --log-level=warning; echo "EXIT: $?"   # 0
+  npx esbuild server/index.ts --bundle=false --format=esm --outfile=/tmp/s.js --log-level=warning; echo "EXIT: $?"     # 0
+  grep -c 'app.get("/tour"' server/index.ts                 # 1
+  grep -c 'link-header-tour' client/src/pages/landing-x.tsx  # 1
+  grep -c 'cta-footer-tour'  client/src/pages/landing-x.tsx  # 1
+  test -f client/public/tour/index.html && echo OK
+
+Bei Fehler: `git reset --hard pre-tour`.
+ERFOLG → "tour verdrahtet, grün." NICHTS publishen. Publish macht der Nutzer.
+═══════════════════════════════════════════════════════════════════════════════
