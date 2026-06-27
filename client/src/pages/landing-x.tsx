@@ -43,9 +43,11 @@ function FadeUp({ children, delay = 0, className }: { children: React.ReactNode;
   );
 }
 
-function LangSwitch() {
+function HeaderNav() {
   const { t, i18n } = useTranslation();
   const { theme, toggleTheme, currentParticipant } = useAppStore();
+  const [, navigate] = useLocation();
+  const [code, setCode] = useState("");
   const isDE = i18n.language?.startsWith("de");
   const session = getSession();
   const signedIn = session.signedIn || !!currentParticipant;
@@ -57,147 +59,6 @@ function LangSwitch() {
     });
   };
 
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top: 20,
-        right: 24,
-        zIndex: 10,
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        fontFamily: font.body,
-        fontSize: 12,
-        fontWeight: 500,
-        letterSpacing: "0.06em",
-      }}
-      data-testid="lang-switch"
-    >
-      <button
-        onClick={toggleTheme}
-        style={{
-          padding: "6px 8px",
-          borderRadius: 8,
-          border: `1px solid ${v.border}`,
-          background: "transparent",
-          color: v.muted,
-          cursor: "pointer",
-          transition: "all 0.2s",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-        aria-label="Toggle theme"
-        data-testid="button-theme-toggle"
-      >
-        {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-      </button>
-      {!signedIn && (
-        <>
-          <Link
-            href="/login"
-            data-testid="link-header-signin"
-            style={{
-              padding: "6px 10px",
-              borderRadius: 8,
-              border: `1px solid ${v.border}`,
-              background: "transparent",
-              color: v.muted,
-              textDecoration: "none",
-              fontFamily: font.body,
-              fontSize: 12,
-              fontWeight: 500,
-              letterSpacing: "0.04em",
-              transition: "all 0.2s",
-            }}
-          >
-            {t("auth.signIn", "Anmelden")}
-          </Link>
-          <Link
-            href="/register"
-            data-testid="link-header-register"
-            style={{
-              padding: "6px 10px",
-              borderRadius: 8,
-              border: `1px solid ${ACCENT}55`,
-              background: `${ACCENT}12`,
-              color: ACCENT,
-              textDecoration: "none",
-              fontFamily: font.body,
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: "0.04em",
-              transition: "all 0.2s",
-            }}
-          >
-            {t("auth.register", "Registrieren")}
-          </Link>
-        </>
-      )}
-      {signedIn && (
-        <Link
-          href="/labs/tastings"
-          data-testid="link-header-app"
-          style={{
-            padding: "6px 10px",
-            borderRadius: 8,
-            border: `1px solid ${ACCENT}55`,
-            background: `${ACCENT}12`,
-            color: ACCENT,
-            textDecoration: "none",
-            fontFamily: font.body,
-            fontSize: 12,
-            fontWeight: 600,
-            letterSpacing: "0.04em",
-            transition: "all 0.2s",
-          }}
-        >
-          {t("auth.toApp", "Zur App")}
-        </Link>
-      )}
-      <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-        <button
-          onClick={() => switchLang("de")}
-          style={{
-            padding: "6px 10px",
-            borderRadius: "8px 0 0 8px",
-            border: `1px solid ${isDE ? ACCENT + "50" : v.border}`,
-            borderRight: "none",
-            background: isDE ? `${ACCENT}12` : "transparent",
-            color: isDE ? ACCENT : v.muted,
-            cursor: "pointer",
-            transition: "all 0.2s",
-          }}
-          data-testid="button-lang-de"
-        >
-          DE
-        </button>
-        <button
-          onClick={() => switchLang("en")}
-          style={{
-            padding: "6px 10px",
-            borderRadius: "0 8px 8px 0",
-            border: `1px solid ${!isDE ? ACCENT + "50" : v.border}`,
-            background: !isDE ? `${ACCENT}12` : "transparent",
-            color: !isDE ? ACCENT : v.muted,
-            cursor: "pointer",
-            transition: "all 0.2s",
-          }}
-          data-testid="button-lang-en"
-        >
-          EN
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function JoinCodeInput() {
-  const { t } = useTranslation();
-  const [, navigate] = useLocation();
-  const [code, setCode] = useState("");
-
   const handleJoin = useCallback(() => {
     const trimmed = code.trim().toUpperCase();
     if (trimmed) {
@@ -206,323 +67,202 @@ function JoinCodeInput() {
   }, [code, navigate]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-      <p
-        style={{
-          fontFamily: font.body,
-          fontSize: 12,
-          color: v.mutedLight,
-          letterSpacing: "0.04em",
-        }}
-      >
-        {"Code eingeben, beitreten — ganz ohne Konto."}
-      </p>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 0,
-          borderRadius: 50,
-          border: `1.5px solid ${v.border}`,
-          overflow: "hidden",
-          background: `${ACCENT}06`,
-        }}
-      >
-        <input
-          type="text"
-          value={code}
-          onChange={(e) => setCode(e.target.value.toUpperCase())}
-          onKeyDown={(e) => e.key === "Enter" && handleJoin()}
-          placeholder="CODE"
+    <header
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 100,
+        background: v.bg,
+        borderBottom: `1px solid ${v.border}`,
+        padding: "16px 24px",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 16,
+        flexWrap: "wrap",
+      }}
+      data-testid="header-nav"
+    >
+      <div style={{ fontFamily: font.display, fontSize: 18, fontWeight: 600, color: v.text }}>CaskSense</div>
+
+      <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+        <Link
+          href="/labs/onboarding"
           style={{
-            width: 160,
-            padding: "11px 18px",
-            border: "none",
-            outline: "none",
-            background: "transparent",
-            fontFamily: font.body,
-            fontSize: 14,
+            padding: "8px 16px",
+            borderRadius: 6,
+            background: ACCENT,
+            color: "#0b0906",
             fontWeight: 500,
-            letterSpacing: "0.12em",
-            color: v.text,
-            textTransform: "uppercase",
-          }}
-          data-testid="input-join-code"
-        />
-        <button
-          onClick={handleJoin}
-          disabled={!code.trim()}
-          style={{
-            padding: "11px 20px",
+            fontSize: 12,
+            textDecoration: "none",
             border: "none",
-            borderLeft: `1px solid ${v.border}`,
-            background: code.trim() ? ACCENT : "transparent",
-            color: code.trim() ? v.bg : v.muted,
-            fontFamily: font.body,
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: code.trim() ? "pointer" : "default",
-            transition: "all 0.2s",
-            letterSpacing: "0.02em",
+            cursor: "pointer",
+            transition: "all 0.3s",
           }}
-          data-testid="button-join-code"
+          data-testid="link-header-solo-cta"
         >
-          {t("landing.quickJoin.go")}
+          Solo verkosten — mit Cooper
+        </Link>
+
+        <div style={{ display: "flex", gap: 0, alignItems: "center", borderRadius: 6, overflow: "hidden", border: `1.5px solid ${v.border}`, background: `${ACCENT}06` }}>
+          <input
+            type="text"
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            onKeyDown={(e) => e.key === "Enter" && handleJoin()}
+            placeholder="CODE"
+            style={{
+              width: 110,
+              padding: "8px 14px",
+              border: "none",
+              outline: "none",
+              background: "transparent",
+              fontFamily: font.body,
+              fontSize: 12,
+              fontWeight: 500,
+              letterSpacing: "0.08em",
+              color: v.text,
+              textTransform: "uppercase",
+            }}
+            data-testid="input-header-join-code"
+          />
+          <button
+            onClick={handleJoin}
+            disabled={!code.trim()}
+            style={{
+              padding: "8px 14px",
+              border: `1px solid ${v.border}`,
+              borderLeft: `1px solid ${v.border}`,
+              background: code.trim() ? ACCENT : "transparent",
+              color: code.trim() ? "#0b0906" : v.muted,
+              fontFamily: font.body,
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: code.trim() ? "pointer" : "not-allowed",
+              transition: "all 0.2s",
+            }}
+            data-testid="button-header-join"
+          >
+            Beitreten
+          </button>
+        </div>
+
+        <button
+          onClick={toggleTheme}
+          style={{
+            padding: "6px 8px",
+            borderRadius: 6,
+            border: `1px solid ${v.border}`,
+            background: "transparent",
+            color: v.muted,
+            cursor: "pointer",
+            transition: "all 0.2s",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          aria-label="Toggle theme"
+          data-testid="button-theme-toggle"
+        >
+          {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
         </button>
       </div>
-    </div>
+    </header>
   );
 }
 
-function AnimatedNumber({ value, suffix = "", delay = 0 }: { value: number; suffix?: string; delay?: number }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-40px" });
-  const [display, setDisplay] = useState(0);
-
-  useEffect(() => {
-    if (!inView) return;
-    const startTime = Date.now() + delay;
-    const duration = 1400;
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      if (elapsed < 0) return;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setDisplay(Math.round(eased * value));
-      if (progress >= 1) clearInterval(interval);
-    }, 30);
-    return () => clearInterval(interval);
-  }, [inView, value, delay]);
-
-  return <span ref={ref}>{inView ? display.toLocaleString() : "0"}{suffix}</span>;
-}
-
 function HeroSection() {
-  const { t } = useTranslation();
-
   return (
-    <section
-      style={{
-        minHeight: "100dvh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        textAlign: "center",
-        position: "relative",
-        overflow: "hidden",
-        padding: "60px 24px 80px",
-      }}
-      data-testid="section-hero"
-    >
-      <LangSwitch />
-
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: `radial-gradient(ellipse 70% 50% at 50% 45%, ${ACCENT}05 0%, transparent 70%)`,
-          pointerEvents: "none",
-        }}
-      />
-
-      <motion.div
-        style={{
-          position: "absolute",
-          width: 500,
-          height: 500,
-          borderRadius: "50%",
-          background: `radial-gradient(circle, ${ACCENT}04 0%, transparent 60%)`,
-          top: "25%",
-          left: "50%",
-          transform: "translateX(-50%)",
-          pointerEvents: "none",
-        }}
-        animate={{ scale: [1, 1.06, 1], opacity: [0.3, 0.5, 0.3] }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-      />
-
-      <FadeUp>
-        <div style={{ width: "min(460px, 86vw)", marginBottom: 16, position: "relative", zIndex: 1 }}>
-          <img
-            src={heroImage}
-            alt=""
-            style={{
-              width: "100%",
-              height: "auto",
-              display: "block",
-              objectFit: "cover",
-              maskImage: "radial-gradient(ellipse 65% 55% at 50% 50%, black 20%, transparent 70%)",
-              WebkitMaskImage: "radial-gradient(ellipse 65% 55% at 50% 50%, black 20%, transparent 70%)",
-              opacity: 0.45,
-            }}
-          />
-        </div>
-      </FadeUp>
-
-      <FadeUp delay={0.1}>
-        <p
+    <section style={{ padding: "120px 24px 80px", textAlign: "center" }} data-testid="section-hero">
+      <div style={{ ...container }}>
+        <div
           style={{
             fontFamily: font.body,
-            fontSize: "clamp(10px, 1.3vw, 12px)",
+            fontSize: 12,
             fontWeight: 600,
-            letterSpacing: "0.18em",
+            letterSpacing: "0.14em",
             textTransform: "uppercase",
             color: ACCENT_DIM,
-            marginBottom: 18,
-            position: "relative",
-            zIndex: 2,
+            marginBottom: 20,
           }}
-          data-testid="hero-kicker"
         >
           Für alle, die Whisky bewusst genießen
-        </p>
-      </FadeUp>
+        </div>
 
-      <FadeUp delay={0.15}>
         <h1
           style={{
             fontFamily: font.display,
-            fontSize: "clamp(52px, 9vw, 96px)",
+            fontSize: "clamp(40px, 6vw, 56px)",
             fontWeight: 400,
             color: v.text,
-            letterSpacing: "-0.03em",
-            lineHeight: 1.0,
-            marginBottom: 20,
-            position: "relative",
-            zIndex: 2,
+            letterSpacing: "-0.01em",
+            marginBottom: 12,
+            lineHeight: 1,
           }}
         >
           CaskSense
         </h1>
-      </FadeUp>
 
-      <FadeUp delay={0.3}>
-        <p
-          style={{
-            fontFamily: font.display,
-            fontSize: "clamp(17px, 2.2vw, 24px)",
-            fontWeight: 400,
-            fontStyle: "italic",
-            color: v.muted,
-            marginBottom: 12,
-            letterSpacing: "0.01em",
-            position: "relative",
-            zIndex: 2,
-          }}
-        >
-          {t("landing.hero.subline")}
-        </p>
-      </FadeUp>
-
-      <FadeUp delay={0.42}>
         <p
           style={{
             fontFamily: font.body,
-            fontSize: "clamp(16px, 2vw, 21px)",
-            fontWeight: 400,
-            lineHeight: 1.5,
-            color: v.muted,
-            maxWidth: 500,
-            margin: "0 auto 40px",
-            position: "relative",
-            zIndex: 2,
+            fontSize: 20,
+            fontStyle: "italic",
+            color: ACCENT,
+            marginBottom: 24,
           }}
-          data-testid="hero-lead"
         >
-          Verkosten, Worte finden, vergleichen — und mit der Zeit den eigenen Geschmack immer besser verstehen.
+          Where tasting becomes reflection.
         </p>
-      </FadeUp>
 
-      <FadeUp delay={0.6}>
-        <div
+        <p
           style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 20,
-            position: "relative",
-            zIndex: 2,
+            fontFamily: font.body,
+            fontSize: "clamp(15px, 1.6vw, 17px)",
+            lineHeight: 1.7,
+            color: v.muted,
+            maxWidth: 600,
+            margin: "0 auto",
           }}
         >
-          <Link
-            href="/labs/onboarding"
-            data-testid="cta-solo-cooper"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "17px 52px",
-              background: ACCENT,
-              color: v.bg,
-              fontFamily: font.body,
-              fontSize: 16,
-              fontWeight: 600,
-              borderRadius: 50,
-              textDecoration: "none",
-              boxShadow: `0 4px 24px ${ACCENT}30, 0 1px 3px rgba(0,0,0,0.2)`,
-              transition: "transform 0.2s, box-shadow 0.2s",
-              letterSpacing: "0.01em",
-            }}
-          >
-            Solo verkosten — mit Cooper
-            <ChevronRight style={{ width: 17, height: 17 }} />
-          </Link>
-
-          <JoinCodeInput />
-
-          <Link
-            href="/labs/onboarding"
-            data-testid="link-host"
-            style={{
-              fontFamily: font.body,
-              fontSize: 13,
-              fontWeight: 500,
-              color: v.muted,
-              textDecoration: "none",
-              letterSpacing: "0.03em",
-              paddingTop: 4,
-            }}
-          >
-            Oder selbst ein Tasting hosten
-          </Link>
-
-        </div>
-      </FadeUp>
-
+          Verkosten, Worte finden, beschreiben, vergleichen und den eigenen Geschmack immer besser verstehen.
+        </p>
+      </div>
     </section>
   );
 }
 
 function FeaturesSection() {
-  const { t } = useTranslation();
-
   const cards = [
     {
-      icon: <Wine style={{ width: 28, height: 28 }} />,
-      title: t("landing.features.solo.title"),
-      desc: t("landing.features.solo.text"),
-      href: "/labs/onboarding",
+      icon: "🥃",
+      title: "Solo verkosten",
+      desc: "Dein persönliches Tasting-Tagebuch mit Cooper als Begleiter.",
       testId: "card-solo",
     },
     {
-      icon: <Users style={{ width: 28, height: 28 }} />,
-      title: t("landing.features.together.title"),
-      desc: "Verkostet gemeinsam und seht in Sekunden, wie unterschiedlich ihr schmeckt. Das Erleben steht im Mittelpunkt — die Auswertung läuft nebenbei.",
-      href: "/labs/onboarding",
+      icon: "👥",
+      title: "Mit Freunden",
+      desc: "Live tastings in der Gruppe, blind oder offen, mit Ergebnisse.",
       testId: "card-together",
     },
     {
-      icon: <ClipboardList style={{ width: 28, height: 28 }} />,
-      title: t("landing.features.hosting.title"),
-      desc: t("landing.features.hosting.text"),
-      href: "/labs/onboarding",
+      icon: "🎙️",
+      title: "Host Cockpit",
+      desc: "Steuere Tastings, sehe Live-Bewertungen, moderiere die Runde.",
       testId: "card-hosting",
+    },
+    {
+      icon: "📊",
+      title: "Vergleichen & analysieren",
+      desc: "Deine Noten vs. Community, Palate-Profile, Benchmark-Vergleiche.",
+      testId: "card-sharing",
     },
   ];
 
   return (
-    <section style={{ padding: "80px 24px" }} data-testid="section-features">
+    <section style={{ padding: "80px 24px", background: v.bg }} data-testid="section-features">
       <div style={{ ...container, maxWidth: 760 }}>
         <div
           style={{
@@ -533,12 +273,12 @@ function FeaturesSection() {
         >
           {cards.map((card, i) => (
             <FadeUp key={i} delay={i * 0.1}>
-              <Link href={card.href} style={{ textDecoration: "none", display: "block", height: "100%" }} data-testid={`link-${card.testId}`}>
+              <Link href="/labs/onboarding" style={{ textDecoration: "none", display: "block", height: "100%" }} data-testid={`link-${card.testId}`}>
                 <div
                   style={{
                     padding: "40px 32px",
                     borderRadius: 20,
-                    border: `1px solid rgba(201,151,43,0.18)`,
+                    border: `1px solid ${ACCENT}30`,
                     background: "rgba(255,255,255,0.02)",
                     backdropFilter: "blur(12px)",
                     cursor: "pointer",
@@ -552,11 +292,11 @@ function FeaturesSection() {
                   }}
                   data-testid={card.testId}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "rgba(201,151,43,0.4)";
-                    e.currentTarget.style.boxShadow = `0 0 40px rgba(201,151,43,0.08)`;
+                    e.currentTarget.style.borderColor = `${ACCENT}60`;
+                    e.currentTarget.style.boxShadow = `0 0 40px ${ACCENT}15`;
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "rgba(201,151,43,0.18)";
+                    e.currentTarget.style.borderColor = `${ACCENT}30`;
                     e.currentTarget.style.boxShadow = "none";
                   }}
                 >
@@ -569,7 +309,7 @@ function FeaturesSection() {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      color: ACCENT,
+                      fontSize: 28,
                     }}
                   >
                     {card.icon}
@@ -608,7 +348,7 @@ function FeaturesSection() {
                       paddingTop: 8,
                     }}
                   >
-                    {t("landing.hero.cta")}
+                    Loslegen
                     <ChevronRight style={{ width: 14, height: 14 }} />
                   </span>
                 </div>
@@ -621,10 +361,7 @@ function FeaturesSection() {
   );
 }
 
-
 function BenchmarkSection() {
-  const { t } = useTranslation();
-
   return (
     <section style={{ padding: "80px 24px" }} data-testid="section-benchmark">
       <div style={{ ...container, maxWidth: 920 }}>
@@ -657,7 +394,7 @@ function BenchmarkSection() {
                   marginBottom: 12,
                 }}
               >
-                {t("landing.benchmark.community.eyebrow")}
+                Community Benchmark
               </p>
               <h3
                 style={{
@@ -670,7 +407,7 @@ function BenchmarkSection() {
                   marginBottom: 28,
                 }}
               >
-                {"Was tausende Verkostungen über jeden Whisky wissen."}
+                Lagavulin 16
               </h3>
 
               <div
@@ -705,13 +442,13 @@ function BenchmarkSection() {
                     Lagavulin 16
                   </div>
                   <div style={{ fontFamily: font.body, fontSize: 12, color: v.muted, lineHeight: 1.4 }}>
-                    Islay · 16y · 43% · 127 {t("landing.benchmark.ratings")}
+                    Islay · 16y · 43% · 127 Bewertungen
                   </div>
                   <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
                     {[
-                      { label: t("landing.benchmark.nose"), val: "86" },
-                      { label: t("landing.benchmark.taste"), val: "85" },
-                      { label: t("landing.benchmark.finish"), val: "82" },
+                      { label: "Nase", val: "86" },
+                      { label: "Gaumen", val: "85" },
+                      { label: "Abgang", val: "82" },
                     ].map((d) => (
                       <div key={d.label} style={{ textAlign: "center" }}>
                         <div style={{ fontSize: 14, fontWeight: 700, color: v.text, fontVariantNumeric: "tabular-nums" }}>{d.val}</div>
@@ -746,7 +483,7 @@ function BenchmarkSection() {
                   marginBottom: 12,
                 }}
               >
-                {t("landing.benchmark.palate.eyebrow")}
+                Dein Palate Profil
               </p>
               <h3
                 style={{
@@ -759,7 +496,7 @@ function BenchmarkSection() {
                   marginBottom: 28,
                 }}
               >
-                {t("landing.benchmark.palate.title")}
+                Deine Aromen
               </h3>
 
               <div
@@ -771,15 +508,15 @@ function BenchmarkSection() {
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <span style={{ fontFamily: font.display, fontSize: 14, fontWeight: 600, color: v.text }}>{t("landing.benchmark.palate.heading")}</span>
-                  <span style={{ fontSize: 11, color: v.muted }}>{t("landing.benchmark.palate.dims")}</span>
+                  <span style={{ fontFamily: font.display, fontSize: 14, fontWeight: 600, color: v.text }}>Aroma-Dimensionen</span>
+                  <span style={{ fontSize: 11, color: v.muted }}>Dein Score · Community Ø</span>
                 </div>
                 {[
-                  { label: t("landing.benchmark.smoke"), you: 78, avg: 62, delta: "+16" },
-                  { label: t("landing.benchmark.sweetness"), you: 45, avg: 58, delta: "−13" },
-                  { label: t("landing.benchmark.fruit"), you: 72, avg: 70, delta: "+2" },
-                  { label: t("landing.benchmark.spice"), you: 68, avg: 55, delta: "+13" },
-                  { label: t("landing.benchmark.body"), you: 82, avg: 71, delta: "+11" },
+                  { label: "Rauch", you: 78, avg: 62, delta: "+16" },
+                  { label: "Süße", you: 45, avg: 58, delta: "−13" },
+                  { label: "Frucht", you: 72, avg: 70, delta: "+2" },
+                  { label: "Würze", you: 68, avg: 55, delta: "+13" },
+                  { label: "Körper", you: 82, avg: 71, delta: "+11" },
                 ].map((dim) => (
                   <div key={dim.label} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                     <span style={{ width: 64, fontSize: 12, fontWeight: 500, color: v.muted, textAlign: "right" }}>{dim.label}</span>
@@ -787,360 +524,34 @@ function BenchmarkSection() {
                       <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${dim.avg}%`, background: `${ACCENT}25`, borderRadius: 3 }} />
                       <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${dim.you}%`, background: ACCENT, borderRadius: 3 }} />
                     </div>
-                    <span style={{
-                      width: 32, fontSize: 11, fontWeight: 700, textAlign: "right",
-                      color: dim.delta.startsWith("+") ? v.success : dim.delta.startsWith("−") ? v.danger : v.muted,
-                      fontVariantNumeric: "tabular-nums",
-                    }}>
+                    <span
+                      style={{
+                        width: 32,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        textAlign: "right",
+                        color: dim.delta.startsWith("+") ? v.success : dim.delta.startsWith("−") ? v.danger : v.muted,
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
                       {dim.delta}
                     </span>
                   </div>
                 ))}
                 <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 12 }}>
                   <span style={{ fontSize: 10, color: v.muted, display: "flex", alignItems: "center", gap: 4 }}>
-                    <span style={{ width: 12, height: 3, borderRadius: 2, background: ACCENT, display: "inline-block" }} /> {t("landing.benchmark.palate.you")}
+                    <span style={{ width: 12, height: 3, borderRadius: 2, background: ACCENT, display: "inline-block" }} /> Dein Score
                   </span>
                   <span style={{ fontSize: 10, color: v.muted, display: "flex", alignItems: "center", gap: 4 }}>
-                    <span style={{ width: 12, height: 3, borderRadius: 2, background: `${ACCENT}25`, display: "inline-block" }} /> {t("landing.benchmark.palate.communityLabel")}
+                    <span style={{ width: 12, height: 3, borderRadius: 2, background: `${ACCENT}25`, display: "inline-block" }} /> Community Ø
                   </span>
                 </div>
-                <p
-                  style={{
-                    fontFamily: font.body,
-                    fontSize: 15,
-                    fontStyle: "italic",
-                    fontWeight: 300,
-                    color: "rgba(240,230,211,0.5)",
-                    lineHeight: 1.6,
-                    marginTop: 24,
-                    marginBottom: 0,
-                  }}
-                  data-testid="text-benchmark-connoisseur"
-                >
-                  {t("landing.benchmark.connoisseur")}
-                </p>
               </div>
             </div>
           </FadeUp>
         </div>
       </div>
     </section>
-  );
-}
-
-function LiveStatsSection() {
-  const { t } = useTranslation();
-  const [platformStats, setPlatformStats] = useState<{
-    totalTastings: number;
-    totalParticipants: number;
-    totalWhiskies: number;
-    totalRatings: number;
-  } | null>(null);
-
-  useEffect(() => {
-    fetch("/api/platform-stats")
-      .then((res) => res.ok ? res.json() : Promise.reject())
-      .then((data) => setPlatformStats(data))
-      .catch(() => setPlatformStats({ totalTastings: 0, totalParticipants: 0, totalWhiskies: 0, totalRatings: 0 }));
-  }, []);
-
-  const stats = platformStats
-    ? [
-        { value: platformStats.totalTastings, suffix: "+", label: t("landing.liveStats.tastings") },
-        { value: platformStats.totalRatings, suffix: "+", label: t("landing.liveStats.ratings") },
-        { value: platformStats.totalParticipants, suffix: "", label: t("landing.liveStats.participants") },
-        { value: platformStats.totalWhiskies, suffix: "", label: t("landing.liveStats.whiskies") },
-      ]
-    : [
-        { value: 0, suffix: "", label: t("landing.liveStats.tastings") },
-        { value: 0, suffix: "", label: t("landing.liveStats.ratings") },
-        { value: 0, suffix: "", label: t("landing.liveStats.participants") },
-        { value: 0, suffix: "", label: t("landing.liveStats.whiskies") },
-      ];
-
-  return (
-    <section style={{ padding: "80px 24px", textAlign: "center" }} data-testid="section-live-stats">
-      <div style={container}>
-        <FadeUp>
-          <h2
-            style={{
-              fontFamily: font.display,
-              fontSize: "clamp(24px, 3.4vw, 36px)",
-              fontWeight: 400,
-              color: v.text,
-              letterSpacing: "-0.01em",
-              lineHeight: 1.25,
-              maxWidth: 640,
-              margin: "0 auto 44px",
-            }}
-            data-testid="stats-heading"
-          >
-            Gemeinsam entsteht, was keiner allein hätte.
-          </h2>
-        </FadeUp>
-        <FadeUp>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: "clamp(32px, 6vw, 80px)",
-              marginBottom: 40,
-              flexWrap: "wrap",
-            }}
-          >
-            {stats.map((stat, i) => (
-              <div key={i} style={{ textAlign: "center" }}>
-                <div
-                  style={{
-                    fontFamily: font.display,
-                    fontSize: "clamp(36px, 6vw, 64px)",
-                    fontWeight: 400,
-                    color: v.text,
-                    letterSpacing: "-0.03em",
-                    lineHeight: 1,
-                    marginBottom: 8,
-                    fontVariantNumeric: "tabular-nums",
-                  }}
-                  data-testid={`stat-${i}`}
-                >
-                  <AnimatedNumber value={stat.value} suffix={stat.suffix} delay={i * 200} />
-                </div>
-                <div
-                  style={{
-                    fontFamily: font.body,
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: v.muted,
-                    letterSpacing: "0.04em",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {stat.label}
-                </div>
-              </div>
-            ))}
-          </div>
-        </FadeUp>
-        <FadeUp delay={0.15}>
-          <p
-            style={{
-              fontFamily: font.display,
-              fontSize: "clamp(16px, 2vw, 22px)",
-              fontWeight: 400,
-              fontStyle: "italic",
-              color: v.muted,
-              maxWidth: 480,
-              margin: "0 auto",
-              lineHeight: 1.5,
-            }}
-          >
-            {"Eine Wissensbasis über Whisky, die mit jedem Dram wächst."}
-          </p>
-        </FadeUp>
-      </div>
-    </section>
-  );
-}
-
-function CTASection() {
-  const { t } = useTranslation();
-
-  return (
-    <section
-      style={{
-        padding: "100px 24px 60px",
-        textAlign: "center",
-        position: "relative",
-      }}
-      data-testid="section-cta"
-    >
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: `radial-gradient(ellipse 60% 50% at 50% 40%, ${ACCENT}04 0%, transparent 70%)`,
-          pointerEvents: "none",
-        }}
-      />
-      <div style={{ ...container, position: "relative", zIndex: 1 }}>
-        <FadeUp>
-          <h2
-            style={{
-              fontFamily: font.display,
-              fontSize: "clamp(28px, 4.5vw, 48px)",
-              fontWeight: 400,
-              fontStyle: "italic",
-              color: v.text,
-              letterSpacing: "-0.02em",
-              lineHeight: 1.15,
-              marginBottom: 40,
-            }}
-          >
-            {t("landing.cta.title")}
-          </h2>
-        </FadeUp>
-        <FadeUp delay={0.1}>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 24,
-            }}
-          >
-            <Link
-              href="/labs/onboarding"
-              data-testid="cta-final-primary"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "17px 52px",
-                background: ACCENT,
-                color: v.bg,
-                fontFamily: font.body,
-                fontSize: 16,
-                fontWeight: 600,
-                borderRadius: 50,
-                textDecoration: "none",
-                boxShadow: `0 4px 24px ${ACCENT}30, 0 1px 3px rgba(0,0,0,0.2)`,
-                transition: "transform 0.2s, box-shadow 0.2s",
-                letterSpacing: "0.01em",
-              }}
-            >
-              {t("landing.cta.button")}
-              <ChevronRight style={{ width: 17, height: 17 }} />
-            </Link>
-
-            <JoinCodeInput />
-
-          </div>
-        </FadeUp>
-      </div>
-    </section>
-  );
-}
-
-function Footer() {
-  const { t } = useTranslation();
-
-  return (
-    <footer
-      style={{
-        padding: "32px 24px",
-        textAlign: "center",
-        borderTop: `1px solid ${v.border}`,
-      }}
-      data-testid="section-footer"
-    >
-      <div style={container}>
-        <p
-          style={{
-            fontFamily: font.body,
-            fontSize: 13,
-            color: v.mutedLight,
-            marginBottom: 4,
-          }}
-        >
-          CaskSense — Where tasting becomes reflection.
-        </p>
-        <p
-          style={{
-            fontFamily: font.body,
-            fontSize: 11,
-            color: v.mutedLight,
-            opacity: 0.6,
-            marginBottom: 12,
-          }}
-        >
-          {t("premium.footerHobby")}
-        </p>
-        <div
-          style={{
-            display: "flex",
-            gap: 24,
-            justifyContent: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <a
-            href="/CaskSense_Labs_Praesentation.pdf"
-            target="_blank"
-            rel="noopener noreferrer"
-            download
-            data-testid="link-footer-presentation"
-            style={{
-              fontFamily: font.body,
-              fontSize: 12,
-              color: v.muted,
-              textDecoration: "none",
-            }}
-          >
-            {t("premium.footerFeatures")}
-          </a>
-          <Link
-            href="/impressum"
-            data-testid="link-footer-impressum"
-            style={{
-              fontFamily: font.body,
-              fontSize: 12,
-              color: v.muted,
-              textDecoration: "none",
-            }}
-          >
-            Impressum
-          </Link>
-          <Link
-            href="/privacy"
-            data-testid="link-footer-privacy"
-            style={{
-              fontFamily: font.body,
-              fontSize: 12,
-              color: v.muted,
-              textDecoration: "none",
-            }}
-          >
-            {t("premium.footerPrivacy")}
-          </Link>
-          <Link
-            href="/login"
-            data-testid="link-footer-signin"
-            style={{
-              fontFamily: font.body,
-              fontSize: 12,
-              color: v.muted,
-              textDecoration: "none",
-            }}
-          >
-            {t("auth.signIn", "Anmelden")}
-          </Link>
-          <Link
-            href="/register"
-            data-testid="link-footer-register"
-            style={{
-              fontFamily: font.body,
-              fontSize: 12,
-              color: v.muted,
-              textDecoration: "none",
-            }}
-          >
-            {t("auth.register", "Registrieren")}
-          </Link>
-          <Link
-            href="/terms"
-            data-testid="link-footer-terms"
-            style={{
-              fontFamily: font.body,
-              fontSize: 12,
-              color: v.muted,
-              textDecoration: "none",
-            }}
-          >
-            {t("premium.footerTerms")}
-          </Link>
-        </div>
-      </div>
-    </footer>
   );
 }
 
@@ -1201,10 +612,8 @@ function ArcSection() {
                   borderRadius: 16,
                   aspectRatio: "1 / 1",
                   objectFit: "cover",
-                  maskImage:
-                    "radial-gradient(ellipse 88% 88% at 50% 50%, black 66%, transparent 100%)",
-                  WebkitMaskImage:
-                    "radial-gradient(ellipse 88% 88% at 50% 50%, black 66%, transparent 100%)",
+                  maskImage: "radial-gradient(ellipse 88% 88% at 50% 50%, black 66%, transparent 100%)",
+                  WebkitMaskImage: "radial-gradient(ellipse 88% 88% at 50% 50%, black 66%, transparent 100%)",
                 }}
               />
               <div>
@@ -1297,6 +706,40 @@ function ArcSection() {
   );
 }
 
+function LiveStatsSection() {
+  return (
+    <section style={{ padding: "80px 24px", textAlign: "center" }} data-testid="section-stats">
+      <div style={{ ...container, maxWidth: 620 }}>
+        <FadeUp>
+          <p
+            style={{
+              fontFamily: font.body,
+              fontSize: "clamp(16px, 2vw, 18px)",
+              color: v.text,
+              marginBottom: 32,
+              fontWeight: 500,
+            }}
+          >
+            Gemeinsam entsteht, was keiner allein hätte.
+          </p>
+        </FadeUp>
+        <FadeUp delay={0.1}>
+          <p
+            style={{
+              fontFamily: font.body,
+              fontSize: "clamp(15px, 1.6vw, 17px)",
+              lineHeight: 1.7,
+              color: v.muted,
+            }}
+          >
+            Eine Wissensbasis über Whisky, die mit jedem Dram wächst.
+          </p>
+        </FadeUp>
+      </div>
+    </section>
+  );
+}
+
 function StanceSection() {
   return (
     <section style={{ padding: "80px 24px 96px" }} data-testid="section-stance">
@@ -1336,6 +779,66 @@ function StanceSection() {
   );
 }
 
+function Footer() {
+  return (
+    <footer style={{ padding: "40px 24px", borderTop: `1px solid ${v.border}`, textAlign: "center" }} data-testid="footer">
+      <div style={{ ...container, maxWidth: 920 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 24,
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ display: "flex", gap: 24, fontSize: 12 }}>
+            <Link
+              href="/imprint"
+              data-testid="link-footer-imprint"
+              style={{
+                fontFamily: font.body,
+                fontSize: 12,
+                color: v.muted,
+                textDecoration: "none",
+              }}
+            >
+              Impressum
+            </Link>
+            <Link
+              href="/privacy"
+              data-testid="link-footer-privacy"
+              style={{
+                fontFamily: font.body,
+                fontSize: 12,
+                color: v.muted,
+                textDecoration: "none",
+              }}
+            >
+              Datenschutz
+            </Link>
+            <Link
+              href="/terms"
+              data-testid="link-footer-terms"
+              style={{
+                fontFamily: font.body,
+                fontSize: 12,
+                color: v.muted,
+                textDecoration: "none",
+              }}
+            >
+              Nutzungsbedingungen
+            </Link>
+          </div>
+          <p style={{ fontFamily: font.body, fontSize: 12, color: v.muted, margin: 0, fontStyle: "italic" }}>
+            CaskSense — Where tasting becomes reflection.
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
 export default function LandingNew() {
   return (
     <div
@@ -1369,8 +872,11 @@ export default function LandingNew() {
           backgroundImage: FILM_GRAIN_BG,
         }}
       />
+      <HeaderNav />
       <HeroSection />
       <ArcSection />
+      <FeaturesSection />
+      <BenchmarkSection />
       <LiveStatsSection />
       <StanceSection />
       <Footer />
