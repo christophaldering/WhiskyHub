@@ -5955,10 +5955,10 @@ Nase
 Gaumen
 Abgang
 Gesamteindruck
-Schreibe die vier Überschriften GENAU so (ein Wort je eigener Zeile, ohne Doppelpunkt, ohne Nummerierung, ohne Sternchen). Unter jede Überschrift kommt ein kurzer, evokativer Fließtext (1–4 Sätze) zu dieser Dimension; trenne die Abschnitte durch eine Leerzeile.
+Schreibe die vier Überschriften GENAU so (ein Wort je eigener Zeile, ohne Doppelpunkt, ohne Nummerierung, ohne Sternchen). Unter jede Überschrift kommt zusammenhängender, evokativer Fließtext in seiner Stimme; trenne die Abschnitte durch eine Leerzeile. Die LÄNGE jedes Abschnitts richtet sich allein danach, wie viel der Taster zu dieser Dimension gesagt hat: hat er viel, differenziert und ausführlich erklärt, wird der Abschnitt entsprechend lang und nimmt all das auf; war er knapp, bleibt der Abschnitt knapp. Es gibt KEINE Höchstlänge — Kürze ist nie ein Ziel, Treue zum Gesagten schon.
 REGELN:
 - Nutze AUSSCHLIESSLICH, was der TASTER wirklich gesagt hat. Erfinde nichts, ergänze keine Aromen. Ordne das Gesagte der jeweils passenden Dimension zu.
-- Nimm ALLES auf, was er beschrieben hat — auch Nebennotizen, auch Verworfenes. Glätte nicht.
+- TREUE UND VOLLSTÄNDIGKEIT sind deine oberste Pflicht, wichtiger als Kürze oder Eleganz: JEDE eigenständige Beobachtung, Nuance, jeder Vergleich, jede Differenzierung, jeder Vorbehalt und jeder Nebengedanke des Tasters muss in der Notiz wiederzufinden sein — auch Nebennotizen, auch Verworfenes. Wirf nichts weg, weil es nebensächlich, umständlich oder weitschweifig klingt; wenn er es gesagt hat, gehört es hinein. Glätte nicht und raffe nicht zusammen — lieber ein Satz mehr, der eine seiner Wahrnehmungen bewahrt, als ein geglätteter, der sie verliert. Weglassen darfst du NUR reines Gesprächs-Beiwerk (Begrüßung, Fülllaute wie "ähm", Coopers eigene Fragen und Einwürfe) — niemals etwas Inhaltliches von ihm.
 - Bewahre Mehrdeutigkeit, Widersprüche und Überraschungen organisch ("erst dachte ich…, dann eher…").
 - Hat der Taster zu einer Dimension nichts gesagt, halte den Abschnitt sehr knapp oder vermerke wahrheitsgetreu, dass dazu nichts kam — erfinde nichts.
 - "Gesamteindruck" verdichtet sein Gesamtgefühl und (falls vorhanden) seinen Affekt — KEINE Bewertungszahl.
@@ -5966,7 +5966,7 @@ REGELN:
 Gib NUR den reinen Notiztext zurück (die vier Überschriften + Text), ohne Anführungszeichen, ohne Vorrede.`;
         const pc = await openai.chat.completions.create({
           model: "gpt-5-mini",
-          max_completion_tokens: 1500,
+          max_completion_tokens: 2400,
           reasoning_effort: "minimal",
           messages: [{ role: "system", content: proseSystem }, { role: "user", content: `Gespräch:${ctx}\n${convo}` }],
         });
