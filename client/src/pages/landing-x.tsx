@@ -343,7 +343,7 @@ function HeroSection() {
       />
 
       <FadeUp>
-        <div style={{ width: "min(280px, 60vw)", marginBottom: 16, position: "relative", zIndex: 1 }}>
+        <div style={{ width: "min(460px, 86vw)", marginBottom: 16, position: "relative", zIndex: 1 }}>
           <img
             src={heroImage}
             alt=""
@@ -354,7 +354,7 @@ function HeroSection() {
               objectFit: "cover",
               maskImage: "radial-gradient(ellipse 65% 55% at 50% 50%, black 20%, transparent 70%)",
               WebkitMaskImage: "radial-gradient(ellipse 65% 55% at 50% 50%, black 20%, transparent 70%)",
-              opacity: 0.3,
+              opacity: 0.45,
             }}
           />
         </div>
@@ -393,6 +393,25 @@ function HeroSection() {
           }}
         >
           {t("landing.hero.subline")}
+        </p>
+      </FadeUp>
+
+      <FadeUp delay={0.42}>
+        <p
+          style={{
+            fontFamily: font.body,
+            fontSize: "clamp(15px, 1.7vw, 18px)",
+            fontWeight: 300,
+            lineHeight: 1.55,
+            color: v.mutedLight,
+            maxWidth: 460,
+            margin: "0 auto 40px",
+            position: "relative",
+            zIndex: 2,
+          }}
+          data-testid="hero-lead"
+        >
+          Whisky bewusst verkosten — und in Worte fassen, was du schmeckst. Allein oder in der Runde.
         </p>
       </FadeUp>
 
@@ -452,39 +471,6 @@ function HeroSection() {
         </div>
       </FadeUp>
 
-      <motion.div
-        style={{
-          position: "absolute",
-          bottom: 32,
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 2,
-        }}
-        animate={{ y: [0, 6, 0] }}
-        transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-      >
-        <div
-          style={{
-            width: 24,
-            height: 38,
-            borderRadius: 12,
-            border: `1.5px solid ${v.border}`,
-            display: "flex",
-            justifyContent: "center",
-            paddingTop: 8,
-          }}
-        >
-          <div
-            style={{
-              width: 2.5,
-              height: 7,
-              borderRadius: 2,
-              background: v.muted,
-              opacity: 0.6,
-            }}
-          />
-        </div>
-      </motion.div>
     </section>
   );
 }
@@ -1020,7 +1006,7 @@ function Footer() {
             marginBottom: 4,
           }}
         >
-          {t("premium.footerTagline")}
+          CaskSense — Where tasting becomes reflection.
         </p>
         <p
           style={{
@@ -1129,14 +1115,14 @@ function ArcSection() {
       img: arc1,
       eyebrow: "Erleben wird Benennen",
       title: "Aus einem Schluck werden Worte.",
-      body: "Cooper sitzt mit dir am Glas — allein oder in der Runde — und hilft dir, deinen flüchtigen Eindruck in eigene Worte zu fassen. Nichts wird vorgegeben, alles geschärft. Das Benennen vertieft das Erleben.",
+      body: "Du genießt, beschreibst, fasst deinen Eindruck in Worte. Wenn du magst, sitzt Cooper mit am Tisch — ein ruhiger KI-Begleiter, der dir hilft, das Geschmeckte zu schärfen, ohne es vorzugeben. Das Benennen vertieft das Erleben.",
     },
     {
       num: "02",
       img: arc2,
       eyebrow: "Benennen wird Vergleichen",
       title: "Aus Worten wird Vergleich.",
-      body: "Genau diese Worte machen Vergleich erst möglich — in drei Kreisen, die nach außen wachsen: du über die Zeit, deine Runde am Tisch und die ganze Community.",
+      body: "Genau diese Worte machen Vergleich erst möglich — in drei Kreisen, die nach außen wachsen: du über die Zeit, deine Freunde am Tisch und die ganze Community.",
     },
     {
       num: "03",
@@ -1289,7 +1275,7 @@ function StanceSection() {
               margin: "0 auto",
             }}
           >
-            Keine kommerzielle Absicht, kein Tracking, keine Werbung. CaskSense entsteht, weil Whisky es verdient, ernst genommen zu werden — Schluck für Schluck, Wort für Wort.
+            Keine kommerzielle Absicht, kein Tracking, keine Werbung. CaskSense folgt einer einfachen Überzeugung: Ein Eindruck wird klarer, sobald man ihn benennt — und diese stille, genaue Aufmerksamkeit verdient einen Ort, der ihr nichts verkaufen will.
           </p>
         </FadeUp>
       </div>
