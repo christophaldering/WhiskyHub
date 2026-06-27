@@ -447,6 +447,30 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       app.get("/story/", sendStory);
     }
 
+    {
+      const path = await import("path");
+      const fs = await import("fs");
+      const here =
+        typeof __dirname !== "undefined"
+          ? __dirname
+          : (import.meta as { dirname?: string }).dirname ?? process.cwd();
+      const tourDevPath = path.resolve(here, "..", "client", "public", "tour", "index.html");
+      const tourProdPath = path.resolve(here, "public", "tour", "index.html");
+      const sendTour = (_req: Request, res: Response) => {
+        const candidate = fs.existsSync(tourProdPath) ? tourProdPath : tourDevPath;
+        try {
+          const html = fs.readFileSync(candidate, "utf-8");
+          res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+          res.setHeader("Content-Type", "text/html; charset=utf-8");
+          res.send(html);
+        } catch (e) {
+          res.status(500).send("Tour unavailable");
+        }
+      };
+      app.get("/tour", sendTour);
+      app.get("/tour/", sendTour);
+    }
+
     if (process.env.NODE_ENV === "production") {
       serveStatic(app);
     } else {
