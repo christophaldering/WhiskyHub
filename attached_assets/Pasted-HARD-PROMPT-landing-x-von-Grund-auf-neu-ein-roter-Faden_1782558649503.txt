@@ -1,0 +1,283 @@
+HARD PROMPT — /landing-x von Grund auf neu (ein roter Faden: Erleben → Benennen → Vergleichen)
+
+ZIEL: Die experimentelle Seite client/src/pages/landing-x.tsx radikal vereinfachen.
+Es bleiben Hero-Titel + Subline. Neu darunter: zwei Aktionen (Solo mit Cooper / Tasting beitreten)
++ dezent „selbst hosten"; dann ein Drei-Schritte-Bogen, die Zahlen, eine Haltungs-Zeile, der Footer.
+Live-Seite (/) bleibt unberührt. KEIN Schema, KEIN drizzle, KEINE Migration.
+
+ROLLBACK-TAG ZUERST:
+  git tag pre-landing-x-v2-2026-06-26
+
+STEP 0 — DIAGNOSE (nur lesen): Bestätige in client/src/pages/landing-x.tsx, dass es gibt:
+`function CooperSection() {`, `function LanguageSection() {`, `function OverTimeSection() {`,
+`data-testid="cta-hero-primary"`, `href="/story"`, und im Haupt-Render `<CooperSection />`.
+Dann STOPP + warte auf "OK".
+
+NACH MEINEM OK — alle Edits NUR in client/src/pages/landing-x.tsx:
+
+EDIT 1 — Hero-Fließtext entfernen (nur Titel + Subline bleiben).
+SUCHE:
+      <FadeUp delay={0.45}>
+        <div
+          style={{
+            fontFamily: font.body,
+            fontSize: "clamp(14px, 1.5vw, 17px)",
+            lineHeight: 1.5,
+            fontWeight: 300,
+            maxWidth: 440,
+            margin: "0 auto 44px",
+            position: "relative",
+            zIndex: 2,
+            textAlign: "center",
+          }}
+        >
+          <p style={{ color: v.mutedLight, margin: "0 0 2px" }}>
+            Ein ruhiger Begleiter am Glas, der dir hilft, deinen Eindruck zu schärfen und festzuhalten.
+          </p>
+          <p style={{ color: "rgba(201,151,43,0.85)", margin: 0 }}>
+            Allein oder in der Runde.
+          </p>
+        </div>
+      </FadeUp>
+
+      <FadeUp delay={0.6}>
+ERSETZE:
+      <FadeUp delay={0.6}>
+
+EDIT 2 — Primär-Button: testid.
+SUCHE:
+            data-testid="cta-hero-primary"
+ERSETZE:
+            data-testid="cta-solo-cooper"
+
+EDIT 3 — Primär-Button: Beschriftung.
+SUCHE:
+            {t("landing.hero.startTasting")}
+            <ChevronRight style={{ width: 17, height: 17 }} />
+ERSETZE:
+            Solo verkosten — mit Cooper
+            <ChevronRight style={{ width: 17, height: 17 }} />
+
+EDIT 4 — Story-Link → dezenter „selbst hosten"-Link.
+SUCHE:
+          <a
+            href="/story"
+            data-testid="link-story-hero"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "11px 22px",
+              borderRadius: 50,
+              border: `1.5px solid ${ACCENT}55`,
+              background: `${ACCENT}10`,
+              color: v.text,
+              fontFamily: font.body,
+              fontSize: 13,
+              fontWeight: 500,
+              letterSpacing: "0.04em",
+              textDecoration: "none",
+              transition: "background 0.2s, border-color 0.2s, transform 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = `${ACCENT}1f`;
+              e.currentTarget.style.borderColor = `${ACCENT}88`;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = `${ACCENT}10`;
+              e.currentTarget.style.borderColor = `${ACCENT}55`;
+            }}
+          >
+            <span style={{ color: v.text }}>
+              {t("landing.storyCta.label", "Die CaskSense-Story")}
+            </span>
+            <ChevronRight style={{ width: 14, height: 14, color: ACCENT }} />
+          </a>
+ERSETZE:
+          <Link
+            href="/labs/onboarding"
+            data-testid="link-host"
+            style={{
+              fontFamily: font.body,
+              fontSize: 13,
+              fontWeight: 500,
+              color: v.muted,
+              textDecoration: "none",
+              letterSpacing: "0.03em",
+              paddingTop: 4,
+            }}
+          >
+            Oder selbst ein Tasting hosten
+          </Link>
+
+EDIT 5 — Die drei Sektionen Cooper/Language/OverTime LÖSCHEN und durch zwei neue ersetzen.
+Lösche die drei kompletten Funktionen `function CooperSection() { … }`,
+`function LanguageSection() { … }`, `function OverTimeSection() { … }`
+(jeweils von der Signatur bis zur zugehörigen schließenden Klammer).
+Füge an derselben Stelle — direkt VOR `export default function LandingNew() {` — exakt ein:
+
+function ArcSection() {
+  const steps = [
+    {
+      num: "01",
+      eyebrow: "Erleben wird Benennen",
+      title: "Aus einem Schluck werden Worte.",
+      body: "Cooper sitzt mit dir am Glas — allein oder in der Runde — und hilft dir, deinen flüchtigen Eindruck in eigene Worte zu fassen. Nichts wird vorgegeben, alles geschärft. Das Benennen vertieft das Erleben.",
+    },
+    {
+      num: "02",
+      eyebrow: "Benennen wird Vergleichen",
+      title: "Aus Worten wird Vergleich.",
+      body: "Genau diese Worte machen Vergleich erst möglich — in drei Kreisen, die nach außen wachsen: du über die Zeit, deine Runde am Tisch und die ganze Community.",
+    },
+    {
+      num: "03",
+      eyebrow: "Vergleichen wird Erkennen",
+      title: "Aus Vergleich werden Muster.",
+      body: "Aus tausenden Eindrücken wächst eine Datenbank — und mit ihr Muster: wie dein Gaumen tickt, und welche Whiskys sich ähneln oder unterscheiden. Leise im Hintergrund, ernsthaft gemeint.",
+    },
+  ];
+
+  return (
+    <section style={{ padding: "96px 24px" }} data-testid="section-arc">
+      <div style={{ ...container, maxWidth: 720 }}>
+        {steps.map((s, i) => (
+          <FadeUp key={i} delay={i * 0.1}>
+            <div
+              style={{
+                display: "flex",
+                gap: 24,
+                alignItems: "flex-start",
+                paddingBottom: i < steps.length - 1 ? 56 : 0,
+                marginBottom: i < steps.length - 1 ? 56 : 0,
+                borderBottom: i < steps.length - 1 ? `1px solid ${v.border}` : "none",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: font.display,
+                  fontSize: "clamp(28px, 5vw, 44px)",
+                  fontWeight: 400,
+                  color: `${ACCENT}55`,
+                  lineHeight: 1,
+                  flexShrink: 0,
+                  width: 56,
+                }}
+              >
+                {s.num}
+              </span>
+              <div>
+                <p
+                  style={{
+                    fontFamily: font.body,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    color: ACCENT_DIM,
+                    marginBottom: 12,
+                  }}
+                >
+                  {s.eyebrow}
+                </p>
+                <h2
+                  style={{
+                    fontFamily: font.display,
+                    fontSize: "clamp(24px, 3.4vw, 34px)",
+                    fontWeight: 400,
+                    color: v.text,
+                    letterSpacing: "-0.01em",
+                    lineHeight: 1.2,
+                    marginBottom: 14,
+                  }}
+                >
+                  {s.title}
+                </h2>
+                <p
+                  style={{
+                    fontFamily: font.body,
+                    fontSize: "clamp(15px, 1.6vw, 17px)",
+                    lineHeight: 1.7,
+                    color: v.muted,
+                  }}
+                >
+                  {s.body}
+                </p>
+              </div>
+            </div>
+          </FadeUp>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function StanceSection() {
+  return (
+    <section style={{ padding: "80px 24px 96px" }} data-testid="section-stance">
+      <div style={{ ...container, maxWidth: 620, textAlign: "center" }}>
+        <FadeUp>
+          <h2
+            style={{
+              fontFamily: font.display,
+              fontSize: "clamp(22px, 3vw, 30px)",
+              fontWeight: 400,
+              fontStyle: "italic",
+              color: v.text,
+              letterSpacing: "-0.01em",
+              lineHeight: 1.3,
+              marginBottom: 18,
+            }}
+          >
+            Ein privates Projekt aus Leidenschaft.
+          </h2>
+        </FadeUp>
+        <FadeUp delay={0.1}>
+          <p
+            style={{
+              fontFamily: font.body,
+              fontSize: "clamp(15px, 1.6vw, 17px)",
+              lineHeight: 1.7,
+              color: v.muted,
+              maxWidth: 480,
+              margin: "0 auto",
+            }}
+          >
+            Keine kommerzielle Absicht, kein Tracking, keine Werbung. CaskSense entsteht, weil Whisky es verdient, ernst genommen zu werden — Schluck für Schluck, Wort für Wort.
+          </p>
+        </FadeUp>
+      </div>
+    </section>
+  );
+}
+
+EDIT 6 — Haupt-Render auf die schlanke Struktur umstellen.
+SUCHE:
+      <HeroSection />
+      <CooperSection />
+      <LanguageSection />
+      <OverTimeSection />
+      <FeaturesSection />
+      <BenchmarkSection />
+      <LiveStatsSection />
+      <CTASection />
+      <Footer />
+ERSETZE:
+      <HeroSection />
+      <ArcSection />
+      <LiveStatsSection />
+      <StanceSection />
+      <Footer />
+
+VERIFIKATION (nur Ausgabe, NICHT committen/pushen):
+  grep -c "function CooperSection\|function LanguageSection\|function OverTimeSection" client/src/pages/landing-x.tsx   # 0
+  grep -c "function ArcSection\|function StanceSection" client/src/pages/landing-x.tsx   # 2
+  grep -c "<ArcSection />" client/src/pages/landing-x.tsx   # 1
+  grep -c "Solo verkosten — mit Cooper" client/src/pages/landing-x.tsx   # 1
+  grep -c "Oder selbst ein Tasting hosten" client/src/pages/landing-x.tsx   # 1
+  grep -c "Impressum" client/src/pages/landing-x.tsx   # 1
+  Danach: Build-/tsc-Check, dass landing-x.tsx fehlerfrei kompiliert.
+  (Hinweis: FeaturesSection/BenchmarkSection/CTASection bleiben ungenutzt definiert — das ist ok, kein Fehler.)
+
+COMMIT-VERBOT (nochmal explizit): NICHT git add, NICHT git commit, NICHT git push, NICHT drizzle,
+KEINE Schema-Änderung. Nur Datei ändern + Verifikation zeigen. Push mache ich selbst.
