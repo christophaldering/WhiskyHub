@@ -1,0 +1,55 @@
+═══════════════════════════════════════════════════════════════════════════════
+HARD PROMPT — landing-x.tsx → INTEGRATED (Live-Previews + zweisprachig) 2026-06-27
+═══════════════════════════════════════════════════════════════════════════════
+ROLLBACK-TAG (ZUERST):
+  cd /home/claude/WhiskyHub
+  git tag pre-INTEGRATED-landing-2026-06-27 2>/dev/null || true
+  git rev-parse HEAD
+
+STEP 0 — DRIFT-CHECK (Replit oft VORAUS):
+  test -f client/src/pages/landing-x.tsx && echo "ok" || echo "FEHLT"
+  grep -c "export default function LandingNew" client/src/pages/landing-x.tsx
+  → Ganz-Datei-Ersetzung = drift-sicher (kein Anker, kein str_replace).
+
+WAS GETAN WIRD:
+  ✓ Gesamten Inhalt von client/src/pages/landing-x.tsx 1:1 ersetzen durch
+    die beigelegte Datei landing-x_INTEGRATED_2026-06-27.tsx
+  ✓ esbuild-Syntaxcheck + Verifikations-Greps.
+
+WAS NICHT GETAN WIRD (bindend):
+  ✗ KEIN git add/commit/push/tag-push   ✗ KEIN npm run build
+  ✗ KEIN drizzle / Schema / Migration   ✗ KEINE andere Datei
+  ✗ KEINE neuen Packages
+  (lucide-react, framer-motion, wouter, react-i18next sind bereits im Projekt;
+   alle genutzten Icons existieren in lucide-react. noUnusedLocals ist AUS.)
+
+STEP 1 — AUSFÜHRUNG:
+  Inhalt komplett überschreiben (Overwrite, nicht patchen).
+
+STEP 2 — SYNTAX-CHECK (Pflicht):
+  cd /home/claude/WhiskyHub
+  npx esbuild client/src/pages/landing-x.tsx --bundle=false --outfile=/tmp/x.js --log-level=warning
+  echo "EXIT: $?"
+  → EXIT 0 = weiter. EXIT != 0 = STOP, Fehler posten, NICHT publishen.
+
+STEP 3 — VERIFIKATION (jede Zeile EINZELN; grep -c Exit 1 bei 0 ist kein Fehler):
+  F=client/src/pages/landing-x.tsx
+  grep -cE "function (CooperPreview|DramPreview|HostPreview|WeltPreview)" $F   # 4
+  grep -cE "function (HeaderNav|HeroSection|BeatsSection|HostSection|WeltSection|StanceSection|Footer)" $F  # 7
+  grep -c "export default function LandingNew" $F        # 1
+  grep -c "useTx()" $F                                   # 10
+  grep -c "My World" $F                                  # >=1 (EN aktiv)
+  grep -c "ScreenshotFrame" $F                           # 0 (Platzhalter weg)
+  grep -c "0B0906" $F                                    # 0 (alles theme-aware)
+
+VERBOTE-WIEDERHOLUNG: kein commit/push/drizzle/build/andere Datei. Nur diese Datei.
+
+STEP 4 — ABSCHLUSS-EVALUATION:
+  ERFOLG: esbuild EXIT 0 UND alle Greps wie erwartet.
+    → Melden: "INTEGRATED eingespielt, grün. Bereit zum Publish." NICHTS publishen.
+  FEHLSCHLAG: git checkout -- client/src/pages/landing-x.tsx
+    → Fehler + rote Greps posten, auf Anweisung warten.
+
+PUBLISH macht der NUTZER: Replit-UI → Publish → Test auf /landing-x
+  (oben rechts Theme-Toggle Dark/Hell prüfen, DE/EN umschalten — Screens schalten mit)
+═══════════════════════════════════════════════════════════════════════════════
