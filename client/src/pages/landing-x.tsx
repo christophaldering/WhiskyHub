@@ -307,7 +307,7 @@ function HeroSection() {
       <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse 70% 50% at 50% 38%, ${ACCENT}08 0%, transparent 70%)`, pointerEvents: "none" }} />
       <motion.div style={{ position: "absolute", width: 500, height: 500, borderRadius: "50%", background: `radial-gradient(circle, ${ACCENT}05 0%, transparent 60%)`, top: "10%", left: "50%", transform: "translateX(-50%)", pointerEvents: "none" }} animate={{ scale: [1, 1.06, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }} />
       <FadeUp>
-        <div style={{ width: "min(280px, 60vw)", marginBottom: 12, position: "relative", zIndex: 1 }}>
+        <div style={{ width: "min(380px, 74vw)", marginBottom: 16, position: "relative", zIndex: 1 }}>
           <img src={heroImage} alt="" style={{ width: "100%", height: "auto", display: "block", objectFit: "cover", maskImage: "radial-gradient(ellipse 65% 55% at 50% 50%, black 20%, transparent 70%)", WebkitMaskImage: "radial-gradient(ellipse 65% 55% at 50% 50%, black 20%, transparent 70%)", opacity: 0.3 }} />
         </div>
       </FadeUp>
