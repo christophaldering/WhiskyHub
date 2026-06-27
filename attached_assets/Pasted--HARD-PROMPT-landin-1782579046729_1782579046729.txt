@@ -1,0 +1,109 @@
+═══════════════════════════════════════════════════════════════════════════════
+HARD PROMPT — landing-x.tsx → HYBRID-FINAL (2026-06-27)
+═══════════════════════════════════════════════════════════════════════════════
+
+ROLLBACK-TAG (ZUERST SETZEN, vor jeder Änderung):
+  cd /home/claude/WhiskyHub
+  git tag pre-HYBRID-landing-FINAL-2026-06-27 2>/dev/null || true
+  git rev-parse HEAD    # HEAD notieren, für Rollback
+
+───────────────────────────────────────────────────────────────────────────────
+STEP 0 — DIAGNOSE & DRIFT-CHECK  (Replit ist oft VORAUS gegenüber GitHub!)
+───────────────────────────────────────────────────────────────────────────────
+  # Echten aktuellen Stand der Zieldatei ansehen — NICHT aus dem Gedächtnis:
+  test -f client/src/pages/landing-x.tsx && echo "Datei existiert" || echo "FEHLT"
+  head -20 client/src/pages/landing-x.tsx
+  grep -c "export default function LandingNew" client/src/pages/landing-x.tsx
+
+  Erwartung: Datei existiert, exportiert default LandingNew.
+  → Diese Operation ist DRIFT-SICHER: wir ersetzen die GANZE Datei (kein
+    Zeilen-Anker, kein str_replace). Egal welcher Zwischenstand in Replit liegt,
+    das Ergebnis ist deterministisch identisch.
+
+───────────────────────────────────────────────────────────────────────────────
+WAS GETAN WIRD  (genau dies, nichts darüber hinaus):
+───────────────────────────────────────────────────────────────────────────────
+  ✓ Der GESAMTE Inhalt von client/src/pages/landing-x.tsx wird 1:1 ersetzt
+    durch den Inhalt der beigelegten Datei:
+        landing-x_HYBRID_2026-06-27.tsx
+  ✓ Danach: esbuild-Syntaxcheck + Verifikations-Greps.
+
+───────────────────────────────────────────────────────────────────────────────
+WAS NICHT GETAN WIRD  (absolut bindend):
+───────────────────────────────────────────────────────────────────────────────
+  ✗ KEIN git add / git commit / git push / git tag-push
+  ✗ KEIN npm run build
+  ✗ KEIN npx drizzle-kit, KEINE Schema-/Migrations-Änderung
+  ✗ KEINE andere Datei anfassen (NUR landing-x.tsx)
+  ✗ KEINE neuen Packages installieren
+  ✗ KEINE Route, kein i18n-File, kein index.html ändern
+  (Hinweis: Replit-Agent führt KEIN drizzle aus; noUnusedLocals ist AUS —
+   ungenutzte Imports/Funktionen brechen den Build NICHT.)
+
+───────────────────────────────────────────────────────────────────────────────
+STEP 1 — AUSFÜHRUNG
+───────────────────────────────────────────────────────────────────────────────
+  Ersetze den kompletten Inhalt von client/src/pages/landing-x.tsx durch den
+  vollständigen Inhalt von landing-x_HYBRID_2026-06-27.tsx (Overwrite, nicht
+  patchen). Keine Zeile selbst dazudichten oder umformulieren.
+
+───────────────────────────────────────────────────────────────────────────────
+STEP 2 — SYNTAX-CHECK  (Pflicht, vor allem Weiteren)
+───────────────────────────────────────────────────────────────────────────────
+  cd /home/claude/WhiskyHub
+  npx esbuild client/src/pages/landing-x.tsx --bundle=false --outfile=/tmp/x.js --log-level=warning
+  echo "EXIT: $?"
+
+  → EXIT 0 = ok, weiter zu STEP 3.
+  → EXIT != 0 ODER Fehlermeldung = STOP. Fehlertext hier posten,
+    NICHTS publishen, KEINE weiteren Änderungen.
+
+───────────────────────────────────────────────────────────────────────────────
+STEP 3 — VERIFIKATION  (jede Zeile EINZELN ausführen!)
+  WICHTIG: `grep -c` liefert bei 0 Treffern Exit-Code 1. Das ist KEIN Fehler —
+  nur die ausgegebene ZAHL zählt. Niemals diese Greps in eine &&-Kette hängen.
+───────────────────────────────────────────────────────────────────────────────
+  F=client/src/pages/landing-x.tsx
+
+  # MÜSSEN passen:
+  grep -cE "function (HeaderNav|ScreenshotFrame|HeroSection|BeatsSection|HostSection|StanceSection|Footer|FadeUp)" $F   # erwartet 8
+  grep -c "export default function LandingNew" $F            # erwartet 1
+  grep -c "Playfair Display" $F                              # erwartet >= 1
+  grep -c "Cormorant Garamond" $F                            # erwartet >= 1
+  grep -c "DM Sans" $F                                       # erwartet >= 1
+  grep -c "heroImage" $F                                     # erwartet 2 (Import + Nutzung)
+  grep -c "ellipse 65% 55% at 50% 50%, black 20%" $F         # erwartet 1 (Hero-Maske)
+  grep -c "Solo verkosten" $F                                # erwartet 2 (Hero + Abschluss)
+  grep -c "Einem Tasting beitreten" $F                       # erwartet 2
+  grep -c "im Spiegel der Community und der Zeit" $F         # erwartet 1 (Variante-2-Headline)
+
+  # MÜSSEN 0 sein (einzeln laufen lassen — Exit 1 ist hier ok):
+  grep -c "KI-Begleiter" $F                                  # erwartet 0
+  grep -c "🥃" $F                                            # erwartet 0 (keine Emojis)
+
+───────────────────────────────────────────────────────────────────────────────
+VERBOTE — WIEDERHOLUNG (gelten bis zum Ende dieses Prompts):
+  KEIN commit · KEIN push · KEIN drizzle · KEIN Schema · KEINE andere Datei ·
+  KEIN build. Nur landing-x.tsx ersetzen, prüfen, Bericht.
+───────────────────────────────────────────────────────────────────────────────
+
+───────────────────────────────────────────────────────────────────────────────
+STEP 4 — ABSCHLUSS-EVALUATION
+───────────────────────────────────────────────────────────────────────────────
+  ERFOLG nur wenn ALLES zutrifft:
+    • STEP 2 esbuild EXIT 0
+    • alle „MÜSSEN passen"-Greps liefern die erwarteten Werte
+    • beide „MÜSSEN 0 sein"-Greps liefern 0
+  → Dann melden: "HYBRID-FINAL eingespielt, Syntax + Verifikation grün.
+    Bereit zum Publish."  Und NICHTS publishen — das macht der Nutzer.
+
+  FEHLSCHLAG (irgendein Check rot):
+  → KEIN Publish. Datei auf den Ausgangsstand zurücksetzen:
+        git checkout -- client/src/pages/landing-x.tsx
+    (bzw. auf den in STEP 0 notierten HEAD / Tag pre-HYBRID-landing-FINAL-2026-06-27)
+  → Fehlertext + rote Grep-Werte hier posten. Auf Anweisung warten.
+
+───────────────────────────────────────────────────────────────────────────────
+PUBLISH — macht der NUTZER selbst:
+  Replit-UI → „Publish" → danach Live-Test:  https://casksense.com/landing-x
+═══════════════════════════════════════════════════════════════════════════════
