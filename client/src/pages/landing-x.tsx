@@ -321,7 +321,7 @@ function HeroSection() {
         <p style={{ fontFamily: font.voice, fontSize: "clamp(19px, 2.4vw, 26px)", fontWeight: 400, fontStyle: "italic", color: ACCENT, marginBottom: 22, letterSpacing: "0.01em", position: "relative", zIndex: 2 }}>Where tasting becomes reflection.</p>
       </FadeUp>
       <FadeUp delay={0.38}>
-        <p style={{ fontFamily: font.body, fontSize: "clamp(15px, 1.6vw, 17px)", lineHeight: 1.6, fontWeight: 400, color: v.muted, maxWidth: 540, margin: "0 auto 36px", position: "relative", zIndex: 2 }}>{tx("Verkosten, Worte finden, beschreiben, vergleichen und den eigenen Geschmack immer besser verstehen.", "Taste, find words, describe, compare — and understand your own palate better with every dram.")}</p>
+        <p style={{ fontFamily: font.body, fontSize: "clamp(15px, 1.6vw, 17px)", lineHeight: 1.6, fontWeight: 400, color: v.muted, maxWidth: 540, margin: "0 auto 36px", position: "relative", zIndex: 2 }}>{tx("Verkosten, Worte finden, beschreiben, vergleichen und den eigenen Geschmack immer besser einordnen können.", "Taste, find words, describe, compare — and learn to place your own palate ever more precisely.")}</p>
       </FadeUp>
       <FadeUp delay={0.5}>
         <div style={{ display: "flex", gap: 14, alignItems: "center", justifyContent: "center", flexWrap: "wrap", marginBottom: 16, position: "relative", zIndex: 2 }}>
