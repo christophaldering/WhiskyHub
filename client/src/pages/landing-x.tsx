@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, useInView } from "framer-motion";
-import { ChevronRight, Wine, Users, Mic, SplitSquareVertical, Sun, Moon } from "lucide-react";
+import { ChevronRight, Wine, Users, Mic, SplitSquareVertical, Sun, Moon, ClipboardList } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { v } from "@/lib/themeVars";
 import { useAppStore } from "@/lib/store";
@@ -408,10 +408,10 @@ function HeroSection() {
           }}
         >
           <p style={{ color: v.mutedLight, margin: "0 0 2px" }}>
-            {t("landing.hero.body1")}
+            Ein ruhiger Begleiter am Glas, der dir hilft, deinen Eindruck zu schärfen und festzuhalten.
           </p>
           <p style={{ color: "rgba(201,151,43,0.85)", margin: 0 }}>
-            {t("landing.hero.body2")}
+            Allein oder in der Runde.
           </p>
         </div>
       </FadeUp>
@@ -541,23 +541,16 @@ function FeaturesSection() {
     {
       icon: <Users style={{ width: 28, height: 28 }} />,
       title: t("landing.features.together.title"),
-      desc: t("landing.features.together.text"),
+      desc: "Verkostet gemeinsam und seht in Sekunden, wie unterschiedlich ihr schmeckt. Das Erleben steht im Mittelpunkt — die Auswertung läuft nebenbei.",
       href: "/labs/onboarding",
       testId: "card-together",
     },
     {
-      icon: <Mic style={{ width: 28, height: 28 }} />,
+      icon: <ClipboardList style={{ width: 28, height: 28 }} />,
       title: t("landing.features.hosting.title"),
       desc: t("landing.features.hosting.text"),
       href: "/labs/onboarding",
       testId: "card-hosting",
-    },
-    {
-      icon: <SplitSquareVertical style={{ width: 28, height: 28 }} />,
-      title: t("landing.features.sharing.title"),
-      desc: t("landing.features.sharing.text"),
-      href: "/labs/onboarding",
-      testId: "card-sharing",
     },
   ];
 
@@ -710,7 +703,7 @@ function BenchmarkSection() {
                   marginBottom: 28,
                 }}
               >
-                {t("landing.benchmark.community.title")}
+                {"Was tausende Verkostungen über jeden Whisky wissen."}
               </h3>
 
               <div
@@ -957,7 +950,7 @@ function LiveStatsSection() {
               lineHeight: 1.5,
             }}
           >
-            {t("landing.liveStats.tagline")}
+            {"Echte Zahlen — aus historischen Verkostungen und allem, was seither dazukommt."}
           </p>
         </FadeUp>
       </div>
@@ -1167,6 +1160,83 @@ function Footer() {
   );
 }
 
+function CooperSection() {
+  return (
+    <section style={{ padding: "80px 24px" }} data-testid="section-cooper">
+      <div style={{ ...container, maxWidth: 680, textAlign: "center" }}>
+        <FadeUp>
+          <p style={{ fontFamily: font.body, fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: ACCENT_DIM, marginBottom: 16 }}>
+            Dein Begleiter am Glas
+          </p>
+        </FadeUp>
+        <FadeUp delay={0.1}>
+          <h2 style={{ fontFamily: font.display, fontSize: "clamp(26px, 4vw, 40px)", fontWeight: 400, color: v.text, letterSpacing: "-0.01em", lineHeight: 1.2, marginBottom: 24 }}>
+            Cooper hört zu — und trifft dich da, wo du stehst.
+          </h2>
+        </FadeUp>
+        <FadeUp delay={0.2}>
+          <p style={{ fontFamily: font.body, fontSize: "clamp(15px, 1.6vw, 18px)", lineHeight: 1.7, color: v.muted, maxWidth: 560, margin: "0 auto 16px" }}>
+            Er sagt dir nicht, was du schmecken sollst. Ein nüchternes Gegenüber, das spürt, ob du nach Worten suchst oder sie längst hast, und dort fragt, wo es weiterführt — und deinen ersten Eindruck schärft, ohne ihn vorzugeben.
+          </p>
+        </FadeUp>
+        <FadeUp delay={0.3}>
+          <p style={{ fontFamily: font.display, fontSize: "clamp(16px, 1.8vw, 20px)", fontStyle: "italic", color: "rgba(201,151,43,0.9)", maxWidth: 560, margin: "0 auto" }}>
+            Per Stimme oder Text — am Ende eine Notiz, auf der Grundlage deiner Worte.
+          </p>
+        </FadeUp>
+      </div>
+    </section>
+  );
+}
+
+function LanguageSection() {
+  return (
+    <section style={{ padding: "80px 24px" }} data-testid="section-language">
+      <div style={{ ...container, maxWidth: 680, textAlign: "center" }}>
+        <FadeUp>
+          <p style={{ fontFamily: font.body, fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: ACCENT_DIM, marginBottom: 16 }}>
+            Präzision in Worten
+          </p>
+        </FadeUp>
+        <FadeUp delay={0.1}>
+          <h2 style={{ fontFamily: font.display, fontSize: "clamp(26px, 4vw, 40px)", fontWeight: 400, color: v.text, letterSpacing: "-0.01em", lineHeight: 1.2, marginBottom: 24 }}>
+            Schmecken können viele. Es treffsicher in Worte zu fassen, ist die Kunst.
+          </h2>
+        </FadeUp>
+        <FadeUp delay={0.2}>
+          <p style={{ fontFamily: font.body, fontSize: "clamp(15px, 1.6vw, 18px)", lineHeight: 1.7, color: v.muted, maxWidth: 560, margin: "0 auto" }}>
+            CaskSense erweitert deinen Sprachraum für Whisky — aus einem wachsenden Vokabular an Aromen und Eindrücken. Wer anfängt, findet erste Worte; wer Erfahrung hat, schärft und differenziert. Kein Lehrbuch, ein Sparringspartner.
+          </p>
+        </FadeUp>
+      </div>
+    </section>
+  );
+}
+
+function OverTimeSection() {
+  return (
+    <section style={{ padding: "80px 24px" }} data-testid="section-overtime">
+      <div style={{ ...container, maxWidth: 680, textAlign: "center" }}>
+        <FadeUp>
+          <p style={{ fontFamily: font.body, fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: ACCENT_DIM, marginBottom: 16 }}>
+            Über die Zeit
+          </p>
+        </FadeUp>
+        <FadeUp delay={0.1}>
+          <h2 style={{ fontFamily: font.display, fontSize: "clamp(26px, 4vw, 40px)", fontWeight: 400, color: v.text, letterSpacing: "-0.01em", lineHeight: 1.2, marginBottom: 24 }}>
+            Dein Geschmack hat eine Geschichte.
+          </h2>
+        </FadeUp>
+        <FadeUp delay={0.2}>
+          <p style={{ fontFamily: font.body, fontSize: "clamp(15px, 1.6vw, 18px)", lineHeight: 1.7, color: v.muted, maxWidth: 560, margin: "0 auto" }}>
+            Wie sich ein Whisky beim zweiten Mal anders zeigt. Wie sich dein Profil über Monate verdichtet. Die Zeitreise erzählt deinen Weg — aus deinen eigenen Eindrücken.
+          </p>
+        </FadeUp>
+      </div>
+    </section>
+  );
+}
+
 export default function LandingNew() {
   return (
     <div
@@ -1201,9 +1271,12 @@ export default function LandingNew() {
         }}
       />
       <HeroSection />
+      <CooperSection />
+      <LanguageSection />
+      <OverTimeSection />
       <FeaturesSection />
-      <LiveStatsSection />
       <BenchmarkSection />
+      <LiveStatsSection />
       <CTASection />
       <Footer />
     </div>
