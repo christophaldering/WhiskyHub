@@ -1,0 +1,160 @@
+HARD PROMPT — Nordstern-Satz + Bilder in den drei Schritten (landing-x)
+
+ZIEL: In client/src/pages/landing-x.tsx (a) den Einleitungssatz über die drei Schritte setzen
+und (b) jedem Schritt sein Bild voranstellen (Bild | Text, am Handy gestapelt mit Bild oben).
+KEIN Schema, KEIN drizzle, KEIN Commit/Push.
+
+ROLLBACK-TAG ZUERST:
+  git tag pre-arc-bilder-2026-06-26
+
+STEP 0 — DIAGNOSE (nur lesen, dann STOPP + warte auf "OK"):
+  1) Bestätige, dass diese drei Dateien existieren:
+     client/src/assets/images/arc-1-erleben.png
+     client/src/assets/images/arc-2-vergleich.png
+     client/src/assets/images/arc-3-muster.png
+     Falls eine fehlt: NICHT fortfahren, melden.
+  2) Bestätige in client/src/pages/landing-x.tsx: `import heroImage from "@/assets/images/hero-whisky.png";`,
+     `<div style={{ ...container, maxWidth: 720 }}>` und `display: "flex",` innerhalb von ArcSection.
+
+NACH MEINEM OK — Edits NUR in client/src/pages/landing-x.tsx:
+
+EDIT 1 — Bild-Importe ergänzen.
+SUCHE:
+import heroImage from "@/assets/images/hero-whisky.png";
+ERSETZE:
+import heroImage from "@/assets/images/hero-whisky.png";
+import arc1 from "@/assets/images/arc-1-erleben.png";
+import arc2 from "@/assets/images/arc-2-vergleich.png";
+import arc3 from "@/assets/images/arc-3-muster.png";
+
+EDIT 2 — Bild dem 1. Schritt zuordnen.
+SUCHE:
+      num: "01",
+      eyebrow: "Erleben wird Benennen",
+ERSETZE:
+      num: "01",
+      img: arc1,
+      eyebrow: "Erleben wird Benennen",
+
+EDIT 3 — Bild dem 2. Schritt zuordnen.
+SUCHE:
+      num: "02",
+      eyebrow: "Benennen wird Vergleichen",
+ERSETZE:
+      num: "02",
+      img: arc2,
+      eyebrow: "Benennen wird Vergleichen",
+
+EDIT 4 — Bild dem 3. Schritt zuordnen.
+SUCHE:
+      num: "03",
+      eyebrow: "Vergleichen wird Erkennen",
+ERSETZE:
+      num: "03",
+      img: arc3,
+      eyebrow: "Vergleichen wird Erkennen",
+
+EDIT 5 — Container verbreitern + Nordstern-Satz einfügen.
+SUCHE:
+      <div style={{ ...container, maxWidth: 720 }}>
+        {steps.map((s, i) => (
+ERSETZE:
+      <div style={{ ...container, maxWidth: 920 }}>
+        <FadeUp>
+          <p
+            style={{
+              fontFamily: font.display,
+              fontSize: "clamp(23px, 3.4vw, 34px)",
+              fontWeight: 400,
+              color: v.text,
+              lineHeight: 1.4,
+              letterSpacing: "-0.01em",
+              textAlign: "center",
+              maxWidth: 640,
+              margin: "0 auto 80px",
+            }}
+            data-testid="arc-thesis"
+          >
+            Ein guter Whisky verdient mehr als »lecker«. CaskSense hilft dir, den flüchtigen
+            Moment am Glas in eigene Worte zu fassen — und macht aus diesen Worten Vergleich
+            und Muster: für dich, deine Runde und eine wachsende Community.
+          </p>
+        </FadeUp>
+        {steps.map((s, i) => (
+
+EDIT 6 — Schritt-Zeile von „große Nummer + Text" auf „Bild | Text" umbauen.
+SUCHE:
+            <div
+              style={{
+                display: "flex",
+                gap: 24,
+                alignItems: "flex-start",
+                paddingBottom: i < steps.length - 1 ? 56 : 0,
+                marginBottom: i < steps.length - 1 ? 56 : 0,
+                borderBottom: i < steps.length - 1 ? `1px solid ${v.border}` : "none",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: font.display,
+                  fontSize: "clamp(28px, 5vw, 44px)",
+                  fontWeight: 400,
+                  color: `${ACCENT}55`,
+                  lineHeight: 1,
+                  flexShrink: 0,
+                  width: 56,
+                }}
+              >
+                {s.num}
+              </span>
+              <div>
+ERSETZE:
+            <div
+              style={{
+                display: "grid",
+                gap: 40,
+                alignItems: "center",
+                gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+                paddingBottom: i < steps.length - 1 ? 64 : 0,
+                marginBottom: i < steps.length - 1 ? 64 : 0,
+                borderBottom: i < steps.length - 1 ? `1px solid ${v.border}` : "none",
+              }}
+            >
+              <img
+                src={s.img}
+                alt=""
+                style={{
+                  width: "100%",
+                  height: "auto",
+                  display: "block",
+                  borderRadius: 18,
+                  aspectRatio: "1 / 1",
+                  objectFit: "cover",
+                  maskImage:
+                    "radial-gradient(ellipse 88% 88% at 50% 50%, black 66%, transparent 100%)",
+                  WebkitMaskImage:
+                    "radial-gradient(ellipse 88% 88% at 50% 50%, black 66%, transparent 100%)",
+                }}
+              />
+              <div>
+                <span
+                  style={{
+                    fontFamily: font.display,
+                    fontSize: "clamp(30px, 5vw, 46px)",
+                    fontWeight: 400,
+                    color: `${ACCENT}40`,
+                    lineHeight: 1,
+                    display: "block",
+                    marginBottom: 16,
+                  }}
+                >
+                  {s.num}
+                </span>
+
+VERIFIKATION (nur Ausgabe, NICHT committen/pushen):
+  grep -c "arc-1-erleben\|arc-2-vergleich\|arc-3-muster" client/src/pages/landing-x.tsx   # 3
+  grep -c "img: arc" client/src/pages/landing-x.tsx        # 3
+  grep -c "src={s.img}" client/src/pages/landing-x.tsx     # 1
+  grep -c "arc-thesis" client/src/pages/landing-x.tsx      # 1
+  Danach: Build-/tsc-Check, dass landing-x.tsx fehlerfrei kompiliert.
+COMMIT-VERBOT (nochmal): NICHT add/commit/push, NICHT drizzle, KEINE Schema-Änderung. Push mache ich selbst.
