@@ -1116,7 +1116,7 @@ function ArcSection() {
       eyebrow: "Erleben wird Benennen",
       title: "Aus einem Schluck werden Worte.",
       body: "Du genießt, beschreibst, hältst fest. Wenn du magst, schärft Cooper mit — ein ruhiger KI-Begleiter, der nichts vorgibt.",
-      praxis: ["Verkostungen festhalten", "solo & gemeinsam", "Aroma-Vokabular", "Cooper"],
+      praxis: "Halte deine Verkostungen fest — solo oder gemeinsam — und finde die treffenden Worte für jedes Aroma.",
     },
     {
       num: "02",
@@ -1124,7 +1124,7 @@ function ArcSection() {
       eyebrow: "Benennen wird Vergleichen",
       title: "Aus Worten wird Vergleich.",
       body: "Deine Worte werden vergleichbar — über die Zeit, in der Runde, in der Community.",
-      praxis: ["Tastings hosten & auswerten", "Geschmacksprofil & DNA", "Community-Benchmark"],
+      praxis: "Führe eigene Tastings durch, werte sie aus und vergleiche über die Zeit wie mit der ganzen Community.",
     },
     {
       num: "03",
@@ -1132,12 +1132,18 @@ function ArcSection() {
       eyebrow: "Vergleichen wird Erkennen",
       title: "Aus Vergleich werden Muster.",
       body: "Aus vielen Eindrücken wächst Wissen — leise im Hintergrund, ernsthaft gemeint.",
-      praxis: ["Wachsende Datenbank", "Muster über Gaumen & Whiskys", "Ähnlichkeiten & Unterschiede"],
+      praxis: "Eine wachsende Datenbank macht Muster im Gaumen sichtbar — und zeigt dir, welche Whiskys sich ähneln.",
     },
   ];
 
   return (
     <section style={{ padding: "96px 24px" }} data-testid="section-arc">
+      <style>{`
+        .arc-step { display: grid; grid-template-columns: 1fr; gap: 28px; align-items: center; }
+        @media (min-width: 760px) {
+          .arc-step { grid-template-columns: 240px 1fr; gap: 48px; }
+        }
+      `}</style>
       <div style={{ ...container, maxWidth: 920 }}>
         <FadeUp>
           <p
@@ -1180,13 +1186,10 @@ function ArcSection() {
         {steps.map((s, i) => (
           <FadeUp key={i} delay={i * 0.1}>
             <div
+              className="arc-step"
               style={{
-                display: "grid",
-                gap: 40,
-                alignItems: "center",
-                gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-                paddingBottom: i < steps.length - 1 ? 64 : 0,
-                marginBottom: i < steps.length - 1 ? 64 : 0,
+                paddingBottom: i < steps.length - 1 ? 56 : 0,
+                marginBottom: i < steps.length - 1 ? 56 : 0,
                 borderBottom: i < steps.length - 1 ? `1px solid ${v.border}` : "none",
               }}
             >
@@ -1197,7 +1200,7 @@ function ArcSection() {
                   width: "100%",
                   height: "auto",
                   display: "block",
-                  borderRadius: 18,
+                  borderRadius: 16,
                   aspectRatio: "1 / 1",
                   objectFit: "cover",
                   maskImage:
@@ -1210,12 +1213,12 @@ function ArcSection() {
                 <span
                   style={{
                     fontFamily: font.display,
-                    fontSize: "clamp(30px, 5vw, 46px)",
+                    fontSize: "clamp(28px, 4.5vw, 40px)",
                     fontWeight: 400,
                     color: `${ACCENT}40`,
                     lineHeight: 1,
                     display: "block",
-                    marginBottom: 16,
+                    marginBottom: 14,
                   }}
                 >
                   {s.num}
@@ -1236,7 +1239,7 @@ function ArcSection() {
                 <h2
                   style={{
                     fontFamily: font.display,
-                    fontSize: "clamp(24px, 3.4vw, 34px)",
+                    fontSize: "clamp(23px, 3.2vw, 32px)",
                     fontWeight: 400,
                     color: v.text,
                     letterSpacing: "-0.01em",
@@ -1256,25 +1259,37 @@ function ArcSection() {
                 >
                   {s.body}
                 </p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 20 }}>
-                  {s.praxis.map((chip, j) => (
-                    <span
-                      key={j}
-                      style={{
-                        fontFamily: font.body,
-                        fontSize: 12,
-                        fontWeight: 500,
-                        letterSpacing: "0.02em",
-                        color: v.muted,
-                        padding: "5px 12px",
-                        borderRadius: 999,
-                        border: `1px solid ${ACCENT}2e`,
-                        background: `${ACCENT}0a`,
-                      }}
-                    >
-                      {chip}
-                    </span>
-                  ))}
+                <div
+                  style={{
+                    marginTop: 22,
+                    paddingTop: 18,
+                    borderTop: `1px solid ${ACCENT}24`,
+                    maxWidth: 440,
+                  }}
+                >
+                  <p
+                    style={{
+                      fontFamily: font.body,
+                      fontSize: 10.5,
+                      fontWeight: 600,
+                      letterSpacing: "0.16em",
+                      textTransform: "uppercase",
+                      color: ACCENT_DIM,
+                      marginBottom: 8,
+                    }}
+                  >
+                    In der Praxis
+                  </p>
+                  <p
+                    style={{
+                      fontFamily: font.body,
+                      fontSize: "clamp(13.5px, 1.5vw, 15px)",
+                      lineHeight: 1.6,
+                      color: v.muted,
+                    }}
+                  >
+                    {s.praxis}
+                  </p>
                 </div>
               </div>
             </div>
