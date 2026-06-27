@@ -1115,21 +1115,24 @@ function ArcSection() {
       img: arc1,
       eyebrow: "Erleben wird Benennen",
       title: "Aus einem Schluck werden Worte.",
-      body: "Du genießt, beschreibst, fasst deinen Eindruck in Worte. Wenn du magst, sitzt Cooper mit am Tisch — ein ruhiger KI-Begleiter, der dir hilft, das Geschmeckte zu schärfen, ohne es vorzugeben. Das Benennen vertieft das Erleben.",
+      body: "Du genießt, beschreibst, hältst fest. Wenn du magst, schärft Cooper mit — ein ruhiger KI-Begleiter, der nichts vorgibt.",
+      praxis: ["Verkostungen festhalten", "solo & gemeinsam", "Aroma-Vokabular", "Cooper"],
     },
     {
       num: "02",
       img: arc2,
       eyebrow: "Benennen wird Vergleichen",
       title: "Aus Worten wird Vergleich.",
-      body: "Genau diese Worte machen Vergleich erst möglich — in drei Kreisen, die nach außen wachsen: du über die Zeit, deine Freunde am Tisch und die ganze Community.",
+      body: "Deine Worte werden vergleichbar — über die Zeit, in der Runde, in der Community.",
+      praxis: ["Tastings hosten & auswerten", "Geschmacksprofil & DNA", "Community-Benchmark"],
     },
     {
       num: "03",
       img: arc3,
       eyebrow: "Vergleichen wird Erkennen",
       title: "Aus Vergleich werden Muster.",
-      body: "Aus tausenden Eindrücken wächst eine Datenbank — und mit ihr Muster: wie dein Gaumen tickt, und welche Whiskys sich ähneln oder unterscheiden. Leise im Hintergrund, ernsthaft gemeint.",
+      body: "Aus vielen Eindrücken wächst Wissen — leise im Hintergrund, ernsthaft gemeint.",
+      praxis: ["Wachsende Datenbank", "Muster über Gaumen & Whiskys", "Ähnlichkeiten & Unterschiede"],
     },
   ];
 
@@ -1147,13 +1150,31 @@ function ArcSection() {
               letterSpacing: "-0.01em",
               textAlign: "center",
               maxWidth: 640,
-              margin: "0 auto 80px",
+              margin: "0 auto 24px",
             }}
             data-testid="arc-thesis"
           >
             Ein guter Whisky verdient mehr als »lecker«. CaskSense hilft dir, den flüchtigen
             Moment am Glas in eigene Worte zu fassen — und macht aus diesen Worten Vergleich
             und Muster: für dich, deine Runde und eine wachsende Community.
+          </p>
+        </FadeUp>
+        <FadeUp delay={0.1}>
+          <p
+            style={{
+              fontFamily: font.body,
+              fontSize: "clamp(14px, 1.6vw, 16px)",
+              fontWeight: 400,
+              lineHeight: 1.6,
+              color: v.muted,
+              textAlign: "center",
+              maxWidth: 600,
+              margin: "0 auto 76px",
+            }}
+            data-testid="arc-utility"
+          >
+            Konkret: Verkostungen festhalten, Tastings durchführen und auswerten, dein
+            Geschmacksprofil über die Zeit verfolgen — solo und in der Gruppe.
           </p>
         </FadeUp>
         {steps.map((s, i) => (
@@ -1235,6 +1256,26 @@ function ArcSection() {
                 >
                   {s.body}
                 </p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 20 }}>
+                  {s.praxis.map((chip, j) => (
+                    <span
+                      key={j}
+                      style={{
+                        fontFamily: font.body,
+                        fontSize: 12,
+                        fontWeight: 500,
+                        letterSpacing: "0.02em",
+                        color: v.muted,
+                        padding: "5px 12px",
+                        borderRadius: 999,
+                        border: `1px solid ${ACCENT}2e`,
+                        background: `${ACCENT}0a`,
+                      }}
+                    >
+                      {chip}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           </FadeUp>
