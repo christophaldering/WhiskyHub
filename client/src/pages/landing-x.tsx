@@ -360,6 +360,25 @@ function HeroSection() {
         </div>
       </FadeUp>
 
+      <FadeUp delay={0.1}>
+        <p
+          style={{
+            fontFamily: font.body,
+            fontSize: "clamp(10px, 1.3vw, 12px)",
+            fontWeight: 600,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: ACCENT_DIM,
+            marginBottom: 18,
+            position: "relative",
+            zIndex: 2,
+          }}
+          data-testid="hero-kicker"
+        >
+          Für alle, die Whisky mehr als nur trinken
+        </p>
+      </FadeUp>
+
       <FadeUp delay={0.15}>
         <h1
           style={{
@@ -400,18 +419,18 @@ function HeroSection() {
         <p
           style={{
             fontFamily: font.body,
-            fontSize: "clamp(15px, 1.7vw, 18px)",
-            fontWeight: 300,
-            lineHeight: 1.55,
-            color: v.mutedLight,
-            maxWidth: 460,
+            fontSize: "clamp(16px, 2vw, 21px)",
+            fontWeight: 400,
+            lineHeight: 1.5,
+            color: v.muted,
+            maxWidth: 500,
             margin: "0 auto 40px",
             position: "relative",
             zIndex: 2,
           }}
           data-testid="hero-lead"
         >
-          Whisky bewusst verkosten — und in Worte fassen, was du schmeckst. Allein oder in der Runde.
+          Verkosten, in Worte fassen, vergleichen — und mit der Zeit deinen Geschmack verstehen.
         </p>
       </FadeUp>
 
