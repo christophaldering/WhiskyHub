@@ -215,7 +215,7 @@ function JoinCodeInput() {
           letterSpacing: "0.04em",
         }}
       >
-        {t("landing.quickJoin.sublabel")}
+        {"Code eingeben, beitreten — ganz ohne Konto."}
       </p>
       <div
         style={{
@@ -375,7 +375,7 @@ function HeroSection() {
           }}
           data-testid="hero-kicker"
         >
-          Für alle, die Whisky mehr als nur trinken
+          Für alle, die Whisky bewusst genießen
         </p>
       </FadeUp>
 
@@ -430,7 +430,7 @@ function HeroSection() {
           }}
           data-testid="hero-lead"
         >
-          Verkosten, in Worte fassen, vergleichen — und mit der Zeit deinen Geschmack verstehen.
+          Verkosten, Worte finden, vergleichen — und mit der Zeit den eigenen Geschmack immer besser verstehen.
         </p>
       </FadeUp>
 
@@ -862,6 +862,23 @@ function LiveStatsSection() {
     <section style={{ padding: "80px 24px", textAlign: "center" }} data-testid="section-live-stats">
       <div style={container}>
         <FadeUp>
+          <h2
+            style={{
+              fontFamily: font.display,
+              fontSize: "clamp(24px, 3.4vw, 36px)",
+              fontWeight: 400,
+              color: v.text,
+              letterSpacing: "-0.01em",
+              lineHeight: 1.25,
+              maxWidth: 640,
+              margin: "0 auto 44px",
+            }}
+            data-testid="stats-heading"
+          >
+            Gemeinsam entsteht, was keiner allein hätte.
+          </h2>
+        </FadeUp>
+        <FadeUp>
           <div
             style={{
               display: "flex",
@@ -917,7 +934,7 @@ function LiveStatsSection() {
               lineHeight: 1.5,
             }}
           >
-            {"Echte Zahlen — aus historischen Verkostungen und allem, was seither dazukommt."}
+            {"Eine Wissensbasis über Whisky, die mit jedem Dram wächst."}
           </p>
         </FadeUp>
       </div>
@@ -1135,7 +1152,7 @@ function ArcSection() {
       eyebrow: "Erleben wird Benennen",
       title: "Aus einem Schluck werden Worte.",
       body: "Du genießt, beschreibst, hältst fest. Wenn du magst, schärft Cooper mit — ein ruhiger KI-Begleiter, der nichts vorgibt.",
-      praxis: "Halte deine Verkostungen fest — solo oder gemeinsam — und finde die treffenden Worte für jedes Aroma.",
+      praxis: "Halt jede Verkostung fest — solo oder in der Gruppe — und finde für jedes Aroma das treffende Wort.",
     },
     {
       num: "02",
@@ -1143,15 +1160,15 @@ function ArcSection() {
       eyebrow: "Benennen wird Vergleichen",
       title: "Aus Worten wird Vergleich.",
       body: "Deine Worte werden vergleichbar — über die Zeit, in der Runde, in der Community.",
-      praxis: "Führe eigene Tastings durch, werte sie aus und vergleiche über die Zeit wie mit der ganzen Community.",
+      praxis: "Veranstalte eigene Tastings, werte sie aus und vergleiche — über die Zeit und mit der ganzen Community.",
     },
     {
       num: "03",
       img: arc3,
       eyebrow: "Vergleichen wird Erkennen",
       title: "Aus Vergleich werden Muster.",
-      body: "Aus vielen Eindrücken wächst Wissen — leise im Hintergrund, ernsthaft gemeint.",
-      praxis: "Eine wachsende Datenbank macht Muster im Gaumen sichtbar — und zeigt dir, welche Whiskys sich ähneln.",
+      body: "Einzelne Eindrücke sind subjektiv. Viele zusammen werden zu Erkenntnis.",
+      praxis: "Eine Datenbank, die mit jedem Dram wächst — und zeigt, welche Whiskys sich ähneln und wie dein Gaumen tickt.",
     },
   ];
 
@@ -1164,44 +1181,6 @@ function ArcSection() {
         }
       `}</style>
       <div style={{ ...container, maxWidth: 920 }}>
-        <FadeUp>
-          <p
-            style={{
-              fontFamily: font.display,
-              fontSize: "clamp(23px, 3.4vw, 34px)",
-              fontWeight: 400,
-              color: v.text,
-              lineHeight: 1.4,
-              letterSpacing: "-0.01em",
-              textAlign: "center",
-              maxWidth: 640,
-              margin: "0 auto 24px",
-            }}
-            data-testid="arc-thesis"
-          >
-            Ein guter Whisky verdient mehr als »lecker«. CaskSense hilft dir, den flüchtigen
-            Moment am Glas in eigene Worte zu fassen — und macht aus diesen Worten Vergleich
-            und Muster: für dich, deine Runde und eine wachsende Community.
-          </p>
-        </FadeUp>
-        <FadeUp delay={0.1}>
-          <p
-            style={{
-              fontFamily: font.body,
-              fontSize: "clamp(14px, 1.6vw, 16px)",
-              fontWeight: 400,
-              lineHeight: 1.6,
-              color: v.muted,
-              textAlign: "center",
-              maxWidth: 600,
-              margin: "0 auto 76px",
-            }}
-            data-testid="arc-utility"
-          >
-            Konkret: Verkostungen festhalten, Tastings durchführen und auswerten, dein
-            Geschmacksprofil über die Zeit verfolgen — solo und in der Gruppe.
-          </p>
-        </FadeUp>
         {steps.map((s, i) => (
           <FadeUp key={i} delay={i * 0.1}>
             <div
@@ -1283,7 +1262,6 @@ function ArcSection() {
                     marginTop: 22,
                     paddingTop: 18,
                     borderTop: `1px solid ${ACCENT}24`,
-                    maxWidth: 440,
                   }}
                 >
                   <p
@@ -1302,8 +1280,8 @@ function ArcSection() {
                   <p
                     style={{
                       fontFamily: font.body,
-                      fontSize: "clamp(13.5px, 1.5vw, 15px)",
-                      lineHeight: 1.6,
+                      fontSize: "clamp(15px, 1.6vw, 17px)",
+                      lineHeight: 1.7,
                       color: v.muted,
                     }}
                   >
@@ -1350,7 +1328,7 @@ function StanceSection() {
               margin: "0 auto",
             }}
           >
-            Keine kommerzielle Absicht, kein Tracking, keine Werbung. CaskSense folgt einer einfachen Überzeugung: Ein Eindruck wird klarer, sobald man ihn benennt — und diese stille, genaue Aufmerksamkeit verdient einen Ort, der ihr nichts verkaufen will.
+            Keine kommerzielle Absicht, kein Tracking, keine Werbung. CaskSense folgt einer einfachen Überzeugung: Ein Eindruck wird klarer, wenn man ihn benennt — und das verdient einen Ort, der dir nichts verkaufen will.
           </p>
         </FadeUp>
       </div>
