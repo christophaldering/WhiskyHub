@@ -38,6 +38,7 @@ import Terms from "@/pages/terms";
 
 const GuidedPresentation = lazy(() => import("@/pages/guided-presentation"));
 const LandingNew = lazy(() => import("@/pages/landing-new"));
+const LandingX = lazy(() => import("@/pages/landing-x"));
 const LandingV2 = lazy(() => import("@/pages/landing-v2"));
 const FeatureShowcase = lazy(() => import("@/pages/feature-showcase"));
 const FeatureTour = lazy(() => import("@/pages/feature-tour"));
@@ -508,6 +509,7 @@ function Router() {
         {/* ── Public / Marketing ── */}
         <Route path="/" component={LandingCms} />
         <Route path="/landing-static" component={LandingNew} />
+        <Route path="/landing-x" component={LandingX} />
         <Route path="/landing-old" component={PublicLanding} />
         <Route path="/presentation" component={GuidedPresentation} />
         <Route path="/landing-v2" component={LandingV2} />
