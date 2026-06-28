@@ -6,3 +6,4 @@
 - [Story first-run locked blocks](story-firstrun-locked-blocks.md) — first-run AI fill must keep `!b.locked && !b.hidden`; data-seeded locked blocks (tempo beat) get clobbered otherwise.
 - [Section-type widening vs backend enum](section-overall-boundary.md) — widening a UI section type to add "overall" can leak an invalid value into a backend zod enum; narrow at every network boundary.
 - [Model-id migration boundaries](model-id-migration.md) — swap exact quoted ids only; never touch "gpt-4o-mini-transcribe"/gpt-image-1; gpt-5 family may reject max_tokens/temperature.
+- [Prod data scales & Publish backup trap](prod-data-and-publish-quirks.md) — Publish copies new dev tables to prod EMPTY (defeats existence-gated backups); prod historical scores are mixed 0-10/0-100, normalize scale-aware.
