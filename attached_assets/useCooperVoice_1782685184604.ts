@@ -1,0 +1,235 @@
+import { useState, useRef, useCallback, useEffect } from "react";
+import { pidHeaders } from "@/lib/api";
+import type { ConverseTurn } from "./impressionApi";
+
+type Status = "idle" | "token" | "connecting" | "connected" | "error";
+
+export const VOICES = ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse", "marin", "cedar"];
+
+export type Corner = "untouched" | "touched" | "sharpened";
+export interface Ledger { nose: Corner; palate: Corner; finish: Corner; body: Corner; intensity: Corner; affect: Corner; vagueResolved: boolean; }
+export const LEDGER_CORNERS = ["nose", "palate", "finish", "body", "intensity", "affect"] as const;
+export const EMPTY_LEDGER: Ledger = { nose: "untouched", palate: "untouched", finish: "untouched", body: "untouched", intensity: "untouched", affect: "untouched", vagueResolved: false };
+
+export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fluessig" | "tiefsinnig"; probe?: boolean }) {
+  const [status, setStatus] = useState<Status>("idle");
+  const [statusText, setStatusText] = useState("Bereit.");
+  const [speaking, setSpeaking] = useState(false);
+  const [model, setModel] = useState<string>("");
+  const [voice, setVoice] = useState<string>(opts?.initialVoice ?? "cedar");
+  const [mode, setMode] = useState<"fluessig" | "tiefsinnig">(opts?.initialMode ?? "tiefsinnig");
+  const [ledger, setLedger] = useState<Ledger>(EMPTY_LEDGER);
+  const [transcript, setTranscript] = useState<ConverseTurn[]>([]);
+  const [busy, setBusy] = useState(false);
+  const pcRef = useRef<RTCPeerConnection | null>(null);
+  const micRef = useRef<MediaStream | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const levelRef = useRef(0);                       // Audio-Amplitude 0..1, von der Glimmer-Ansicht gelesen
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const levelRafRef = useRef<number | null>(null);
+  const micLevelRef = useRef(0);                    // Mikro-Eingangspegel 0..1 für die Mikro-Wellen
+  const micRafRef = useRef<number | null>(null);
+  const micCtxRef = useRef<AudioContext | null>(null);
+  const mentorTimeoutRef = useRef<any>(null);
+  const dcRef = useRef<RTCDataChannel | null>(null);
+  const statusRef = useRef<Status>("idle");
+  statusRef.current = status;
+
+  const cleanup = useCallback(() => {
+    try { pcRef.current?.close(); } catch { /* noop */ }
+    pcRef.current = null;
+    try { micRef.current?.getTracks().forEach((t) => t.stop()); } catch { /* noop */ }
+    micRef.current = null;
+    if (mentorTimeoutRef.current) { clearTimeout(mentorTimeoutRef.current); mentorTimeoutRef.current = null; }
+    dcRef.current = null;
+    if (levelRafRef.current) { cancelAnimationFrame(levelRafRef.current); levelRafRef.current = null; }
+    if (audioCtxRef.current) { try { audioCtxRef.current.close(); } catch { /* noop */ } audioCtxRef.current = null; }
+    if (micRafRef.current) { cancelAnimationFrame(micRafRef.current); micRafRef.current = null; }
+    if (micCtxRef.current) { try { micCtxRef.current.close(); } catch { /* noop */ } micCtxRef.current = null; }
+    micLevelRef.current = 0;
+    levelRef.current = 0;
+    setSpeaking(false);
+  }, []);
+
+  useEffect(() => () => cleanup(), [cleanup]);
+
+  const fail = useCallback((msg: string, err?: unknown) => {
+    console.error("[voice-probe]", msg, err);
+    setStatus("error");
+    setStatusText("Fehler: " + msg);
+    setBusy(false);
+    cleanup();
+  }, [cleanup]);
+
+  const connect = useCallback(async () => {
+    setBusy(true);
+    setStatus("token");
+    setStatusText("fordere Token an …");
+    setLedger(EMPTY_LEDGER);
+    setTranscript([]);
+    try {
+      const wantIntro = opts?.probe !== true && (() => { try { return localStorage.getItem("labs_cooper_voice_intro_seen") !== "1"; } catch { return false; } })();
+      const tokenRes = await fetch("/api/voice-probe/token", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ voice, mode, probe: opts?.probe === true, intro: wantIntro }) });
+      const tokenText = await tokenRes.text();
+      if (!tokenRes.ok) { fail(`Token ${tokenRes.status}: ${tokenText.slice(0, 300)}`); return; }
+      let tokenData: any = {}; try { tokenData = JSON.parse(tokenText); } catch { /* noop */ }
+      const EPHEMERAL_KEY = tokenData?.value;
+      const usedModel = tokenData?.model || "gpt-realtime";
+      setModel(usedModel);
+      if (tokenData?.voice) setVoice(tokenData.voice);
+      if (tokenData?.mode) setMode(tokenData.mode);
+      if (!EPHEMERAL_KEY) { fail("Kein ephemeraler Key in der Token-Antwort."); return; }
+
+      setStatus("connecting");
+      setStatusText("verbinde …");
+      const pc = new RTCPeerConnection();
+      pcRef.current = pc;
+
+      const audioEl = document.createElement("audio");
+      audioEl.autoplay = true;
+      audioRef.current = audioEl;
+      pc.ontrack = (e) => {
+        audioEl.srcObject = e.streams[0];
+        try {
+          const AC: any = (window as any).AudioContext || (window as any).webkitAudioContext;
+          if (AC) {
+            const ctx = new AC();
+            audioCtxRef.current = ctx;
+            const srcNode = ctx.createMediaStreamSource(e.streams[0]);
+            const analyser = ctx.createAnalyser();
+            analyser.fftSize = 256;
+            analyser.smoothingTimeConstant = 0.6;
+            srcNode.connect(analyser);
+            const data = new Uint8Array(analyser.frequencyBinCount);
+            const tick = () => {
+              analyser.getByteFrequencyData(data);
+              let sum = 0; for (let i = 0; i < data.length; i++) sum += data[i];
+              levelRef.current = Math.min(1, (sum / data.length / 255) * 2.2);
+              levelRafRef.current = requestAnimationFrame(tick);
+            };
+            tick();
+          }
+        } catch { /* iOS Safari liefert auf Remote-Streams evtl. keine Daten → Glimmer nutzt speaking-Fallback */ }
+      };
+
+      pc.onconnectionstatechange = () => {
+        const st = pc.connectionState;
+        console.log("[voice-probe] connectionState", st);
+        if (st === "connected") { setStatus("connected"); setStatusText("verbunden — sprich jetzt"); setBusy(false); if (wantIntro) { try { localStorage.setItem("labs_cooper_voice_intro_seen", "1"); } catch { /* ignore */ } } }
+        else if ((st === "failed" || st === "disconnected" || st === "closed") && statusRef.current !== "error") {
+          setStatusText("Verbindung " + st);
+        }
+      };
+
+      const ms = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micRef.current = ms;
+      // Mikro-Eingangspegel für die Glimmer-Wellen (funktioniert auch auf iOS — anders als Remote-Streams)
+      try {
+        const MAC: any = (window as any).AudioContext || (window as any).webkitAudioContext;
+        if (MAC) {
+          const mctx = new MAC();
+          micCtxRef.current = mctx;
+          const msrc = mctx.createMediaStreamSource(ms);
+          const manalyser = mctx.createAnalyser();
+          manalyser.fftSize = 256;
+          manalyser.smoothingTimeConstant = 0.5;
+          msrc.connect(manalyser);
+          const mdata = new Uint8Array(manalyser.frequencyBinCount);
+          const mtick = () => {
+            manalyser.getByteFrequencyData(mdata);
+            let sum = 0; for (let i = 0; i < mdata.length; i++) sum += mdata[i];
+            micLevelRef.current = Math.min(1, (sum / mdata.length / 255) * 2.8);
+            micRafRef.current = requestAnimationFrame(mtick);
+          };
+          mtick();
+        }
+      } catch { /* Mikro-Pegel optional */ }
+      pc.addTrack(ms.getTracks()[0], ms);
+
+      let responseActive = false;
+      let pendingToolResponse = false;
+      let pendingMentor: string | null = null;
+      const flushMentor = () => { if (mentorTimeoutRef.current) { clearTimeout(mentorTimeoutRef.current); mentorTimeoutRef.current = null; } if (pendingMentor) { const t = pendingMentor; pendingMentor = null; setTranscript((prev) => [...prev, { role: "mentor", text: t }]); } };
+      const dc = pc.createDataChannel("oai-events");
+      dcRef.current = dc;
+      // Cooper evaluiert bei jeder Sprech-Pause (VAD); per cooper_pass bleibt er still, wenn er nicht angesprochen wurde.
+      const triggerCooper = () => { if (responseActive) return; try { dc.send(JSON.stringify({ type: "response.create" })); } catch (err) { console.error("[voice-probe] turn trigger failed", err); } };
+      dc.onopen = () => {
+        console.log("[voice-probe] datachannel open");
+        try { dc.send(JSON.stringify({ type: "response.create" })); } catch (err) { console.error("[voice-probe] greeting trigger failed", err); }
+      };
+      dc.onmessage = (e) => {
+        let msg: any = null;
+        try { msg = JSON.parse(e.data); } catch { return; }
+        if (msg?.type === "response.created") { responseActive = true; setSpeaking(true); }
+        if (msg?.type === "input_audio_buffer.speech_stopped") { triggerCooper(); }
+        if (msg?.type === "response.done") {
+          responseActive = false;
+          setSpeaking(false);
+          if (pendingToolResponse) {
+            pendingToolResponse = false;
+            try { dc.send(JSON.stringify({ type: "response.create" })); } catch (err) { console.error("[voice-probe] pending response trigger failed", err); }
+          }
+        }
+        if (msg?.type === "conversation.item.input_audio_transcription.completed" && msg?.transcript) { const t = String(msg.transcript).trim(); if (t) setTranscript((prev) => [...prev, { role: "taster", text: t }]); }
+        if ((msg?.type === "response.output_audio_transcript.done" || msg?.type === "response.audio_transcript.done") && msg?.transcript) { const t = String(msg.transcript).trim(); if (t) { pendingMentor = t; if (mentorTimeoutRef.current) clearTimeout(mentorTimeoutRef.current); mentorTimeoutRef.current = setTimeout(flushMentor, 15000); } }
+        if (msg?.type === "output_audio_buffer.stopped") { flushMentor(); setSpeaking(false); }
+        if (msg?.type === "response.function_call_arguments.done" && msg?.name === "cooper_pass") {
+          try { dc.send(JSON.stringify({ type: "response.cancel" })); } catch { /* noop */ }
+          return;
+        }
+        if (msg?.type === "response.function_call_arguments.done" && msg?.name === "update_ledger") {
+          console.log("[voice-probe] tool-call update_ledger", msg.arguments);
+          let args: any = {};
+          try { args = JSON.parse(msg.arguments); } catch { /* noop */ }
+          setLedger((prev) => {
+            const next: Ledger = { ...prev };
+            for (const k of LEDGER_CORNERS) { if (typeof args[k] === "string") next[k] = args[k] as Corner; }
+            if (typeof args.vagueResolved === "boolean") next.vagueResolved = args.vagueResolved;
+            return next;
+          });
+          try {
+            dc.send(JSON.stringify({ type: "conversation.item.create", item: { type: "function_call_output", call_id: msg.call_id, output: JSON.stringify({ ok: true }) } }));
+          } catch (err) { console.error("[voice-probe] ledger-ack failed", err); }
+          if (responseActive) { pendingToolResponse = true; } else {
+            try { dc.send(JSON.stringify({ type: "response.create" })); } catch (err) { console.error("[voice-probe] tool response trigger failed", err); }
+          }
+        }
+      };
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      const sdpRes = await fetch(`https://api.openai.com/v1/realtime/calls?model=${encodeURIComponent(usedModel)}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${EPHEMERAL_KEY}`, "Content-Type": "application/sdp" },
+        body: offer.sdp,
+      });
+      const answerSdp = await sdpRes.text();
+      if (!sdpRes.ok) { fail(`SDP ${sdpRes.status}: ${answerSdp.slice(0, 300)}`); return; }
+      await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
+      setStatusText("Handshake gesendet, warte auf Verbindung …");
+    } catch (e: any) {
+      fail(e?.message || String(e), e);
+    }
+  }, [fail, voice, mode]);
+
+  const summon = useCallback(() => {
+    const dc = dcRef.current;
+    if (!dc || dc.readyState !== "open") return;
+    try { dc.send(JSON.stringify({ type: "response.cancel" })); } catch { /* noop */ }
+    try {
+      dc.send(JSON.stringify({ type: "conversation.item.create", item: { type: "message", role: "user", content: [{ type: "input_text", text: "[Antippen \u2014 der Taster moechte jetzt ausdruecklich von dir hoeren. Reagiere knapp und hilf ihm, seinen Eindruck zu schaerfen, dann zieh dich zurueck.]" }] } }));
+      dc.send(JSON.stringify({ type: "response.create" }));
+    } catch (err) { console.error("[voice-probe] summon failed", err); }
+  }, []);
+
+  const disconnect = useCallback(() => {
+    cleanup();
+    setStatus("idle");
+    setStatusText("Getrennt.");
+    setBusy(false);
+  }, [cleanup]);
+
+  return { status, statusText, model, voice, setVoice, mode, setMode, ledger, transcript, busy, connect, disconnect, levelRef, micLevelRef, speaking, summon };
+}

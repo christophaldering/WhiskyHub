@@ -1,0 +1,276 @@
+ROLLE: Führe exakt die folgenden Schritte aus. Dies bündelt: Summon/Tap-Weckruf, Kontext-Notiz,
+Intro-Erklärung, Abschied/Persönlichkeit, Admin-Notizlänge UND die Glimmer-Bühne (Cooper-Aura,
+Mikro-Wellen, Flash-Fix).
+
+VERBOTEN (durchgängig, AUCH in der Verifikation): KEIN git commit, KEIN git push, KEIN
+drizzle-kit, KEINE Schema-Änderung, KEINE Migration. Nur Dateiinhalte ändern. Keine neuen
+DB-Tabellen/Spalten — alles läuft über App-Settings.
+
+Sicherung zuerst: git tag pre-cooper-full-2026-06-28
+
+════════ SCHRITT 0 — DRIFT-CHECK (PFLICHT, vor jeder Änderung) ════════
+  grep -c 'create_response: false' server/routes.ts            # erwartet ≥1 (erst-zuhören da)
+  grep -c 'cooperGreetingContract' server/routes.ts            # erwartet ≥1
+  grep -c 'name: "cooper_pass"' server/routes.ts               # erwartet 0
+  grep -c 'cooperVoiceLifeBlock' server/routes.ts              # erwartet 0
+  grep -c 'cooper-aura' client/src/labs/labs-theme.css         # erwartet 0
+WENN cooper_pass, cooperVoiceLifeBlock ODER cooper-aura ≥1 IST, oder eine der ersten beiden 0:
+STOPP, nichts ändern, melde alle fünf Zahlen zurück. (Dann ist der Stand anders als erwartet.)
+
+════════ DATEI 1 — client/src/labs/components/rating/useCooperVoice.ts ════════
+Ersetze den GESAMTEN Inhalt durch die beigefügte Datei useCooperVoice.ts.
+
+════════ DATEI 2 — client/src/labs/components/rating/ImpressionCapture.tsx ════════
+Ersetze den GESAMTEN Inhalt durch die beigefügte Datei ImpressionCapture.tsx.
+
+════════ DATEI 3 — client/src/labs/labs-theme.css (ANHÄNGEN) ════════
+SUCHE:
+@media (prefers-reduced-motion: reduce) {
+  .cooper-barrel.is-live .cooper-barrel-glow { transform: none; transition: opacity 120ms linear; }
+}
+ERSETZE durch (dasselbe + Anhang):
+@media (prefers-reduced-motion: reduce) {
+  .cooper-barrel.is-live .cooper-barrel-glow { transform: none; transition: opacity 120ms linear; }
+}
+
+/* ── Glimmer-Bühne: Cooper-Aura (Cooper spricht) + Mikro-Wellen (du sprichst) ── */
+.cooper-aura {
+  position: absolute; top: 50%; left: 50%;
+  width: 230px; height: 230px; margin: -115px 0 0 -115px;
+  border-radius: 50%; pointer-events: none; z-index: 0;
+  background: radial-gradient(circle, color-mix(in srgb, var(--labs-gold) 52%, transparent) 0%, color-mix(in srgb, var(--labs-gold) 26%, transparent) 36%, transparent 68%);
+  filter: blur(3px);
+  opacity: calc(0.95 * var(--cooper-level, 0));
+  transform: scale(calc(1 + 0.9 * var(--cooper-level, 0)));
+  transition: opacity 100ms linear, transform 120ms ease-out;
+}
+.cooper-mic-layer {
+  position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  opacity: calc(var(--mic-level, 0));
+  transition: opacity 110ms linear;
+}
+.cooper-stage.is-cooper-speaking .cooper-mic-layer { opacity: 0; }
+.cooper-mic-ripple {
+  position: absolute; top: 50%; left: 50%;
+  width: 230px; height: 230px; margin: -115px 0 0 -115px;
+  border-radius: 50%; border: 1.5px solid color-mix(in srgb, var(--labs-text) 40%, transparent);
+  opacity: 0; animation: cooper-mic-wave 2.4s ease-out infinite;
+}
+.cooper-mic-ripple.r2 { animation-delay: 0.8s; }
+.cooper-mic-ripple.r3 { animation-delay: 1.6s; }
+@keyframes cooper-mic-wave {
+  0%   { transform: scale(0.6); opacity: 0; }
+  22%  { opacity: 0.7; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cooper-aura { transition: none; }
+  .cooper-mic-layer { display: none; }
+}
+
+════════ DATEI 4 — server/routes.ts (SIEBEN Ersetzungen) ════════
+
+—— 4a: cooper_pass-Tool ——
+SUCHE:
+            vagueResolved: { type: "boolean" },
+          },
+          required: [],
+        },
+      }];
+ERSETZE durch:
+            vagueResolved: { type: "boolean" },
+          },
+          required: [],
+        },
+      }, {
+        type: "function",
+        name: "cooper_pass",
+        description: "Rufe dies auf, wenn der Taster dich NICHT angesprochen und nichts gefragt hat \u2014 du bleibst dann still und sagst KEIN Wort. Das ist dein Normalfall, waehrend der Taster fuer sich verkostet.",
+        parameters: { type: "object", properties: {}, required: [] },
+      }];
+
+—— 4b: Begrüßungs-Vertrag (Summon/Pass) ——
+SUCHE (eine Zeile):
+      const cooperGreetingContract = "DEINE ERÖFFNUNG — jedes Mal als Allererstes, und sie ÜBERSCHREIBT alle abweichenden Eröffnungs-Hinweise weiter oben: Begrüße knapp und sachlich, nenne dich Cooper, und mach den Ablauf klar — du hörst jetzt vor allem zu; du meldest dich erst, wenn der Taster eine deutliche Pause macht oder dich anspricht, und hilfst ihm dann, seinen Eindruck zu schärfen. Lade ihn ein, zu beginnen, wann er mag. Kein Smalltalk, keine Begeisterung, kein Lob, nichts über diese Flasche. Nach dieser Eröffnung bist du still und wartest — du kommentierst nicht und bestätigst nicht, du hilfst nur beim Schärfen, wenn du an der Reihe bist.";
+ERSETZE durch (eine Zeile):
+      const cooperGreetingContract = "DEINE ERÖFFNUNG (jedes Mal als Allererstes, sie ÜBERSCHREIBT abweichende Eröffnungs-Hinweise oben; variiere die Formulierung): Begrüße knapp und sachlich, nenne dich Cooper, und sag in einem kurzen Satz, dass du vor allem zuhörst und dich von dir aus nur sehr selten meldest — der Taster soll dich einfach ansprechen oder antippen, wann immer er etwas von dir will; dann bist du da und ziehst dich danach wieder zurück. Kein Smalltalk, keine Begeisterung, kein Lob, nichts über diese Flasche.\n\nDANACH gilt für jede Gelegenheit zu reagieren: Prüfe zuerst, ob der Taster gerade DICH angesprochen oder dir eine Frage gestellt hat (etwa 'Cooper, ...', 'was meinst du', 'hilf mir mal') ODER ob er ausdrücklich um deine Reaktion gebeten wurde. Wenn NICHT — er denkt nur laut, beschreibt für sich, macht eine Pause —, dann rufe das Tool cooper_pass auf und sage KEIN WORT; das ist dein Normalfall. NUR wenn du klar angesprochen/gefragt wurdest, reagierst du: knapp, hilf ihm seinen Eindruck zu schärfen (eine Frage oder ein konkreter Bezug), dann zieh dich sofort wieder zurück. Im Zweifel: cooper_pass.";
+
+—— 4c: Stimme — Abschied & Persönlichkeit (Montage-Zeile) ——
+SUCHE (eine Zeile):
+      const instructions = baseInstr + "\n\n" + continuerBlock + " " + (continuerByLevel[cooperLevel] || continuerByLevel.adaptive) + "\n\n" + backdoorBlock + (knobV ? "\n\n" + knobV : "") + (wantsVoiceIntro ? "\n\n" + cooperVoiceIntroBlock : "") + "\n\n" + cooperGreetingContract;
+ERSETZE durch (ZWEI Zeilen):
+      const cooperVoiceLifeBlock = "LEBENDIGKEIT & ABSCHIED: Sprich nie wie ein Protokoll oder ein Assistent, der Aufgaben quittiert. Vermeide technisch-flache \u00dcbergangsfloskeln wie 'alles klar, ich ordne das f\u00fcr dich', 'verstanden, ich verarbeite das' oder 'einen Moment, ich fasse zusammen'. Wenn du zum Festhalten der Notiz \u00fcbergehst, sag es lebendig, beil\u00e4ufig und jedes Mal anders \u2014 in deinen eigenen, menschlichen Worten, mit einem Hauch Pers\u00f6nlichkeit, mal trocken, mal w\u00e4rmer, nie nach Schema F. Und wenn der Taster signalisiert, dass er fertig ist, oder sich verabschiedet, dann verabschiede auch DU dich: kurz, echt und freundlich, in wechselnden Worten \u2014 kein immer gleicher Standardsatz, sondern ein zugewandter eigener Abschluss, der zum Moment passt.";
+      const instructions = baseInstr + "\n\n" + continuerBlock + " " + (continuerByLevel[cooperLevel] || continuerByLevel.adaptive) + "\n\n" + backdoorBlock + (knobV ? "\n\n" + knobV : "") + (wantsVoiceIntro ? "\n\n" + cooperVoiceIntroBlock : "") + "\n\n" + cooperGreetingContract + "\n\n" + cooperVoiceLifeBlock;
+
+—— 4d: Prosa-Prompt, optionaler Kontext-Abschnitt ——
+SUCHE:
+Schreibe die vier Überschriften GENAU so (ein Wort je eigener Zeile, ohne Doppelpunkt, ohne Nummerierung, ohne Sternchen).
+ERSETZE durch:
+Schreibe diese vier Überschriften GENAU so (ein Wort je eigener Zeile, ohne Doppelpunkt, ohne Nummerierung, ohne Sternchen). NUR WENN der Taster im Gespräch etwas zum Rahmen der Verkostung gesagt hat — Ort, Zeit, Wetter, Anlass, Stimmung oder Begleitung (z. B. mit wem er verkostet) —, hänge GANZ AM ENDE einen fünften Abschnitt mit der Überschrift Kontext an (genauso in eigener Zeile) und halte das dort in seiner Ich-Stimme fest. Hat er zum Rahmen nichts gesagt, LASS den Kontext-Abschnitt komplett weg — erfinde keinen Rahmen und keine Begleitung.
+
+—— 4e: GET cooper-defaults — noteLength ——
+SUCHE:
+    const pW = await storage.getAppSetting("cooper_persona_warmth");
+    return res.json({ voice: gV ?? "cedar", mode: gM ?? "tiefsinnig", reserve: pR ?? "mid", spark: pS ?? "mid", warmth: pW ?? "mid" });
+ERSETZE durch:
+    const pW = await storage.getAppSetting("cooper_persona_warmth");
+    const nL = await storage.getAppSetting("cooper_note_length");
+    return res.json({ voice: gV ?? "cedar", mode: gM ?? "tiefsinnig", reserve: pR ?? "mid", spark: pS ?? "mid", warmth: pW ?? "mid", noteLength: nL ?? "lang" });
+
+—— 4f: POST cooper-defaults — noteLength ——
+SUCHE:
+    const warmth = WARMTH.includes(req.body?.warmth) ? req.body.warmth : "mid";
+    await storage.setAppSetting("cooper_default_voice", req.body.voice);
+    await storage.setAppSetting("cooper_default_mode", req.body.mode);
+    await storage.setAppSetting("cooper_persona_reserve", reserve);
+    await storage.setAppSetting("cooper_persona_spark", spark);
+    await storage.setAppSetting("cooper_persona_warmth", warmth);
+    return res.json({ voice: req.body.voice, mode: req.body.mode, reserve, spark, warmth });
+ERSETZE durch:
+    const warmth = WARMTH.includes(req.body?.warmth) ? req.body.warmth : "mid";
+    const NOTELEN = ["kurz", "lang", "ausfuehrlich"];
+    const noteLength = NOTELEN.includes(req.body?.noteLength) ? req.body.noteLength : "lang";
+    await storage.setAppSetting("cooper_default_voice", req.body.voice);
+    await storage.setAppSetting("cooper_default_mode", req.body.mode);
+    await storage.setAppSetting("cooper_persona_reserve", reserve);
+    await storage.setAppSetting("cooper_persona_spark", spark);
+    await storage.setAppSetting("cooper_persona_warmth", warmth);
+    await storage.setAppSetting("cooper_note_length", noteLength);
+    return res.json({ voice: req.body.voice, mode: req.body.mode, reserve, spark, warmth, noteLength });
+
+—— 4g: Prosa-Längen-Direktive + Token-Bump ——
+SUCHE:
+        const pc = await openai.chat.completions.create({
+          model: "gpt-5-mini",
+          max_completion_tokens: 2400,
+          reasoning_effort: "minimal",
+          messages: [{ role: "system", content: proseSystem }, { role: "user", content: `Gespräch:${ctx}\n${convo}` }],
+        });
+ERSETZE durch:
+        const noteLen = (await storage.getAppSetting("cooper_note_length")) ?? "lang";
+        const lengthDirective = noteLen === "kurz"
+          ? "\n\nLÄNGE: Halte die Notiz bewusst KNAPP und auf das Wesentliche verdichtet — verliere nichts Inhaltliches des Tasters, aber formuliere kompakt."
+          : noteLen === "ausfuehrlich"
+          ? "\n\nLÄNGE: Schreibe SEHR AUSFÜHRLICH und reich ausgestaltet. Entfalte jede Wahrnehmung großzügig, in voller, evokativer Sprache, und gib auch Nebengedanken breiten Raum — ohne je etwas zu erfinden."
+          : "\n\nLÄNGE: Schreibe ausführlich und vollständig; gib jeder Beobachtung des Tasters Raum und bleibe seinem Reichtum treu.";
+        const pc = await openai.chat.completions.create({
+          model: "gpt-5-mini",
+          max_completion_tokens: 3200,
+          reasoning_effort: "minimal",
+          messages: [{ role: "system", content: proseSystem + lengthDirective }, { role: "user", content: `Gespräch:${ctx}\n${convo}` }],
+        });
+
+════════ DATEI 5 — client/src/labs/utils/dramNoteHtml.ts ════════
+SUCHE:
+const SECTIONS = ["Nase", "Gaumen", "Abgang", "Gesamteindruck"];
+const EN: Record<string, string> = { Nase: "Nose", Gaumen: "Palate", Abgang: "Finish", Gesamteindruck: "Overall" };
+ERSETZE durch:
+const SECTIONS = ["Nase", "Gaumen", "Abgang", "Gesamteindruck", "Kontext"];
+const EN: Record<string, string> = { Nase: "Nose", Gaumen: "Palate", Abgang: "Finish", Gesamteindruck: "Overall", Kontext: "Context" };
+
+════════ DATEI 6 — client/src/labs/utils/dramNotePdf.ts ════════
+SUCHE:
+const SECTIONS = ["Nase","Gaumen","Abgang","Gesamteindruck"];
+const EN: Record<string,string> = { Nase:"NOSE", Gaumen:"PALATE", Abgang:"FINISH", Gesamteindruck:"OVERALL" };
+ERSETZE durch:
+const SECTIONS = ["Nase","Gaumen","Abgang","Gesamteindruck","Kontext"];
+const EN: Record<string,string> = { Nase:"NOSE", Gaumen:"PALATE", Abgang:"FINISH", Gesamteindruck:"OVERALL", Kontext:"KONTEXT" };
+
+════════ DATEI 7 — client/src/labs/components/rating/ImpressionHowItWorks.tsx ════════
+SUCHE:
+export default function ImpressionHowItWorks() {
+  const { t } = useTranslation();
+
+  const points = [
+    { Icon: MessageCircle,
+      lead: t("v2.impressionHow1Lead", "Du beginnst."),
+      text: t("v2.impressionHow1", "Sag oder tippe frei, was du wahrnimmst — roh, unfertig, in deinen eigenen Worten. Es gibt kein Richtig, Fachbegriffe brauchst du nicht.") },
+    { Icon: Ear,
+      lead: t("v2.impressionHow2Lead", "Cooper hört zu."),
+      text: t("v2.impressionHow2", "Er fragt nur dort behutsam nach, wo es dir hilft — und gibt dir nichts vor.") },
+    { Icon: CircleCheck,
+      lead: t("v2.impressionHow3Lead", "Du behältst das letzte Wort."),
+      text: t("v2.impressionHow3", "Aus deinen Worten wird deine Notiz und ein Wertungsvorschlag. Aufhören kannst du jederzeit.") },
+  ];
+ERSETZE durch:
+export default function ImpressionHowItWorks({ mode = "input" }: { mode?: "voice" | "input" }) {
+  const { t } = useTranslation();
+
+  const point2 = mode === "voice"
+    ? t("v2.impressionHow2Voice", "Er hält sich zurück und meldet sich von selbst nur selten. Willst du etwas von ihm, sprich ihn an oder tippe das Fass an — dann ist er da und zieht sich danach wieder zurück.")
+    : t("v2.impressionHow2", "Er fragt nur dort behutsam nach, wo es dir hilft — und gibt dir nichts vor.");
+
+  const points = [
+    { Icon: MessageCircle,
+      lead: t("v2.impressionHow1Lead", "Du beginnst."),
+      text: t("v2.impressionHow1", "Sag oder tippe frei, was du wahrnimmst — roh, unfertig, in deinen eigenen Worten. Es gibt kein Richtig, Fachbegriffe brauchst du nicht.") },
+    { Icon: Ear,
+      lead: t("v2.impressionHow2Lead", "Cooper hört zu."),
+      text: point2 },
+    { Icon: CircleCheck,
+      lead: t("v2.impressionHow3Lead", "Du behältst das letzte Wort."),
+      text: t("v2.impressionHow3", "Aus deinen Worten wird deine Notiz und ein Wertungsvorschlag. Aufhören kannst du jederzeit.") },
+  ];
+
+════════ DATEI 8 — client/src/labs/pages/LabsVoiceProbe.tsx (SECHS) ════════
+
+—— 8a —— SUCHE:
+  const [savedDefault, setSavedDefault] = useState<{ voice: string; mode: string; reserve: string; spark: string; warmth: string } | null>(null);
+  const [reserve, setReserve] = useState("mid");
+  const [spark, setSpark] = useState("mid");
+  const [warmth, setWarmth] = useState("mid");
+ERSETZE durch:
+  const [savedDefault, setSavedDefault] = useState<{ voice: string; mode: string; reserve: string; spark: string; warmth: string; noteLength: string } | null>(null);
+  const [reserve, setReserve] = useState("mid");
+  const [spark, setSpark] = useState("mid");
+  const [warmth, setWarmth] = useState("mid");
+  const [noteLength, setNoteLength] = useState("lang");
+
+—— 8b —— SUCHE:
+        if (data?.warmth) setWarmth(data.warmth);
+        setSavedDefault({ voice: data.voice, mode: data.mode, reserve: data.reserve, spark: data.spark, warmth: data.warmth });
+ERSETZE durch:
+        if (data?.warmth) setWarmth(data.warmth);
+        if (data?.noteLength) setNoteLength(data.noteLength);
+        setSavedDefault({ voice: data.voice, mode: data.mode, reserve: data.reserve, spark: data.spark, warmth: data.warmth, noteLength: data.noteLength });
+
+—— 8c —— SUCHE:
+body: JSON.stringify({ voice, mode, reserve, spark, warmth })
+ERSETZE durch:
+body: JSON.stringify({ voice, mode, reserve, spark, warmth, noteLength })
+
+—— 8d —— SUCHE:
+      setSavedDefault({ voice: data.voice, mode: data.mode, reserve: data.reserve, spark: data.spark, warmth: data.warmth });
+      setSaveMsg("Gespeichert");
+ERSETZE durch:
+      setSavedDefault({ voice: data.voice, mode: data.mode, reserve: data.reserve, spark: data.spark, warmth: data.warmth, noteLength: data.noteLength });
+      setSaveMsg("Gespeichert");
+
+—— 8e —— SUCHE:
+            { key: "warmth", label: "Wärme", value: warmth, setter: setWarmth, opts: [["neutral", "Neutral"], ["mid", "Ausgewogen"], ["warm", "Warm"]] },
+          ].map((knob) => (
+ERSETZE durch:
+            { key: "warmth", label: "Wärme", value: warmth, setter: setWarmth, opts: [["neutral", "Neutral"], ["mid", "Ausgewogen"], ["warm", "Warm"]] },
+            { key: "noteLength", label: "Notizlänge", value: noteLength, setter: setNoteLength, opts: [["kurz", "Kurz"], ["lang", "Lang"], ["ausfuehrlich", "Sehr ausführlich"]] },
+          ].map((knob) => (
+
+—— 8f —— SUCHE:
+Wärme {WRM_LABEL[savedDefault.warmth] ?? savedDefault.warmth}
+            </div>
+ERSETZE durch:
+Wärme {WRM_LABEL[savedDefault.warmth] ?? savedDefault.warmth} · Notiz {savedDefault.noteLength === "kurz" ? "Kurz" : savedDefault.noteLength === "ausfuehrlich" ? "Sehr ausführlich" : "Lang"}
+            </div>
+
+════════ VERIFIKATION (nur lesen) ════════
+  grep -c 'micLevelRef' client/src/labs/components/rating/useCooperVoice.ts          # ≥4
+  grep -c 'cooper-stage' client/src/labs/components/rating/ImpressionCapture.tsx     # 1
+  grep -c 'cooper-aura' client/src/labs/labs-theme.css                              # ≥2
+  grep -c 'name: "cooper_pass"' server/routes.ts                                    # 1
+  grep -c 'cooperVoiceLifeBlock' server/routes.ts                                   # 2
+  grep -c 'cooper_note_length' server/routes.ts                                     # 3
+  grep -c 'Überschrift Kontext an' server/routes.ts                                 # 1
+  grep -c 'noteLength' client/src/labs/pages/LabsVoiceProbe.tsx                      # ≥6
+  grep -c 'Kontext' client/src/labs/utils/dramNoteHtml.ts                           # 2
+  grep -c 'ImpressionHowItWorks mode=' client/src/labs/components/rating/ImpressionCapture.tsx  # 2
+
+Stimmen die Zahlen: fertig. NICHT committen, NICHT pushen, KEIN drizzle.
