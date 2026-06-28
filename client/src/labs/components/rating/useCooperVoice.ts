@@ -28,6 +28,7 @@ export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fl
   const audioCtxRef = useRef<AudioContext | null>(null);
   const levelRafRef = useRef<number | null>(null);
   const mentorTimeoutRef = useRef<any>(null);
+  const gapTimerRef = useRef<any>(null);
   const statusRef = useRef<Status>("idle");
   statusRef.current = status;
 
@@ -37,6 +38,7 @@ export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fl
     try { micRef.current?.getTracks().forEach((t) => t.stop()); } catch { /* noop */ }
     micRef.current = null;
     if (mentorTimeoutRef.current) { clearTimeout(mentorTimeoutRef.current); mentorTimeoutRef.current = null; }
+    if (gapTimerRef.current) { clearTimeout(gapTimerRef.current); gapTimerRef.current = null; }
     if (levelRafRef.current) { cancelAnimationFrame(levelRafRef.current); levelRafRef.current = null; }
     if (audioCtxRef.current) { try { audioCtxRef.current.close(); } catch { /* noop */ } audioCtxRef.current = null; }
     levelRef.current = 0;
@@ -122,6 +124,10 @@ export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fl
       let pendingMentor: string | null = null;
       const flushMentor = () => { if (mentorTimeoutRef.current) { clearTimeout(mentorTimeoutRef.current); mentorTimeoutRef.current = null; } if (pendingMentor) { const t = pendingMentor; pendingMentor = null; setTranscript((prev) => [...prev, { role: "mentor", text: t }]); } };
       const dc = pc.createDataChannel("oai-events");
+      const GAP_MS = mode === "tiefsinnig" ? 4500 : 3500;
+      const clearGap = () => { if (gapTimerRef.current) { clearTimeout(gapTimerRef.current); gapTimerRef.current = null; } };
+      const triggerCooper = () => { clearGap(); if (responseActive) return; try { dc.send(JSON.stringify({ type: "response.create" })); } catch (err) { console.error("[voice-probe] gap/address trigger failed", err); } };
+      const armGap = () => { clearGap(); gapTimerRef.current = setTimeout(() => { gapTimerRef.current = null; triggerCooper(); }, GAP_MS); };
       dc.onopen = () => {
         console.log("[voice-probe] datachannel open");
         try { dc.send(JSON.stringify({ type: "response.create" })); } catch (err) { console.error("[voice-probe] greeting trigger failed", err); }
@@ -129,7 +135,8 @@ export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fl
       dc.onmessage = (e) => {
         let msg: any = null;
         try { msg = JSON.parse(e.data); } catch { return; }
-        if (msg?.type === "response.created") { responseActive = true; setSpeaking(true); }
+        if (msg?.type === "response.created") { responseActive = true; setSpeaking(true); clearGap(); }
+        if (msg?.type === "input_audio_buffer.speech_started") { clearGap(); }
         if (msg?.type === "response.done") {
           responseActive = false;
           setSpeaking(false);
@@ -138,7 +145,7 @@ export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fl
             try { dc.send(JSON.stringify({ type: "response.create" })); } catch (err) { console.error("[voice-probe] pending response trigger failed", err); }
           }
         }
-        if (msg?.type === "conversation.item.input_audio_transcription.completed" && msg?.transcript) { const t = String(msg.transcript).trim(); if (t) setTranscript((prev) => [...prev, { role: "taster", text: t }]); }
+        if (msg?.type === "conversation.item.input_audio_transcription.completed" && msg?.transcript) { const t = String(msg.transcript).trim(); if (t) { setTranscript((prev) => [...prev, { role: "taster", text: t }]); if (/\bcooper\b/i.test(t)) { triggerCooper(); } else { armGap(); } } }
         if ((msg?.type === "response.output_audio_transcript.done" || msg?.type === "response.audio_transcript.done") && msg?.transcript) { const t = String(msg.transcript).trim(); if (t) { pendingMentor = t; if (mentorTimeoutRef.current) clearTimeout(mentorTimeoutRef.current); mentorTimeoutRef.current = setTimeout(flushMentor, 15000); } }
         if (msg?.type === "output_audio_buffer.stopped") { flushMentor(); setSpeaking(false); }
         if (msg?.type === "response.function_call_arguments.done" && msg?.name === "update_ledger") {

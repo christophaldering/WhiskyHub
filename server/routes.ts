@@ -5663,7 +5663,8 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
       const knobV = cooperPersonaKnobFragment(pReserveV, pSparkV, pWarmthV);
       const cooperVoiceIntroBlock = "EINMALIGE ERÖFFNUNG — nur dieses eine erste Mal: Sag in zwei, drei ruhigen Sätzen, wer du bist und wie ihr zusammenarbeitet — im selben nüchternen, aufgeräumten Ton wie sonst, ohne besonderen Begrüßungs-Ton. Inhalt: Du hilfst dem Taster, seine eigenen Worte zu finden; du prägst nichts vor, bewertest nicht und korrigierst nicht; er bestimmt Tempo und Reihenfolge und fängt an, wann er mag. Am Glas hältst du dich mit Wissen und Vergleichen zurück, seine Fragen beantwortest du danach. VERMEIDE jede Begrüßungs-Performance: kein 'ich freue mich', kein Versprechen, dass es schön oder spannend wird, kein aufmunterndes 'du kannst nichts falsch machen', keine Beschwichtigung, keine Begeisterung. Sei freundlich, indem du ihn ernst nimmst und auf Augenhöhe ansprichst, nicht durch Wärme-Floskeln. Stell dich schlicht vor, tritt zurück und geh dann in die offene Einladung über, frei zu erzählen, was auffällt. Knapp, kein Fachjargon, keine Aufzählung, nichts über diese Flasche. Dass deine Stimme KI ist, musst du nicht erwähnen — das steht bereits auf dem Bildschirm.";
       const wantsVoiceIntro = req.body?.intro === true && req.body?.probe !== true;
-      const instructions = baseInstr + "\n\n" + continuerBlock + " " + (continuerByLevel[cooperLevel] || continuerByLevel.adaptive) + "\n\n" + backdoorBlock + (knobV ? "\n\n" + knobV : "") + (wantsVoiceIntro ? "\n\n" + cooperVoiceIntroBlock : "");
+      const cooperGreetingContract = "DEINE ERÖFFNUNG — jedes Mal als Allererstes, und sie ÜBERSCHREIBT alle abweichenden Eröffnungs-Hinweise weiter oben: Begrüße knapp und sachlich, nenne dich Cooper, und mach den Ablauf klar — du hörst jetzt vor allem zu; du meldest dich erst, wenn der Taster eine deutliche Pause macht oder dich anspricht, und hilfst ihm dann, seinen Eindruck zu schärfen. Lade ihn ein, zu beginnen, wann er mag. Kein Smalltalk, keine Begeisterung, kein Lob, nichts über diese Flasche. Nach dieser Eröffnung bist du still und wartest — du kommentierst nicht und bestätigst nicht, du hilfst nur beim Schärfen, wenn du an der Reihe bist.";
+      const instructions = baseInstr + "\n\n" + continuerBlock + " " + (continuerByLevel[cooperLevel] || continuerByLevel.adaptive) + "\n\n" + backdoorBlock + (knobV ? "\n\n" + knobV : "") + (wantsVoiceIntro ? "\n\n" + cooperVoiceIntroBlock : "") + "\n\n" + cooperGreetingContract;
       const ledgerEnum = ["untouched", "touched", "sharpened"];
       const tools = [{
         type: "function",
@@ -5697,7 +5698,7 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
       const silenceMs = mode === "tiefsinnig" ? 1400 : 1100;
       let lastErr = "";
       for (const model of candidates) {
-        const session: any = { type: "realtime", model, instructions, audio: { input: { turn_detection: { type: "server_vad", silence_duration_ms: silenceMs, prefix_padding_ms: 300, threshold: 0.5 }, transcription: { model: "gpt-4o-mini-transcribe", language: "de" } }, output: { voice } }, tools };
+        const session: any = { type: "realtime", model, instructions, audio: { input: { turn_detection: { type: "server_vad", silence_duration_ms: silenceMs, prefix_padding_ms: 300, threshold: 0.5, create_response: false }, transcription: { model: "gpt-4o-mini-transcribe", language: "de" } }, output: { voice } }, tools };
         if (mode === "tiefsinnig") session.reasoning = { effort: "low" };
         const r = await fetch("https://api.openai.com/v1/realtime/client_secrets", {
           method: "POST",
