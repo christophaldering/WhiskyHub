@@ -1,0 +1,92 @@
+ROLLE: Du führst exakt die unten beschriebenen Änderungen aus. Cooper bekommt einen
+verlässlichen Weckruf: (1) das Realtime-Modell hört das Audio selbst und meldet sich nur,
+wenn es angesprochen wird, sonst ruft es das neue Tool cooper_pass auf und bleibt still;
+(2) ein Tipp auf die Cooper-Glimmer-Figur weckt ihn zu 100%.
+
+VERBOTEN (gilt durchgängig, auch in der Verifikation am Ende): KEIN git commit, KEIN
+git push, KEIN drizzle-kit, KEINE Schema-Änderung, KEINE Migration. Nur Dateiinhalte
+ändern. Nichts committen.
+
+Sicherung zuerst:
+  git tag pre-cooper-summon-2026-06-28
+
+────────────────────────────────────────────────────────
+SCHRITT 0 — DRIFT-CHECK (PFLICHT, vor jeder Änderung)
+Dieser Stand baut auf dem „erst-zuhören"-Build auf, der auf DIESER Replit liegt (nicht auf
+GitHub). Prüfe, dass er da ist:
+
+  grep -c 'create_response: false' server/routes.ts
+  grep -c 'cooperGreetingContract' server/routes.ts
+  grep -c 'gapTimerRef' client/src/labs/components/rating/useCooperVoice.ts
+
+ERWARTUNG: alle drei ≥ 1.
+Wenn IRGENDEINER 0 ist: STOPP, nichts ändern, melde die drei Zahlen zurück. (Dann liegt ein
+anderer Stand vor und die Anker passen nicht.)
+
+────────────────────────────────────────────────────────
+DATEI 1 — client/src/labs/components/rating/useCooperVoice.ts
+Ersetze den GESAMTEN Inhalt dieser Datei durch den Inhalt der beigefügten Datei
+useCooperVoice.ts (komplette Ersatzdatei). Nichts daran weiter editieren.
+
+────────────────────────────────────────────────────────
+DATEI 2 — server/routes.ts  (zwei Ersetzungen)
+
+== 2a: cooper_pass-Tool ergänzen ==
+SUCHE:
+            vagueResolved: { type: "boolean" },
+          },
+          required: [],
+        },
+      }];
+ERSETZE durch:
+            vagueResolved: { type: "boolean" },
+          },
+          required: [],
+        },
+      }, {
+        type: "function",
+        name: "cooper_pass",
+        description: "Rufe dies auf, wenn der Taster dich NICHT angesprochen und nichts gefragt hat \u2014 du bleibst dann still und sagst KEIN Wort. Das ist dein Normalfall, waehrend der Taster fuer sich verkostet.",
+        parameters: { type: "object", properties: {}, required: [] },
+      }];
+
+== 2b: Begrüßungs-/Verhaltens-Vertrag ersetzen ==
+SUCHE (eine Zeile, beginnt mit „const cooperGreetingContract ="; ersetze die ganze Zeile):
+      const cooperGreetingContract = "DEINE ERÖFFNUNG — jedes Mal als Allererstes, und sie ÜBERSCHREIBT alle abweichenden Eröffnungs-Hinweise weiter oben: Begrüße knapp und sachlich, nenne dich Cooper, und mach den Ablauf klar — du hörst jetzt vor allem zu; du meldest dich erst, wenn der Taster eine deutliche Pause macht oder dich anspricht, und hilfst ihm dann, seinen Eindruck zu schärfen. Lade ihn ein, zu beginnen, wann er mag. Kein Smalltalk, keine Begeisterung, kein Lob, nichts über diese Flasche. Nach dieser Eröffnung bist du still und wartest — du kommentierst nicht und bestätigst nicht, du hilfst nur beim Schärfen, wenn du an der Reihe bist.";
+ERSETZE durch:
+      const cooperGreetingContract = "DEINE ERÖFFNUNG (jedes Mal als Allererstes, sie ÜBERSCHREIBT abweichende Eröffnungs-Hinweise oben; variiere die Formulierung): Begrüße knapp und sachlich, nenne dich Cooper, und sag in einem kurzen Satz, dass du vor allem zuhörst und dich von dir aus nur sehr selten meldest — der Taster soll dich einfach ansprechen oder antippen, wann immer er etwas von dir will; dann bist du da und ziehst dich danach wieder zurück. Kein Smalltalk, keine Begeisterung, kein Lob, nichts über diese Flasche.\n\nDANACH gilt für jede Gelegenheit zu reagieren: Prüfe zuerst, ob der Taster gerade DICH angesprochen oder dir eine Frage gestellt hat (etwa 'Cooper, ...', 'was meinst du', 'hilf mir mal') ODER ob er ausdrücklich um deine Reaktion gebeten wurde. Wenn NICHT — er denkt nur laut, beschreibt für sich, macht eine Pause —, dann rufe das Tool cooper_pass auf und sage KEIN WORT; das ist dein Normalfall. NUR wenn du klar angesprochen/gefragt wurdest, reagierst du: knapp, hilf ihm seinen Eindruck zu schärfen (eine Frage oder ein konkreter Bezug), dann zieh dich sofort wieder zurück. Im Zweifel: cooper_pass.";
+
+────────────────────────────────────────────────────────
+DATEI 3 — client/src/labs/components/rating/ImpressionCapture.tsx  (zwei Ersetzungen)
+
+== 3a: Glimmer-Figur antippbar machen ==
+SUCHE:
+                <div ref={glowWrapRef} style={{ display: "flex" }}><CooperBarrel size={230} live /></div>
+ERSETZE durch:
+                <div ref={glowWrapRef} onClick={() => voice.summon()} title={t("v2.voiceTapCooper", "Tippen, um Cooper zu fragen")} style={{ display: "flex", cursor: "pointer" }}><CooperBarrel size={230} live /></div>
+
+== 3b: Tipp-Hinweis ergänzen ==
+SUCHE:
+                <div style={{ fontFamily: FONT.serif, fontStyle: "italic", fontSize: 15, color: LABS_THEME.faint, textAlign: "center" }}>
+                  {t("v2.voiceSpeakFreely", "Worte f\u00fcr das, was du wahrnimmst")}
+                </div>
+ERSETZE durch:
+                <div style={{ fontFamily: FONT.serif, fontStyle: "italic", fontSize: 15, color: LABS_THEME.faint, textAlign: "center" }}>
+                  {t("v2.voiceSpeakFreely", "Worte f\u00fcr das, was du wahrnimmst")}
+                </div>
+                <div style={{ fontFamily: FONT.body, fontSize: 12, color: LABS_THEME.faint, textAlign: "center", marginTop: 2, opacity: 0.85 }}>
+                  {t("v2.voiceTapHint", "Sprich Cooper an oder tippe ihn an, wenn du ihn brauchst")}
+                </div>
+
+────────────────────────────────────────────────────────
+VERIFIKATION (nur lesen, NICHT committen):
+  grep -c 'name: "cooper_pass"' server/routes.ts                                  # erwartet 1
+  grep -c 'cooper_pass' client/src/labs/components/rating/useCooperVoice.ts       # erwartet ≥1
+  grep -c 'const summon = useCallback' client/src/labs/components/rating/useCooperVoice.ts   # erwartet 1
+  grep -c 'speaking, summon }' client/src/labs/components/rating/useCooperVoice.ts # erwartet 1
+  grep -c 'speech_stopped' client/src/labs/components/rating/useCooperVoice.ts    # erwartet 1
+  grep -c 'gapTimerRef\|armGap\|GAP_MS' client/src/labs/components/rating/useCooperVoice.ts  # erwartet 0
+  grep -c 'voice.summon()' client/src/labs/components/rating/ImpressionCapture.tsx # erwartet 1
+
+Wenn alle Zahlen stimmen: fertig. NICHT committen, NICHT pushen, KEIN drizzle. Lass den Code
+nur im Workspace stehen; ich teste am Gerät.

@@ -389,9 +389,12 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
               {showTranscript && <LedgerConstellation data={voice.ledger as any} />}
 
               <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: SP.lg }}>
-                <div ref={glowWrapRef} style={{ display: "flex" }}><CooperBarrel size={230} live /></div>
+                <div ref={glowWrapRef} onClick={() => voice.summon()} title={t("v2.voiceTapCooper", "Tippen, um Cooper zu fragen")} style={{ display: "flex", cursor: "pointer" }}><CooperBarrel size={230} live /></div>
                 <div style={{ fontFamily: FONT.serif, fontStyle: "italic", fontSize: 15, color: LABS_THEME.faint, textAlign: "center" }}>
                   {t("v2.voiceSpeakFreely", "Worte f\u00fcr das, was du wahrnimmst")}
+                </div>
+                <div style={{ fontFamily: FONT.body, fontSize: 12, color: LABS_THEME.faint, textAlign: "center", marginTop: 2, opacity: 0.85 }}>
+                  {t("v2.voiceTapHint", "Sprich Cooper an oder tippe ihn an, wenn du ihn brauchst")}
                 </div>
               </div>
 
