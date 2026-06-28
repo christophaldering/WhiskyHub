@@ -1008,7 +1008,7 @@ export default function LabsWhiskyDNA({ embedded = false }: { embedded?: boolean
             <p style={{ fontSize: 11, color: "var(--labs-text-muted)", marginBottom: 10, lineHeight: 1.5 }}>
               {t("dnaAffinityDesc", "Higher = you tend to rate drams with this aroma above your personal baseline. Axes with too few rated drams are dampened toward neutral and flagged.")}
             </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {affinityRows.map((c) => {
                 const aff = Math.round(c.affinity ?? 50);
                 const sample = c.sample ?? 0;
@@ -1020,48 +1020,53 @@ export default function LabsWhiskyDNA({ embedded = false }: { embedded?: boolean
                     data-testid={`row-affinity-${c.id}`}
                     style={{
                       display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      padding: isHighlighted ? "6px 8px" : "0",
-                      margin: isHighlighted ? "-6px -8px" : "0",
+                      flexDirection: "column",
+                      gap: 6,
+                      padding: isHighlighted ? "8px 10px" : "0",
+                      margin: isHighlighted ? "-8px -10px" : "0",
                       borderRadius: 8,
                       background: isHighlighted ? "color-mix(in srgb, var(--labs-accent) 12%, transparent)" : "transparent",
                       boxShadow: isHighlighted ? "0 0 0 1px color-mix(in srgb, var(--labs-accent) 45%, transparent)" : "none",
                       transition: "background 300ms ease, box-shadow 300ms ease, padding 300ms ease, margin 300ms ease",
                     }}
                   >
-                    <div style={{ width: 10, height: 10, borderRadius: 3, background: c.color, flexShrink: 0 }} />
-                    <div style={{ flex: 1, fontSize: 13, color: "var(--labs-text)" }}>
-                      {lang === "de" ? c.de : c.en}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ width: 10, height: 10, borderRadius: 3, background: c.color, flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 500, color: "var(--labs-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {lang === "de" ? c.de : c.en}
+                      </div>
+                      {!sufficient && (
+                        <span
+                          data-testid={`badge-affinity-insufficient-${c.id}`}
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.04em",
+                            padding: "2px 6px",
+                            borderRadius: 999,
+                            background: "color-mix(in srgb, var(--labs-gold) 16%, transparent)",
+                            color: "var(--labs-gold)",
+                            flexShrink: 0,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {t("dnaInsufficient", "low data")}
+                        </span>
+                      )}
+                      <div style={{ fontSize: 15, fontWeight: 700, color: sufficient ? "var(--labs-text)" : "var(--labs-text-muted)", fontVariantNumeric: "tabular-nums", flexShrink: 0, minWidth: 28, textAlign: "right" }} data-testid={`text-affinity-value-${c.id}`}>
+                        {aff}
+                      </div>
                     </div>
-                    <div style={{ position: "relative", width: 110, height: 6, borderRadius: 3, background: "color-mix(in srgb, var(--labs-text) 10%, transparent)", overflow: "hidden", flexShrink: 0 }}>
-                      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${aff}%`, background: c.color, opacity: sufficient ? 1 : 0.45 }} />
-                      <div style={{ position: "absolute", top: 0, bottom: 0, left: "50%", width: 1, background: "color-mix(in srgb, var(--labs-text) 30%, transparent)" }} />
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ position: "relative", flex: 1, height: 6, borderRadius: 3, background: "color-mix(in srgb, var(--labs-text) 10%, transparent)", overflow: "hidden" }}>
+                        <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${aff}%`, background: c.color, opacity: sufficient ? 1 : 0.45 }} />
+                        <div style={{ position: "absolute", top: 0, bottom: 0, left: "50%", width: 1, background: "color-mix(in srgb, var(--labs-text) 30%, transparent)" }} />
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--labs-text-muted)", minWidth: 30, textAlign: "right", fontVariantNumeric: "tabular-nums", flexShrink: 0 }} data-testid={`text-affinity-sample-${c.id}`}>
+                        n={sample}
+                      </div>
                     </div>
-                    <div style={{ fontSize: 12, color: "var(--labs-text-muted)", minWidth: 32, textAlign: "right" }} data-testid={`text-affinity-value-${c.id}`}>
-                      {aff}
-                    </div>
-                    <div style={{ fontSize: 11, color: "var(--labs-text-muted)", minWidth: 36, textAlign: "right" }} data-testid={`text-affinity-sample-${c.id}`}>
-                      n={sample}
-                    </div>
-                    {!sufficient && (
-                      <span
-                        data-testid={`badge-affinity-insufficient-${c.id}`}
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 600,
-                          textTransform: "uppercase",
-                          letterSpacing: "0.04em",
-                          padding: "2px 6px",
-                          borderRadius: 999,
-                          background: "color-mix(in srgb, var(--labs-gold) 16%, transparent)",
-                          color: "var(--labs-gold)",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {t("dnaInsufficient", "low data")}
-                      </span>
-                    )}
                   </div>
                 );
               })}
