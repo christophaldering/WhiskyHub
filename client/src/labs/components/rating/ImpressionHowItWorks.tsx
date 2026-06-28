@@ -3,8 +3,12 @@ import { MessageCircle, Ear, CircleCheck } from "lucide-react";
 import { FONT, SP, LABS_THEME } from "./theme";
 import CooperIntro from "./CooperIntro";
 
-export default function ImpressionHowItWorks() {
+export default function ImpressionHowItWorks({ mode = "input" }: { mode?: "voice" | "input" }) {
   const { t } = useTranslation();
+
+  const point2 = mode === "voice"
+    ? t("v2.impressionHow2Voice", "Er hält sich zurück und meldet sich von selbst nur selten. Willst du etwas von ihm, sprich ihn an oder tippe das Fass an — dann ist er da und zieht sich danach wieder zurück.")
+    : t("v2.impressionHow2", "Er fragt nur dort behutsam nach, wo es dir hilft — und gibt dir nichts vor.");
 
   const points = [
     { Icon: MessageCircle,
@@ -12,7 +16,7 @@ export default function ImpressionHowItWorks() {
       text: t("v2.impressionHow1", "Sag oder tippe frei, was du wahrnimmst — roh, unfertig, in deinen eigenen Worten. Es gibt kein Richtig, Fachbegriffe brauchst du nicht.") },
     { Icon: Ear,
       lead: t("v2.impressionHow2Lead", "Cooper hört zu."),
-      text: t("v2.impressionHow2", "Er fragt nur dort behutsam nach, wo es dir hilft — und gibt dir nichts vor.") },
+      text: point2 },
     { Icon: CircleCheck,
       lead: t("v2.impressionHow3Lead", "Du behältst das letzte Wort."),
       text: t("v2.impressionHow3", "Aus deinen Worten wird deine Notiz und ein Wertungsvorschlag. Aufhören kannst du jederzeit.") },

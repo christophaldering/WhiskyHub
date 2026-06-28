@@ -1,0 +1,102 @@
+ROLLE: Führe exakt die folgenden Ersetzungen aus. (1) Cooper-Verkostungsnotiz bekommt einen
+optionalen Abschnitt "Kontext". (2) Der Intro-Screen erklärt im Stimm-Modus das neue Cooper-
+Verhalten + Fass-Antippen.
+
+VERBOTEN (durchgängig, auch in der Verifikation): KEIN git commit, KEIN git push, KEIN
+drizzle-kit, KEINE Schema-Änderung, KEINE Migration. Nur Dateiinhalte ändern.
+
+Sicherung: git tag pre-cooper-context-intro-2026-06-28
+
+────────────────────────────────────────────────────────
+DATEI 1 — server/routes.ts  (Prosa-Prompt: Kontext-Abschnitt)
+SUCHE:
+GLIEDERE die Notiz in GENAU vier Abschnitte, jeder mit seiner Überschrift in einer eigenen Zeile, in dieser Reihenfolge:
+Nase
+Gaumen
+Abgang
+Gesamteindruck
+Schreibe die vier Überschriften GENAU so (ein Wort je eigener Zeile, ohne Doppelpunkt, ohne Nummerierung, ohne Sternchen).
+ERSETZE durch:
+GLIEDERE die Notiz in vier Wahrnehmungs-Abschnitte, jeder mit seiner Überschrift in einer eigenen Zeile, in dieser Reihenfolge:
+Nase
+Gaumen
+Abgang
+Gesamteindruck
+Schreibe diese vier Überschriften GENAU so (ein Wort je eigener Zeile, ohne Doppelpunkt, ohne Nummerierung, ohne Sternchen). NUR WENN der Taster im Gespräch etwas zum Rahmen der Verkostung gesagt hat — Ort, Zeit, Wetter, Anlass, Stimmung oder Begleitung (z. B. mit wem er verkostet) —, hänge GANZ AM ENDE einen fünften Abschnitt mit der Überschrift Kontext an (genauso in eigener Zeile) und halte das dort in seiner Ich-Stimme fest. Hat er zum Rahmen nichts gesagt, LASS den Kontext-Abschnitt komplett weg — erfinde keinen Rahmen und keine Begleitung.
+
+────────────────────────────────────────────────────────
+DATEI 2 — client/src/labs/utils/dramNoteHtml.ts  (Export-Parser kennt "Kontext")
+SUCHE:
+const SECTIONS = ["Nase", "Gaumen", "Abgang", "Gesamteindruck"];
+const EN: Record<string, string> = { Nase: "Nose", Gaumen: "Palate", Abgang: "Finish", Gesamteindruck: "Overall" };
+ERSETZE durch:
+const SECTIONS = ["Nase", "Gaumen", "Abgang", "Gesamteindruck", "Kontext"];
+const EN: Record<string, string> = { Nase: "Nose", Gaumen: "Palate", Abgang: "Finish", Gesamteindruck: "Overall", Kontext: "Context" };
+
+────────────────────────────────────────────────────────
+DATEI 3 — client/src/labs/utils/dramNotePdf.ts  (Export-Parser kennt "Kontext")
+SUCHE:
+const SECTIONS = ["Nase","Gaumen","Abgang","Gesamteindruck"];
+const EN: Record<string,string> = { Nase:"NOSE", Gaumen:"PALATE", Abgang:"FINISH", Gesamteindruck:"OVERALL" };
+ERSETZE durch:
+const SECTIONS = ["Nase","Gaumen","Abgang","Gesamteindruck","Kontext"];
+const EN: Record<string,string> = { Nase:"NOSE", Gaumen:"PALATE", Abgang:"FINISH", Gesamteindruck:"OVERALL", Kontext:"KONTEXT" };
+
+────────────────────────────────────────────────────────
+DATEI 4 — client/src/labs/components/rating/ImpressionHowItWorks.tsx
+SUCHE:
+export default function ImpressionHowItWorks() {
+  const { t } = useTranslation();
+
+  const points = [
+    { Icon: MessageCircle,
+      lead: t("v2.impressionHow1Lead", "Du beginnst."),
+      text: t("v2.impressionHow1", "Sag oder tippe frei, was du wahrnimmst — roh, unfertig, in deinen eigenen Worten. Es gibt kein Richtig, Fachbegriffe brauchst du nicht.") },
+    { Icon: Ear,
+      lead: t("v2.impressionHow2Lead", "Cooper hört zu."),
+      text: t("v2.impressionHow2", "Er fragt nur dort behutsam nach, wo es dir hilft — und gibt dir nichts vor.") },
+    { Icon: CircleCheck,
+      lead: t("v2.impressionHow3Lead", "Du behältst das letzte Wort."),
+      text: t("v2.impressionHow3", "Aus deinen Worten wird deine Notiz und ein Wertungsvorschlag. Aufhören kannst du jederzeit.") },
+  ];
+ERSETZE durch:
+export default function ImpressionHowItWorks({ mode = "input" }: { mode?: "voice" | "input" }) {
+  const { t } = useTranslation();
+
+  const point2 = mode === "voice"
+    ? t("v2.impressionHow2Voice", "Er hält sich zurück und meldet sich von selbst nur selten. Willst du etwas von ihm, sprich ihn an oder tippe das Fass an — dann ist er da und zieht sich danach wieder zurück.")
+    : t("v2.impressionHow2", "Er fragt nur dort behutsam nach, wo es dir hilft — und gibt dir nichts vor.");
+
+  const points = [
+    { Icon: MessageCircle,
+      lead: t("v2.impressionHow1Lead", "Du beginnst."),
+      text: t("v2.impressionHow1", "Sag oder tippe frei, was du wahrnimmst — roh, unfertig, in deinen eigenen Worten. Es gibt kein Richtig, Fachbegriffe brauchst du nicht.") },
+    { Icon: Ear,
+      lead: t("v2.impressionHow2Lead", "Cooper hört zu."),
+      text: point2 },
+    { Icon: CircleCheck,
+      lead: t("v2.impressionHow3Lead", "Du behältst das letzte Wort."),
+      text: t("v2.impressionHow3", "Aus deinen Worten wird deine Notiz und ein Wertungsvorschlag. Aufhören kannst du jederzeit.") },
+  ];
+
+────────────────────────────────────────────────────────
+DATEI 5 — client/src/labs/components/rating/ImpressionCapture.tsx  (mode an beide Aufrufe)
+SUCHE (14 Leerzeichen Einzug, im Voice-Block):
+              <ImpressionHowItWorks />
+ERSETZE durch:
+              <ImpressionHowItWorks mode="voice" />
+
+SUCHE (10 Leerzeichen Einzug, im Input-Block):
+          <ImpressionHowItWorks />
+ERSETZE durch:
+          <ImpressionHowItWorks mode="input" />
+
+────────────────────────────────────────────────────────
+VERIFIKATION (nur lesen):
+  grep -c 'Überschrift Kontext an' server/routes.ts                                  # 1
+  grep -c 'Kontext' client/src/labs/utils/dramNoteHtml.ts                            # 2
+  grep -c 'Kontext' client/src/labs/utils/dramNotePdf.ts                             # 2
+  grep -c 'impressionHow2Voice' client/src/labs/components/rating/ImpressionHowItWorks.tsx   # 1
+  grep -c 'ImpressionHowItWorks mode=' client/src/labs/components/rating/ImpressionCapture.tsx # 2
+
+Stimmen die Zahlen: fertig. NICHT committen, NICHT pushen, KEIN drizzle.

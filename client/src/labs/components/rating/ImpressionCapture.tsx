@@ -339,7 +339,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
         <>
           {voice.status !== "connected" ? (
             <>
-              <ImpressionHowItWorks />
+              <ImpressionHowItWorks mode="voice" />
               {voice.status === "error" && (
                 <div style={{ fontFamily: FONT.body, fontSize: 14, color: LABS_THEME.amber, marginBottom: SP.sm, lineHeight: 1.4 }}>
                   {voice.statusText}
@@ -445,7 +445,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
 
       {phase === "input" && (
         <>
-          <ImpressionHowItWorks />
+          <ImpressionHowItWorks mode="input" />
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}

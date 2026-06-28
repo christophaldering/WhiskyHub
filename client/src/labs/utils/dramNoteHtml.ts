@@ -1,7 +1,7 @@
 import type { DramNoteData } from "./dramNotePdf";
 
-const SECTIONS = ["Nase", "Gaumen", "Abgang", "Gesamteindruck"];
-const EN: Record<string, string> = { Nase: "Nose", Gaumen: "Palate", Abgang: "Finish", Gesamteindruck: "Overall" };
+const SECTIONS = ["Nase", "Gaumen", "Abgang", "Gesamteindruck", "Kontext"];
+const EN: Record<string, string> = { Nase: "Nose", Gaumen: "Palate", Abgang: "Finish", Gesamteindruck: "Overall", Kontext: "Context" };
 
 function esc(s: string): string {
   return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");

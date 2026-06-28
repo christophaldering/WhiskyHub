@@ -27,8 +27,8 @@ const AMBER: [number,number,number] = [196,122,58];
 const DARK: [number,number,number] = [26,21,16];
 const GRAY: [number,number,number] = [133,120,98];
 const RULEC: [number,number,number] = [227,217,198];
-const SECTIONS = ["Nase","Gaumen","Abgang","Gesamteindruck"];
-const EN: Record<string,string> = { Nase:"NOSE", Gaumen:"PALATE", Abgang:"FINISH", Gesamteindruck:"OVERALL" };
+const SECTIONS = ["Nase","Gaumen","Abgang","Gesamteindruck","Kontext"];
+const EN: Record<string,string> = { Nase:"NOSE", Gaumen:"PALATE", Abgang:"FINISH", Gesamteindruck:"OVERALL", Kontext:"KONTEXT" };
 
 function parseSections(text: string){
   const lines=(text||"").split(/\r?\n/); const out:{header:string|null;body:string}[]=[]; let cur:{header:string|null;body:string}|null=null;
