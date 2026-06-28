@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { adminApi, feedbackApi } from "@/lib/api";
+import { adminApi, feedbackApi, pidHeaders } from "@/lib/api";
 import { apiRequest } from "@/lib/queryClient";
 import { useAppStore } from "@/lib/store";
 import { useAIStatus } from "@/hooks/use-ai-status";
@@ -2597,6 +2597,31 @@ function CleanupTab({ participantId }: { participantId: string }) {
   const [onlyTestData, setOnlyTestData] = useState(false);
   const [previewResults, setPreviewResults] = useState<{ count: number; tastings: Array<{ id: string; title: string; date: string; participantCount: number; isTestData: boolean }> } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [scoreMigLoading, setScoreMigLoading] = useState(false);
+  const [scoreMigResult, setScoreMigResult] = useState<any | null>(null);
+
+  const runScoreCurveMigration = async () => {
+    setScoreMigLoading(true);
+    try {
+      const res = await fetch("/api/admin/score-curve-migration", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...pidHeaders() },
+        credentials: "include",
+        body: JSON.stringify({ confirm: "APPLY_SCORE_CURVE_V1" }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || res.statusText);
+      }
+      const data = await res.json();
+      setScoreMigResult(data);
+      toast({ title: "Umrechnung fertig", description: `${data.updated} Einträge aktualisiert (Bereich ${data.band?.min_n}–${data.band?.max_n}).` });
+    } catch (e: any) {
+      toast({ title: t("admin.error"), description: e.message, variant: "destructive" });
+    } finally {
+      setScoreMigLoading(false);
+    }
+  };
 
   const executeCleanup = async (action: "preview" | "markAsTest" | "delete") => {
     setIsLoading(true);
@@ -2632,6 +2657,35 @@ function CleanupTab({ participantId }: { participantId: string }) {
 
   return (
     <div className="space-y-6">
+      <Card className="border-amber-400/40">
+        <CardContent className="pt-6">
+          <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
+            <FlaskConical className="w-5 h-5 text-amber-500" />
+            Score-Umrechnung (einmalig)
+          </h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Rechnet die normalisierten Werte der historischen Tastings auf die neue Kurve um.
+            Legt vorher automatisch eine Sicherungstabelle an und kann gefahrlos mehrfach gedrückt werden.
+          </p>
+          <Button
+            onClick={runScoreCurveMigration}
+            disabled={scoreMigLoading}
+            data-testid="btn-score-curve-migration"
+          >
+            {scoreMigLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <FlaskConical className="w-4 h-4 mr-2" />}
+            Umrechnung jetzt ausführen
+          </Button>
+          {scoreMigResult && (
+            <pre
+              className="mt-4 text-xs bg-secondary/20 border border-border/40 rounded-lg p-3 overflow-x-auto"
+              data-testid="text-score-curve-result"
+            >
+              {JSON.stringify(scoreMigResult, null, 2)}
+            </pre>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardContent className="pt-6">
           <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">

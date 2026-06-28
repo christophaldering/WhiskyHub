@@ -1045,6 +1045,85 @@ export async function registerRoutes(
     }
   });
 
+  // One-time admin migration: re-normalize historical scores onto the condensed curve.
+  // Idempotent (UPDATE recomputes deterministically from *_score). Backup made once.
+  app.post("/api/admin/score-curve-migration", async (req, res) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      if (req.body?.confirm !== "APPLY_SCORE_CURVE_V1") {
+        return res.status(400).json({ message: "Missing confirm token APPLY_SCORE_CURVE_V1" });
+      }
+
+      const { pool: pgPool } = await import("./db");
+
+      const pre = await pgPool.query(
+        `SELECT count(*)::int AS total, count(total_score)::int AS have_total,
+                min(total_score)::float AS min_s, max(total_score)::float AS max_s,
+                min(normalized_total)::float AS min_n_before, max(normalized_total)::float AS max_n_before
+         FROM historical_tasting_entries`
+      );
+
+      const BAK = "historical_tasting_entries_bak_curve";
+      const exists = await pgPool.query(`SELECT to_regclass($1) AS reg`, [BAK]);
+      let backupCreated = false;
+      if (!exists.rows[0].reg) {
+        await pgPool.query(
+          `CREATE TABLE ${BAK} AS
+           SELECT id, nose_score, taste_score, finish_score, total_score,
+                  normalized_nose, normalized_taste, normalized_finish, normalized_total
+           FROM historical_tasting_entries`
+        );
+        backupCreated = true;
+      }
+      const bak = await pgPool.query(`SELECT count(*)::int AS c FROM ${BAK}`);
+
+      const curve = (col: string) =>
+        `round((CASE WHEN ${col} IS NULL THEN NULL
+           WHEN ${col} <= 7 THEN 75 + (${col} - 4) * 2.5
+           WHEN ${col} <= 9 THEN 82.5 + (${col} - 7) * 5
+           WHEN ${col} <= 10 THEN 92.5 + (${col} - 9) * 2.5
+           ELSE 95 END)::numeric, 1)`;
+
+      const upd = await pgPool.query(
+        `UPDATE historical_tasting_entries SET
+           normalized_nose = ${curve("nose_score")},
+           normalized_taste = ${curve("taste_score")},
+           normalized_finish = ${curve("finish_score")},
+           normalized_total = ${curve("total_score")}`
+      );
+
+      const band = await pgPool.query(
+        `SELECT min(normalized_total)::float AS min_n, max(normalized_total)::float AS max_n,
+                round(avg(normalized_total)::numeric,1)::float AS avg_n
+         FROM historical_tasting_entries`
+      );
+      const safety = await pgPool.query(
+        `SELECT
+           count(*) FILTER (WHERE total_score IS NOT NULL AND normalized_total IS NULL)::int AS total_missing,
+           count(*) FILTER (WHERE nose_score IS NOT NULL AND normalized_nose IS NULL)::int AS nose_missing,
+           count(*) FILTER (WHERE taste_score IS NOT NULL AND normalized_taste IS NULL)::int AS taste_missing,
+           count(*) FILTER (WHERE finish_score IS NOT NULL AND normalized_finish IS NULL)::int AS finish_missing
+         FROM historical_tasting_entries`
+      );
+
+      res.json({
+        ok: true,
+        preCheck: pre.rows[0],
+        backup: { table: BAK, created: backupCreated, rows: bak.rows[0].c },
+        updated: upd.rowCount,
+        band: band.rows[0],
+        safety: safety.rows[0],
+      });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.get("/api/admin/daily-report/preview", async (req, res) => {
     try {
       const requesterId = req.headers["x-participant-id"] as string;
