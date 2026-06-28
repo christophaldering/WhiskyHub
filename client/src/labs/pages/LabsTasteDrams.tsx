@@ -1550,27 +1550,32 @@ function TastingNarrativeSection({ value, onSave, saving, readOnly, onDownload, 
   if (!has && !editing) return null;
   return (
     <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--labs-border)" }}>
-      <div className="flex items-center justify-between mb-2">
-        <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-accent)" }}>
-          {t("drams.tastingNarrative", "Meine Verkostungsnotiz")}
-        </div>
-        <div className="flex items-center gap-1">
+      <div className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--labs-accent)" }}>
+        {t("drams.tastingNarrative", "Meine Verkostungsnotiz")}
+      </div>
+      {!editing && (
+        <div className="flex items-center gap-2 mb-3" style={{ flexWrap: "wrap" }}>
+          {!readOnly && (
+            <button onClick={() => { setDraft(value || ""); setEditing(true); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", minHeight: 40, borderRadius: 10, fontSize: 13, fontWeight: 600, background: "color-mix(in srgb, var(--labs-gold) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--labs-gold) 30%, transparent)", color: "var(--labs-accent)", cursor: "pointer", fontFamily: "inherit" }} data-testid="button-note-edit">
+              <Pencil style={{ width: 14, height: 14 }} /> {t("common.edit", "Bearbeiten")}
+            </button>
+          )}
           {has && (onDownload || onDownloadHtml) && (
             <div style={{ position: "relative" }}>
-              <button onClick={() => setDlOpen((v) => !v)} style={{ fontSize: 12, color: "var(--labs-text-muted)", background: "transparent", border: "none", cursor: "pointer", padding: "4px 6px", display: "inline-flex", alignItems: "center", gap: 4 }} data-testid="button-note-download">
-                {t("drams.downloadNote", "Herunterladen")} <ChevronDown style={{ width: 12, height: 12 }} />
+              <button onClick={() => setDlOpen((v) => !v)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", minHeight: 40, borderRadius: 10, fontSize: 13, fontWeight: 600, background: "color-mix(in srgb, var(--labs-gold) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--labs-gold) 30%, transparent)", color: "var(--labs-accent)", cursor: "pointer", fontFamily: "inherit" }} data-testid="button-note-download">
+                <Download style={{ width: 14, height: 14 }} /> {t("drams.downloadNote", "Herunterladen")} <ChevronDown style={{ width: 12, height: 12, opacity: 0.7 }} />
               </button>
               {dlOpen && (
                 <>
                   <div onClick={() => setDlOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 10 }} />
-                  <div style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, zIndex: 11, minWidth: 150, background: "var(--labs-surface-elevated, var(--labs-bg-elevated, var(--labs-bg)))", border: "1px solid var(--labs-border)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.25)", padding: 4 }} data-testid="menu-note-download">
+                  <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 11, minWidth: 170, background: "var(--labs-surface-elevated, var(--labs-bg-elevated, var(--labs-bg)))", border: "1px solid var(--labs-border)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.25)", padding: 4 }} data-testid="menu-note-download">
                     {onDownload && (
-                      <button onClick={() => { setDlOpen(false); onDownload(); }} className="w-full text-left flex items-center gap-2" style={{ fontSize: 13, padding: "8px 10px", borderRadius: 6, color: "var(--labs-text)", background: "transparent", border: "none", cursor: "pointer" }} data-testid="note-download-pdf">
+                      <button onClick={() => { setDlOpen(false); onDownload(); }} className="w-full text-left flex items-center gap-2" style={{ fontSize: 13, padding: "10px 10px", borderRadius: 6, color: "var(--labs-text)", background: "transparent", border: "none", cursor: "pointer" }} data-testid="note-download-pdf">
                         <FileText style={{ width: 14, height: 14 }} /> {t("drams.noteAsPdf", "Als PDF")}
                       </button>
                     )}
                     {onDownloadHtml && (
-                      <button onClick={() => { setDlOpen(false); onDownloadHtml(); }} className="w-full text-left flex items-center gap-2" style={{ fontSize: 13, padding: "8px 10px", borderRadius: 6, color: "var(--labs-text)", background: "transparent", border: "none", cursor: "pointer" }} data-testid="note-download-html">
+                      <button onClick={() => { setDlOpen(false); onDownloadHtml(); }} className="w-full text-left flex items-center gap-2" style={{ fontSize: 13, padding: "10px 10px", borderRadius: 6, color: "var(--labs-text)", background: "transparent", border: "none", cursor: "pointer" }} data-testid="note-download-html">
                         <Globe style={{ width: 14, height: 14 }} /> {t("drams.noteAsWeb", "Als Webseite")}
                       </button>
                     )}
@@ -1579,13 +1584,8 @@ function TastingNarrativeSection({ value, onSave, saving, readOnly, onDownload, 
               )}
             </div>
           )}
-          {!editing && !readOnly && (
-            <button onClick={() => { setDraft(value || ""); setEditing(true); }} style={{ fontSize: 12, color: "var(--labs-text-muted)", background: "transparent", border: "none", cursor: "pointer", padding: "4px 6px" }}>
-              {t("common.edit", "Bearbeiten")}
-            </button>
-          )}
         </div>
-      </div>
+      )}
       {!editing ? (
         <>
           <div className="labs-serif" style={{ fontSize: 16, color: "var(--labs-text-secondary)", lineHeight: 1.65, whiteSpace: "pre-wrap" }}>{value}</div>
