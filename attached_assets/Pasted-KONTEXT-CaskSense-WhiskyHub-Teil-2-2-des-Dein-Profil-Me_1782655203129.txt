@@ -1,0 +1,111 @@
+KONTEXT: CaskSense (WhiskyHub). Teil 2/2 des „Dein Profil"-Merges. Teil 1 (Komponenten + neue Datei LabsProfile.tsx) ist bereits angewendet. Jetzt wird die neue Hülle verdrahtet und die Doppel-Kachel zu einer zusammengeführt.
+
+SICHERHEIT: Der Rollback-Tag pre-profil-merge-2026-06-28 deckt den gesamten Merge ab (reset darauf macht Teil 1+2 rückgängig). KEINE Commits, KEINE Pushes, KEIN drizzle/Schema, KEIN „Published".
+
+STEP 0 — DIAGNOSE: Prüfe, dass jeder SUCHEN-Block GENAU EINMAL vorkommt. Falls nicht: STOPP und melde.
+
+=================================================================
+DATEI D: client/src/labs/pages/hubTiles.tsx  (2 Edits)
+=================================================================
+--- D1 (Whisky-DNA-Kachel → „Dein Profil") SUCHEN:
+  {
+    icon: Activity,
+    labelKey: "myTastePage.whiskyDna",
+    labelFallback: "Whisky DNA",
+    descKey: "myTastePage.aiInsightsHub.dnaDesc",
+    descFallback: "The fingerprint of your taste",
+    href: "/labs/taste/dna",
+    testId: "labs-link-ai-insights-dna",
+  },
+--- D1 ERSETZEN:
+  {
+    icon: Activity,
+    labelKey: "myTastePage.analyticsHub.profile",
+    labelFallback: "Dein Profil",
+    descKey: "myTastePage.analyticsHub.profileDesc",
+    descFallback: "Aroma-Signatur, Struktur & Bewertung",
+    href: "/labs/taste/profile",
+    testId: "labs-link-analytics-hub-profile",
+  },
+
+--- D2 (Profil/Gaumen-Kachel ENTFERNEN) SUCHEN (inkl. führender Leerzeile):
+
+  {
+    icon: Activity,
+    labelKey: "myTastePage.analyticsHub.palate",
+    labelFallback: "Your Profile / Palate",
+    descKey: "myTastePage.analyticsHub.palateDesc",
+    descFallback: "Your CaskSense flavor profile",
+    href: "/labs/taste/profile",
+    testId: "labs-link-analytics-hub-palate",
+  },
+--- D2 ERSETZEN: (leer — komplett löschen)
+
+=================================================================
+DATEI E: client/src/labs/pages/LabsTaste.tsx  (4 Edits)
+=================================================================
+--- E1 SUCHEN:
+import LabsTasteProfile from "./LabsTasteProfile";
+--- E1 ERSETZEN:
+import LabsTasteProfile from "./LabsTasteProfile";
+import LabsProfile from "./LabsProfile";
+
+--- E2 SUCHEN:
+const ANALYTICS_SUB_IDS = new Set(
+  ANALYTICS_HUB_TILES.map((tile) => tile.testId),
+);
+--- E2 ERSETZEN:
+const ANALYTICS_SUB_IDS = new Set([
+  ...ANALYTICS_HUB_TILES.map((tile) => tile.testId),
+  "labs-link-ai-insights-dna",
+  "labs-link-analytics-hub-palate",
+]);
+
+--- E3 SUCHEN:
+    const activeAnalyticsTileDef = ANALYTICS_HUB_TILES.find((tile) => tile.testId === activeAnalyticsTile);
+--- E3 ERSETZEN:
+    const normalizedAnalyticsTile =
+      activeAnalyticsTile === "labs-link-ai-insights-dna" || activeAnalyticsTile === "labs-link-analytics-hub-palate"
+        ? "labs-link-analytics-hub-profile"
+        : activeAnalyticsTile;
+    const activeAnalyticsTileDef = ANALYTICS_HUB_TILES.find((tile) => tile.testId === normalizedAnalyticsTile);
+
+--- E4 (DNA- und Palate-Render-Zeile durch EINE Profil-Zeile ersetzen) SUCHEN:
+            {activeAnalyticsTile === "labs-link-ai-insights-dna" && <LabsWhiskyDNA />}
+            {activeAnalyticsTile === "labs-link-analytics-hub-wheel" && <LabsTasteWheel />}
+            {activeAnalyticsTile === "labs-link-analytics-hub-compare" && <LabsCompareBenchmark />}
+            {activeAnalyticsTile === "labs-link-analytics-hub-palate" && <LabsTasteProfile />}
+--- E4 ERSETZEN:
+            {(activeAnalyticsTile === "labs-link-analytics-hub-profile" || activeAnalyticsTile === "labs-link-ai-insights-dna" || activeAnalyticsTile === "labs-link-analytics-hub-palate") && <LabsProfile />}
+            {activeAnalyticsTile === "labs-link-analytics-hub-wheel" && <LabsTasteWheel />}
+            {activeAnalyticsTile === "labs-link-analytics-hub-compare" && <LabsCompareBenchmark />}
+
+=================================================================
+DATEI F: client/src/App.tsx  (2 Edits)
+=================================================================
+--- F1 SUCHEN:
+query="tab=analytics&sub=labs-link-analytics-hub-palate"
+--- F1 ERSETZEN:
+query="tab=analytics&sub=labs-link-analytics-hub-profile"
+
+--- F2 SUCHEN:
+query="tab=analytics&sub=labs-link-ai-insights-dna"
+--- F2 ERSETZEN:
+query="tab=analytics&sub=labs-link-analytics-hub-profile"
+
+=================================================================
+DATEI G: client/src/labs/insights/engine.ts  (2 Stellen, identische Ersetzung)
+=================================================================
+Ersetze BEIDE Vorkommen von:
+  sub=labs-link-ai-insights-dna&highlight=
+durch:
+  sub=labs-link-analytics-hub-profile&highlight=
+
+=================================================================
+VERIFIKATION:
+- hubTiles.tsx: „labs-link-analytics-hub-profile" 1×; „labs-link-analytics-hub-palate" 0×.
+- LabsTaste.tsx: import LabsProfile vorhanden; Render nutzt <LabsProfile />; keine <LabsWhiskyDNA /> / <LabsTasteProfile /> mehr im Analytics-Render.
+- App.tsx: zwei Redirects zeigen auf sub=labs-link-analytics-hub-profile.
+- engine.ts: „labs-link-ai-insights-dna" kommt 0× vor.
+- Build/Typecheck fehlerfrei. Klick-Test: Meine Welt → Analyse → „Dein Profil" zeigt die drei Abschnitte; alte Links /labs/taste/dna und /labs/taste/profile landen darauf.
+ERINNERUNG: KEINE Commits, KEINE Pushes, KEIN drizzle/Schema, KEIN „Published".

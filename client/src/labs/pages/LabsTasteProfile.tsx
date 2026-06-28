@@ -133,7 +133,7 @@ function BreakdownSection({ title, icon: Icon, entries, testId }: {
   );
 }
 
-export default function LabsTasteProfile() {
+export default function LabsTasteProfile({ embedded = false }: { embedded?: boolean } = {}) {
   const { t } = useTranslation();
   const session = useSession();
   const pid = session.pid;
@@ -305,9 +305,10 @@ export default function LabsTasteProfile() {
   };
 
   return (
-    <div className="labs-page" data-testid="labs-taste-profile">
-      <MeineWeltActionBar active="analytics" />
+    <div className={embedded ? "" : "labs-page"} data-testid="labs-taste-profile">
+      {!embedded && <MeineWeltActionBar active="analytics" />}
 
+      {!embedded && (
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
         <div style={{ flex: "1 1 auto", minWidth: 0 }}>
           <div className="flex items-center gap-3 mb-1 labs-fade-in">
@@ -343,6 +344,7 @@ export default function LabsTasteProfile() {
           )}
         </div>
       </div>
+      )}
 
       {!hasData ? (
         <div className="labs-empty labs-fade-in">
@@ -497,9 +499,13 @@ export default function LabsTasteProfile() {
             </div>
           )}
 
-          <BreakdownSection title={t("labs.profile.byRegion", "By Region")} icon={MapPin} entries={regionEntries} testId="section-region-breakdown" />
-          <BreakdownSection title={t("labs.profile.byCaskType", "By Cask Type")} icon={Cog} entries={caskEntries} testId="section-cask-breakdown" />
-          <BreakdownSection title={t("labs.profile.byPeatLevel", "By Peat Level")} icon={Flame} entries={peatEntries} testId="section-peat-breakdown" />
+          {!embedded && (
+            <>
+              <BreakdownSection title={t("labs.profile.byRegion", "By Region")} icon={MapPin} entries={regionEntries} testId="section-region-breakdown" />
+              <BreakdownSection title={t("labs.profile.byCaskType", "By Cask Type")} icon={Cog} entries={caskEntries} testId="section-cask-breakdown" />
+              <BreakdownSection title={t("labs.profile.byPeatLevel", "By Peat Level")} icon={Flame} entries={peatEntries} testId="section-peat-breakdown" />
+            </>
+          )}
 
           {whiskyProfile?.whiskyComparison && whiskyProfile.whiskyComparison.length > 0 && (
             <div className="labs-card p-5 labs-fade-in" data-testid="section-whisky-comparison">

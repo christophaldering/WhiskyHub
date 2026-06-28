@@ -1,0 +1,266 @@
+KONTEXT: CaskSense (WhiskyHub). Voll-Merge von Whisky-DNA + Profil/Gaumen zu einer „Dein Profil"-Seite. Dies ist Teil 1/2 (Komponenten + neue Datei). Danach ist noch NICHTS verdrahtet — die App verhält sich für Nutzer unverändert (die neue Hülle ist noch ungenutzt). Das ist beabsichtigt.
+
+SICHERHEIT ZUERST:
+- Setze VOR jeder Änderung einen Rollback-Tag: git tag pre-profil-merge-2026-06-28
+- KEINE Commits, KEINE Pushes, KEIN drizzle/Schema/Migrationen, KEIN „Published".
+
+STEP 0 — DIAGNOSE (erst lesen, dann planen, dann ausführen):
+1. Öffne client/src/labs/pages/LabsWhiskyDNA.tsx und client/src/labs/pages/LabsTasteProfile.tsx.
+2. Prüfe, dass jeder SUCHEN-Block unten GENAU EINMAL exakt vorkommt. Mehrzeilige Blöcke vollständig prüfen (z.B. A4 und B-Anker sind nur als ganzer Block eindeutig). Wenn irgendein SUCHEN-Block nicht (oder mehrfach) gefunden wird: STOPP, ändere nichts, melde die Abweichung.
+3. Lege keinen weiteren Anker an, der nicht hier steht.
+
+=================================================================
+DATEI A: client/src/labs/pages/LabsWhiskyDNA.tsx  (7 Edits)
+=================================================================
+
+--- A1 SUCHEN:
+export default function LabsWhiskyDNA() {
+--- A1 ERSETZEN:
+export default function LabsWhiskyDNA({ embedded = false }: { embedded?: boolean } = {}) {
+
+--- A2 SUCHEN:
+    <div className="labs-page" data-testid="labs-whisky-dna">
+      <MeineWeltActionBar active="ai" />
+      <BackLink href="/labs/taste/connoisseur" style={{ textDecoration: "none" }}>
+        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-dna">
+          <ChevronLeft className="w-4 h-4" /> {t("labs.connoisseur.title", "Connoisseur")}
+        </button>
+      </BackLink>
+--- A2 ERSETZEN:
+    <div className={embedded ? "" : "labs-page"} data-testid="labs-whisky-dna">
+      {!embedded && (
+        <>
+          <MeineWeltActionBar active="ai" />
+          <BackLink href="/labs/taste/connoisseur" style={{ textDecoration: "none" }}>
+            <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-dna">
+              <ChevronLeft className="w-4 h-4" /> {t("labs.connoisseur.title", "Connoisseur")}
+            </button>
+          </BackLink>
+        </>
+      )}
+
+--- A3 SUCHEN:
+      <div className="labs-fade-in" style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+--- A3 ERSETZEN:
+      {!embedded && (
+      <div className="labs-fade-in" style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+
+--- A4 SUCHEN:
+            />
+          );
+        })()}
+      </div>
+--- A4 ERSETZEN:
+            />
+          );
+        })()}
+      </div>
+      )}
+
+--- A5 (Struktur-Block am bisherigen Ort LÖSCHEN — diesen Block komplett entfernen):
+          {/* Structural preferences */}
+          {hasStructural && (
+            <div className="labs-card p-5 labs-fade-in" style={{ marginBottom: 16 }} data-testid="card-structural-preferences">
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--labs-accent)", marginBottom: 6 }}>
+                {t("dnaStructuralTitle", "Structural preferences")}
+              </p>
+              <p style={{ fontSize: 12, color: "var(--labs-text-muted)", marginBottom: 12, lineHeight: 1.5 }}>
+                {t("dnaStructuralDesc", "Where your ratings consistently exceed your personal baseline.")}
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+                {structuralDimensions.map((dim) => {
+                  const items = dna.structural?.[dim.key] ?? [];
+                  if (items.length === 0) return null;
+                  return (
+                    <div key={dim.key} data-testid={`group-structural-${dim.key}`}>
+                      <p style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text)", marginBottom: 6 }}>
+                        {dim.label}
+                      </p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {items.map((b) => (
+                          <div key={b.id} data-testid={`row-struct-${dim.key}-${b.id}`} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <div style={{ flex: 1, fontSize: 12, color: "var(--labs-text)", textTransform: "capitalize", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {lang === "de" ? b.label.de : b.label.en}
+                            </div>
+                            <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                              {Math.round(b.affinity)} <span style={{ opacity: 0.6 }}>· n={b.sample}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+--- A5 ERSETZEN: (leer — komplett löschen)
+
+--- A5b (Öffnung VOR den Share-Buttons einfügen — gehört zum schließenden )} aus A6) SUCHEN:
+          {/* Share buttons */}
+          <div className="labs-fade-in" style={{ display: "flex", gap: 10 }}>
+--- A5b ERSETZEN:
+          {/* Share buttons */}
+          {!embedded && (
+          <div className="labs-fade-in" style={{ display: "flex", gap: 10 }}>
+
+--- A6 (Share-Buttons schließen + Struktur-Block ans ENDE setzen, mit „Struktur-Vorlieben"-Überschrift) SUCHEN:
+              {t("dnaCopy", "Copy summary")}
+            </button>
+          </div>
+        </>
+--- A6 ERSETZEN:
+              {t("dnaCopy", "Copy summary")}
+            </button>
+          </div>
+          )}
+
+          {/* Structural preferences — moved to end so it forms its own section in merged Profile */}
+          {embedded && hasStructural && (
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--labs-gold)", margin: "4px 0 12px" }} data-testid="labs-profile-section-structure">
+              {t("labs.profile.sectionStructure", "Struktur-Vorlieben")}
+            </p>
+          )}
+          {/* Structural preferences */}
+          {hasStructural && (
+            <div className="labs-card p-5 labs-fade-in" style={{ marginBottom: 16 }} data-testid="card-structural-preferences">
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--labs-accent)", marginBottom: 6 }}>
+                {t("dnaStructuralTitle", "Structural preferences")}
+              </p>
+              <p style={{ fontSize: 12, color: "var(--labs-text-muted)", marginBottom: 12, lineHeight: 1.5 }}>
+                {t("dnaStructuralDesc", "Where your ratings consistently exceed your personal baseline.")}
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+                {structuralDimensions.map((dim) => {
+                  const items = dna.structural?.[dim.key] ?? [];
+                  if (items.length === 0) return null;
+                  return (
+                    <div key={dim.key} data-testid={`group-structural-${dim.key}`}>
+                      <p style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text)", marginBottom: 6 }}>
+                        {dim.label}
+                      </p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {items.map((b) => (
+                          <div key={b.id} data-testid={`row-struct-${dim.key}-${b.id}`} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <div style={{ flex: 1, fontSize: 12, color: "var(--labs-text)", textTransform: "capitalize", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {lang === "de" ? b.label.de : b.label.en}
+                            </div>
+                            <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                              {Math.round(b.affinity)} <span style={{ opacity: 0.6 }}>· n={b.sample}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </>
+
+=================================================================
+DATEI B: client/src/labs/pages/LabsTasteProfile.tsx  (5 Edits)
+=================================================================
+
+--- B1 SUCHEN:
+export default function LabsTasteProfile() {
+--- B1 ERSETZEN:
+export default function LabsTasteProfile({ embedded = false }: { embedded?: boolean } = {}) {
+
+--- B2 SUCHEN:
+    <div className="labs-page" data-testid="labs-taste-profile">
+      <MeineWeltActionBar active="analytics" />
+--- B2 ERSETZEN:
+    <div className={embedded ? "" : "labs-page"} data-testid="labs-taste-profile">
+      {!embedded && <MeineWeltActionBar active="analytics" />}
+
+--- B3 SUCHEN:
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+--- B3 ERSETZEN:
+      {!embedded && (
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+
+--- B4 SUCHEN:
+        </div>
+      </div>
+
+      {!hasData ? (
+--- B4 ERSETZEN:
+        </div>
+      </div>
+      )}
+
+      {!hasData ? (
+
+--- B5 SUCHEN:
+          <BreakdownSection title={t("labs.profile.byRegion", "By Region")} icon={MapPin} entries={regionEntries} testId="section-region-breakdown" />
+          <BreakdownSection title={t("labs.profile.byCaskType", "By Cask Type")} icon={Cog} entries={caskEntries} testId="section-cask-breakdown" />
+          <BreakdownSection title={t("labs.profile.byPeatLevel", "By Peat Level")} icon={Flame} entries={peatEntries} testId="section-peat-breakdown" />
+--- B5 ERSETZEN:
+          {!embedded && (
+            <>
+              <BreakdownSection title={t("labs.profile.byRegion", "By Region")} icon={MapPin} entries={regionEntries} testId="section-region-breakdown" />
+              <BreakdownSection title={t("labs.profile.byCaskType", "By Cask Type")} icon={Cog} entries={caskEntries} testId="section-cask-breakdown" />
+              <BreakdownSection title={t("labs.profile.byPeatLevel", "By Peat Level")} icon={Flame} entries={peatEntries} testId="section-peat-breakdown" />
+            </>
+          )}
+
+=================================================================
+DATEI C: NEU anlegen client/src/labs/pages/LabsProfile.tsx
+=================================================================
+import type { CSSProperties } from "react";
+import { useTranslation } from "react-i18next";
+import MeineWeltActionBar from "@/labs/components/MeineWeltActionBar";
+import LabsWhiskyDNA from "./LabsWhiskyDNA";
+import LabsTasteProfile from "./LabsTasteProfile";
+
+const sectionHeaderStyle: CSSProperties = {
+  fontSize: 11,
+  fontWeight: 700,
+  textTransform: "uppercase",
+  letterSpacing: "0.08em",
+  color: "var(--labs-gold)",
+  margin: "4px 0 12px",
+};
+
+export default function LabsProfile() {
+  const { t } = useTranslation();
+  return (
+    <div className="labs-page" data-testid="labs-profile">
+      <MeineWeltActionBar active="analytics" />
+
+      <div className="labs-fade-in" style={{ marginBottom: 20 }}>
+        <h1 className="labs-h2" style={{ color: "var(--labs-text)" }} data-testid="text-profile-merged-title">
+          {t("labs.profile.mergedTitle", "Dein Profil")}
+        </h1>
+        <p style={{ color: "var(--labs-text-muted)", fontSize: 13, marginTop: 6, lineHeight: 1.5 }}>
+          {t(
+            "labs.profile.mergedSubtitle",
+            "Aroma-Signatur, Struktur-Vorlieben und Bewertungs-Profil – dein Geschmacks-Fingerabdruck an einem Ort.",
+          )}
+        </p>
+      </div>
+
+      <p style={sectionHeaderStyle} data-testid="labs-profile-section-aroma">
+        {t("labs.profile.sectionAroma", "Aroma-Signatur")}
+      </p>
+      <LabsWhiskyDNA embedded />
+
+      <div style={{ marginTop: 24, borderTop: "1px solid var(--labs-border)" }} />
+      <p style={{ ...sectionHeaderStyle, marginTop: 16 }} data-testid="labs-profile-section-rating">
+        {t("labs.profile.sectionRating", "Bewertungs-Profil")}
+      </p>
+      <LabsTasteProfile embedded />
+    </div>
+  );
+}
+
+=================================================================
+VERIFIKATION (nur lesen/zählen, nichts committen):
+- LabsWhiskyDNA.tsx: „card-structural-preferences" kommt GENAU 1× vor (Block wurde verschoben, nicht dupliziert).
+- LabsWhiskyDNA.tsx: „embedded = false", „labs-profile-section-structure" und „{!embedded && (" (vor den Share-Buttons) je vorhanden.
+- LabsTasteProfile.tsx: „embedded = false" 1×; die drei BreakdownSection-Zeilen stehen jetzt in {!embedded && (…)}.
+- LabsProfile.tsx existiert und importiert LabsWhiskyDNA + LabsTasteProfile.
+- Build/Typecheck läuft fehlerfrei (esbuild/tsc EXIT 0).
+ERINNERUNG: KEINE Commits, KEINE Pushes, KEIN drizzle/Schema, KEIN „Published". Nur Dateien ändern.

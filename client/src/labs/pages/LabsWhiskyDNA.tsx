@@ -352,7 +352,7 @@ function phaseColor(phase: DnaResponse["phase"]) {
   }
 }
 
-export default function LabsWhiskyDNA() {
+export default function LabsWhiskyDNA({ embedded = false }: { embedded?: boolean } = {}) {
   const { t } = useTranslation();
   const session = useSession();
   const pid = session.pid;
@@ -598,14 +598,19 @@ export default function LabsWhiskyDNA() {
     structuralDimensions.some((d) => (dna.structural?.[d.key]?.length ?? 0) > 0);
 
   return (
-    <div className="labs-page" data-testid="labs-whisky-dna">
-      <MeineWeltActionBar active="ai" />
-      <BackLink href="/labs/taste/connoisseur" style={{ textDecoration: "none" }}>
-        <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-dna">
-          <ChevronLeft className="w-4 h-4" /> {t("labs.connoisseur.title", "Connoisseur")}
-        </button>
-      </BackLink>
+    <div className={embedded ? "" : "labs-page"} data-testid="labs-whisky-dna">
+      {!embedded && (
+        <>
+          <MeineWeltActionBar active="ai" />
+          <BackLink href="/labs/taste/connoisseur" style={{ textDecoration: "none" }}>
+            <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-dna">
+              <ChevronLeft className="w-4 h-4" /> {t("labs.connoisseur.title", "Connoisseur")}
+            </button>
+          </BackLink>
+        </>
+      )}
 
+      {!embedded && (
       <div className="labs-fade-in" style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
         <div style={{ flex: "1 1 auto", minWidth: 0 }}>
           <h1 className="labs-h2" style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -701,6 +706,7 @@ export default function LabsWhiskyDNA() {
           );
         })()}
       </div>
+      )}
 
       {isLoading && (
         <div className="labs-card p-8 text-center">
@@ -1140,43 +1146,6 @@ export default function LabsWhiskyDNA() {
             </div>
           </div>
 
-          {/* Structural preferences */}
-          {hasStructural && (
-            <div className="labs-card p-5 labs-fade-in" style={{ marginBottom: 16 }} data-testid="card-structural-preferences">
-              <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--labs-accent)", marginBottom: 6 }}>
-                {t("dnaStructuralTitle", "Structural preferences")}
-              </p>
-              <p style={{ fontSize: 12, color: "var(--labs-text-muted)", marginBottom: 12, lineHeight: 1.5 }}>
-                {t("dnaStructuralDesc", "Where your ratings consistently exceed your personal baseline.")}
-              </p>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
-                {structuralDimensions.map((dim) => {
-                  const items = dna.structural?.[dim.key] ?? [];
-                  if (items.length === 0) return null;
-                  return (
-                    <div key={dim.key} data-testid={`group-structural-${dim.key}`}>
-                      <p style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text)", marginBottom: 6 }}>
-                        {dim.label}
-                      </p>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                        {items.map((b) => (
-                          <div key={b.id} data-testid={`row-struct-${dim.key}-${b.id}`} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <div style={{ flex: 1, fontSize: 12, color: "var(--labs-text)", textTransform: "capitalize", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {lang === "de" ? b.label.de : b.label.en}
-                            </div>
-                            <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
-                              {Math.round(b.affinity)} <span style={{ opacity: 0.6 }}>· n={b.sample}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
           {/* Aroma vocabulary frequency (legacy view, supplemental) */}
           {!noAromasDetected && (
           <div className="labs-card p-5 labs-fade-in" style={{ marginBottom: 16 }} data-testid="card-aroma-frequency">
@@ -1487,6 +1456,7 @@ export default function LabsWhiskyDNA() {
           )}
 
           {/* Share buttons */}
+          {!embedded && (
           <div className="labs-fade-in" style={{ display: "flex", gap: 10 }}>
             <button
               onClick={handleSaveImage}
@@ -1506,6 +1476,50 @@ export default function LabsWhiskyDNA() {
               {t("dnaCopy", "Copy summary")}
             </button>
           </div>
+          )}
+
+          {/* Structural preferences — moved to end so it forms its own section in merged Profile */}
+          {embedded && hasStructural && (
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--labs-gold)", margin: "4px 0 12px" }} data-testid="labs-profile-section-structure">
+              {t("labs.profile.sectionStructure", "Struktur-Vorlieben")}
+            </p>
+          )}
+          {/* Structural preferences */}
+          {hasStructural && (
+            <div className="labs-card p-5 labs-fade-in" style={{ marginBottom: 16 }} data-testid="card-structural-preferences">
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--labs-accent)", marginBottom: 6 }}>
+                {t("dnaStructuralTitle", "Structural preferences")}
+              </p>
+              <p style={{ fontSize: 12, color: "var(--labs-text-muted)", marginBottom: 12, lineHeight: 1.5 }}>
+                {t("dnaStructuralDesc", "Where your ratings consistently exceed your personal baseline.")}
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+                {structuralDimensions.map((dim) => {
+                  const items = dna.structural?.[dim.key] ?? [];
+                  if (items.length === 0) return null;
+                  return (
+                    <div key={dim.key} data-testid={`group-structural-${dim.key}`}>
+                      <p style={{ fontSize: 11, fontWeight: 600, color: "var(--labs-text)", marginBottom: 6 }}>
+                        {dim.label}
+                      </p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {items.map((b) => (
+                          <div key={b.id} data-testid={`row-struct-${dim.key}-${b.id}`} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <div style={{ flex: 1, fontSize: 12, color: "var(--labs-text)", textTransform: "capitalize", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {lang === "de" ? b.label.de : b.label.en}
+                            </div>
+                            <div style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>
+                              {Math.round(b.affinity)} <span style={{ opacity: 0.6 }}>· n={b.sample}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
