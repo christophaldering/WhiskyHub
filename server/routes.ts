@@ -5664,7 +5664,8 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
       const cooperVoiceIntroBlock = "EINMALIGE ERÖFFNUNG — nur dieses eine erste Mal: Sag in zwei, drei ruhigen Sätzen, wer du bist und wie ihr zusammenarbeitet — im selben nüchternen, aufgeräumten Ton wie sonst, ohne besonderen Begrüßungs-Ton. Inhalt: Du hilfst dem Taster, seine eigenen Worte zu finden; du prägst nichts vor, bewertest nicht und korrigierst nicht; er bestimmt Tempo und Reihenfolge und fängt an, wann er mag. Am Glas hältst du dich mit Wissen und Vergleichen zurück, seine Fragen beantwortest du danach. VERMEIDE jede Begrüßungs-Performance: kein 'ich freue mich', kein Versprechen, dass es schön oder spannend wird, kein aufmunterndes 'du kannst nichts falsch machen', keine Beschwichtigung, keine Begeisterung. Sei freundlich, indem du ihn ernst nimmst und auf Augenhöhe ansprichst, nicht durch Wärme-Floskeln. Stell dich schlicht vor, tritt zurück und geh dann in die offene Einladung über, frei zu erzählen, was auffällt. Knapp, kein Fachjargon, keine Aufzählung, nichts über diese Flasche. Dass deine Stimme KI ist, musst du nicht erwähnen — das steht bereits auf dem Bildschirm.";
       const wantsVoiceIntro = req.body?.intro === true && req.body?.probe !== true;
       const cooperGreetingContract = "DEINE ERÖFFNUNG (jedes Mal als Allererstes, sie ÜBERSCHREIBT abweichende Eröffnungs-Hinweise oben; variiere die Formulierung): Begrüße knapp und sachlich, nenne dich Cooper, und sag in einem kurzen Satz, dass du vor allem zuhörst und dich von dir aus nur sehr selten meldest — der Taster soll dich einfach ansprechen oder antippen, wann immer er etwas von dir will; dann bist du da und ziehst dich danach wieder zurück. Kein Smalltalk, keine Begeisterung, kein Lob, nichts über diese Flasche.\n\nDANACH gilt für jede Gelegenheit zu reagieren: Prüfe zuerst, ob der Taster gerade DICH angesprochen oder dir eine Frage gestellt hat (etwa 'Cooper, ...', 'was meinst du', 'hilf mir mal') ODER ob er ausdrücklich um deine Reaktion gebeten wurde. Wenn NICHT — er denkt nur laut, beschreibt für sich, macht eine Pause —, dann rufe das Tool cooper_pass auf und sage KEIN WORT; das ist dein Normalfall. NUR wenn du klar angesprochen/gefragt wurdest, reagierst du: knapp, hilf ihm seinen Eindruck zu schärfen (eine Frage oder ein konkreter Bezug), dann zieh dich sofort wieder zurück. Im Zweifel: cooper_pass.";
-      const instructions = baseInstr + "\n\n" + continuerBlock + " " + (continuerByLevel[cooperLevel] || continuerByLevel.adaptive) + "\n\n" + backdoorBlock + (knobV ? "\n\n" + knobV : "") + (wantsVoiceIntro ? "\n\n" + cooperVoiceIntroBlock : "") + "\n\n" + cooperGreetingContract;
+      const cooperVoiceLifeBlock = "LEBENDIGKEIT & ABSCHIED: Sprich nie wie ein Protokoll oder ein Assistent, der Aufgaben quittiert. Vermeide technisch-flache \u00dcbergangsfloskeln wie 'alles klar, ich ordne das f\u00fcr dich', 'verstanden, ich verarbeite das' oder 'einen Moment, ich fasse zusammen'. Wenn du zum Festhalten der Notiz \u00fcbergehst, sag es lebendig, beil\u00e4ufig und jedes Mal anders \u2014 in deinen eigenen, menschlichen Worten, mit einem Hauch Pers\u00f6nlichkeit, mal trocken, mal w\u00e4rmer, nie nach Schema F. Und wenn der Taster signalisiert, dass er fertig ist, oder sich verabschiedet, dann verabschiede auch DU dich: kurz, echt und freundlich, in wechselnden Worten \u2014 kein immer gleicher Standardsatz, sondern ein zugewandter eigener Abschluss, der zum Moment passt.";
+      const instructions = baseInstr + "\n\n" + continuerBlock + " " + (continuerByLevel[cooperLevel] || continuerByLevel.adaptive) + "\n\n" + backdoorBlock + (knobV ? "\n\n" + knobV : "") + (wantsVoiceIntro ? "\n\n" + cooperVoiceIntroBlock : "") + "\n\n" + cooperGreetingContract + "\n\n" + cooperVoiceLifeBlock;
       const ledgerEnum = ["untouched", "touched", "sharpened"];
       const tools = [{
         type: "function",
@@ -5740,7 +5741,8 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
     const pR = await storage.getAppSetting("cooper_persona_reserve");
     const pS = await storage.getAppSetting("cooper_persona_spark");
     const pW = await storage.getAppSetting("cooper_persona_warmth");
-    return res.json({ voice: gV ?? "cedar", mode: gM ?? "tiefsinnig", reserve: pR ?? "mid", spark: pS ?? "mid", warmth: pW ?? "mid" });
+    const nL = await storage.getAppSetting("cooper_note_length");
+    return res.json({ voice: gV ?? "cedar", mode: gM ?? "tiefsinnig", reserve: pR ?? "mid", spark: pS ?? "mid", warmth: pW ?? "mid", noteLength: nL ?? "lang" });
   });
 
   app.post("/api/admin/cooper-defaults", async (req: Request, res: Response) => {
@@ -5758,12 +5760,15 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
     const reserve = RESERVE.includes(req.body?.reserve) ? req.body.reserve : "mid";
     const spark = SPARK.includes(req.body?.spark) ? req.body.spark : "mid";
     const warmth = WARMTH.includes(req.body?.warmth) ? req.body.warmth : "mid";
+    const NOTELEN = ["kurz", "lang", "ausfuehrlich"];
+    const noteLength = NOTELEN.includes(req.body?.noteLength) ? req.body.noteLength : "lang";
     await storage.setAppSetting("cooper_default_voice", req.body.voice);
     await storage.setAppSetting("cooper_default_mode", req.body.mode);
     await storage.setAppSetting("cooper_persona_reserve", reserve);
     await storage.setAppSetting("cooper_persona_spark", spark);
     await storage.setAppSetting("cooper_persona_warmth", warmth);
-    return res.json({ voice: req.body.voice, mode: req.body.mode, reserve, spark, warmth });
+    await storage.setAppSetting("cooper_note_length", noteLength);
+    return res.json({ voice: req.body.voice, mode: req.body.mode, reserve, spark, warmth, noteLength });
   });
 
   // ===== COOPER: Sensorisches Gedächtnis (Phase 1 — erzeugen/ansehen/löschen, KEINE Cooper-Einspeisung) =====
@@ -5972,11 +5977,17 @@ REGELN:
 - "Gesamteindruck" verdichtet sein Gesamtgefühl und (falls vorhanden) seinen Affekt — KEINE Bewertungszahl.
 - Evokativ, in der Sprache des Gesprächs. KEINE Aufzählungen/Spiegelstriche im Fließtext.
 Gib NUR den reinen Notiztext zurück (die vier Überschriften + Text), ohne Anführungszeichen, ohne Vorrede.`;
+        const noteLen = (await storage.getAppSetting("cooper_note_length")) ?? "lang";
+        const lengthDirective = noteLen === "kurz"
+          ? "\n\nLÄNGE: Halte die Notiz bewusst KNAPP und auf das Wesentliche verdichtet — verliere nichts Inhaltliches des Tasters, aber formuliere kompakt."
+          : noteLen === "ausfuehrlich"
+          ? "\n\nLÄNGE: Schreibe SEHR AUSFÜHRLICH und reich ausgestaltet. Entfalte jede Wahrnehmung großzügig, in voller, evokativer Sprache, und gib auch Nebengedanken breiten Raum — ohne je etwas zu erfinden."
+          : "\n\nLÄNGE: Schreibe ausführlich und vollständig; gib jeder Beobachtung des Tasters Raum und bleibe seinem Reichtum treu.";
         const pc = await openai.chat.completions.create({
           model: "gpt-5-mini",
-          max_completion_tokens: 2400,
+          max_completion_tokens: 3200,
           reasoning_effort: "minimal",
-          messages: [{ role: "system", content: proseSystem }, { role: "user", content: `Gespräch:${ctx}\n${convo}` }],
+          messages: [{ role: "system", content: proseSystem + lengthDirective }, { role: "user", content: `Gespräch:${ctx}\n${convo}` }],
         });
         return res.json({ narrative: (pc.choices[0]?.message?.content || "").trim() });
       }

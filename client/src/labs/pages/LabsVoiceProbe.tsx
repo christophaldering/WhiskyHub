@@ -13,10 +13,11 @@ const WRM_LABEL: Record<string, string> = { neutral: "Neutral", mid: "Ausgewogen
 export default function LabsVoiceProbe() {
   const session = useSession();
   const { status, statusText, model, voice, setVoice, mode, setMode, ledger, transcript, busy, connect, disconnect, levelRef, speaking } = useCooperVoice({ probe: true });
-  const [savedDefault, setSavedDefault] = useState<{ voice: string; mode: string; reserve: string; spark: string; warmth: string } | null>(null);
+  const [savedDefault, setSavedDefault] = useState<{ voice: string; mode: string; reserve: string; spark: string; warmth: string; noteLength: string } | null>(null);
   const [reserve, setReserve] = useState("mid");
   const [spark, setSpark] = useState("mid");
   const [warmth, setWarmth] = useState("mid");
+  const [noteLength, setNoteLength] = useState("lang");
   const [saveMsg, setSaveMsg] = useState("");
   const [saving, setSaving] = useState(false);
   const [memory, setMemory] = useState<string | null>(null);
@@ -35,7 +36,8 @@ export default function LabsVoiceProbe() {
         if (data?.reserve) setReserve(data.reserve);
         if (data?.spark) setSpark(data.spark);
         if (data?.warmth) setWarmth(data.warmth);
-        setSavedDefault({ voice: data.voice, mode: data.mode, reserve: data.reserve, spark: data.spark, warmth: data.warmth });
+        if (data?.noteLength) setNoteLength(data.noteLength);
+        setSavedDefault({ voice: data.voice, mode: data.mode, reserve: data.reserve, spark: data.spark, warmth: data.warmth, noteLength: data.noteLength });
       } catch { /* noop */ }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -44,10 +46,10 @@ export default function LabsVoiceProbe() {
     setSaving(true);
     setSaveMsg("");
     try {
-      const res = await fetch("/api/admin/cooper-defaults", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ voice, mode, reserve, spark, warmth }) });
+      const res = await fetch("/api/admin/cooper-defaults", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ voice, mode, reserve, spark, warmth, noteLength }) });
       if (!res.ok) { setSaveMsg("Fehler beim Speichern."); return; }
       const data = await res.json();
-      setSavedDefault({ voice: data.voice, mode: data.mode, reserve: data.reserve, spark: data.spark, warmth: data.warmth });
+      setSavedDefault({ voice: data.voice, mode: data.mode, reserve: data.reserve, spark: data.spark, warmth: data.warmth, noteLength: data.noteLength });
       setSaveMsg("Gespeichert");
     } catch {
       setSaveMsg("Fehler beim Speichern.");
@@ -178,6 +180,7 @@ export default function LabsVoiceProbe() {
             { key: "reserve", label: "Zurückhaltung", value: reserve, setter: setReserve, opts: [["still", "Sehr still"], ["mid", "Ausgewogen"], ["gespraechig", "Gesprächiger"]] },
             { key: "spark", label: "Funken", value: spark, setter: setSpark, opts: [["nuechtern", "Nüchtern"], ["mid", "Ausgewogen"], ["verspielt", "Verspielt"]] },
             { key: "warmth", label: "Wärme", value: warmth, setter: setWarmth, opts: [["neutral", "Neutral"], ["mid", "Ausgewogen"], ["warm", "Warm"]] },
+            { key: "noteLength", label: "Notizlänge", value: noteLength, setter: setNoteLength, opts: [["kurz", "Kurz"], ["lang", "Lang"], ["ausfuehrlich", "Sehr ausführlich"]] },
           ].map((knob) => (
             <div key={knob.key} style={{ display: "flex", flexDirection: "column", gap: SP.xs }}>
               <div style={{ fontFamily: FONT.body, fontSize: 12, color: LABS_THEME.faint, textTransform: "uppercase", letterSpacing: 1 }}>{knob.label}</div>
@@ -213,7 +216,7 @@ export default function LabsVoiceProbe() {
           </div>
           {savedDefault && (
             <div style={{ fontFamily: FONT.body, fontSize: 12, color: LABS_THEME.faint }}>
-              Ton: Zurückhaltung {RES_LABEL[savedDefault.reserve] ?? savedDefault.reserve} · Funken {SPK_LABEL[savedDefault.spark] ?? savedDefault.spark} · Wärme {WRM_LABEL[savedDefault.warmth] ?? savedDefault.warmth}
+              Ton: Zurückhaltung {RES_LABEL[savedDefault.reserve] ?? savedDefault.reserve} · Funken {SPK_LABEL[savedDefault.spark] ?? savedDefault.spark} · Wärme {WRM_LABEL[savedDefault.warmth] ?? savedDefault.warmth} · Notiz {savedDefault.noteLength === "kurz" ? "Kurz" : savedDefault.noteLength === "ausfuehrlich" ? "Sehr ausführlich" : "Lang"}
             </div>
           )}
           <button

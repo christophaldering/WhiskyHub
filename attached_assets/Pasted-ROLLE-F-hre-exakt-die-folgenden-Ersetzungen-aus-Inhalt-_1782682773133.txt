@@ -1,0 +1,217 @@
+ROLLE: Führe exakt die folgenden Ersetzungen aus. Inhalt: (1) Verkostungsnotiz bekommt
+optionalen "Kontext"-Abschnitt + Export erkennt ihn. (2) Intro erklärt im Stimm-Modus das
+Cooper-Verhalten + Fass-Antippen. (3) Cooper-Stimme: lebendigerer Abschied, weniger
+technische Floskeln. (4) Admin kann die Notizlänge (kurz/lang/sehr ausführlich) festlegen.
+
+VERBOTEN (durchgängig, AUCH in der Verifikation): KEIN git commit, KEIN git push, KEIN
+drizzle-kit, KEINE Schema-Änderung, KEINE Migration. Nur Dateiinhalte ändern.
+Hinweis: Es kommen KEINE neuen DB-Tabellen/Spalten dazu — cooper_note_length läuft über die
+bestehende App-Settings-Mechanik, also KEIN drizzle nötig.
+
+Sicherung: git tag pre-cooper-bundle-2026-06-28
+
+════════════════════ DATEI 1 — server/routes.ts (FÜNF Ersetzungen) ════════════════════
+
+—— 1a: Prosa-Prompt, optionaler Kontext-Abschnitt ——
+SUCHE:
+GLIEDERE die Notiz in GENAU vier Abschnitte, jeder mit seiner Überschrift in einer eigenen Zeile, in dieser Reihenfolge:
+Nase
+Gaumen
+Abgang
+Gesamteindruck
+Schreibe die vier Überschriften GENAU so (ein Wort je eigener Zeile, ohne Doppelpunkt, ohne Nummerierung, ohne Sternchen).
+ERSETZE durch:
+GLIEDERE die Notiz in vier Wahrnehmungs-Abschnitte, jeder mit seiner Überschrift in einer eigenen Zeile, in dieser Reihenfolge:
+Nase
+Gaumen
+Abgang
+Gesamteindruck
+Schreibe diese vier Überschriften GENAU so (ein Wort je eigener Zeile, ohne Doppelpunkt, ohne Nummerierung, ohne Sternchen). NUR WENN der Taster im Gespräch etwas zum Rahmen der Verkostung gesagt hat — Ort, Zeit, Wetter, Anlass, Stimmung oder Begleitung (z. B. mit wem er verkostet) —, hänge GANZ AM ENDE einen fünften Abschnitt mit der Überschrift Kontext an (genauso in eigener Zeile) und halte das dort in seiner Ich-Stimme fest. Hat er zum Rahmen nichts gesagt, LASS den Kontext-Abschnitt komplett weg — erfinde keinen Rahmen und keine Begleitung.
+
+—— 1b: Stimme — Abschied & Persönlichkeit (Montage-Zeile) ——
+SUCHE (eine Zeile, beginnt mit "const instructions = baseInstr"):
+      const instructions = baseInstr + "\n\n" + continuerBlock + " " + (continuerByLevel[cooperLevel] || continuerByLevel.adaptive) + "\n\n" + backdoorBlock + (knobV ? "\n\n" + knobV : "") + (wantsVoiceIntro ? "\n\n" + cooperVoiceIntroBlock : "") + "\n\n" + cooperGreetingContract;
+ERSETZE durch (ZWEI Zeilen):
+      const cooperVoiceLifeBlock = "LEBENDIGKEIT & ABSCHIED: Sprich nie wie ein Protokoll oder ein Assistent, der Aufgaben quittiert. Vermeide technisch-flache \u00dcbergangsfloskeln wie 'alles klar, ich ordne das f\u00fcr dich', 'verstanden, ich verarbeite das' oder 'einen Moment, ich fasse zusammen'. Wenn du zum Festhalten der Notiz \u00fcbergehst, sag es lebendig, beil\u00e4ufig und jedes Mal anders \u2014 in deinen eigenen, menschlichen Worten, mit einem Hauch Pers\u00f6nlichkeit, mal trocken, mal w\u00e4rmer, nie nach Schema F. Und wenn der Taster signalisiert, dass er fertig ist, oder sich verabschiedet, dann verabschiede auch DU dich: kurz, echt und freundlich, in wechselnden Worten \u2014 kein immer gleicher Standardsatz, sondern ein zugewandter eigener Abschluss, der zum Moment passt.";
+      const instructions = baseInstr + "\n\n" + continuerBlock + " " + (continuerByLevel[cooperLevel] || continuerByLevel.adaptive) + "\n\n" + backdoorBlock + (knobV ? "\n\n" + knobV : "") + (wantsVoiceIntro ? "\n\n" + cooperVoiceIntroBlock : "") + "\n\n" + cooperGreetingContract + "\n\n" + cooperVoiceLifeBlock;
+
+—— 1c: GET /api/admin/cooper-defaults — noteLength mitgeben ——
+SUCHE:
+    const pW = await storage.getAppSetting("cooper_persona_warmth");
+    return res.json({ voice: gV ?? "cedar", mode: gM ?? "tiefsinnig", reserve: pR ?? "mid", spark: pS ?? "mid", warmth: pW ?? "mid" });
+ERSETZE durch:
+    const pW = await storage.getAppSetting("cooper_persona_warmth");
+    const nL = await storage.getAppSetting("cooper_note_length");
+    return res.json({ voice: gV ?? "cedar", mode: gM ?? "tiefsinnig", reserve: pR ?? "mid", spark: pS ?? "mid", warmth: pW ?? "mid", noteLength: nL ?? "lang" });
+
+—— 1d: POST /api/admin/cooper-defaults — noteLength prüfen & speichern ——
+SUCHE:
+    const warmth = WARMTH.includes(req.body?.warmth) ? req.body.warmth : "mid";
+    await storage.setAppSetting("cooper_default_voice", req.body.voice);
+    await storage.setAppSetting("cooper_default_mode", req.body.mode);
+    await storage.setAppSetting("cooper_persona_reserve", reserve);
+    await storage.setAppSetting("cooper_persona_spark", spark);
+    await storage.setAppSetting("cooper_persona_warmth", warmth);
+    return res.json({ voice: req.body.voice, mode: req.body.mode, reserve, spark, warmth });
+ERSETZE durch:
+    const warmth = WARMTH.includes(req.body?.warmth) ? req.body.warmth : "mid";
+    const NOTELEN = ["kurz", "lang", "ausfuehrlich"];
+    const noteLength = NOTELEN.includes(req.body?.noteLength) ? req.body.noteLength : "lang";
+    await storage.setAppSetting("cooper_default_voice", req.body.voice);
+    await storage.setAppSetting("cooper_default_mode", req.body.mode);
+    await storage.setAppSetting("cooper_persona_reserve", reserve);
+    await storage.setAppSetting("cooper_persona_spark", spark);
+    await storage.setAppSetting("cooper_persona_warmth", warmth);
+    await storage.setAppSetting("cooper_note_length", noteLength);
+    return res.json({ voice: req.body.voice, mode: req.body.mode, reserve, spark, warmth, noteLength });
+
+—— 1e: Prosa-Längen-Direktive + Token-Bump ——
+SUCHE:
+        const pc = await openai.chat.completions.create({
+          model: "gpt-5-mini",
+          max_completion_tokens: 2400,
+          reasoning_effort: "minimal",
+          messages: [{ role: "system", content: proseSystem }, { role: "user", content: `Gespräch:${ctx}\n${convo}` }],
+        });
+ERSETZE durch:
+        const noteLen = (await storage.getAppSetting("cooper_note_length")) ?? "lang";
+        const lengthDirective = noteLen === "kurz"
+          ? "\n\nLÄNGE: Halte die Notiz bewusst KNAPP und auf das Wesentliche verdichtet — verliere nichts Inhaltliches des Tasters, aber formuliere kompakt."
+          : noteLen === "ausfuehrlich"
+          ? "\n\nLÄNGE: Schreibe SEHR AUSFÜHRLICH und reich ausgestaltet. Entfalte jede Wahrnehmung großzügig, in voller, evokativer Sprache, und gib auch Nebengedanken breiten Raum — ohne je etwas zu erfinden."
+          : "\n\nLÄNGE: Schreibe ausführlich und vollständig; gib jeder Beobachtung des Tasters Raum und bleibe seinem Reichtum treu.";
+        const pc = await openai.chat.completions.create({
+          model: "gpt-5-mini",
+          max_completion_tokens: 3200,
+          reasoning_effort: "minimal",
+          messages: [{ role: "system", content: proseSystem + lengthDirective }, { role: "user", content: `Gespräch:${ctx}\n${convo}` }],
+        });
+
+════════════════════ DATEI 2 — client/src/labs/utils/dramNoteHtml.ts ════════════════════
+SUCHE:
+const SECTIONS = ["Nase", "Gaumen", "Abgang", "Gesamteindruck"];
+const EN: Record<string, string> = { Nase: "Nose", Gaumen: "Palate", Abgang: "Finish", Gesamteindruck: "Overall" };
+ERSETZE durch:
+const SECTIONS = ["Nase", "Gaumen", "Abgang", "Gesamteindruck", "Kontext"];
+const EN: Record<string, string> = { Nase: "Nose", Gaumen: "Palate", Abgang: "Finish", Gesamteindruck: "Overall", Kontext: "Context" };
+
+════════════════════ DATEI 3 — client/src/labs/utils/dramNotePdf.ts ════════════════════
+SUCHE:
+const SECTIONS = ["Nase","Gaumen","Abgang","Gesamteindruck"];
+const EN: Record<string,string> = { Nase:"NOSE", Gaumen:"PALATE", Abgang:"FINISH", Gesamteindruck:"OVERALL" };
+ERSETZE durch:
+const SECTIONS = ["Nase","Gaumen","Abgang","Gesamteindruck","Kontext"];
+const EN: Record<string,string> = { Nase:"NOSE", Gaumen:"PALATE", Abgang:"FINISH", Gesamteindruck:"OVERALL", Kontext:"KONTEXT" };
+
+════════════════════ DATEI 4 — client/src/labs/components/rating/ImpressionHowItWorks.tsx ════════════════════
+SUCHE:
+export default function ImpressionHowItWorks() {
+  const { t } = useTranslation();
+
+  const points = [
+    { Icon: MessageCircle,
+      lead: t("v2.impressionHow1Lead", "Du beginnst."),
+      text: t("v2.impressionHow1", "Sag oder tippe frei, was du wahrnimmst — roh, unfertig, in deinen eigenen Worten. Es gibt kein Richtig, Fachbegriffe brauchst du nicht.") },
+    { Icon: Ear,
+      lead: t("v2.impressionHow2Lead", "Cooper hört zu."),
+      text: t("v2.impressionHow2", "Er fragt nur dort behutsam nach, wo es dir hilft — und gibt dir nichts vor.") },
+    { Icon: CircleCheck,
+      lead: t("v2.impressionHow3Lead", "Du behältst das letzte Wort."),
+      text: t("v2.impressionHow3", "Aus deinen Worten wird deine Notiz und ein Wertungsvorschlag. Aufhören kannst du jederzeit.") },
+  ];
+ERSETZE durch:
+export default function ImpressionHowItWorks({ mode = "input" }: { mode?: "voice" | "input" }) {
+  const { t } = useTranslation();
+
+  const point2 = mode === "voice"
+    ? t("v2.impressionHow2Voice", "Er hält sich zurück und meldet sich von selbst nur selten. Willst du etwas von ihm, sprich ihn an oder tippe das Fass an — dann ist er da und zieht sich danach wieder zurück.")
+    : t("v2.impressionHow2", "Er fragt nur dort behutsam nach, wo es dir hilft — und gibt dir nichts vor.");
+
+  const points = [
+    { Icon: MessageCircle,
+      lead: t("v2.impressionHow1Lead", "Du beginnst."),
+      text: t("v2.impressionHow1", "Sag oder tippe frei, was du wahrnimmst — roh, unfertig, in deinen eigenen Worten. Es gibt kein Richtig, Fachbegriffe brauchst du nicht.") },
+    { Icon: Ear,
+      lead: t("v2.impressionHow2Lead", "Cooper hört zu."),
+      text: point2 },
+    { Icon: CircleCheck,
+      lead: t("v2.impressionHow3Lead", "Du behältst das letzte Wort."),
+      text: t("v2.impressionHow3", "Aus deinen Worten wird deine Notiz und ein Wertungsvorschlag. Aufhören kannst du jederzeit.") },
+  ];
+
+════════════════════ DATEI 5 — client/src/labs/components/rating/ImpressionCapture.tsx (ZWEI) ════════════════════
+SUCHE (14 Leerzeichen Einzug):
+              <ImpressionHowItWorks />
+ERSETZE durch:
+              <ImpressionHowItWorks mode="voice" />
+
+SUCHE (10 Leerzeichen Einzug):
+          <ImpressionHowItWorks />
+ERSETZE durch:
+          <ImpressionHowItWorks mode="input" />
+
+════════════════════ DATEI 6 — client/src/labs/pages/LabsVoiceProbe.tsx (SECHS) ════════════════════
+
+—— 6a: State + Typ ——
+SUCHE:
+  const [savedDefault, setSavedDefault] = useState<{ voice: string; mode: string; reserve: string; spark: string; warmth: string } | null>(null);
+  const [reserve, setReserve] = useState("mid");
+  const [spark, setSpark] = useState("mid");
+  const [warmth, setWarmth] = useState("mid");
+ERSETZE durch:
+  const [savedDefault, setSavedDefault] = useState<{ voice: string; mode: string; reserve: string; spark: string; warmth: string; noteLength: string } | null>(null);
+  const [reserve, setReserve] = useState("mid");
+  const [spark, setSpark] = useState("mid");
+  const [warmth, setWarmth] = useState("mid");
+  const [noteLength, setNoteLength] = useState("lang");
+
+—— 6b: Laden ——
+SUCHE:
+        if (data?.warmth) setWarmth(data.warmth);
+        setSavedDefault({ voice: data.voice, mode: data.mode, reserve: data.reserve, spark: data.spark, warmth: data.warmth });
+ERSETZE durch:
+        if (data?.warmth) setWarmth(data.warmth);
+        if (data?.noteLength) setNoteLength(data.noteLength);
+        setSavedDefault({ voice: data.voice, mode: data.mode, reserve: data.reserve, spark: data.spark, warmth: data.warmth, noteLength: data.noteLength });
+
+—— 6c: Speichern (Body) ——
+SUCHE:
+body: JSON.stringify({ voice, mode, reserve, spark, warmth })
+ERSETZE durch:
+body: JSON.stringify({ voice, mode, reserve, spark, warmth, noteLength })
+
+—— 6d: Speichern (savedDefault setzen) ——
+SUCHE:
+      setSavedDefault({ voice: data.voice, mode: data.mode, reserve: data.reserve, spark: data.spark, warmth: data.warmth });
+      setSaveMsg("Gespeichert");
+ERSETZE durch:
+      setSavedDefault({ voice: data.voice, mode: data.mode, reserve: data.reserve, spark: data.spark, warmth: data.warmth, noteLength: data.noteLength });
+      setSaveMsg("Gespeichert");
+
+—— 6e: Regler-Array ——
+SUCHE:
+            { key: "warmth", label: "Wärme", value: warmth, setter: setWarmth, opts: [["neutral", "Neutral"], ["mid", "Ausgewogen"], ["warm", "Warm"]] },
+          ].map((knob) => (
+ERSETZE durch:
+            { key: "warmth", label: "Wärme", value: warmth, setter: setWarmth, opts: [["neutral", "Neutral"], ["mid", "Ausgewogen"], ["warm", "Warm"]] },
+            { key: "noteLength", label: "Notizlänge", value: noteLength, setter: setNoteLength, opts: [["kurz", "Kurz"], ["lang", "Lang"], ["ausfuehrlich", "Sehr ausführlich"]] },
+          ].map((knob) => (
+
+—— 6f: Anzeige der gespeicherten Länge ——
+SUCHE:
+Wärme {WRM_LABEL[savedDefault.warmth] ?? savedDefault.warmth}
+            </div>
+ERSETZE durch:
+Wärme {WRM_LABEL[savedDefault.warmth] ?? savedDefault.warmth} · Notiz {savedDefault.noteLength === "kurz" ? "Kurz" : savedDefault.noteLength === "ausfuehrlich" ? "Sehr ausführlich" : "Lang"}
+            </div>
+
+════════════════════ VERIFIKATION (nur lesen) ════════════════════
+  grep -c 'Überschrift Kontext an' server/routes.ts                                   # 1
+  grep -c 'cooperVoiceLifeBlock' server/routes.ts                                     # 2
+  grep -c 'cooper_note_length' server/routes.ts                                       # 3
+  grep -c 'noteLength' client/src/labs/pages/LabsVoiceProbe.tsx                       # ≥6
+  grep -c 'Kontext' client/src/labs/utils/dramNoteHtml.ts                             # 2
+  grep -c 'Kontext' client/src/labs/utils/dramNotePdf.ts                             # 2
+  grep -c 'ImpressionHowItWorks mode=' client/src/labs/components/rating/ImpressionCapture.tsx  # 2
+
+Stimmen die Zahlen: fertig. NICHT committen, NICHT pushen, KEIN drizzle.
