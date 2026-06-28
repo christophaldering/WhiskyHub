@@ -188,6 +188,29 @@ async function backfillNormalizedScores() {
   }
 }
 
+// Einmalige/idempotente Datenhygiene fuer historische Eintraege, laeuft bei jedem Boot
+// gegen die DB, gegen die die App gerade laeuft (beim Deploy = Produktion).
+async function applyHistoricalScaleFixes() {
+  try {
+    const { db: dbInst } = await import("./db");
+    const { sql: sqlTag } = await import("drizzle-orm");
+
+    // ABV: faelschlich als Anteil importierte Werte (<1) auf Prozent (x100).
+    // Idempotent: nach der Korrektur ist nichts mehr < 1.
+    const abvRes = await dbInst.execute(
+      sqlTag`UPDATE historical_tasting_entries
+             SET normalized_abv = round((normalized_abv * 100)::numeric, 1)
+             WHERE normalized_abv IS NOT NULL AND normalized_abv < 1`
+    );
+    const abvCount = (abvRes as any)?.rowCount ?? 0;
+    if (abvCount > 0) {
+      log(`Datafix: corrected ${abvCount} historical fraction ABVs (x100)`, "seed");
+    }
+  } catch (e) {
+    log(`Historical scale fixes failed: ${(e as Error).message}`, "seed");
+  }
+}
+
 async function seedDistilleries() {
   try {
     const count = await storage.getDistilleryCount();
@@ -883,9 +906,13 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       .then(() => seedBottlers())
       .catch((e) => log(`Bottler seed error: ${(e as Error).message}`, "seed"))
       .finally(() =>
-        backfillNormalizedScores().catch((e) =>
-          log(`Backfill error: ${(e as Error).message}`, "seed"),
-        ),
+        backfillNormalizedScores()
+          .catch((e) => log(`Backfill error: ${(e as Error).message}`, "seed"))
+          .finally(() =>
+            applyHistoricalScaleFixes().catch((e) =>
+              log(`Datafix error: ${(e as Error).message}`, "seed"),
+            ),
+          ),
       );
 
     setInterval(async () => {
