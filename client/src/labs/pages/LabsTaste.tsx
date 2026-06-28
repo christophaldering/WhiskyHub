@@ -38,6 +38,7 @@ import LabsTasteWheel from "./LabsTasteWheel";
 import LabsTasteCompare from "./LabsTasteCompare";
 import LabsTasteDownloads from "./LabsTasteDownloads";
 import LabsTasteProfile from "./LabsTasteProfile";
+import LabsProfile from "./LabsProfile";
 import LabsBenchmark from "./LabsBenchmark";
 import LabsCompareBenchmark from "./LabsCompareBenchmark";
 
@@ -115,9 +116,11 @@ const COLLECTION_SUB_IDS = new Set(
   COLLECTION_HUB_TILES.map((tile) => tile.testId),
 );
 const AI_SUB_IDS = new Set(AI_INSIGHTS_HUB_TILES.map((tile) => tile.testId));
-const ANALYTICS_SUB_IDS = new Set(
-  ANALYTICS_HUB_TILES.map((tile) => tile.testId),
-);
+const ANALYTICS_SUB_IDS = new Set([
+  ...ANALYTICS_HUB_TILES.map((tile) => tile.testId),
+  "labs-link-ai-insights-dna",
+  "labs-link-analytics-hub-palate",
+]);
 
 function tabForSub(sub: string): Tab | null {
   if (COLLECTION_SUB_IDS.has(sub)) return "collection";
@@ -440,7 +443,11 @@ export default function LabsTaste() {
         </div>
       );
     }
-    const activeAnalyticsTileDef = ANALYTICS_HUB_TILES.find((tile) => tile.testId === activeAnalyticsTile);
+    const normalizedAnalyticsTile =
+      activeAnalyticsTile === "labs-link-ai-insights-dna" || activeAnalyticsTile === "labs-link-analytics-hub-palate"
+        ? "labs-link-analytics-hub-profile"
+        : activeAnalyticsTile;
+    const activeAnalyticsTileDef = ANALYTICS_HUB_TILES.find((tile) => tile.testId === normalizedAnalyticsTile);
     const analyticsActiveTestId = activeAnalyticsTileDef?.testId;
     return (
       <div data-testid="meine-welt-inline-analytics">
@@ -468,10 +475,9 @@ export default function LabsTaste() {
         >
           <EmbeddedMeineWeltProvider>
             {activeAnalyticsTile === "labs-link-analytics-hub-analytics" && <LabsTasteAnalytics />}
-            {activeAnalyticsTile === "labs-link-ai-insights-dna" && <LabsWhiskyDNA />}
+            {(activeAnalyticsTile === "labs-link-analytics-hub-profile" || activeAnalyticsTile === "labs-link-ai-insights-dna" || activeAnalyticsTile === "labs-link-analytics-hub-palate") && <LabsProfile />}
             {activeAnalyticsTile === "labs-link-analytics-hub-wheel" && <LabsTasteWheel />}
             {activeAnalyticsTile === "labs-link-analytics-hub-compare" && <LabsCompareBenchmark />}
-            {activeAnalyticsTile === "labs-link-analytics-hub-palate" && <LabsTasteProfile />}
           </EmbeddedMeineWeltProvider>
         </HubTileCollapsible>
       </div>

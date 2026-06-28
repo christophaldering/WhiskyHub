@@ -68,7 +68,7 @@ export function selectSoloInsights(input: SoloEngineInput): Insight[] {
         subline: t("insights.solo.dnaHighlight.subline", "You consistently rate {{label}} drams above your baseline.", { label: top.label }),
         visual,
         score: clamp01((top.affinity - 50) / 50) * 0.95,
-        deepLink: `/labs/taste?tab=analytics&sub=labs-link-ai-insights-dna&highlight=${encodeURIComponent(top.id)}`,
+        deepLink: `/labs/taste?tab=analytics&sub=labs-link-analytics-hub-profile&highlight=${encodeURIComponent(top.id)}`,
         testId: `insight-solo-dna-${top.id}`,
         tone: "accent",
       });
@@ -432,7 +432,7 @@ export function selectFeedInsights(input: FeedEngineInput): Insight[] {
         subline: t("insights.feed.aromaUnlock.subline", "Your DNA shows a clear preference."),
         visual: radarVisual,
         score: clamp01((newest.affinity - 50) / 50) * 0.75,
-        deepLink: `/labs/taste?tab=analytics&sub=labs-link-ai-insights-dna&highlight=${encodeURIComponent(newest.id)}`,
+        deepLink: `/labs/taste?tab=analytics&sub=labs-link-analytics-hub-profile&highlight=${encodeURIComponent(newest.id)}`,
         testId: "insight-feed-aroma",
         tone: "accent",
       });

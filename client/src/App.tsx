@@ -762,10 +762,10 @@ function Router() {
               <Route path="/labs/discover/vocabulary">{() => <RedirectWithQuery to="/labs/explore" query="tab=bibliothek&section=nachschlagewerk&sub=aroma-atlas" />}</Route>
               <Route path="/labs/discover">{() => <Redirect to="/labs/explore" />}</Route>
               <Route path="/labs/entdecken">{() => <Redirect to="/labs/explore" />}</Route>
-              <Route path="/labs/taste/profile">{() => <RedirectWithQuery to="/labs/taste" query="tab=analytics&sub=labs-link-analytics-hub-palate" />}</Route>
+              <Route path="/labs/taste/profile">{() => <RedirectWithQuery to="/labs/taste" query="tab=analytics&sub=labs-link-analytics-hub-profile" />}</Route>
               <Route path="/labs/taste/analytics">{() => <RedirectWithQuery to="/labs/taste" query="tab=analytics&sub=labs-link-analytics-hub-analytics" />}</Route>
               <Route path="/labs/taste/wheel">{() => <RedirectWithQuery to="/labs/taste" query="tab=analytics&sub=labs-link-analytics-hub-wheel" />}</Route>
-              <Route path="/labs/taste/dna">{() => <RedirectWithQuery to="/labs/taste" query="tab=analytics&sub=labs-link-ai-insights-dna" />}</Route>
+              <Route path="/labs/taste/dna">{() => <RedirectWithQuery to="/labs/taste" query="tab=analytics&sub=labs-link-analytics-hub-profile" />}</Route>
               <Route path="/labs/taste/compare">{() => <RedirectWithQuery to="/labs/taste" query="tab=analytics&sub=labs-link-analytics-hub-compare" />}</Route>
               <Route path="/labs/taste/drams">{() => <RedirectWithQuery to="/labs/taste" query="" />}</Route>
               <Route path="/labs/taste/collection">{() => <RedirectWithQuery to="/labs/taste" query="tab=collection&sub=labs-link-collection-hub-bottles" />}</Route>
