@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { Heart, Info, ChevronLeft, ExternalLink } from "lucide-react";
 import { useIsEmbeddedInExplore } from "@/labs/embeddedExploreContext";
-import authorPhoto from "@assets/22A3ABF8-0085-4C82-97DF-EAA0ACD46B4E_1771448218726.png";
+import authorPhoto from "@assets/IMG_7227_1782630937512.jpeg";
 
 const HOSPIZ_NAME = "Christina-Kleintjes-Hospiz-Stiftung";
 const HOSPIZ_URL = "https://c-kleintjes-hospiz-stiftung.de";
