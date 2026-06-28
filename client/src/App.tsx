@@ -507,7 +507,9 @@ function Router() {
       <ScrollRestoration />
       <Switch>
         {/* ── Public / Marketing ── */}
-        <Route path="/" component={LandingCms} />
+        <Route path="/" component={LandingX} />
+        {/* archived previous home (CMS page → landing-new fallback) */}
+        <Route path="/landing-cms" component={LandingCms} />
         <Route path="/landing-static" component={LandingNew} />
         <Route path="/landing-x" component={LandingX} />
         <Route path="/landing-old" component={PublicLanding} />
