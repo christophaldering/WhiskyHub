@@ -2607,7 +2607,7 @@ function CleanupTab({ participantId }: { participantId: string }) {
         method: "POST",
         headers: { "Content-Type": "application/json", ...pidHeaders() },
         credentials: "include",
-        body: JSON.stringify({ confirm: "APPLY_SCORE_CURVE_V1" }),
+        body: JSON.stringify({ confirm: "APPLY_SCORE_CURVE_V2" }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));

@@ -1055,51 +1055,75 @@ export async function registerRoutes(
       if (!requester || requester.role !== "admin") {
         return res.status(403).json({ message: "Admin access required" });
       }
-      if (req.body?.confirm !== "APPLY_SCORE_CURVE_V1") {
-        return res.status(400).json({ message: "Missing confirm token APPLY_SCORE_CURVE_V1" });
+      if (req.body?.confirm !== "APPLY_SCORE_CURVE_V2") {
+        return res.status(400).json({ message: "Missing confirm token APPLY_SCORE_CURVE_V2" });
       }
 
       const { pool: pgPool } = await import("./db");
 
       const pre = await pgPool.query(
         `SELECT count(*)::int AS total, count(total_score)::int AS have_total,
+                count(*) FILTER (WHERE total_score > 12)::int AS already_0_100,
+                count(*) FILTER (WHERE total_score > 10 AND total_score <= 12)::int AS ambiguous,
                 min(total_score)::float AS min_s, max(total_score)::float AS max_s,
                 min(normalized_total)::float AS min_n_before, max(normalized_total)::float AS max_n_before
          FROM historical_tasting_entries`
       );
 
-      const BAK = "historical_tasting_entries_bak_curve";
-      const exists = await pgPool.query(`SELECT to_regclass($1) AS reg`, [BAK]);
-      let backupCreated = false;
-      if (!exists.rows[0].reg) {
-        await pgPool.query(
-          `CREATE TABLE ${BAK} AS
-           SELECT id, nose_score, taste_score, finish_score, total_score,
-                  normalized_nose, normalized_taste, normalized_finish, normalized_total
-           FROM historical_tasting_entries`
-        );
-        backupCreated = true;
-      }
+      // Always take a REAL backup of the CURRENT state (drop+recreate avoids the
+      // empty-table trap where Publish schema-sync pre-creates an empty copy).
+      const BAK = "historical_tasting_entries_bak_curve_v2";
+      await pgPool.query(`DROP TABLE IF EXISTS ${BAK}`);
+      await pgPool.query(
+        `CREATE TABLE ${BAK} AS
+         SELECT id, nose_score, taste_score, finish_score, total_score,
+                normalized_nose, normalized_taste, normalized_finish, normalized_total
+         FROM historical_tasting_entries`
+      );
       const bak = await pgPool.query(`SELECT count(*)::int AS c FROM ${BAK}`);
 
-      const curve = (col: string) =>
-        `round((CASE WHEN ${col} IS NULL THEN NULL
-           WHEN ${col} <= 7 THEN 75 + (${col} - 4) * 2.5
-           WHEN ${col} <= 9 THEN 82.5 + (${col} - 7) * 5
-           WHEN ${col} <= 10 THEN 92.5 + (${col} - 9) * 2.5
-           ELSE 95 END)::numeric, 1)`;
+      // Scale-aware: scores > 12 are already on the 0-100 scale -> pass through.
+      // Scores 0-10 -> condensed curve.
+      const curveComp = (col: string) =>
+        `(CASE WHEN ${col} IS NULL THEN NULL
+            WHEN ${col} > 12 THEN round(${col}::numeric, 1)
+            WHEN ${col} <= 7 THEN round((75 + (${col} - 4) * 2.5)::numeric, 1)
+            WHEN ${col} <= 9 THEN round((82.5 + (${col} - 7) * 5)::numeric, 1)
+            WHEN ${col} <= 10 THEN round((92.5 + (${col} - 9) * 2.5)::numeric, 1)
+            ELSE 95 END)`;
+
+      // total: pass through if already 0-100; if total is on an odd 10-12 legacy
+      // scale (3 rows) but components are 0-10, derive it from the corrected
+      // component sub-scores; otherwise condensed curve.
+      const curveTotal =
+        `(CASE WHEN total_score IS NULL THEN NULL
+            WHEN total_score > 12 THEN round(total_score::numeric, 1)
+            WHEN total_score <= 10 THEN round((CASE
+                  WHEN total_score <= 7 THEN 75 + (total_score - 4) * 2.5
+                  WHEN total_score <= 9 THEN 82.5 + (total_score - 7) * 5
+                  ELSE 92.5 + (total_score - 9) * 2.5 END)::numeric, 1)
+            ELSE round(((
+                  coalesce(${curveComp("nose_score")}, 0)
+                  + coalesce(${curveComp("taste_score")}, 0)
+                  + coalesce(${curveComp("finish_score")}, 0)
+                ) / nullif(
+                  (CASE WHEN nose_score IS NULL THEN 0 ELSE 1 END)
+                  + (CASE WHEN taste_score IS NULL THEN 0 ELSE 1 END)
+                  + (CASE WHEN finish_score IS NULL THEN 0 ELSE 1 END), 0))::numeric, 1)
+         END)`;
 
       const upd = await pgPool.query(
         `UPDATE historical_tasting_entries SET
-           normalized_nose = ${curve("nose_score")},
-           normalized_taste = ${curve("taste_score")},
-           normalized_finish = ${curve("finish_score")},
-           normalized_total = ${curve("total_score")}`
+           normalized_nose = ${curveComp("nose_score")},
+           normalized_taste = ${curveComp("taste_score")},
+           normalized_finish = ${curveComp("finish_score")},
+           normalized_total = ${curveTotal}`
       );
 
       const band = await pgPool.query(
         `SELECT min(normalized_total)::float AS min_n, max(normalized_total)::float AS max_n,
-                round(avg(normalized_total)::numeric,1)::float AS avg_n
+                round(avg(normalized_total)::numeric,1)::float AS avg_n,
+                count(*) FILTER (WHERE normalized_total = 95)::int AS at95
          FROM historical_tasting_entries`
       );
       const safety = await pgPool.query(
@@ -1114,7 +1138,7 @@ export async function registerRoutes(
       res.json({
         ok: true,
         preCheck: pre.rows[0],
-        backup: { table: BAK, created: backupCreated, rows: bak.rows[0].c },
+        backup: { table: BAK, rows: bak.rows[0].c },
         updated: upd.rowCount,
         band: band.rows[0],
         safety: safety.rows[0],
