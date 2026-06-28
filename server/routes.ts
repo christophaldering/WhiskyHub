@@ -5661,7 +5661,9 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
       const pSparkV = await storage.getAppSetting("cooper_persona_spark");
       const pWarmthV = await storage.getAppSetting("cooper_persona_warmth");
       const knobV = cooperPersonaKnobFragment(pReserveV, pSparkV, pWarmthV);
-      const instructions = baseInstr + "\n\n" + continuerBlock + " " + (continuerByLevel[cooperLevel] || continuerByLevel.adaptive) + "\n\n" + backdoorBlock + (knobV ? "\n\n" + knobV : "");
+      const cooperVoiceIntroBlock = "EINMALIGE ERÖFFNUNG — nur dieses eine erste Mal: Bevor du zur offenen Einladung übergehst, stell dich in ein, zwei ruhigen Sätzen kurz vor und mach klar, wie ihr zusammenarbeitet — du hilfst dem Taster, seine eigenen Worte zu finden, du prägst nichts vor, und er bestimmt Tempo und Reihenfolge. Am Glas hältst du dich mit Wissen und Vergleichen zurück; seine Fragen beantwortest du gern danach. Lade ihn ein, sich Zeit zu lassen — es gibt kein richtig oder falsch. Geh dann sanft in die offene Einladung über, frei zu erzählen, was auffällt. Warm und knapp, kein Fachjargon, keine Aufzählung, nichts über diese Flasche. Dass deine Stimme KI ist, musst du nicht erwähnen — das steht bereits auf dem Bildschirm.";
+      const wantsVoiceIntro = req.body?.intro === true && req.body?.probe !== true;
+      const instructions = baseInstr + "\n\n" + continuerBlock + " " + (continuerByLevel[cooperLevel] || continuerByLevel.adaptive) + "\n\n" + backdoorBlock + (knobV ? "\n\n" + knobV : "") + (wantsVoiceIntro ? "\n\n" + cooperVoiceIntroBlock : "");
       const ledgerEnum = ["untouched", "touched", "sharpened"];
       const tools = [{
         type: "function",

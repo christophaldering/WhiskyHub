@@ -60,7 +60,8 @@ export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fl
     setLedger(EMPTY_LEDGER);
     setTranscript([]);
     try {
-      const tokenRes = await fetch("/api/voice-probe/token", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ voice, mode, probe: opts?.probe === true }) });
+      const wantIntro = opts?.probe !== true && (() => { try { return localStorage.getItem("labs_cooper_voice_intro_seen") !== "1"; } catch { return false; } })();
+      const tokenRes = await fetch("/api/voice-probe/token", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ voice, mode, probe: opts?.probe === true, intro: wantIntro }) });
       const tokenText = await tokenRes.text();
       if (!tokenRes.ok) { fail(`Token ${tokenRes.status}: ${tokenText.slice(0, 300)}`); return; }
       let tokenData: any = {}; try { tokenData = JSON.parse(tokenText); } catch { /* noop */ }
@@ -106,7 +107,7 @@ export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fl
       pc.onconnectionstatechange = () => {
         const st = pc.connectionState;
         console.log("[voice-probe] connectionState", st);
-        if (st === "connected") { setStatus("connected"); setStatusText("verbunden — sprich jetzt"); setBusy(false); }
+        if (st === "connected") { setStatus("connected"); setStatusText("verbunden — sprich jetzt"); setBusy(false); if (wantIntro) { try { localStorage.setItem("labs_cooper_voice_intro_seen", "1"); } catch { /* ignore */ } } }
         else if ((st === "failed" || st === "disconnected" || st === "closed") && statusRef.current !== "error") {
           setStatusText("Verbindung " + st);
         }
