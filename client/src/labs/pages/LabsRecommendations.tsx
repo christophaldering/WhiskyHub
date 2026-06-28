@@ -7,6 +7,7 @@ import WhiskyImage from "@/labs/components/WhiskyImage";
 import { useSession } from "@/lib/session";
 import { flavorProfileApi, communityApi } from "@/lib/api";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
+import LabsTryNext from "./LabsTryNext";
 import {
   ChevronLeft, Sparkles, Wine, MapPin, Droplets, Flame, Users,
   Info, Bot, RefreshCw, ExternalLink, Calendar, Percent,
@@ -452,6 +453,8 @@ export default function LabsRecommendations() {
               </div>
             )}
           </section>
+
+          <LabsTryNext />
 
           <section style={{ display: "flex", flexDirection: "column", gap: 12 }} data-testid="section-ai-recommendations">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>

@@ -125,7 +125,6 @@ export const AI_INSIGHTS_HUB_TILES: HubTileDef[] = [
     descFallback: "Personalized whisky picks for you",
     href: "/labs/taste/recommendations",
     testId: "labs-link-ai-insights-recommendations",
-    hidden: true,
   },
   {
     icon: Compass,
