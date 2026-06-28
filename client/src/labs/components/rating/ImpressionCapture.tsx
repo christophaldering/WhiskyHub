@@ -106,9 +106,10 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
         let lvl = voice.levelRef?.current ?? 0;
         if (lvl < 0.02 && speakingRef.current) {
           const p = (now - t0) / 900;
-          lvl = 0.32 + 0.22 * (0.5 + 0.5 * Math.sin(p * Math.PI * 2));
+          lvl = 0.4 + 0.28 * (0.5 + 0.5 * Math.sin(p * Math.PI * 2));
         }
         el.style.setProperty("--cooper-level", lvl.toFixed(3));
+        el.style.setProperty("--mic-level", (voice.micLevelRef?.current ?? 0).toFixed(3));
       }
       raf = requestAnimationFrame(loop);
     };
@@ -208,8 +209,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
 
   const handleVoiceFinish = async () => {
     const tr = voice.transcript;
-    voice.disconnect();
-    if (tr.length === 0) { onSkip(); return; }
+    if (tr.length === 0) { voice.disconnect(); onSkip(); return; }
     setTranscript(tr);
     rawImpressionRef.current = tr.filter((x) => x.role === "taster").map((x) => x.text).join(" ");
     setLoading(true);
@@ -218,8 +218,10 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
       const r = await finalizeImpression({ whiskyName, intensity, transcript: tr });
       setResult({ ...r, rawImpression: rawImpressionRef.current || r.rawImpression });
       setPhase("handoff");
+      voice.disconnect();
     } catch {
       setError(true);
+      voice.disconnect();
     }
     setLoading(false);
   };
@@ -389,7 +391,15 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
               {showTranscript && <LedgerConstellation data={voice.ledger as any} />}
 
               <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: SP.lg }}>
-                <div ref={glowWrapRef} onClick={() => voice.summon()} title={t("v2.voiceTapCooper", "Tippen, um Cooper zu fragen")} style={{ display: "flex", cursor: "pointer" }}><CooperBarrel size={230} live /></div>
+                <div ref={glowWrapRef} onClick={() => voice.summon()} title={t("v2.voiceTapCooper", "Tippen, um Cooper zu fragen")} className={`cooper-stage${voice.speaking ? " is-cooper-speaking" : ""}`} style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: 230, height: 230, cursor: "pointer" }}>
+                  <div className="cooper-aura" aria-hidden="true" />
+                  <div className="cooper-mic-layer" aria-hidden="true">
+                    <span className="cooper-mic-ripple r1" />
+                    <span className="cooper-mic-ripple r2" />
+                    <span className="cooper-mic-ripple r3" />
+                  </div>
+                  <span style={{ position: "relative", zIndex: 1, display: "flex" }}><CooperBarrel size={230} live /></span>
+                </div>
                 <div style={{ fontFamily: FONT.serif, fontStyle: "italic", fontSize: 15, color: LABS_THEME.faint, textAlign: "center" }}>
                   {t("v2.voiceSpeakFreely", "Worte f\u00fcr das, was du wahrnimmst")}
                 </div>

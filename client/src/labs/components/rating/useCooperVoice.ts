@@ -27,6 +27,9 @@ export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fl
   const levelRef = useRef(0);                       // Audio-Amplitude 0..1, von der Glimmer-Ansicht gelesen
   const audioCtxRef = useRef<AudioContext | null>(null);
   const levelRafRef = useRef<number | null>(null);
+  const micLevelRef = useRef(0);                    // Mikro-Eingangspegel 0..1 für die Mikro-Wellen
+  const micRafRef = useRef<number | null>(null);
+  const micCtxRef = useRef<AudioContext | null>(null);
   const mentorTimeoutRef = useRef<any>(null);
   const dcRef = useRef<RTCDataChannel | null>(null);
   const statusRef = useRef<Status>("idle");
@@ -41,6 +44,9 @@ export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fl
     dcRef.current = null;
     if (levelRafRef.current) { cancelAnimationFrame(levelRafRef.current); levelRafRef.current = null; }
     if (audioCtxRef.current) { try { audioCtxRef.current.close(); } catch { /* noop */ } audioCtxRef.current = null; }
+    if (micRafRef.current) { cancelAnimationFrame(micRafRef.current); micRafRef.current = null; }
+    if (micCtxRef.current) { try { micCtxRef.current.close(); } catch { /* noop */ } micCtxRef.current = null; }
+    micLevelRef.current = 0;
     levelRef.current = 0;
     setSpeaking(false);
   }, []);
@@ -117,6 +123,27 @@ export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fl
 
       const ms = await navigator.mediaDevices.getUserMedia({ audio: true });
       micRef.current = ms;
+      // Mikro-Eingangspegel für die Glimmer-Wellen (funktioniert auch auf iOS — anders als Remote-Streams)
+      try {
+        const MAC: any = (window as any).AudioContext || (window as any).webkitAudioContext;
+        if (MAC) {
+          const mctx = new MAC();
+          micCtxRef.current = mctx;
+          const msrc = mctx.createMediaStreamSource(ms);
+          const manalyser = mctx.createAnalyser();
+          manalyser.fftSize = 256;
+          manalyser.smoothingTimeConstant = 0.5;
+          msrc.connect(manalyser);
+          const mdata = new Uint8Array(manalyser.frequencyBinCount);
+          const mtick = () => {
+            manalyser.getByteFrequencyData(mdata);
+            let sum = 0; for (let i = 0; i < mdata.length; i++) sum += mdata[i];
+            micLevelRef.current = Math.min(1, (sum / mdata.length / 255) * 2.8);
+            micRafRef.current = requestAnimationFrame(mtick);
+          };
+          mtick();
+        }
+      } catch { /* Mikro-Pegel optional */ }
       pc.addTrack(ms.getTracks()[0], ms);
 
       let responseActive = false;
@@ -204,5 +231,5 @@ export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fl
     setBusy(false);
   }, [cleanup]);
 
-  return { status, statusText, model, voice, setVoice, mode, setMode, ledger, transcript, busy, connect, disconnect, levelRef, speaking, summon };
+  return { status, statusText, model, voice, setVoice, mode, setMode, ledger, transcript, busy, connect, disconnect, levelRef, micLevelRef, speaking, summon };
 }
