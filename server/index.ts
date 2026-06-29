@@ -589,6 +589,7 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS voice_memo_duration integer`);
       await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'final'`);
       await dbJournal.execute(sqlJ`ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS deleted_at timestamp`);
+      await dbJournal.execute(sqlJ`ALTER TABLE participants ADD COLUMN IF NOT EXISTS cooper_note_length text`);
       log("Ensured journal_entries has all schema columns", "startup");
 
       await dbJournal.execute(sqlJ`
