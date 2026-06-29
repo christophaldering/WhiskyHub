@@ -1,0 +1,270 @@
+=== HARD PROMPT: Cooper-Zusammenfassungs-Fix + Zeitreise als KI-Kachel ===
+
+Dieses Prompt enthält zwei unabhängige Aufgaben (A und B). Beide können sequenziell in
+derselben Session umgesetzt werden.
+
+────────────────────────────────────────
+SICHERHEIT (gilt für BEIDE Aufgaben)
+────────────────────────────────────────
+Vor dem ersten Datei-Edit:
+  git tag pre-cooper-zeitreise-fix-$(date +%Y-%m-%d)
+
+Kein Commit, kein Schema-Push, keine Migrationen.
+Kein drizzle-kit, kein db:push.
+Commit-Verbot gilt auch im Verifikationsabschnitt – explizit nicht committen.
+
+────────────────────────────────────────
+AUFGABE A — Cooper: Zusammenfassungs-Verhalten korrigieren
+────────────────────────────────────────
+
+DATEI: server/routes.ts
+BEREICH: /api/impression/converse → turnSystem-Prompt (ca. Z. 6002)
+
+SCHRITT 0 — DIAGNOSE (vor jeder Änderung):
+  grep -n "turnSystem" server/routes.ts
+  Zeige die aktuellen letzten 3–4 Sätze des turnSystem-Strings (ab "Wenn nichts Wesentliches mehr offen ist …").
+
+PROBLEM:
+  Cooper fasst Wahrnehmungsabschnitte (Nase / Gaumen / Abgang / Gesamteindruck) zu früh
+  und zu proaktiv zusammen, ohne zu prüfen ob der Taster mit dem Part fertig ist.
+  Das widerspricht dem Persona-Grundsatz: der Taster bestimmt Tempo und Reihenfolge.
+
+PLAN (vor Ausführung zeigen, Bestätigung abwarten):
+
+Im turnSystem-String den letzten Satz / die letzte Regel ersetzen oder ergänzen:
+
+AKTUELL (Ende des turnSystem-Strings):
+  "Wenn nichts Wesentliches mehr offen ist oder der Taster erschöpft wirkt, fasse kurz
+   zusammen und biete den Abschluss an."
+
+ERSETZEN DURCH:
+  "Fasse einen Wahrnehmungsabschnitt (Nase, Gaumen, Abgang, Gesamteindruck) NIEMALS
+   ungefragt zusammen. Bevor du zusammenfasst, frage knapp nach, ob der Taster mit diesem
+   Teil fertig ist — z. B. 'Magst du noch mehr zur Nase sagen, oder weiter?' Zusammen-
+   fassungen erstellst du NUR wenn der Taster explizit darum bittet ODER wenn die Vielzahl
+   und Tiefe der genannten Eindrücke eine Bündelung wirklich nützlich macht — nicht als
+   Routine nach jedem Abschnitt. Wenn nichts Wesentliches mehr offen ist oder der Taster
+   signalisiert dass er fertig ist, biete den Abschluss an ohne nochmals zusammenzufassen,
+   es sei denn er wünscht es ausdrücklich."
+
+WICHTIG: Nur dieser eine Satz/Absatz am Ende des turnSystem-Strings ändern.
+Alle anderen Teile des Strings (Grundmodus, Anti-Wiederholung, Ledger-Regeln etc.)
+bleiben UNVERÄNDERT.
+
+VERIFIKATION Aufgabe A:
+  grep -n "Wahrnehmungsabschnitt\|ungefragt" server/routes.ts
+  → Neue Regel muss gefunden werden.
+  KEIN COMMIT.
+
+────────────────────────────────────────
+AUFGABE B — Zeitreise: Aus Dram-Liste in KI-Hub + Kapitelstruktur
+────────────────────────────────────────
+
+SCHRITT 0 — DIAGNOSE:
+  1. grep -n "timetravel\|Zeitreise" client/src/labs/pages/LabsTasteDrams.tsx
+     → Zeigt: Zeitreise-Button in der Dram-Liste (Z. ~1177) + ViewState "timetravel" (Z. ~37, ~608)
+  2. grep -n "AI_INSIGHTS_HUB_TILES" client/src/labs/pages/hubTiles.tsx
+     → Zeigt: aktuell 3 sichtbare Kacheln (Connoisseur / Recommendations / AI Curation)
+  3. grep -n "Clock\|timetravel\|Zeitreise" client/src/labs/pages/hubTiles.tsx
+     → Prüft ob Zeitreise dort schon existiert (erwartet: NICHT vorhanden)
+  4. grep -n "cooper/timetravel" server/routes.ts | head -3
+     → Bestätigt: Endpoint POST /api/cooper/timetravel existiert (Z. ~5851)
+  5. grep -n "narrative.*split\|split.*\\\\n" client/src/labs/components/DramTimeTravel.tsx
+     → Zeigt aktuellen Render: Absatz-Split via \n{2,} (Z. ~138), plain Fließtext, keine Kapitel
+
+PLAN (vor Ausführung zeigen, Bestätigung abwarten):
+
+B1 — Server: Zeitreise-System-Prompt mit Kapitelstruktur
+  DATEI: server/routes.ts, Funktion app.post("/api/cooper/timetravel"), const system (Z. ~5887)
+
+  AKTUELL (system-String, sinngemäß):
+    "… zusammenhängender, erzählender Rückblick (KEINE Aufzählung, KEINE Tabelle).
+     … 200–300 Wörter, warm und beobachtend …
+     Schließe mit EINER neugierigen Frage …"
+
+  ERSETZEN DURCH (vollständiger neuer system-String):
+    `Du bist Cooper, der Küfer — hier im Nachgang der ruhige Kenner. Du erzählst die
+    Verkostungs-REISE EINER Person durch einen Zeitraum. Stütze dich AUSSCHLIESSLICH auf
+    die gelieferten Daten; erfinde keine Aromen, vergib KEINE eigenen Noten oder Punkte.
+
+    Gliedere deinen Rückblick in MAXIMAL 5 Kapitel. Schreibe jede Kapitelüberschrift
+    in einer EIGENEN ZEILE, in Großbuchstaben, ohne Sonderzeichen davor oder danach,
+    gefolgt von einer Leerzeile und dann dem Kapiteltext. Nicht alle Kapitel müssen
+    erscheinen — lass ein Kapitel weg wenn die Datenlage dafür zu dünn ist.
+
+    Die möglichen Kapitel in dieser Reihenfolge:
+
+    ANFÄNGE
+    Was am Beginn des Zeitraums auffiel — erste Drams, damaliger Stil, womit alles begann.
+    Nur schreiben wenn die frühesten Drams im Zeitraum deutlich anders sind als die späteren.
+
+    WENDEPUNKTE
+    Momente wo sich Bewertungsmuster, Regionen, Fasstypen oder Aromen-Präferenzen
+    erkennbar verschoben haben. Nur schreiben wenn solche Verschiebungen in den Daten
+    sichtbar sind.
+
+    ROTE FÄDEN
+    Was sich durch den ganzen Zeitraum zieht — wiederkehrende Regionen, Aromacluster,
+    Cask-Typen, oder ein besonders markanter Dram zu dem zurückgekehrt wurde.
+    Dieses Kapitel erscheint fast immer.
+
+    HEUTE
+    Aktueller Stil und Wahrnehmung am Ende des Zeitraums — wohin die Reise geführt hat.
+    Dieses Kapitel erscheint fast immer.
+
+    AUSBLICK
+    NUR schreiben wenn der Datenbogen eine klare Trajektorie zeigt, die eine neugierige
+    Vorausschau rechtfertigt. Schließe dieses Kapitel mit EINER einladenden Frage,
+    die zurück ans Glas führt. Wenn die Datenlage keinen klaren Ausblick trägt,
+    stelle die Frage stattdessen am Ende von HEUTE.
+
+    Schreibe in der zweiten Person, ${isDe ? "Deutsch" : "Englisch"}, warm und beobachtend,
+    nicht schmeichelnd, nicht wertend. Gesamtlänge 200–400 Wörter je nach Datenmenge.`
+
+  Hinweis: Die max_completion_tokens von 1100 auf 1400 erhöhen (mehr Spielraum für Kapitel).
+
+B2 — Client: Kapitel-Render in DramTimeTravel.tsx
+  DATEI: client/src/labs/components/DramTimeTravel.tsx
+  BEREICH: result.narrative Render (Z. ~138)
+
+  AKTUELL:
+    result.narrative.split(/\n{2,}/).map((para, i) => (
+      <p key={i} style={{ fontFamily: "'Cormorant Garamond'", fontSize: 18, ... }}>
+        {para.trim()}
+      </p>
+    ))
+
+  ERSETZEN DURCH: Intelligenter Renderer der Kapitelüberschriften (GROSSBUCHSTABEN,
+  Zeile nur aus Großbuchstaben + evtl. Leerzeichen) von Fließtext unterscheidet:
+
+    {result.narrative.split(/\n{2,}/).map((block, i) => {
+      const trimmed = block.trim();
+      // Kapitelüberschrift: kurze Zeile, nur Großbuchstaben + Leerzeichen, min 4 Zeichen
+      const isHeading = /^[A-ZÄÖÜ\s]{4,30}$/.test(trimmed);
+      if (isHeading) return (
+        <p key={i} style={{
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          color: "var(--labs-accent)",
+          margin: "24px 0 6px",
+        }}>{trimmed}</p>
+      );
+      return (
+        <p key={i} style={{
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontSize: 18,
+          lineHeight: 1.65,
+          color: "var(--labs-text)",
+          margin: "0 0 12px",
+        }}>{trimmed}</p>
+      );
+    })}
+
+B3 — Neue KI-Kachel in hubTiles.tsx
+  DATEI: client/src/labs/pages/hubTiles.tsx
+  BEREICH: AI_INSIGHTS_HUB_TILES Array
+
+  Nach der Connoisseur-Kachel (erste Kachel) eine neue Kachel einfügen:
+
+    {
+      icon: Clock,   // Clock aus lucide-react — prüfen ob bereits importiert, sonst Import ergänzen
+      labelKey: "myTastePage.aiInsightsHub.timetravel",
+      labelFallback: "Zeitreise",
+      descKey: "myTastePage.aiInsightsHub.timetravelDesc",
+      descFallback: "Deine Verkostungs-Reise durch die Zeit",
+      href: "/labs/taste/timetravel",
+      testId: "labs-link-ai-insights-timetravel",
+    },
+
+B4 — Neue Route + Seite für Zeitreise im KI-Hub
+  Die Zeitreise war bisher ein ViewState innerhalb von LabsTasteDrams (kein eigener Pfad).
+  Jetzt bekommt sie eine eigene Route als Unterseite des KI-Hubs.
+
+  DATEI: client/src/App.tsx (oder wo die /labs/taste/* Routen definiert sind)
+  → Route hinzufügen:
+    <Route path="/labs/taste/timetravel" component={LabsTasteTimetravel} />
+
+  NEUE DATEI: client/src/labs/pages/LabsTasteTimetravel.tsx
+  → Thin Wrapper der DramTimeTravel wiederverwendet, aber Daten selbst lädt:
+
+    import { useEffect, useState } from "react";
+    import { useTranslation } from "react-i18next";
+    import { useNavigate } from "wouter";   // oder useLocation je nach Router-Pattern im Projekt
+    import DramTimeTravel from "../components/DramTimeTravel";
+    import { pidHeaders } from "@/lib/api";
+
+    export default function LabsTasteTimetravel() {
+      const { i18n } = useTranslation();
+      const [, navigate] = useNavigate();  // Wouter-Pattern prüfen und anpassen
+      const [items, setItems] = useState<any[]>([]);
+      const [loading, setLoading] = useState(true);
+
+      useEffect(() => {
+        // Alle journal_entries des Nutzers laden (gleicher Endpunkt wie LabsTasteDrams)
+        fetch("/api/journal", { headers: pidHeaders() })
+          .then(r => r.ok ? r.json() : [])
+          .then(data => { setItems(Array.isArray(data) ? data : []); setLoading(false); })
+          .catch(() => setLoading(false));
+      }, []);
+
+      if (loading) return (
+        <div style={{ padding: 24, color: "var(--labs-text-muted)" }}>
+          {i18n.language?.startsWith("de") ? "Lade …" : "Loading …"}
+        </div>
+      );
+
+      return (
+        <div style={{ padding: "0 16px", maxWidth: 640, margin: "0 auto" }}>
+          <DramTimeTravel allItems={items} onBack={() => navigate("/labs/taste")} />
+        </div>
+      );
+    }
+
+  HINWEIS ZUM ROUTER: Den exakten useNavigate/useLocation/navigate-Pattern aus einer
+  bestehenden LabsTaste*-Seite (z.B. LabsTasteAnalytics.tsx) ablesen und 1:1 übernehmen.
+
+B5 — i18n Keys ergänzen
+  DATEI: client/src/lib/i18n.ts
+  Im DE-Block und EN-Block unter myTastePage.aiInsightsHub folgende Keys ergänzen:
+
+  DE:
+    "timetravel": "Zeitreise",
+    "timetravelDesc": "Deine Verkostungs-Reise durch die Zeit"
+
+  EN:
+    "timetravel": "Time Travel",
+    "timetravelDesc": "Your tasting journey through time"
+
+B6 — Zeitreise-Button in LabsTasteDrams BEHALTEN oder entfernen?
+  Empfehlung: Den Button in der Dram-Liste BEHALTEN als Schnellzugang, aber
+  die onClick-Funktion auf navigate("/labs/taste/timetravel") ändern statt
+  setViewState("timetravel"). So hat der Nutzer zwei Wege zur selben Seite.
+  ViewState "timetravel" und den zugehörigen Branch (Z. ~608) können dann
+  entfernt werden.
+  → Nur umsetzen wenn es sauber geht; sonst Button belassen wie er ist.
+
+VERIFIKATION Aufgabe B:
+  1. grep -n "timetravel\|Zeitreise" client/src/labs/pages/hubTiles.tsx
+     → Neue Kachel muss sichtbar sein (hidden: false oder kein hidden-Flag)
+  2. grep -n "LabsTasteTimetravel\|/labs/taste/timetravel" client/src/App.tsx
+     → Route muss registriert sein
+  3. grep -n "Kapitel\|ANFÄNGE\|ROTE FÄDEN\|WENDEPUNKTE\|HEUTE\|AUSBLICK" server/routes.ts
+     → Neue Kapitel-Anweisungen im System-Prompt sichtbar
+  4. grep -n "isHeading\|A-ZÄÖÜ" client/src/labs/components/DramTimeTravel.tsx
+     → Kapitel-Renderer vorhanden
+  5. grep -n "timetravelDesc\|timetravel" client/src/lib/i18n.ts
+     → Beide Sprachen vorhanden
+  6. KEIN COMMIT.
+
+────────────────────────────────────────
+ABSCHLUSS
+────────────────────────────────────────
+Nach erfolgreicher Verifikation beider Aufgaben:
+  → Replit neu starten (nicht committen)
+  → Im Browser / auf dem iPhone testen:
+    - KI-Hub zeigt neue Zeitreise-Kachel
+    - Zeitreise-Seite lädt und generiert einen strukturierten Report mit Kapitelüberschriften
+    - Cooper fasst während des Gesprächs nicht mehr ungefragt zusammen
