@@ -136,9 +136,16 @@ export default function DramTimeTravel({ allItems, onBack }: { allItems: Item[];
 
       {result && (
         <div style={{ marginBottom: 20 }} data-testid="timetravel-narrative">
-          {result.narrative.split(/\n{2,}/).map((para, i) => (
-            <p key={i} style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 18, lineHeight: 1.6, color: "var(--labs-text)", margin: "0 0 12px" }}>{para.trim()}</p>
-          ))}
+          {result.narrative.split(/\n{2,}/).map((block, i) => {
+            const trimmed = block.trim();
+            const isHeading = /^[A-ZÄÖÜ\s]{4,30}$/.test(trimmed);
+            if (isHeading) return (
+              <p key={i} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--labs-accent)", margin: "24px 0 6px" }}>{trimmed}</p>
+            );
+            return (
+              <p key={i} style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 18, lineHeight: 1.65, color: "var(--labs-text)", margin: "0 0 12px" }}>{trimmed}</p>
+            );
+          })}
         </div>
       )}
 

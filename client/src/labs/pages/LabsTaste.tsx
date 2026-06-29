@@ -33,6 +33,7 @@ import LabsWhiskyDNA from "./LabsWhiskyDNA";
 import LabsRecommendations from "./LabsRecommendations";
 import LabsCollectionAnalysis from "./LabsCollectionAnalysis";
 import LabsAICuration from "./LabsAICuration";
+import LabsTasteTimetravel from "./LabsTasteTimetravel";
 import LabsTasteAnalytics from "./LabsTasteAnalytics";
 import LabsTasteWheel from "./LabsTasteWheel";
 import LabsTasteCompare from "./LabsTasteCompare";
@@ -435,6 +436,7 @@ export default function LabsTaste() {
           >
             <EmbeddedMeineWeltProvider>
               {activeAITile === "labs-link-ai-insights-connoisseur" && <LabsConnoisseur />}
+              {activeAITile === "labs-link-ai-insights-timetravel" && <LabsTasteTimetravel />}
               {activeAITile === "labs-link-ai-insights-recommendations" && <LabsRecommendations />}
               {activeAITile === "labs-link-ai-insights-ai-curation" && <LabsAICuration />}
               {activeAITile === "labs-link-ai-insights-ai-images" && <LabsAiImages />}

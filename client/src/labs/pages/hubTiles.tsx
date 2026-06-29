@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { useEffect, useState, type ElementType, type ReactNode, type CSSProperties, type Ref } from "react";
 import {
-  BookOpen, Archive, Heart, Sparkles, Activity, Library, Compass,
+  BookOpen, Archive, Heart, Sparkles, Activity, Library, Compass, Clock,
   BarChart3, PieChart, GitCompareArrows, Download, Layers, Crown, Users, Brain,
   ChevronDown, FileText, Image as ImageIcon,
 } from "lucide-react";
@@ -116,6 +116,15 @@ export const AI_INSIGHTS_HUB_TILES: HubTileDef[] = [
     descFallback: "Your personal palate letter",
     href: "/labs/taste/connoisseur",
     testId: "labs-link-ai-insights-connoisseur",
+  },
+  {
+    icon: Clock,
+    labelKey: "myTastePage.aiInsightsHub.timetravel",
+    labelFallback: "Zeitreise",
+    descKey: "myTastePage.aiInsightsHub.timetravelDesc",
+    descFallback: "Deine Verkostungs-Reise durch die Zeit",
+    href: "/labs/taste/timetravel",
+    testId: "labs-link-ai-insights-timetravel",
   },
   {
     icon: Sparkles,
