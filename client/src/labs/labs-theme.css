@@ -3018,13 +3018,13 @@ a.labs-dram-item {
   border-radius: 50%; pointer-events: none; z-index: 0;
   background: radial-gradient(circle, color-mix(in srgb, var(--labs-gold) 52%, transparent) 0%, color-mix(in srgb, var(--labs-gold) 26%, transparent) 36%, transparent 68%);
   filter: blur(3px);
-  opacity: calc(0.95 * var(--cooper-level, 0));
-  transform: scale(calc(1 + 0.9 * var(--cooper-level, 0)));
+  opacity: calc(0.95 * var(--cooper-level, 0) * var(--glimmer-intensity, 1.5));
+  transform: scale(calc(1 + 0.9 * var(--cooper-level, 0) * var(--glimmer-intensity, 1.5)));
   transition: opacity 100ms linear, transform 120ms ease-out;
 }
 .cooper-mic-layer {
   position: absolute; inset: 0; pointer-events: none; z-index: 0;
-  opacity: calc(var(--mic-level, 0));
+  opacity: calc(var(--mic-level, 0) * var(--glimmer-intensity, 1.5));
   transition: opacity 110ms linear;
 }
 .cooper-stage.is-cooper-speaking .cooper-mic-layer { opacity: 0; }

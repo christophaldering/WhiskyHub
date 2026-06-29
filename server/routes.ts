@@ -5720,7 +5720,8 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
           const value = data?.value || data?.client_secret?.value;
           const expiresAt = data?.expires_at ?? data?.expiresAt ?? null;
           if (!value) { lastErr = `Kein ephemeraler Key in der Antwort: ${text.slice(0, 400)}`; continue; }
-          return res.json({ value, expiresAt, model, voice, mode });
+          const glimmerIntensity = (await storage.getAppSetting("cooper_glimmer_intensity")) || "1.5";
+          return res.json({ value, expiresAt, model, voice, mode, glimmerIntensity });
         }
         lastErr = `${r.status} ${text.slice(0, 400)}`;
         if (model !== candidates[candidates.length - 1] && /model/i.test(text)) continue;
@@ -5742,7 +5743,8 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
     const pS = await storage.getAppSetting("cooper_persona_spark");
     const pW = await storage.getAppSetting("cooper_persona_warmth");
     const nL = await storage.getAppSetting("cooper_note_length");
-    return res.json({ voice: gV ?? "cedar", mode: gM ?? "tiefsinnig", reserve: pR ?? "mid", spark: pS ?? "mid", warmth: pW ?? "mid", noteLength: nL ?? "lang" });
+    const gI = await storage.getAppSetting("cooper_glimmer_intensity");
+    return res.json({ voice: gV ?? "cedar", mode: gM ?? "tiefsinnig", reserve: pR ?? "mid", spark: pS ?? "mid", warmth: pW ?? "mid", noteLength: nL ?? "lang", glimmerIntensity: gI ?? "1.5" });
   });
 
   app.post("/api/admin/cooper-defaults", async (req: Request, res: Response) => {
@@ -5762,13 +5764,16 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
     const warmth = WARMTH.includes(req.body?.warmth) ? req.body.warmth : "mid";
     const NOTELEN = ["kurz", "lang", "ausfuehrlich"];
     const noteLength = NOTELEN.includes(req.body?.noteLength) ? req.body.noteLength : "lang";
+    const GLIMMER = ["1", "1.5", "2", "2.6"];
+    const glimmerIntensity = GLIMMER.includes(req.body?.glimmerIntensity) ? req.body.glimmerIntensity : "1.5";
     await storage.setAppSetting("cooper_default_voice", req.body.voice);
     await storage.setAppSetting("cooper_default_mode", req.body.mode);
     await storage.setAppSetting("cooper_persona_reserve", reserve);
     await storage.setAppSetting("cooper_persona_spark", spark);
     await storage.setAppSetting("cooper_persona_warmth", warmth);
     await storage.setAppSetting("cooper_note_length", noteLength);
-    return res.json({ voice: req.body.voice, mode: req.body.mode, reserve, spark, warmth, noteLength });
+    await storage.setAppSetting("cooper_glimmer_intensity", glimmerIntensity);
+    return res.json({ voice: req.body.voice, mode: req.body.mode, reserve, spark, warmth, noteLength, glimmerIntensity });
   });
 
   // ===== COOPER: Sensorisches Gedächtnis (Phase 1 — erzeugen/ansehen/löschen, KEINE Cooper-Einspeisung) =====

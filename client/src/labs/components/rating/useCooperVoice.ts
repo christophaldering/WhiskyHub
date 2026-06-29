@@ -30,6 +30,7 @@ export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fl
   const micLevelRef = useRef(0);                    // Mikro-Eingangspegel 0..1 für die Mikro-Wellen
   const micRafRef = useRef<number | null>(null);
   const micCtxRef = useRef<AudioContext | null>(null);
+  const glimmerIntensityRef = useRef("1.5");
   const mentorTimeoutRef = useRef<any>(null);
   const dcRef = useRef<RTCDataChannel | null>(null);
   const statusRef = useRef<Status>("idle");
@@ -78,6 +79,7 @@ export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fl
       setModel(usedModel);
       if (tokenData?.voice) setVoice(tokenData.voice);
       if (tokenData?.mode) setMode(tokenData.mode);
+      if (tokenData?.glimmerIntensity) glimmerIntensityRef.current = String(tokenData.glimmerIntensity);
       if (!EPHEMERAL_KEY) { fail("Kein ephemeraler Key in der Token-Antwort."); return; }
 
       setStatus("connecting");
@@ -231,5 +233,5 @@ export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fl
     setBusy(false);
   }, [cleanup]);
 
-  return { status, statusText, model, voice, setVoice, mode, setMode, ledger, transcript, busy, connect, disconnect, levelRef, micLevelRef, speaking, summon };
+  return { status, statusText, model, voice, setVoice, mode, setMode, ledger, transcript, busy, connect, disconnect, levelRef, micLevelRef, glimmerIntensityRef, speaking, summon };
 }

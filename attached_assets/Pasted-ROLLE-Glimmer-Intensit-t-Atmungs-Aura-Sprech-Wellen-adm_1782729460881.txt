@@ -1,0 +1,107 @@
+ROLLE: Glimmer-Intensität (Atmungs-Aura + Sprech-Wellen) admin-einstellbar machen, Default 1.5
+(= +50%). Server liefert den Wert über die Voice-Token-Antwort an den Client; CSS skaliert damit.
+
+VERBOTEN: KEIN git commit/push, KEIN drizzle, KEINE Migration/Schema-Datei. (Diese Einstellung
+nutzt App-Settings — KEINE neue Spalte.)
+
+Sicherung: git tag pre-glimmer-intensity-2026-06-28
+
+════ SCHRITT 0 — Basis prüfen ════
+  grep -c micCtxRef client/src/labs/components/rating/useCooperVoice.ts   # ≥1
+  grep -c cooper_note_length server/routes.ts                            # ≥3
+  grep -c 'var(--cooper-level, 0)' client/src/labs/labs-theme.css        # ≥1
+Wenn eine 0 ist: STOPP (der Cooper-Komplett-Prompt fehlt noch), melde zurück.
+
+════ DATEI 1 — client/src/labs/pages/LabsVoiceProbe.tsx ════
+Ersetze den GESAMTEN Inhalt durch die beigefügte Datei LabsVoiceProbe.tsx.
+(Sie enthält den neuen „Glimmer-Intensität"-Regler und – falls noch vorhanden – die bereits
+beschlossene Entfernung des Notizlänge-Reglers aus dem Studio.)
+
+════ DATEI 2 — server/routes.ts (VIER) ════
+
+—— 2a: Token-Antwort trägt die Intensität zum Client ——
+SUCHE:
+          return res.json({ value, expiresAt, model, voice, mode });
+ERSETZE durch:
+          const glimmerIntensity = (await storage.getAppSetting("cooper_glimmer_intensity")) || "1.5";
+          return res.json({ value, expiresAt, model, voice, mode, glimmerIntensity });
+
+—— 2b: Admin GET ——
+SUCHE:
+    const nL = await storage.getAppSetting("cooper_note_length");
+    return res.json({ voice: gV ?? "cedar", mode: gM ?? "tiefsinnig", reserve: pR ?? "mid", spark: pS ?? "mid", warmth: pW ?? "mid", noteLength: nL ?? "lang" });
+ERSETZE durch:
+    const nL = await storage.getAppSetting("cooper_note_length");
+    const gI = await storage.getAppSetting("cooper_glimmer_intensity");
+    return res.json({ voice: gV ?? "cedar", mode: gM ?? "tiefsinnig", reserve: pR ?? "mid", spark: pS ?? "mid", warmth: pW ?? "mid", noteLength: nL ?? "lang", glimmerIntensity: gI ?? "1.5" });
+
+—— 2c: Admin POST (Validierung) ——
+SUCHE:
+    const NOTELEN = ["kurz", "lang", "ausfuehrlich"];
+    const noteLength = NOTELEN.includes(req.body?.noteLength) ? req.body.noteLength : "lang";
+    await storage.setAppSetting("cooper_default_voice", req.body.voice);
+ERSETZE durch:
+    const NOTELEN = ["kurz", "lang", "ausfuehrlich"];
+    const noteLength = NOTELEN.includes(req.body?.noteLength) ? req.body.noteLength : "lang";
+    const GLIMMER = ["1", "1.5", "2", "2.6"];
+    const glimmerIntensity = GLIMMER.includes(req.body?.glimmerIntensity) ? req.body.glimmerIntensity : "1.5";
+    await storage.setAppSetting("cooper_default_voice", req.body.voice);
+
+—— 2d: Admin POST (Speichern + Rückgabe) ——
+SUCHE:
+    await storage.setAppSetting("cooper_note_length", noteLength);
+    return res.json({ voice: req.body.voice, mode: req.body.mode, reserve, spark, warmth, noteLength });
+ERSETZE durch:
+    await storage.setAppSetting("cooper_note_length", noteLength);
+    await storage.setAppSetting("cooper_glimmer_intensity", glimmerIntensity);
+    return res.json({ voice: req.body.voice, mode: req.body.mode, reserve, spark, warmth, noteLength, glimmerIntensity });
+
+════ DATEI 3 — client/src/labs/components/rating/useCooperVoice.ts (DREI) ════
+
+—— 3a —— SUCHE:
+  const micCtxRef = useRef<AudioContext | null>(null);
+ERSETZE durch:
+  const micCtxRef = useRef<AudioContext | null>(null);
+  const glimmerIntensityRef = useRef("1.5");
+
+—— 3b —— SUCHE:
+      if (tokenData?.mode) setMode(tokenData.mode);
+ERSETZE durch:
+      if (tokenData?.mode) setMode(tokenData.mode);
+      if (tokenData?.glimmerIntensity) glimmerIntensityRef.current = String(tokenData.glimmerIntensity);
+
+—— 3c —— SUCHE:
+levelRef, micLevelRef, speaking, summon };
+ERSETZE durch:
+levelRef, micLevelRef, glimmerIntensityRef, speaking, summon };
+
+════ DATEI 4 — client/src/labs/components/rating/ImpressionCapture.tsx (EINE) ════
+SUCHE:
+        el.style.setProperty("--mic-level", (voice.micLevelRef?.current ?? 0).toFixed(3));
+ERSETZE durch:
+        el.style.setProperty("--mic-level", (voice.micLevelRef?.current ?? 0).toFixed(3));
+        el.style.setProperty("--glimmer-intensity", voice.glimmerIntensityRef?.current ?? "1.5");
+
+════ DATEI 5 — client/src/labs/labs-theme.css (DREI) ════
+
+—— 5a —— SUCHE:
+  opacity: calc(0.95 * var(--cooper-level, 0));
+ERSETZE durch:
+  opacity: calc(0.95 * var(--cooper-level, 0) * var(--glimmer-intensity, 1.5));
+
+—— 5b —— SUCHE:
+  transform: scale(calc(1 + 0.9 * var(--cooper-level, 0)));
+ERSETZE durch:
+  transform: scale(calc(1 + 0.9 * var(--cooper-level, 0) * var(--glimmer-intensity, 1.5)));
+
+—— 5c —— SUCHE:
+  opacity: calc(var(--mic-level, 0));
+ERSETZE durch:
+  opacity: calc(var(--mic-level, 0) * var(--glimmer-intensity, 1.5));
+
+════ VERIFIKATION (nur lesen) ════
+  grep -c 'cooper_glimmer_intensity' server/routes.ts                                   # ≥3
+  grep -c 'glimmerIntensityRef' client/src/labs/components/rating/useCooperVoice.ts     # 3
+  grep -c 'glimmer-intensity' client/src/labs/labs-theme.css                            # ≥3
+  grep -c 'glimmerIntensity' client/src/labs/pages/LabsVoiceProbe.tsx                   # ≥6
+NICHT committen, NICHT pushen, KEIN drizzle.

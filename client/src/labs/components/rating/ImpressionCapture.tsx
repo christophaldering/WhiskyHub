@@ -110,6 +110,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
         }
         el.style.setProperty("--cooper-level", lvl.toFixed(3));
         el.style.setProperty("--mic-level", (voice.micLevelRef?.current ?? 0).toFixed(3));
+        el.style.setProperty("--glimmer-intensity", voice.glimmerIntensityRef?.current ?? "1.5");
       }
       raf = requestAnimationFrame(loop);
     };
