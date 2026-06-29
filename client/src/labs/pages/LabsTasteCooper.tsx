@@ -82,6 +82,7 @@ export default function LabsTasteCooper() {
   const [selected, setSelected] = useState<CooperEntryMode>("auto");
   const [level, setLevel] = useState<CooperLevel>("auto");
   const [depth, setDepth] = useState<CooperDepth>("neugierig");
+  const [noteLength, setNoteLength] = useState<"kurz" | "lang" | "ausfuehrlich">("lang");
 
   useEffect(() => {
     if (participant) {
@@ -91,6 +92,8 @@ export default function LabsTasteCooper() {
       setLevel(lv === "beginner" || lv === "expert" || lv === "connoisseur" ? lv : "auto");
       const dp = (participant as any).cooperDepth;
       setDepth(dp === "schnell" || dp === "rabbithole" ? dp : "neugierig");
+      const nl = (participant as any).cooperNoteLength;
+      setNoteLength(nl === "kurz" || nl === "ausfuehrlich" ? nl : "lang");
     }
   }, [participant]);
 
@@ -124,6 +127,13 @@ export default function LabsTasteCooper() {
     onError: () => { toast({ title: t("v2.cooperPrefs.saveError", "Konnte nicht gespeichert werden"), variant: "destructive" }); },
   });
   const pickDepth = (d: CooperDepth) => { setDepth(d); if (pid) depthMutation.mutate(d); };
+
+  const noteLengthMutation = useMutation({
+    mutationFn: (nlen: "kurz" | "lang" | "ausfuehrlich") => participantUpdateApi.update(pid!, { cooperNoteLength: nlen }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["participant", pid] }); toast({ title: t("v2.cooperPrefs.saved", "Gespeichert") }); },
+    onError: () => { toast({ title: t("v2.cooperPrefs.saveError", "Konnte nicht gespeichert werden"), variant: "destructive" }); },
+  });
+  const pickNoteLength = (nlen: "kurz" | "lang" | "ausfuehrlich") => { setNoteLength(nlen); if (pid) noteLengthMutation.mutate(nlen); };
 
   if (!currentParticipant) {
     return (
@@ -163,6 +173,12 @@ export default function LabsTasteCooper() {
     { value: "schnell", label: t("v2.cooperPrefs.depthSchnell", "Schnell"), desc: t("v2.cooperPrefs.depthSchnellDesc", "Wenige Nachfragen — zügig durch.") },
     { value: "neugierig", label: t("v2.cooperPrefs.depthNeugierig", "Neugierig"), desc: t("v2.cooperPrefs.depthNeugierigDesc", "Ausgewogen — die wichtigsten Ecken.") },
     { value: "rabbithole", label: t("v2.cooperPrefs.depthRabbithole", "Rabbit Hole"), desc: t("v2.cooperPrefs.depthRabbitholeDesc", "Tief und ausführlich — jede Nuance.") },
+  ];
+
+  const noteLengthOptions: { value: "kurz" | "lang" | "ausfuehrlich"; label: string; desc: string }[] = [
+    { value: "kurz", label: t("v2.cooperPrefs.noteShort", "Kurz"), desc: t("v2.cooperPrefs.noteShortDesc", "Knappe Notiz, auf das Wesentliche verdichtet.") },
+    { value: "lang", label: t("v2.cooperPrefs.noteLong", "Lang"), desc: t("v2.cooperPrefs.noteLongDesc", "Ausführlich und vollständig — jede Beobachtung bekommt Raum.") },
+    { value: "ausfuehrlich", label: t("v2.cooperPrefs.noteFull", "Sehr ausführlich"), desc: t("v2.cooperPrefs.noteFullDesc", "Reich ausgestaltet, jede Nuance breit entfaltet.") },
   ];
 
   return (
@@ -253,6 +269,26 @@ export default function LabsTasteCooper() {
               key={opt.value}
               onClick={() => pickDepth(opt.value)}
               data-testid={`cooper-depth-${opt.value}`}
+              style={{ display: "flex", alignItems: "flex-start", gap: 12, textAlign: "left", width: "100%", padding: "14px 16px", borderRadius: 12, cursor: "pointer", background: active ? "var(--labs-gold-soft, rgba(212,168,71,0.12))" : "var(--labs-surface)", border: active ? "2px solid var(--labs-gold, #D4A847)" : "1px solid var(--labs-border)", transition: "border-color 150ms ease, background 150ms ease" }}
+            >
+              <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: active ? "var(--labs-gold, #D4A847)" : "var(--labs-text)" }}>{opt.label}</span>
+                <span style={{ fontSize: 12, color: "var(--labs-text-muted)", lineHeight: 1.4 }}>{opt.desc}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="labs-card p-5 flex flex-col gap-3">
+        <p className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{t("v2.cooperPrefs.noteTitle", "Länge der Verkostungsnotiz")}</p>
+        {noteLengthOptions.map((opt) => {
+          const active = noteLength === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => pickNoteLength(opt.value)}
+              data-testid={`cooper-notelen-${opt.value}`}
               style={{ display: "flex", alignItems: "flex-start", gap: 12, textAlign: "left", width: "100%", padding: "14px 16px", borderRadius: 12, cursor: "pointer", background: active ? "var(--labs-gold-soft, rgba(212,168,71,0.12))" : "var(--labs-surface)", border: active ? "2px solid var(--labs-gold, #D4A847)" : "1px solid var(--labs-border)", transition: "border-color 150ms ease, background 150ms ease" }}
             >
               <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>

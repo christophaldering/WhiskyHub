@@ -5977,7 +5977,9 @@ REGELN:
 - "Gesamteindruck" verdichtet sein Gesamtgefühl und (falls vorhanden) seinen Affekt — KEINE Bewertungszahl.
 - Evokativ, in der Sprache des Gesprächs. KEINE Aufzählungen/Spiegelstriche im Fließtext.
 Gib NUR den reinen Notiztext zurück (die vier Überschriften + Text), ohne Anführungszeichen, ohne Vorrede.`;
-        const noteLen = (await storage.getAppSetting("cooper_note_length")) ?? "lang";
+        const proseUserId = (req.headers["x-participant-id"] as string) || "";
+        const proseParticipant = proseUserId ? await storage.getParticipant(proseUserId) : null;
+        const noteLen = ((proseParticipant as any)?.cooperNoteLength) || (await storage.getAppSetting("cooper_note_length")) || "lang";
         const lengthDirective = noteLen === "kurz"
           ? "\n\nLÄNGE: Halte die Notiz bewusst KNAPP und auf das Wesentliche verdichtet — verliere nichts Inhaltliches des Tasters, aber formuliere kompakt."
           : noteLen === "ausfuehrlich"
@@ -7348,6 +7350,16 @@ Aktualisiere das Ledger EHRLICH anhand des Gesprächs: untouched->touched sobald
           updates.cooperDepth = String(c);
         } else {
           return res.status(400).json({ message: "Invalid cooper depth. Must be schnell, neugierig, rabbithole or null." });
+        }
+      }
+      if (req.body.cooperNoteLength !== undefined) {
+        const c = req.body.cooperNoteLength;
+        if (c === null) {
+          updates.cooperNoteLength = null;
+        } else if (["kurz", "lang", "ausfuehrlich"].includes(String(c))) {
+          updates.cooperNoteLength = String(c);
+        } else {
+          return res.status(400).json({ message: "Invalid cooper note length. Must be kurz, lang, ausfuehrlich or null." });
         }
       }
       if (req.body.cooperMemoryEnabled !== undefined) {

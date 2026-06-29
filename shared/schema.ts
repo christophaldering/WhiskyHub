@@ -42,6 +42,7 @@ export const participants = pgTable("participants", {
   cooperEntryMode: text("cooper_entry_mode"),
   cooperLevel: text("cooper_level"),
   cooperDepth: text("cooper_depth"),
+  cooperNoteLength: text("cooper_note_length"),
   cooperMemory: text("cooper_memory"),
   cooperMemoryUpdatedAt: timestamp("cooper_memory_updated_at"),
   cooperMemoryEnabled: boolean("cooper_memory_enabled").default(false),

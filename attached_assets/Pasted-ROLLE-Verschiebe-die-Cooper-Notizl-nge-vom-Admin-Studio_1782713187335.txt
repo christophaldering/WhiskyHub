@@ -1,0 +1,166 @@
+ROLLE: Verschiebe die Cooper-Notizlänge vom Admin-Studio zu einer PRO-NUTZER-Einstellung im
+Cooper-Screen. Neue Participant-Spalte cooper_note_length; Regler in LabsTasteCooper; Prosa liest
+die Länge pro Nutzer; Studio-Regler entfernt.
+
+VERBOTEN beim Editieren: KEIN git commit/push, KEINE Migration-Datei. ABER: Diese Änderung fügt
+EINE additive Spalte hinzu — NACH dem Editieren (siehe POST-STEP) muss EINMAL manuell
+`npx drizzle-kit push --force` laufen. Du (Agent) führst drizzle NICHT aus; nur der Mensch.
+
+Sicherung: git tag pre-notelen-peruser-2026-06-28
+
+════ SCHRITT 0 — Kontext prüfen ════
+  grep -c noteLength client/src/labs/pages/LabsVoiceProbe.tsx   # erwartet ≥6 (Länge ist im Studio)
+  grep -c cooperNoteLength shared/schema.ts                     # erwartet 0 (noch nicht verschoben)
+Wenn LabsVoiceProbe 0 ist: STOPP (anderer Stand) und melde zurück.
+
+════ DATEI 1 — shared/schema.ts ════
+SUCHE:
+  cooperDepth: text("cooper_depth"),
+  cooperMemory: text("cooper_memory"),
+ERSETZE durch:
+  cooperDepth: text("cooper_depth"),
+  cooperNoteLength: text("cooper_note_length"),
+  cooperMemory: text("cooper_memory"),
+
+════ DATEI 2 — server/routes.ts (ZWEI) ════
+
+—— 2a: PATCH-Whitelist (nach cooperDepth) ——
+SUCHE:
+        } else if (["schnell", "neugierig", "rabbithole"].includes(String(c))) {
+          updates.cooperDepth = String(c);
+        } else {
+          return res.status(400).json({ message: "Invalid cooper depth. Must be schnell, neugierig, rabbithole or null." });
+        }
+      }
+ERSETZE durch:
+        } else if (["schnell", "neugierig", "rabbithole"].includes(String(c))) {
+          updates.cooperDepth = String(c);
+        } else {
+          return res.status(400).json({ message: "Invalid cooper depth. Must be schnell, neugierig, rabbithole or null." });
+        }
+      }
+      if (req.body.cooperNoteLength !== undefined) {
+        const c = req.body.cooperNoteLength;
+        if (c === null) {
+          updates.cooperNoteLength = null;
+        } else if (["kurz", "lang", "ausfuehrlich"].includes(String(c))) {
+          updates.cooperNoteLength = String(c);
+        } else {
+          return res.status(400).json({ message: "Invalid cooper note length. Must be kurz, lang, ausfuehrlich or null." });
+        }
+      }
+
+—— 2b: Prosa liest die Länge PRO NUTZER (Studio-Global bleibt nur Fallback) ——
+SUCHE:
+        const noteLen = (await storage.getAppSetting("cooper_note_length")) ?? "lang";
+ERSETZE durch:
+        const proseUserId = (req.headers["x-participant-id"] as string) || "";
+        const proseParticipant = proseUserId ? await storage.getParticipant(proseUserId) : null;
+        const noteLen = ((proseParticipant as any)?.cooperNoteLength) || (await storage.getAppSetting("cooper_note_length")) || "lang";
+
+════ DATEI 3 — client/src/labs/pages/LabsTasteCooper.tsx (SECHS) ════
+
+—— 3a: State ——
+SUCHE:
+  const [depth, setDepth] = useState<CooperDepth>("neugierig");
+ERSETZE durch:
+  const [depth, setDepth] = useState<CooperDepth>("neugierig");
+  const [noteLength, setNoteLength] = useState<"kurz" | "lang" | "ausfuehrlich">("lang");
+
+—— 3b: Laden aus participant ——
+SUCHE:
+      const dp = (participant as any).cooperDepth;
+      setDepth(dp === "schnell" || dp === "rabbithole" ? dp : "neugierig");
+    }
+ERSETZE durch:
+      const dp = (participant as any).cooperDepth;
+      setDepth(dp === "schnell" || dp === "rabbithole" ? dp : "neugierig");
+      const nl = (participant as any).cooperNoteLength;
+      setNoteLength(nl === "kurz" || nl === "ausfuehrlich" ? nl : "lang");
+    }
+
+—— 3c: Mutation + Picker ——
+SUCHE:
+  const pickDepth = (d: CooperDepth) => { setDepth(d); if (pid) depthMutation.mutate(d); };
+ERSETZE durch:
+  const pickDepth = (d: CooperDepth) => { setDepth(d); if (pid) depthMutation.mutate(d); };
+
+  const noteLengthMutation = useMutation({
+    mutationFn: (nlen: "kurz" | "lang" | "ausfuehrlich") => participantUpdateApi.update(pid!, { cooperNoteLength: nlen }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["participant", pid] }); toast({ title: t("v2.cooperPrefs.saved", "Gespeichert") }); },
+    onError: () => { toast({ title: t("v2.cooperPrefs.saveError", "Konnte nicht gespeichert werden"), variant: "destructive" }); },
+  });
+  const pickNoteLength = (nlen: "kurz" | "lang" | "ausfuehrlich") => { setNoteLength(nlen); if (pid) noteLengthMutation.mutate(nlen); };
+
+—— 3d: Options ——
+SUCHE:
+    { value: "rabbithole", label: t("v2.cooperPrefs.depthRabbithole", "Rabbit Hole"), desc: t("v2.cooperPrefs.depthRabbitholeDesc", "Tief und ausführlich — jede Nuance.") },
+  ];
+ERSETZE durch:
+    { value: "rabbithole", label: t("v2.cooperPrefs.depthRabbithole", "Rabbit Hole"), desc: t("v2.cooperPrefs.depthRabbitholeDesc", "Tief und ausführlich — jede Nuance.") },
+  ];
+
+  const noteLengthOptions: { value: "kurz" | "lang" | "ausfuehrlich"; label: string; desc: string }[] = [
+    { value: "kurz", label: t("v2.cooperPrefs.noteShort", "Kurz"), desc: t("v2.cooperPrefs.noteShortDesc", "Knappe Notiz, auf das Wesentliche verdichtet.") },
+    { value: "lang", label: t("v2.cooperPrefs.noteLong", "Lang"), desc: t("v2.cooperPrefs.noteLongDesc", "Ausführlich und vollständig — jede Beobachtung bekommt Raum.") },
+    { value: "ausfuehrlich", label: t("v2.cooperPrefs.noteFull", "Sehr ausführlich"), desc: t("v2.cooperPrefs.noteFullDesc", "Reich ausgestaltet, jede Nuance breit entfaltet.") },
+  ];
+
+—— 3e: Render-Block (neue Karte direkt VOR „Was Cooper über dich weiß") ——
+SUCHE:
+        })}
+      </div>
+
+      <div className="labs-card p-5 flex flex-col gap-3">
+        <p className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Was Cooper über dich weiß</p>
+ERSETZE durch:
+        })}
+      </div>
+
+      <div className="labs-card p-5 flex flex-col gap-3">
+        <p className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>{t("v2.cooperPrefs.noteTitle", "Länge der Verkostungsnotiz")}</p>
+        {noteLengthOptions.map((opt) => {
+          const active = noteLength === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => pickNoteLength(opt.value)}
+              data-testid={`cooper-notelen-${opt.value}`}
+              style={{ display: "flex", alignItems: "flex-start", gap: 12, textAlign: "left", width: "100%", padding: "14px 16px", borderRadius: 12, cursor: "pointer", background: active ? "var(--labs-gold-soft, rgba(212,168,71,0.12))" : "var(--labs-surface)", border: active ? "2px solid var(--labs-gold, #D4A847)" : "1px solid var(--labs-border)", transition: "border-color 150ms ease, background 150ms ease" }}
+            >
+              <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: active ? "var(--labs-gold, #D4A847)" : "var(--labs-text)" }}>{opt.label}</span>
+                <span style={{ fontSize: 12, color: "var(--labs-text-muted)", lineHeight: 1.4 }}>{opt.desc}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="labs-card p-5 flex flex-col gap-3">
+        <p className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Was Cooper über dich weiß</p>
+
+════ DATEI 4 — client/src/labs/pages/LabsVoiceProbe.tsx (Regler aus Studio ENTFERNEN) ════
+Entferne in diesem File ALLE Vorkommen von „noteLength" wieder (die sechs Stellen, die zuvor
+hinzugefügt wurden): den State + Typ, das Laden, den Save-Body, das Save-savedDefault, den
+Regler-Array-Eintrag und die „· Notiz …"-Anzeige. Ziel: `grep -c noteLength
+client/src/labs/pages/LabsVoiceProbe.tsx` ergibt 0. Falls unklar, ersetze gezielt:
+
+  (1) "...warmth: string; noteLength: string } | null>"  →  "...warmth: string } | null>"
+  (2) Zeile  const [noteLength, setNoteLength] = useState("lang");  →  löschen
+  (3) Zeile  if (data?.noteLength) setNoteLength(data.noteLength);  →  löschen
+  (4) in BEIDEN setSavedDefault(...) das  , noteLength: data.noteLength  entfernen
+  (5) im POST-Body  { voice, mode, reserve, spark, warmth, noteLength }  →  ohne noteLength
+  (6) Regler-Zeile  { key: "noteLength", label: "Notizlänge", ... },  →  löschen
+  (7) in der Anzeige  · Notiz {savedDefault.noteLength === ...}  →  entfernen
+
+════ POST-STEP (PFLICHT, vom MENSCHEN in der Replit-Shell) ════
+  npx drizzle-kit push --force
+(legt die Spalte cooper_note_length an; ohne diesen Schritt schlägt das Speichern fehl)
+
+════ VERIFIKATION (nur lesen) ════
+  grep -c cooperNoteLength shared/schema.ts                               # 1
+  grep -c cooperNoteLength server/routes.ts                              # ≥3
+  grep -c cooperNoteLength client/src/labs/pages/LabsTasteCooper.tsx     # ≥4
+  grep -c noteLength client/src/labs/pages/LabsVoiceProbe.tsx            # 0
+NICHT committen, NICHT pushen.
