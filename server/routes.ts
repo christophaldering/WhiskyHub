@@ -6006,7 +6006,7 @@ Schreibe in der zweiten Person, ${isDe ? "Deutsch" : "Englisch"}, warm und beoba
       const rateCheck = checkConverseRateLimit(rateLimitKey);
       if (!rateCheck.allowed) return res.status(429).json({ message: "Too many requests.", retryAfter: rateCheck.retryAfterSeconds });
 
-      const { whiskyName, intensity, transcript, ledger, finalize, prose } = req.body || {};
+      const { whiskyName, intensity, transcript, ledger, finalize, prose, enableIdentity } = req.body || {};
       const turns: Array<{ role: string; text: string }> = Array.isArray(transcript)
         ? transcript.filter((t: any) => t && typeof t.text === "string" && t.text.trim()).map((t: any) => ({ role: t.role === "mentor" ? "mentor" : "taster", text: String(t.text).trim().slice(0, 800) })).slice(-20)
         : [];
@@ -6022,12 +6022,14 @@ Schreibe in der zweiten Person, ${isDe ? "Deutsch" : "Englisch"}, warm und beoba
         const finSystem = `Du verdichtest ein ganzes Verkostungs-Gespräch zu einer Struktur. Erfinde nichts; nimm nur, was der TASTER wirklich gesagt hat. Antworte in der Sprache des Gesprächs. JSON:
 {"flavorTags":["..max6.."],"nose":"kurzer Satz oder leer","taste":"kurzer Satz oder leer","finish":"kurzer Satz oder leer","scoreSuggestion":{"overall":0-100,"nose":0-100,"taste":0-100,"finish":0-100} ODER null,"confidence":"high|medium|low"}
 SCORE-REGEL (NEU, wichtig): Leite den Score aus AFFEKT und INTENSITÄT ab — Begeisterung, "packt mich", "mächtig", "voluminös", "lange", "will mehr", "werde mich morgen erinnern" => HOCH; flach, enttäuschend, "naja" => niedrig. Starker positiver Affekt rechtfertigt einen hohen Score AUCH OHNE das Wort "lecker". Eine reine Aromennennung OHNE jeden Affekt rechtfertigt keinen hohen Score. Nur wenn im GESAMTEN Gespräch wirklich kein Affekt erkennbar ist => scoreSuggestion=null, confidence="low".`;
+        const idDirective = `\n\nZUSÄTZLICH — STAMMDATEN PASSIV MITLESEN: Wenn der TASTER von sich aus identifizierende Angaben zur Flasche genannt hat, gib sie unter "identityLedger" zurück. Frage NIE danach und leite NICHTS ab — nimm NUR, was er ausdrücklich selbst gesagt hat. Felder (alle optional): {"name":"","distillery":"","region":"","country":"","abv":Zahl,"price":Zahl,"currency":"","wb_number":"","vintage":"","age_statement":""}. Lass jedes Feld weg, zu dem er nichts gesagt hat; erfinde keine Werte. Wenn nichts Identifizierendes genannt wurde, lass "identityLedger" ganz weg.`;
+        const finSystemFull = enableIdentity ? finSystem + idDirective : finSystem;
         const completion = await openai.chat.completions.create({
           model: "gpt-5-mini",
           max_completion_tokens: 1200,
           reasoning_effort: "minimal",
           response_format: { type: "json_object" },
-          messages: [{ role: "system", content: finSystem }, { role: "user", content: `Gespräch:${ctx}\n${convo}` }],
+          messages: [{ role: "system", content: finSystemFull }, { role: "user", content: `Gespräch:${ctx}\n${convo}` }],
         });
         let p: any = {}; try { p = JSON.parse(completion.choices[0]?.message?.content || "{}"); } catch { p = {}; }
         const clamp = (v: any): number | null => { const n = Number(v); return Number.isFinite(n) ? Math.max(0, Math.min(100, Math.round(n))) : null; };
@@ -6038,6 +6040,24 @@ SCORE-REGEL (NEU, wichtig): Leite den Score aus AFFEKT und INTENSITÄT ab — Be
         }
         const conf = ["high", "medium", "low"].includes(p.confidence) ? p.confidence : "medium";
         const cw: Record<string, number> = { high: 0.9, medium: 0.6, low: 0.3 };
+        let identityLedger: any = undefined;
+        if (enableIdentity && p.identityLedger && typeof p.identityLedger === "object") {
+          const il = p.identityLedger;
+          const sTrim = (v: any) => (typeof v === "string" && v.trim() ? v.trim().slice(0, 160) : undefined);
+          const nNum = (v: any) => { const n = Number(v); return Number.isFinite(n) ? n : undefined; };
+          const out: any = {};
+          const nm = sTrim(il.name); if (nm) out.name = nm;
+          const ds = sTrim(il.distillery); if (ds) out.distillery = ds;
+          const rg = sTrim(il.region); if (rg) out.region = rg;
+          const ct = sTrim(il.country); if (ct) out.country = ct;
+          const ab = nNum(il.abv); if (ab !== undefined) out.abv = ab;
+          const pr = nNum(il.price); if (pr !== undefined) out.price = pr;
+          const cu = sTrim(il.currency); if (cu) out.currency = cu;
+          const wb = sTrim(il.wb_number); if (wb) out.wb_number = wb;
+          const vt = sTrim(il.vintage); if (vt) out.vintage = vt;
+          const ag = sTrim(il.age_statement); if (ag) out.age_statement = ag;
+          if (Object.keys(out).length > 0) { out._sourceVoice = true; identityLedger = out; }
+        }
         return res.json({
           rawImpression: turns.find((t) => t.role === "taster")?.text || "",
           flavorTags: Array.isArray(p.flavorTags) ? p.flavorTags.filter((t: any) => typeof t === "string" && t.trim()).map((t: string) => t.trim()).slice(0, 6) : [],
@@ -6045,6 +6065,7 @@ SCORE-REGEL (NEU, wichtig): Leite den Score aus AFFEKT und INTENSITÄT ab — Be
           taste: typeof p.taste === "string" ? p.taste.trim() : "",
           finish: typeof p.finish === "string" ? p.finish.trim() : "",
           scoreSuggestion: score, confidence: conf, confidenceWeight: cw[conf],
+          ...(identityLedger ? { identityLedger } : {}),
           followUpQuestion: "", followUpKind: "", followUpTerm: "", tookMs: Date.now() - startMs,
         });
       }

@@ -12,6 +12,7 @@ interface Props {
    * und finalisiert das Speichern. w === null bedeutet "Ohne Namen speichern".
    */
   onResolve: (w: CapturedWhisky | null, imageFile?: File | null) => void;
+  voiceIdentity?: Partial<CapturedWhisky>;
 }
 
 /**
@@ -21,12 +22,12 @@ interface Props {
  * Whisky wird dem bestehenden Eintrag zugeordnet (kein neuer Eintrag) - das traegt DNA,
  * Sensorische Signatur und Vergleiche. Vollstaendig ueberspringbar via "Ohne Namen speichern".
  */
-export default function SoloNamingCapture({ participantId, isAuthenticated, onResolve }: Props) {
+export default function SoloNamingCapture({ participantId, isAuthenticated, onResolve, voiceIdentity }: Props) {
   const { t } = useTranslation();
   const [phase, setPhase] = useState<"choose" | "confirm">("choose");
   const [draft, setDraft] = useState<CapturedWhisky | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [nameInput, setNameInput] = useState("");
+  const [nameInput, setNameInput] = useState(voiceIdentity?.name || "");
 
   if (phase === "confirm") {
     return (
@@ -37,6 +38,7 @@ export default function SoloNamingCapture({ participantId, isAuthenticated, onRe
         onSubmit={(w, img) => onResolve(w, img)}
         onBack={() => setPhase("choose")}
         submitLabel={t("v2.solo.namingContinue", "Weiter")}
+        voiceIdentity={voiceIdentity}
       />
     );
   }
@@ -78,7 +80,7 @@ export default function SoloNamingCapture({ participantId, isAuthenticated, onRe
         <button
           type="button"
           disabled={nameInput.trim().length < 2}
-          onClick={() => onResolve({ name: nameInput.trim(), distillery: "", country: "", region: "", cask: "", age: "", abv: "", fromAI: false })}
+          onClick={() => onResolve({ name: nameInput.trim(), distillery: voiceIdentity?.distillery || "", country: voiceIdentity?.country || "", region: voiceIdentity?.region || "", cask: "", age: voiceIdentity?.age || "", abv: voiceIdentity?.abv || "", fromAI: false })}
           data-testid="solo-naming-name-submit"
           className="labs-btn-primary"
           style={{ width: "100%", minHeight: TOUCH_MIN, marginTop: SP.sm }}

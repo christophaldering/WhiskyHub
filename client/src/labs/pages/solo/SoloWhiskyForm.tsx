@@ -12,17 +12,21 @@ interface Props {
   onBack: () => void;
   onChange?: (w: Partial<CapturedWhisky>) => void;
   submitLabel?: string;
+  voiceIdentity?: Partial<CapturedWhisky>;
 }
 
-export default function SoloWhiskyForm({ initial, fromAI, initialImageFile, onSubmit, onBack, onChange, submitLabel }: Props) {
+type VoiceField = "name" | "distillery" | "country" | "region" | "age" | "abv";
+
+export default function SoloWhiskyForm({ initial, fromAI, initialImageFile, onSubmit, onBack, onChange, submitLabel, voiceIdentity }: Props) {
   const { t } = useTranslation();
-  const [name, setName] = useState(initial?.name || "");
-  const [distillery, setDistillery] = useState(initial?.distillery || "");
-  const [country, setCountry] = useState(initial?.country || "");
-  const [region, setRegion] = useState(initial?.region || "");
+  const initVal = (k: VoiceField) => (initial?.[k] || "") || (voiceIdentity?.[k] || "");
+  const [name, setName] = useState(initVal("name"));
+  const [distillery, setDistillery] = useState(initVal("distillery"));
+  const [country, setCountry] = useState(initVal("country"));
+  const [region, setRegion] = useState(initVal("region"));
   const [cask, setCask] = useState(initial?.cask || "");
-  const [age, setAge] = useState(initial?.age || "");
-  const [abv, setAbv] = useState(initial?.abv || "");
+  const [age, setAge] = useState(initVal("age"));
+  const [abv, setAbv] = useState(initVal("abv"));
   const [imageFile, setImageFile] = useState<File | null>(initialImageFile || null);
   const [imagePreview, setImagePreview] = useState<string | null>(
     initialImageFile ? URL.createObjectURL(initialImageFile) : null
@@ -41,6 +45,51 @@ export default function SoloWhiskyForm({ initial, fromAI, initialImageFile, onSu
   }, [name, distillery, country, region, cask, age, abv]);
 
   const canSubmit = name.trim().length > 0;
+
+  const conflictOf = (k: VoiceField) => {
+    const pv = (initial?.[k] ?? "").toString().trim();
+    const vv = (voiceIdentity?.[k] ?? "").toString().trim();
+    return pv && vv && pv.toLowerCase() !== vv.toLowerCase() ? { photo: pv, voice: vv } : null;
+  };
+
+  const renderConflict = (k: VoiceField, current: string, set: (v: string) => void) => {
+    const c = conflictOf(k);
+    if (!c) return null;
+    const opts = [
+      { v: c.voice, src: t("v2.solo.sourceVoice", "Cooper"), id: "voice" },
+      { v: c.photo, src: t("v2.solo.sourcePhoto", "Photo"), id: "photo" },
+    ];
+    return (
+      <div data-testid={`solo-conflict-${k}`} style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8, alignItems: "center" }}>
+        <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--labs-text-secondary)" }}>
+          {t("v2.solo.conflictHint", "Two sources \u2014 tap one:")}
+        </span>
+        {opts.map((opt) => {
+          const active = current.trim().toLowerCase() === opt.v.toLowerCase();
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => set(opt.v)}
+              data-testid={`solo-conflict-${k}-${opt.id}`}
+              style={{
+                cursor: "pointer",
+                borderRadius: 999,
+                padding: "4px 10px",
+                fontFamily: "var(--font-ui)",
+                fontSize: 12,
+                border: active ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border)",
+                background: active ? "var(--labs-accent)" : "transparent",
+                color: active ? "var(--labs-accent-dark)" : "var(--labs-text)",
+              }}
+            >
+              {opt.v} · {opt.src}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
 
   const handleSubmit = () => {
     if (!canSubmit) return;
@@ -125,6 +174,7 @@ export default function SoloWhiskyForm({ initial, fromAI, initialImageFile, onSu
             className="labs-input"
             data-testid="solo-input-name"
           />
+          {renderConflict("name", name, setName)}
         </div>
 
         <div>
@@ -137,6 +187,7 @@ export default function SoloWhiskyForm({ initial, fromAI, initialImageFile, onSu
             className="labs-input"
             data-testid="solo-input-distillery"
           />
+          {renderConflict("distillery", distillery, setDistillery)}
         </div>
 
         <div>
@@ -149,6 +200,7 @@ export default function SoloWhiskyForm({ initial, fromAI, initialImageFile, onSu
             className="labs-input"
             data-testid="solo-input-country"
           />
+          {renderConflict("country", country, setCountry)}
         </div>
 
         <div>
@@ -161,6 +213,7 @@ export default function SoloWhiskyForm({ initial, fromAI, initialImageFile, onSu
             className="labs-input"
             data-testid="solo-input-region"
           />
+          {renderConflict("region", region, setRegion)}
         </div>
 
         <div>
@@ -187,6 +240,7 @@ export default function SoloWhiskyForm({ initial, fromAI, initialImageFile, onSu
               className="labs-input"
               data-testid="solo-input-age"
             />
+            {renderConflict("age", age, setAge)}
           </div>
           <div>
             <span className="labs-section-label">{t("v2.solo.abv", "ABV")}</span>
@@ -199,6 +253,7 @@ export default function SoloWhiskyForm({ initial, fromAI, initialImageFile, onSu
               className="labs-input"
               data-testid="solo-input-abv"
             />
+            {renderConflict("abv", abv, setAbv)}
           </div>
         </div>
       </div>

@@ -28,6 +28,7 @@ interface ImpressionCaptureProps {
   onIdentifyFirst?: () => void;
   participantId?: string;
   startPhase?: "voice" | "input";
+  captureIdentity?: boolean;
 }
 
 type Phase = "voice" | "input" | "converse" | "handoff";
@@ -47,7 +48,7 @@ const LEDGER_SLOTS: { key: keyof Omit<Ledger, "vagueResolved">; label: string }[
   { key: "affect", label: "Wertung" },
 ];
 
-export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdentifyFirst, participantId, startPhase }: ImpressionCaptureProps) {
+export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdentifyFirst, participantId, startPhase, captureIdentity }: ImpressionCaptureProps) {
   const { t, i18n } = useTranslation();
   const voice = useCooperVoice();
 
@@ -199,7 +200,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
     setLoading(true);
     setError(false);
     try {
-      const r = await finalizeImpression({ whiskyName, intensity, transcript });
+      const r = await finalizeImpression({ whiskyName, intensity, transcript, enableIdentity: captureIdentity });
       setResult({ ...r, rawImpression: rawImpressionRef.current || r.rawImpression });
       setPhase("handoff");
     } catch {
@@ -216,7 +217,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
     setLoading(true);
     setError(false);
     try {
-      const r = await finalizeImpression({ whiskyName, intensity, transcript: tr });
+      const r = await finalizeImpression({ whiskyName, intensity, transcript: tr, enableIdentity: captureIdentity });
       setResult({ ...r, rawImpression: rawImpressionRef.current || r.rawImpression });
       setPhase("handoff");
       voice.disconnect();

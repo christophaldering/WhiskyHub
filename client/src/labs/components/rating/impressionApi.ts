@@ -7,6 +7,21 @@ export type ImpressionScore = {
   finish: number | null;
 };
 
+export type IdentityLedger = {
+  name?: string;
+  distillery?: string;
+  region?: string;
+  country?: string;
+  abv?: number;
+  price?: number;
+  currency?: string;
+  wb_number?: string;
+  vintage?: string;
+  age_statement?: string;
+  _sourceVoice: true;
+};
+export const EMPTY_IDENTITY_LEDGER: IdentityLedger = { _sourceVoice: true };
+
 export type ImpressionResult = {
   rawImpression: string;
   flavorTags: string[];
@@ -20,6 +35,7 @@ export type ImpressionResult = {
   followUpKind: "aroma" | "dimension" | "evaluation" | "";
   followUpTerm: string;
   narrative?: string;
+  identityLedger?: IdentityLedger;
   captureMeta?: { cooperTurns?: number; cooperMode?: string; entryModeUsed?: string; [key: string]: unknown };
   tookMs: number;
 };
@@ -48,7 +64,7 @@ export async function converseImpression(args: { whiskyName?: string; intensity:
   if (!res.ok) throw new Error(`converse failed: ${res.status}`);
   return res.json();
 }
-export async function finalizeImpression(args: { whiskyName?: string; intensity: Intensity; transcript: ConverseTurn[] }): Promise<ImpressionResult> {
+export async function finalizeImpression(args: { whiskyName?: string; intensity: Intensity; transcript: ConverseTurn[]; enableIdentity?: boolean }): Promise<ImpressionResult> {
   const res = await fetch("/api/impression/converse", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ ...args, finalize: true }) });
   if (!res.ok) throw new Error(`finalize failed: ${res.status}`);
   return res.json();

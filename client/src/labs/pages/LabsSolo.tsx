@@ -146,6 +146,7 @@ export default function LabsSolo() {
   const [ratingInitialData, setRatingInitialData] = useState<RatingData | undefined>(undefined);
   const [showImpressionCapture, setShowImpressionCapture] = useState(false);
   const [cooperStarted, setCooperStarted] = useState(false);
+  const [voiceIdentity, setVoiceIdentity] = useState<Partial<CapturedWhisky> | null>(null);
   const rawImpressionRef = useRef<string>("");
   const narrativeRef = useRef<string>("");
   const captureMetaRef = useRef<Record<string, unknown> | null>(null);
@@ -339,6 +340,7 @@ export default function LabsSolo() {
     setRatingMode(null);
     setRatingPhaseIndex(0);
     setShowImpressionCapture(true);
+    setVoiceIdentity(null);
     pendingNameRef.current = null;
     namingResolvedRef.current = false;
     pendingFinalizeRef.current = null;
@@ -358,6 +360,7 @@ export default function LabsSolo() {
 
   const startImpression = useCallback(() => {
     setShowImpressionCapture(true);
+    setVoiceIdentity(null);
     setCooperStarted(true);
     setStep("rating");
   }, []);
@@ -402,6 +405,19 @@ export default function LabsSolo() {
     rawImpressionRef.current = result.rawImpression || "";
     narrativeRef.current = result.narrative || "";
     captureMetaRef.current = result.captureMeta || null;
+    const il = result.identityLedger;
+    if (il) {
+      const mapped: Partial<CapturedWhisky> = {};
+      if (il.name) mapped.name = il.name;
+      if (il.distillery) mapped.distillery = il.distillery;
+      if (il.region) mapped.region = il.region;
+      if (il.country) mapped.country = il.country;
+      if (il.abv !== undefined) mapped.abv = String(il.abv);
+      if (il.age_statement) mapped.age = il.age_statement;
+      setVoiceIdentity(Object.keys(mapped).length > 0 ? mapped : null);
+    } else {
+      setVoiceIdentity(null);
+    }
     setRatingInitialData((prev) => mapImpressionToRating(result, { prev }));
     setRatingMode(preferredRatingModeFromProfile ?? "compact");
     setShowImpressionCapture(false);
@@ -755,6 +771,7 @@ export default function LabsSolo() {
     setDraftSaving(false);
     setTastingContext(null);
     setShowImpressionCapture(false);
+    setVoiceIdentity(null);
     rawImpressionRef.current = "";
     narrativeRef.current = "";
     captureMetaRef.current = null;
@@ -881,6 +898,7 @@ export default function LabsSolo() {
         initial={whisky || undefined}
         fromAI={whisky?.fromAI}
         initialImageFile={soloImageFile}
+        voiceIdentity={voiceIdentity || undefined}
         onSubmit={handleFormSubmit}
         onBack={() => { setStep("capture"); clearSoloDraft(); }}
         onChange={(w) => {
@@ -917,6 +935,7 @@ export default function LabsSolo() {
             onSkip={handleImpressionSkip}
             onIdentifyFirst={handleIdentifyFirst}
             participantId={participantId}
+            captureIdentity
           />
           ) : (
             <div className="labs-card" style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }} data-testid="solo-impression-choice">
@@ -1083,6 +1102,7 @@ export default function LabsSolo() {
         participantId={participantId}
         isAuthenticated={isUserAuthenticated()}
         onResolve={resolveNaming}
+        voiceIdentity={voiceIdentity || undefined}
       />
     );
   } else if (step === "done" && ratingResult) {
