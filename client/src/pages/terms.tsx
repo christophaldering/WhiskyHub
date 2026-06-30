@@ -2,6 +2,7 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Wine, ArrowLeft, FileText } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { c } from "@/lib/theme";
 
 const SECTIONS = ["scope", "usage", "content", "liability", "changes"] as const;
@@ -9,6 +10,7 @@ const SECTIONS = ["scope", "usage", "content", "liability", "changes"] as const;
 export default function Terms() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
+  const goBack = useBackNavigation("/labs/about");
 
   return (
     <SimpleShell maxWidth={720} hideNav>
@@ -23,7 +25,7 @@ export default function Terms() {
             <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: c.accent, fontSize: 16 }}>CaskSense</span>
           </button>
           <button
-            onClick={() => window.history.back()}
+            onClick={goBack}
             style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: `1px solid ${c.border}`, borderRadius: 8, color: c.muted, fontSize: 14, padding: "6px 14px", cursor: "pointer" }}
             data-testid="button-back-terms"
           >

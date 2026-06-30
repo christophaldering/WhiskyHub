@@ -28,6 +28,7 @@ import { downloadCsvFromRows, downloadXlsxFromSheets, safeFileSegment } from "@/
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 import RatingFlowV2 from "@/labs/components/rating/RatingFlowV2";
 import { useCooperStartPhase } from "@/labs/hooks/useCooperStartPhase";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import type { RatingData } from "@/labs/components/rating/types";
 import { buildTastingNoteHtml } from "@/labs/utils/tastingNoteHtml";
 
@@ -581,11 +582,12 @@ export default function LabsTasteDrams() {
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   };
 
+  const goBack = useBackNavigation("/labs/taste/drams");
   const handleBack = () => {
     if (enteredViaDeepLink && typeof window !== "undefined" && window.history.length > 1) {
       setEnteredViaDeepLink(false);
       setSelectedEntry(null);
-      window.history.back();
+      goBack();
       return;
     }
     setEnteredViaDeepLink(false);
@@ -1035,7 +1037,7 @@ export default function LabsTasteDrams() {
             if (enteredViaDeepLink && selectedEntry.status === "draft" && typeof window !== "undefined" && window.history.length > 1) {
               setEnteredViaDeepLink(false);
               setSelectedEntry(null);
-              window.history.back();
+              goBack();
               return;
             }
             setEnteredViaDeepLink(false);

@@ -2,11 +2,13 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Wine, ArrowLeft, Shield } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
+import { useBackNavigation } from "@/labs/hooks/useBackNavigation";
 import { c } from "@/lib/theme";
 
 export default function Privacy() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
+  const goBack = useBackNavigation("/labs/about");
 
   const sections = [
     "overview",
@@ -41,7 +43,7 @@ export default function Privacy() {
             <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: c.accent, fontSize: 16 }}>CaskSense</span>
           </button>
           <button
-            onClick={() => window.history.back()}
+            onClick={goBack}
             style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: `1px solid ${c.border}`, borderRadius: 8, color: c.muted, fontSize: 14, padding: "6px 14px", cursor: "pointer" }}
             data-testid="button-back-privacy"
           >
