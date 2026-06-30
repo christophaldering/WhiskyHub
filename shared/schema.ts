@@ -1757,6 +1757,49 @@ export const dataGuardSnapshots = pgTable("_data_guard_snapshots", {
   buildSha: text("build_sha"),
 });
 
+// --- Historical Tasting Entries Backups ---
+// Externally created backup snapshots of historical_tasting_entries (score columns
+// only). Live ONLY in production; not written from app code.
+// Listed here ONLY to prevent Drizzle from generating spurious DROP/RENAME migrations
+// at publish time. Columns mirror the production tables exactly (all nullable, no PK).
+// Intentionally no insertSchema / type exports — these tables are not read or written
+// from app code.
+export const historicalTastingEntriesBak20260628 = pgTable("historical_tasting_entries_bak_20260628", {
+  id: varchar("id"),
+  noseScore: real("nose_score"),
+  tasteScore: real("taste_score"),
+  finishScore: real("finish_score"),
+  totalScore: real("total_score"),
+  normalizedNose: real("normalized_nose"),
+  normalizedTaste: real("normalized_taste"),
+  normalizedFinish: real("normalized_finish"),
+  normalizedTotal: real("normalized_total"),
+});
+
+export const historicalTastingEntriesBakCurve = pgTable("historical_tasting_entries_bak_curve", {
+  id: varchar("id"),
+  noseScore: real("nose_score"),
+  tasteScore: real("taste_score"),
+  finishScore: real("finish_score"),
+  totalScore: real("total_score"),
+  normalizedNose: real("normalized_nose"),
+  normalizedTaste: real("normalized_taste"),
+  normalizedFinish: real("normalized_finish"),
+  normalizedTotal: real("normalized_total"),
+});
+
+export const historicalTastingEntriesBakCurveV2 = pgTable("historical_tasting_entries_bak_curve_v2", {
+  id: varchar("id"),
+  noseScore: real("nose_score"),
+  tasteScore: real("taste_score"),
+  finishScore: real("finish_score"),
+  totalScore: real("total_score"),
+  normalizedNose: real("normalized_nose"),
+  normalizedTaste: real("normalized_taste"),
+  normalizedFinish: real("normalized_finish"),
+  normalizedTotal: real("normalized_total"),
+});
+
 export const AUTO_HANDOUT_CHAPTER_TYPES = {
   distillery: [
     { id: "steckbrief", title: "Steckbrief" },
