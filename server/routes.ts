@@ -5663,9 +5663,13 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
       const knobV = cooperPersonaKnobFragment(pReserveV, pSparkV, pWarmthV);
       const cooperVoiceIntroBlock = "EINMALIGE ERÖFFNUNG — nur dieses eine erste Mal: Sag in zwei, drei ruhigen Sätzen, wer du bist und wie ihr zusammenarbeitet — im selben nüchternen, aufgeräumten Ton wie sonst, ohne besonderen Begrüßungs-Ton. Inhalt: Du hilfst dem Taster, seine eigenen Worte zu finden; du prägst nichts vor, bewertest nicht und korrigierst nicht; er bestimmt Tempo und Reihenfolge und fängt an, wann er mag. Am Glas hältst du dich mit Wissen und Vergleichen zurück, seine Fragen beantwortest du danach. VERMEIDE jede Begrüßungs-Performance: kein 'ich freue mich', kein Versprechen, dass es schön oder spannend wird, kein aufmunterndes 'du kannst nichts falsch machen', keine Beschwichtigung, keine Begeisterung. Sei freundlich, indem du ihn ernst nimmst und auf Augenhöhe ansprichst, nicht durch Wärme-Floskeln. Stell dich schlicht vor, tritt zurück und geh dann in die offene Einladung über, frei zu erzählen, was auffällt. Knapp, kein Fachjargon, keine Aufzählung, nichts über diese Flasche. Dass deine Stimme KI ist, musst du nicht erwähnen — das steht bereits auf dem Bildschirm.";
       const wantsVoiceIntro = req.body?.intro === true && req.body?.probe !== true;
+      const voiceStyle = ((auth.participant as any).cooperStyleMemory || "").toString().trim();
+      const cooperStyleBlock = voiceStyle
+        ? "\n\nWas du aus früheren Gesprächen über den Kommunikationsstil dieses Tasters weißt — NUR für dein Register, nie laut erwähnen, nie als Wissen über Aromen oder Vorlieben missbrauchen:\n" + voiceStyle
+        : "";
       const cooperGreetingContract = "DEINE ERÖFFNUNG (jedes Mal als Allererstes, sie ÜBERSCHREIBT abweichende Eröffnungs-Hinweise oben; variiere die Formulierung): Begrüße knapp und sachlich, nenne dich Cooper, und sag in einem kurzen Satz, dass du vor allem zuhörst und dich von dir aus nur sehr selten meldest — der Taster soll dich einfach ansprechen oder antippen, wann immer er etwas von dir will; dann bist du da und ziehst dich danach wieder zurück. Kein Smalltalk, keine Begeisterung, kein Lob, nichts über diese Flasche.\n\nDANACH gilt für jede Gelegenheit zu reagieren: Prüfe zuerst, ob der Taster gerade DICH angesprochen oder dir eine Frage gestellt hat (etwa 'Cooper, ...', 'was meinst du', 'hilf mir mal') ODER ob er ausdrücklich um deine Reaktion gebeten wurde. Wenn NICHT — er denkt nur laut, beschreibt für sich, macht eine Pause —, dann rufe das Tool cooper_pass auf und sage KEIN WORT; das ist dein Normalfall. NUR wenn du klar angesprochen/gefragt wurdest, reagierst du: knapp, hilf ihm seinen Eindruck zu schärfen (eine Frage oder ein konkreter Bezug), dann zieh dich sofort wieder zurück. Im Zweifel: cooper_pass.";
       const cooperVoiceLifeBlock = "LEBENDIGKEIT & ABSCHIED: Sprich nie wie ein Protokoll oder ein Assistent, der Aufgaben quittiert. Vermeide technisch-flache \u00dcbergangsfloskeln wie 'alles klar, ich ordne das f\u00fcr dich', 'verstanden, ich verarbeite das' oder 'einen Moment, ich fasse zusammen'. Wenn du zum Festhalten der Notiz \u00fcbergehst, sag es lebendig, beil\u00e4ufig und jedes Mal anders \u2014 in deinen eigenen, menschlichen Worten, mit einem Hauch Pers\u00f6nlichkeit, mal trocken, mal w\u00e4rmer, nie nach Schema F. Und wenn der Taster signalisiert, dass er fertig ist, oder sich verabschiedet, dann verabschiede auch DU dich: kurz, echt und freundlich, in wechselnden Worten \u2014 kein immer gleicher Standardsatz, sondern ein zugewandter eigener Abschluss, der zum Moment passt.";
-      const instructions = baseInstr + "\n\n" + continuerBlock + " " + (continuerByLevel[cooperLevel] || continuerByLevel.adaptive) + "\n\n" + backdoorBlock + (knobV ? "\n\n" + knobV : "") + (wantsVoiceIntro ? "\n\n" + cooperVoiceIntroBlock : "") + "\n\n" + cooperGreetingContract + "\n\n" + cooperVoiceLifeBlock;
+      const instructions = baseInstr + "\n\n" + continuerBlock + " " + (continuerByLevel[cooperLevel] || continuerByLevel.adaptive) + "\n\n" + backdoorBlock + (knobV ? "\n\n" + knobV : "") + (wantsVoiceIntro ? "\n\n" + cooperVoiceIntroBlock : "") + cooperStyleBlock + "\n\n" + cooperGreetingContract + "\n\n" + cooperVoiceLifeBlock;
       const ledgerEnum = ["untouched", "touched", "sharpened"];
       const tools = [{
         type: "function",
@@ -6058,7 +6062,7 @@ SCORE-REGEL (NEU, wichtig): Leite den Score aus AFFEKT und INTENSITÄT ab — Be
           const ag = sTrim(il.age_statement); if (ag) out.age_statement = ag;
           if (Object.keys(out).length > 0) { out._sourceVoice = true; identityLedger = out; }
         }
-        return res.json({
+        res.json({
           rawImpression: turns.find((t) => t.role === "taster")?.text || "",
           flavorTags: Array.isArray(p.flavorTags) ? p.flavorTags.filter((t: any) => typeof t === "string" && t.trim()).map((t: string) => t.trim()).slice(0, 6) : [],
           nose: typeof p.nose === "string" ? p.nose.trim() : "",
@@ -6068,6 +6072,31 @@ SCORE-REGEL (NEU, wichtig): Leite den Score aus AFFEKT und INTENSITÄT ab — Be
           ...(identityLedger ? { identityLedger } : {}),
           followUpQuestion: "", followUpKind: "", followUpTerm: "", tookMs: Date.now() - startMs,
         });
+        // ---------- STIL-GEDÄCHTNIS: fire-and-forget, best-effort, nur Kommunikationsstil ----------
+        void (async () => {
+          try {
+            const styPid = (req.headers["x-participant-id"] as string) || "";
+            if (!styPid) return;
+            const styP = await storage.getParticipant(styPid);
+            if (!styP) return;
+            const oldStyle = ((styP as any).cooperStyleMemory || "").toString().trim();
+            const styCompletion = await openai.chat.completions.create({
+              model: "gpt-5-mini",
+              max_completion_tokens: 300,
+              reasoning_effort: "minimal",
+              messages: [
+                { role: "system", content: "Du destillierst aus EINEM Verkostungs-Gespräch, WIE dieser Taster kommuniziert — ausschließlich Kommunikationsstil: Ausführlichkeit (viel/wenig), Präzision (genau/vage), Tempo (bedächtig/schnell), Pausen-Toleranz. STRIKT VERBOTEN: jegliche Aromen, Noten, Bewertungen/Scores, Whisky-Namen, Vorlieben oder Inhalte. Wenn dir ein altes Stil-Profil vorliegt, führe altes und neues zu EINEM konsistenten Profil zusammen. Antworte auf Deutsch, maximal 3 kurze Sätze, reiner Text ohne Vorrede." },
+                { role: "user", content: `ALTES STIL-PROFIL:\n${oldStyle || "(keins)"}\n\nGESPRÄCH:\n${convo}` },
+              ],
+            } as any);
+            const styText = (styCompletion.choices?.[0]?.message?.content || "").trim();
+            if (!styText) return;
+            await storage.updateParticipant(styPid, { cooperStyleMemory: styText } as Record<string, any>);
+          } catch (e: any) {
+            console.error("[STYLE-MEMORY] update failed:", e?.message || e);
+          }
+        })();
+        return;
       }
 
       // ---------- PROSE: ganzes Gespräch -> fließende Verkostungsnotiz (Ich-Stimme) ----------
@@ -6116,12 +6145,18 @@ Offene Ecken (Ledger, Status je untouched/touched/sharpened): Nase=${curLedger.n
 Gib JSON zurück:
 {"mentorTurn":"deine 1-3 Sätze","ledger":{"nose":"...","palate":"...","finish":"...","body":"...","intensity":"...","affect":"...","vagueResolved":true|false},"chips":["..bis zu 5 Vokabeln, die zur gerade besprochenen Ecke passen und mitschwingen — schärfen, nicht vorschreiben.."]}
 Aktualisiere das Ledger EHRLICH anhand des Gesprächs: untouched->touched sobald zu einer Ecke etwas gesagt wurde; touched->sharpened sobald sie präzisiert/mit konkreten Begriffen gefüllt ist. Setze vagueResolved=true, sobald mind. ein anfangs vager Begriff (z.B. rauchig, fruchtig) konkretisiert wurde.`;
+      const turnPid = (req.headers["x-participant-id"] as string) || "";
+      const turnParticipant = turnPid ? await storage.getParticipant(turnPid) : null;
+      const turnStyle = ((turnParticipant as any)?.cooperStyleMemory || "").toString().trim();
+      const styHintC = turnStyle
+        ? "\n\nWas du aus früheren Gesprächen über den Kommunikationsstil dieses Tasters weißt — NUR für dein Register, nie laut erwähnen, nie als Wissen über Aromen oder Vorlieben missbrauchen:\n" + turnStyle
+        : "";
       const completion = await openai.chat.completions.create({
         model: "gpt-5-mini",
         max_completion_tokens: 900,
         reasoning_effort: "minimal",
         response_format: { type: "json_object" },
-        messages: [{ role: "system", content: turnSystem }, { role: "user", content: `${ctx}\n${convo}` }],
+        messages: [{ role: "system", content: turnSystem + styHintC }, { role: "user", content: `${ctx}\n${convo}` }],
       });
       let p: any = {}; try { p = JSON.parse(completion.choices[0]?.message?.content || "{}"); } catch { p = {}; }
       const merged = mergeLedger(curLedger, (p.ledger && typeof p.ledger === "object") ? p.ledger : {});
