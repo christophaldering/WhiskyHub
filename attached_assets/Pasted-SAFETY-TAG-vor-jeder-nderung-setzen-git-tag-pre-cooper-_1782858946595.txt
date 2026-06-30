@@ -1,0 +1,158 @@
+SAFETY TAG (vor jeder Änderung setzen):
+git tag pre-cooper-lang-register-2026-06-30
+
+ZIEL:
+Zwei Fixes in einem Rutsch:
+
+FIX 1 — Sprache: Cooper spricht immer Deutsch, auch wenn die App
+auf Englisch steht. Ursache: alle Persona-Instructions enthalten
+"Sprich Deutsch" hartcodiert, und die Realtime-Transcription nutzt
+language: "de" fix. Fix: Client schickt lang ("de"|"en") im
+Request-Body mit, Server baut Instructions und Transcription
+dynamisch.
+
+FIX 2 — Register-Lernen: adaptiveInstructions sagt "Du weißt
+noch nicht, mit wem du es zu tun hast — beginne IMMER neutral",
+auch wenn cooperStyleMemory bereits vorhanden ist. Widerspruch mit
+dem cooperStyleBlock. Fix: wenn cooperLevel === "adaptive" UND
+voiceStyle vorhanden, wird dieser eine Satz durch einen
+informierten Einstieg ersetzt.
+
+SCOPE: server/routes.ts (voice-probe/token Endpoint) +
+client/src/labs/components/rating/useCooperVoice.ts.
+Keine Schema-Änderung, keine Migration, keine anderen Endpoints.
+
+---
+
+SCHRITT 0 — DIAGNOSE (vor jeder Änderung, nur lesen):
+
+1. Zeige useCooperVoice.ts Z.73 (fetch /api/voice-probe/token)
+   vollständig — exakter body: JSON.stringify({...})-Inhalt.
+   Wie wird i18n.language aktuell gelesen oder NICHT gelesen?
+
+2. Zeige server/routes.ts Z.5711 — die session-Definition mit
+   transcription: { model: ..., language: "de" }.
+   Exakter Kontext ±5 Zeilen.
+
+3. Zeige den Anfang von adaptiveInstructions (Z.~5648) —
+   exakt den Satz "Du weißt noch nicht, mit wem du es zu tun
+   hast — beginne deshalb IMMER neutral, ruhig und
+   zurückhaltend" bis zum Ende des ersten Absatzes.
+   WICHTIG: exakten Wortlaut kopieren, damit replace() sicher
+   trifft.
+
+4. Bestätige: turnSystem im Text-Schärfer (Z.~6114) enthält
+   bereits "Antworte in der Sprache des Tasters" — dieser
+   Endpoint braucht KEINEN Fix.
+
+5. Zeige demoInstructions (Z.~5771) — bestätige dass dort
+   bereits "Sprich in der Sprache des Besuchers" steht
+   (Demo-Pfad ist bereits korrekt, NICHT anfassen).
+
+6. Zeige wie i18n.language in anderen rating/-Komponenten
+   gelesen wird (z.B. FlavorTags.tsx Z.162 oder
+   ImpressionCapture.tsx Z.129) — exaktes Pattern als
+   Vorlage für useCooperVoice.
+
+---
+
+SCHRITT 1 — PLAN (bestätigen vor Ausführung):
+
+A) Client: useCooperVoice.ts
+   - i18n aus "i18n" importieren (falls nicht bereits
+     importiert — aus Diagnose prüfen)
+   - lang-Variable bauen: analog bestehendem Pattern aus
+     anderen rating/-Komponenten (z.B.
+     i18n.language?.startsWith("de") ? "de" : "en")
+   - lang im fetch-Body mitsenden:
+     body: JSON.stringify({ voice, mode, probe, intro, lang })
+
+B) Server: routes.ts — FIX 1 (Sprache)
+   - lang aus req.body lesen:
+     const lang = req.body?.lang === "en" ? "en" : "de";
+     (Fallback "de" wenn nicht übergeben — sicher)
+   - In allen 4 Persona-Instructions "Sprich Deutsch" →
+     "Speak English, keep it concise and spoken." (wenn EN)
+     ODER per Template-String: den Sprachbefehl dynamisch
+     einsetzen. Empfehlung: nach dem Lesen von lang eine
+     Variable bauen:
+     const langCmd = lang === "en"
+       ? "Speak English, concise and natural."
+       : "Sprich Deutsch, knapp und gesprochen.";
+     Dann in den Instructions den hartcodierten "Sprich
+     Deutsch"-Satz durch langCmd ersetzen.
+     ACHTUNG: "Sprich Deutsch" kommt in ALLEN 4 Instructions
+     vor (connoisseur/expert/beginner/adaptive) — alle 4
+     müssen angepasst werden. Exakte Fundstellen aus Diagnose
+     bestätigen.
+   - Transcription language: "de" → language: lang
+     (Z.~5711, session-Definition)
+   - continuerBlock, backdoorBlock, cooperGreetingContract,
+     cooperVoiceLifeBlock: diese sind auf Deutsch verfasst
+     (Cooper-interne Anweisungen). Sie müssen NICHT übersetzt
+     werden — Cooper versteht die Instruktion und antwortet
+     trotzdem in der Zielsprache, weil langCmd das vorgibt.
+     AUSNAHME: cooperGreetingContract enthält Beispiel-
+     Anreden auf Deutsch ("Cooper, ...", "was meinst du",
+     "hilf mir mal") — diese können bleiben, da sie nur
+     Beispiele sind.
+
+C) Server: routes.ts — FIX 2 (Register-Lernen)
+   - effectiveBaseInstr-Variable nach dem baseInstr-Build:
+     const effectiveBaseInstr =
+       (cooperLevel === "adaptive" && voiceStyle)
+         ? baseInstr.replace(
+             "[EXAKTER SATZ AUS DIAGNOSE PUNKT 3]",
+             lang === "en"
+               ? "You already know this taster's communication style from previous sessions — start directly in their familiar register without mentioning or explaining it. Don't probe first."
+               : "Du kennst den Kommunikationsstil dieses Tasters aus früheren Gesprächen bereits — beginne direkt in seinem gewohnten Register, ohne es zu erwähnen oder zu erklären. Taste dich nicht erst ran."
+           )
+         : baseInstr;
+   - In Z.~5672 instructions-Build: baseInstr → effectiveBaseInstr
+
+D) Demo-Pfad (demoInstructions, Z.~5771): NICHT anfassen.
+   Spricht bereits beide Sprachen adaptiv.
+
+---
+
+SCHRITT 2 — AUSFÜHRUNG:
+Erst nach explizitem "OK, umsetzen" durch Christoph.
+Reihenfolge: Diagnose bestätigen → Client (useCooperVoice.ts)
+→ Server FIX 1 (Sprache in Instructions + Transcription)
+→ Server FIX 2 (effectiveBaseInstr) → Verifikation.
+
+---
+
+VERIFIKATION (nach Ausführung, vor Commit):
+
+1. Grep-Check: kein "Sprich Deutsch" mehr in
+   connoisseurInstructions, expertInstructions,
+   beginnerInstructions, adaptiveInstructions:
+   grep -n "Sprich Deutsch" server/routes.ts
+   Erwartetes Ergebnis: 0 Treffer in den Persona-Strings
+   (andere Vorkommen wie Kommentare sind OK).
+
+2. Bestätige: transcription language ist nicht mehr "de"
+   fix, sondern dynamisch (lang-Variable).
+
+3. Bestätige: useCooperVoice.ts sendet lang im Body mit.
+
+4. Bestätige: replace() in effectiveBaseInstr trifft genau
+   EINEN Treffer (nicht null, nicht mehrere).
+
+5. Bestätige: cooperLevel "beginner"/"expert"/"connoisseur"
+   → effectiveBaseInstr === baseInstr (unverändert).
+
+6. Bestätige: demoInstructions unverändert.
+
+7. Bestätige: turnSystem (/api/impression/converse)
+   unverändert — kein Sprachfix dort nötig.
+
+8. TypeScript-Check: npx tsc --noEmit — keine neuen Fehler
+   über Baseline.
+
+9. _data_guard_snapshots unverändert, keine Schema-Änderung,
+   keine Migrationsdateien berührt.
+
+KEIN COMMIT. KEIN PUSH. KEIN drizzle-kit.
+Christoph prüft und committet selbst.
