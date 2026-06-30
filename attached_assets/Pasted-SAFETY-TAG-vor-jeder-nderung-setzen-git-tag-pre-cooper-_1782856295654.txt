@@ -1,0 +1,143 @@
+SAFETY TAG (vor jeder Änderung setzen):
+git tag pre-cooper-memory-p2-2026-06-30
+
+ZIEL:
+Das bestehende cooperMemory (sensorisches Porträt, generiert via
+/api/cooper/memory/generate, gespeichert in participants.cooper_memory)
+wird NICHT in den Schärfer eingespeist — das ist Nordstern-Pflicht
+(kein Inhalts-Gedächtnis am Glas, da es den ersten unverfälschten
+Eindruck vorprägen würde).
+
+Was eingespeist wird: ein separates, schlankes STIL-GEDÄCHTNIS —
+ausschließlich WIE der Taster kommuniziert (viel/wenig, präzise/vage,
+schnell/bedächtig), KEIN WAS (Aromen, Noten, Scores, Vorlieben).
+Dieses Stil-Gedächtnis wird nach jeder Schärfer-Session automatisch
+aktualisiert (max. 2-3 Sätze, aus dem Gesprächsverlauf abgeleitet),
+in einem eigenen Feld gespeichert und beim nächsten Schärfer-Start
+als knapper Kontext-Hinweis eingespielt — so dass Cooper nicht
+bei null anfängt, sondern sofort in das bekannte Register wechselt,
+ohne je nach Aromen, Scores oder Vorlieben zu greifen.
+
+ABGRENZUNG (absolut):
+- cooperMemory (sensorisches Porträt) = NUR Frag CaskSense / Kenner
+  im Nachgang. NICHT anfassen.
+- cooperStyleMemory (NEU) = NUR Stil/Kommunikation, NUR Schärfer.
+  Kein Aroma, kein Score, keine Vorliebe, kein Whisky-Name.
+- cooperMemoryEnabled schaltet NUR cooperMemory (Frag CaskSense) —
+  cooperStyleMemory ist IMMER aktiv sobald vorhanden (kein
+  separater Toggle nötig, da kein Inhalts-Risiko).
+
+---
+
+SCHRITT 0 — DIAGNOSE (vor jeder Änderung, nur lesen):
+
+1. Zeige shared/schema.ts — Spalten im participants-Table die mit
+   "cooper" beginnen (vollständige Liste, exakte Namen).
+
+2. Zeige server/routes.ts POST /api/impression/converse-Endpoint
+   vollständig — wo wird `instructions` gebaut (baseInstr +
+   continuerBlock etc.)? Wo wäre der Einspeise-Punkt für den
+   Stil-Hinweis?
+
+3. Zeige server/routes.ts POST /api/cooper/memory/generate (~Z.5853)
+   — exakte Struktur des updateParticipant-Aufrufs, damit das neue
+   Feld (cooperStyleMemory) konsistent ergänzt wird.
+
+4. Zeige storage.updateParticipant — welche Felder sind
+   whitelisted? Muss cooperStyleMemory dort ergänzt werden?
+
+5. Zeige den PATCH /api/participants/:id-Endpoint (~Z.7445) —
+   ist cooperMemoryEnabled dort bereits whitelisted? Muss
+   cooperStyleMemory auf der Whitelist stehen?
+
+6. Bestätige: cooperMemory-Einspeisung in Frag CaskSense (~Z.29126)
+   wird in diesem Schritt NICHT angefasst.
+
+Präsentiere alle 6 Diagnosen vollständig. Keine Annahmen.
+
+---
+
+SCHRITT 1 — PLAN (bestätigen vor Ausführung):
+
+A) Schema-Erweiterung: shared/schema.ts
+   Neues Feld im participants-Table:
+   cooperStyleMemory: text("cooper_style_memory") — nullable, kein
+   Default. ADDITIV, kein DROP, kein ALTER bestehender Spalten.
+   → Nach Push: manuell npx drizzle-kit push --force in Replit-Shell
+     (Christoph macht das, nicht der Agent).
+
+B) Stil-Gedächtnis-Aktualisierung: POST /api/impression/converse
+   NUR im finalize:true-Zweig (nach dem Gespräch, nicht mid-
+   conversation):
+   - Aus dem vollständigen Gesprächsverlauf (turns) ein kompaktes
+     Stil-Profil ableiten: 1-3 Sätze, ausschließlich über
+     Kommunikationsverhalten (Ausführlichkeit, Präzision, Tempo,
+     Pausen-Toleranz). Kein Aroma, kein Score, keine
+     Whisky-Erwähnung. Prompt-Instruktion strikt begrenzen.
+   - Altes cooperStyleMemory mit neuem MERGEN (nicht ersetzen):
+     GPT-5-mini fasst altes + neues Profil zusammen, max. 3 Sätze.
+     Bewahrt Konsistenz über viele Sessions.
+   - Aufruf: gpt-5-mini, max_completion_tokens: 300,
+     reasoning_effort: "minimal", KEIN temperature-Parameter
+     (projektweiter Shim-Standard).
+   - Ergebnis via storage.updateParticipant speichern.
+   - KEIN extra API-Endpoint nötig — passiert still im finalize-Pfad.
+
+C) Stil-Hinweis einspeisen: POST /api/impression/converse
+   Im instructions-Build (nach baseInstr + continuerBlock,
+   VOR cooperGreetingContract):
+   - Wenn cooperStyleMemory vorhanden und nicht leer:
+     Knapper Block (max. 2-3 Sätze) ans instructions-Ende anhängen:
+     "Was du aus früheren Gesprächen über den Kommunikationsstil
+     dieses Tasters weißt — NUR für dein Register, nie laut
+     erwähnen, nie als Wissen über Aromen oder Vorlieben
+     missbrauchen:\n" + cooperStyleMemory
+   - NICHT in den Demo-Pfad (demoInstructions, Z.5772) — der ist
+     öffentlich/unauthentifiziert.
+   - NICHT in den LabsLive-Pfad (falls der denselben Endpoint nutzt
+     — aus Diagnose prüfen).
+
+D) Storage-Whitelist prüfen und ergänzen:
+   cooperStyleMemory in alle relevanten Whitelists eintragen
+   (storage.updateParticipant, PATCH /api/participants/:id),
+   sofern Diagnose das erfordert.
+
+---
+
+SCHRITT 2 — AUSFÜHRUNG:
+Erst nach explizitem "OK, umsetzen" durch Christoph.
+Reihenfolge: Schema → Storage-Whitelist → finalize-Pfad
+(Stil-Ableitung + Merge + Speicherung) → instructions-Einspeisung
+→ Verifikation.
+
+---
+
+VERIFIKATION (nach Ausführung, vor Commit):
+
+1. Bestätige: cooperStyleMemory-Spalte in shared/schema.ts vorhanden,
+   additiv, kein bestehender Cooper-Spaltenname geändert.
+
+2. Bestätige: npx drizzle-kit push --force wurde NICHT vom Agent
+   ausgeführt — Christoph macht das manuell in der Replit-Shell.
+
+3. Bestätige: cooperMemory (sensorisches Porträt) und seine
+   Einspeisung in Frag CaskSense (Z.~29126) sind UNVERÄNDERT.
+
+4. Bestätige: Im finalize:true-Zweig wird cooperStyleMemory
+   aktualisiert — kein Aroma, kein Whisky-Name, kein Score
+   im generierten Text (manuell prüfen anhand eines Test-Outputs).
+
+5. Bestätige: Demo-Pfad (demoInstructions, unauthentifiziert) erhält
+   KEIN cooperStyleMemory.
+
+6. Bestätige: LabsLive-Pfad (falls betroffen) erhält KEIN
+   cooperStyleMemory.
+
+7. TypeScript-Check: npx tsc --noEmit — keine neuen Fehler.
+
+8. Bestätige: _data_guard_snapshots unverändert, 36+1
+   Migrationsdateien unter migrations/ weiterhin getrackt,
+   kein Schema-Drift für bestehende Tabellen.
+
+KEIN COMMIT. KEIN PUSH. KEIN drizzle-kit.
+Christoph prüft und committet selbst.
