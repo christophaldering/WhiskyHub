@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { pidHeaders } from "@/lib/api";
+import i18n from "@/lib/i18n";
 import type { ConverseTurn } from "./impressionApi";
 
 type Status = "idle" | "token" | "connecting" | "connected" | "error";
@@ -70,7 +71,8 @@ export function useCooperVoice(opts?: { initialVoice?: string; initialMode?: "fl
     setTranscript([]);
     try {
       const wantIntro = opts?.probe !== true && (() => { try { return localStorage.getItem("labs_cooper_voice_intro_seen") !== "1"; } catch { return false; } })();
-      const tokenRes = await fetch("/api/voice-probe/token", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ voice, mode, probe: opts?.probe === true, intro: wantIntro }) });
+      const lang = i18n.language?.startsWith("de") ? "de" : "en";
+      const tokenRes = await fetch("/api/voice-probe/token", { method: "POST", headers: { "Content-Type": "application/json", ...pidHeaders() }, body: JSON.stringify({ voice, mode, probe: opts?.probe === true, intro: wantIntro, lang }) });
       const tokenText = await tokenRes.text();
       if (!tokenRes.ok) { fail(`Token ${tokenRes.status}: ${tokenText.slice(0, 300)}`); return; }
       let tokenData: any = {}; try { tokenData = JSON.parse(tokenText); } catch { /* noop */ }
