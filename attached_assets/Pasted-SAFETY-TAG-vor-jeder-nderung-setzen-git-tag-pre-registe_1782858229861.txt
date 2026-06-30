@@ -1,0 +1,94 @@
+SAFETY TAG (vor jeder Änderung setzen):
+git tag pre-register-lernen-2026-06-30
+
+ZIEL:
+Im adaptiveInstructions-Preset steht aktuell: "Du weißt noch nicht,
+mit wem du es zu tun hast — beginne deshalb IMMER neutral". Das stimmt
+nicht mehr, wenn cooperStyleMemory vorhanden ist. Cooper bekommt dann
+widersprüchliche Signale: einerseits "fang bei null an", andererseits
+"du kennst seinen Stil bereits". Dieser Widerspruch wird aufgelöst:
+Wenn ein Stil-Profil vorhanden ist, ersetzt ein angepasster Eröffnungs-
+Satz die Kalt-Start-Anweisung — Cooper steigt still in das bekannte
+Register ein, ohne es laut zu erwähnen.
+
+SCOPE: Nur server/routes.ts, nur der instructions-Build im
+/api/voice-probe/token-Endpoint. Keine Schema-Änderung, keine
+Migration, keine neuen Endpoints.
+
+---
+
+SCHRITT 0 — DIAGNOSE (vor jeder Änderung, nur lesen):
+
+1. Zeige den exakten instructions-Build (Z.~5672):
+   baseInstr + continuerBlock + ... + cooperStyleBlock + ...
+   Welche Variable steht wo im String? Exakte Reihenfolge.
+
+2. Zeige den Anfang von adaptiveInstructions (Z.~5648) — speziell
+   den Satz "Du weißt noch nicht, mit wem du es zu tun hast —
+   beginne deshalb IMMER neutral..." bis zum Ende des ersten
+   Absatzes (der Register-Erkennungs-Abschnitt).
+
+3. Bestätige: voiceStyle / cooperStyleBlock (Z.~5666-5668) ist
+   zum Zeitpunkt des instructions-Build bereits befüllt oder leer
+   — kann also als Bedingung genutzt werden (voiceStyle !== "").
+
+4. Bestätige: der Text-Schärfer (/api/impression/converse,
+   turnSystem) ist NICHT betroffen — dieser Schritt betrifft
+   nur den Sprach-Schärfer (voice-probe/token).
+
+---
+
+SCHRITT 1 — PLAN (bestätigen vor Ausführung):
+
+Einzige Änderung: im instructions-Build (Z.~5672) wird baseInstr
+NICHT mehr direkt verwendet, sondern durch eine neue Variable
+`effectiveBaseInstr` ersetzt:
+
+const effectiveBaseInstr = (cooperLevel === "adaptive" && voiceStyle)
+  ? baseInstr.replace(
+      "Du weißt noch nicht, mit wem du es zu tun hast — beginne deshalb IMMER neutral, ruhig und zurückhaltend",
+      "Du kennst den Kommunikationsstil dieses Tasters aus früheren Gesprächen bereits — beginne direkt in seinem gewohnten Register, ohne es zu erwähnen oder zu erklären. Taste dich nicht erst ran"
+    )
+  : baseInstr;
+
+Dann in Z.5672: baseInstr → effectiveBaseInstr.
+
+WICHTIG:
+- Der replace() greift nur wenn cooperLevel === "adaptive" UND
+  voiceStyle nicht leer — alle anderen Level (beginner/expert/
+  connoisseur) bleiben vollständig unverändert.
+- Wenn voiceStyle leer (erste Session, kein Stil-Profil): baseInstr
+  unverändert, Cooper startet wie bisher mit Kalt-Start.
+- Der Rest von adaptiveInstructions (Prüfstein-Logik, Reversibilität
+  etc.) bleibt vollständig erhalten — nur dieser eine Satz wird
+  ersetzt.
+- Exakter String-Match muss gegen die Diagnose in Schritt 0
+  verifiziert werden — wenn der Satz im Code leicht abweicht,
+  replace anpassen.
+
+---
+
+SCHRITT 2 — AUSFÜHRUNG:
+Erst nach explizitem "OK, umsetzen" durch Christoph.
+Nur server/routes.ts, nur diese eine Variable + Nutzung.
+
+---
+
+VERIFIKATION (nach Ausführung, vor Commit):
+
+1. Bestätige: replace() hat genau EINEN Treffer im String —
+   weder null (Satz nicht gefunden → replace wirkungslos) noch
+   mehrere.
+2. Bestätige: cooperLevel === "beginner"/"expert"/"connoisseur"
+   → effectiveBaseInstr === baseInstr (unverändert).
+3. Bestätige: cooperLevel === "adaptive", voiceStyle leer →
+   effectiveBaseInstr === baseInstr (Kalt-Start wie bisher).
+4. Bestätige: cooperLevel === "adaptive", voiceStyle vorhanden →
+   replace greift, neuer Satz im instructions-String sichtbar.
+5. TypeScript-Check: npx tsc --noEmit — keine neuen Fehler
+   über Baseline hinaus.
+6. _data_guard_snapshots unverändert, keine Schema-Änderung,
+   keine Migrationsdateien berührt.
+
+KEIN COMMIT. KEIN PUSH. KEIN drizzle-kit.
+Christoph prüft und committet selbst.
