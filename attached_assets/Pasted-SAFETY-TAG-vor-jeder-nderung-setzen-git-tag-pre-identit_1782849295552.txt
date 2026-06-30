@@ -1,0 +1,187 @@
+SAFETY TAG (vor jeder Änderung setzen):
+git tag pre-identity-ledger-YYYY-MM-DD
+
+ZIEL:
+Cooper schneidet während des converse-Flows passiv alle Stammdaten mit,
+die der Tastende von sich aus nennt (Name, Destillerie, Region, Land, ABV,
+Preis, Währung, WB-Nummer, Jahrgang, Age Statement) — ohne je aktiv danach
+zu fragen. Bei finalize wandern diese Daten strukturiert ins ImpressionResult
+und füllen das nachgelagerte Whisky-Formular als Vorschläge vor. Bei
+Konflikt mit bestehender Foto-Erkennung (Check-Feature) entscheidet der
+Nutzer im Formular.
+
+SCOPE: NUR LabsSolo. LabsLive bleibt unberührt — explizit ausgeklammert,
+eigener Folgeschritt.
+
+---
+
+SCHRITT 0 — DIAGNOSE (vor jeder Änderung, nur lesen, nichts schreiben):
+
+1. Zeige server/routes.ts Bereich POST /api/impression/converse (~Z.5581):
+   - Wie ist update_ledger aktuell als Tool definiert (Schema, Tool-Call-
+     Handling, mergeLedger-Logik)?
+   - Wie wird der Ledger-State zwischen Turns gehalten (in-memory pro
+     Session, oder über Request-Body hin- und hergereicht)?
+   - Wie sieht finalize: true aktuell aus — was wird zurückgegeben,
+     welcher Code-Pfad?
+
+2. Zeige client/src/lib/impressionApi.ts vollständig:
+   - Typen Ledger, ImpressionResult, ConverseResult, ConverseTurn
+   - EMPTY_LEDGER
+   - converseImpression, finalizeImpression, proseImpression Signaturen
+
+3. Zeige client/src/labs/pages/solo/ImpressionCapture.tsx — speziell:
+   - onApply(ImpressionResult)-Aufruf und was danach passiert
+   - Wie wird handleImpressionApply in LabsSolo aufgerufen?
+
+4. Zeige LabsSolo.tsx — speziell handleImpressionApply und buildJournalBody:
+   - Welche Felder aus ImpressionResult werden aktuell in den Journal-Body
+     übernommen?
+   - Wie ist das nachgelagerte Whisky-Formular/Zuordnungs-Screen aufgebaut
+     (Datei/Komponente)?
+
+5. Zeige den Check-Feature-Flow (client/src/labs/check/CheckResultCard.tsx
+   oder checkApi.ts) — welche Felder liefert die Foto-Erkennung zurück,
+   in welchem Format, und wie werden sie aktuell ins Formular übernommen?
+
+6. Bestätige: Nutzt LabsLive denselben /api/impression/converse-Endpoint?
+   Wenn ja, sicherstellen dass die Erweiterung dort KEIN identityLedger
+   aktiviert (Feature-Flag oder Solo-only-Pfad).
+
+Präsentiere Diagnose vollständig BEVOR irgendein Code geändert wird.
+Wenn die Diagnose von den hier genannten Zeilennummern/Strukturen abweicht,
+Plan in Schritt 1 entsprechend anpassen und das explizit benennen.
+
+---
+
+SCHRITT 1 — PLAN (zur Bestätigung vorlegen, NICHT ausführen ohne OK):
+
+A) Server: Neues Tool update_identity im converse-Endpoint
+
+   Tool-Definition analog update_ledger, aber mit Identity-Feldern:
+   {
+     name?: string,
+     distillery?: string,
+     region?: string,
+     country?: string,
+     abv?: number,
+     price?: number,
+     currency?: string,
+     wb_number?: string,
+     vintage?: string,
+     age_statement?: string
+   }
+
+   Tool-Call-Handling:
+   - mergeIdentityLedger: neue Werte überschreiben ältere (last-mention-wins),
+     undefined-Felder bleiben unverändert
+   - _sourceVoice: true als unveränderlicher Marker auf dem gesamten Objekt
+   - identityLedger wird analog zum sensorischen Ledger über den Request-Body
+     hin- und hergereicht (kein Server-seitiger Session-State nötig, sofern
+     die Diagnose das bestätigt)
+
+   System-Instruction-Ergänzung (MINIMAL):
+   - Einzige Ergänzung: Cooper soll update_identity aufrufen, wenn der
+     Tastende von sich aus identifizierende Angaben zur Flasche macht.
+   - KEINE Änderung am sokratischen Gesprächsstil, KEINE neue Aufforderung
+     an Cooper, aktiv nachzufragen. Ergänzung darf die Persona-Instruction
+     nicht verwässern.
+   - Cooper erwähnt das Tool-Calling dem Taster gegenüber nie.
+
+   finalize: true Erweiterung:
+   - identityLedger (wenn nicht leer) ans ImpressionResult anhängen
+   - Nur tatsächlich befüllte Felder zurückgeben, keine leeren Strings
+     oder null-Werte
+
+B) Typen: ImpressionResult erweitern (client/src/lib/impressionApi.ts)
+
+   IdentityLedger-Typ (alle Felder optional):
+   {
+     name?: string
+     distillery?: string
+     region?: string
+     country?: string
+     abv?: number
+     price?: number
+     currency?: string
+     wb_number?: string
+     vintage?: string
+     age_statement?: string
+     _sourceVoice: true
+   }
+
+   ImpressionResult bekommt: identityLedger?: IdentityLedger
+   ConverseResult bekommt: identityLedger?: IdentityLedger (für
+   Turn-zu-Turn-Weitergabe analog Ledger)
+
+   EMPTY_IDENTITY_LEDGER exportieren (analog EMPTY_LEDGER).
+
+C) Client: ImpressionCapture.tsx — identityLedger durchreichen
+
+   - identityLedger-State parallel zum sensorischen Ledger halten
+   - Bei jedem converseImpression-Call: aktuelles identityLedger mitsenden,
+     zurückgegebenes identityLedger in State mergen
+   - Bei finalizeImpression: identityLedger mitsenden, zurückgegebenes
+     identityLedger an onApply(ImpressionResult) weitergeben
+   - KEINE UI-Änderung in ImpressionCapture selbst — der Tastende sieht
+     nichts vom identityLedger während des Gesprächs
+
+D) Client: LabsSolo.tsx — Formular-Vorausfüllung
+
+   handleImpressionApply erhält identityLedger aus ImpressionResult.
+   Wenn identityLedger befüllt:
+   - Felder als Vorschläge in das Whisky-Anlage-/Zuordnungs-Formular
+     schreiben (genauer Ziel-Komponente laut Diagnose bestimmen)
+   - Konfliktlogik mit Check-Feature:
+     → Wenn ein Feld bereits via Foto-Erkennung (_sourceVoice fehlt)
+       befüllt ist UND der Wert abweicht: beide Varianten als auswählbare
+       Chips/Buttons im Formular nebeneinander anzeigen, Nutzer tippt
+       auf eine davon
+     → Wenn beide Quellen übereinstimmen: Feld direkt vorausgefüllt,
+       kein Konflikt-UI
+     → Wenn nur eine Quelle vorhanden: direkt vorausgefüllt
+
+E) LabsLive: KEIN identityLedger aktivieren
+
+   Sicherstellen, dass der converse-Endpoint für LabsLive-Calls das
+   update_identity-Tool NICHT im Tool-Set erhält — entweder via
+   explizitem Flag im Request-Body (z.B. enableIdentityLedger: boolean)
+   oder via separatem Tool-Set für den LabsLive-Pfad.
+   In jedem Fall muss LabsLive nach dieser Änderung exakt so funktionieren
+   wie vorher.
+
+---
+
+SCHRITT 2 — AUSFÜHRUNG:
+Erst nach explizitem "OK, umsetzen" durch Christoph.
+Reihenfolge: Server (Tool-Definition + finalize-Erweiterung) → Typen →
+ImpressionCapture (State + Durchreichen) → LabsSolo (Formular-Vorausfüllung
++ Konflikt-UI) → Sicherstellen LabsLive unberührt.
+
+---
+
+VERIFIKATION (nach Ausführung, vor jedem Commit):
+
+1. Bestätige: Cooper fragt in keinem Test-Durchlauf aktiv nach Stammdaten —
+   weder explizit ("Weißt du noch die ABV?") noch implizit ("Magst du mir
+   mehr über die Flasche erzählen?").
+2. Bestätige: Wenn Taster Name/ABV/Region etc. von sich aus nennt, erscheint
+   das entsprechende Feld nach finalize vorausgefüllt im Formular.
+3. Bestätige: Wenn Taster NICHTS nennt, ist identityLedger leer/undefined
+   und das Formular verhält sich exakt wie vorher (kein leeres Objekt,
+   keine null-Werte).
+4. Bestätige: Konflikt-UI (zwei Quellen, abweichende Werte) zeigt beide
+   Optionen als tippbare Chips, nicht als Textfeld mit einem überschriebenen
+   Wert.
+5. Bestätige: LabsLive-Flow (Gruppen-Tasting) verhält sich nach der
+   Änderung exakt wie vorher — kein identityLedger, kein update_identity-
+   Tool-Call, kein verändertes Verhalten.
+6. Bestätige: _data_guard_snapshots unverändert, 36+1 Migrationsdateien
+   weiterhin unter migrations/ getrackt.
+7. Bestätige: KEINE Schema-Änderung, KEINE neue Migration — identityLedger
+   lebt nur im Laufzeit-State und ImpressionResult, nicht in der Datenbank
+   (tasting_narrative in journal_entries ist der einzige Persistenz-Ort,
+   bleibt unverändert).
+
+KEIN COMMIT. KEIN PUSH. KEIN drizzle-kit. Christoph prüft und committet
+selbst.
