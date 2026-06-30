@@ -1,0 +1,213 @@
+# HARDPROMPT — Workspace-Einrichtung durch Master-Admin
+
+DIES IST EINE VERBINDLICHE AUSFÜHRUNGSANWEISUNG, KEINE EMPFEHLUNG.
+
+Du führst die folgenden Schritte exakt in der angegebenen Reihenfolge aus.
+Du triffst KEINE eigenen Architektur-Entscheidungen, wo dieser Prompt eine
+Vorgabe macht. Bei Unklarheit: STOPP, fragen — NICHT improvisieren. Nach
+jedem Schritt erstellst du exakt den angegebenen Commit, mit exakt dem
+angegebenen Commit-Message-Text. Formulierungen wie „könnte", „ggf.",
+„optional", „nach Ermessen" kommen in diesem Dokument NICHT vor — jeder
+Punkt ist Pflicht.
+
+---
+
+## Zielbild (bindend)
+
+Ein Master-Admin kann im Master-Dashboard einen neuen Workspace anlegen
+UND in demselben Vorgang festlegen, welche E-Mail-Adressen darauf Zugriff
+erhalten (inkl. Rolle, inkl. initialem Passwort). Es gibt KEINEN
+separaten Beantragungs-/Bestätigungs-Workflow — der Master-Admin richtet
+direkt und vollständig ein, der Workspace ist danach sofort nutzbar.
+KEINE neue Einladungs-/Allowlist-Infrastruktur bauen — die bestehende
+User-Erstellung (siehe Tatsachenbasis) wird wiederverwendet, nicht
+dupliziert.
+
+## Bindende Tatsachenbasis (geprüft, nicht zu hinterfragen)
+
+- `app/api/workspaces/route.ts` (GET) existiert bereits, master-only
+  (`hasMasterAuth()`), listet alle Workspaces. Es gibt HEUTE KEINEN
+  POST-Handler in dieser Datei — Workspace-Erstellung zur Laufzeit
+  existiert NICHT. Workspaces entstehen aktuell NUR über
+  `prisma/seed.ts` und `instrumentation.ts` (Deploy-/Start-Zeit-Skripte).
+- `app/api/w/[workspaceSlug]/users/route.ts` (POST) existiert bereits und
+  erlaubt EXPLIZIT Aufrufe mit `hasMasterAuth()` (Master-Bypass, siehe
+  Zeile mit `if (!master && (!session || ...))`). Diese Route NIMMT
+  bereits `{ email, name, password, roles, assessmentId }` entgegen,
+  hasht das Passwort mit `bcrypt`, prüft Email+Workspace-Eindeutigkeit.
+  DIESE ROUTE WIRD WIEDERVERWENDET, NICHT NEU GEBAUT.
+- `Workspace`-Modell hat bereits: `slug` (unique), `name`,
+  `adminPasswordHash`, `dataResidency` (Default `"EU"`), `featureFlags`
+  (Json), `status` (Default `"active"`). KEINE neuen Felder werden für
+  diese Direktive benötigt — `status` wird wiederverwendet, NICHT neu
+  definiert.
+- `lib/feature-flags.ts` exportiert `MODULE_REGISTRY` mit allen Modulen
+  und deren `defaultReleased`-Wert — DIES ist die Quelle für die
+  `featureFlags`-Initialisierung eines neuen Workspace, kein eigenes
+  Mapping erfinden.
+- `app/master/page.tsx` ruft bereits `fetch("/api/workspaces")` ab und
+  zeigt eine Liste — diese Liste wird NICHT neu gebaut, nur um einen
+  „Neuer Workspace"-Button ergänzt.
+- `lib/audit.ts` exportiert `logAudit(entry)` — JEDE Workspace-Erstellung
+  UND jede dabei angelegte User-Erstellung MUSS geloggt werden
+  (`entityType: "Workspace"` bzw. `"User"`).
+- `lib/rbac.ts` definiert die Rollen-Konstanten (`MASTER_ADMIN`,
+  `WORKSPACE_ADMIN`, `MODERATOR`, `OBSERVER`, `PROJECT_OFFICE`, `CLIENT`,
+  `CANDIDATE` + Legacy-Aliase). Diese Liste wird für das Rollen-Dropdown
+  im neuen Formular verwendet, KEINE eigene Rollenliste erfinden.
+
+## Nicht anfassen (absolutes Verbot, keine Ausnahmen)
+
+`prisma/seed.ts` · `instrumentation.ts` (bestehende Auto-Bootstrap-Logik
+für comp/abcd/varexia bleibt unverändert) · bestehende Logik in
+`app/api/w/[workspaceSlug]/users/route.ts` (nur AUFRUFEN, nicht
+verändern) · `app/w/[workspaceSlug]/request-access/` und
+`/admin/access-requests` (anderer Workflow — Zugriff auf BESTEHENDEN
+Workspace, bleibt komplett unangetastet) · Auth-Cookie-Mechanik in
+`lib/session.ts` (nur NUTZEN, nicht verändern).
+
+Wenn eine Änderung in diesem Prompt mit einer Regel hier kollidiert: STOPP.
+Konflikt melden, nicht ausführen.
+
+---
+
+## SCHRITT 1 — POST-Route für Workspace-Erstellung
+
+1. In `app/api/workspaces/route.ts`: neuen `POST`-Handler ergänzen
+   (bestehenden `GET`-Handler NICHT verändern).
+2. Auth: NUR `hasMasterAuth()` — kein Workspace-Session-Bypass, diese
+   Route ist AUSSCHLIESSLICH für Master-Admins. Ohne Master-Auth: 401.
+3. Erwarteter Request-Body:
+   ```
+   { name: string; slug: string; adminPassword: string; dataResidency?: string }
+   ```
+4. Validierung, GENAU diese Regeln, in dieser Reihenfolge:
+   a. `name` und `slug` und `adminPassword` Pflichtfelder — fehlt eines:
+      400.
+   b. `slug` MUSS dem Muster `^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$`
+      entsprechen (Kleinbuchstaben, Ziffern, Bindestriche, 3–50 Zeichen,
+      kein führender/abschließender Bindestrich) — sonst 400 mit
+      verständlicher Fehlermeldung.
+   c. `slug` darf nicht mit einem reservierten Wert kollidieren:
+      `master`, `api`, `w`, `comp-bdp`, `abcd-bdp`, `candidate`,
+      `candidate-access`, `dr`, `data-room`, `landing`, `tour` — sonst
+      400.
+   d. Eindeutigkeitsprüfung gegen bestehende `Workspace.slug` — bei
+      Kollision: 409.
+   e. `adminPassword` MUSS mindestens 8 Zeichen lang sein — sonst 400.
+5. Bei erfolgreicher Validierung: `Workspace` anlegen mit
+   `adminPasswordHash` = `bcrypt.hash(adminPassword, 10)` (dieselbe
+   bcrypt-Konfiguration wie in `users/route.ts`), `dataResidency` =
+   übergebener Wert oder Default `"EU"`, `status = "active"`,
+   `featureFlags` = JSON-Objekt mit JEDEM Key aus `MODULE_REGISTRY` und
+   dessen `defaultReleased`-Wert (exakt wie das bestehende
+   Feature-Flag-System es für andere Workspaces erwartet — Format prüfen
+   und exakt übernehmen, nicht neu erfinden).
+6. `logAudit({ workspaceId: <neue ID>, userId: <master-userId falls
+   vorhanden, sonst null>, action: "workspace_created", entityType:
+   "Workspace", entityId: <neue ID>, details: { name, slug } })`.
+7. Response: 201 mit dem erstellten Workspace OHNE `adminPasswordHash`
+   im Response-Body (Muster aus bestehendem GET-Handler übernehmen —
+   dort wird `adminPasswordHash` bereits aus der Response entfernt,
+   identisch handhaben).
+
+**COMMIT (exakter Wortlaut):**
+`API: POST /api/workspaces für Master-Admin-gesteuerte Workspace-Erstellung`
+
+---
+
+## SCHRITT 2 — Master-Dashboard: Neuer-Workspace-Formular
+
+1. Neue Seite `app/master/workspaces/new/page.tsx`. Zugriffsschutz:
+   identisch zu bestehenden Master-Seiten (Redirect/401, falls keine
+   `hasMasterAuth()` — bestehendes Muster aus `app/master/page.tsx`
+   übernehmen).
+2. Formular-Felder, GENAU diese, keine zusätzlichen:
+   - Workspace-Name (Text, Pflicht)
+   - Slug (Text, Pflicht, automatisch aus Name vorgeschlagen — Kleinbuchstaben,
+     Leerzeichen zu Bindestrich, Sonderzeichen entfernt — aber vom Master-
+     Admin überschreibbar; Live-Prüfung gegen
+     `GET /api/workspaces/[slug]/check` falls diese Route bereits
+     existiert, sonst Prüfung erst beim Absenden über die neue POST-Route
+     aus Schritt 1)
+   - Workspace-Admin-Passwort (Passwort-Feld, Pflicht, min. 8 Zeichen,
+     Hinweistext: „Dies ist das Workspace-weite Zugangspasswort, getrennt
+     von individuellen Nutzer-Logins.")
+   - Daten-Residenz (Dropdown, Default „EU", Optionen aus bestehendem
+     `dataResidency`-Wertebereich, falls im Code dokumentiert, sonst nur
+     „EU" als einzige Option anbieten)
+3. Abschnitt „Zugang für folgende Personen" — wiederholbare Zeilen
+   (mindestens 1, beliebig viele über „+ Person hinzufügen"), pro Zeile:
+   - E-Mail (Pflicht, Format-Validierung clientseitig)
+   - Name (Pflicht)
+   - Rolle (Dropdown aus `lib/rbac.ts`-Rollenkonstanten, OHNE
+     `CANDIDATE` — Kandidaten werden nicht über diesen Flow angelegt)
+   - Initiales Passwort (Pflicht, min. 8 Zeichen)
+4. HARTE clientseitige UND serverseitige Regel: MINDESTENS eine der
+   definierten Personen MUSS die Rolle `WORKSPACE_ADMIN` oder `ADMIN`
+   (Legacy-Alias) haben — sonst Validierungsfehler „Mindestens ein
+   Workspace-Admin erforderlich", Formular nicht absendbar.
+5. Submit-Ablauf, GENAU in dieser Reihenfolge:
+   a. `POST /api/workspaces` mit Name/Slug/Passwort/Residenz aus Schritt 1.
+   b. Bei Erfolg: für JEDE definierte Person sequenziell
+      `POST /api/w/[neuerSlug]/users` mit
+      `{ email, name, password, roles: [rolle] }` aufrufen (bestehende
+      Route aus der Tatsachenbasis, master-autorisiert).
+   c. Schlägt EIN Personen-POST fehl: restliche Personen werden TROTZDEM
+      angelegt (kein Komplett-Abbruch), aber die fehlgeschlagene(n)
+      Person(en) werden in der Erfolgsmeldung EXPLIZIT als Fehler
+      aufgelistet — der Master-Admin MUSS sehen, wer nicht angelegt
+      wurde, um es manuell über `/w/[slug]/admin/users` nachzuholen.
+   d. Erfolgsmeldung nach Abschluss: Workspace-Slug, Anzahl erfolgreich
+      angelegter Personen, Link zur direkten Workspace-Übersicht.
+6. Im bestehenden `app/master/page.tsx`: Button „Neuer Workspace" ergänzen,
+   verlinkt auf `/master/workspaces/new`. Bestehende Workspace-Listen-
+   Anzeige NICHT verändern, nur den Button ergänzen.
+
+**COMMIT (exakter Wortlaut):**
+`Master-Dashboard: Formular zur Workspace-Einrichtung inkl. initialer Zugangs-E-Mails`
+
+---
+
+## SCHRITT 3 — Validierung (alle Punkte MÜSSEN PASS sein)
+
+Führe JEDEN Check aus, bestätige PASS/FAIL einzeln. Bei FAIL: STOPP,
+beheben, erneut prüfen.
+
+1. `POST /api/workspaces` ohne Master-Auth → 401. PASS/FAIL.
+2. `POST /api/workspaces` mit ungültigem Slug (Großbuchstaben, Sonderzeichen,
+   reserviertes Wort) → 400 mit verständlicher Fehlermeldung. PASS/FAIL.
+3. `POST /api/workspaces` mit bereits vergebenem Slug → 409. PASS/FAIL.
+4. Erfolgreiche Erstellung über das Formular: neuer Workspace erscheint in
+   `app/master/page.tsx`-Liste, `featureFlags` korrekt aus
+   `MODULE_REGISTRY` befüllt. PASS/FAIL.
+5. Mindestens eine definierte Person mit Rolle `WORKSPACE_ADMIN`: diese
+   Person kann sich anschließend unter `/w/[slug]/login` mit E-Mail +
+   vergebenem Passwort erfolgreich einloggen und landet im
+   Workspace-Admin-Bereich. PASS/FAIL.
+6. Formular ohne definierten `WORKSPACE_ADMIN`/`ADMIN` unter den Personen
+   lässt sich NICHT absenden (clientseitig UND bei direktem API-Aufruf
+   serverseitig abgelehnt). PASS/FAIL.
+7. Fehlschlag bei einer von mehreren Personen: restliche Personen wurden
+   trotzdem angelegt, Fehler wird explizit angezeigt. PASS/FAIL.
+8. Audit-Log enthält `action: "workspace_created"`-Eintrag mit korrekter
+   `entityId`. PASS/FAIL.
+9. `adminPasswordHash` taucht in KEINER API-Response auf (weder GET noch
+   POST). PASS/FAIL.
+10. Bestehender Workflow `/w/[workspaceSlug]/request-access` und
+    `/admin/access-requests` funktioniert unverändert (Regressionstest).
+    PASS/FAIL.
+11. `npm run lint` — null Fehler. PASS/FAIL.
+12. `npm run build` — null Fehler. PASS/FAIL.
+
+**COMMIT (exakter Wortlaut, nur wenn ALLE Punkte PASS):**
+`Workspace-Einrichtung durch Master-Admin abgeschlossen und validiert`
+
+---
+
+## Abschluss-Statement (Pflicht)
+
+Nach finalem Commit: kurze Zusammenfassung — welche Dateien neu, welche
+Route ergänzt. Explizite Liste aller 12 Validierungspunkte mit PASS/FAIL.
+Keine Selbsteinschätzung wie „sollte funktionieren" — nur verifizierte
+Ergebnisse aus tatsächlich ausgeführten Checks.
