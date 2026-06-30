@@ -1,0 +1,113 @@
+SAFETY TAG (vor jeder Änderung setzen):
+git tag pre-cooper-landing-demo-2026-06-30
+
+ZIEL:
+Ein schwebender Fass-Button (bestehendes CooperBarrel-Icon, bereits passend 
+gestaltet) auf der öffentlichen Landingpage, der nach Erklär-Screen + 
+Mikro-Freigabe einen kurzen, kostengedeckelten Realtime-Voice-Demo-Moment 
+mit Cooper startet. KEIN echtes Tasting, KEIN Zugriff auf Nutzerdaten — 
+eigenständige, sicher gedeckelte Mini-Persona.
+
+---
+
+SCHRITT 0 — DIAGNOSE (vor jeder Änderung, nur lesen, nichts schreiben):
+
+1. Zeige die aktuelle Landingpage-Struktur (Datei/Route) — wo sitzen aktuell 
+   CTAs, gibt es bereits einen fixed/floating Button-Slot oder ähnliche 
+   Patterns (z.B. Cookie-Banner, Chat-Widget)?
+2. Zeige den bestehenden Realtime-Voice-Aufbau für den eingeloggten 
+   Cooper-Flow (useCooperVoice, ephemeral key issuance in server/routes.ts) 
+   — wie wird aktuell der ephemeral key ausgestellt, gibt es schon ein 
+   Session-Timeout, welches Realtime-Model/Voice wird genutzt, und wie sind 
+   die cooperLevel-Instruktionen (~Z.5612) strukturiert?
+3. Zeige checkLimit.ts (server/lib/checkLimit.ts) vollständig als 
+   Referenzmuster für IP-basiertes Rate-Limiting — exakte Struktur, damit 
+   das neue Limit konsistent gebaut wird.
+4. Zeige aktuelles shared/schema.ts — Bestätige Namenskonvention für neue 
+   Tabellen und ob ip_hash-Spalten anderswo bereits existieren (Vorbild 
+   für Hashing-Methode). WICHTIG: Tabelle _data_guard_snapshots NICHT 
+   anfassen, ist bewusst so wie sie ist.
+5. Bestätige: existiert bereits eine KI-Stimmen-Offenlegung-Komponente 
+   (laut bisherigem Stand: in ImpressionCapture voice-Phase vorhanden) — 
+   kann Formulierung/Komponente wiederverwendet werden?
+6. Zeige CooperBarrel.tsx — welche Props/Größen werden aktuell unterstützt, 
+   damit der Floating-Button stimmig eingebunden werden kann.
+
+Präsentiere die Diagnose-Ergebnisse BEVOR irgendein Code geändert wird. 
+KEINE Annahmen treffen, wo die Diagnose etwas anderes zeigt als hier 
+vermutet — in dem Fall den Plan in Schritt 1 entsprechend anpassen und 
+das explizit benennen.
+
+---
+
+SCHRITT 1 — PLAN (zur Bestätigung vorlegen, NICHT ausführen ohne OK):
+
+A) Neue Tabelle `landing_cooper_demo_log`:
+   - ip_hash (text, sha256 der IP — oder bestehende Hash-Methode, falls 
+     Diagnose eine andere ergibt)
+   - day_key (text, Berlin-Zeitzone, Format YYYY-MM-DD)
+   - count (integer, default 0)
+   - last_run_at (timestamp)
+   - PK aus (ip_hash, day_key)
+   Additive Schema-Änderung. NACH Push: manuell `npx drizzle-kit push --force` 
+   in Replit-Shell nötig — explizit im Verifikationsschritt erinnern.
+
+B) Neuer Endpoint POST /api/public/cooper-demo/start (kein Auth):
+   - IP aus Request ermitteln (Proxy-Header beachten, falls Replit dahinter), 
+     hashen, day_key (Berlin) berechnen
+   - Limit: 2 Starts pro IP pro Tag, Slot-Claim via INSERT ... ON CONFLICT 
+     DO UPDATE (count erhöhen), analog Backup-Scheduler-Pattern
+   - Bei Limit erreicht: 429 mit kurzer JSON-Message (z.B. 
+     "Komm später wieder oder probiere CaskSense direkt aus")
+   - Bei OK: ephemeral key für Realtime API ausstellen MIT serverseitig 
+     erzwungenem Hard-Timeout (z.B. 75 Sekunden) — falls die Realtime API 
+     selbst kein Session-Limit kennt, serverseitigen Watchdog/Timer bauen, 
+     der die Session aktiv beendet, NICHT nur Client-seitig
+   - Eigene, feste Demo-Persona-Instruction (separat von cooperLevel-Presets, 
+     eigene kurze System-Instruction): Cooper stellt sich kurz vor, 
+     beschreibt EINEN festen Beispiel-Dram, beantwortet maximal 1-2 
+     Rückfragen, lädt am Ende ein, es mit dem eigenen Glas in der App 
+     auszuprobieren. KEIN Ledger, KEIN Zugriff auf echte Whisky-/Nutzerdaten, 
+     KEIN Tool-Calling.
+
+C) Client-Flow:
+   - Schwebender Button (fixed position, z.B. unten rechts) mit bestehendem 
+     CooperBarrel-Icon auf der Landingpage
+   - Klick → Erklär-Screen (kurz: was ist Cooper, KI-Stimmen-Offenlegung, 
+     Hinweis auf Zeitlimit) → "Mikro freigeben & starten"-Button
+   - Nach Freigabe: Call an /api/public/cooper-demo/start, bei 429 
+     freundliche Fehlermeldung statt Connect-Versuch
+   - Bei Erfolg: Realtime-Verbindung analog bestehendem useCooperVoice-Hook, 
+     ggf. als eigene schlanke Variante (kein participantId, kein Ledger-State)
+   - Sichtbarer Countdown/Hinweis während der Demo, dass sie zeitlich 
+     begrenzt ist (vermeidet abruptes Abbrechen-Gefühl)
+
+D) Kein neuer Eintrag in cooperLevel-Logik in routes.ts ~5612 — Demo-Pfad 
+   bekommt eigene, getrennte Instruction-Konstante, um die bestehende 
+   Persona-Steuerung nicht zu verwässern oder versehentlich zu beeinflussen.
+
+---
+
+SCHRITT 2 — AUSFÜHRUNG:
+Erst nach explizitem "OK, umsetzen" durch Christoph. Reihenfolge: 
+Schema-Änderung → Server-Endpoint inkl. Rate-Limit → Client-Komponenten 
+(Button, Erklär-Screen, Demo-Voice-Hook) → Einbindung auf Landingpage.
+
+---
+
+VERIFIKATION (nach Ausführung, vor jedem Commit):
+1. Bestätige: 36+1 Migration-/Schema-Tracking weiterhin korrekt, 
+   `_data_guard_snapshots` unverändert.
+2. Bestätige: `npx drizzle-kit push --force` wurde NICHT automatisch vom 
+   Agent ausgeführt — das macht Christoph manuell in der Replit-Shell.
+3. Bestätige: Rate-Limit greift nachweislich (z.B. 3. Versuch in selber 
+   day_key → 429).
+4. Bestätige: Hard-Timeout beendet die Realtime-Session serverseitig, 
+   nicht nur im Client (z.B. durch Killen des Client-Tabs während der 
+   Session testen — Server muss trotzdem terminieren).
+5. Bestätige: Demo-Persona hat KEIN Tool-Calling, KEINEN Zugriff auf echte 
+   Whisky-/Community-/Nutzerdaten.
+6. Bestätige: KI-Stimmen-Offenlegung ist sichtbar VOR Start der Session.
+
+KEIN COMMIT. KEIN PUSH. Kein Ausführen von drizzle-kit. Christoph prüft 
+lokal/in Replit und committet selbst.
