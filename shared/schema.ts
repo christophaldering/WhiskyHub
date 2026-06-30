@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, real, doublePrecision, timestamp, boolean, jsonb, date, index, uniqueIndex, customType, serial } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, real, doublePrecision, timestamp, boolean, jsonb, date, index, uniqueIndex, customType, serial, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -1565,6 +1565,17 @@ export const dailyReportLog = pgTable("daily_report_log", {
   sentAt: timestamp("sent_at").notNull().defaultNow(),
 });
 export type DailyReportLog = typeof dailyReportLog.$inferSelect;
+
+// --- Landing Cooper Demo Log (per-IP daily cost cap for the public voice demo) ---
+export const landingCooperDemoLog = pgTable("landing_cooper_demo_log", {
+  ipHash: text("ip_hash").notNull(),
+  dayKey: text("day_key").notNull(),
+  count: integer("count").notNull().default(0),
+  lastRunAt: timestamp("last_run_at").notNull().defaultNow(),
+}, (table) => [
+  primaryKey({ columns: [table.ipHash, table.dayKey] }),
+]);
+export type LandingCooperDemoLog = typeof landingCooperDemoLog.$inferSelect;
 
 // Woechentlicher Backup-Slot (server/db-backup-scheduler.ts) — ein Eintrag pro
 // ISO-Woche (Europe/Berlin) verhindert Doppel-Backups ueber mehrere Instanzen.

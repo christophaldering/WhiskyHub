@@ -11,6 +11,7 @@ import { v } from "@/lib/themeVars";
 import { useAppStore } from "@/lib/store";
 import { getSession } from "@/lib/session";
 import heroImage from "@/assets/images/hero-whisky.png";
+import CooperLandingDemo from "@/pages/CooperLandingDemo";
 
 const ACCENT = "#C9A961";
 const ACCENT_DIM = "#8E7640";
@@ -582,6 +583,7 @@ export default function LandingNew() {
       <WeltSection />
       <StanceSection />
       <Footer />
+      <CooperLandingDemo />
     </div>
   );
 }

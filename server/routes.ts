@@ -5733,6 +5733,69 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
     }
   });
 
+  // ===== PUBLIC COOPER DEMO (Startseite, ohne Auth, kostengedeckelt) =====
+  // Eigenstaendige Mini-Persona: kein Tool-Calling, kein Zugriff auf echte
+  // Whisky-/Nutzer-/Community-Daten. Kosten-Deckel = DB-Tageslimit pro IP
+  // (2 Starts/Tag) + kurze Key-TTL; die eigentliche Gespraechsdauer kappt der
+  // Client per Hard-Timer (Realtime laeuft per WebRTC direkt Browser<->OpenAI,
+  // der Server ist nach der Key-Ausgabe nicht mehr in der Leitung).
+  const COOPER_DEMO_DAILY_LIMIT = 2;
+  app.post("/api/public/cooper-demo/start", async (req: Request, res: Response) => {
+    try {
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) return res.status(500).json({ message: "OPENAI_API_KEY not configured" });
+
+      const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || "unknown";
+      const ipHash = crypto.createHash("sha256").update(ip).digest("hex");
+      const dayKey = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date());
+
+      const { db } = await import("./db");
+      const { sql: dsql } = await import("drizzle-orm");
+      // Atomarer Slot-Claim: hochzaehlen und neuen Stand zurueckgeben.
+      const claim = await db.execute(dsql`
+        INSERT INTO landing_cooper_demo_log (ip_hash, day_key, count, last_run_at)
+        VALUES (${ipHash}, ${dayKey}, 1, now())
+        ON CONFLICT (ip_hash, day_key)
+        DO UPDATE SET count = landing_cooper_demo_log.count + 1, last_run_at = now()
+        RETURNING count
+      `);
+      const newCount = Number((claim.rows?.[0] as any)?.count ?? 0);
+      if (newCount > COOPER_DEMO_DAILY_LIMIT) {
+        return res.status(429).json({ message: "Komm spaeter wieder oder probiere CaskSense direkt aus." });
+      }
+
+      const demoInstructions = "Du bist Cooper \u2014 benannt nach dem K\u00fcfer, der die F\u00e4sser baut, in denen Whisky reift. Ein ruhiger Begleiter beim Verkosten, kein abgehobener Kritiker.\n\nDIES IST EINE KURZE, KOSTENLOSE SCHNUPPER-DEMO auf der Startseite von CaskSense \u2014 KEINE echte Verkostung. Der Besucher hat gerade KEIN Glas vor sich, und du hast KEINEN Zugriff auf echte Whisky-, Nutzer- oder Community-Daten.\n\nAblauf (halte dich kurz \u2014 die Demo ist zeitlich auf etwa eine Minute begrenzt):\n1. Stell dich in zwei, drei ruhigen S\u00e4tzen vor: Du bist Cooper; beim Verkosten sagst du nie vor, was jemand schmecken soll, sondern hilfst, den eigenen Eindruck in Worte zu fassen.\n2. Beschreibe EINEN festen Beispiel-Dram, damit der Besucher ein Gef\u00fchl daf\u00fcr bekommt, wie das klingt: einen sanften Speyside-Whisky \u2014 Honig und reifer Apfel in der Nase, weiche Vanille und etwas helles Eichenholz am Gaumen, ein warmer, mittellanger Abgang. Mach beil\u00e4ufig klar, dass das nur ein Beispiel ist.\n3. Beantworte H\u00d6CHSTENS ein bis zwei kurze R\u00fcckfragen.\n4. Lade am Ende warm ein, es mit dem eigenen Glas direkt in CaskSense auszuprobieren.\n\nStrikt: KEINE Werkzeuge/Tools, keine erfundenen konkreten Marken oder Abf\u00fcllungen \u2014 bleib bei diesem einen Beispiel-Dram. Sprich in der Sprache des Besuchers (Deutsch oder Englisch), knapp, gesprochen, warm, aber nicht \u00fcberschw\u00e4nglich. Dass deine Stimme KI ist, steht bereits auf dem Bildschirm \u2014 du musst es nicht erw\u00e4hnen.";
+
+      const candidates = ["gpt-realtime", "gpt-realtime-2"];
+      let lastErr = "";
+      for (const model of candidates) {
+        const session: any = { type: "realtime", model, instructions: demoInstructions, audio: { input: { turn_detection: { type: "server_vad", silence_duration_ms: 1100, prefix_padding_ms: 300, threshold: 0.5, create_response: false }, transcription: { model: "gpt-4o-mini-transcribe" } }, output: { voice: "cedar" } }, tools: [] };
+        const r = await fetch("https://api.openai.com/v1/realtime/client_secrets", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            expires_after: { anchor: "created_at", seconds: 120 },
+            session,
+          }),
+        });
+        const text = await r.text();
+        if (r.ok) {
+          let data: any = {}; try { data = JSON.parse(text); } catch { data = {}; }
+          const value = data?.value || data?.client_secret?.value;
+          if (!value) { lastErr = `Kein ephemeraler Key in der Antwort: ${text.slice(0, 400)}`; continue; }
+          return res.json({ value, model, voice: "cedar", maxSeconds: 75 });
+        }
+        lastErr = `${r.status} ${text.slice(0, 400)}`;
+        if (model !== candidates[candidates.length - 1] && /model/i.test(text)) continue;
+        break;
+      }
+      return res.status(500).json({ message: `Realtime-Token fehlgeschlagen: ${lastErr}` });
+    } catch (e: any) {
+      console.error("[cooper-demo] start failed:", e?.message || e);
+      return res.status(500).json({ message: "Die Demo ist gerade nicht verfügbar. Bitte versuche es später noch einmal." });
+    }
+  });
+
   app.get("/api/admin/cooper-defaults", async (req: Request, res: Response) => {
     const auth = await requireAuth(req);
     if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
