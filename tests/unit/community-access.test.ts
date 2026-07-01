@@ -20,11 +20,24 @@ describe("Community Visibility & Access Control", () => {
       expect(data.tastings).toHaveLength(0);
     });
 
-    it("sees 0 entries in analytics", async () => {
+    it("analytics returns anonymous public-view aggregates without auth", async () => {
       const { data } = await fetchJSON("/api/historical/analytics");
-      expect(data.totalTastings).toBe(0);
-      expect(data.totalEntries).toBe(0);
-      expect(data.topWhiskies).toHaveLength(0);
+      // Gewolltes Soll: echte Access-Control mit bewusstem publicView-Zweig
+      expect(data.publicView).toBe(true);
+      // aggregiert (>0), kein harter Wert
+      expect(data.totalEntries).toBeGreaterThan(0);
+      expect(typeof data.totalTastings).toBe("number");
+      expect(Array.isArray(data.topWhiskies)).toBe(true);
+      expect(typeof data.regionBreakdown).toBe("object");
+      expect(typeof data.scoreDistribution).toBe("object");
+      // Anonymitaet: nur die erwarteten Aggregat-Felder, nichts Personenbezogenes
+      expect(Object.keys(data).sort()).toEqual([
+        "caskBreakdown", "publicView", "regionBreakdown", "scoreDistribution",
+        "smokyBreakdown", "topWhiskies", "totalEntries", "totalTastings",
+      ]);
+      const serialized = JSON.stringify(data);
+      expect(serialized).not.toMatch(/participantId|participant_id/i);
+      expect(serialized).not.toMatch(/"notes"/i);
     });
 
     it("public-insights returns anonymous aggregates without auth", async () => {
