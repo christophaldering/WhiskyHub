@@ -248,7 +248,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
     cooper: "Cooper", cooperStudio: "Cooper-Studio", secCooper: "Cooper", secSettings: "Einstellungen", secAppearance: "Darstellung", secAdmin: "Admin", settings: "Einstellungen",
     theme: "Theme", themeLight: "Hell", themeDark: "Dunkel", language: "Sprache",
     secAccount: "Konto & Daten", verifyEmail: "E-Mail bestätigen", dataExport: "Daten & Export",
-    secApp: "App", about: "Über CaskSense", support: "Projekt unterstützen",
+    secInfo: "Info", about: "Über CaskSense", support: "Projekt unterstützen",
     admin: "Admin", switchClassic: "Klassische Ansicht", back: "Zurück",
     appInfoVersion: "Version", appInfoTagline: "Ein privates Hobbyprojekt — aus Freude an Whisky und Technik.",
     appInfoStory: "Die ganze Geschichte von CaskSense", appInfoImpressum: "Impressum", appInfoPrivacy: "Datenschutz",
@@ -256,7 +256,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
     cooper: "Cooper", cooperStudio: "Cooper-Studio", secCooper: "Cooper", secSettings: "Settings", secAppearance: "Appearance", secAdmin: "Admin", settings: "Settings",
     theme: "Theme", themeLight: "Light", themeDark: "Dark", language: "Language",
     secAccount: "Account & Data", verifyEmail: "Verify Email", dataExport: "Data & Export",
-    secApp: "App", about: "About CaskSense", support: "Support the project",
+    secInfo: "Info", about: "About CaskSense", support: "Support the project",
     admin: "Admin", switchClassic: "Switch to Classic UI", back: "Back",
     appInfoVersion: "Version", appInfoTagline: "A private hobby project — for the love of whisky and tech.",
     appInfoStory: "The full story behind CaskSense", appInfoImpressum: "Imprint", appInfoPrivacy: "Privacy",
@@ -897,7 +897,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
       />
 
       <div style={{ height: 1, background: tv.border, margin: "8px 0" }} />
-      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: tv.muted, padding: "2px 4px 6px" }}>{L.secApp}</div>
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: tv.muted, padding: "2px 4px 6px" }}>{L.secInfo}</div>
       <MenuButton theme={tv}
         icon={<Info style={{ width: 18, height: 18, color: tv.accent }} />}
         label={L.about}

@@ -45,7 +45,7 @@ const FU = "'DM Sans', system-ui, sans-serif";
 
 export default function LabsAbout() {
   const { t, i18n } = useTranslation();
-  const goBackToDiscover = useBackNavigation("/labs/explore");
+  const goBackToDiscover = useBackNavigation("/labs/taste/profile");
   const blocks = t("about.blocks", { returnObjects: true }) as Block[];
   const embedded = useIsEmbeddedInExplore();
   const isDE = (i18n.language || "de").startsWith("de");
