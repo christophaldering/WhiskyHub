@@ -1,0 +1,126 @@
+SAFETY TAG (Christoph setzt selbst): git tag pre-cooper-metaintro-2026-07-01
+
+ZIEL:
+Cooper soll bei JEDEM Voice-Aufruf eine kurze, verlässliche
+Meta-Landkarte des Ablaufs geben (wer er ist + welcher Bogen kommt:
+erster Eindruck → Nase/Gaumen/Abgang → Zusammenfassung +
+Bewertungsvorschlag, alles frei änderbar), damit auch Wiederkehrer
+orientiert sind. Diese kompakte Landkarte ERSETZT die bisherige
+zweistufige Logik: Die alte ausführliche Erst-Vorstellung
+(cooperVoiceIntroBlock) wird NICHT mehr automatisch beim ersten Mal
+aufgedrängt, sondern nur noch auf Nachfrage abgerufen. Beim
+wiederholten Mal kommt zusätzlich ein Halbsatz-Angebot für eine
+ausführlichere Erklärung.
+
+NEUE LOGIK (ersetzt "erstes Mal lang / danach knapp"):
+- IMMER: kompakte Meta-Landkarte + Wer/Wie (ein Absatz).
+- ERSTES Mal: nur diese Landkarte (keine zusätzliche lange
+  Vorstellung — die Landkarte IST die Vorstellung).
+- WIEDERHOLTES Mal: dieselbe Landkarte + Halbsatz-Angebot
+  "wenn du mehr willst, sag Bescheid".
+- Auf Nachfrage (Taster nimmt Angebot an ODER fragt beim ersten Mal
+  nach): Cooper erklärt sich und sein Vorgehen frei/ausführlicher in
+  eigenen Worten.
+
+NORDSTERN (verbindlich): Die Landkarte BESCHREIBT den möglichen Bogen,
+sie DIKTIERT ihn nicht. Pflicht-Wendungen sinngemäß: "ganz wie es
+sich für dich ergibt", "keine feste Reihenfolge, der du folgen musst",
+"alles nur ein Angebot, das du frei ändern kannst". Kein Dirigieren,
+nichts über die Flasche, kein Vorgreifen.
+
+SCHRITT 0 — DIAGNOSE (nur lesen):
+1. Zeige Z.5679-5693: cooperVoiceIntroBlock, wantsVoiceIntro,
+   cooperGreetingContract (jetzt mit 3 Fällen), cooperVoiceLifeBlock,
+   und die instructions-Zusammensetzung (Z.5693).
+2. Bestätige: wantsVoiceIntro === true nur beim ersten Mal
+   (Client-localStorage). Dieses Flag wird jetzt umgedeutet:
+   es steuert künftig nur noch, OB das Reintro-Halbsatz-Angebot
+   erscheint (false → Angebot; true → kein Angebot, weil erstes Mal).
+
+SCHRITT 1 — PLAN (bestätigen):
+
+A) NEUER Block cooperMetaMapBlock (immer eingespeist), Inhalt als
+   Anweisung an Cooper (variiert Wortlaut, kein starres Skript),
+   sinngemäß DE:
+   "Gib zu Beginn eine kurze Landkarte, in deinen eigenen Worten und
+   jedes Mal etwas anders: Du bist Cooper und begleitest ihn gern
+   durch sein Tasting — vom ersten Eindruck über Nase, Gaumen und
+   Abgang, ganz wie es sich für ihn ergibt. Er soll frei heraussagen,
+   was ihm auffällt; du hörst mit und schärfst seine Worte, wenn er
+   mag. Am Ende fasst du zusammen und schlägst eine erste Bewertung
+   vor — alles nur ein Angebot, das er frei ändern kann. Es gibt keine
+   feste Reihenfolge, der er folgen muss; er fängt an, wie es ihm
+   gefällt. Halte das kompakt (wenige Sätze), ruhig, ohne
+   Begrüßungs-Performance, ohne Fachjargon, ohne Aufzählungs-Ton,
+   nichts über diese Flasche."
+   + EN-Variante (via langDirective/lang-Muster wie die anderen
+     Blöcke).
+
+B) NEUER Block cooperReintroOfferBlock (NUR wenn !wantsVoiceIntro,
+   also wiederholtes Mal), sinngemäß DE:
+   "Hänge an deine Eröffnung beiläufig an: wenn er mag, dass du dich
+   und dein Vorgehen ausführlicher erklärst, soll er einfach Bescheid
+   sagen. Kein Drängen, kein Startschuss-Ton — die Kontrolle bleibt
+   bei ihm."
+   + EN-Variante.
+
+C) NEUER Block cooperDeepIntroOnRequest (immer eingespeist, als
+   Verhaltensregel): "Wenn der Taster um eine ausführlichere
+   Vorstellung bittet (jetzt oder später), erkläre dich und dein
+   Vorgehen FREI in eigenen Worten, nie wörtlich abgespult: du hilfst
+   ihm, seine eigenen Worte zu finden; du prägst nichts vor, bewertest
+   und korrigierst nicht; er bestimmt Tempo und Reihenfolge; am Glas
+   hältst du dich mit Wissen und Vergleichen zurück und beantwortest
+   seine Fragen danach. Knapp, gesprochen, nichts über diese Flasche.
+   Danach zurück in die offene Einladung."
+   (Das ersetzt inhaltlich den bisherigen cooperVoiceIntroBlock als
+   AUF-ANFRAGE-Verhalten statt Erstmalzwang.)
+
+D) cooperVoiceIntroBlock (alt, "EINMALIGE ERÖFFNUNG nur erstes Mal"):
+   wird NICHT mehr automatisch eingespeist. Sein Inhalt geht in C auf.
+   Entweder Block entfernen ODER als Referenz belassen aber aus der
+   instructions-Zeile herausnehmen. Empfehlung: aus der
+   instructions-Zeile entfernen, Block-Definition kann bleiben
+   (ungenutzt) oder gelöscht werden — Diagnose zeigt, was sauberer ist.
+
+E) instructions-Zeile (Z.5693) anpassen:
+   - cooperMetaMapBlock IMMER einsetzen (vor cooperGreetingContract,
+     da es die Eröffnung ist).
+   - (wantsVoiceIntro ? cooperVoiceIntroBlock : "") ENTFERNEN.
+   - cooperReintroOfferBlock nur wenn !wantsVoiceIntro.
+   - cooperDeepIntroOnRequest immer.
+   - cooperGreetingContract (mit den 3 Fällen) bleibt unverändert
+     erhalten — ABER prüfen, ob sein Eröffnungs-Satz ("Begrüße knapp,
+     nenne dich Cooper...") jetzt mit der Meta-Landkarte doppelt.
+     Wenn Dopplung: den reinen Begrüßungs-Teil des GreetingContract
+     entschlacken, sodass die Begrüßung/Vorstellung aus dem
+     MetaMapBlock kommt und der GreetingContract nur noch die
+     REAKTIONS-Regeln (die 3 Fälle + cooper_pass) trägt. Das ist
+     wichtig, damit sich nicht zwei Eröffnungs-Anweisungen
+     widersprechen. Plan hierzu in Diagnose konkretisieren.
+
+SCHRITT 2 — AUSFÜHRUNG: nach "OK, umsetzen".
+Nur server/routes.ts Voice-Blöcke. Text-Schärfer + Demo unberührt.
+
+VALIDIERUNG (PASS/FAIL):
+1. [ ] Jeder Aufruf (intro true UND false): Instruktions-String
+       enthält cooperMetaMapBlock (die kurze Landkarte).
+2. [ ] Erstes Mal (intro true): KEIN cooperReintroOfferBlock,
+       KEIN automatischer alter cooperVoiceIntroBlock.
+3. [ ] Wiederholtes Mal (intro false): cooperReintroOfferBlock
+       vorhanden.
+4. [ ] cooperDeepIntroOnRequest immer vorhanden (Auf-Anfrage-
+       Verhalten).
+5. [ ] Keine doppelte/​widersprüchliche Eröffnungs-Anweisung
+       zwischen MetaMapBlock und GreetingContract (GreetingContract
+       ggf. auf Reaktions-Regeln entschlackt).
+6. [ ] Nordstern-Wendungen im MetaMapBlock vorhanden ("wie es sich
+       für dich ergibt" / "keine feste Reihenfolge" / "nur ein
+       Angebot").
+7. [ ] DE + EN für alle neuen Blöcke.
+8. [ ] Die 3 Reaktions-Fälle (pass/schärfen/warm aufgreifen)
+       unverändert erhalten.
+9. [ ] Text-Schärfer + Demo-Pfad unverändert.
+10.[ ] npx tsc --noEmit: keine neuen Fehler über Baseline (509).
+
+KEIN COMMIT/PUSH. Christoph committet selbst.
