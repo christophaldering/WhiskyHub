@@ -553,8 +553,17 @@ export default function SoloCaptureScreen({ participantId, isAuthenticated, onIm
             <span style={{ color: "var(--labs-accent)", display: "flex" }}><CooperBarrel size={24} mono /></span>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
-              {t("v2.solo.impressionTileTitle", "Eindruck festhalten")}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600, color: "var(--labs-text)" }}>
+              <span style={{ minWidth: 0 }}>{t("v2.solo.impressionTileTitle", "Eindruck festhalten")}</span>
+              <span style={{
+                display: "inline-flex", alignItems: "center", flexShrink: 0,
+                fontSize: 11, fontWeight: 600, letterSpacing: 0.3,
+                padding: "2px 8px", borderRadius: 999,
+                background: "color-mix(in srgb, var(--labs-gold) 14%, transparent)",
+                color: "var(--labs-accent)",
+              }}>
+                {t("v2.solo.impressionTileBadge", "mit Cooper")}
+              </span>
             </div>
             <div style={{ fontSize: 11, color: "var(--labs-accent)", marginTop: 1 }}>
               {t("v2.solo.impressionTileSubtitle", "Dein erster Eindruck in eigenen Worten")}
