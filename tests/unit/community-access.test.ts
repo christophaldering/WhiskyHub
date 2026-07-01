@@ -27,9 +27,23 @@ describe("Community Visibility & Access Control", () => {
       expect(data.topWhiskies).toHaveLength(0);
     });
 
-    it("sees 0 entries in public-insights (all community_only)", async () => {
+    it("public-insights returns anonymous aggregates without auth", async () => {
       const { data } = await fetchJSON("/api/historical/public-insights");
-      expect(data.totalEntries).toBe(0);
+      // Gewolltes Soll: oeffentlich by design, aggregiert (>0), kein harter Wert
+      expect(data.totalEntries).toBeGreaterThan(0);
+      expect(typeof data.totalTastings).toBe("number");
+      expect(Array.isArray(data.topDistilleries)).toBe(true);
+      expect(typeof data.regionBreakdown).toBe("object");
+      expect(typeof data.scoreDistribution).toBe("object");
+      // Anonymitaet: nur die erwarteten Aggregat-Felder, nichts Personenbezogenes
+      expect(Object.keys(data).sort()).toEqual([
+        "caskBreakdown", "regionBreakdown", "scoreDistribution",
+        "smokyBreakdown", "topDistilleries", "totalEntries",
+        "totalTastings", "totalWhiskies",
+      ]);
+      const serialized = JSON.stringify(data);
+      expect(serialized).not.toMatch(/participantId|participant_id/i);
+      expect(serialized).not.toMatch(/"notes"/i);
     });
 
     it("gets 403 on a community_only tasting detail", async () => {

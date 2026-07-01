@@ -1,0 +1,70 @@
+VERBINDLICHE DIREKTIVE — Zwei veraltete Tests korrigieren
+SAFETY TAG (Christoph setzt selbst): git tag pre-test-fixes-2026-07-01
+
+KONTEXT (Entscheidungen von Christoph, verbindlich):
+- Fund 1 (labs-ask-tools): Test ist veraltet, get_benchmark_stats ist
+  legitim → Test auf 7 Tools aktualisieren.
+- Fund 2 (public-insights): Öffentliche Aggregat-Insights sind GEWOLLT
+  (öffentlich by design) → Test anpassen, Endpoint NICHT gaten.
+- Prinzip WAHRHEIT bleibt: Tests dokumentieren das korrekte Soll.
+  Hier ist das Soll bewusst "öffentlich, aber anonym/aggregiert".
+
+ZIEL:
+Beide vorbestehenden roten Unit-Tests grün machen, indem die Tests an
+das (bestätigt korrekte) Ist-Verhalten angepasst werden. KEINE
+Produktivcode-Änderung.
+
+SCHRITT 0 — DIAGNOSE (nur lesen):
+1. Zeige tests/unit/labs-ask-tools.test.ts — die Stelle, die 6 Tools
+   erwartet (Array + Titel "six"). Exakter Wortlaut.
+2. Zeige tests/unit/community-access.test.ts — den Testfall
+   "sees 0 entries in public-insights" (expect totalEntries toBe 0).
+3. SICHERHEITS-CHECK für Fund 2 (wichtig, nur lesen): Zeige, welche
+   Felder der /api/historical/public-insights-Endpoint anonym
+   zurückgibt. Bestätige, dass es AUSSCHLIESSLICH aggregierte/
+   anonymisierte Werte sind (Summen, Durchschnitte, k-anonyme
+   Top-Listen mit count-Schwelle) und KEINE Einzelbewertungen,
+   Teilnehmernamen, participant-IDs oder Freitext-Notizen einzelner
+   Personen. Liste die zurückgegebenen Felder auf.
+   → Falls doch etwas Nicht-Anonymes durchgeht (z.B. ein Name, eine
+     einzelne identifizierbare Bewertung): STOPP, melden, NICHT den
+     Test anpassen — dann ist es doch ein Leck und wir entscheiden neu.
+
+SCHRITT 1 — PLAN (bestätigen):
+A) labs-ask-tools.test.ts: get_benchmark_stats ins erwartete
+   Tool-Array aufnehmen, Zähl-/Titeltext 6→7 ("six"→"seven").
+   Nur der Test, keine Registry-Änderung.
+B) community-access.test.ts: den public-insights-Testfall an das
+   gewollte öffentliche Verhalten anpassen. Statt toBe(0) das
+   korrekte Soll dokumentieren:
+   - Der Test soll das GEWOLLTE Verhalten festschreiben: anonymer
+     Zugriff liefert aggregierte Insights (totalEntries > 0), UND
+     die Antwort enthält KEINE personenbezogenen/nicht-anonymen
+     Felder (assert, dass die aus Schritt 0 als anonym bestätigten
+     Felder da sind und keine Namen/IDs/Einzelbewertungen).
+   - it()-Text umbenennen, sodass er das neue Soll beschreibt
+     (z.B. "public-insights returns anonymous aggregates without auth").
+   - Den harten Wert (384) NICHT festnageln (ändert sich mit Daten) —
+     stattdessen > 0 bzw. Typ/Struktur prüfen, plus die
+     Anonymitäts-Assertions.
+C) KEINE Änderung an server/routes.ts, labs-ask-tools.ts oder anderem
+   Produktivcode.
+
+SCHRITT 2 — AUSFÜHRUNG: nach "OK, umsetzen".
+
+VALIDIERUNG (PASS/FAIL):
+1. [ ] npm run test:unit: labs-ask-tools grün.
+2. [ ] community-access public-insights-Test grün, prüft jetzt
+       aggregiert>0 + Anonymität statt toBe(0).
+3. [ ] Alle übrigen Unit-Tests weiterhin grün (inkl. die 24
+       participant-scores von eben).
+4. [ ] Schritt-0-Sicherheitscheck bestätigt: public-insights gibt
+       nur anonyme Aggregate aus (Feld-Liste im Bericht).
+5. [ ] git diff berührt NUR die zwei Testdateien, kein Produktivcode.
+6. [ ] npx tsc --noEmit: keine neuen Fehler über Baseline (509).
+
+ABSCHLUSSBERICHT: verifizierte PASS/FAIL je Punkt + die Feld-Liste
+aus dem Anonymitäts-Check. Falls der Check ein nicht-anonymes Feld
+findet: NICHT anpassen, melden.
+
+KEIN COMMIT/PUSH. Christoph committet selbst.

@@ -29,10 +29,11 @@ import {
 } from "../../server/labs-ask-tools";
 
 describe("labs-ask-tools — registry shape", () => {
-  it("exposes the six expected user-stat tools", () => {
+  it("exposes the seven expected user-stat tools", () => {
     const names = labsAskTools.map((t) => t.name).sort();
     expect(names).toEqual([
       "count_user_whiskies",
+      "get_benchmark_stats",
       "get_user_overview_stats",
       "get_user_recent_ratings",
       "get_user_tastings_role_breakdown",
