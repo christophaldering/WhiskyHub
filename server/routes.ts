@@ -3443,7 +3443,13 @@ export async function registerRoutes(
       if (await rejectIfArchived(tastingId, res)) return;
       const tasting = await storage.getTasting(tastingId);
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
-      
+
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+      const requester = await storage.getParticipant(requesterId);
+      if (requesterId !== tasting.hostId && requester?.role !== "admin")
+        return res.status(403).json({ message: "Forbidden" });
+
       const { order } = req.body;
       if (!Array.isArray(order)) return res.status(400).json({ message: "Invalid order data" });
       

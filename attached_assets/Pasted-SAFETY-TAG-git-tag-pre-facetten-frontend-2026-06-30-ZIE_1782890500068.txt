@@ -1,0 +1,68 @@
+SAFETY TAG: git tag pre-facetten-frontend-2026-06-30
+
+ZIEL:
+Der Text-Schärfer liefert bereits followUpKind ("aroma"|"dimension"|
+"evaluation"), followUpTerm und followUpQuestion (server/routes.ts
+~Z.5580-5594, im ImpressionResult). Das Frontend nutzt diese Felder
+aktuell NICHT. Ziel: aus diesen Feldern dezente, tippbare
+Schärfungs-Chips rendern, die den wahrgenommenen Eindruck schärfen,
+ohne ihn vorzuprägen.
+
+NORDSTERN (Pflicht):
+- Chips erscheinen NIE vor dem freien Eindruck — erst nachdem der
+  Taster selbst etwas gesagt/eingegeben hat.
+- Chips schärfen (laden ein zu präzisieren), sie prägen nicht vor.
+- Kein Dirigieren: Chips sind ein Angebot, keine Aufforderung.
+- Max. wenige Chips gleichzeitig, ruhige Gestaltung, Design-Tokens
+  (--labs-gold etc.), 44px Touch-Targets, 8px-Raster, keine Emojis.
+
+SCHRITT 0 — DIAGNOSE (nur lesen):
+1. Zeige impressionApi.ts — ImpressionResult-Typ vollständig,
+   speziell followUpKind/followUpTerm/followUpQuestion (Z.35-36
+   Umgebung).
+2. Zeige ImpressionCapture.tsx vollständig — wie wird das
+   converse-Ergebnis aktuell verarbeitet und dargestellt? Wo würde
+   ein Chip-Block sinnvoll sitzen (nach dem Eindruck, vor/neben dem
+   Handoff)?
+3. Zeige, ob es bereits eine Chip-Komponente im rating/-Ordner gibt
+   (CooperChip.tsx?) — kann sie wiederverwendet werden?
+4. Zeige wie i18n in ImpressionCapture genutzt wird (für DE/EN der
+   Chip-Beschriftungen).
+
+SCHRITT 1 — PLAN (bestätigen):
+A) Chip-Ableitung aus followUp-Feldern:
+   - followUpKind "aroma": followUpTerm ist ein vager Begriff
+     (z.B. "rauchig") → ein Chip "rauchig schärfen" der die
+     followUpQuestion als sokratische Rückfrage öffnet
+     (z.B. "eher Lagerfeuer oder Pflaster/Jod?").
+   - followUpKind "dimension": followUpTerm ist "nose"/"taste"/
+     "finish" → ein Chip der einlädt, zu dieser noch unberührten
+     Dimension etwas zu sagen.
+   - followUpKind "evaluation": ein Chip der offen einlädt, die
+     Gesamtwirkung/Wertung zu ergänzen.
+   - Leerer followUpKind → KEIN Chip.
+B) Tap-Verhalten:
+   - Chip-Tap fügt die followUpQuestion NICHT als Cooper-Text ein,
+     sondern öffnet ein Eingabefeld/fokussiert das bestehende, mit
+     der Frage als dezentem Prompt/Placeholder — der Taster
+     antwortet SELBST, Cooper prägt nicht vor.
+   - (Alternative aus Diagnose ableiten, falls der converse-Flow
+     einen anderen natürlichen Weg hat — Plan entsprechend
+     anpassen.)
+C) Platzierung: nach dem freien Eindruck, ruhig, optional
+   wegklickbar. Nie modaler Zwang.
+
+SCHRITT 2 — AUSFÜHRUNG: nach "OK, umsetzen". Nur Client
+(ImpressionCapture + ggf. neue kleine ChipRow-Komponente).
+Kein Server, kein Schema.
+
+VERIFIKATION:
+1. Chips erscheinen NUR nach erstem freien Eindruck, nie davor.
+2. Leerer followUpKind → keine Chips.
+3. Chip-Tap prägt keinen Aroma-/Wertungstext vor, sondern lädt den
+   Taster zum eigenen Präzisieren ein.
+4. DE + EN Beschriftungen korrekt.
+5. Design-Tokens, 44px Targets, keine Emojis.
+6. npx tsc --noEmit — keine neuen Fehler.
+
+KEIN COMMIT/PUSH. Christoph committet selbst.
