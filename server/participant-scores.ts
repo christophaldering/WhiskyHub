@@ -10,14 +10,14 @@ export interface ParticipantScorePoint {
   source: "rating" | "journal";
 }
 
-function clampScore0to100(value: number): number {
+export function clampScore0to100(value: number): number {
   if (!Number.isFinite(value)) return 0;
   if (value < 0) return 0;
   if (value > 100) return 100;
   return value;
 }
 
-function normalizePersonalScore(raw: number): number {
+export function normalizePersonalScore(raw: number): number {
   if (!Number.isFinite(raw)) return 0;
   const value = raw <= 10 ? raw * 10 : raw;
   return clampScore0to100(value);
