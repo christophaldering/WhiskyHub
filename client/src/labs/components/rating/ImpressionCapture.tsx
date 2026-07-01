@@ -215,12 +215,23 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
     requestAnimationFrame(() => inputRef.current?.focus());
   };
 
+  // Angetippte Chips (adoptedTerms), die es nie in einen gesendeten taster-Turn geschafft haben,
+  // vor dem Finalisieren als stillen taster-Turn anhängen — sonst gehen sie mitten im Gespräch verloren.
+  const withAdoptedChips = (turns: ConverseTurn[]): ConverseTurn[] => {
+    if (adoptedTerms.size === 0) return turns;
+    const hay = turns.filter((x) => x.role === "taster").map((x) => x.text.toLowerCase()).join(" \u2022 ");
+    const missing = Array.from(adoptedTerms).filter((tg) => !hay.includes(tg.toLowerCase()));
+    return missing.length ? [...turns, { role: "taster", text: missing.join(", ") }] : turns;
+  };
+
   const handleFinish = async () => {
     const pending = reply.trim();
     if (loading || (transcript.length === 0 && !pending)) return;
     // Noch nicht abgesendeten Eingabe-Rest (z.B. angetippte Chips) vor dem Finalisieren bewahren
-    const finalTranscript: ConverseTurn[] = pending ? [...transcript, { role: "taster", text: pending }] : transcript;
-    if (pending) { setTranscript(finalTranscript); setReply(""); setChips([]); }
+    const flushed: ConverseTurn[] = pending ? [...transcript, { role: "taster", text: pending }] : transcript;
+    const finalTranscript = withAdoptedChips(flushed);
+    if (pending) { setReply(""); setChips([]); }
+    if (finalTranscript !== transcript) setTranscript(finalTranscript);
     const parseGen = ++parseGenRef.current;
     setFollowUp(null);
     setLoading(true);
@@ -243,7 +254,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
   };
 
   const handleVoiceFinish = async () => {
-    const tr = voice.transcript;
+    const tr = withAdoptedChips(voice.transcript);
     if (tr.length === 0) { voice.disconnect(); onSkip(); return; }
     setTranscript(tr);
     rawImpressionRef.current = tr.filter((x) => x.role === "taster").map((x) => x.text).join(" ");
