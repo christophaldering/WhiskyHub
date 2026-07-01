@@ -79,16 +79,17 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
   const [narrative, setNarrative] = useState("");
   const [narrativeLoading, setNarrativeLoading] = useState(false);
   const [followUp, setFollowUp] = useState<{ kind: string; term: string; question: string } | null>(null);
-  const [sharpenDismissed, setSharpenDismissed] = useState(false);
-  const [replyPlaceholder, setReplyPlaceholder] = useState<string | null>(null);
+  const [refinePlaceholder, setRefinePlaceholder] = useState<string | null>(null);
 
   const [offeredTerms, setOfferedTerms] = useState<Set<string>>(new Set());
   const [adoptedTerms, setAdoptedTerms] = useState<Set<string>>(new Set());
   const rawImpressionRef = useRef("");
   const mountTimeRef = useRef(Date.now());
   const firstInputAtRef = useRef<number | null>(null);
-  const replyRef = useRef<HTMLTextAreaElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const parseGenRef = useRef(0);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   const threadRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -165,15 +166,8 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
     setLoading(true);
     setError(false);
     setFollowUp(null);
-    setSharpenDismissed(false);
-    setReplyPlaceholder(null);
-    const parseGen = ++parseGenRef.current;
-    parseImpression(raw, whiskyName)
-      .then((p) => {
-        if (parseGenRef.current !== parseGen) return;
-        if (p.followUpKind && p.followUpQuestion) setFollowUp({ kind: p.followUpKind, term: p.followUpTerm, question: p.followUpQuestion });
-      })
-      .catch(() => {});
+    setRefinePlaceholder(null);
+    parseGenRef.current++;
     try {
       const r = await converseImpression({ whiskyName, intensity, transcript: firstTurns, ledger: EMPTY_LEDGER });
       applyConverse(firstTurns, r);
@@ -190,9 +184,6 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
     setTranscript(nextTurns);
     setReply("");
     setChips([]);
-    parseGenRef.current++;
-    setFollowUp(null);
-    setReplyPlaceholder(null);
     setLoading(true);
     setError(false);
     try {
@@ -214,27 +205,29 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
     });
   };
 
-  const dimLabelFor = (term: string) =>
-    term === "taste" ? t("v2.dimPalate", "Gaumen") : term === "finish" ? t("v2.dimFinish", "Abgang") : t("v2.dimNose", "Nase");
-  const sharpenLabel = (kind: string, term: string): string =>
-    kind === "aroma"
-      ? t("v2.sharpenAroma", "\u201a{{term}}\u2018 sch\u00e4rfen", { term })
-      : kind === "dimension"
-      ? t("v2.sharpenDimension", "{{dim}} noch beschreiben", { dim: dimLabelFor(term) })
-      : t("v2.sharpenEvaluation", "Gesamteindruck erg\u00e4nzen");
-  const tapSharpen = () => {
+  const tapRefine = () => {
     if (!followUp) return;
-    if (followUp.question) setReplyPlaceholder(followUp.question);
-    setSharpenDismissed(true);
-    requestAnimationFrame(() => replyRef.current?.focus());
+    parseGenRef.current++;
+    setRefinePlaceholder(followUp.question || null);
+    setText(rawImpressionRef.current);
+    setFollowUp(null);
+    setPhase("input");
+    requestAnimationFrame(() => inputRef.current?.focus());
   };
 
   const handleFinish = async () => {
     if (loading || transcript.length === 0) return;
-    parseGenRef.current++;
+    const parseGen = ++parseGenRef.current;
     setFollowUp(null);
     setLoading(true);
     setError(false);
+    const fullImpression = transcript.filter((x) => x.role === "taster").map((x) => x.text).join(" ").trim();
+    parseImpression(fullImpression || rawImpressionRef.current, whiskyName)
+      .then((p) => {
+        if (!mountedRef.current || parseGenRef.current !== parseGen) return;
+        if (p.followUpKind && p.followUpQuestion) setFollowUp({ kind: p.followUpKind, term: p.followUpTerm, question: p.followUpQuestion });
+      })
+      .catch(() => {});
     try {
       const r = await finalizeImpression({ whiskyName, intensity, transcript, enableIdentity: captureIdentity });
       setResult({ ...r, rawImpression: rawImpressionRef.current || r.rawImpression });
@@ -250,8 +243,16 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
     if (tr.length === 0) { voice.disconnect(); onSkip(); return; }
     setTranscript(tr);
     rawImpressionRef.current = tr.filter((x) => x.role === "taster").map((x) => x.text).join(" ");
+    const parseGen = ++parseGenRef.current;
+    setFollowUp(null);
     setLoading(true);
     setError(false);
+    parseImpression(rawImpressionRef.current, whiskyName)
+      .then((p) => {
+        if (!mountedRef.current || parseGenRef.current !== parseGen) return;
+        if (p.followUpKind && p.followUpQuestion) setFollowUp({ kind: p.followUpKind, term: p.followUpTerm, question: p.followUpQuestion });
+      })
+      .catch(() => {});
     try {
       const r = await finalizeImpression({ whiskyName, intensity, transcript: tr, enableIdentity: captureIdentity });
       setResult({ ...r, rawImpression: rawImpressionRef.current || r.rawImpression });
@@ -272,6 +273,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
   };
 
   const handleConfirm = () => {
+    parseGenRef.current++;
     if (!result) {
       onSkip();
       return;
@@ -495,9 +497,10 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
         <>
           <ImpressionHowItWorks mode="input" />
           <textarea
+            ref={inputRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={t("v2.impressionPlaceholder", "z.B. warm und weich, Vanille und etwas Rauch im Abgang \u2026")}
+            placeholder={refinePlaceholder || t("v2.impressionPlaceholder", "z.B. warm und weich, Vanille und etwas Rauch im Abgang \u2026")}
             rows={4}
             style={{ width: "100%", boxSizing: "border-box", background: LABS_THEME.inputBg, border: `1px solid ${LABS_THEME.border}`, borderRadius: RADIUS.md, color: LABS_THEME.text, fontFamily: FONT.body, fontSize: 16, lineHeight: 1.5, padding: SP.md, resize: "vertical", minHeight: 96, outline: "none" }}
           />
@@ -572,33 +575,11 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
             </div>
           )}
 
-          {followUp && !sharpenDismissed && !loading && (
-            <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: SP.sm, marginBottom: SP.md }}>
-              <button
-                type="button"
-                onClick={tapSharpen}
-                data-testid="chip-sharpen"
-                style={{ minHeight: TOUCH_MIN, padding: "8px 16px", borderRadius: 999, border: `1px solid ${LABS_THEME.gold}`, background: "rgba(212,168,71,0.10)", color: LABS_THEME.gold, fontFamily: FONT.body, fontSize: 14, cursor: "pointer" }}
-              >
-                {sharpenLabel(followUp.kind, followUp.term)}
-              </button>
-              <button
-                type="button"
-                onClick={() => setSharpenDismissed(true)}
-                aria-label={t("v2.sharpenDismiss", "Ausblenden")}
-                data-testid="chip-sharpen-dismiss"
-                style={{ minHeight: TOUCH_MIN, minWidth: TOUCH_MIN, padding: 0, background: "transparent", border: "none", color: LABS_THEME.faint, fontFamily: FONT.body, fontSize: 18, lineHeight: 1, cursor: "pointer" }}
-              >
-                {"\u00d7"}
-              </button>
-            </div>
-          )}
 
           <textarea
-            ref={replyRef}
             value={reply}
             onChange={(e) => setReply(e.target.value)}
-            placeholder={replyPlaceholder || t("v2.impressionAnswerPlaceholder", "Deine Antwort \u2014 ein paar Worte gen\u00fcgen \u2026")}
+            placeholder={t("v2.impressionAnswerPlaceholder", "Deine Antwort \u2014 ein paar Worte gen\u00fcgen \u2026")}
             rows={2}
             style={{ width: "100%", boxSizing: "border-box", background: LABS_THEME.inputBg, border: `1px solid ${LABS_THEME.border}`, borderRadius: RADIUS.md, color: LABS_THEME.text, fontFamily: FONT.body, fontSize: 16, lineHeight: 1.5, padding: SP.md, resize: "vertical", minHeight: 64, outline: "none" }}
           />
@@ -647,6 +628,21 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
           ) : (
             <div style={{ fontFamily: FONT.body, fontSize: 14, color: LABS_THEME.muted, marginBottom: SP.md, lineHeight: 1.5 }}>
               {t("v2.impressionHandoffNoScore", "Die Wertung startet neutral \u2014 die Zahlen setzt du selbst.")}
+            </div>
+          )}
+          {followUp && (
+            <div style={{ marginBottom: SP.md }}>
+              <div style={{ fontFamily: FONT.serif, fontSize: 15, fontStyle: "italic", color: LABS_THEME.gold, marginBottom: SP.sm, lineHeight: 1.45 }}>
+                {followUp.question}
+              </div>
+              <button
+                type="button"
+                onClick={tapRefine}
+                data-testid="chip-sharpen"
+                style={{ minHeight: TOUCH_MIN, padding: "8px 16px", borderRadius: 999, border: `1px solid ${LABS_THEME.gold}`, background: "rgba(212,168,71,0.10)", color: LABS_THEME.gold, fontFamily: FONT.body, fontSize: 14, cursor: "pointer" }}
+              >
+                {t("v2.sharpenRefine", "Noch sch\u00e4rfen")}
+              </button>
             </div>
           )}
           <div style={{ height: 1, background: LABS_THEME.border, margin: `0 0 ${SP.md}px` }} />
