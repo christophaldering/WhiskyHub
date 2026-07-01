@@ -1,0 +1,104 @@
+VERBINDLICHE DIREKTIVE — Test-Absicherung Stufe 1: Score-Normalisierung
+SAFETY TAG (Christoph setzt selbst): git tag pre-tests-scores-2026-07-01
+
+KONTEXT & PRINZIPIEN (verbindlich für diese Aufgabe):
+- Ziel ist NICHT Abdeckung, sondern Absicherung der teuersten stillen
+  Brüche: Score-Normalisierung trägt DNA/Analytics/alle Vergleiche.
+  Ein unbemerkter Fehler produziert plausibel-falsche Zahlen.
+- Prinzip WAHRHEIT: Deckt ein Test einen echten Bug in der bestehenden
+  Logik auf, wird der Test so geschrieben, dass er das KORREKTE
+  Soll-Verhalten dokumentiert, der Bug wird PROMINENT im Abschluss
+  gemeldet — die Produktivlogik wird NICHT eigenmächtig angepasst, nur
+  um den Test grün zu machen. Ein roter Test ist ein Fund, kein Ärgernis.
+- Leichtgewichtig: reine Unit-Tests mit dem bereits vorhandenen Vitest
+  (tests/unit/, vitest.config.ts). KEIN E2E, KEINE Mock-DB, KEINE neue
+  Maschinerie.
+- Bei Unklarheit im Code: NACHFRAGEN statt raten.
+
+ZIEL:
+Die reinen Rechenfunktionen in server/participant-scores.ts unter Test
+stellen: normalizePersonalScore, clampScore0to100, computeStabilityScore.
+Voraussetzung: die ersten beiden sind aktuell modul-privat und müssen
+exportiert werden (minimale, additive Änderung — keine Logikänderung).
+
+---
+
+SCHRITT 0 — DIAGNOSE (nur lesen, NICHTS ändern):
+
+1. Zeige server/participant-scores.ts Z.1-110 vollständig — die exakte
+   Implementierung von clampScore0to100 (Z.13), normalizePersonalScore
+   (Z.20) und computeStabilityScore (Z.105) inkl. STABILITY_MAX_STDDEV.
+2. Bestätige den genauen Vertrag jeder Funktion, damit die Tests das
+   IST-Soll dokumentieren, nicht ein vermutetes:
+   - clampScore0to100: nicht-endlich→0, <0→0, >100→100, sonst
+     unverändert?
+   - normalizePersonalScore: nicht-endlich→0, raw≤10→raw*10, sonst raw,
+     dann clamp? (Grenzfall raw===10 → 100; raw===10.0001 → bleibt?)
+   - computeStabilityScore: was ist der genaue Rückgabewert, wann null,
+     wie fließt STABILITY_MAX_STDDEV=30 ein? (vollständige Formel aus
+     dem Code ableiten, nicht raten)
+3. Zeige ein bestehendes Unit-Test-File als Stilvorlage, z.B.
+   tests/unit/historical-normalization.test.ts (erste ~30 Zeilen) —
+   damit Import-Stil, describe/it-Struktur und Konventionen passen.
+4. Bestätige: tests/unit/**/*.test.ts wird von vitest.config.ts erfasst,
+   und ein Import aus server/ funktioniert unter dieser Config
+   (Alias @shared vorhanden; server/ ohne Alias über relativen Pfad).
+   Falls ein Import-Pfad-Problem absehbar ist: benennen, nicht raten.
+
+Präsentiere die Diagnose vollständig BEVOR etwas geändert wird.
+
+---
+
+SCHRITT 1 — PLAN (vorlegen, NICHT ausführen ohne "OK, umsetzen"):
+
+A) Minimale Export-Änderung in participant-scores.ts:
+   - clampScore0to100 und normalizePersonalScore mit `export` versehen.
+   - KEINE Logikänderung, KEINE Signaturänderung, nur das Keyword
+     export ergänzen. computeStabilityScore ist bereits exportiert.
+
+B) Neue Testdatei tests/unit/participant-scores.test.ts:
+   Testfälle, die den in Schritt 0 bestätigten Vertrag dokumentieren —
+   mindestens:
+   - clampScore0to100: NaN→0, Infinity→0, -5→0, 0→0, 50→50, 100→100,
+     150→100.
+   - normalizePersonalScore: NaN→0, 0→0, 5→50, 10→100 (×10-Zweig
+     Obergrenze), 10.5→10.5? bzw. laut Code-Vertrag (>10 bleibt roh,
+     dann clamp), 55→55, 100→100, 150→100 (roh>10 dann clamp).
+     Speziell die ×10-SCHWELLE bei genau 10 als eigener Testfall
+     (das ist die geschäftskritische Kante — 10 auf 10er-Skala vs
+     10 auf 100er-Skala).
+   - computeStabilityScore: leeres Array→null (falls Vertrag),
+     Einzelwert→? (laut Code), identische Werte (stdDev 0)→Maximalwert,
+     stark streuende Werte→niedriger Wert, Grenze an STABILITY_MAX_STDDEV.
+   - Jeder Test benennt im it()-Text das ABGESICHERTE VERHALTEN
+     klar (z.B. "clamps values above 100 to 100").
+
+C) Falls Schritt 0 einen Widerspruch/Bug aufdeckt (z.B. die
+   ×10-Schwelle behandelt einen legitimen 10er-Skala-Wert falsch):
+   Test schreibt das KORREKTE Soll, Bug wird im Abschluss GEMELDET,
+   Produktivcode NICHT angefasst. Separat zur Entscheidung vorlegen.
+
+---
+
+SCHRITT 2 — AUSFÜHRUNG: erst nach "OK, umsetzen".
+Reihenfolge: Export-Ergänzung → Testdatei → npm run test:unit.
+
+---
+
+VALIDIERUNG (PASS/FAIL pro Punkt, keine Selbsteinschätzung):
+1. [ ] npm run test:unit läuft, neue Datei participant-scores.test.ts
+       wird erfasst.
+2. [ ] Alle neuen Tests GRÜN — ODER: roter Test = dokumentierter Bug,
+       im Abschluss prominent gemeldet (mit exaktem Input/erwartet/ist).
+3. [ ] Bestehende Tests (die anderen ~150) weiterhin GRÜN — keine
+       Regression durch die Export-Änderung.
+4. [ ] participant-scores.ts: NUR export-Keywords ergänzt, sonst
+       Byte-identisch (git diff zeigt nur +export an den 2 Zeilen).
+5. [ ] npx tsc --noEmit: keine neuen Fehler über Baseline (509).
+6. [ ] Kein Schema, kein Server-Verhalten, keine Migration berührt.
+
+ABSCHLUSSBERICHT: nur verifizierte Ergebnisse (PASS/FAIL je Punkt),
+KEINE Formulierungen wie "sollte funktionieren". Anzahl neuer Tests,
+Anzahl grün/rot, jeder rote Test mit Begründung.
+
+KEIN COMMIT. KEIN PUSH. Christoph committet selbst.
