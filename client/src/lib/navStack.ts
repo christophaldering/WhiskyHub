@@ -42,8 +42,8 @@ export function peekRoute(): string | null {
 }
 
 export function getSmartFallback(currentPath: string): string {
-  if (currentPath.startsWith("/my-taste")) return "/my-taste";
-  return "/tasting";
+  if (currentPath.startsWith("/my-taste") || currentPath.startsWith("/labs/taste")) return "/labs/taste";
+  return "/labs/tastings";
 }
 
 const SCROLL_KEY = "cs_scroll_positions";
