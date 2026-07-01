@@ -1,4 +1,5 @@
 import { pidHeaders } from "@/lib/api";
+import i18n from "@/lib/i18n";
 
 export type ImpressionScore = {
   overall: number | null;
@@ -41,10 +42,11 @@ export type ImpressionResult = {
 };
 
 export async function parseImpression(text: string, whiskyName?: string, askedQuestions?: string[]): Promise<ImpressionResult> {
+  const lang = i18n.language?.startsWith("de") ? "de" : "en";
   const res = await fetch("/api/impression/parse", {
     method: "POST",
     headers: { "Content-Type": "application/json", ...pidHeaders() },
-    body: JSON.stringify({ text, whiskyName, askedQuestions }),
+    body: JSON.stringify({ text, whiskyName, askedQuestions, lang }),
   });
   if (!res.ok) {
     throw new Error(`impression parse failed: ${res.status}`);

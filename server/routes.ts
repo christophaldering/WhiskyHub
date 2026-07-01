@@ -5523,7 +5523,8 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         return res.status(429).json({ message: "Too many requests.", retryAfter: rateCheck.retryAfterSeconds });
       }
 
-      const { text, whiskyName, askedQuestions } = req.body || {};
+      const { text, whiskyName, askedQuestions, lang: langRaw } = req.body || {};
+      const lang = langRaw === "en" ? "en" : "de";
       if (!text || typeof text !== "string" || text.trim().length < 2) {
         return res.status(400).json({ message: "Impression text is required (at least 2 characters)" });
       }
@@ -5535,6 +5536,9 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         ? ` Bereits gestellte Rueckfragen (KEINE davon und nichts inhaltlich Aehnliches erneut stellen): ${asked.join(" | ")}`
         : "";
       const context = typeof whiskyName === "string" && whiskyName.trim() ? `\nWhisky: ${whiskyName.trim().slice(0, 120)}` : "";
+      const langDirective = lang === "en"
+        ? "Answer in English. All text fields (nose, taste, finish, followUpQuestion) must be in English."
+        : "Antworte auf Deutsch. Alle Textfelder (nose, taste, finish, followUpQuestion) müssen auf Deutsch sein.";
 
       const openai = new OpenAI({
         apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -5549,7 +5553,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         messages: [
           {
             role: "system",
-            content: `Du bist ein behutsamer Verkostungs-Assistent. Du bekommst einen rohen, freien Eindruck eines Whiskys (oft knapp, z.B. "lecker, rauchig"). Erfinde NICHTS hinzu. Leite NUR ab, was der Eindruck wirklich hergibt. Antworte in der Sprache des Eindrucks. Gib JSON zurueck:
+            content: `Du bist ein behutsamer Verkostungs-Assistent. Du bekommst einen rohen, freien Eindruck eines Whiskys (oft knapp, z.B. "lecker, rauchig"). Erfinde NICHTS hinzu. Leite NUR ab, was der Eindruck wirklich hergibt. ${langDirective} Gib JSON zurueck:
 {"flavorTags": ["..."], "nose": "kurzer Satz oder leer", "taste": "kurzer Satz oder leer", "finish": "kurzer Satz oder leer", "scoreSuggestion": {"overall": 0-100, "nose": 0-100, "taste": 0-100, "finish": 0-100} ODER null, "confidence": "high|medium|low", "followUpQuestion": "EINE sokratische Rueckfrage oder leer", "followUpKind": "aroma|dimension|evaluation oder leer", "followUpTerm": "ein Schluesselwort oder leer"}
 SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN Worten ab (z.B. lecker, ausgewogen, rund, langweilig, zu scharf, kantig, haengt lange nach). Eine reine Aromen-Nennung (rauchig, fruchtig, vanillig) ist KEINE Wertung -> dann scoreSuggestion=null und confidence="low". Je duenner die Wertung, desto vorsichtiger. Hoechstens 6 flavorTags, nur Begriffe die im Eindruck stecken oder klar mitschwingen. Bestimme followUpKind nach der DRINGLICHSTEN offenen Luecke und setze followUpTerm passend dazu: (1) "aroma" - ein bereits GENANNTER Begriff ist vage/spaltbar (z.B. rauchig, fruchtig, wuerzig, suess); followUpTerm = GENAU dieser eine Begriff (ein Wort, so wie genannt); die Frage laedt ein, ihn zu praezisieren (rauchig -> eher Lagerfeuer oder eher Pflaster/Jod?). (2) "dimension" - zu einer Kerndimension wurde noch GAR NICHTS gesagt; followUpTerm = "nose" ODER "taste" ODER "finish"; die Frage richtet sich genau dorthin. (3) "evaluation" - Charakter/Aromen sind da, aber KEINE Wertung gefallen; frage offen, wie gut es insgesamt wirkt; followUpTerm = "". Setze followUpKind, followUpTerm UND followUpQuestion auf LEER, wenn nichts mehr offen ist (alle drei Dimensionen beruehrt, kein vager Begriff offen, Wertung vorhanden) oder jede Frage nur eine bereits gestellte wiederholen wuerde.`,
           },
