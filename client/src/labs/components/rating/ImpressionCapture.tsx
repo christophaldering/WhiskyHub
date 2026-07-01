@@ -216,12 +216,16 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
   };
 
   const handleFinish = async () => {
-    if (loading || transcript.length === 0) return;
+    const pending = reply.trim();
+    if (loading || (transcript.length === 0 && !pending)) return;
+    // Noch nicht abgesendeten Eingabe-Rest (z.B. angetippte Chips) vor dem Finalisieren bewahren
+    const finalTranscript: ConverseTurn[] = pending ? [...transcript, { role: "taster", text: pending }] : transcript;
+    if (pending) { setTranscript(finalTranscript); setReply(""); setChips([]); }
     const parseGen = ++parseGenRef.current;
     setFollowUp(null);
     setLoading(true);
     setError(false);
-    const fullImpression = transcript.filter((x) => x.role === "taster").map((x) => x.text).join(" ").trim();
+    const fullImpression = finalTranscript.filter((x) => x.role === "taster").map((x) => x.text).join(" ").trim();
     parseImpression(fullImpression || rawImpressionRef.current, whiskyName)
       .then((p) => {
         if (!mountedRef.current || parseGenRef.current !== parseGen) return;
@@ -229,7 +233,7 @@ export default function ImpressionCapture({ whiskyName, onApply, onSkip, onIdent
       })
       .catch(() => {});
     try {
-      const r = await finalizeImpression({ whiskyName, intensity, transcript, enableIdentity: captureIdentity });
+      const r = await finalizeImpression({ whiskyName, intensity, transcript: finalTranscript, enableIdentity: captureIdentity });
       setResult({ ...r, rawImpression: rawImpressionRef.current || r.rawImpression });
       setPhase("handoff");
     } catch {

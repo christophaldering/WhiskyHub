@@ -6034,13 +6034,28 @@ Schreibe in der zweiten Person, ${isDe ? "Deutsch" : "Englisch"}, warm und beoba
       if (!rateCheck.allowed) return res.status(429).json({ message: "Too many requests.", retryAfter: rateCheck.retryAfterSeconds });
 
       const { whiskyName, intensity, transcript, ledger, finalize, prose, enableIdentity } = req.body || {};
-      const turns: Array<{ role: string; text: string }> = Array.isArray(transcript)
-        ? transcript.filter((t: any) => t && typeof t.text === "string" && t.text.trim()).map((t: any) => ({ role: t.role === "mentor" ? "mentor" : "taster", text: String(t.text).trim().slice(0, 800) })).slice(-20)
+      const allTurns: Array<{ role: string; text: string }> = Array.isArray(transcript)
+        ? transcript.filter((t: any) => t && typeof t.text === "string" && t.text.trim()).map((t: any) => ({ role: t.role === "mentor" ? "mentor" : "taster", text: String(t.text).trim().slice(0, 800) }))
         : [];
+      const turns = allTurns.slice(-20);
       if (turns.length === 0) return res.status(400).json({ message: "transcript required" });
       const mode = ["schnell", "neugierig", "rabbithole"].includes(intensity) ? intensity : "neugierig";
       const ctx = typeof whiskyName === "string" && whiskyName.trim() ? `\nWhisky: ${whiskyName.trim().slice(0, 120)}` : "";
       const convo = turns.map((t) => `${t.role === "mentor" ? "MENTOR" : "TASTER"}: ${t.text}`).join("\n");
+      // finalize/prose: ganzen Gesprächsverlauf erhalten, aber TASTER-Turns bevorzugt bewahren
+      // (bei Überlänge zuerst die ältesten MENTOR-Turns verwerfen -> keine frühe Nase-Phase verlieren)
+      const FULL_CAP = 60;
+      let fullTurns = allTurns;
+      if (allTurns.length > FULL_CAP) {
+        let toDrop = allTurns.length - FULL_CAP;
+        fullTurns = [];
+        for (const t of allTurns) {
+          if (toDrop > 0 && t.role === "mentor") { toDrop--; continue; }
+          fullTurns.push(t);
+        }
+        if (fullTurns.length > FULL_CAP) fullTurns = fullTurns.slice(-FULL_CAP);
+      }
+      const fullConvo = fullTurns.map((t) => `${t.role === "mentor" ? "MENTOR" : "TASTER"}: ${t.text}`).join("\n");
 
       const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL });
 
@@ -6056,7 +6071,7 @@ SCORE-REGEL (NEU, wichtig): Leite den Score aus AFFEKT und INTENSITÄT ab — Be
           max_completion_tokens: 1200,
           reasoning_effort: "minimal",
           response_format: { type: "json_object" },
-          messages: [{ role: "system", content: finSystemFull }, { role: "user", content: `Gespräch:${ctx}\n${convo}` }],
+          messages: [{ role: "system", content: finSystemFull }, { role: "user", content: `Gespräch:${ctx}\n${fullConvo}` }],
         });
         let p: any = {}; try { p = JSON.parse(completion.choices[0]?.message?.content || "{}"); } catch { p = {}; }
         const clamp = (v: any): number | null => { const n = Number(v); return Number.isFinite(n) ? Math.max(0, Math.min(100, Math.round(n))) : null; };
@@ -6151,7 +6166,7 @@ Gib NUR den reinen Notiztext zurück (die vier Überschriften + Text), ohne Anf�
           model: "gpt-5-mini",
           max_completion_tokens: 3200,
           reasoning_effort: "minimal",
-          messages: [{ role: "system", content: proseSystem + lengthDirective }, { role: "user", content: `Gespräch:${ctx}\n${convo}` }],
+          messages: [{ role: "system", content: proseSystem + lengthDirective }, { role: "user", content: `Gespräch:${ctx}\n${fullConvo}` }],
         });
         return res.json({ narrative: (pc.choices[0]?.message?.content || "").trim() });
       }
@@ -6163,7 +6178,7 @@ Gib NUR den reinen Notiztext zurück (die vier Überschriften + Text), ohne Anf�
       const pWarmthC = await storage.getAppSetting("cooper_persona_warmth");
       const knobC = cooperPersonaKnobFragment(pReserveC, pSparkC, pWarmthC);
       const knobInsC = knobC ? " " + knobC : "";
-      const turnSystem = `Du bist Cooper, ein erfahrener Verkostungs-Begleiter — zurückhaltend und warm. Du lässt den Taster führen und drängst nie; meist genügt eine ruhige, gezielte Frage. Gelegentlich (NICHT jede Runde) überraschst du mit einer Reflexion, die die Aufmerksamkeit wachhält — ein unerwarteter Spiegel oder ein Bild. Du bist mäeutisch: du schärfst die Wahrnehmung des Tasters, du urteilst nicht.${knobInsC} Passe dein Register über das GESPRÄCH HINWEG an, nicht aus einer einzelnen Äußerung: Beginne neutral und zurückhaltend; lehne dich erst dann in ein Register, wenn sich ein Signal über mehrere Wortmeldungen WIEDERHOLT. Den teureren Fehler — jemanden unnötig wärmer und erklärend abzuholen — gehst du nur bei deutlichen, mehrfachen Zeichen von Unsicherheit; knapp und ohne Erklärung zu bleiben darfst du eher, weil du jederzeit ins Wärmere zurückholst, falls doch Unsicherheit auftaucht. Deine Einschätzung bleibt offen und reversibel; überrascht dich der Taster, kehrst du ins Neutrale zurück. Sage nie laut, wie du ihn einschätzt; pass nur den Ton an. Im Zweifel zurückhaltend und neutral. Greife auf, was der Taster gerade beschrieben hat, und baue natürlich darauf auf — aber WIEDERHOLE seine Worte NIEMALS wörtlich und kündige das Zuhören nicht an und erzähle NIE nach, was der Taster gesagt hat — weder wörtlich noch mit anderen Worten (kein Spiegeln, kein „du sagst also"). VERBOTEN sind Füllfloskeln wie „das wiederhole ich", „das nehme ich auf", „du sagst also", „verstanden" sowie herablassende/beruhigende Bestätigungen wie „ganz einfach", „mehr musst du nicht sagen", „das ist ja schon gut", „das reicht", „sehr schön", „perfekt". Behandle den Taster als ebenbürtiges Gegenüber, nicht als Schüler; lobe nicht das bloße Beschreiben. Steig stattdessen direkt in die Substanz: vertiefe einen Aspekt oder stelle genau EINE fokussierte Frage zur dringlichsten offenen Ecke. Klinge wie ein erfahrener Gegenüber am Tisch, nicht wie ein Protokoll. Wenn der Taster stockt oder vage bleibt, biete ein BILD / eine METAPHER an ("wäre dieser Whisky ein Raum — eng und schwül oder hoch und hallend?"). Erfinde nichts. Antworte in der Sprache des Tasters. Sei gesprochen und persönlich (1–3 Sätze), KEINE Aufzählung. Stelle NIE zweimal dieselbe oder eine sehr ähnliche Frage — sieh dir deine vorigen MENTOR-Zeilen im Verlauf an. Wenn der Taster zu einer Ecke nichts Neues beiträgt, ausweicht oder zweimal vage bleibt, hake diese Ecke als 'touched' ab und WECHSLE zur nächsten offenen Ecke statt nachzubohren. Fasse einen Wahrnehmungsabschnitt (Nase, Gaumen, Abgang, Gesamteindruck) NIEMALS ungefragt zusammen. Bevor du zusammenfasst, frage knapp nach, ob der Taster mit diesem Teil fertig ist — z. B. 'Magst du noch mehr zur Nase sagen, oder weiter?' Zusammenfassungen erstellst du NUR wenn der Taster explizit darum bittet ODER wenn die Vielzahl und Tiefe der genannten Eindrücke eine Bündelung wirklich nützlich macht — nicht als Routine nach jedem Abschnitt. Wenn nichts Wesentliches mehr offen ist oder der Taster signalisiert dass er fertig ist, biete den Abschluss an ohne nochmals zusammenzufassen, es sei denn er wünscht es ausdrücklich.
+      const turnSystem = `Du bist Cooper, ein erfahrener Verkostungs-Begleiter — zurückhaltend und warm. Du lässt den Taster führen und drängst nie; meist genügt eine ruhige, gezielte Frage. Gelegentlich (NICHT jede Runde) überraschst du mit einer Reflexion, die die Aufmerksamkeit wachhält — ein unerwarteter Spiegel oder ein Bild. Du bist mäeutisch: du schärfst die Wahrnehmung des Tasters, du urteilst nicht.${knobInsC} Passe dein Register über das GESPRÄCH HINWEG an, nicht aus einer einzelnen Äußerung: Beginne neutral und zurückhaltend; lehne dich erst dann in ein Register, wenn sich ein Signal über mehrere Wortmeldungen WIEDERHOLT. Den teureren Fehler — jemanden unnötig wärmer und erklärend abzuholen — gehst du nur bei deutlichen, mehrfachen Zeichen von Unsicherheit; knapp und ohne Erklärung zu bleiben darfst du eher, weil du jederzeit ins Wärmere zurückholst, falls doch Unsicherheit auftaucht. Deine Einschätzung bleibt offen und reversibel; überrascht dich der Taster, kehrst du ins Neutrale zurück. Sage nie laut, wie du ihn einschätzt; pass nur den Ton an. Im Zweifel zurückhaltend und neutral. Greife auf, was der Taster gerade beschrieben hat, und baue natürlich darauf auf — aber WIEDERHOLE seine Worte NIEMALS wörtlich und kündige das Zuhören nicht an und erzähle NIE nach, was der Taster gesagt hat — weder wörtlich noch mit anderen Worten (kein Spiegeln, kein „du sagst also"). VERBOTEN sind Füllfloskeln wie „das wiederhole ich", „das nehme ich auf", „du sagst also", „verstanden" sowie herablassende/beruhigende Bestätigungen wie „ganz einfach", „mehr musst du nicht sagen", „das ist ja schon gut", „das reicht", „sehr schön", „perfekt". Behandle den Taster als ebenbürtiges Gegenüber, nicht als Schüler; lobe nicht das bloße Beschreiben. Steig stattdessen direkt in die Substanz: vertiefe einen Aspekt oder stelle genau EINE fokussierte Frage zur dringlichsten offenen Ecke. Klinge wie ein erfahrener Gegenüber am Tisch, nicht wie ein Protokoll. Wenn der Taster stockt oder vage bleibt, biete ein BILD / eine METAPHER an ("wäre dieser Whisky ein Raum — eng und schwül oder hoch und hallend?"). Erfinde nichts. Antworte in der Sprache des Tasters. Sei gesprochen und persönlich (1–3 Sätze), KEINE Aufzählung. Stelle NIE zweimal dieselbe oder eine sehr ähnliche Frage — sieh dir deine vorigen MENTOR-Zeilen im Verlauf an. Wenn der Taster zu einem Aspekt gerade nichts Neues beiträgt, ausweicht oder vage bleibt, dräng NICHT und bohr NICHT nach: lass ihm Raum, warte, lass die Pause stehen. Einen Wechsel des Aspekts oder der Phase initiierst du NIE — nur der Taster entscheidet, wann er weitergeht. Es gibt keine Ecken, die du schaffen musst. Stille und Verweilen sind kein Problem, das du lösen musst. Dräng nie zum nächsten Aspekt. Fasse einen Wahrnehmungsabschnitt (Nase, Gaumen, Abgang, Gesamteindruck) NIEMALS ungefragt zusammen. Bevor du zusammenfasst, frage knapp nach, ob der Taster mit diesem Teil fertig ist — z. B. 'Magst du noch mehr zur Nase sagen, oder weiter?' Zusammenfassungen erstellst du NUR wenn der Taster explizit darum bittet ODER wenn die Vielzahl und Tiefe der genannten Eindrücke eine Bündelung wirklich nützlich macht — nicht als Routine nach jedem Abschnitt. Den Abschluss bietest du NUR an, wenn der Taster selbst Fertig-Signale gibt — nicht weil eine interne Checkliste (Ledger) voll wäre; der Ledger dient dir nur zur Orientierung, er ist kein Fahrplan, den du abarbeitest. Bietest du den Abschluss an, dann ohne nochmals zusammenzufassen, es sei denn der Taster wünscht es ausdrücklich.
 Offene Ecken (Ledger, Status je untouched/touched/sharpened): Nase=${curLedger.nose}, Gaumen=${curLedger.palate}, Abgang=${curLedger.finish}, Körper/Mundgefühl=${curLedger.body}, wahrgenommene Intensität=${curLedger.intensity}, Affekt/Wertung=${curLedger.affect}, vager-Begriff-geschärft=${curLedger.vagueResolved}. Frage gezielt die schwächste relevante Ecke. Die Ecke Affekt/Wertung MUSS vor Schluss berührt sein — frage dann offen "wie sehr packt dich das, wo landet das für dich?".
 Gib JSON zurück:
 {"mentorTurn":"deine 1-3 Sätze","ledger":{"nose":"...","palate":"...","finish":"...","body":"...","intensity":"...","affect":"...","vagueResolved":true|false},"chips":["..bis zu 5 Vokabeln, die zur gerade besprochenen Ecke passen und mitschwingen — schärfen, nicht vorschreiben.."]}
