@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
@@ -8,7 +8,7 @@ import { useAppStore } from "@/lib/store";
 import { useAIStatus } from "@/hooks/use-ai-status";
 import type { EncyclopediaSuggestion } from "@shared/schema";
 import { RichTextEditor } from "@/components/rich-text-editor";
-import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus, Heart, Rocket, Wifi, Star, Brain, Clock, Settings, FlaskConical, Filter, AlertTriangle, Globe, UserPlus, BellRing, Megaphone, Scale } from "lucide-react";
+import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus, Heart, Rocket, Wifi, Star, Brain, Clock, Settings, FlaskConical, Filter, AlertTriangle, Globe, UserPlus, BellRing, Megaphone, Scale } from "lucide-react";
 import AnalyticsDashboard from "@/components/admin/AnalyticsDashboard";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -1819,20 +1819,6 @@ function AIControlsTab({ participantId }: { participantId: string }) {
     },
   });
 
-  const { data: breakdown } = useQuery<{
-    totals: { calls: number; users: number; firstAt: string | null; lastAt: string | null };
-    perFeature: Array<{ featureId: string; all: number; d30: number; d90: number }>;
-    perMonth: Array<{ month: string; calls: number; users: number }>;
-    note: string;
-  }>({
-    queryKey: ["/api/admin/ai-usage-breakdown", participantId],
-    queryFn: async () => {
-      const res = await fetch(`/api/admin/ai-usage-breakdown?participantId=${participantId}`);
-      if (!res.ok) throw new Error("Failed");
-      return res.json();
-    },
-  });
-
   const [masterDisabled, setMasterDisabled] = useState<boolean | null>(null);
   const [disabledFeatures, setDisabledFeatures] = useState<string[]>([]);
   const [quotaInput, setQuotaInput] = useState("");
@@ -2034,73 +2020,6 @@ function AIControlsTab({ participantId }: { participantId: string }) {
             <Shield className="w-3 h-3 text-amber-500" />
             Admin-User sind vom Limit ausgenommen und behalten immer Zugriff.
           </p>
-        </CardContent>
-      </Card>
-
-      <Card data-testid="card-ai-usage-breakdown">
-        <CardContent className="pt-6">
-          <h3 className="text-lg font-semibold mb-1 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-amber-600" />
-            AI-Nutzung nach Feature
-          </h3>
-          <p className="text-xs text-muted-foreground mb-4 flex items-start gap-1.5" data-testid="text-breakdown-note">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-500 mt-0.5 flex-shrink-0" />
-            {breakdown?.note ?? "Lade Nutzungsdaten…"}
-          </p>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-            <div className="p-3 rounded-lg border bg-muted/30" data-testid="stat-total-calls">
-              <p className="text-2xl font-bold font-mono">{breakdown?.totals.calls ?? 0}</p>
-              <p className="text-xs text-muted-foreground">Aufrufe gesamt</p>
-            </div>
-            <div className="p-3 rounded-lg border bg-muted/30" data-testid="stat-total-users">
-              <p className="text-2xl font-bold font-mono">{breakdown?.totals.users ?? 0}</p>
-              <p className="text-xs text-muted-foreground">Aktive Nutzer</p>
-            </div>
-            <div className="p-3 rounded-lg border bg-muted/30" data-testid="stat-first-at">
-              <p className="text-sm font-semibold">{breakdown?.totals.firstAt ? new Date(breakdown.totals.firstAt).toLocaleDateString("de-DE") : "–"}</p>
-              <p className="text-xs text-muted-foreground">Erster Aufruf</p>
-            </div>
-            <div className="p-3 rounded-lg border bg-muted/30" data-testid="stat-last-at">
-              <p className="text-sm font-semibold">{breakdown?.totals.lastAt ? new Date(breakdown.totals.lastAt).toLocaleDateString("de-DE") : "–"}</p>
-              <p className="text-xs text-muted-foreground">Letzter Aufruf</p>
-            </div>
-          </div>
-
-          {(breakdown?.perFeature.length ?? 0) === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Noch keine geloggte AI-Nutzung.</p>
-          ) : (
-            <div className="mb-5">
-              <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 gap-y-1 text-xs">
-                <span className="font-semibold text-muted-foreground">Feature</span>
-                <span className="font-semibold text-muted-foreground text-right w-14">30 Tage</span>
-                <span className="font-semibold text-muted-foreground text-right w-14">90 Tage</span>
-                <span className="font-semibold text-muted-foreground text-right w-14">Gesamt</span>
-                {breakdown?.perFeature.map((f) => (
-                  <Fragment key={f.featureId}>
-                    <span className="text-sm truncate" data-testid={`feature-name-${f.featureId}`}>{f.featureId}</span>
-                    <span className="text-sm font-mono text-right w-14">{f.d30}</span>
-                    <span className="text-sm font-mono text-right w-14">{f.d90}</span>
-                    <span className="text-sm font-mono text-right w-14 font-semibold">{f.all}</span>
-                  </Fragment>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {(breakdown?.perMonth.length ?? 0) > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> Pro Monat</p>
-              <div className="space-y-1 max-h-48 overflow-y-auto">
-                {breakdown?.perMonth.map((m) => (
-                  <div key={m.month} className="flex items-center justify-between text-sm px-2 py-1 rounded border" data-testid={`month-${m.month}`}>
-                    <span className="font-mono">{m.month}</span>
-                    <span className="text-muted-foreground">{m.calls} Aufrufe · {m.users} Nutzer</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
 

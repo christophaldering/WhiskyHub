@@ -993,6 +993,10 @@ export const aiUsageLog = pgTable("ai_usage_log", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   participantId: varchar("participant_id").notNull(),
   featureId: text("feature_id").notNull(),
+  model: varchar("model"),
+  tokensIn: integer("tokens_in"),
+  tokensOut: integer("tokens_out"),
+  durationMs: integer("duration_ms"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
   index("idx_ai_usage_participant").on(table.participantId),

@@ -22,7 +22,7 @@ import { registerFunnelRoutes } from "./funnel-routes";
 import { recordEvents as recordFunnelEvents } from "./funnel-store";
 import { addConnection, broadcastToTasting } from "./sse";
 import { getCachedWhiskyDna, setCachedWhiskyDna } from "./whiskyDnaCache";
-import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES, getAIFreeQuota, setAIFreeQuota, getAIUsageOverview, getAIUsageBreakdown, checkAIQuota } from "./ai-settings";
+import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES, getAIFreeQuota, setAIFreeQuota, getAIUsageOverview, getAIUsageBreakdown, checkAIQuota, logAIUsage } from "./ai-settings";
 import { getAIClient, getAIStatus } from "./ai-client";
 import { labsAskToolMap, buildOpenAIToolList, type AnswerMode, type LabsToolSource, type LabsToolDefinition } from "./labs-ask-tools";
 import {
@@ -665,6 +665,20 @@ async function rejectIfWhiskyArchived(whiskyId: string, res: Response): Promise<
   const whisky = await storage.getWhisky(whiskyId);
   if (!whisky) return false;
   return rejectIfArchived(whisky.tastingId, res);
+}
+
+// Fallback participant id for AI calls that run without an authenticated participant
+// (public/anonymous flows). Keeps usage-cost logging complete without polluting per-user quota.
+const AI_LOG_ANON = "anonymous";
+
+// Fire-and-forget cost logger for raw-OpenAI call sites (not routed through getAIClient).
+// Never throws, never blocks the user path; extracts token usage from the response.
+function logChatUsage(participantId: string, featureId: string, model: string, resp: any): void {
+  logAIUsage(participantId || AI_LOG_ANON, featureId, {
+    model,
+    tokensIn: resp?.usage?.prompt_tokens ?? resp?.usage?.input_tokens ?? null,
+    tokensOut: resp?.usage?.completion_tokens ?? resp?.usage?.output_tokens ?? null,
+  });
 }
 
 export async function registerRoutes(
@@ -5460,6 +5474,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         });
 
         const raw = completion.choices[0]?.message?.content || "{}";
+        logChatUsage(AI_LOG_ANON, "whisky_identify_text", "gpt-5-mini", completion);
         const parsed = JSON.parse(raw);
 
         if (parsed.name && parsed.confidence !== "low") {
@@ -5566,6 +5581,7 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
       });
 
       const raw = completion.choices[0]?.message?.content || "{}";
+      logChatUsage(AI_LOG_ANON, "impression_parse", "gpt-5-mini", completion);
       let parsed: any = {};
       try { parsed = JSON.parse(raw); } catch { parsed = {}; }
 
@@ -5752,6 +5768,7 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
           const expiresAt = data?.expires_at ?? data?.expiresAt ?? null;
           if (!value) { lastErr = `Kein ephemeraler Key in der Antwort: ${text.slice(0, 400)}`; continue; }
           const glimmerIntensity = (await storage.getAppSetting("cooper_glimmer_intensity")) || "1.5";
+          logAIUsage(auth.participant.id, "cooper_voice_session", { model });
           return res.json({ value, expiresAt, model, voice, mode, glimmerIntensity });
         }
         lastErr = `${r.status} ${text.slice(0, 400)}`;
@@ -5814,6 +5831,7 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
           let data: any = {}; try { data = JSON.parse(text); } catch { data = {}; }
           const value = data?.value || data?.client_secret?.value;
           if (!value) { lastErr = `Kein ephemeraler Key in der Antwort: ${text.slice(0, 400)}`; continue; }
+          logAIUsage(AI_LOG_ANON, "cooper_voice_demo", { model });
           return res.json({ value, model, voice: "cedar", maxSeconds: 75 });
         }
         lastErr = `${r.status} ${text.slice(0, 400)}`;
@@ -5928,6 +5946,7 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
       } as any);
 
       const text = (completion.choices?.[0]?.message?.content || "").trim();
+      logChatUsage(auth.participant.id, "cooper_memory", "gpt-5-mini", completion);
       if (!text) return res.status(502).json({ message: "Leere Antwort vom Modell." });
 
       const now = new Date();
@@ -6020,6 +6039,7 @@ Schreibe in der zweiten Person, ${isDe ? "Deutsch" : "Englisch"}, warm und beoba
       } as any);
 
       const text = (completion.choices?.[0]?.message?.content || "").trim();
+      logChatUsage(auth.participant.id, "cooper_timetravel", "gpt-5-mini", completion);
       if (!text) return res.status(502).json({ message: "Leere Antwort vom Modell." });
 
       const result = { narrative: text, generatedAt: new Date().toISOString(), count: sorted.length, period: periodLabel };
@@ -6078,6 +6098,7 @@ SCORE-REGEL (NEU, wichtig): Leite den Score aus AFFEKT und INTENSITÄT ab — Be
           messages: [{ role: "system", content: finSystemFull }, { role: "user", content: `Gespräch:${ctx}\n${fullConvo}` }],
         });
         let p: any = {}; try { p = JSON.parse(completion.choices[0]?.message?.content || "{}"); } catch { p = {}; }
+        logChatUsage((req.headers["x-participant-id"] as string) || AI_LOG_ANON, "impression_converse", "gpt-5-mini", completion);
         const clamp = (v: any): number | null => { const n = Number(v); return Number.isFinite(n) ? Math.max(0, Math.min(100, Math.round(n))) : null; };
         let score: any = null;
         if (p.scoreSuggestion && typeof p.scoreSuggestion === "object") {
@@ -6132,6 +6153,7 @@ SCORE-REGEL (NEU, wichtig): Leite den Score aus AFFEKT und INTENSITÄT ab — Be
               ],
             } as any);
             const styText = (styCompletion.choices?.[0]?.message?.content || "").trim();
+            logChatUsage((req.headers["x-participant-id"] as string) || AI_LOG_ANON, "impression_converse", "gpt-5-mini", styCompletion);
             if (!styText) return;
             await storage.updateParticipant(styPid, { cooperStyleMemory: styText } as Record<string, any>);
           } catch (e: any) {
@@ -6172,6 +6194,7 @@ Gib NUR den reinen Notiztext zurück (die vier Überschriften + Text), ohne Anf�
           reasoning_effort: "minimal",
           messages: [{ role: "system", content: proseSystem + lengthDirective }, { role: "user", content: `Gespräch:${ctx}\n${fullConvo}` }],
         });
+        logChatUsage((req.headers["x-participant-id"] as string) || AI_LOG_ANON, "impression_converse", "gpt-5-mini", pc);
         return res.json({ narrative: (pc.choices[0]?.message?.content || "").trim() });
       }
 
@@ -6201,6 +6224,7 @@ Aktualisiere das Ledger EHRLICH anhand des Gesprächs: untouched->touched sobald
         messages: [{ role: "system", content: turnSystem + styHintC }, { role: "user", content: `${ctx}\n${convo}` }],
       });
       let p: any = {}; try { p = JSON.parse(completion.choices[0]?.message?.content || "{}"); } catch { p = {}; }
+      logChatUsage((req.headers["x-participant-id"] as string) || AI_LOG_ANON, "impression_converse", "gpt-5-mini", completion);
       const merged = mergeLedger(curLedger, (p.ledger && typeof p.ledger === "object") ? p.ledger : {});
       const chips = Array.isArray(p.chips) ? p.chips.filter((c: any) => typeof c === "string" && c.trim()).map((c: string) => c.trim()).slice(0, 5) : [];
       const tasterTurns = turns.filter((tt) => tt.role === "taster").length;
@@ -8967,6 +8991,7 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
       });
 
       const content = response.choices[0]?.message?.content || "{}";
+      logChatUsage(tasting.hostId, "ai_highlights", "gpt-5-mini", response);
       let highlights;
       try { highlights = JSON.parse(content); } catch { highlights = { summary: content }; }
 
@@ -11245,6 +11270,7 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
         });
 
         const raw = completion.choices[0]?.message?.content || "{}";
+        logChatUsage(AI_LOG_ANON, "barcode_lookup", "gpt-5-mini", completion);
         const parsed = JSON.parse(raw);
 
         if (parsed.name && parsed.confidence !== "low") {
@@ -12257,6 +12283,7 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
         });
 
         const content = response.choices[0]?.message?.content || "[]";
+        logChatUsage(participantId, "price_estimate", "gpt-5", response);
         try {
           const jsonMatch = content.match(/\[[\s\S]*\]/);
           const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : "[]");
@@ -12357,6 +12384,7 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
       });
 
       const content = response.choices[0]?.message?.content || "{}";
+      logChatUsage(participantId, "suggest_tasting", "gpt-5", response);
       try {
         const jsonMatch = content.match(/\{[\s\S]*\}/);
         const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : "{}");
@@ -13154,6 +13182,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
       });
 
       const content = response.choices[0]?.message?.content || "{}";
+      logChatUsage(participantId, "wishlist_identify", "gpt-5", response);
       console.log("Wishlist scan AI response:", content.substring(0, 500));
       let parsed: any;
       try {
@@ -13276,6 +13305,7 @@ ${flavorProfile.topWhiskies?.length ? `Top-rated whiskies: ${flavorProfile.topWh
       });
 
       const summary = response.choices[0]?.message?.content?.trim() || "";
+      logChatUsage(participantId, "wishlist_summary", "gpt-5-mini", response);
       const summaryDate = new Date();
 
       res.json({ summary, summaryDate: summaryDate.toISOString() });
@@ -16006,6 +16036,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       });
 
       const raw = completion.choices[0]?.message?.content || "[]";
+      logChatUsage(requesterId, "participant_ai_profiles", "gpt-5", completion);
       let profiles: { id: string; profile: string }[];
       try {
         const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
@@ -18091,6 +18122,7 @@ Key CaskSense Features:
       });
 
       const result = JSON.parse(response.choices[0]?.message?.content || "{}");
+      logChatUsage(requesterId, "newsletter_generate", "gpt-5-mini", response);
       res.json({ subject: result.subject || "CaskSense Newsletter", body: result.body || "" });
     } catch (e: any) {
       console.error("Newsletter AI generation error:", e.message);
@@ -18520,6 +18552,7 @@ Return ONLY valid JSON array. If no whisky data found, return [].`,
         });
 
         const content = response.choices[0]?.message?.content || "[]";
+        logChatUsage(participantId, "benchmark_analyze", "gpt-5", response);
         const jsonMatch = content.match(/\[[\s\S]*\]/);
         const entries = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
         return res.json({ entries: enrichEntries(entries), fileName: file.originalname });
@@ -18575,6 +18608,7 @@ Return ONLY valid JSON array. If no whisky data found, return [].`,
           });
 
           const content = response.choices[0]?.message?.content || "[]";
+          logChatUsage(participantId, "benchmark_analyze", "gpt-5", response);
           const jsonMatch = content.match(/\[[\s\S]*\]/);
           const entries = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
           return res.json({ entries: enrichEntries(entries), fileName: file.originalname });
@@ -18636,6 +18670,7 @@ Return ONLY a valid JSON array. If no whisky data is found, return [].`,
       });
 
       const content = response.choices[0]?.message?.content || "[]";
+      logChatUsage(participantId, "benchmark_analyze", "gpt-5", response);
       const jsonMatch = content.match(/\[[\s\S]*\]/);
       const entries = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
       res.json({ entries: enrichEntries(entries), fileName: file.originalname });
@@ -18742,6 +18777,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
           });
 
           const content = response.choices[0]?.message?.content || "{}";
+          logChatUsage(participantId, "photo_tasting_identify", "gpt-5", response);
           console.log("Photo tasting scan AI response:", content.substring(0, 500));
           let parsed: any;
           try {
@@ -20670,6 +20706,7 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
       });
 
       const content = response.choices[0]?.message?.content;
+      logChatUsage(hostId, "ai_import", "gpt-5", response);
       if (!content) {
         return res.status(500).json({ message: "AI could not extract data from the provided content" });
       }
@@ -21892,6 +21929,7 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
       });
 
       const analysis = completion.choices[0]?.message?.content || "";
+      logChatUsage(requesterId, "platform_analytics", "gpt-5", completion);
       res.json({ analysis });
     } catch (e: any) {
       console.error("AI analytics error:", e);
@@ -23165,6 +23203,7 @@ User's style request: ${sanitizedPrompt}`;
 
       const { generateImageBuffer } = await import("./replit_integrations/image/client.js");
       const imageBuffer = await generateImageBuffer(finalPrompt, "1024x1024");
+      logAIUsage((tasting?.hostId || AI_LOG_ANON), "tasting_cover_image", { model: "gpt-image-1" });
 
       let jpegBuffer: Buffer;
       try {
@@ -24210,6 +24249,7 @@ Rules:
         });
 
         const content = completion.choices[0]?.message?.content?.trim() || "[]";
+        logChatUsage(AI_LOG_ANON, "labs_flavour_assist", "gpt-5-mini", completion);
         const jsonMatch = content.match(/\[[\s\S]*\]/);
         const terms: string[] = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
         res.json({ terms: terms.filter((t: unknown) => typeof t === "string").slice(0, 12) });

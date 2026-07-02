@@ -132,8 +132,27 @@ export async function setAIFreeQuota(quota: number, actorId: string): Promise<nu
   return safeQuota;
 }
 
-export async function recordAIUsage(participantId: string, featureId: string): Promise<void> {
-  await db.insert(aiUsageLog).values({ participantId, featureId });
+export interface AIUsageMeta {
+  model?: string | null;
+  tokensIn?: number | null;
+  tokensOut?: number | null;
+  durationMs?: number | null;
+}
+
+export async function recordAIUsage(participantId: string, featureId: string, meta?: AIUsageMeta): Promise<void> {
+  await db.insert(aiUsageLog).values({
+    participantId,
+    featureId,
+    model: meta?.model ?? null,
+    tokensIn: meta?.tokensIn ?? null,
+    tokensOut: meta?.tokensOut ?? null,
+    durationMs: meta?.durationMs ?? null,
+  });
+}
+
+// Fire-and-forget usage logger: never throws, never blocks the user path.
+export function logAIUsage(participantId: string, featureId: string, meta?: AIUsageMeta): void {
+  recordAIUsage(participantId, featureId, meta).catch(() => {});
 }
 
 export async function getAIUsageCount(participantId: string): Promise<number> {
@@ -194,7 +213,7 @@ export async function getAIUsageBreakdown(): Promise<AIUsageBreakdown> {
     },
     perFeature: perFeatureRows.map((r) => ({ featureId: r.featureId, all: Number(r.all), d30: Number(r.d30), d90: Number(r.d90) })),
     perMonth: perMonthRows.map((r) => ({ month: r.month, calls: Number(r.calls), users: Number(r.users) })),
-    note: "Erfasst werden nur Aufrufe über den Plattform-Key via getAIClient. Aufrufe mit eigenem User-Key sowie Voice, Bildgenerierung und einige Report-Endpoints (rohe OpenAI-Clients) werden derzeit nicht geloggt.",
+    note: "Erfasst werden Plattform-Key-Aufrufe (getAIClient) sowie Voice-, Bild- und Report-Endpoints mit rohen OpenAI-Clients. Bei getAIClient-Aufrufen bleiben model/tokens leer (der Log erfolgt vor dem Call); die Voice-Session-Dauer wird noch nicht erfasst. Aufrufe mit eigenem User-Key werden nicht geloggt.",
   };
 }
 

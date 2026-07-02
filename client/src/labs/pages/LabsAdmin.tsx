@@ -1474,6 +1474,16 @@ function AITab({ pid }: { pid: string }) {
     queryFn: async () => { const res = await fetch(`/api/admin/ai-usage?participantId=${pid}`); if (!res.ok) throw new Error("Failed"); return res.json(); },
   });
 
+  const { data: breakdown } = useQuery<{
+    totals: { calls: number; users: number; firstAt: string | null; lastAt: string | null };
+    perFeature: Array<{ featureId: string; all: number; d30: number; d90: number }>;
+    perMonth: Array<{ month: string; calls: number; users: number }>;
+    note: string;
+  }>({
+    queryKey: ["/api/admin/ai-usage-breakdown", pid],
+    queryFn: async () => { const res = await fetch(`/api/admin/ai-usage-breakdown?participantId=${pid}`); if (!res.ok) throw new Error("Failed"); return res.json(); },
+  });
+
   const [masterDisabled, setMasterDisabled] = useState<boolean | null>(null);
   const [disabledFeatures, setDisabledFeatures] = useState<string[]>([]);
   const [quotaInput, setQuotaInput] = useState("");
@@ -1606,6 +1616,66 @@ function AITab({ pid }: { pid: string }) {
             { t("admin.currentQuota") }: {usageData?.quota === 0 ? t("admin.unlimited") : `${usageData?.quota ?? 20} ${t("admin.requests")}`}
           </span>
         </div>
+      </div>
+
+      <div className="labs-card p-4 mb-4" data-testid="labs-admin-ai-usage-breakdown">
+        <div className="flex items-center gap-2 mb-1">
+          <TrendingUp className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+          <span className="text-sm font-bold" style={{ color: "var(--labs-text)" }}>{ t("admin.aiUsageByFeature") }</span>
+        </div>
+        <div className="flex items-start gap-1.5 text-[11px] mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="labs-admin-breakdown-note">
+          <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
+          <span>{breakdown?.note ?? "…"}</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+          <div className="p-2.5 rounded-lg" style={{ border: "1px solid var(--labs-border)", background: "var(--labs-surface)" }} data-testid="labs-admin-stat-total-calls">
+            <div className="text-xl font-bold font-mono" style={{ color: "var(--labs-text)" }}>{breakdown?.totals.calls ?? 0}</div>
+            <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.callsTotal") }</div>
+          </div>
+          <div className="p-2.5 rounded-lg" style={{ border: "1px solid var(--labs-border)", background: "var(--labs-surface)" }} data-testid="labs-admin-stat-total-users">
+            <div className="text-xl font-bold font-mono" style={{ color: "var(--labs-text)" }}>{breakdown?.totals.users ?? 0}</div>
+            <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.activeUsers") }</div>
+          </div>
+          <div className="p-2.5 rounded-lg" style={{ border: "1px solid var(--labs-border)", background: "var(--labs-surface)" }} data-testid="labs-admin-stat-first-at">
+            <div className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{breakdown?.totals.firstAt ? new Date(breakdown.totals.firstAt).toLocaleDateString() : "–"}</div>
+            <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.firstCall") }</div>
+          </div>
+          <div className="p-2.5 rounded-lg" style={{ border: "1px solid var(--labs-border)", background: "var(--labs-surface)" }} data-testid="labs-admin-stat-last-at">
+            <div className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>{breakdown?.totals.lastAt ? new Date(breakdown.totals.lastAt).toLocaleDateString() : "–"}</div>
+            <div className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.lastCall") }</div>
+          </div>
+        </div>
+        {(breakdown?.perFeature.length ?? 0) === 0 ? (
+          <div className="text-center py-4 text-xs" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.noLoggedAiUsage") }</div>
+        ) : (
+          <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 gap-y-1 mb-2">
+            <span className="text-[11px] font-semibold" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.featureLabel") }</span>
+            <span className="text-[11px] font-semibold text-right w-14" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.days30") }</span>
+            <span className="text-[11px] font-semibold text-right w-14" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.days90") }</span>
+            <span className="text-[11px] font-semibold text-right w-14" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.totalLabel") }</span>
+            {breakdown?.perFeature.map((f) => (
+              <Fragment key={f.featureId}>
+                <span className="text-xs truncate" style={{ color: "var(--labs-text)" }} data-testid={`labs-admin-feature-${f.featureId}`}>{f.featureId}</span>
+                <span className="text-xs font-mono text-right w-14" style={{ color: "var(--labs-text-secondary)" }}>{f.d30}</span>
+                <span className="text-xs font-mono text-right w-14" style={{ color: "var(--labs-text-secondary)" }}>{f.d90}</span>
+                <span className="text-xs font-mono font-semibold text-right w-14" style={{ color: "var(--labs-text)" }}>{f.all}</span>
+              </Fragment>
+            ))}
+          </div>
+        )}
+        {(breakdown?.perMonth.length ?? 0) > 0 && (
+          <div className="mt-3">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold mb-2" style={{ color: "var(--labs-text-muted)" }}><Calendar className="w-3.5 h-3.5" />{ t("admin.perMonth") }</div>
+            <div className="space-y-1 max-h-48 overflow-y-auto">
+              {breakdown?.perMonth.map((m) => (
+                <div key={m.month} className="flex items-center justify-between text-xs px-2 py-1 rounded" style={{ border: "1px solid var(--labs-border)" }} data-testid={`labs-admin-month-${m.month}`}>
+                  <span className="font-mono" style={{ color: "var(--labs-text)" }}>{m.month}</span>
+                  <span style={{ color: "var(--labs-text-muted)" }}>{m.calls} { t("admin.callsShort") } · {m.users} { t("admin.usersShort") }</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="labs-card p-4 mb-4">
