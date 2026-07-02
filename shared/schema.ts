@@ -48,6 +48,8 @@ export const participants = pgTable("participants", {
   cooperMemoryEnabled: boolean("cooper_memory_enabled").default(false),
   cooperStyleMemory: text("cooper_style_memory"),
   privacyConsentAt: timestamp("privacy_consent_at"),
+  researchConsent: boolean("research_consent").default(false),
+  aggregateConsent: boolean("aggregate_consent").default(false),
   lastSeenAt: timestamp("last_seen_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -55,6 +57,22 @@ export const participants = pgTable("participants", {
 export const insertParticipantSchema = createInsertSchema(participants).omit({ id: true, createdAt: true, emailVerified: true, verificationCode: true, verificationExpiry: true, loginLinkToken: true, loginLinkExpiry: true, lastSeenAt: true, makingOfAccess: true, privacyConsentAt: true });
 export type InsertParticipant = z.infer<typeof insertParticipantSchema>;
 export type Participant = typeof participants.$inferSelect;
+
+// --- Consent Records (append-only audit trail) ---
+// Änderungen erzeugen IMMER eine neue Zeile (kein UPDATE/DELETE) — der Verlauf IST der Audit-Trail.
+export const consentRecords = pgTable("consent_records", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  participantId: varchar("participant_id").notNull(),
+  consentType: varchar("consent_type").notNull(),   // 'research' | 'aggregate'
+  textVersion: varchar("text_version").notNull(),   // z.B. 'v1-2026-07'
+  granted: boolean("granted").notNull(),            // true=erteilt, false=widerrufen
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  partTypeIdx: index("idx_consent_participant_type").on(table.participantId, table.consentType),
+}));
+export const insertConsentRecordSchema = createInsertSchema(consentRecords).omit({ id: true, createdAt: true });
+export type InsertConsentRecord = z.infer<typeof insertConsentRecordSchema>;
+export type ConsentRecord = typeof consentRecords.$inferSelect;
 
 // --- Tastings (sessions) ---
 export const tastings = pgTable("tastings", {
@@ -866,6 +884,7 @@ export const vocabularyAdoption = pgTable("vocabulary_adoption", {
   locale: varchar("locale").notNull().default("de"),
   status: varchar("status").notNull(),                    // 'offered' | 'adopted' | 'self'
   source: varchar("source").notNull().default("impression"),
+  modelLabel: varchar("model_label"),                     // nullable; welches Modell den Begriff anbot, z.B. 'gpt-5-mini'
   useCount: integer("use_count").notNull().default(1),
   firstAt: timestamp("first_at").defaultNow(),
   lastAt: timestamp("last_at").defaultNow(),

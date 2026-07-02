@@ -660,6 +660,13 @@ export const wotdApi = {
 };
 
 // ===== Profiles =====
+export type ConsentState = { researchConsent: boolean; aggregateConsent: boolean; textVersion: string | null };
+export const consentApi = {
+  get: (): Promise<ConsentState> => fetchJSON(`/consent`),
+  set: (consentType: "research" | "aggregate", granted: boolean): Promise<ConsentState> =>
+    fetchJSON(`/consent`, { method: "POST", body: JSON.stringify({ consentType, granted }) }),
+};
+
 export const profileApi = {
   get: (participantId: string) => fetchJSON(`/profiles/${participantId}`),
   update: (participantId: string, data: any) =>

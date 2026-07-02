@@ -5,7 +5,7 @@ import { SkeletonList } from "@/labs/components/LabsSkeleton";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import { useAppStore } from "@/lib/store";
 import { signOut, updateSessionPhotoUrl } from "@/lib/session";
-import { profileApi, participantApi, participantUpdateApi, tastingApi } from "@/lib/api";
+import { profileApi, participantApi, participantUpdateApi, tastingApi, consentApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
 import { downloadBlob } from "@/lib/download";
@@ -53,6 +53,9 @@ export default function LabsTasteSettings() {
   const [cheersEnabled, setCheersEnabled] = useState(true);
   const [tastingInviteEnabled, setTastingInviteEnabled] = useState(true);
   const [shareStatsForBenchmarks, setShareStatsForBenchmarks] = useState(false);
+  const [researchConsent, setResearchConsent] = useState(false);
+  const [aggregateConsent, setAggregateConsent] = useState(false);
+  const [consentSaving, setConsentSaving] = useState(false);
   const [notifSaving, setNotifSaving] = useState(false);
   const [privacySaving, setPrivacySaving] = useState(false);
   const [preferredRatingScale, setPreferredRatingScale] = useState<number | null>(null);
@@ -80,6 +83,35 @@ export default function LabsTasteSettings() {
     queryFn: () => participantApi.get(pid!),
     enabled: !!pid,
   });
+
+  const { data: consentState } = useQuery({
+    queryKey: ["consent", pid],
+    queryFn: () => consentApi.get(),
+    enabled: !!pid,
+  });
+
+  useEffect(() => {
+    if (consentState) {
+      setResearchConsent(consentState.researchConsent === true);
+      setAggregateConsent(consentState.aggregateConsent === true);
+    }
+  }, [consentState]);
+
+  const saveConsent = useCallback(async (consentType: "research" | "aggregate", granted: boolean) => {
+    setConsentSaving(true);
+    try {
+      const next = await consentApi.set(consentType, granted);
+      setResearchConsent(next.researchConsent === true);
+      setAggregateConsent(next.aggregateConsent === true);
+      queryClient.invalidateQueries({ queryKey: ["consent", pid] });
+    } catch {
+      if (consentType === "research") setResearchConsent(!granted);
+      else setAggregateConsent(!granted);
+      toast({ title: t("v2.consentSaveError", "Failed to save preference"), variant: "destructive" });
+    } finally {
+      setConsentSaving(false);
+    }
+  }, [pid, queryClient, toast, t]);
 
   useEffect(() => {
     if (profile) {
@@ -459,6 +491,50 @@ export default function LabsTasteSettings() {
                   </div>
                 </div>
               </label>
+            </div>
+          </div>
+
+          <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 14 }}>
+            <div className="flex items-center gap-2 mb-3">
+              <Shield className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
+              <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>{t("v2.consentSectionTitle", "Research & Data")}</label>
+            </div>
+            <div className="flex flex-col gap-3">
+              {consentSaving && <div className="text-xs" style={{ color: "var(--labs-accent)" }}>Saving...</div>}
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={researchConsent}
+                  disabled={consentSaving}
+                  onChange={(e) => { const v = e.target.checked; setResearchConsent(v); saveConsent("research", v); }}
+                  style={{ marginTop: 2, accentColor: "var(--labs-accent)" }}
+                  data-testid="checkbox-labs-consent-research"
+                />
+                <div>
+                  <div className="text-sm" style={{ color: "var(--labs-text)" }}>{t("v2.consentResearchTitle", "Contribute to research")}</div>
+                  <div className="text-xs mt-0.5" style={{ color: "var(--labs-text-muted)" }}>{t("v2.consentResearchBody", "")}</div>
+                </div>
+              </label>
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={aggregateConsent}
+                  disabled={consentSaving}
+                  onChange={(e) => { const v = e.target.checked; setAggregateConsent(v); saveConsent("aggregate", v); }}
+                  style={{ marginTop: 2, accentColor: "var(--labs-accent)" }}
+                  data-testid="checkbox-labs-consent-aggregate"
+                />
+                <div>
+                  <div className="text-sm" style={{ color: "var(--labs-text)" }}>{t("v2.consentAggregateTitle", "Aggregate insights")}</div>
+                  <div className="text-xs mt-0.5" style={{ color: "var(--labs-text-muted)" }}>{t("v2.consentAggregateBody", "")}</div>
+                </div>
+              </label>
+              <div className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                {t("v2.consentRevocableHint", "You can withdraw at any time. Details in the")}{" "}
+                <Link href="/labs/privacy" style={{ color: "var(--labs-accent)", textDecoration: "underline" }} data-testid="link-labs-consent-privacy">
+                  {t("v2.consentPrivacyLink", "privacy policy")}
+                </Link>.
+              </div>
             </div>
           </div>
         </div>

@@ -8,7 +8,7 @@ import { getParticipantOverallScores, computeStabilityScore } from "./participan
 import {
   participants, tastings, tastingParticipants, sharingParticipants, whiskies, whiskyHandoutLibrary, whiskyHandouts, tastingHandouts, distilleryHandouts, pdfSplitSessions, ratings, ratingAudit,
   profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, whiskyGroups, whiskyGroupMembers, journalEntries, benchmarkEntries, wishlistEntries,
-  newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, tastingPhotos, tastingEventPhotos, entryPhotos, vocabularyAdoption, tastingStoryVersions, tastingStoryImages, storyVersions, storyTemplates, userFeedback,
+  newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, tastingPhotos, tastingEventPhotos, entryPhotos, vocabularyAdoption, consentRecords, tastingStoryVersions, tastingStoryImages, storyVersions, storyTemplates, userFeedback,
   type InsertParticipant, type Participant,
   type InsertTasting, type Tasting,
   type InsertTastingParticipant, type TastingParticipant,
@@ -43,6 +43,7 @@ import {
   type InsertTastingEventPhoto, type TastingEventPhoto,
   type InsertEntryPhoto, type EntryPhoto,
   type InsertVocabularyAdoption, type VocabularyAdoption,
+  type InsertConsentRecord, type ConsentRecord,
   type InsertTastingStoryVersion, type TastingStoryVersion,
   type InsertTastingStoryImage, type TastingStoryImage,
   type InsertStoryVersion, type StoryVersion,
@@ -695,8 +696,10 @@ export interface IStorage {
   getEntryPhotos(journalEntryId: string): Promise<EntryPhoto[]>;
   createEntryPhoto(data: InsertEntryPhoto): Promise<EntryPhoto>;
   deleteEntryPhoto(id: string, participantId: string): Promise<void>;
-  recordVocabularyEvents(participantId: string, events: { term: string; status: "offered"|"adopted"|"self"; locale?: string; source?: string }[]): Promise<{ recorded: number; resolved: number }>;
+  recordVocabularyEvents(participantId: string, events: { term: string; status: "offered"|"adopted"|"self"; locale?: string; source?: string }[], modelLabel?: string | null): Promise<{ recorded: number; resolved: number }>;
   getVocabularyAdoption(participantId: string): Promise<VocabularyAdoption[]>;
+  recordConsent(participantId: string, consentType: "research"|"aggregate", granted: boolean, textVersion: string): Promise<void>;
+  getConsentState(participantId: string): Promise<{ researchConsent: boolean; aggregateConsent: boolean; textVersion: string | null }>;
 
   // Tasting Story Versions (host-saved snapshots of the story slides cache)
   listTastingStoryVersions(tastingId: string): Promise<TastingStoryVersion[]>;
@@ -3795,7 +3798,7 @@ export class DatabaseStorage implements IStorage {
       .sort((a, b) => b.userCount - a.userCount)
       .slice(0, 500);
   }
-  async recordVocabularyEvents(participantId: string, events: { term: string; status: "offered"|"adopted"|"self"; locale?: string; source?: string }[]): Promise<{ recorded: number; resolved: number }> {
+  async recordVocabularyEvents(participantId: string, events: { term: string; status: "offered"|"adopted"|"self"; locale?: string; source?: string }[], modelLabel?: string | null): Promise<{ recorded: number; resolved: number }> {
     if (!participantId || !events?.length) return { recorded: 0, resolved: 0 };
     const descriptors = await db.select().from(flavourDescriptors);
     const norm = (s: string) => (s || "").trim().toLowerCase();
@@ -3831,12 +3834,43 @@ export class DatabaseStorage implements IStorage {
       } else {
         await db.insert(vocabularyAdoption).values({
           participantId, descriptorId, term, locale, status, source,
+          modelLabel: modelLabel ?? null,
           useCount: (status === "adopted" || status === "self") ? 1 : 0,
         });
       }
       recorded++;
     }
     return { recorded, resolved };
+  }
+
+  // Append-only: jede Änderung schreibt eine NEUE consent_records-Zeile (nie UPDATE/DELETE);
+  // das Participant-Flag ist nur der Schnellzugriff und folgt der letzten Zeile.
+  async recordConsent(participantId: string, consentType: "research"|"aggregate", granted: boolean, textVersion: string): Promise<void> {
+    await db.transaction(async (tx) => {
+      await tx.insert(consentRecords).values({ participantId, consentType, granted, textVersion });
+      const [latest] = await tx.select({ granted: consentRecords.granted })
+        .from(consentRecords)
+        .where(and(eq(consentRecords.participantId, participantId), eq(consentRecords.consentType, consentType)))
+        .orderBy(desc(consentRecords.createdAt))
+        .limit(1);
+      const effective = latest?.granted ?? granted;
+      const flag = consentType === "research" ? { researchConsent: effective } : { aggregateConsent: effective };
+      await tx.update(participants).set(flag).where(eq(participants.id, participantId));
+    });
+  }
+
+  async getConsentState(participantId: string): Promise<{ researchConsent: boolean; aggregateConsent: boolean; textVersion: string | null }> {
+    const [p] = await db.select().from(participants).where(eq(participants.id, participantId));
+    const [lastGrant] = await db.select({ textVersion: consentRecords.textVersion })
+      .from(consentRecords)
+      .where(and(eq(consentRecords.participantId, participantId), eq(consentRecords.granted, true)))
+      .orderBy(desc(consentRecords.createdAt))
+      .limit(1);
+    return {
+      researchConsent: p?.researchConsent === true,
+      aggregateConsent: p?.aggregateConsent === true,
+      textVersion: lastGrant?.textVersion ?? null,
+    };
   }
 
   async listTastingStoryVersions(tastingId: string): Promise<TastingStoryVersion[]> {

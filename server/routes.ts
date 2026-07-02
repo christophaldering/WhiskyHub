@@ -47,6 +47,10 @@ import { maybeCompressImage } from "./image-sanitize";
 const identifyCache = new LRUCacheImpl<any>(200, 24 * 60 * 60 * 1000);
 
 const ADMIN_CONTACT_EMAIL = process.env.ADMIN_CONTACT_EMAIL || "christoph.aldering@googlemail.com";
+// Consent-Textversion — bei inhaltlicher Änderung der Einwilligungstexte hochziehen (löst später Re-Consent aus).
+const CONSENT_TEXT_VERSION = "v1-2026-07";
+// Einzige Quelle für das aktive Cooper-Textmodell (auch als modelLabel für vocabulary_adoption genutzt).
+const COOPER_TEXT_MODEL = process.env.AI_INTEGRATIONS_OPENAI_MODEL || "gpt-5-mini";
 const VERIFICATION_GRACE_PERIOD_MS = 24 * 60 * 60 * 1000;
 const VERIFICATION_CUTOFF_DATE = new Date("2026-03-19T00:00:00Z");
 
@@ -12903,8 +12907,38 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
       const { participantId, events } = req.body || {};
       if (!caller || !participantId || caller !== participantId) return res.status(403).json({ error: "Forbidden" });
       if (!Array.isArray(events)) return res.status(400).json({ error: "events[] required" });
-      res.json(await storage.recordVocabularyEvents(participantId, events.slice(0, 50)));
+      res.json(await storage.recordVocabularyEvents(participantId, events.slice(0, 50), COOPER_TEXT_MODEL));
     } catch (e: any) { res.status(500).json({ error: e?.message || "vocab record failed" }); }
+  });
+
+  // --- Consent (Forschungsspende + Aggregat-Insights) ---
+  // Wahrheit = append-only consent_records. Änderungen NUR hierüber (nie via PATCH /api/participants),
+  // sonst wird der Audit-Trail umgangen.
+  app.post("/api/consent", async (req: any, res: any) => {
+    try {
+      const caller = String(req.headers["x-participant-id"] || "");
+      if (!caller) return res.status(403).json({ error: "Forbidden" });
+      const participant = await storage.getParticipant(caller);
+      if (!participant) return res.status(403).json({ error: "Forbidden" });
+      const consentType = String(req.body?.consentType || "");
+      if (consentType !== "research" && consentType !== "aggregate") {
+        return res.status(400).json({ error: "consentType must be 'research' or 'aggregate'" });
+      }
+      if (typeof req.body?.granted !== "boolean") {
+        return res.status(400).json({ error: "granted must be a boolean" });
+      }
+      await storage.recordConsent(caller, consentType, req.body.granted, CONSENT_TEXT_VERSION);
+      res.json(await storage.getConsentState(caller));
+    } catch (e: any) { res.status(500).json({ error: e?.message || "consent write failed" }); }
+  });
+  app.get("/api/consent", async (req: any, res: any) => {
+    try {
+      const caller = String(req.headers["x-participant-id"] || "");
+      if (!caller) return res.status(403).json({ error: "Forbidden" });
+      const participant = await storage.getParticipant(caller);
+      if (!participant) return res.status(403).json({ error: "Forbidden" });
+      res.json(await storage.getConsentState(caller));
+    } catch (e: any) { res.status(500).json({ error: e?.message || "consent read failed" }); }
   });
   app.get("/api/vocabulary/:participantId/adoption", async (req: any, res: any) => {
     try {
