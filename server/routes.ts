@@ -22,7 +22,7 @@ import { registerFunnelRoutes } from "./funnel-routes";
 import { recordEvents as recordFunnelEvents } from "./funnel-store";
 import { addConnection, broadcastToTasting } from "./sse";
 import { getCachedWhiskyDna, setCachedWhiskyDna } from "./whiskyDnaCache";
-import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES, getAIFreeQuota, setAIFreeQuota, getAIUsageOverview, checkAIQuota } from "./ai-settings";
+import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES, getAIFreeQuota, setAIFreeQuota, getAIUsageOverview, getAIUsageBreakdown, checkAIQuota } from "./ai-settings";
 import { getAIClient, getAIStatus } from "./ai-client";
 import { labsAskToolMap, buildOpenAIToolList, type AnswerMode, type LabsToolSource, type LabsToolDefinition } from "./labs-ask-tools";
 import {
@@ -15548,6 +15548,21 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       res.json({ usage, quota });
     } catch (e: any) {
       res.status(500).json({ message: e.message || "Failed to load AI usage" });
+    }
+  });
+
+  app.get("/api/admin/ai-usage-breakdown", async (req, res) => {
+    try {
+      const participantId = req.query.participantId as string;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const breakdown = await getAIUsageBreakdown();
+      res.json(breakdown);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Failed to load AI usage breakdown" });
     }
   });
 

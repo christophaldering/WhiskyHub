@@ -147,6 +147,57 @@ export async function checkAIQuota(participantId: string): Promise<{ allowed: bo
   return { allowed: used < limit, used, limit };
 }
 
+export interface AIUsageBreakdown {
+  totals: { calls: number; users: number; firstAt: string | null; lastAt: string | null };
+  perFeature: Array<{ featureId: string; all: number; d30: number; d90: number }>;
+  perMonth: Array<{ month: string; calls: number; users: number }>;
+  note: string;
+}
+
+export async function getAIUsageBreakdown(): Promise<AIUsageBreakdown> {
+  const [totalsRow] = await db
+    .select({
+      calls: count(),
+      users: sql<number>`count(distinct ${aiUsageLog.participantId})`,
+      firstAt: sql<string | null>`to_char(min(${aiUsageLog.createdAt}) at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`,
+      lastAt: sql<string | null>`to_char(max(${aiUsageLog.createdAt}) at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`,
+    })
+    .from(aiUsageLog);
+
+  const perFeatureRows = await db
+    .select({
+      featureId: aiUsageLog.featureId,
+      all: count(),
+      d30: sql<number>`count(*) filter (where ${aiUsageLog.createdAt} >= now() - interval '30 days')`,
+      d90: sql<number>`count(*) filter (where ${aiUsageLog.createdAt} >= now() - interval '90 days')`,
+    })
+    .from(aiUsageLog)
+    .groupBy(aiUsageLog.featureId)
+    .orderBy(sql`count(*) desc`);
+
+  const perMonthRows = await db
+    .select({
+      month: sql<string>`to_char(date_trunc('month', ${aiUsageLog.createdAt}), 'YYYY-MM')`,
+      calls: count(),
+      users: sql<number>`count(distinct ${aiUsageLog.participantId})`,
+    })
+    .from(aiUsageLog)
+    .groupBy(sql`date_trunc('month', ${aiUsageLog.createdAt})`)
+    .orderBy(sql`date_trunc('month', ${aiUsageLog.createdAt}) desc`);
+
+  return {
+    totals: {
+      calls: Number(totalsRow?.calls ?? 0),
+      users: Number(totalsRow?.users ?? 0),
+      firstAt: totalsRow?.firstAt ?? null,
+      lastAt: totalsRow?.lastAt ?? null,
+    },
+    perFeature: perFeatureRows.map((r) => ({ featureId: r.featureId, all: Number(r.all), d30: Number(r.d30), d90: Number(r.d90) })),
+    perMonth: perMonthRows.map((r) => ({ month: r.month, calls: Number(r.calls), users: Number(r.users) })),
+    note: "Erfasst werden nur Aufrufe über den Plattform-Key via getAIClient. Aufrufe mit eigenem User-Key sowie Voice, Bildgenerierung und einige Report-Endpoints (rohe OpenAI-Clients) werden derzeit nicht geloggt.",
+  };
+}
+
 export async function getAIUsageOverview(): Promise<Array<{ participantId: string; name: string; email: string | null; requestCount: number; hasOwnKey: boolean }>> {
   const usageCounts = await db
     .select({ participantId: aiUsageLog.participantId, requestCount: count() })
