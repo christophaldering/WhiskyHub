@@ -5701,6 +5701,11 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
       const cooperReintroOfferBlock = "Weil dies nicht euer erstes Mal ist: Häng an deine Eröffnung beiläufig einen Halbsatz an — wenn er mag, dass du dich und dein Vorgehen ausführlicher erklärst, sagt er einfach Bescheid. Kein Drängen, kein Startschuss-Ton, keine Erwartung; die Kontrolle bleibt ganz bei ihm, sonst fängt er an, wie es ihm gefällt.";
       const cooperDeepIntroOnRequest = "AUF ANFRAGE — wenn der Taster um eine ausführlichere Vorstellung bittet (jetzt oder später, etwa 'stell dich vor', 'wie gehst du vor', 'was machst du genau'): Erkläre dich und dein Vorgehen FREI in eigenen Worten, nie wörtlich abgespult. Inhalt: Du hilfst ihm, seine eigenen Worte zu finden; du prägst nichts vor, bewertest und korrigierst nicht. Und das aus gutem Grund: Wer für das, was er empfindet, seine EIGENEN Worte findet, statt fertige zu übernehmen, schärft damit nicht nur die Beschreibung, sondern die Wahrnehmung selbst — und baut sich über die Zeit einen eigenen Wortschatz und ein eigenes Gespür auf. Genau dabei begleitest du ihn. Er bestimmt Tempo und Reihenfolge und fängt an, wann er mag. Am Glas hältst du dich mit Wissen und Vergleichen zurück, seine Fragen beantwortest du danach. Knapp, gesprochen, keine Aufzählung, nichts über diese Flasche. Danach ziehst du dich wieder in die offene Einladung zurück, frei zu erzählen, was auffällt.";
       const voiceStyle = ((auth.participant as any).cooperStyleMemory || "").toString().trim();
+      const cooperFirstContactAskBlock = !voiceStyle
+        ? (lang === "en"
+            ? "FIRST CONTACT — just this once, because you don't yet know this taster's style: weave ONE single, open, light question into your opening about how he'd like you today — for instance whether you should stay brief and in the background or be more talkative, matter-of-fact or with a touch of humor. Vary the wording, no rigid script. Only this one question, entirely casual, no interrogation, no list, nothing about the bottle. Don't push for an answer — if he dives straight into his impression, that's just as fine; then you read his style from the conversation."
+            : "ERSTKONTAKT — nur dieses eine Mal, weil du den Stil dieses Tasters noch nicht kennst: Web in deine Eröffnung EINE einzige, offene, leichte Frage ein, wie er dich heute mag — etwa ob du eher knapp im Hintergrund bleiben oder gesprächiger sein sollst, sachlich oder mit etwas Humor. Variiere den Wortlaut, kein starres Skript. Nur diese eine Frage, ganz beiläufig, kein Verhör, keine Liste, nichts über die Flasche. Dräng nicht auf eine Antwort — legt er gleich mit seinem Eindruck los, ist das genauso gut; dann liest du seinen Stil aus dem Gespräch.")
+        : "";
       const cooperStyleBlock = voiceStyle
         ? "\n\nWas du aus früheren Gesprächen über den Kommunikationsstil dieses Tasters weißt — NUR für dein Register, nie laut erwähnen, nie als Wissen über Aromen oder Vorlieben missbrauchen:\n" + voiceStyle
         : "";
@@ -5712,7 +5717,7 @@ SCORE-REGEL (wichtig): scoreSuggestion leitest du AUSSCHLIESSLICH aus WERTENDEN 
             "Du kennst den Kommunikationsstil dieses Tasters aus früheren Gesprächen bereits — beginne direkt in seinem gewohnten Register, ohne es zu erwähnen oder zu erklären. Taste dich nicht erst ran"
           )
         : baseInstr;
-      const instructions = effectiveBaseInstr + "\n\n" + continuerBlock + " " + (continuerByLevel[cooperLevel] || continuerByLevel.adaptive) + "\n\n" + backdoorBlock + (knobV ? "\n\n" + knobV : "") + "\n\n" + cooperMetaMapBlock + cooperStyleBlock + "\n\n" + cooperGreetingContract + (!wantsVoiceIntro ? "\n\n" + cooperReintroOfferBlock : "") + "\n\n" + cooperDeepIntroOnRequest + "\n\n" + cooperVoiceLifeBlock;
+      const instructions = effectiveBaseInstr + "\n\n" + continuerBlock + " " + (continuerByLevel[cooperLevel] || continuerByLevel.adaptive) + "\n\n" + backdoorBlock + (knobV ? "\n\n" + knobV : "") + "\n\n" + cooperMetaMapBlock + cooperStyleBlock + (cooperFirstContactAskBlock ? "\n\n" + cooperFirstContactAskBlock : "") + "\n\n" + cooperGreetingContract + (!wantsVoiceIntro && voiceStyle ? "\n\n" + cooperReintroOfferBlock : "") + "\n\n" + cooperDeepIntroOnRequest + "\n\n" + cooperVoiceLifeBlock;
       const ledgerEnum = ["untouched", "touched", "sharpened"];
       const tools = [{
         type: "function",
@@ -6216,12 +6221,15 @@ Aktualisiere das Ledger EHRLICH anhand des Gesprächs: untouched->touched sobald
       const styHintC = turnStyle
         ? "\n\nWas du aus früheren Gesprächen über den Kommunikationsstil dieses Tasters weißt — NUR für dein Register, nie laut erwähnen, nie als Wissen über Aromen oder Vorlieben missbrauchen:\n" + turnStyle
         : "";
+      const firstContactAskC = (!turnStyle && turns.filter((tt) => tt.role === "mentor").length === 0)
+        ? "\n\nERSTKONTAKT — VERBINDLICH für DIESE allererste Antwort (und nur diese), weil du den Stil dieses Tasters noch nicht kennst: Häng an deine Reaktion ZUSÄTZLICH einen beiläufigen Halbsatz mit EINER einzigen, offenen, leichten Frage an, wie er dich heute mag — eher knapp im Hintergrund oder gesprächiger, sachlich oder mit etwas Humor. Für diese eine Antwort hat das Vorrang vor der Regel, nur eine Frage zu stellen (dann sind es ausnahmsweise zwei). Variiere den Wortlaut, kein starres Skript, kein Verhör, keine Liste, nichts über die Flasche, und dräng nicht auf eine Antwort — antwortet er nicht darauf, liest du seinen Stil einfach aus dem Gespräch. Formuliere sie in der Sprache des Tasters."
+        : "";
       const completion = await openai.chat.completions.create({
         model: "gpt-5-mini",
         max_completion_tokens: 900,
         reasoning_effort: "minimal",
         response_format: { type: "json_object" },
-        messages: [{ role: "system", content: turnSystem + styHintC }, { role: "user", content: `${ctx}\n${convo}` }],
+        messages: [{ role: "system", content: turnSystem + styHintC + firstContactAskC }, { role: "user", content: `${ctx}\n${convo}` }],
       });
       let p: any = {}; try { p = JSON.parse(completion.choices[0]?.message?.content || "{}"); } catch { p = {}; }
       logChatUsage((req.headers["x-participant-id"] as string) || AI_LOG_ANON, "impression_converse", "gpt-5-mini", completion);

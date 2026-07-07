@@ -8,3 +8,4 @@
 *.woff2 binary merge=ours
 *.ttf binary merge=ours
 *.eot binary merge=ours
+casksense-full.bundle filter=lfs diff=lfs merge=lfs -text
