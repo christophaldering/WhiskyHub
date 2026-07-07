@@ -1,0 +1,93 @@
+# HARDPROMPT — SECURITY FIX Stufe 1: K-01 (Admin-Selbsternennung) + K-02 (Secret-Leak)
+
+ROLLE: Du führst exakt die unten definierten Änderungen aus. NICHTS darüber hinaus.
+SPRACHE: Deutsch. Bei JEDER Unklarheit oder wenn ein SEARCH-Block nicht exakt 1× matcht: STOPP und melde.
+
+## GRUNDREGELN (NICHT VERHANDELBAR)
+- NIEMALS `git push`.
+- NIEMALS `git commit` OHNE meine ausdrückliche Anweisung im Schritt 5.
+- NIEMALS `drizzle-kit` / `db:push` ausführen. Diese Änderung berührt KEINE Tabelle, nur ein Zod-Schema.
+- KEINE `as any`, KEIN `@ts-ignore`, KEIN `!`-Non-Null. Nur echte Guards.
+- Ändere AUSSCHLIESSLICH die zwei genannten Dateien an den drei genannten Stellen. Sonst nichts.
+
+## SCHRITT 0 — DIAGNOSE (READ-ONLY, NICHTS ÄNDERN)
+Führe aus und zeige mir die Ausgabe, BEVOR du editierst:
+  git status
+  git rev-parse --abbrev-ref HEAD
+  sed -n '57p' shared/schema.ts
+  grep -n "toPublicParticipant" server/routes.ts || echo "Name frei (gut)"
+  sed -n '3118,3122p' server/routes.ts
+Wenn `git status` NICHT sauber ist (außer SICHERHEITS_BEFUND.md): STOPP und melde.
+
+## SCHRITT 1 — SICHERHEITS-TAG SETZEN
+  git tag pre-security-fix-K01-K02-2026-07-07
+Bestätige mit: git tag | grep pre-security-fix-K01-K02-2026-07-07
+
+## SCHRITT 2 — K-01: `role` & Privileg-Felder aus dem Registrierungs-Schema entfernen
+Datei: shared/schema.ts
+
+SEARCH (muss exakt 1× vorkommen):
+export const insertParticipantSchema = createInsertSchema(participants).omit({ id: true, createdAt: true, emailVerified: true, verificationCode: true, verificationExpiry: true, loginLinkToken: true, loginLinkExpiry: true, lastSeenAt: true, makingOfAccess: true, privacyConsentAt: true });
+
+REPLACE:
+export const insertParticipantSchema = createInsertSchema(participants).omit({ id: true, createdAt: true, emailVerified: true, verificationCode: true, verificationExpiry: true, loginLinkToken: true, loginLinkExpiry: true, lastSeenAt: true, makingOfAccess: true, privacyConsentAt: true, role: true, canAccessWhiskyDb: true, communityContributor: true });
+
+## SCHRITT 3 — K-02a: Zentrale Bereinigungsfunktion einfügen
+Datei: server/routes.ts
+
+SEARCH (muss exakt 1× vorkommen):
+    return { authenticated: true, participant };
+  };
+
+  const requireOwnerOrAdmin = async (req: Request, paramId: string): Promise<{ authorized: true; requester: Participant } | { authorized: false; status: number; message: string }> => {
+
+REPLACE:
+    return { authenticated: true, participant };
+  };
+
+  // SECURITY (K-02/M-04): Entfernt Auth-Geheimnisse aus Nutzerobjekten VOR dem Senden.
+  // Behält id/name/role/Anzeigefelder; strippt NUR pin-Hash und aktive Login-/Verifikations-Tokens.
+  const toPublicParticipant = <T extends Record<string, any>>(p: T | null | undefined): Partial<T> | null => {
+    if (!p) return null;
+    const { pin, loginLinkToken, loginLinkExpiry, verificationCode, verificationExpiry, ...rest } = p;
+    return rest;
+  };
+
+  const requireOwnerOrAdmin = async (req: Request, paramId: string): Promise<{ authorized: true; requester: Participant } | { authorized: false; status: number; message: string }> => {
+
+## SCHRITT 4 — K-02b: Bereinigung im Teilnehmer-Endpunkt anwenden
+Datei: server/routes.ts (Endpunkt GET /api/tastings/:id/participants)
+
+SEARCH (muss exakt 1× vorkommen):
+    const sanitized = deduplicated.map((tp: any) => {
+      const { rejoinCode, ...rest } = tp || {};
+      return rest;
+    });
+
+REPLACE:
+    const sanitized = deduplicated.map((tp: any) => {
+      const { rejoinCode, ...rest } = tp || {};
+      return { ...rest, participant: toPublicParticipant(rest.participant) };
+    });
+
+## SCHRITT 5 — VERIFIKATION (nur zeigen, NICHT committen)
+Führe aus und zeige die volle Ausgabe:
+  grep -n "role: true, canAccessWhiskyDb: true, communityContributor: true" shared/schema.ts
+  grep -n "toPublicParticipant" server/routes.ts
+  grep -n "participant: toPublicParticipant(rest.participant)" server/routes.ts
+  npm run check 2>&1 | tail -20
+
+ERWARTUNG:
+  - Zeile 1: genau 1 Treffer in shared/schema.ts
+  - Zeile 2: genau 2 Treffer (Definition + Verwendung)
+  - Zeile 3: genau 1 Treffer
+  - `npm run check`: KEINE NEUEN Typfehler gegenüber der bekannten Baseline. Falls neue Fehler
+    auftauchen, die diese Änderung verursacht: STOPP, melde die Fehler, committe NICHTS.
+
+## SCHRITT 6 — ABSCHLUSS
+- Committe NICHTS von selbst. Kein `git push`. Kein `drizzle-kit`.
+- Melde: „Stufe 1 umgesetzt, Verifikation zeigt X/Y/Z Treffer, check ohne neue Fehler."
+- Warte auf meine Freigabe für den Commit.
+
+## ROLLBACK (falls nötig)
+  git reset --hard pre-security-fix-K01-K02-2026-07-07
