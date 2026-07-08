@@ -318,6 +318,17 @@ export function log(message: string, source = "express") {
 
 const app = express();
 
+// SECURITY (M-01): Basis-Sicherheits-Header auf allen Antworten. Bewusst OHNE
+// Content-Security-Policy (die wird separat und getestet eingeführt), da eine zu
+// strenge CSP das Frontend brechen kann. Diese vier Header sind nebenwirkungsarm.
+app.use((_req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Strict-Transport-Security", "max-age=15552000; includeSubDomains");
+  next();
+});
+
 function isAllowedCapacitorOrigin(origin: string): boolean {
   if (origin === "capacitor://localhost" || origin === "ionic://localhost") return true;
   try {
