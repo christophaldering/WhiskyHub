@@ -1267,6 +1267,11 @@ export async function registerRoutes(
   app.post("/api/session/token", async (req, res) => {
     const auth = await requireAuth(req);
     if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+    // SECURITY (H-01, Stufe 4a): Konten MIT PIN (Passwort) dürfen ihr Token NICHT aus einer
+    // rohen ID tauschen — sie erhalten es beim Login. Nur PIN-lose Gäste bootstrappen hier.
+    if (auth.participant.pin) {
+      return res.status(403).json({ message: "Use login to obtain a session token" });
+    }
     return res.json({ sessionToken: issueSessionToken(auth.participant.id) });
   });
 
@@ -6427,7 +6432,7 @@ Aktualisiere das Ledger EHRLICH anhand des Gesprächs: untouched->touched sobald
 
   // ===== SESSION AUTH (shared by Classic + Simple) =====
   const sessionSigninAttempts = new Map<string, { count: number; resetAt: number }>();
-  const sessionResumeTokens = new Map<string, { mode: string; name?: string; expiresAt: number }>();
+  const sessionResumeTokens = new Map<string, { mode: string; name?: string; pid?: string; role?: string; expiresAt: number }>();
   const sessionResumeAttempts = new Map<string, { count: number; resetAt: number }>();
 
   function generateResumeToken(): string {
@@ -6509,7 +6514,7 @@ Aktualisiere das Ledger EHRLICH anhand des Gesprächs: untouched->touched sobald
         if (e) e.count = 0;
         let signinPhotoUrl: string | undefined;
         try { const prof = await storage.getProfile(participant.id); if (prof?.photoUrl) signinPhotoUrl = prof.photoUrl; } catch (err) { console.warn(`[SESSION][SIGNIN] failed to load profile photo for pid=${participant.id}:`, err); }
-        const result: any = { ok: true, name: displayName, mode: authMode, pid: participant.id, role: participant.role || "user", photoUrl: signinPhotoUrl };
+        const result: any = { ok: true, name: displayName, mode: authMode, pid: participant.id, role: participant.role || "user", photoUrl: signinPhotoUrl, sessionToken: issueSessionToken(participant.id) };
         const token = generateResumeToken();
         sessionResumeTokens.set(token, { mode: authMode, name: displayName, pid: participant.id, role: participant.role || "user", expiresAt: now + 14 * 24 * 60 * 60 * 1000 });
         result.resumeToken = token;
@@ -6532,7 +6537,7 @@ Aktualisiere das Ledger EHRLICH anhand des Gesprächs: untouched->touched sobald
           try { const prof = await storage.getProfile(found.id); if (prof?.photoUrl) globalPhotoUrl = prof.photoUrl; } catch (err) { console.warn(`[SESSION][SIGNIN] failed to load profile photo for global-PIN pid=${found.id}:`, err); }
         }
       }
-      const result: any = { ok: true, name: displayName, mode: authMode, pid: globalPid, photoUrl: globalPhotoUrl };
+      const result: any = { ok: true, name: displayName, mode: authMode, pid: globalPid, photoUrl: globalPhotoUrl, sessionToken: globalPid ? issueSessionToken(globalPid) : undefined };
       const token = generateResumeToken();
       sessionResumeTokens.set(token, { mode: authMode, name: displayName, pid: globalPid, expiresAt: now + 14 * 24 * 60 * 60 * 1000 });
       result.resumeToken = token;
@@ -6602,7 +6607,7 @@ Aktualisiere das Ledger EHRLICH anhand des Gesprächs: untouched->touched sobald
         console.warn(`[SESSION][RESUME] failed to load profile photo for pid=${stored.pid}:`, err);
       }
     }
-    return res.json({ ok: true, mode: stored.mode, name: stored.name, pid: stored.pid || undefined, role: (stored as any).role || "user", photoUrl: resumePhotoUrl });
+    return res.json({ ok: true, mode: stored.mode, name: stored.name, pid: stored.pid || undefined, role: (stored as any).role || "user", photoUrl: resumePhotoUrl, sessionToken: stored.pid ? issueSessionToken(stored.pid) : undefined });
   };
 
   const handleSignout = (req: Request, res: Response) => {

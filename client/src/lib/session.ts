@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
 import { queryClient } from "@/lib/queryClient";
-import { fetchAndStoreSessionToken, clearSessionToken } from "./api";
+import { fetchAndStoreSessionToken, clearSessionToken, setSessionToken } from "./api";
 
 const SK_SIGNED_IN = "session_signed_in";
 const SK_MODE = "session_mode";
@@ -153,6 +153,8 @@ export async function signIn(opts: {
   if (!res.ok) {
     return { ok: false, error: data.message || "Sign in failed", retryAfter: data.retryAfter, code: data.code, adminEmail: data.adminEmail, participantId: data.participantId };
   }
+  // SECURITY (H-01, Stufe 4a): Token direkt aus der Login-Antwort übernehmen (BEVOR Daten laden).
+  if (data.sessionToken && typeof data.sessionToken === "string") { setSessionToken(data.sessionToken); }
   const displayName = data.name || opts.name || null;
   const pid = data.pid || undefined;
   const role = data.role || undefined;
