@@ -249,7 +249,7 @@ export default function SoloDoneScreen({ whiskyName, score, onAnother, onHub, sh
             margin: 0,
             textAlign: "center",
           }} data-testid="solo-done-draft-hint">
-            {t("v2.solo.draftHint", "Du kannst den Entwurf jederzeit unter \"My Drams\" vervollständigen.")}
+            {t("v2.solo.draftHint", "Dein Entwurf wird automatisch gespeichert")}
           </p>
         )}
 

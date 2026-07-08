@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 
 export default function LabsCommunityDetail() {
   const { t } = useTranslation();
+  const tStatus = t; // Alias: in den Listen-maps shadowt das Tasting-Objekt die Variable t
   const [, params] = useRoute("/labs/community/:id");
   const communityId = params?.id;
   const goBack = useBackNavigation("/labs/community");
@@ -723,7 +724,7 @@ export default function LabsCommunityDetail() {
                           </div>
                         </div>
                         <span className="text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>
-                          {t.status === "draft" ? "Draft" : "Open"}
+                          {t.status === "draft" ? tStatus("tastingStatus.draftOpen", "Offen") : tStatus("tastingStatus.open", "Live")}
                         </span>
                       </div>
                       <p className="text-[10px] mt-1.5 flex items-center gap-1" style={{ color: "var(--labs-text-secondary)" }}>
