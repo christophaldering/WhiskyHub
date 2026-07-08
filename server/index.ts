@@ -316,6 +316,35 @@ export function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
+// SECURITY (M-04): Rekursiver Scrubber. Entfernt bekannte Auth-Geheimnis-Felder aus
+// Antwort-Objekten/-Arrays, ohne die Original-Referenzen zu verändern (flache Kopien
+// entlang des Pfades; Blattwerte wie Dates bleiben unangetastet). Nur diese Feldnamen
+// werden entfernt — normale Objekte (Whisky, Journal, ...) bleiben unberührt.
+const SENSITIVE_FIELDS = new Set([
+  "pin",
+  "loginLinkToken",
+  "loginLinkExpiry",
+  "verificationCode",
+  "verificationExpiry",
+]);
+function scrubSensitiveFields(value: any, depth = 0): any {
+  if (depth > 12 || value == null) return value;
+  if (Array.isArray(value)) {
+    return value.map((v) => scrubSensitiveFields(v, depth + 1));
+  }
+  if (typeof value === "object") {
+    // Dates u.ä. nicht anfassen
+    if (value instanceof Date || Buffer.isBuffer(value)) return value;
+    const out: Record<string, any> = {};
+    for (const key of Object.keys(value)) {
+      if (SENSITIVE_FIELDS.has(key)) continue;
+      out[key] = scrubSensitiveFields(value[key], depth + 1);
+    }
+    return out;
+  }
+  return value;
+}
+
 const app = express();
 
 // SECURITY (M-01): Basis-Sicherheits-Header auf allen Antworten. Bewusst OHNE
@@ -372,8 +401,11 @@ app.use((req, res, next) => {
 
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
+    // SECURITY (M-04): Zentrale Bereinigung — entfernt Auth-Geheimnisse aus JEDER
+    // API-Antwort (und damit auch aus den Logs). Arbeitet auf Kopien, mutiert Originale nicht.
+    const scrubbed = scrubSensitiveFields(bodyJson);
+    capturedJsonResponse = scrubbed;
+    return originalResJson.apply(res, [scrubbed, ...args]);
   };
 
   res.on("finish", () => {
