@@ -9,15 +9,54 @@ export function getParticipantId(): string | null {
   } catch { return null; }
 }
 
+// SECURITY (H-01): Sitzungs-Token (signiert, ablaufend) BEVORZUGT im Auth-Header;
+// rohe UUID nur noch als Übergangs-Fallback, bis Stufe 4 scharfschaltet.
+const SESSION_TOKEN_KEY = "casksense_session_token";
+export function getSessionToken(): string | null {
+  try {
+    return sessionStorage.getItem(SESSION_TOKEN_KEY) || localStorage.getItem(SESSION_TOKEN_KEY) || null;
+  } catch { return null; }
+}
+export function setSessionToken(token: string): void {
+  try {
+    sessionStorage.setItem(SESSION_TOKEN_KEY, token);
+    localStorage.setItem(SESSION_TOKEN_KEY, token);
+  } catch {}
+}
+export function clearSessionToken(): void {
+  try {
+    sessionStorage.removeItem(SESSION_TOKEN_KEY);
+    localStorage.removeItem(SESSION_TOKEN_KEY);
+  } catch {}
+}
+// Wert für den Auth-Header: Token bevorzugt, sonst (Übergang) die rohe ID.
+export function authHeaderValue(): string | null {
+  return getSessionToken() || getParticipantId();
+}
+// Holt EINMALIG ein Token für die aktuelle (roh authentifizierte) Sitzung und speichert es.
+export async function fetchAndStoreSessionToken(): Promise<void> {
+  try {
+    const pid = getParticipantId();
+    if (!pid) return;
+    const res = await fetch(`${API_BASE}/session/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-participant-id": getSessionToken() || pid },
+    });
+    if (!res.ok) return;
+    const data = await res.json().catch(() => null);
+    if (data && typeof data.sessionToken === "string") setSessionToken(data.sessionToken);
+  } catch {}
+}
+
 export function pidHeaders(): Record<string, string> {
-  const pid = getParticipantId();
-  return pid ? { "x-participant-id": pid } : {};
+  const v = authHeaderValue();
+  return v ? { "x-participant-id": v } : {};
 }
 
 async function fetchJSON(url: string, options?: RequestInit) {
-  const pid = getParticipantId();
+  const v = authHeaderValue();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (pid) headers["x-participant-id"] = pid;
+  if (v) headers["x-participant-id"] = v;
   const callerHeaders = (options?.headers as Record<string, string> | undefined) || {};
   const mergedHeaders = { ...headers, ...callerHeaders };
   const res = await fetch(`${API_BASE}${url}`, {

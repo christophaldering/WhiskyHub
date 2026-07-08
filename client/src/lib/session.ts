@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
 import { queryClient } from "@/lib/queryClient";
+import { fetchAndStoreSessionToken, clearSessionToken } from "./api";
 
 const SK_SIGNED_IN = "session_signed_in";
 const SK_MODE = "session_mode";
@@ -110,6 +111,8 @@ export function updateSessionPhotoUrl(photoUrl: string | null | undefined) {
 export function setSessionAndSync(mode: SessionMode, name?: string | null, pid?: string, role?: string, photoUrl?: string) {
   setSessionStorage(mode, name, pid, role, photoUrl);
   syncStoreParticipant(pid, name, role, photoUrl);
+  // SECURITY (H-01, Stufe 3a): Nach etabliertem Login einmal ein Sitzungs-Token holen (fire-and-forget).
+  if (pid) { void fetchAndStoreSessionToken(); }
 }
 
 export function syncStoreParticipant(pid?: string, name?: string | null, role?: string, photoUrl?: string) {
@@ -278,6 +281,7 @@ export async function signOut(): Promise<void> {
   } catch {}
   clearSessionStorage();
   clearRemember();
+  try { clearSessionToken(); } catch {}
   try { localStorage.removeItem("casksense_participant_id"); } catch {}
   try { useAppStore.getState().setParticipant(null); } catch {}
   try { queryClient.clear(); } catch {}
