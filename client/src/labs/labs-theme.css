@@ -2200,7 +2200,9 @@ a.labs-dram-item {
 .labs-tasting-card-title-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
+  row-gap: 4px;
   margin-bottom: 2px;
 }
 
