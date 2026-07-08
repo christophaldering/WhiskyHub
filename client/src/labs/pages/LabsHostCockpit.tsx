@@ -2529,13 +2529,13 @@ export default function LabsHostCockpit({ tastingId, onExit, inviteSection, sett
   function renderGroupStats() {
     return (
       <div className="cockpit-card" data-testid="cockpit-group-stats">
-        <div className="cockpit-card-header">
+        <div className="cockpit-card-header" style={{ flexWrap: "wrap", rowGap: 4 }}>
           <div className="cockpit-card-title">
             <BarChart3 style={{ width: 13, height: 13, color: "var(--labs-accent)" }} />
             {t("cockpit.groupTitle", "Group Ratings")}
           </div>
           {activeWhisky && (
-            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text-muted)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "right", marginLeft: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-text-muted)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "right", marginLeft: 8, flex: "1 1 160px" }}>
               {isBlind ? `Dram ${blindLabel(effectiveDramIdx)}` : (activeWhisky.name || `Dram ${effectiveDramIdx + 1}`)}
             </span>
           )}
