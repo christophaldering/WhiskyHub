@@ -31,7 +31,7 @@ import {
   TASTING_STATS_CHART_TOOL_NAMES,
   verifyTastingAccess,
 } from "./labs-tasting-ask-tools";
-import { hashPassword, verifyPassword } from "./lib/auth";
+import { hashPassword, verifyPassword, issueSessionToken } from "./lib/auth";
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, AlignmentType, WidthType, BorderStyle } from "docx";
 import sharp from "sharp";
 import { PDFDocument } from "pdf-lib";
@@ -1259,6 +1259,16 @@ export async function registerRoutes(
   // Ein Gast-Teilnehmer (experienceLevel "guest", ohne E-Mail) wird in place zu
   // einem echten Konto: E-Mail + PIN werden gesetzt, der "#xxxx"-Gastsuffix
   // entfernt und die übliche E-Mail-Verifikation angestoßen. Bewertungen,
+  // SECURITY (H-01, Stufe 2): Stellt ein signiertes, ablaufendes Sitzungs-Token aus.
+  // Der Client ruft dies nach erfolgreichem Login EINMAL auf (in der Übergangsphase
+  // noch mit roher x-participant-id authentifiziert, die die Edge-Middleware durchlässt)
+  // und sendet anschließend das Token statt der rohen ID. Ändert bestehende Endpunkte nicht.
+  app.post("/api/session/token", async (req, res) => {
+    const auth = await requireAuth(req);
+    if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+    return res.json({ sessionToken: issueSessionToken(auth.participant.id) });
+  });
+
   // Tasting-Mitgliedschaften und Signatur-Startpunkt bleiben erhalten — es
   // findet bewusst KEIN Merge zweier Teilnehmer statt (existiert die E-Mail
   // bereits, lehnen wir ab; Zusammenführen wäre ein eigenes Paket).
