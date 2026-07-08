@@ -5,3 +5,10 @@ server/public
 vite.config.ts.*
 *.tar.gz
 backups/
+
+.env
+.env.*
+*.local
+*.bundle
+deployment secrets
+attached_assets/Pasted--HARDPROMPT*
