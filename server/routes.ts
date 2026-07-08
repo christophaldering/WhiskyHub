@@ -11835,7 +11835,9 @@ If you cannot identify the barcode, return {"name": "", "confidence": "low"}.`,
         finishedAt: Date.now(),
       });
       setTimeout(() => importProgressByPid.delete(participantIdForProgress), 30_000);
-      res.status(500).json({ error: error?.message || "Import failed", details: error?.stack });
+      // SECURITY (M-05): Kein Stacktrace an den Client. Details werden serverseitig
+      // geloggt (siehe console.error oben); der Client erhält nur eine neutrale Meldung.
+      res.status(500).json({ error: "Import failed" });
     }
   });
 
