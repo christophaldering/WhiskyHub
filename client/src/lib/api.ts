@@ -108,7 +108,13 @@ async function fetchJSON(url: string, options?: RequestInit) {
     throw err;
   }
   if (res.status === 204) return null;
-  return res.json();
+  const data = await res.json();
+  // SECURITY (H-01): Sitzungs-Token aus JEDER Auth-Antwort zentral übernehmen — deckt alle
+  // Login-Pfade ab (loginByEmail, loginOrCreate, guestJoin ...), nicht nur /api/session/signin.
+  if (data && typeof data === "object" && typeof data.sessionToken === "string") {
+    try { setSessionToken(data.sessionToken); } catch {}
+  }
+  return data;
 }
 
 // ===== Participants =====

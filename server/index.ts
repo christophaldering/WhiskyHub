@@ -1,7 +1,7 @@
 import "./openai-compat";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { verifySessionToken, looksLikeSessionToken } from "./lib/auth";
+import { verifySessionToken, looksLikeSessionToken, issueSessionToken } from "./lib/auth";
 import { serveStatic } from "./static";
 import { createServer, type IncomingMessage, type ServerResponse } from "http";
 import { APP_NAME, getVersionInfo } from "@shared/version";
@@ -346,6 +346,15 @@ function scrubSensitiveFields(value: any, depth = 0): any {
   return value;
 }
 
+// SECURITY (H-01): Pfade, deren erfolgreiche Teilnehmer-Antwort ein Sitzungs-Token erhält,
+// damit JEDER Login-Weg (nicht nur /api/session/signin) ein Token liefert.
+const H01_AUTH_TOKEN_PATHS = new Set<string>([
+  "/api/participants/login",
+  "/api/participants",
+  "/api/participants/guest",
+  "/api/participants/demo-guest",
+]);
+
 const app = express();
 
 // SECURITY (M-01): Basis-Sicherheits-Header auf allen Antworten. Bewusst OHNE
@@ -404,7 +413,17 @@ app.use((req, res, next) => {
   res.json = function (bodyJson, ...args) {
     // SECURITY (M-04): Zentrale Bereinigung — entfernt Auth-Geheimnisse aus JEDER
     // API-Antwort (und damit auch aus den Logs). Arbeitet auf Kopien, mutiert Originale nicht.
-    const scrubbed = scrubSensitiveFields(bodyJson);
+    let scrubbed = scrubSensitiveFields(bodyJson);
+    // SECURITY (H-01): Auf Login-/Registrier-/Gast-Pfaden ein Token an die Teilnehmer-Antwort
+    // anhängen (Erfolgsfall = Objekt mit id). Fehler-Antworten (ohne id) bleiben unberührt.
+    if (
+      req.method === "POST" &&
+      H01_AUTH_TOKEN_PATHS.has(req.path) &&
+      scrubbed && typeof scrubbed === "object" && !Array.isArray(scrubbed) &&
+      typeof scrubbed.id === "string" && !scrubbed.sessionToken
+    ) {
+      scrubbed = { ...scrubbed, sessionToken: issueSessionToken(scrubbed.id) };
+    }
     capturedJsonResponse = scrubbed;
     return originalResJson.apply(res, [scrubbed, ...args]);
   };
