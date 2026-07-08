@@ -19519,7 +19519,9 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
   // ungültig — Share-Links sind jederzeit neu erzeugbar.
   const storyShareSecret = crypto
     .createHash("sha256")
-    .update(process.env.SESSION_SECRET || process.env.DATABASE_URL || "casksense-story")
+    // SECURITY (M-02): kein öffentlich bekannter Konstanten-Fallback mehr.
+    // DATABASE_URL wird beim Start erzwungen (server/db.ts), daher immer vorhanden.
+    .update(process.env.SESSION_SECRET || process.env.DATABASE_URL || "")
     .digest();
   const storyShareToken = (tastingId: string) =>
     crypto.createHmac("sha256", storyShareSecret).update(`story:${tastingId}`).digest("hex").slice(0, 20);
