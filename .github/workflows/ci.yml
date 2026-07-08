@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  # tsc-Schulden-Ratsche: Fehlerzahl darf diese Baseline NIE überschreiten.
+  # Beim Schuldenabbau: Zahl hier manuell senken (nie erhöhen).
+  TSC_BASELINE: 501
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Replit schreibt package-firewall.replit.local-URLs ins Lockfile —
+      # außerhalb von Replit unerreichbar, daher hier auf npmjs.org umschreiben.
+      - name: Lockfile — Replit-Firewall-URLs neutralisieren
+        run: sed -i 's|http://package-firewall.replit.local/npm/|https://registry.npmjs.org/|g' package-lock.json
+
+      - name: Dependencies
+        run: npm ci --no-audit --no-fund
+
+      # tsc braucht bei dieser Codebasegröße >2GB Heap (Node-Default reicht nicht).
+      - name: TypeScript-Check gegen Baseline
+        run: |
+          set +e
+          NODE_OPTIONS="--max-old-space-size=6144" npx tsc > tsc-output.txt 2>&1
+          set -e
+          ERRORS=$(grep -cE "error TS" tsc-output.txt || true)
+          echo "tsc-Fehler: $ERRORS (Baseline: $TSC_BASELINE)"
+          if [ "$ERRORS" -gt "$TSC_BASELINE" ]; then
+            echo "::error::tsc-Fehlerzahl ($ERRORS) über Baseline ($TSC_BASELINE) — neue Typfehler eingeführt!"
+            echo "--- Neue Fehler prüfen (letzte 50 Zeilen): ---"
+            tail -50 tsc-output.txt
+            exit 1
+          fi
+          if [ "$ERRORS" -lt "$TSC_BASELINE" ]; then
+            echo "::notice::Fehlerzahl ($ERRORS) unter Baseline — TSC_BASELINE in ci.yml auf $ERRORS senken (Ratsche)."
+          fi
+
+      # community-access.test.ts braucht einen laufenden Server (Port 5000) —
+      # kein echter Unit-Test, läuft nur lokal. DATABASE_URL ist ein Dummy:
+      # zwei Tests importieren server/db.ts (wirft ohne die Variable), verbinden aber nie.
+      - name: Unit-Tests
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci_dummy
+        run: npx vitest run --config vitest.config.ts --exclude "tests/unit/community-access.test.ts"
