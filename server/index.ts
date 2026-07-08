@@ -423,18 +423,34 @@ app.use((req, res, next) => {
   next();
 });
 
-// SECURITY (H-01, Stufe 1 — noch schlafend): Prüft NUR token-förmige x-participant-id-Header.
-// Ein gültiges Token wird auf die reine participantId zurückgeschrieben (alle nachgelagerten
-// Leser sehen weiter eine simple ID). Rohe UUIDs (keine Punkte) laufen UNVERÄNDERT durch —
-// deshalb ändert diese Stufe das Verhalten nicht. Erst Stufe 4 weist rohe UUIDs ab.
+// SECURITY (H-01, Stufe 4b — SCHARF): Token-förmige Header werden verifiziert und zur ID
+// aufgelöst. Rohe UUIDs werden ABGEWIESEN (401) — außer auf den Bootstrap-Pfaden, die per
+// Passwort/Body authentifizieren (Login/Registrierung/Gast) bzw. dem Gast-Token-Bootstrap.
+// Damit ist die rohe UUID kein gültiger Zugangsnachweis mehr.
+const H01_BOOTSTRAP_PATHS = new Set<string>([
+  "/api/session/signin",
+  "/api/session/token",
+  "/api/participants",
+  "/api/participants/login",
+  "/api/participants/demo-guest",
+  "/api/participants/guest",
+  "/api/participants/login-link/request",
+  "/api/participants/login-link/consume",
+]);
 app.use((req, res, next) => {
   const raw = req.headers["x-participant-id"];
-  if (typeof raw === "string" && looksLikeSessionToken(raw)) {
-    const resolvedId = verifySessionToken(raw);
-    if (!resolvedId) {
-      return res.status(401).json({ message: "Session expired or invalid" });
+  if (typeof raw === "string" && raw.length > 0) {
+    if (looksLikeSessionToken(raw)) {
+      const resolvedId = verifySessionToken(raw);
+      if (!resolvedId) {
+        return res.status(401).json({ message: "Session expired or invalid" });
+      }
+      req.headers["x-participant-id"] = resolvedId;
+    } else if (!H01_BOOTSTRAP_PATHS.has(req.path)) {
+      // Rohe UUID (kein Token) auf einem geschützten Pfad -> abweisen.
+      return res.status(401).json({ message: "Session token required" });
     }
-    req.headers["x-participant-id"] = resolvedId;
+    // Auf Bootstrap-Pfaden: rohe ID wird durchgelassen (Body-/Passwort-Auth bzw. Gast-Bootstrap).
   }
   next();
 });
