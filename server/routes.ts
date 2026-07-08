@@ -102,6 +102,36 @@ function checkConverseRateLimit(key: string): { allowed: boolean; retryAfterSeco
   return { allowed: true };
 }
 
+// SECURITY (H-05): Brute-Force-Schutz am Login. Strenger als Identify:
+// max. 5 Fehlversuche pro 15 Minuten, geschlüsselt auf E-Mail + IP.
+// Nur FEHLVERSUCHE zählen; ein erfolgreicher Login räumt den Eintrag (loginRateLimitClear).
+const loginRateLimit = new Map<string, { count: number; resetAt: number }>();
+const LOGIN_RATE_LIMIT = 5;
+const LOGIN_RATE_WINDOW_MS = 15 * 60 * 1000;
+function checkLoginRateLimit(key: string): { allowed: boolean; retryAfterSeconds?: number } {
+  const now = Date.now();
+  const entry = loginRateLimit.get(key);
+  if (!entry || now > entry.resetAt) {
+    return { allowed: true };
+  }
+  if (entry.count >= LOGIN_RATE_LIMIT) {
+    return { allowed: false, retryAfterSeconds: Math.ceil((entry.resetAt - now) / 1000) };
+  }
+  return { allowed: true };
+}
+function loginRateLimitFail(key: string): void {
+  const now = Date.now();
+  const entry = loginRateLimit.get(key);
+  if (!entry || now > entry.resetAt) {
+    loginRateLimit.set(key, { count: 1, resetAt: now + LOGIN_RATE_WINDOW_MS });
+  } else {
+    entry.count++;
+  }
+}
+function loginRateLimitClear(key: string): void {
+  loginRateLimit.delete(key);
+}
+
 const aiScanCache = new Map<string, { result: any; timestamp: number }>();
 let tourCacheVersion = Date.now();
 const tourImageCache = new Map<string, string>();
@@ -1114,6 +1144,16 @@ export async function registerRoutes(
       if (!pin || typeof pin !== "string") {
         return res.status(400).json({ message: "PIN is required" });
       }
+      // SECURITY (H-05): Brute-Force-Bremse VOR jeder PIN-Prüfung.
+      const loginRateKey = email.trim().toLowerCase() + "|" +
+        ((req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || "unknown");
+      const loginRate = checkLoginRateLimit(loginRateKey);
+      if (!loginRate.allowed) {
+        return res.status(429).json({
+          message: "Too many login attempts. Please try again later.",
+          retryAfterSeconds: loginRate.retryAfterSeconds,
+        });
+      }
       const ADMIN_EMAIL = "christoph.aldering@googlemail.com";
       const existing = await storage.getParticipantByEmail(email.trim());
       if (!existing) {
@@ -1138,8 +1178,10 @@ export async function registerRoutes(
         return res.json(updated);
       }
       if (!(await verifyPassword(pin || "", existing.pin || ""))) {
+        loginRateLimitFail(loginRateKey);   // SECURITY (H-05): Fehlversuch zählen
         return res.status(401).json({ message: "Invalid password" });
       }
+      loginRateLimitClear(loginRateKey);     // SECURITY (H-05): Erfolg -> Zähler zurücksetzen
       const loginVerCheck = checkEmailVerification(existing);
       if (loginVerCheck.blocked) {
         return res.status(403).json({ message: loginVerCheck.message, code: loginVerCheck.code, adminEmail: ADMIN_CONTACT_EMAIL, participantId: existing.id });
