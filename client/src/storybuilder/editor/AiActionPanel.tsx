@@ -193,7 +193,7 @@ function DiffPreviewModal({
             <div style={{ fontSize: 10, letterSpacing: ".2em", textTransform: "uppercase", color: "#C9A961", marginBottom: 6 }}>Vorschlag</div>
             <div
               data-testid="ai-diff-proposal"
-              dangerouslySetInnerHTML={{ __html: diff.proposal }}
+              dangerouslySetInnerHTML={{ __html: sanitizeStoryHtml(diff.proposal) }}
               style={{ ...diffBox, borderColor: "rgba(201,169,97,0.5)" }}
             />
           </div>
