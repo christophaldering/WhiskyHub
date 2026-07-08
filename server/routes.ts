@@ -47,6 +47,13 @@ import { maybeCompressImage } from "./image-sanitize";
 const identifyCache = new LRUCacheImpl<any>(200, 24 * 60 * 60 * 1000);
 
 const ADMIN_CONTACT_EMAIL = process.env.ADMIN_CONTACT_EMAIL || "christoph.aldering@googlemail.com";
+// SECURITY (M-06): Admin-Bootstrap-Adresse aus der Umgebung, NICHT hartcodiert im Repo.
+// Leerer Wert bedeutet: KEIN automatisches Admin-Upgrade (siehe isAdminBootstrapEmail).
+const ADMIN_BOOTSTRAP_EMAIL = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+function isAdminBootstrapEmail(email: string | null | undefined): boolean {
+  if (!ADMIN_BOOTSTRAP_EMAIL) return false;
+  return (email || "").trim().toLowerCase() === ADMIN_BOOTSTRAP_EMAIL;
+}
 // Consent-Textversion — bei inhaltlicher Änderung der Einwilligungstexte hochziehen (löst später Re-Consent aus).
 const CONSENT_TEXT_VERSION = "v1-2026-07";
 // Einzige Quelle für das aktive Cooper-Textmodell (auch als modelLabel für vocabulary_adoption genutzt).
@@ -1003,7 +1010,6 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Password must be 4–64 characters" });
       }
       const privacyConsent = req.body.privacyConsent === true;
-      const ADMIN_EMAIL = "christoph.aldering@googlemail.com";
 
       const existing = await storage.getParticipantByName(data.name);
       if (!existing) {
@@ -1026,7 +1032,7 @@ export async function registerRoutes(
           if (privacyConsent && !existing.privacyConsentAt) {
             await storage.setPrivacyConsent(existing.id);
           }
-          if (existing.email?.toLowerCase() === ADMIN_EMAIL && existing.role !== "admin") {
+          if (isAdminBootstrapEmail(existing.email) && existing.role !== "admin") {
             await storage.updateParticipantRole(existing.id, "admin");
           }
           const updated = await storage.getParticipant(existing.id);
@@ -1049,7 +1055,7 @@ export async function registerRoutes(
         if (privacyConsent && !existing.privacyConsentAt) {
           await storage.setPrivacyConsent(existing.id);
         }
-        if (existing.email?.toLowerCase() === ADMIN_EMAIL && existing.role !== "admin") {
+        if (isAdminBootstrapEmail(existing.email) && existing.role !== "admin") {
           await storage.updateParticipantRole(existing.id, "admin");
           const updated = await storage.getParticipant(existing.id);
           if (updated) { storage.updateLastSeen(updated.id).catch(() => {}); notifyAdminLogin(updated, false); }
@@ -1076,7 +1082,7 @@ export async function registerRoutes(
       await storage.setPrivacyConsent(participant.id);
       recordFunnelEvents([{ event: "signup_submit_success", page: "/labs/onboarding" }], req).catch(() => undefined);
 
-      if (participant.email?.toLowerCase() === ADMIN_EMAIL && participant.role !== "admin") {
+      if (isAdminBootstrapEmail(participant.email) && participant.role !== "admin") {
         await storage.updateParticipantRole(participant.id, "admin");
       }
 
@@ -1197,14 +1203,13 @@ export async function registerRoutes(
           retryAfterSeconds: loginRate.retryAfterSeconds,
         });
       }
-      const ADMIN_EMAIL = "christoph.aldering@googlemail.com";
       const existing = await storage.getParticipantByEmail(email.trim());
       if (!existing) {
         return res.status(404).json({ message: "No account found with this email. Please register first." });
       }
       if (!existing.pin) {
         await storage.updateParticipantPin(existing.id, pin);
-        if (existing.email?.toLowerCase() === ADMIN_EMAIL && existing.role !== "admin") {
+        if (isAdminBootstrapEmail(existing.email) && existing.role !== "admin") {
           await storage.updateParticipantRole(existing.id, "admin");
         }
         if (experienceLevel && typeof experienceLevel === "string" && ["guest", "explorer", "connoisseur", "analyst"].includes(experienceLevel)) {
@@ -1232,7 +1237,7 @@ export async function registerRoutes(
       if (experienceLevel && typeof experienceLevel === "string" && ["guest", "explorer", "connoisseur", "analyst"].includes(experienceLevel)) {
         await storage.updateParticipant(existing.id, { experienceLevel });
       }
-      if (existing.email?.toLowerCase() === ADMIN_EMAIL && existing.role !== "admin") {
+      if (isAdminBootstrapEmail(existing.email) && existing.role !== "admin") {
         await storage.updateParticipantRole(existing.id, "admin");
         const updated = await storage.getParticipant(existing.id);
         if (updated) { storage.updateLastSeen(updated.id).catch(() => {}); notifyAdminLogin(updated, false); }
