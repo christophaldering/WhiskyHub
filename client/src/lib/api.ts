@@ -33,6 +33,42 @@ export function clearSessionToken(): void {
 export function authHeaderValue(): string | null {
   return getSessionToken() || getParticipantId();
 }
+
+// SECURITY (H-01, Stufe 3b): Globaler fetch-Interceptor. Setzt für /api-Aufrufe den
+// x-participant-id-Header auf das Sitzungs-Token, sobald eines vorhanden ist. Dadurch
+// senden ALLE Aufrufstellen (auch die verstreuten Inline-Header) automatisch das Token,
+// ohne dass jede Stelle einzeln geändert werden muss. Ohne Token: keine Änderung.
+let authInterceptorInstalled = false;
+export function installAuthHeaderInterceptor(): void {
+  if (authInterceptorInstalled) return;
+  if (typeof window === "undefined" || typeof window.fetch !== "function") return;
+  authInterceptorInstalled = true;
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+    try {
+      const token = getSessionToken();
+      if (token) {
+        let url = "";
+        if (typeof input === "string") url = input;
+        else if (input instanceof URL) url = input.toString();
+        else url = (input as Request).url;
+        if (url && url.indexOf("/api") !== -1) {
+          if (typeof input === "string" || input instanceof URL) {
+            const headers = new Headers(init?.headers || undefined);
+            headers.set("x-participant-id", token);
+            return originalFetch(input, { ...init, headers });
+          } else {
+            const req = input as Request;
+            const headers = new Headers(req.headers);
+            headers.set("x-participant-id", token);
+            return originalFetch(new Request(req, { headers }));
+          }
+        }
+      }
+    } catch {}
+    return originalFetch(input as RequestInfo | URL, init);
+  };
+}
 // Holt EINMALIG ein Token für die aktuelle (roh authentifizierte) Sitzung und speichert es.
 export async function fetchAndStoreSessionToken(): Promise<void> {
   try {
