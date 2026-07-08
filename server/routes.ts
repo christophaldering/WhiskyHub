@@ -1208,7 +1208,8 @@ export async function registerRoutes(
         return res.status(404).json({ message: "No account found with this email. Please register first." });
       }
       if (!existing.pin) {
-        await storage.updateParticipantPin(existing.id, pin);
+        // SECURITY: PIN niemals im Klartext speichern — immer bcrypt-hashen.
+        await storage.updateParticipantPin(existing.id, await hashPassword(pin));
         if (isAdminBootstrapEmail(existing.email) && existing.role !== "admin") {
           await storage.updateParticipantRole(existing.id, "admin");
         }
@@ -1989,7 +1990,8 @@ export async function registerRoutes(
       if (participant.verificationExpiry && new Date() > new Date(participant.verificationExpiry)) {
         return res.status(400).json({ message: "Verification code has expired. Please request a new one." });
       }
-      await storage.updateParticipantPin(participant.id, newPin);
+      // SECURITY: PIN niemals im Klartext speichern — immer bcrypt-hashen.
+      await storage.updateParticipantPin(participant.id, await hashPassword(newPin));
       await storage.setVerificationCode(participant.id, "", new Date(0));
       res.json({ success: true });
     } catch (e: any) {
