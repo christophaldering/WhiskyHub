@@ -872,6 +872,14 @@ export async function registerRoutes(
     return { authenticated: true, participant };
   };
 
+  // SECURITY (K-02/M-04): Entfernt Auth-Geheimnisse aus Nutzerobjekten VOR dem Senden.
+  // Behält id/name/role/Anzeigefelder; strippt NUR pin-Hash und aktive Login-/Verifikations-Tokens.
+  const toPublicParticipant = <T extends Record<string, any>>(p: T | null | undefined) => {
+    if (!p) return null;
+    const { pin, loginLinkToken, loginLinkExpiry, verificationCode, verificationExpiry, ...rest } = p;
+    return rest;
+  };
+
   const requireOwnerOrAdmin = async (req: Request, paramId: string): Promise<{ authorized: true; requester: Participant } | { authorized: false; status: number; message: string }> => {
     const requesterId = req.headers["x-participant-id"] as string | undefined;
     if (!requesterId) return { authorized: false, status: 403, message: "Forbidden" };
@@ -3132,7 +3140,7 @@ export async function registerRoutes(
     });
     const sanitized = deduplicated.map((tp: any) => {
       const { rejoinCode, ...rest } = tp || {};
-      return rest;
+      return { ...rest, participant: toPublicParticipant(rest.participant) };
     });
     res.json(sanitized);
   });
