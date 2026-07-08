@@ -1,6 +1,7 @@
 import "./openai-compat";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+import { verifySessionToken, looksLikeSessionToken } from "./lib/auth";
 import { serveStatic } from "./static";
 import { createServer, type IncomingMessage, type ServerResponse } from "http";
 import { APP_NAME, getVersionInfo } from "@shared/version";
@@ -419,6 +420,22 @@ app.use((req, res, next) => {
     }
   });
 
+  next();
+});
+
+// SECURITY (H-01, Stufe 1 — noch schlafend): Prüft NUR token-förmige x-participant-id-Header.
+// Ein gültiges Token wird auf die reine participantId zurückgeschrieben (alle nachgelagerten
+// Leser sehen weiter eine simple ID). Rohe UUIDs (keine Punkte) laufen UNVERÄNDERT durch —
+// deshalb ändert diese Stufe das Verhalten nicht. Erst Stufe 4 weist rohe UUIDs ab.
+app.use((req, res, next) => {
+  const raw = req.headers["x-participant-id"];
+  if (typeof raw === "string" && looksLikeSessionToken(raw)) {
+    const resolvedId = verifySessionToken(raw);
+    if (!resolvedId) {
+      return res.status(401).json({ message: "Session expired or invalid" });
+    }
+    req.headers["x-participant-id"] = resolvedId;
+  }
   next();
 });
 
