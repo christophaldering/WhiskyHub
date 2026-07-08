@@ -593,9 +593,52 @@ async function tryFetchWhiskybaseImage(whiskybaseUrlOrId: string | null | undefi
   }
 }
 
+// SECURITY (H-04): SSRF-Schutz. Nur öffentliche http(s)-Bild-URLs zulassen;
+// interne/private Ziele (localhost, private IP-Bereiche, Cloud-Metadaten) blockieren.
+function assertSafeImageUrl(rawUrl: string): URL {
+  let u: URL;
+  try {
+    u = new URL(rawUrl);
+  } catch {
+    throw new Error("Invalid URL");
+  }
+  if (u.protocol !== "https:" && u.protocol !== "http:") {
+    throw new Error("Only http/https allowed");
+  }
+  const host = u.hostname.toLowerCase();
+  // localhost / loopback / link-local / metadata / interne Namen
+  if (
+    host === "localhost" ||
+    host === "0.0.0.0" ||
+    host === "::1" ||
+    host === "metadata.google.internal" ||
+    host.endsWith(".internal") ||
+    host.endsWith(".local")
+  ) {
+    throw new Error("Host not allowed");
+  }
+  // IPv4 in privaten / reservierten Bereichen blockieren
+  const m = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (m) {
+    const a = Number(m[1]), b = Number(m[2]);
+    if (
+      a === 10 ||
+      a === 127 ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      (a === 169 && b === 254) ||
+      a === 0
+    ) {
+      throw new Error("Private IP not allowed");
+    }
+  }
+  return u;
+}
+
 async function downloadImageFromUrl(url: string, objectStorage: ObjectStorageService): Promise<string | null> {
   try {
-    const response = await fetch(url);
+    assertSafeImageUrl(url);
+    const response = await fetch(url, { redirect: "error" });
     if (!response.ok) return null;
     const contentType = response.headers.get("content-type") || "";
     const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
