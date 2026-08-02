@@ -265,6 +265,165 @@ function exportAiResultsCsv(results: any[], t: any) {
   URL.revokeObjectURL(url);
 }
 
+// Lineup-Feinschliff: Freitext-Anweisung -> KI-Sortiervorschlag mit
+// Vorher/Nachher-Vorschau. Wird in beiden Smart-Import-Ergebnislisten
+// (mobil + Desktop) verwendet.
+function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply }: {
+  results: any[];
+  hostId: string;
+  language: string;
+  t: any;
+  testPrefix: string;
+  onApply: (next: any[]) => void;
+}) {
+  const [instruction, setInstruction] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [proposal, setProposal] = useState<{ order: number[]; removed: number[]; reasons: Record<number, string>; summary?: string } | null>(null);
+  // Fingerabdruck der Liste zum Zeitpunkt des Vorschlags: ändert sich die
+  // Liste semantisch (neuer Import, andere Reihenfolge), verfällt der Vorschlag.
+  const snapshotOf = (rs: any[]) => rs.map((w: any) => w?.name || "").join("\u0000");
+  const proposalSnapshotRef = useRef<string>("");
+
+  if (results.length < 2) return null;
+  if (proposal && proposalSnapshotRef.current !== snapshotOf(results)) {
+    setProposal(null);
+  }
+
+  const runRefine = async (instr: string) => {
+    if (!instr.trim() || loading) return;
+    setLoading(true);
+    setError("");
+    setProposal(null);
+    try {
+      const res = await fetch(apiUrl("/api/tastings/ai-refine"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hostId,
+          instruction: instr.trim(),
+          language,
+          whiskies: results.map((w: any) => ({
+            name: w.name, distillery: w.distillery, age: w.age, abv: w.abv,
+            caskType: w.caskType || w.cask, region: w.region, country: w.country,
+            category: w.category, peatLevel: w.peatLevel, wbScore: w.wbScore, price: w.price,
+          })),
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.message || "Refine failed");
+      proposalSnapshotRef.current = snapshotOf(results);
+      setProposal(data);
+    } catch (e: any) {
+      setError(e?.message || t("labs.aiRefine.error", "Fine-tuning failed. Please try again."));
+    }
+    setLoading(false);
+  };
+
+  const presets: { key: string; label: string }[] = [
+    { key: "abv", label: t("labs.aiRefine.presetAbv", "ABV ascending") },
+    { key: "peat", label: t("labs.aiRefine.presetPeat", "Peat at the end") },
+    { key: "sherry", label: t("labs.aiRefine.presetSherry", "Sherry block") },
+    { key: "check", label: t("labs.aiRefine.presetCheck", "Check my order") },
+  ];
+
+  const acceptProposal = () => {
+    if (!proposal || proposalSnapshotRef.current !== snapshotOf(results)) {
+      setProposal(null);
+      return;
+    }
+    const next = proposal.order.map(oldIdx => results[oldIdx]).filter(Boolean);
+    setProposal(null);
+    setInstruction("");
+    onApply(next);
+  };
+
+  return (
+    <div className="labs-card p-3 space-y-2" style={{ border: "1px solid color-mix(in srgb, var(--labs-accent) 25%, transparent)" }} data-testid={`${testPrefix}-refine-panel`}>
+      <div className="flex items-center gap-1.5">
+        <Sparkles className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
+        <span className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>{t("labs.aiRefine.title", "Fine-tune lineup")}</span>
+      </div>
+      <div className="flex gap-1.5">
+        <input
+          className="labs-input flex-1 text-xs"
+          value={instruction}
+          onChange={e => setInstruction(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") runRefine(instruction); }}
+          placeholder={t("labs.aiRefine.placeholder", "e.g. sort by ABV ascending, peaty ones last…")}
+          disabled={loading}
+          data-testid={`${testPrefix}-refine-input`}
+        />
+        <button
+          className="labs-btn-ghost text-xs flex-shrink-0"
+          onClick={() => runRefine(instruction)}
+          disabled={loading || !instruction.trim()}
+          data-testid={`${testPrefix}-refine-run`}
+        >
+          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : t("labs.aiRefine.run", "Apply")}
+        </button>
+      </div>
+      <div className="flex gap-1.5 flex-wrap">
+        {presets.map(p => (
+          <button
+            key={p.key}
+            className="text-[11px] px-2 py-1 rounded-full"
+            style={{ background: "color-mix(in srgb, var(--labs-accent) 10%, transparent)", color: "var(--labs-accent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 25%, transparent)", opacity: loading ? 0.5 : 1 }}
+            onClick={() => { setInstruction(p.label); runRefine(p.label); }}
+            disabled={loading}
+            data-testid={`${testPrefix}-refine-preset-${p.key}`}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+      {loading && (
+        <p className="text-[11px]" style={{ color: "var(--labs-text-muted)", margin: 0 }}>{t("labs.aiRefine.loading", "The AI is arranging your lineup…")}</p>
+      )}
+      {error && <p className="text-[11px]" style={{ color: "var(--labs-danger)", margin: 0 }} data-testid={`${testPrefix}-refine-error`}>{error}</p>}
+      {proposal && (
+        <div className="space-y-1.5" data-testid={`${testPrefix}-refine-proposal`}>
+          {proposal.summary && <p className="text-[11px]" style={{ color: "var(--labs-text-secondary)", margin: 0 }}>{proposal.summary}</p>}
+          <div className="space-y-1">
+            {proposal.order.map((oldIdx, pos) => {
+              const w = results[oldIdx];
+              if (!w) return null;
+              const moved = oldIdx !== pos;
+              return (
+                <div key={oldIdx} className="text-[11px] flex gap-1.5 items-baseline" style={{ color: "var(--labs-text)" }}>
+                  <span style={{ color: "var(--labs-text-muted)", flexShrink: 0, minWidth: 18 }}>{pos + 1}.</span>
+                  <span className="truncate">{w.name}</span>
+                  {moved && <span style={{ color: "var(--labs-accent)", flexShrink: 0 }}>({oldIdx + 1}→{pos + 1})</span>}
+                  {proposal.reasons[oldIdx] && <span className="truncate" style={{ color: "var(--labs-text-muted)" }}>— {proposal.reasons[oldIdx]}</span>}
+                </div>
+              );
+            })}
+            {proposal.removed.map(oldIdx => {
+              const w = results[oldIdx];
+              if (!w) return null;
+              return (
+                <div key={`rm-${oldIdx}`} className="text-[11px] flex gap-1.5 items-baseline" style={{ color: "var(--labs-text-muted)" }}>
+                  <span style={{ flexShrink: 0, minWidth: 18 }}>✕</span>
+                  <span className="truncate" style={{ textDecoration: "line-through" }}>{w.name}</span>
+                  {proposal.reasons[oldIdx] && <span className="truncate">— {proposal.reasons[oldIdx]}</span>}
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex gap-1.5">
+            <button className="labs-btn-primary text-xs flex-1" onClick={acceptProposal} data-testid={`${testPrefix}-refine-accept`}>
+              {t("labs.aiRefine.accept", "Apply order")}
+            </button>
+            <button className="labs-btn-ghost text-xs" onClick={() => setProposal(null)} data-testid={`${testPrefix}-refine-discard`}>
+              {t("labs.aiRefine.discard", "Discard")}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function normalizeAbv(raw: any): number | null {
   if (raw === null || raw === undefined || raw === "") return null;
   let val = typeof raw === "string" ? parseFloat(raw.replace(",", ".")) : Number(raw);
@@ -1266,6 +1425,7 @@ function MobileCompanion({
   const [mobileAiResults, setMobileAiResults] = useState<any[]>([]);
   const [mobileAiImageUrls, setMobileAiImageUrls] = useState<string[]>([]);
   const [mobileAiSelected, setMobileAiSelected] = useState<Set<number>>(new Set());
+  const [mobileAiPhotoPicker, setMobileAiPhotoPicker] = useState<number | null>(null);
   const [mobileDragOver, setMobileDragOver] = useState(false);
   const [confirmEndSession, setConfirmEndSession] = useState(false);
   const [storyOnEnd, setStoryOnEnd] = useState(true);
@@ -1473,8 +1633,13 @@ function MobileCompanion({
           toast({ description: t("labs.aiImport.partialFail", "{{count}} photo(s) could not be analyzed. The remaining bottles were recognized — you can re-upload the missing photos.", { count: result.failedImages }) });
         }
         if (result?.whiskies?.length) {
+          // Einzelfotos (1 Foto = 1 Flasche) direkt als Flaschenfoto zuordnen.
+          const urls: string[] = Array.isArray(result.imageUrls) ? result.imageUrls : [];
+          if (urls.length > 0 && urls.length === result.whiskies.length) {
+            result.whiskies.forEach((w: any, i: number) => { w._photoUrl = urls[i]; });
+          }
           setMobileAiResults(result.whiskies);
-          setMobileAiImageUrls(result.imageUrls || []);
+          setMobileAiImageUrls(urls);
           const existingList = (whiskies || []) as Array<Record<string, unknown>>;
           const nonDupeIndices = new Set(
             result.whiskies.map((_: any, i: number) => i).filter((i: number) =>
@@ -1505,6 +1670,23 @@ function MobileCompanion({
     return () => clearTimeout(timer);
   }, [mobileAiFiles]);
 
+  // Feinschliff-Vorschlag übernehmen: Reihenfolge ersetzen, Auswahl anhand
+  // der Objekt-Identität auf die neuen Indizes ummappen.
+  const applyMobileRefine = (next: any[]) => {
+    const sel = new Set<number>();
+    next.forEach((w, i) => {
+      const oldIdx = mobileAiResults.indexOf(w);
+      if (oldIdx >= 0 && mobileAiSelected.has(oldIdx)) sel.add(i);
+    });
+    setMobileAiResults(next.map((w, i) => ({ ...w, sortOrder: i + 1 })));
+    setMobileAiSelected(sel);
+    setMobileAiPhotoPicker(null);
+  };
+
+  const assignMobilePhoto = (idx: number, url: string | null) => {
+    setMobileAiResults(rs => rs.map((w, i) => (i === idx ? { ...w, _photoUrl: url || undefined } : w)));
+  };
+
   const handleMobileAiConfirm = async () => {
     let added = 0, dupeAdded = 0, fail = 0;
     const dupeIndices = getMobileDuplicateIndices();
@@ -1521,7 +1703,7 @@ function MobileCompanion({
         try {
           await whiskyApi.create({
             tastingId,
-            imageUrl: singlePhotoUrl || "",
+            imageUrl: w._photoUrl || singlePhotoUrl || "",
             name: w.name || "",
             distillery: w.distillery || "",
             abv: normalizeAbv(w.abv),
@@ -1989,18 +2171,42 @@ function MobileCompanion({
                       </button>
                       </div>
                     </div>
+                    <AiRefinePanel results={mobileAiResults} hostId={pid} language={i18n.language || "de"} t={t} testPrefix="mobile-ai" onApply={applyMobileRefine} />
+                    {mobileAiImageUrls.length > 1 && mobileAiImageUrls.length === mobileAiResults.length && (
+                      <p className="text-[11px]" style={{ color: "var(--labs-text-muted)", margin: 0 }} data-testid="mobile-ai-photo-hint">
+                        {t("labs.aiImport.photoAutoAssign", "Single-bottle photos were automatically assigned as bottle photos.")}
+                      </p>
+                    )}
                     {mobileAiResults.map((w: any, i: number) => {
                       const isDupe = dupeIndices.has(i);
                       return (
-                      <label key={i} className="labs-card p-2 flex items-center gap-2 cursor-pointer" style={{ opacity: mobileAiSelected.has(i) ? 1 : isDupe ? 0.4 : 0.5 }}>
+                      <div key={i}>
+                      <label className="labs-card p-2 flex items-center gap-2 cursor-pointer" style={{ opacity: mobileAiSelected.has(i) ? 1 : isDupe ? 0.4 : 0.5 }}>
                         <input type="checkbox" checked={mobileAiSelected.has(i)} onChange={() => { const s = new Set(mobileAiSelected); s.has(i) ? s.delete(i) : s.add(i); setMobileAiSelected(s); }} />
+                        {mobileAiImageUrls.length > 0 && (
+                          <button
+                            type="button"
+                            className="flex-shrink-0"
+                            onClick={e => { e.preventDefault(); e.stopPropagation(); setMobileAiPhotoPicker(mobileAiPhotoPicker === i ? null : i); }}
+                            title={t("labs.aiImport.pickPhoto", "Assign photo")}
+                            data-testid={`mobile-ai-photo-${i}`}
+                          >
+                            {w._photoUrl ? (
+                              <img src={w._photoUrl} alt="" style={{ width: 32, height: 32, objectFit: "cover", borderRadius: 6 }} />
+                            ) : (
+                              <span className="flex items-center justify-center" style={{ width: 32, height: 32, border: "1px dashed var(--labs-text-muted)", borderRadius: 6, color: "var(--labs-text-muted)" }}>
+                                <Camera className="w-3.5 h-3.5" />
+                              </span>
+                            )}
+                          </button>
+                        )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
                             <p className="text-sm font-medium truncate" style={{ margin: 0 }}>{w.name}</p>
                             {isDupe && <span className="text-[11px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "color-mix(in srgb, var(--labs-warning, #f59e0b) 20%, transparent)", color: "var(--labs-warning, #f59e0b)", whiteSpace: "nowrap" }} data-testid={`mobile-ai-dupe-badge-${i}`}>{t("labs.aiImport.duplicate", "duplicate")}</span>}
                           </div>
                           <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
-                            {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ")}
+                            {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.caskType || w.cask, w.peatLevel, w.wbScore ? `WB ${w.wbScore}` : null, formatPrice(w.price)].filter(Boolean).join(" · ")}
                           </p>
                           {whiskybaseUrlFor(w) ? (
                             <a
@@ -2019,6 +2225,21 @@ function MobileCompanion({
                           )}
                         </div>
                       </label>
+                      {mobileAiPhotoPicker === i && mobileAiImageUrls.length > 0 && (
+                        <div className="flex gap-1.5 overflow-x-auto py-1.5" data-testid={`mobile-ai-photo-strip-${i}`}>
+                          {mobileAiImageUrls.map((u, ui) => (
+                            <img
+                              key={ui}
+                              src={u}
+                              alt=""
+                              onClick={() => { assignMobilePhoto(i, w._photoUrl === u ? null : u); setMobileAiPhotoPicker(null); }}
+                              style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 6, cursor: "pointer", flexShrink: 0, outline: w._photoUrl === u ? "2px solid var(--labs-accent)" : "1px solid rgba(255,255,255,0.15)" }}
+                              data-testid={`mobile-ai-photo-opt-${i}-${ui}`}
+                            />
+                          ))}
+                        </div>
+                      )}
+                      </div>
                       );
                     })}
                     {pid && (
@@ -5390,6 +5611,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const [aiImportResults, setAiImportResults] = useState<any[]>([]);
   const [aiImportImageUrls, setAiImportImageUrls] = useState<string[]>([]);
   const [aiImportSelected, setAiImportSelected] = useState<Set<number>>(new Set());
+  const [aiImportPhotoPicker, setAiImportPhotoPicker] = useState<number | null>(null);
   const [showCollectionImport, setShowCollectionImport] = useState(false);
   const [showWishlistImport, setShowWishlistImport] = useState(false);
   const [showEditTasting, setShowEditTasting] = useState(false);
@@ -5577,8 +5799,13 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           toast({ description: t("labs.aiImport.partialFail", "{{count}} photo(s) could not be analyzed. The remaining bottles were recognized — you can re-upload the missing photos.", { count: result.failedImages }) });
         }
         if (result?.whiskies?.length) {
+          // Einzelfotos (1 Foto = 1 Flasche) direkt als Flaschenfoto zuordnen.
+          const urls: string[] = Array.isArray(result.imageUrls) ? result.imageUrls : [];
+          if (urls.length > 0 && urls.length === result.whiskies.length) {
+            result.whiskies.forEach((w: any, i: number) => { w._photoUrl = urls[i]; });
+          }
           setAiImportResults(result.whiskies);
-          setAiImportImageUrls(Array.isArray(result.imageUrls) ? result.imageUrls : []);
+          setAiImportImageUrls(urls);
           const existingList = (whiskies || []) as Array<Record<string, unknown>>;
           const nonDupeIndices = new Set(
             result.whiskies.map((_: any, i: number) => i).filter((i: number) =>
@@ -5608,6 +5835,22 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     }, 1000);
     return () => clearTimeout(timer);
   }, [aiImportFiles]);
+
+  // Feinschliff-Vorschlag übernehmen (Desktop): siehe applyMobileRefine.
+  const applyDesktopRefine = (next: any[]) => {
+    const sel = new Set<number>();
+    next.forEach((w, i) => {
+      const oldIdx = aiImportResults.indexOf(w);
+      if (oldIdx >= 0 && aiImportSelected.has(oldIdx)) sel.add(i);
+    });
+    setAiImportResults(next.map((w, i) => ({ ...w, sortOrder: i + 1 })));
+    setAiImportSelected(sel);
+    setAiImportPhotoPicker(null);
+  };
+
+  const assignDesktopPhoto = (idx: number, url: string | null) => {
+    setAiImportResults(rs => rs.map((w, i) => (i === idx ? { ...w, _photoUrl: url || undefined } : w)));
+  };
 
   const handleAiImportConfirm = async () => {
     let added = 0, dupeAdded = 0, failed = 0;
@@ -5639,7 +5882,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             whiskybaseId: w.whiskybaseId || "",
             notes: w.notes || "",
             hostSummary: w.hostSummary || "",
-            imageUrl: singlePhotoUrl || "",
+            imageUrl: w._photoUrl || singlePhotoUrl || "",
             sortOrder: w.sortOrder ? parseInt(w.sortOrder) || ((whiskies?.length || 0) + added + dupeAdded + 1) : ((whiskies?.length || 0) + added + dupeAdded + 1),
           });
           if (aiImportToCollection && currentParticipant?.id) {
@@ -7203,11 +7446,17 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                     </button>
                   </div>
                 </div>
+                <AiRefinePanel results={aiImportResults} hostId={currentParticipant?.id || ""} language={i18n.language || "de"} t={t} testPrefix="labs-ai" onApply={applyDesktopRefine} />
+                {aiImportImageUrls.length > 1 && aiImportImageUrls.length === aiImportResults.length && (
+                  <p className="text-[11px]" style={{ color: "var(--labs-text-muted)", margin: 0 }} data-testid="labs-ai-photo-hint">
+                    {t("labs.aiImport.photoAutoAssign", "Single-bottle photos were automatically assigned as bottle photos.")}
+                  </p>
+                )}
                 {aiImportResults.map((w: any, i: number) => {
                   const isDupe = dupeIndices.has(i);
                   return (
+                  <div key={i}>
                   <label
-                    key={i}
                     className="labs-card p-3 flex items-center gap-3 cursor-pointer"
                     style={{ opacity: aiImportSelected.has(i) ? 1 : isDupe ? 0.4 : 0.5 }}
                   >
@@ -7220,13 +7469,30 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                         setAiImportSelected(s);
                       }}
                     />
+                    {aiImportImageUrls.length > 0 && (
+                      <button
+                        type="button"
+                        className="flex-shrink-0"
+                        onClick={e => { e.preventDefault(); e.stopPropagation(); setAiImportPhotoPicker(aiImportPhotoPicker === i ? null : i); }}
+                        title={t("labs.aiImport.pickPhoto", "Assign photo")}
+                        data-testid={`labs-ai-photo-${i}`}
+                      >
+                        {w._photoUrl ? (
+                          <img src={w._photoUrl} alt="" style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 6 }} />
+                        ) : (
+                          <span className="flex items-center justify-center" style={{ width: 36, height: 36, border: "1px dashed var(--labs-text-muted)", borderRadius: 6, color: "var(--labs-text-muted)" }}>
+                            <Camera className="w-4 h-4" />
+                          </span>
+                        )}
+                      </button>
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <p className="text-sm font-medium" style={{ margin: 0 }}>{w.name}</p>
                         {isDupe && <span className="text-[11px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "color-mix(in srgb, var(--labs-warning, #f59e0b) 20%, transparent)", color: "var(--labs-warning, #f59e0b)", whiteSpace: "nowrap" }} data-testid={`labs-ai-dupe-badge-${i}`}>{t("labs.aiImport.duplicate", "duplicate")}</span>}
                       </div>
                       <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                        {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.country].filter(Boolean).join(" · ")}
+                        {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.country, w.caskType || w.cask, w.peatLevel, w.wbScore ? `WB ${w.wbScore}` : null, formatPrice(w.price)].filter(Boolean).join(" · ")}
                       </p>
                       {whiskybaseUrlFor(w) ? (
                         <a
@@ -7245,6 +7511,21 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       )}
                     </div>
                   </label>
+                  {aiImportPhotoPicker === i && aiImportImageUrls.length > 0 && (
+                    <div className="flex gap-1.5 overflow-x-auto py-1.5" data-testid={`labs-ai-photo-strip-${i}`}>
+                      {aiImportImageUrls.map((u, ui) => (
+                        <img
+                          key={ui}
+                          src={u}
+                          alt=""
+                          onClick={() => { assignDesktopPhoto(i, w._photoUrl === u ? null : u); setAiImportPhotoPicker(null); }}
+                          style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 6, cursor: "pointer", flexShrink: 0, outline: w._photoUrl === u ? "2px solid var(--labs-accent)" : "1px solid rgba(255,255,255,0.15)" }}
+                          data-testid={`labs-ai-photo-opt-${i}-${ui}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  </div>
                   );
                 })}
                 {currentParticipant?.id && (

@@ -21116,6 +21116,63 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
     }
   });
 
+  // Lineup-Feinschliff: Freitext-Anweisung -> neue Reihenfolge der erkannten
+  // Flaschen (mit Begründungen). Arbeitet rein auf den mitgeschickten Daten,
+  // persistiert nichts.
+  app.post("/api/tastings/ai-refine", async (req: any, res: any) => {
+    try {
+      if (await isAIDisabled("ai_import")) return res.status(503).json({ message: "AI feature disabled by admin" });
+      const { hostId, instruction, whiskies, language } = req.body || {};
+      if (!hostId) return res.status(400).json({ message: "hostId required" });
+      if (!instruction || typeof instruction !== "string" || !instruction.trim()) {
+        return res.status(400).json({ message: "instruction required" });
+      }
+      if (!Array.isArray(whiskies) || whiskies.length < 2 || whiskies.length > 100) {
+        return res.status(400).json({ message: "2-100 whiskies required" });
+      }
+      const { buildRefinePrompt, parseRefineResponse } = await import("./ai-refine");
+      const items = whiskies.map((w: any, i: number) => ({
+        index: i,
+        name: String(w?.name || "").slice(0, 200),
+        distillery: w?.distillery ? String(w.distillery).slice(0, 100) : undefined,
+        age: w?.age ? String(w.age).slice(0, 20) : undefined,
+        abv: typeof w?.abv === "number" ? w.abv : (w?.abv ? String(w.abv).slice(0, 10) : undefined),
+        caskType: (w?.caskType || w?.cask) ? String(w.caskType || w.cask).slice(0, 80) : undefined,
+        region: w?.region ? String(w.region).slice(0, 60) : undefined,
+        country: w?.country ? String(w.country).slice(0, 60) : undefined,
+        category: w?.category ? String(w.category).slice(0, 60) : undefined,
+        peatLevel: w?.peatLevel ? String(w.peatLevel).slice(0, 30) : undefined,
+        wbScore: typeof w?.wbScore === "number" ? w.wbScore : (w?.wbScore ? String(w.wbScore).slice(0, 10) : undefined),
+        price: typeof w?.price === "number" ? w.price : (w?.price ? String(w.price).slice(0, 12) : undefined),
+      }));
+      const { system, user } = buildRefinePrompt(items, instruction.trim().slice(0, 1000), language || "de");
+      const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL });
+      // gpt-5-Familie: bewusst KEIN max_tokens/temperature (Empty-Content-Falle).
+      const completion = await openai.chat.completions.create({
+        model: "gpt-5-mini",
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+        response_format: { type: "json_object" },
+      });
+      const raw = completion.choices?.[0]?.message?.content || "";
+      if (!raw.trim()) return res.status(502).json({ message: "AI returned no result. Please try again." });
+      let result;
+      try {
+        result = parseRefineResponse(raw, items.map(it => it.index));
+      } catch (parseErr: any) {
+        console.warn("[ai-refine] invalid AI response:", parseErr?.message);
+        return res.status(502).json({ message: "AI result could not be validated. Please rephrase and try again." });
+      }
+      console.log(`[ai-refine] ${items.length} bottles, ${result.removed.length} removed, instruction: "${instruction.trim().slice(0, 80)}"`);
+      return res.json(result);
+    } catch (e: any) {
+      console.error("AI refine error:", e);
+      res.status(500).json({ message: e.message || "Refine failed" });
+    }
+  });
+
   app.post("/api/tastings/create-from-import", async (req: any, res: any) => {
     try {
       const { hostId, title, date, location, blindMode, whiskies: whiskyData, includeRatings } = req.body;
