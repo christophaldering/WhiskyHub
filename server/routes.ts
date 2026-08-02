@@ -20915,10 +20915,23 @@ If the user data includes a "hostContext" field, treat it as additional creative
             }
           }
         } else if (file.mimetype.startsWith("image/")) {
-          const base64 = file.buffer.toString("base64");
+          // Für den AI-Aufruf verkleinern (Requestgröße/Latenz); Original bleibt
+          // unangetastet für Object Storage.
+          let aiBuffer = file.buffer;
+          let aiMime = file.mimetype;
+          try {
+            aiBuffer = await sharp(file.buffer)
+              .rotate()
+              .resize({ width: 1024, height: 1024, fit: "inside", withoutEnlargement: true })
+              .jpeg({ quality: 80 })
+              .toBuffer();
+            aiMime = "image/jpeg";
+          } catch (resizeErr: any) {
+            console.warn("[ai-import] image resize failed, using original:", resizeErr?.message);
+          }
           imageContents.push({
             type: "image_url",
-            image_url: { url: `data:${file.mimetype};base64,${base64}` },
+            image_url: { url: `data:${aiMime};base64,${aiBuffer.toString("base64")}` },
           });
           try {
             const storedUrl = await uploadBufferToObjectStorage(objectStorage, file.buffer, file.mimetype);
@@ -21019,47 +21032,100 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
 
 - The output must be valid JSON only, no markdown or explanation`;
 
-      const userContent: any[] = [];
+      // Bilder in Teilpaketen analysieren: viele Full-Res-Bilder in einem einzigen
+      // Request führten zu leeren Antworten (gpt-5 verbraucht max_tokens fürs
+      // Reasoning — daher auch KEIN max_tokens/temperature mehr am Aufruf).
+      const IMAGE_BATCH_SIZE = 5;
+      const runExtraction = async (userContent: any[]): Promise<any> => {
+        const response = await openai.chat.completions.create({
+          model: "gpt-5",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userContent },
+          ],
+          response_format: { type: "json_object" },
+        });
+        logChatUsage(hostId, "ai_import", "gpt-5", response);
+        const content = response.choices[0]?.message?.content;
+        if (!content) {
+          console.warn(`[ai-import] empty AI response (finish_reason: ${response.choices[0]?.finish_reason})`);
+          throw new Error("empty_ai_response");
+        }
+        return JSON.parse(content);
+      };
 
+      const batches: { userContent: any[]; imageCount: number }[] = [];
       if (textContent) {
-        userContent.push({
+        const first: any[] = [{
           type: "text",
           text: `Extract all whisky tasting information from this content:\n\n${textContent}`,
-        });
+        }];
+        const firstImages = imageContents.slice(0, IMAGE_BATCH_SIZE);
+        if (firstImages.length > 0) {
+          first.push({ type: "text", text: "Also analyze these images for additional tasting information:" });
+          first.push(...firstImages);
+        }
+        batches.push({ userContent: first, imageCount: firstImages.length });
+        for (let i = IMAGE_BATCH_SIZE; i < imageContents.length; i += IMAGE_BATCH_SIZE) {
+          const chunk = imageContents.slice(i, i + IMAGE_BATCH_SIZE);
+          batches.push({
+            userContent: [
+              { type: "text", text: "Extract all whisky tasting information from these images:" },
+              ...chunk,
+            ],
+            imageCount: chunk.length,
+          });
+        }
+      } else {
+        for (let i = 0; i < imageContents.length; i += IMAGE_BATCH_SIZE) {
+          const chunk = imageContents.slice(i, i + IMAGE_BATCH_SIZE);
+          batches.push({
+            userContent: [
+              { type: "text", text: "Extract all whisky tasting information from these images:" },
+              ...chunk,
+            ],
+            imageCount: chunk.length,
+          });
+        }
       }
 
-      if (imageContents.length > 0) {
-        userContent.push({
-          type: "text",
-          text: textContent
-            ? "Also analyze these images for additional tasting information:"
-            : "Extract all whisky tasting information from these images:",
-        });
-        userContent.push(...imageContents);
-      }
+      const settled = await Promise.allSettled(batches.map((b) => runExtraction(b.userContent)));
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-5",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userContent },
-        ],
-        max_tokens: 4000,
-        temperature: 0.1,
-        response_format: { type: "json_object" },
+      const allWhiskies: any[] = [];
+      let mergedMeta: any = {};
+      let failedImages = 0;
+      let failedBatches = 0;
+      settled.forEach((result, idx) => {
+        if (result.status === "fulfilled") {
+          const parsed = result.value || {};
+          if (Array.isArray(parsed.whiskies)) allWhiskies.push(...parsed.whiskies);
+          if (parsed.tastingMeta && typeof parsed.tastingMeta === "object") {
+            for (const [k, v] of Object.entries(parsed.tastingMeta)) {
+              if (v !== null && v !== undefined && v !== "" && mergedMeta[k] === undefined) mergedMeta[k] = v;
+            }
+          }
+        } else {
+          failedBatches++;
+          failedImages += batches[idx].imageCount;
+          console.warn(`[ai-import] batch ${idx + 1}/${batches.length} failed:`, result.reason?.message);
+        }
       });
 
-      const content = response.choices[0]?.message?.content;
-      logChatUsage(hostId, "ai_import", "gpt-5", response);
-      if (!content) {
+      if (failedBatches > 0 && allWhiskies.length === 0) {
+        // Technische Fehlschläge ohne jedes Ergebnis -> echter Fehler (nicht als
+        // "nichts erkannt" tarnen, auch wenn einzelne Pakete durchliefen).
         return res.status(500).json({ message: "AI could not extract data from the provided content" });
       }
 
-      const parsed = JSON.parse(content);
+      // Upload-Reihenfolge beibehalten: sortOrder fortlaufend neu vergeben
+      allWhiskies.forEach((w, i) => { if (w && typeof w === "object") w.sortOrder = i; });
+
+      console.log(`[ai-import] ${allWhiskies.length} whiskies from ${batches.length} batch(es), ${failedBatches} failed`);
       return res.json({
-        whiskies: parsed.whiskies || [],
-        tastingMeta: parsed.tastingMeta || {},
+        whiskies: allWhiskies,
+        tastingMeta: mergedMeta,
         imageUrls: uploadedImageUrls,
+        failedImages: failedImages > 0 ? failedImages : undefined,
         source: "ai",
       });
     } catch (e: any) {

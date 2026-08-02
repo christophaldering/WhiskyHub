@@ -1437,6 +1437,9 @@ function MobileCompanion({
         setMobileAiError("No whiskies found in Excel file. Make sure at least a 'Name' column (or row) is filled, or use the import template.");
       } else {
         const result = await tastingApi.aiImport(mobileAiFiles, mobileAiText.trim(), pid);
+        if (result?.failedImages > 0 && result?.whiskies?.length) {
+          toast({ description: t("labs.aiImport.partialFail", "{{count}} photo(s) could not be analyzed. The remaining bottles were recognized — you can re-upload the missing photos.", { count: result.failedImages }) });
+        }
         if (result?.whiskies?.length) {
           setMobileAiResults(result.whiskies);
           setMobileAiImageUrls(result.imageUrls || []);
@@ -5501,6 +5504,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         setAiImportError("No whiskies found in Excel file. Make sure at least a 'Name' column (or row) is filled, or use the import template.");
       } else {
         const result = await tastingApi.aiImport(aiImportFiles, aiImportText.trim(), currentParticipant?.id || "");
+        if (result?.failedImages > 0 && result?.whiskies?.length) {
+          toast({ description: t("labs.aiImport.partialFail", "{{count}} photo(s) could not be analyzed. The remaining bottles were recognized — you can re-upload the missing photos.", { count: result.failedImages }) });
+        }
         if (result?.whiskies?.length) {
           setAiImportResults(result.whiskies);
           setAiImportImageUrls(Array.isArray(result.imageUrls) ? result.imageUrls : []);
