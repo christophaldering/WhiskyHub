@@ -9746,6 +9746,9 @@ const resources = {
       hostUi: {
         aiImport: "Smart Import",
         fromCollection: "From Collection & Tastings",
+        exportLineup: "Export lineup as Excel",
+        exportLineupShort: "Excel",
+        lineupExportFailed: "Lineup export failed",
         tastingNotFound: "Tasting not found",
         tastingNoAccess: "This tasting doesn't exist or you don't have access.",
         pdfSplitter: "Split program PDF",
@@ -19613,6 +19616,9 @@ const resources = {
       hostUi: {
         aiImport: "Smart-Import",
         fromCollection: "Aus Sammlung & Tastings",
+        exportLineup: "Lineup als Excel exportieren",
+        exportLineupShort: "Excel",
+        lineupExportFailed: "Lineup-Export fehlgeschlagen",
         tastingNotFound: "Tasting nicht gefunden",
         tastingNoAccess: "Dieses Tasting existiert nicht oder du hast keinen Zugriff.",
         pdfSplitter: "Programm-PDF aufteilen",

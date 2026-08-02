@@ -907,6 +907,52 @@ export async function registerRoutes(
     addConnection(tastingId, res);
   });
 
+  // Lineup-only Excel export (no score columns) — host/admin only
+  app.get("/api/tastings/:id/lineup-export", async (req, res) => {
+    try {
+      const tastingId = req.params.id;
+      // Identity comes only from the x-participant-id header, which the H-01
+      // middleware requires to be a valid signed session token (raw UUIDs are
+      // rejected). No query-based identity to avoid auth bypass.
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.status(401).json({ message: "Authentication required" });
+      const tasting = await storage.getTasting(tastingId);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const participant = await storage.getParticipant(participantId);
+      if (!participant) return res.status(401).json({ message: "Authentication required" });
+      if (participant.role !== "admin" && tasting.hostId !== participantId) {
+        return res.status(403).json({ message: "Only the host can export the lineup" });
+      }
+      const ws = await storage.getWhiskiesForTasting(tastingId);
+      if (!ws || ws.length === 0) {
+        return res.status(404).json({ message: "Lineup is empty — add whiskies before exporting", code: "EMPTY_LINEUP" });
+      }
+      const lang = (req.query.lang as string) === "de" ? "de" : "en";
+      const H = lang === "de"
+        ? { pos: "Position", name: "Name", distillery: "Destillerie", bottler: "Bottler", age: "Alter", abv: "ABV (%)", region: "Region", country: "Land", cask: "Fasstyp" }
+        : { pos: "Position", name: "Name", distillery: "Distillery", bottler: "Bottler", age: "Age", abv: "ABV (%)", region: "Region", country: "Country", cask: "Cask Type" };
+      const sorted = [...ws].sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+      const data = sorted.map((w: any, i: number) => ({
+        [H.pos]: i + 1,
+        [H.name]: w.name || "",
+        [H.distillery]: w.distillery || "",
+        [H.bottler]: w.bottler || "",
+        [H.age]: w.age || "",
+        [H.abv]: w.abv != null && w.abv !== "" ? Number(w.abv) || w.abv : "",
+        [H.region]: w.region || "",
+        [H.country]: w.country || "",
+        [H.cask]: w.caskType || "",
+      }));
+      const safeTitle = String((tasting as any).title || "lineup").replace(/[^a-zA-Z0-9äöüÄÖÜß _-]/g, "").trim().replace(/\s+/g, "_").slice(0, 60) || "lineup";
+      const buf = await buildExcelBuffer([{ name: "Lineup", data }]);
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", `attachment; filename="${safeTitle}_lineup.xlsx"`);
+      res.send(buf);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Export failed" });
+    }
+  });
+
   // ===== SHARED EXPORT HELPERS =====
 
   const sendExport = async (res: Response, data: any[], filename: string, format: string, sheetName: string) => {

@@ -30,7 +30,8 @@ import { useRatingScale } from "@/labs/hooks/useRatingScale";
 import LabsHostCockpit from "@/labs/pages/LabsHostCockpit";
 import CoverImage16x9 from "@/labs/components/CoverImage16x9";
 import ModalPortal from "@/labs/components/ModalPortal";
-import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi, collectionApi, wishlistApi } from "@/lib/api";
+import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi, collectionApi, wishlistApi, pidHeaders } from "@/lib/api";
+import { apiUrl } from "@/lib/native";
 import { toast } from "@/hooks/use-toast";
 import FriendsQuickSelect from "@/labs/components/FriendsQuickSelect";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
@@ -215,6 +216,25 @@ async function parseExcelWhiskies(file: File): Promise<any[]> {
     throw new Error(`Too many rows (${bestResult.length}). Max ${EXCEL_MAX_ROWS} whiskies per import.`);
   }
   return bestResult;
+}
+
+async function downloadLineupExcel(tastingId: string, lang: string): Promise<void> {
+  const res = await fetch(apiUrl(`/api/tastings/${tastingId}/lineup-export?lang=${lang}`), { headers: pidHeaders() });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({} as any));
+    throw new Error(err.message || "Export failed");
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const cd = res.headers.get("Content-Disposition") || "";
+  const m = cd.match(/filename="([^"]+)"/);
+  a.download = m ? m[1] : "lineup.xlsx";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 function normalizeAbv(raw: any): number | null {
@@ -1185,7 +1205,7 @@ function MobileCompanion({
   const whiskyCount = whiskies.length;
   const participantCount = participants.length;
   const ratingCount = ratings.length;
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isLive = tasting.status === "open";
   const isDraft = tasting.status === "draft";
   const isEnded = tasting.status === "closed" || tasting.status === "archived" || tasting.status === "reveal";
@@ -1239,6 +1259,18 @@ function MobileCompanion({
   // Base + counter so multiple adds while the picker stays open get strictly
   // increasing sortOrder (whiskyCount refreshes async and would repeat values).
   const mobilePickerOrderRef = useRef({ base: 0, added: 0 });
+  const [mobileLineupExporting, setMobileLineupExporting] = useState(false);
+  const handleMobileLineupExport = async () => {
+    if (mobileLineupExporting) return;
+    setMobileLineupExporting(true);
+    try {
+      await downloadLineupExcel(tastingId, i18n.language?.startsWith("de") ? "de" : "en");
+    } catch (e: any) {
+      toast({ title: t("hostUi.lineupExportFailed", "Lineup export failed"), description: e.message, variant: "destructive" });
+    } finally {
+      setMobileLineupExporting(false);
+    }
+  };
 
   const handleMobilePickerSelect = async (sel: SelectedWhisky) => {
     try {
@@ -1586,6 +1618,19 @@ function MobileCompanion({
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <p className="labs-section-label mb-0">Whiskies ({whiskyCount})</p>
+            <div className="flex items-center gap-1">
+            {whiskyCount > 0 && (
+              <button
+                className="labs-btn-ghost flex items-center gap-1 text-xs"
+                onClick={handleMobileLineupExport}
+                disabled={mobileLineupExporting}
+                title={t("hostUi.exportLineup", "Export lineup as Excel")}
+                data-testid="mobile-lineup-export-btn"
+              >
+                {mobileLineupExporting ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSpreadsheet className="w-3 h-3" />}
+                {t("hostUi.exportLineupShort", "Excel")}
+              </button>
+            )}
             <div style={{ position: "relative" }}>
               {(mobileShowAdd || mobileAiImport) ? (
                 <button
@@ -1691,6 +1736,7 @@ function MobileCompanion({
                   )}
                 </div>
               </>)}
+            </div>
             </div>
           </div>
 
@@ -5103,7 +5149,7 @@ function TastingSetupSection({
 }
 
 function ManageTasting({ tastingId }: { tastingId: string }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currentParticipant } = useAppStore();
   const [, navigate] = useLocation();
   const goBack = useLabsBack("/labs/tastings");
@@ -5241,6 +5287,18 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const [editingWhiskyId, setEditingWhiskyId] = useState<string | null>(null);
   const [showPdfSplitter, setShowPdfSplitter] = useState(false);
   const [showLineupPicker, setShowLineupPicker] = useState(false);
+  const [lineupExporting, setLineupExporting] = useState(false);
+  const handleLineupExport = async () => {
+    if (lineupExporting) return;
+    setLineupExporting(true);
+    try {
+      await downloadLineupExcel(tastingId, i18n.language?.startsWith("de") ? "de" : "en");
+    } catch (e: any) {
+      toast({ title: t("hostUi.lineupExportFailed", "Lineup export failed"), description: e.message, variant: "destructive" });
+    } finally {
+      setLineupExporting(false);
+    }
+  };
   const [aiImportToCollection, setAiImportToCollection] = useState(false);
   // Base + counter so multiple adds while the picker stays open get strictly
   // increasing sortOrder (whiskies.length refreshes async and would repeat values).
@@ -6753,6 +6811,19 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="labs-section-label mb-0">Whiskies ({whiskyCount})</h2>
+          <div className="flex items-center gap-1">
+          {whiskyCount > 0 && (
+            <button
+              className="labs-btn-ghost flex items-center gap-1 text-xs"
+              onClick={handleLineupExport}
+              disabled={lineupExporting}
+              title={t("hostUi.exportLineup", "Export lineup as Excel")}
+              data-testid="labs-lineup-export-btn"
+            >
+              {lineupExporting ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSpreadsheet className="w-3 h-3" />}
+              {t("hostUi.exportLineupShort", "Excel")}
+            </button>
+          )}
           {tasting.status === "draft" && (
             <div className="relative">
               {(showAddWhisky || showAiImport) ? (
@@ -6852,6 +6923,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               </>)}
             </div>
           )}
+          </div>
         </div>
 
         {tasting.status === "draft" && whiskyCount === 0 && !showAiImport && !showAddWhisky && !showAddPopover && (
