@@ -21091,7 +21091,9 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
           .map((w: any, idx: number) => ({ idx, name: (w?.name || "").trim(), distillery: w?.distillery || null }))
           .filter((m) => m.name && !merged.whiskies[m.idx]?.whiskybaseId);
         if (missing.length > 0) {
-          const ids = await lookupWhiskybaseIds(openai, missing, { timeoutMs: 25000 });
+          // 60s pro Paket: die Websuche braucht mehrere Sekunden pro Whisky;
+          // 25s liefen in Produktion bei 7 Flaschen in den Timeout.
+          const ids = await lookupWhiskybaseIds(openai, missing, { timeoutMs: 60000 });
           ids.forEach((id, i) => { if (id) merged.whiskies[missing[i].idx].whiskybaseId = id; });
         }
         for (const w of merged.whiskies) {

@@ -10,7 +10,9 @@ export interface WhiskybaseLookupItem {
 
 export const WHISKYBASE_URL_PREFIX = "https://www.whiskybase.com/whiskies/whisky/";
 
-const LOOKUP_CHUNK_SIZE = 12;
+// Kleine Pakete: die Websuche braucht pro Whisky mehrere Sekunden; große
+// Pakete liefen in Produktion in den Timeout (alle Links fehlten dann).
+const LOOKUP_CHUNK_SIZE = 4;
 
 const lookupSchema = z.object({
   results: z.array(z.object({
@@ -87,12 +89,35 @@ export async function lookupWhiskybaseIds(
   const settled = await Promise.allSettled(
     chunks.map((c) => lookupChunk(client, c.items, timeoutMs)),
   );
+  const failed: { start: number; items: WhiskybaseLookupItem[] }[] = [];
   settled.forEach((s, ci) => {
     if (s.status === "fulfilled") {
       s.value.forEach((id, i) => { results[chunks[ci].start + i] = id; });
     } else {
       console.warn("[whiskybase-lookup] chunk failed (non-fatal):", (s.reason as any)?.message);
+      failed.push(chunks[ci]);
     }
   });
+
+  // Fehlgeschlagene Pakete einmal in Zweier-Häppchen wiederholen: seltene
+  // Abfüllungen brauchen mehr Such-Zeit; kleinere Pakete bleiben unterm Timeout.
+  if (failed.length > 0) {
+    const retryChunks: { start: number; items: WhiskybaseLookupItem[] }[] = [];
+    for (const f of failed) {
+      for (let i = 0; i < f.items.length; i += 2) {
+        retryChunks.push({ start: f.start + i, items: f.items.slice(i, i + 2) });
+      }
+    }
+    const retried = await Promise.allSettled(
+      retryChunks.map((c) => lookupChunk(client, c.items, timeoutMs)),
+    );
+    retried.forEach((s, ci) => {
+      if (s.status === "fulfilled") {
+        s.value.forEach((id, i) => { results[retryChunks[ci].start + i] = id; });
+      } else {
+        console.warn("[whiskybase-lookup] retry chunk failed (non-fatal):", (s.reason as any)?.message);
+      }
+    });
+  }
   return results;
 }
