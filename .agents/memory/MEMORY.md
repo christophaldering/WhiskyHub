@@ -9,3 +9,4 @@
 - [Prod data scales & Publish backup trap](prod-data-and-publish-quirks.md) — Publish copies new dev tables to prod EMPTY (defeats existence-gated backups); prod historical scores are mixed 0-10/0-100, normalize scale-aware.
 - [Client IP for rate limiting](client-ip-rate-limit.md) — no `trust proxy` set; use x-forwarded-for-first, never req.ip-only or all visitors share one bucket.
 - [Cooper de-pressure invariant](cooper-depressure.md) — Cooper prompts never push corner-coverage; ledger is silent-only; chip-loss guard appends unsent adoptedTerms at finalize.
+- [Merge marker checker](merge-marker-checker.md) — continueMergeResolution flags any "=======" substring, even comment banners; swap 7+ equals for dashes.

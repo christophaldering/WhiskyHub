@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import { useLabsBack } from "@/labs/LabsLayout";
@@ -308,6 +309,7 @@ function isImageFile(file: File): boolean {
   return file.type.startsWith("image/");
 }
 
+const AI_IMPORT_MAX_FILES = 50;
 function FileThumbnail({ file, onRemove, testId }: { file: File; onRemove: () => void; testId: string }) {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -1259,6 +1261,7 @@ function MobileCompanion({
   const [mobileAiFiles, setMobileAiFiles] = useState<File[]>([]);
   const [mobileAiText, setMobileAiText] = useState("");
   const [mobileAiLoading, setMobileAiLoading] = useState(false);
+  const [mobileAiProgress, setMobileAiProgress] = useState<{ done: number; total: number } | null>(null);
   const mobileAiLoadingRef = useRef(false);
   const [mobileAiResults, setMobileAiResults] = useState<any[]>([]);
   const [mobileAiImageUrls, setMobileAiImageUrls] = useState<string[]>([]);
@@ -1463,7 +1466,9 @@ function MobileCompanion({
       } else if (excelFile && (!parsedWhiskies || parsedWhiskies.length === 0)) {
         setMobileAiError("No whiskies found in Excel file. Make sure at least a 'Name' column (or row) is filled, or use the import template.");
       } else {
-        const result = await tastingApi.aiImport(mobileAiFiles, mobileAiText.trim(), pid);
+        const result = await runChunkedAiImport(mobileAiFiles, mobileAiText.trim(), pid, (done, total) => {
+          setMobileAiProgress(total > 1 ? { done, total } : null);
+        });
         if (result?.failedImages > 0 && result?.whiskies?.length) {
           toast({ description: t("labs.aiImport.partialFail", "{{count}} photo(s) could not be analyzed. The remaining bottles were recognized — you can re-upload the missing photos.", { count: result.failedImages }) });
         }
@@ -1485,6 +1490,7 @@ function MobileCompanion({
       setMobileAiError((e instanceof Error ? e.message : null) || t("labs.aiImport.importFailed", "AI import failed. Please try again."));
     }
     setMobileAiLoading(false);
+    setMobileAiProgress(null);
     mobileAiLoadingRef.current = false;
   };
 
@@ -1849,7 +1855,7 @@ function MobileCompanion({
                     e.preventDefault();
                     setMobileDragOver(false);
                     const files = Array.from(e.dataTransfer.files);
-                    if (files.length) setMobileAiFiles(prev => [...prev, ...files]);
+                    if (files.length) setMobileAiFiles(prev => appendAiFilesCapped(prev, files, t));
                   }}
                 >
                   <Upload className="w-6 h-6" style={{ color: "var(--labs-accent)", opacity: 0.75 }} />
@@ -1871,12 +1877,12 @@ function MobileCompanion({
                     <label className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer flex items-center gap-1.5" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none" }}>
                       <Camera className="w-3 h-3" />
                       Camera
-                      <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={e => { if (e.target.files) setMobileAiFiles(prev => [...prev, ...Array.from(e.target.files!)]); }} />
+                      <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={e => { if (e.target.files) setMobileAiFiles(prev => appendAiFilesCapped(prev, Array.from(e.target.files!), t)); }} />
                     </label>
                     <label className="labs-btn-ghost text-xs cursor-pointer flex items-center gap-1.5">
                       <Upload className="w-3 h-3" />
                       Browse
-                      <input type="file" accept="image/*,.pdf,.doc,.docx,.csv,.txt,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple style={{ display: "none" }} onChange={e => { if (e.target.files) setMobileAiFiles(prev => [...prev, ...Array.from(e.target.files!)]); }} />
+                      <input type="file" accept="image/*,.pdf,.doc,.docx,.csv,.txt,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple style={{ display: "none" }} onChange={e => { if (e.target.files) setMobileAiFiles(prev => appendAiFilesCapped(prev, Array.from(e.target.files!), t)); }} />
                     </label>
                   </div>
                   <p className="text-[11px] mt-2" style={{ color: "var(--labs-text-muted)", opacity: 0.75 }} data-testid="text-upload-rights-hint">{t("common.uploadRightsHint")}</p>
@@ -1929,8 +1935,17 @@ function MobileCompanion({
                   data-testid="mobile-ai-import-analyze"
                 >
                   {mobileAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : mobileAiFiles.some(isExcelFile) ? <Upload className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
-                  {mobileAiLoading ? t("labs.host.importingEllipsis") : mobileAiFiles.some(isExcelFile) ? t("labs.host.importExcel") : t("labs.host.analyze")}
+                  {mobileAiLoading
+                    ? (mobileAiProgress
+                        ? t("labs.aiImport.batchProgress", "Analyzing… batch {{done}} of {{total}}", { done: Math.min(mobileAiProgress.done + 1, mobileAiProgress.total), total: mobileAiProgress.total })
+                        : t("labs.host.importingEllipsis"))
+                    : mobileAiFiles.some(isExcelFile) ? t("labs.host.importExcel") : t("labs.host.analyze")}
                 </button>
+                {mobileAiLoading && mobileAiProgress && (
+                  <div className="text-[11px] text-center" style={{ color: "var(--labs-text-muted)" }} data-testid="mobile-ai-import-progress">
+                    {t("labs.aiImport.progressHint", "{{count}} photos are being analyzed in batches — this can take a few minutes.", { count: mobileAiFiles.filter(isImageFile).length })}
+                  </div>
+                )}
 
                 {mobileAiError && (
                   <div className="text-xs p-2 rounded-lg" style={{ background: "color-mix(in srgb, var(--labs-danger) 15%, transparent)", color: "var(--labs-danger)" }}>
@@ -5370,6 +5385,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const [aiImportFiles, setAiImportFiles] = useState<File[]>([]);
   const [aiImportText, setAiImportText] = useState("");
   const [aiImportLoading, setAiImportLoading] = useState(false);
+  const [aiImportProgress, setAiImportProgress] = useState<{ done: number; total: number } | null>(null);
   const aiImportLoadingRef = useRef(false);
   const [aiImportResults, setAiImportResults] = useState<any[]>([]);
   const [aiImportImageUrls, setAiImportImageUrls] = useState<string[]>([]);
@@ -5554,7 +5570,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       } else if (excelFile && (!parsedWhiskies || parsedWhiskies.length === 0)) {
         setAiImportError("No whiskies found in Excel file. Make sure at least a 'Name' column (or row) is filled, or use the import template.");
       } else {
-        const result = await tastingApi.aiImport(aiImportFiles, aiImportText.trim(), currentParticipant?.id || "");
+        const result = await runChunkedAiImport(aiImportFiles, aiImportText.trim(), currentParticipant?.id || "", (done, total) => {
+          setAiImportProgress(total > 1 ? { done, total } : null);
+        });
         if (result?.failedImages > 0 && result?.whiskies?.length) {
           toast({ description: t("labs.aiImport.partialFail", "{{count}} photo(s) could not be analyzed. The remaining bottles were recognized — you can re-upload the missing photos.", { count: result.failedImages }) });
         }
@@ -5576,6 +5594,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       setAiImportError((e instanceof Error ? e.message : null) || t("labs.aiImport.importFailed", "AI import failed. Please try again."));
     }
     setAiImportLoading(false);
+    setAiImportProgress(null);
     aiImportLoadingRef.current = false;
   };
 
@@ -7041,7 +7060,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 e.preventDefault();
                 setDragOver(false);
                 const files = Array.from(e.dataTransfer.files);
-                if (files.length) setAiImportFiles(prev => [...prev, ...files]);
+                if (files.length) setAiImportFiles(prev => appendAiFilesCapped(prev, files, t));
               }}
             >
               <Upload className="w-6 h-6" />
@@ -7066,7 +7085,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                     accept="image/*"
                     capture="environment"
                     style={{ display: "none" }}
-                    onChange={e => { if (e.target.files) setAiImportFiles(prev => [...prev, ...Array.from(e.target.files!)]); }}
+                    onChange={e => { if (e.target.files) setAiImportFiles(prev => appendAiFilesCapped(prev, Array.from(e.target.files!), t)); }}
                   />
                 </label>
                 <label className="labs-btn-ghost text-xs cursor-pointer">
@@ -7077,7 +7096,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                     accept="image/*,.pdf,.doc,.docx,.csv,.txt,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     multiple
                     style={{ display: "none" }}
-                    onChange={e => { if (e.target.files) setAiImportFiles(prev => [...prev, ...Array.from(e.target.files!)]); }}
+                    onChange={e => { if (e.target.files) setAiImportFiles(prev => appendAiFilesCapped(prev, Array.from(e.target.files!), t)); }}
                   />
                 </label>
               </div>
@@ -7123,9 +7142,18 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 data-testid="labs-ai-import-analyze"
               >
                 {aiImportLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : aiImportFiles.some(isExcelFile) ? <Upload className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
-                {aiImportLoading ? t("labs.host.importingEllipsis") : aiImportFiles.some(isExcelFile) ? t("labs.host.importExcel") : t("labs.host.analyze")}
+                {aiImportLoading
+                  ? (aiImportProgress
+                      ? t("labs.aiImport.batchProgress", "Analyzing… batch {{done}} of {{total}}", { done: Math.min(aiImportProgress.done + 1, aiImportProgress.total), total: aiImportProgress.total })
+                      : t("labs.host.importingEllipsis"))
+                  : aiImportFiles.some(isExcelFile) ? t("labs.host.importExcel") : t("labs.host.analyze")}
               </button>
             </div>
+            {aiImportLoading && aiImportProgress && (
+              <div className="text-[11px] mt-2 text-right" style={{ color: "var(--labs-text-muted)" }} data-testid="labs-ai-import-progress">
+                {t("labs.aiImport.progressHint", "{{count}} photos are being analyzed in batches — this can take a few minutes.", { count: aiImportFiles.filter(isImageFile).length })}
+              </div>
+            )}
 
             {aiImportError && (
               <div className="text-xs p-2 rounded-lg mt-2" style={{ background: "color-mix(in srgb, var(--labs-danger) 15%, transparent)", color: "var(--labs-danger)" }} data-testid="labs-ai-import-error">
@@ -8136,3 +8164,59 @@ export default function LabsHost({ params }: LabsHostProps) {
 
   return <CreateTastingForm />;
 }
+
+async function runChunkedAiImport(
+  files: File[],
+  text: string,
+  hostId: string,
+  onProgress?: (done: number, total: number) => void,
+): Promise<any> {
+  const images = files.filter(isImageFile);
+  const others = files.filter((f) => !isImageFile(f));
+  if (images.length <= AI_IMPORT_UPLOAD_CHUNK) {
+    return tastingApi.aiImport(files, text, hostId);
+  }
+  const chunks: File[][] = [];
+  for (let i = 0; i < images.length; i += AI_IMPORT_UPLOAD_CHUNK) {
+    chunks.push(images.slice(i, i + AI_IMPORT_UPLOAD_CHUNK));
+  }
+  const total = chunks.length;
+  const merged: any = { whiskies: [], tastingMeta: {}, imageUrls: [], failedImages: 0, source: "ai" };
+  let firstError: Error | null = null;
+  for (let i = 0; i < total; i++) {
+    onProgress?.(i, total);
+    const chunkFiles = i === 0 ? [...others, ...chunks[i]] : chunks[i];
+    const chunkText = i === 0 ? text : "";
+    try {
+      const r = await tastingApi.aiImport(chunkFiles, chunkText, hostId);
+      if (Array.isArray(r?.whiskies)) merged.whiskies.push(...r.whiskies);
+      if (r?.tastingMeta && typeof r.tastingMeta === "object") {
+        for (const [k, v] of Object.entries(r.tastingMeta)) {
+          if (v !== null && v !== undefined && v !== "" && merged.tastingMeta[k] === undefined) merged.tastingMeta[k] = v;
+        }
+      }
+      if (Array.isArray(r?.imageUrls)) merged.imageUrls.push(...r.imageUrls);
+      if (typeof r?.failedImages === "number") merged.failedImages += r.failedImages;
+    } catch (e) {
+      // Teilpaket-Fehler nicht verschlucken: Fotos zählen als fehlgeschlagen,
+      // und ohne jedes Ergebnis wird der erste Fehler durchgereicht.
+      merged.failedImages += chunks[i].length;
+      if (!firstError) firstError = e instanceof Error ? e : new Error(String(e));
+    }
+  }
+  onProgress?.(total, total);
+  if (merged.whiskies.length === 0 && firstError) throw firstError;
+  merged.whiskies.forEach((w: any, i: number) => { if (w && typeof w === "object") w.sortOrder = i; });
+  return merged;
+}
+
+function appendAiFilesCapped(prev: File[], added: File[], t: TFunction): File[] {
+  const next = [...prev, ...added];
+  if (next.length > AI_IMPORT_MAX_FILES) {
+    toast({ description: t("labs.aiImport.tooManyFiles", "Maximum {{max}} files per import — extra files were not added.", { max: AI_IMPORT_MAX_FILES }) });
+    return next.slice(0, AI_IMPORT_MAX_FILES);
+  }
+  return next;
+}
+
+const AI_IMPORT_UPLOAD_CHUNK = 10;

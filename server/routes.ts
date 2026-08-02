@@ -3866,9 +3866,9 @@ export async function registerRoutes(
     }
   });
 
-  // ============================================================
+  // ------------------------------------------------------------
   // --- Multi-Handouts (n:m): Whisky / Tasting / Distillery ---
-  // ============================================================
+  // ------------------------------------------------------------
 
   // Common helpers
   function clampStr(s: any, n: number): string | null {
@@ -17157,9 +17157,9 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
-  // ============================================================
+  // ------------------------------------------------------------
   // PAGE VIEW TRACKING
-  // ============================================================
+  // ------------------------------------------------------------
 
   app.post("/api/track/page-views", async (req, res) => {
     try {
@@ -17198,9 +17198,9 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
-  // ============================================================
+  // ------------------------------------------------------------
   // ADVANCED ANALYTICS ENDPOINTS (admin-only)
-  // ============================================================
+  // ------------------------------------------------------------
 
   app.get("/api/admin/analytics/page-views", async (req, res) => {
     try {
@@ -17868,9 +17868,9 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
-  // ============================================================
+  // ------------------------------------------------------------
   // FEATURE ADOPTION ANALYTICS
-  // ============================================================
+  // ------------------------------------------------------------
 
   app.get("/api/admin/analytics/feature-adoption", async (req, res) => {
     try {
@@ -17989,9 +17989,9 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
-  // ============================================================
+  // ------------------------------------------------------------
   // ENHANCED ACTIVATION FUNNEL
-  // ============================================================
+  // ------------------------------------------------------------
 
   app.get("/api/admin/analytics/activation-funnel", async (req, res) => {
     try {
@@ -18053,9 +18053,9 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
-  // ============================================================
+  // ------------------------------------------------------------
   // COHORT ANALYSIS WITH CONTENT VELOCITY
-  // ============================================================
+  // ------------------------------------------------------------
 
   app.get("/api/admin/analytics/cohorts", async (req, res) => {
     try {
@@ -18097,9 +18097,9 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
-  // ============================================================
+  // ------------------------------------------------------------
   // NOTIFICATION ENGAGEMENT
-  // ============================================================
+  // ------------------------------------------------------------
 
   app.get("/api/admin/analytics/notifications", async (req, res) => {
     try {
@@ -18194,9 +18194,9 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
-  // ============================================================
+  // ------------------------------------------------------------
   // SEARCH TRACKING
-  // ============================================================
+  // ------------------------------------------------------------
 
   app.post("/api/analytics/search-log", async (req, res) => {
     try {
@@ -18277,9 +18277,9 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
-  // ============================================================
+  // ------------------------------------------------------------
   // UTM & ACQUISITION TRACKING
-  // ============================================================
+  // ------------------------------------------------------------
 
   app.post("/api/analytics/utm", async (req, res) => {
     try {
@@ -18375,9 +18375,9 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
-  // ============================================================
+  // ------------------------------------------------------------
   // NEWSLETTER MANAGEMENT (admin-only)
-  // ============================================================
+  // ------------------------------------------------------------
 
   app.get("/api/admin/newsletters", async (req, res) => {
     try {
@@ -18614,9 +18614,9 @@ Key CaskSense Features:
     }
   });
 
-  // ============================================================
+  // ------------------------------------------------------------
   // BENCHMARK ANALYZER - Document upload + AI extraction
-  // ============================================================
+  // ------------------------------------------------------------
 
   async function verifyHostOrAdmin(participantId: string | undefined): Promise<{ participant: Participant; isHost: boolean; isAdmin: boolean } | null> {
     if (!participantId) return null;
@@ -19022,11 +19022,11 @@ Return ONLY a valid JSON array. If no whisky data is found, return [].`,
     }
   });
 
-  // ============================================================
+  // ------------------------------------------------------------
 
-  // ============================================================
+  // ------------------------------------------------------------
   // PHOTO TASTING - Upload bottle photos + AI identification
-  // ============================================================
+  // ------------------------------------------------------------
 
   app.post("/api/photo-tasting/identify", docUpload.array("photos", 20), async (req: Request, res: Response) => {
     try {
@@ -20552,7 +20552,7 @@ If the user data includes a "hostContext" field, treat it as additional creative
 
   const tastingImportUpload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 20 * 1024 * 1024 },
+    limits: { fileSize: 20 * 1024 * 1024, files: 50 },
     fileFilter: (_req: any, file: any, cb: any) => {
       const allowedMimes = [
         "application/pdf",
@@ -20870,9 +20870,12 @@ If the user data includes a "hostContext" field, treat it as additional creative
   }
 
   app.post("/api/tastings/ai-import", (req: any, res: any, next: any) => {
-    tastingImportUpload.array("files", 10)(req, res, (err: any) => {
+    tastingImportUpload.array("files", 50)(req, res, (err: any) => {
       if (err) {
-        if (err.code === "LIMIT_FILE_SIZE") return res.status(413).json({ message: "File too large (max 20 MB)" });
+        if (err.code === "LIMIT_FILE_SIZE") return res.status(413).json({ message: "File too large (max 20 MB per file)" });
+        if (err.code === "LIMIT_FILE_COUNT" || err.code === "LIMIT_UNEXPECTED_FILE") {
+          return res.status(413).json({ message: "Too many files (max 50 per import)" });
+        }
         return res.status(400).json({ message: err.message || "Upload failed" });
       }
       next();
@@ -20887,6 +20890,12 @@ If the user data includes a "hostContext" field, treat it as additional creative
       if (!hostId) return res.status(400).json({ message: "hostId required" });
       if (files.length === 0 && !pastedText.trim()) {
         return res.status(400).json({ message: "Please provide at least one file or paste text" });
+      }
+
+      const TOTAL_UPLOAD_LIMIT = 200 * 1024 * 1024; // 200 MB pro Import bewusst gedeckelt
+      const totalBytes = files.reduce((sum, f) => sum + (f.size || f.buffer?.length || 0), 0);
+      if (totalBytes > TOTAL_UPLOAD_LIMIT) {
+        return res.status(413).json({ message: "Total upload too large (max 200 MB per import)" });
       }
 
       let excelResult: { whiskies: any[]; tastingMeta: any; hostNotes: Record<number, string> } | null = null;
@@ -21057,7 +21066,15 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
 
       const batches = buildAiImportBatches(textContent, imageContents);
 
-      const settled = await Promise.allSettled(batches.map((b) => runExtraction(b.userContent)));
+      // Ab vielen Teilpaketen (50-Flaschen-Workflow) nicht alle parallel feuern:
+      // begrenzte Parallelität hält Kosten/Rate-Limits im Griff, Reihenfolge bleibt erhalten.
+      const BATCH_CONCURRENCY = 3;
+      const settled: PromiseSettledResult<any>[] = new Array(batches.length);
+      for (let i = 0; i < batches.length; i += BATCH_CONCURRENCY) {
+        const slice = batches.slice(i, i + BATCH_CONCURRENCY);
+        const results = await Promise.allSettled(slice.map((b) => runExtraction(b.userContent)));
+        results.forEach((r, j) => { settled[i + j] = r; });
+      }
       const merged = mergeAiImportBatchResults(settled, batches, (msg) => console.warn(msg));
 
       if (merged.isTechnicalFailure) {
@@ -26570,9 +26587,9 @@ Be accurate. If you cannot read a value, use null. Match whiskies to the known l
     }
   });
 
-  // ============================================================
+  // ------------------------------------------------------------
   // BATCH IMPORT — multi-file PDF/Word -> distilleries + whiskies + handouts
-  // ============================================================
+  // ------------------------------------------------------------
   // In-memory job store for background analyze processing.
   // Jobs auto-expire after 1 hour; sweep on every read.
   type BatchFileStage = "queued" | "uploading" | "extracting" | "analyzing" | "done" | "error";
