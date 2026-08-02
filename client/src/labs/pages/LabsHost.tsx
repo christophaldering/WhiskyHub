@@ -244,6 +244,49 @@ function whiskybaseUrlFor(w: any): string {
   return /^\d+$/.test(id) ? `https://www.whiskybase.com/whiskies/whisky/${id}` : "";
 }
 
+function startWhiskybaseLookup(
+  list: any[],
+  hostId: string,
+  setResults: (updater: (rs: any[]) => any[]) => void,
+) {
+  const keyOf = (w: any) => `${(w?.name || "").trim().toLowerCase()}\u0000${(w?.distillery || "").trim().toLowerCase()}`;
+  const missing = list
+    .map((w: any, i: number) => ({ i, name: (w?.name || "").trim(), distillery: w?.distillery || null }))
+    .filter((m) => m.name && !whiskybaseUrlFor(list[m.i]))
+    .slice(0, 60);
+  if (missing.length === 0) return;
+  const pendingKeys = new Set(missing.map((m) => keyOf(list[m.i])));
+  setResults((rs) => rs.map((w) => (pendingKeys.has(keyOf(w)) && !whiskybaseUrlFor(w) ? { ...w, _wbPending: true } : w)));
+  (async () => {
+    let results: any[] | null = null;
+    try {
+      const res = await fetch(apiUrl("/api/tastings/wb-lookup"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hostId, items: missing.map((m) => ({ name: m.name, distillery: m.distillery })) }),
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (Array.isArray(data?.results)) results = data.results;
+      }
+    } catch {
+      // non-fatal: Links bleiben einfach leer
+    }
+    const byKey = new Map<string, { whiskybaseId: string; whiskybaseUrl: string | null }>();
+    if (results) {
+      missing.forEach((m, i) => {
+        const r = results![i];
+        if (r?.whiskybaseId) byKey.set(keyOf(list[m.i]), r);
+      });
+    }
+    setResults((rs) => rs.map((w) => {
+      if (!w?._wbPending) return w;
+      const { _wbPending, ...rest } = w;
+      const hit = byKey.get(keyOf(w));
+      return hit ? { ...rest, whiskybaseId: hit.whiskybaseId, whiskybaseUrl: hit.whiskybaseUrl } : rest;
+    }));
+  })();
+}
 function exportAiResultsCsv(results: any[], t: any) {
   const esc = (v: any) => {
     const s = v == null ? "" : String(v);
@@ -1639,6 +1682,7 @@ function MobileCompanion({
           assignPhotosFromSource(result.whiskies, urls);
           setMobileAiResults(result.whiskies);
           setMobileAiImageUrls(urls);
+          startWhiskybaseLookup(result.whiskies, pid, setMobileAiResults);
           const existingList = (whiskies || []) as Array<Record<string, unknown>>;
           const nonDupeIndices = new Set(
             result.whiskies.map((_: any, i: number) => i).filter((i: number) =>
@@ -2219,6 +2263,11 @@ function MobileCompanion({
                             >
                               Whiskybase ↗
                             </a>
+                          ) : w._wbPending ? (
+                            <span className="text-[11px] inline-flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }} data-testid={`mobile-ai-wb-pending-${i}`}>
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              {t("labs.aiImport.wbSearching", "Whiskybase search running…")}
+                            </span>
                           ) : (
                             <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("labs.aiImport.wbNoLink", "no Whiskybase match found")}</span>
                           )}
@@ -5803,6 +5852,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           assignPhotosFromSource(result.whiskies, urls);
           setAiImportResults(result.whiskies);
           setAiImportImageUrls(urls);
+          startWhiskybaseLookup(result.whiskies, currentParticipant?.id || "", setAiImportResults);
           const existingList = (whiskies || []) as Array<Record<string, unknown>>;
           const nonDupeIndices = new Set(
             result.whiskies.map((_: any, i: number) => i).filter((i: number) =>
@@ -7503,6 +7553,11 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                         >
                           Whiskybase ↗
                         </a>
+                      ) : w._wbPending ? (
+                        <span className="text-[11px] inline-flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }} data-testid={`labs-ai-wb-pending-${i}`}>
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          {t("labs.aiImport.wbSearching", "Whiskybase search running…")}
+                        </span>
                       ) : (
                         <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("labs.aiImport.wbNoLink", "no Whiskybase match found")}</span>
                       )}

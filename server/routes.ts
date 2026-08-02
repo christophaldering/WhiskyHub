@@ -21088,19 +21088,11 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
         return res.status(500).json({ message: "AI could not extract data from the provided content" });
       }
 
-      // Whiskybase-Links per echter Websuche verifizieren (nur fehlende IDs;
-      // non-fatal, Ergebnis erscheint auch ohne Links).
+      // Whiskybase-URLs nur für bereits sichtbare IDs setzen. Die Websuche für
+      // fehlende IDs läuft NICHT mehr blockierend hier, sondern nachgelagert
+      // über POST /api/tastings/wb-lookup (Client lädt Links im Hintergrund nach).
       try {
-        const { lookupWhiskybaseIds, WHISKYBASE_URL_PREFIX } = await import("./whiskybase-lookup");
-        const missing = merged.whiskies
-          .map((w: any, idx: number) => ({ idx, name: (w?.name || "").trim(), distillery: w?.distillery || null }))
-          .filter((m) => m.name && !merged.whiskies[m.idx]?.whiskybaseId);
-        if (missing.length > 0) {
-          // 60s pro Paket: die Websuche braucht mehrere Sekunden pro Whisky;
-          // 25s liefen in Produktion bei 7 Flaschen in den Timeout.
-          const ids = await lookupWhiskybaseIds(openai, missing, { timeoutMs: 60000 });
-          ids.forEach((id, i) => { if (id) merged.whiskies[missing[i].idx].whiskybaseId = id; });
-        }
+        const { WHISKYBASE_URL_PREFIX } = await import("./whiskybase-lookup");
         for (const w of merged.whiskies) {
           const id = (w?.whiskybaseId || "").toString().trim();
           if (/^\d+$/.test(id)) w.whiskybaseUrl = `${WHISKYBASE_URL_PREFIX}${id}`;
@@ -21120,6 +21112,45 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
     } catch (e: any) {
       console.error("AI import error:", e);
       res.status(500).json({ message: e.message || "Import analysis failed" });
+    }
+  });
+
+  // Whiskybase-Links im Hintergrund nachladen: der Smart-Import liefert sein
+  // Ergebnis sofort, der Client holt fehlende Whiskybase-IDs anschließend über
+  // diesen Endpoint (Websuche pro Flasche dauert mehrere Sekunden).
+  app.post("/api/tastings/wb-lookup", async (req: any, res: any) => {
+    try {
+      if (await isAIDisabled("ai_import")) return res.status(503).json({ message: "AI feature disabled by admin" });
+      const { hostId, items } = req.body || {};
+      if (!hostId) return res.status(400).json({ message: "hostId required" });
+      if (!Array.isArray(items) || items.length === 0 || items.length > 60) {
+        return res.status(400).json({ message: "1-60 items required" });
+      }
+      const cleaned = items.map((it: any) => ({
+        name: String(it?.name || "").trim().slice(0, 200),
+        distillery: it?.distillery ? String(it.distillery).slice(0, 100) : null,
+      }));
+      if (cleaned.some((it) => !it.name)) {
+        return res.status(400).json({ message: "each item needs a name" });
+      }
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+      const { lookupWhiskybaseIds, WHISKYBASE_URL_PREFIX } = await import("./whiskybase-lookup");
+      // 60s pro Paket: die Websuche braucht mehrere Sekunden pro Whisky;
+      // 25s liefen in Produktion bei 7 Flaschen in den Timeout.
+      const ids = await lookupWhiskybaseIds(openai, cleaned, { timeoutMs: 60000 });
+      const results = ids.map((id) => {
+        const clean = (id || "").toString().trim();
+        return /^\d+$/.test(clean)
+          ? { whiskybaseId: clean, whiskybaseUrl: `${WHISKYBASE_URL_PREFIX}${clean}` }
+          : { whiskybaseId: null, whiskybaseUrl: null };
+      });
+      return res.json({ results });
+    } catch (e: any) {
+      console.error("[wb-lookup] failed:", e);
+      res.status(500).json({ message: e.message || "Whiskybase lookup failed" });
     }
   });
 
