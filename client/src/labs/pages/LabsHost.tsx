@@ -18,6 +18,7 @@ import {
 import { useAppStore } from "@/lib/store";
 import AuthGateMessage from "@/labs/components/AuthGateMessage";
 import ParticipantAvatar from "@/labs/components/ParticipantAvatar";
+import { CollectionPicker, type SelectedWhisky } from "@/labs/components/CollectionPicker";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import { stripGuestSuffix } from "@/lib/utils";
 import ManageTastersDialog from "@/labs/components/ManageTastersDialog";
@@ -1232,6 +1233,31 @@ function MobileCompanion({
   };
   const [mobileEditId, setMobileEditId] = useState<string | null>(null);
   const [mobileEditName, setMobileEditName] = useState("");
+  const [mobileEditFields, setMobileEditFields] = useState<{ distillery: string; age: string; abv: string }>({ distillery: "", age: "", abv: "" });
+  const [mobileShowPicker, setMobileShowPicker] = useState(false);
+  const [mobileAiToCollection, setMobileAiToCollection] = useState(false);
+  // Base + counter so multiple adds while the picker stays open get strictly
+  // increasing sortOrder (whiskyCount refreshes async and would repeat values).
+  const mobilePickerOrderRef = useRef({ base: 0, added: 0 });
+
+  const handleMobilePickerSelect = async (sel: SelectedWhisky) => {
+    try {
+      mobilePickerOrderRef.current.added += 1;
+      await whiskyApi.create({
+        tastingId,
+        name: sel.name,
+        distillery: sel.distillery || "",
+        country: sel.country || "",
+        region: sel.region || "",
+        caskType: sel.cask || "",
+        age: sel.age || "",
+        abv: normalizeAbv(sel.abv),
+        imageUrl: "",
+        sortOrder: mobilePickerOrderRef.current.base + mobilePickerOrderRef.current.added,
+      });
+      queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+    } catch { /* keep picker open; user can retry */ }
+  };
 
   const patchMobileDetails = async (fields: Record<string, unknown>) => {
     try {
@@ -1447,6 +1473,18 @@ function MobileCompanion({
             hostSummary: w.hostSummary || "",
             sortOrder: w.sortOrder ? parseInt(w.sortOrder) || (whiskyCount + added + dupeAdded + 1) : (whiskyCount + added + dupeAdded + 1),
           });
+          if (mobileAiToCollection && pid) {
+            try {
+              await collectionApi.add(pid, {
+                name: w.name || "",
+                distillery: w.distillery || "",
+                statedAge: w.age ? String(w.age) : undefined,
+                abv: w.abv != null && w.abv !== "" ? String(w.abv) : undefined,
+                caskType: w.caskType || w.cask || undefined,
+                whiskybaseId: w.whiskybaseId || undefined,
+              });
+            } catch { /* collection add is best-effort */ }
+          }
           if (isDupe) dupeAdded++; else added++;
         } catch { fail++; }
       }
@@ -1626,6 +1664,31 @@ function MobileCompanion({
                     <Plus style={{ width: 16, height: 16, color: "var(--labs-text-secondary)" }} />
                     {t("labs.aiImport.orManually", "or add manually").replace(/^or\s+/i, '').replace(/^\w/, (c: string) => c.toUpperCase())}
                   </button>
+                  {pid && (
+                    <>
+                      <div style={{ height: 1, background: "var(--labs-border)", margin: "0 12px" }} />
+                      <button
+                        style={{
+                          width: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          padding: "14px 16px",
+                          fontSize: 14,
+                          color: "var(--labs-text)",
+                          background: "transparent",
+                          border: "none",
+                          cursor: "pointer",
+                          textAlign: "left",
+                        }}
+                        onClick={() => { mobilePickerOrderRef.current = { base: whiskyCount, added: 0 }; setMobileShowPicker(true); setMobileShowAdd(false); setMobileAiImport(false); setMobileShowAddPopover(false); }}
+                        data-testid="mobile-collection-picker-btn"
+                      >
+                        <Wine style={{ width: 16, height: 16, color: "var(--labs-text-secondary)" }} />
+                        {t("hostUi.fromCollection", "From Collection & Tastings")}
+                      </button>
+                    </>
+                  )}
                 </div>
               </>)}
             </div>
@@ -1843,6 +1906,12 @@ function MobileCompanion({
                       </label>
                       );
                     })}
+                    {pid && (
+                      <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: "var(--labs-text-secondary)", padding: "2px 2px 0" }} data-testid="mobile-ai-to-collection">
+                        <input type="checkbox" checked={mobileAiToCollection} onChange={e => setMobileAiToCollection(e.target.checked)} />
+                        {t("labs.aiImport.alsoCollection", "Also save selected bottles to my collection")}
+                      </label>
+                    )}
                     <button className="labs-btn-primary w-full text-sm" onClick={handleMobileAiConfirm} disabled={mobileAiSelected.size === 0} data-testid="mobile-ai-confirm">
                     {t("labs.aiImport.addCount", "Add {{count}} Whiskies", { count: mobileAiSelected.size })}
                   </button>
@@ -1907,22 +1976,55 @@ function MobileCompanion({
               {whiskies.map((w: any, i: number) => (
                 <div key={w.id} className="labs-card p-3 flex items-center gap-2" data-testid={`mobile-whisky-${w.id}`}>
                   {mobileEditId === w.id ? (
-                    <>
+                    <div className="flex-1 space-y-1.5">
                       <input
-                        className="labs-input flex-1"
+                        className="labs-input w-full"
                         value={mobileEditName}
                         onChange={e => setMobileEditName(e.target.value)}
-                        onKeyDown={e => { if (e.key === "Enter") updateWhiskyMut.mutate({ id: w.id, data: { name: mobileEditName } }); }}
                         autoFocus
                         data-testid="mobile-edit-whisky-input"
                       />
-                      <button className="labs-btn-primary px-2 text-xs" onClick={() => updateWhiskyMut.mutate({ id: w.id, data: { name: mobileEditName } })} data-testid="mobile-edit-whisky-save">
-                        {updateWhiskyMut.isPending ? "..." : <Check className="w-3 h-3" />}
-                      </button>
-                      <button className="labs-btn-ghost px-1" onClick={() => setMobileEditId(null)}>
-                        <X className="w-3 h-3" />
-                      </button>
-                    </>
+                      <div className="flex gap-1.5">
+                        <input
+                          className="labs-input flex-1 min-w-0"
+                          placeholder={t("labs.host.distillery", "Distillery")}
+                          value={mobileEditFields.distillery}
+                          onChange={e => setMobileEditFields(f => ({ ...f, distillery: e.target.value }))}
+                          style={{ fontSize: 12 }}
+                          data-testid="mobile-edit-whisky-distillery"
+                        />
+                        <input
+                          className="labs-input"
+                          placeholder={t("labs.host.age", "Age")}
+                          value={mobileEditFields.age}
+                          onChange={e => setMobileEditFields(f => ({ ...f, age: e.target.value }))}
+                          style={{ width: 52, fontSize: 12, textAlign: "center" }}
+                          data-testid="mobile-edit-whisky-age"
+                        />
+                        <input
+                          className="labs-input"
+                          placeholder="ABV"
+                          inputMode="decimal"
+                          value={mobileEditFields.abv}
+                          onChange={e => setMobileEditFields(f => ({ ...f, abv: e.target.value }))}
+                          style={{ width: 58, fontSize: 12, textAlign: "center" }}
+                          data-testid="mobile-edit-whisky-abv"
+                        />
+                      </div>
+                      <div className="flex gap-1.5 justify-end">
+                        <button className="labs-btn-ghost px-2 text-xs" onClick={() => setMobileEditId(null)}>
+                          <X className="w-3 h-3" />
+                        </button>
+                        <button
+                          className="labs-btn-primary px-3 text-xs"
+                          onClick={() => updateWhiskyMut.mutate({ id: w.id, data: { name: mobileEditName, distillery: mobileEditFields.distillery, age: mobileEditFields.age, abv: normalizeAbv(mobileEditFields.abv) } })}
+                          disabled={!mobileEditName.trim()}
+                          data-testid="mobile-edit-whisky-save"
+                        >
+                          {updateWhiskyMut.isPending ? "..." : <Check className="w-3 h-3" />}
+                        </button>
+                      </div>
+                    </div>
                   ) : (
                     <>
                       {w.imageUrl ? (
@@ -1941,7 +2043,7 @@ function MobileCompanion({
                           {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ") || t("labs.host.noAdditionalDetails")}
                         </p>
                       </div>
-                      <button className="labs-btn-ghost p-1" onClick={() => { setMobileEditId(w.id); setMobileEditName(w.name || ""); }} data-testid={`mobile-edit-whisky-${w.id}`}>
+                      <button className="labs-btn-ghost p-1" onClick={() => { setMobileEditId(w.id); setMobileEditName(w.name || ""); setMobileEditFields({ distillery: w.distillery || "", age: w.age || "", abv: w.abv != null ? String(w.abv) : "" }); }} data-testid={`mobile-edit-whisky-${w.id}`}>
                         <Pencil className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} />
                       </button>
                       <button className="labs-btn-ghost p-1" onClick={() => deleteWhiskyMut.mutate(w.id)} data-testid={`mobile-delete-whisky-${w.id}`}>
@@ -1955,6 +2057,15 @@ function MobileCompanion({
           )}
 
         </div>
+      )}
+
+      {mobileShowPicker && (
+        <CollectionPicker
+          participantId={pid || ""}
+          includePastTastings
+          onSelect={handleMobilePickerSelect}
+          onClose={() => setMobileShowPicker(false)}
+        />
       )}
 
       {tasting.guidedMode && isLive && activeWhisky && (
@@ -5129,6 +5240,11 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const [extAddPending, setExtAddPending] = useState(false);
   const [editingWhiskyId, setEditingWhiskyId] = useState<string | null>(null);
   const [showPdfSplitter, setShowPdfSplitter] = useState(false);
+  const [showLineupPicker, setShowLineupPicker] = useState(false);
+  const [aiImportToCollection, setAiImportToCollection] = useState(false);
+  // Base + counter so multiple adds while the picker stays open get strictly
+  // increasing sortOrder (whiskies.length refreshes async and would repeat values).
+  const lineupPickerOrderRef = useRef({ base: 0, added: 0 });
   const [editFields, setEditFields] = useState<Record<string, string>>({});
   const [wbLookupId, setWbLookupId] = useState("");
   const [wbLookupLoading, setWbLookupLoading] = useState(false);
@@ -5392,6 +5508,18 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             imageUrl: singlePhotoUrl || "",
             sortOrder: w.sortOrder ? parseInt(w.sortOrder) || ((whiskies?.length || 0) + added + dupeAdded + 1) : ((whiskies?.length || 0) + added + dupeAdded + 1),
           });
+          if (aiImportToCollection && currentParticipant?.id) {
+            try {
+              await collectionApi.add(currentParticipant.id, {
+                name: w.name || "",
+                distillery: w.distillery || "",
+                statedAge: w.age ? String(w.age) : undefined,
+                abv: w.abv != null && w.abv !== "" ? String(w.abv) : undefined,
+                caskType: w.caskType || w.cask || undefined,
+                whiskybaseId: w.whiskybaseId || undefined,
+              });
+            } catch { /* collection add is best-effort */ }
+          }
           if (isDupe) dupeAdded++; else added++;
         } catch {
           failed++;
@@ -6679,6 +6807,22 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                     <Plus className="w-4 h-4" style={{ color: "var(--labs-text-secondary)" }} />
                     {t("labs.aiImport.orManually", "or add manually").replace(/^or\s+/i, '').replace(/^\w/, (c: string) => c.toUpperCase())}
                   </button>
+                  {currentParticipant?.id && (
+                    <>
+                      <div style={{ height: 1, background: "var(--labs-border)" }} />
+                      <button
+                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-left transition-colors"
+                        style={{ color: "var(--labs-text)", background: "transparent", border: "none", cursor: "pointer" }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "var(--labs-accent-muted)")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                        onClick={() => { lineupPickerOrderRef.current = { base: whiskies?.length || 0, added: 0 }; setShowLineupPicker(true); setShowAiImport(false); setShowAddWhisky(false); setShowAddPopover(false); }}
+                        data-testid="desktop-collection-picker-option"
+                      >
+                        <Wine className="w-4 h-4" style={{ color: "var(--labs-text-secondary)" }} />
+                        {t("hostUi.fromCollection", "From Collection & Tastings")}
+                      </button>
+                    </>
+                  )}
                   {tasting.hostId === currentParticipant?.id && (
                     <>
                       <div style={{ height: 1, background: "var(--labs-border)" }} />
@@ -6922,6 +7066,12 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   </label>
                   );
                 })}
+                {currentParticipant?.id && (
+                  <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: "var(--labs-text-secondary)", padding: "2px 2px 0" }} data-testid="labs-ai-to-collection">
+                    <input type="checkbox" checked={aiImportToCollection} onChange={e => setAiImportToCollection(e.target.checked)} />
+                    {t("labs.aiImport.alsoCollection", "Also save selected bottles to my collection")}
+                  </label>
+                )}
                 <button
                   className="labs-btn-primary w-full text-sm"
                   onClick={handleAiImportConfirm}
@@ -7644,6 +7794,32 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             )}
           </div>
         </div>
+      )}
+
+      {showLineupPicker && currentParticipant?.id && (
+        <CollectionPicker
+          participantId={currentParticipant.id}
+          includePastTastings
+          onSelect={async (sel: SelectedWhisky) => {
+            try {
+              lineupPickerOrderRef.current.added += 1;
+              await whiskyApi.create({
+                tastingId,
+                name: sel.name,
+                distillery: sel.distillery || "",
+                country: sel.country || "",
+                region: sel.region || "",
+                caskType: sel.cask || "",
+                age: sel.age || "",
+                abv: normalizeAbv(sel.abv),
+                imageUrl: "",
+                sortOrder: lineupPickerOrderRef.current.base + lineupPickerOrderRef.current.added,
+              });
+              queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+            } catch { /* keep picker open; user can retry */ }
+          }}
+          onClose={() => setShowLineupPicker(false)}
+        />
       )}
 
       {tasting?.hostId && tasting.hostId === currentParticipant?.id && (

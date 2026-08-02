@@ -2035,6 +2035,52 @@ export async function registerRoutes(
 
   // ===== TASTINGS =====
 
+  // Lineup history: deduped whiskies across all tastings hosted by a participant
+  app.get("/api/participants/:participantId/lineup-history", async (req, res) => {
+    try {
+      const participantId = req.params.participantId as string;
+      const callerId = req.headers["x-participant-id"] as string | undefined;
+      if (!participantId || !callerId || callerId !== participantId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      const participant = await storage.getParticipant(participantId);
+      if (!participant) return res.status(404).json({ message: "Participant not found" });
+      const hosted = (await storage.getTastingsForParticipant(participantId))
+        .filter((t: any) => t.hostId === participantId && !t.isTestData);
+      const deduped = new Map<string, any>();
+      for (const tasting of hosted) {
+        const ws = await storage.getWhiskiesForTasting(tasting.id);
+        for (const w of ws) {
+          if (!w.name || !w.name.trim()) continue;
+          const key = `${w.name.toLowerCase().trim()}|${(w.distillery || "").toLowerCase().trim()}`;
+          const existing = deduped.get(key);
+          if (existing) {
+            existing.timesUsed += 1;
+            continue;
+          }
+          deduped.set(key, {
+            name: w.name,
+            distillery: w.distillery || null,
+            country: w.country || null,
+            region: w.region || null,
+            caskType: w.caskType || null,
+            age: w.age || null,
+            abv: w.abv != null ? String(w.abv) : null,
+            bottler: (w as any).bottler || null,
+            category: (w as any).category || null,
+            whiskybaseId: (w as any).whiskybaseId || null,
+            imageUrl: w.imageUrl || null,
+            tastingTitle: (tasting as any).title || null,
+            timesUsed: 1,
+          });
+        }
+      }
+      res.json(Array.from(deduped.values()).sort((a, b) => a.name.localeCompare(b.name)));
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Failed to load lineup history" });
+    }
+  });
+
   app.get("/api/tastings", async (req, res) => {
     const participantId = req.query.participantId as string | undefined;
     const hostIdFilter = req.query.hostId as string | undefined;

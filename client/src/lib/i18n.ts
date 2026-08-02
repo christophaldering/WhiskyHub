@@ -2583,6 +2583,9 @@ const resources = {
         pickerNoResults: "No results for \"{{search}}\"",
         badgeJournal: "Journal",
         badgeCollection: "Collection",
+        filterTastings: "Past Tastings",
+        badgeTasting: "Tasting",
+        badgeTastingCount: "Tasting · {{count}}×",
       },
       reminders: {
         title: "Tasting Reminders",
@@ -6401,6 +6404,8 @@ const resources = {
           cardTitle: "Build lineup with AI",
           cardSubtitle: "Photo, Excel, PDF or just describe it — AI fills in the details.",
           cardButton: "Import lineup",
+          alsoCollection: "Also save selected bottles to my collection",
+          collectionSaved: "saved to collection",
         },
         collection: {
           abvDesc: "The strength spectrum of your collection",
@@ -9740,6 +9745,7 @@ const resources = {
       },
       hostUi: {
         aiImport: "Smart Import",
+        fromCollection: "From Collection & Tastings",
         tastingNotFound: "Tasting not found",
         tastingNoAccess: "This tasting doesn't exist or you don't have access.",
         pdfSplitter: "Split program PDF",
@@ -12440,6 +12446,9 @@ const resources = {
         pickerNoResults: "Keine Treffer für \"{{search}}\"",
         badgeJournal: "Journal",
         badgeCollection: "Sammlung",
+        filterTastings: "Frühere Tastings",
+        badgeTasting: "Tasting",
+        badgeTastingCount: "Tasting · {{count}}×",
       },
       reminders: {
         title: "Tasting-Erinnerungen",
@@ -16208,6 +16217,8 @@ const resources = {
           hint: "Lineup nach dem Erstellen per Foto importieren.",
           emptyTitle: "Noch keine Whiskies.",
           orManually: "oder manuell",
+          alsoCollection: "Ausgewählte Flaschen auch in meine Sammlung übernehmen",
+          collectionSaved: "in Sammlung gespeichert",
         },
         scoresNormalizedHint: "Werte auf 100-Punkte-Skala normalisiert",
         scoresNormalizedMultiScale: "Enthält Bewertungen aus verschiedenen Skalen, auf 100 Punkte normalisiert",
@@ -19601,6 +19612,7 @@ const resources = {
       },
       hostUi: {
         aiImport: "Smart-Import",
+        fromCollection: "Aus Sammlung & Tastings",
         tastingNotFound: "Tasting nicht gefunden",
         tastingNoAccess: "Dieses Tasting existiert nicht oder du hast keinen Zugriff.",
         pdfSplitter: "Programm-PDF aufteilen",

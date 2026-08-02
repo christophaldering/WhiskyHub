@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { journalApi, collectionApi } from "@/lib/api";
+import { journalApi, collectionApi, tastingApi } from "@/lib/api";
 import { Search, X, Wine, ChevronRight, Loader2, LogIn } from "lucide-react";
 import type { JournalEntry, WhiskybaseCollectionItem } from "@shared/schema";
 
@@ -12,18 +12,20 @@ export interface SelectedWhisky {
   cask: string | null;
   age: string | null;
   abv: string | null;
-  source: "journal" | "collection";
+  source: "journal" | "collection" | "tasting";
+  timesUsed?: number;
 }
 
 interface CollectionPickerProps {
   participantId: string;
   onSelect: (whisky: SelectedWhisky) => void;
   onClose: () => void;
+  includePastTastings?: boolean;
 }
 
-type SourceFilter = "all" | "journal" | "collection";
+type SourceFilter = "all" | "journal" | "collection" | "tasting";
 
-export function CollectionPicker({ participantId, onSelect, onClose }: CollectionPickerProps) {
+export function CollectionPicker({ participantId, onSelect, onClose, includePastTastings }: CollectionPickerProps) {
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [allItems, setAllItems] = useState<SelectedWhisky[]>([]);
@@ -60,9 +62,10 @@ export function CollectionPicker({ participantId, onSelect, onClose }: Collectio
       setError(null);
 
       try {
-        const [journalData, collectionData] = await Promise.all([
+        const [journalData, collectionData, historyData] = await Promise.all([
           journalApi.getAll(participantId).catch(() => []),
           collectionApi.getAll(participantId).catch(() => []),
+          includePastTastings ? tastingApi.lineupHistory(participantId).catch(() => []) : Promise.resolve([]),
         ]);
 
         if (cancelled) return;
@@ -107,6 +110,30 @@ export function CollectionPicker({ participantId, onSelect, onClose }: Collectio
           }
         }
 
+        const historyItems: SelectedWhisky[] = ((historyData || []) as any[]).map((entry) => ({
+          name: entry.name || "",
+          distillery: entry.distillery || null,
+          country: entry.country || null,
+          region: entry.region || null,
+          cask: entry.caskType || null,
+          age: entry.age || null,
+          abv: entry.abv != null ? String(entry.abv) : null,
+          source: "tasting" as const,
+          timesUsed: entry.timesUsed || 1,
+        }));
+
+        // Tasting-history entries are deduped only within their own source so the
+        // "Past Tastings" filter shows all past-lineup bottles, even when the same
+        // name also exists in journal/collection. Cross-source dedupe happens at
+        // render time for the "all" view.
+        for (const item of historyItems) {
+          if (!item.name) continue;
+          const key = `tasting|${item.name.toLowerCase().trim()}`;
+          if (!deduped.has(key)) {
+            deduped.set(key, item);
+          }
+        }
+
         const sorted = Array.from(deduped.values()).sort((a, b) =>
           a.name.localeCompare(b.name)
         );
@@ -123,7 +150,7 @@ export function CollectionPicker({ participantId, onSelect, onClose }: Collectio
 
     load();
     return () => { cancelled = true; };
-  }, [participantId, isAuthenticated, t]);
+  }, [participantId, isAuthenticated, includePastTastings, t]);
 
   const distilleries = useMemo(() => {
     const set = new Set<string>();
@@ -140,6 +167,16 @@ export function CollectionPicker({ participantId, onSelect, onClose }: Collectio
 
     if (sourceFilter !== "all") {
       filtered = filtered.filter((item) => item.source === sourceFilter);
+    } else {
+      // Cross-source dedupe for the "all" view: journal/collection entries come
+      // first in allItems, so the first occurrence of a name wins.
+      const seen = new Set<string>();
+      filtered = filtered.filter((item) => {
+        const key = item.name.toLowerCase().trim();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     }
 
     if (distilleryFilter) {
@@ -179,6 +216,7 @@ export function CollectionPicker({ participantId, onSelect, onClose }: Collectio
     { key: "all", label: t("collection.filterAll", "All") },
     { key: "journal", label: t("collection.filterJournal", "Journal") },
     { key: "collection", label: t("collection.filterCollection", "Collection") },
+    ...(includePastTastings ? [{ key: "tasting" as SourceFilter, label: t("collection.filterTastings", "Past Tastings") }] : []),
   ];
 
   return (
@@ -596,7 +634,11 @@ export function CollectionPicker({ participantId, onSelect, onClose }: Collectio
                       >
                         {item.source === "journal"
                           ? t("collection.badgeJournal", "Journal")
-                          : t("collection.badgeCollection", "Collection")}
+                          : item.source === "tasting"
+                            ? (item.timesUsed && item.timesUsed > 1
+                                ? t("collection.badgeTastingCount", "Tasting · {{count}}×", { count: item.timesUsed })
+                                : t("collection.badgeTasting", "Tasting"))
+                            : t("collection.badgeCollection", "Collection")}
                       </span>
                     </div>
 

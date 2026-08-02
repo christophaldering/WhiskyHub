@@ -150,6 +150,7 @@ export const participantApi = {
 export const tastingApi = {
   getAll: (participantId?: string) => fetchJSON(participantId ? `/tastings?participantId=${participantId}` : "/tastings"),
   getHosted: (hostId: string) => fetchJSON(`/tastings?hostId=${encodeURIComponent(hostId)}`),
+  lineupHistory: (participantId: string) => fetchJSON(`/participants/${participantId}/lineup-history`),
   get: (id: string) => fetchJSON(`/tastings/${id}`),
   getByCode: (code: string) => fetchJSON(`/tastings/code/${code}`),
   getStoryShareLink: (id: string) => fetchJSON(`/tastings/${id}/story-share-link`),
