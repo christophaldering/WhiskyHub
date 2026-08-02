@@ -21035,7 +21035,8 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
       // Bilder in Teilpaketen analysieren: viele Full-Res-Bilder in einem einzigen
       // Request führten zu leeren Antworten (gpt-5 verbraucht max_tokens fürs
       // Reasoning — daher auch KEIN max_tokens/temperature mehr am Aufruf).
-      const IMAGE_BATCH_SIZE = 5;
+      // Batching-/Merge-Vertrag ist in server/ai-import-batching.ts testbar gekapselt.
+      const { buildAiImportBatches, mergeAiImportBatchResults } = await import("./ai-import-batching");
       const runExtraction = async (userContent: any[]): Promise<any> => {
         const response = await openai.chat.completions.create({
           model: "gpt-5",
@@ -21054,78 +21055,23 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
         return JSON.parse(content);
       };
 
-      const batches: { userContent: any[]; imageCount: number }[] = [];
-      if (textContent) {
-        const first: any[] = [{
-          type: "text",
-          text: `Extract all whisky tasting information from this content:\n\n${textContent}`,
-        }];
-        const firstImages = imageContents.slice(0, IMAGE_BATCH_SIZE);
-        if (firstImages.length > 0) {
-          first.push({ type: "text", text: "Also analyze these images for additional tasting information:" });
-          first.push(...firstImages);
-        }
-        batches.push({ userContent: first, imageCount: firstImages.length });
-        for (let i = IMAGE_BATCH_SIZE; i < imageContents.length; i += IMAGE_BATCH_SIZE) {
-          const chunk = imageContents.slice(i, i + IMAGE_BATCH_SIZE);
-          batches.push({
-            userContent: [
-              { type: "text", text: "Extract all whisky tasting information from these images:" },
-              ...chunk,
-            ],
-            imageCount: chunk.length,
-          });
-        }
-      } else {
-        for (let i = 0; i < imageContents.length; i += IMAGE_BATCH_SIZE) {
-          const chunk = imageContents.slice(i, i + IMAGE_BATCH_SIZE);
-          batches.push({
-            userContent: [
-              { type: "text", text: "Extract all whisky tasting information from these images:" },
-              ...chunk,
-            ],
-            imageCount: chunk.length,
-          });
-        }
-      }
+      const batches = buildAiImportBatches(textContent, imageContents);
 
       const settled = await Promise.allSettled(batches.map((b) => runExtraction(b.userContent)));
+      const merged = mergeAiImportBatchResults(settled, batches, (msg) => console.warn(msg));
 
-      const allWhiskies: any[] = [];
-      let mergedMeta: any = {};
-      let failedImages = 0;
-      let failedBatches = 0;
-      settled.forEach((result, idx) => {
-        if (result.status === "fulfilled") {
-          const parsed = result.value || {};
-          if (Array.isArray(parsed.whiskies)) allWhiskies.push(...parsed.whiskies);
-          if (parsed.tastingMeta && typeof parsed.tastingMeta === "object") {
-            for (const [k, v] of Object.entries(parsed.tastingMeta)) {
-              if (v !== null && v !== undefined && v !== "" && mergedMeta[k] === undefined) mergedMeta[k] = v;
-            }
-          }
-        } else {
-          failedBatches++;
-          failedImages += batches[idx].imageCount;
-          console.warn(`[ai-import] batch ${idx + 1}/${batches.length} failed:`, result.reason?.message);
-        }
-      });
-
-      if (failedBatches > 0 && allWhiskies.length === 0) {
+      if (merged.isTechnicalFailure) {
         // Technische Fehlschläge ohne jedes Ergebnis -> echter Fehler (nicht als
         // "nichts erkannt" tarnen, auch wenn einzelne Pakete durchliefen).
         return res.status(500).json({ message: "AI could not extract data from the provided content" });
       }
 
-      // Upload-Reihenfolge beibehalten: sortOrder fortlaufend neu vergeben
-      allWhiskies.forEach((w, i) => { if (w && typeof w === "object") w.sortOrder = i; });
-
-      console.log(`[ai-import] ${allWhiskies.length} whiskies from ${batches.length} batch(es), ${failedBatches} failed`);
+      console.log(`[ai-import] ${merged.whiskies.length} whiskies from ${batches.length} batch(es), ${merged.failedBatches} failed`);
       return res.json({
-        whiskies: allWhiskies,
-        tastingMeta: mergedMeta,
+        whiskies: merged.whiskies,
+        tastingMeta: merged.tastingMeta,
         imageUrls: uploadedImageUrls,
-        failedImages: failedImages > 0 ? failedImages : undefined,
+        failedImages: merged.failedImages > 0 ? merged.failedImages : undefined,
         source: "ai",
       });
     } catch (e: any) {
