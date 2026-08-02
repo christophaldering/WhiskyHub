@@ -21066,6 +21066,25 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
         return res.status(500).json({ message: "AI could not extract data from the provided content" });
       }
 
+      // Whiskybase-Links per echter Websuche verifizieren (nur fehlende IDs;
+      // non-fatal, Ergebnis erscheint auch ohne Links).
+      try {
+        const { lookupWhiskybaseIds, WHISKYBASE_URL_PREFIX } = await import("./whiskybase-lookup");
+        const missing = merged.whiskies
+          .map((w: any, idx: number) => ({ idx, name: (w?.name || "").trim(), distillery: w?.distillery || null }))
+          .filter((m) => m.name && !merged.whiskies[m.idx]?.whiskybaseId);
+        if (missing.length > 0) {
+          const ids = await lookupWhiskybaseIds(openai, missing, { timeoutMs: 25000 });
+          ids.forEach((id, i) => { if (id) merged.whiskies[missing[i].idx].whiskybaseId = id; });
+        }
+        for (const w of merged.whiskies) {
+          const id = (w?.whiskybaseId || "").toString().trim();
+          if (/^\d+$/.test(id)) w.whiskybaseUrl = `${WHISKYBASE_URL_PREFIX}${id}`;
+        }
+      } catch (wbErr: any) {
+        console.warn("[ai-import] whiskybase enrichment failed (non-fatal):", wbErr?.message);
+      }
+
       console.log(`[ai-import] ${merged.whiskies.length} whiskies from ${batches.length} batch(es), ${merged.failedBatches} failed`);
       return res.json({
         whiskies: merged.whiskies,

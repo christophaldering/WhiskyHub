@@ -237,6 +237,33 @@ async function downloadLineupExcel(tastingId: string, lang: string): Promise<voi
   URL.revokeObjectURL(url);
 }
 
+function whiskybaseUrlFor(w: any): string {
+  if (w?.whiskybaseUrl) return String(w.whiskybaseUrl);
+  const id = (w?.whiskybaseId ?? "").toString().trim();
+  return /^\d+$/.test(id) ? `https://www.whiskybase.com/whiskies/whisky/${id}` : "";
+}
+
+function exportAiResultsCsv(results: any[], t: any) {
+  const esc = (v: any) => {
+    const s = v == null ? "" : String(v);
+    return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const headers = t("labs.aiImport.csvHeaders", "Name|Distillery|Age|ABV|Region|Country|Cask type|Whiskybase").split("|");
+  const rows = results.map((w: any) =>
+    [w.name, w.distillery, w.age, w.abv, w.region, w.country, w.caskType || w.cask, whiskybaseUrlFor(w)].map(esc).join(","),
+  );
+  const csv = "\uFEFF" + [headers.map(esc).join(","), ...rows].join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `smart-import-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 function normalizeAbv(raw: any): number | null {
   if (raw === null || raw === undefined || raw === "") return null;
   let val = typeof raw === "string" ? parseFloat(raw.replace(",", ".")) : Number(raw);
@@ -1930,6 +1957,14 @@ function MobileCompanion({
                         {t("labs.aiImport.found", "Found {{count}}", { count: mobileAiResults.length })}
                         {dupeIndices.size > 0 && <span style={{ color: "var(--labs-text-muted)" }}> ({dupeIndices.size} {t("labs.aiImport.alreadyInLineup", "already in lineup")})</span>}
                       </span>
+                      <div className="flex items-center gap-1">
+                      <button
+                        className="labs-btn-ghost text-xs"
+                        onClick={() => exportAiResultsCsv(mobileAiResults, t)}
+                        data-testid="mobile-ai-export-csv"
+                      >
+                        {t("labs.aiImport.exportCsv", "Export CSV")}
+                      </button>
                       <button
                         className="labs-btn-ghost text-xs"
                         onClick={() => setMobileAiSelected(mobileAiSelected.size === nonDupeCount ? new Set() : new Set(mobileAiResults.map((_, i) => i).filter(i => !dupeIndices.has(i))))}
@@ -1937,6 +1972,7 @@ function MobileCompanion({
                       >
                         {mobileAiSelected.size === nonDupeCount && nonDupeCount > 0 ? t("labs.aiImport.deselectAll", "Deselect") : t("labs.aiImport.selectNew", "Select New")}
                       </button>
+                      </div>
                     </div>
                     {mobileAiResults.map((w: any, i: number) => {
                       const isDupe = dupeIndices.has(i);
@@ -1951,6 +1987,21 @@ function MobileCompanion({
                           <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
                             {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ")}
                           </p>
+                          {whiskybaseUrlFor(w) ? (
+                            <a
+                              href={whiskybaseUrlFor(w)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[11px] underline"
+                              style={{ color: "var(--labs-accent)" }}
+                              onClick={e => e.stopPropagation()}
+                              data-testid={`mobile-ai-wb-link-${i}`}
+                            >
+                              Whiskybase ↗
+                            </a>
+                          ) : (
+                            <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("labs.aiImport.wbNoLink", "no Whiskybase match found")}</span>
+                          )}
                         </div>
                       </label>
                       );
@@ -7101,19 +7152,28 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                     {t("labs.aiImport.found", "Found {{count}}", { count: aiImportResults.length })}
                     {dupeIndices.size > 0 && <span style={{ color: "var(--labs-text-muted)" }}> ({dupeIndices.size} {t("labs.aiImport.alreadyInLineup", "already in lineup")})</span>}
                   </span>
-                  <button
-                    className="labs-btn-ghost text-xs"
-                    onClick={() => {
-                      if (aiImportSelected.size === nonDupeCount && nonDupeCount > 0) {
-                        setAiImportSelected(new Set());
-                      } else {
-                        setAiImportSelected(new Set(aiImportResults.map((_, i) => i).filter(i => !dupeIndices.has(i))));
-                      }
-                    }}
-                    data-testid="labs-ai-import-select-all"
-                  >
-                    {aiImportSelected.size === nonDupeCount && nonDupeCount > 0 ? t("labs.aiImport.deselectAll", "Deselect All") : t("labs.aiImport.selectNew", "Select New")}
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      className="labs-btn-ghost text-xs"
+                      onClick={() => exportAiResultsCsv(aiImportResults, t)}
+                      data-testid="labs-ai-export-csv"
+                    >
+                      {t("labs.aiImport.exportCsv", "Export CSV")}
+                    </button>
+                    <button
+                      className="labs-btn-ghost text-xs"
+                      onClick={() => {
+                        if (aiImportSelected.size === nonDupeCount && nonDupeCount > 0) {
+                          setAiImportSelected(new Set());
+                        } else {
+                          setAiImportSelected(new Set(aiImportResults.map((_, i) => i).filter(i => !dupeIndices.has(i))));
+                        }
+                      }}
+                      data-testid="labs-ai-import-select-all"
+                    >
+                      {aiImportSelected.size === nonDupeCount && nonDupeCount > 0 ? t("labs.aiImport.deselectAll", "Deselect All") : t("labs.aiImport.selectNew", "Select New")}
+                    </button>
+                  </div>
                 </div>
                 {aiImportResults.map((w: any, i: number) => {
                   const isDupe = dupeIndices.has(i);
@@ -7140,6 +7200,21 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
                         {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.country].filter(Boolean).join(" · ")}
                       </p>
+                      {whiskybaseUrlFor(w) ? (
+                        <a
+                          href={whiskybaseUrlFor(w)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[11px] underline"
+                          style={{ color: "var(--labs-accent)" }}
+                          onClick={e => e.stopPropagation()}
+                          data-testid={`labs-ai-wb-link-${i}`}
+                        >
+                          Whiskybase ↗
+                        </a>
+                      ) : (
+                        <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("labs.aiImport.wbNoLink", "no Whiskybase match found")}</span>
+                      )}
                     </div>
                   </label>
                   );
