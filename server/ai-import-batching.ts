@@ -7,6 +7,8 @@
 export interface AiImportBatch {
   userContent: any[];
   imageCount: number;
+  /** Globaler Index des ersten Bildes dieses Pakets (0-basiert, über alle Uploads) */
+  imageStart: number;
 }
 
 export const AI_IMPORT_IMAGE_BATCH_SIZE = 5;
@@ -26,6 +28,7 @@ export function buildAiImportBatches(
         ...chunk,
       ],
       imageCount: chunk.length,
+      imageStart: start,
     };
   };
 
@@ -39,7 +42,7 @@ export function buildAiImportBatches(
       first.push({ type: "text", text: "Also analyze these images for additional tasting information:" });
       first.push(...firstImages);
     }
-    batches.push({ userContent: first, imageCount: firstImages.length });
+    batches.push({ userContent: first, imageCount: firstImages.length, imageStart: 0 });
     for (let i = batchSize; i < imageContents.length; i += batchSize) {
       batches.push(imageChunkAt(i));
     }
@@ -73,7 +76,21 @@ export function mergeAiImportBatchResults(
   settled.forEach((result, idx) => {
     if (result.status === "fulfilled") {
       const parsed = result.value || {};
-      if (Array.isArray(parsed.whiskies)) whiskies.push(...parsed.whiskies);
+      if (Array.isArray(parsed.whiskies)) {
+        // Herkunftsfoto: KI liefert pro Whisky den 1-basierten Bild-Index
+        // innerhalb des Pakets -> in globalen 0-basierten Index umrechnen.
+        const batch = batches[idx];
+        for (const w of parsed.whiskies) {
+          if (!w || typeof w !== "object") continue;
+          const local = Number((w as any).sourceImageIndex);
+          if (batch && Number.isInteger(local) && local >= 1 && local <= batch.imageCount) {
+            (w as any).sourceImageIndex = batch.imageStart + local - 1;
+          } else {
+            delete (w as any).sourceImageIndex;
+          }
+        }
+        whiskies.push(...parsed.whiskies);
+      }
       if (parsed.tastingMeta && typeof parsed.tastingMeta === "object") {
         for (const [k, v] of Object.entries(parsed.tastingMeta)) {
           if (v !== null && v !== undefined && v !== "" && tastingMeta[k] === undefined) tastingMeta[k] = v;

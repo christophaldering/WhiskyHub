@@ -20944,9 +20944,12 @@ If the user data includes a "hostContext" field, treat it as additional creative
           });
           try {
             const storedUrl = await uploadBufferToObjectStorage(objectStorage, file.buffer, file.mimetype);
-            if (storedUrl) uploadedImageUrls.push(storedUrl);
+            // Platzhalter bei Fehlschlag: Index-Ausrichtung zu den analysierten
+            // Bildern muss erhalten bleiben (sourceImageIndex -> imageUrls[i]).
+            uploadedImageUrls.push(storedUrl || "");
           } catch (persistErr) {
             console.warn("[ai-import] image persist failed", persistErr);
+            uploadedImageUrls.push("");
           }
         } else if (ext === ".pdf" || file.mimetype === "application/pdf") {
           const { extractTextFromPdf } = await import("./pdf-utils");
@@ -21006,6 +21009,7 @@ Extract ALL whisky information you can find. Return a JSON object with this stru
       "ppm": null,
       "hostNotes": "Any tasting notes or descriptions found for this whisky",
       "hostSummary": "Detailed host assessment/review if present",
+      "sourceImageIndex": 1,
       "sortOrder": 0
     }
   ]
@@ -21021,6 +21025,7 @@ Important rules:
 - wbScore should be a number 0-100
 - If you find tasting notes (nose/palate/finish descriptions), combine them into hostSummary
 - Set null for any field you cannot determine
+- sourceImageIndex: when the whisky was recognized from one of the provided images, set the 1-based index of that image (1 = first image in this request, 2 = second, ...). Multiple whiskies on the same photo share the same index. Set null when the whisky comes from text/PDF content or you are unsure.
 
 PERSONAL RATINGS EXTRACTION:
 If you detect personal scores, ratings, or evaluations written by the user (e.g. handwritten scores, personal assessments), extract them into these additional fields per whisky:

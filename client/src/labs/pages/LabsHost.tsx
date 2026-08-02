@@ -1633,11 +1633,10 @@ function MobileCompanion({
           toast({ description: t("labs.aiImport.partialFail", "{{count}} photo(s) could not be analyzed. The remaining bottles were recognized — you can re-upload the missing photos.", { count: result.failedImages }) });
         }
         if (result?.whiskies?.length) {
-          // Einzelfotos (1 Foto = 1 Flasche) direkt als Flaschenfoto zuordnen.
+          // Fotos automatisch zuordnen: bevorzugt anhand des von der KI
+          // gemeldeten Herkunftsfotos; Positions-Zuordnung nur als Fallback.
           const urls: string[] = Array.isArray(result.imageUrls) ? result.imageUrls : [];
-          if (urls.length > 0 && urls.length === result.whiskies.length) {
-            result.whiskies.forEach((w: any, i: number) => { w._photoUrl = urls[i]; });
-          }
+          assignPhotosFromSource(result.whiskies, urls);
           setMobileAiResults(result.whiskies);
           setMobileAiImageUrls(urls);
           const existingList = (whiskies || []) as Array<Record<string, unknown>>;
@@ -2172,9 +2171,9 @@ function MobileCompanion({
                       </div>
                     </div>
                     <AiRefinePanel results={mobileAiResults} hostId={pid} language={i18n.language || "de"} t={t} testPrefix="mobile-ai" onApply={applyMobileRefine} />
-                    {mobileAiImageUrls.length > 1 && mobileAiImageUrls.length === mobileAiResults.length && (
+                    {mobileAiImageUrls.length > 1 && mobileAiResults.some((w: any) => w._photoUrl) && (
                       <p className="text-[11px]" style={{ color: "var(--labs-text-muted)", margin: 0 }} data-testid="mobile-ai-photo-hint">
-                        {t("labs.aiImport.photoAutoAssign", "Single-bottle photos were automatically assigned as bottle photos.")}
+                        {t("labs.aiImport.photoAutoAssign", "Photos were automatically matched to the recognized bottles — tap the camera icon to adjust.")}
                       </p>
                     )}
                     {mobileAiResults.map((w: any, i: number) => {
@@ -2227,7 +2226,7 @@ function MobileCompanion({
                       </label>
                       {mobileAiPhotoPicker === i && mobileAiImageUrls.length > 0 && (
                         <div className="flex gap-1.5 overflow-x-auto py-1.5" data-testid={`mobile-ai-photo-strip-${i}`}>
-                          {mobileAiImageUrls.map((u, ui) => (
+                          {mobileAiImageUrls.map((u, ui) => u && (
                             <img
                               key={ui}
                               src={u}
@@ -5799,11 +5798,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           toast({ description: t("labs.aiImport.partialFail", "{{count}} photo(s) could not be analyzed. The remaining bottles were recognized — you can re-upload the missing photos.", { count: result.failedImages }) });
         }
         if (result?.whiskies?.length) {
-          // Einzelfotos (1 Foto = 1 Flasche) direkt als Flaschenfoto zuordnen.
+          // Fotos automatisch zuordnen (siehe assignPhotosFromSource).
           const urls: string[] = Array.isArray(result.imageUrls) ? result.imageUrls : [];
-          if (urls.length > 0 && urls.length === result.whiskies.length) {
-            result.whiskies.forEach((w: any, i: number) => { w._photoUrl = urls[i]; });
-          }
+          assignPhotosFromSource(result.whiskies, urls);
           setAiImportResults(result.whiskies);
           setAiImportImageUrls(urls);
           const existingList = (whiskies || []) as Array<Record<string, unknown>>;
@@ -7447,9 +7444,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   </div>
                 </div>
                 <AiRefinePanel results={aiImportResults} hostId={currentParticipant?.id || ""} language={i18n.language || "de"} t={t} testPrefix="labs-ai" onApply={applyDesktopRefine} />
-                {aiImportImageUrls.length > 1 && aiImportImageUrls.length === aiImportResults.length && (
+                {aiImportImageUrls.length > 1 && aiImportResults.some((w: any) => w._photoUrl) && (
                   <p className="text-[11px]" style={{ color: "var(--labs-text-muted)", margin: 0 }} data-testid="labs-ai-photo-hint">
-                    {t("labs.aiImport.photoAutoAssign", "Single-bottle photos were automatically assigned as bottle photos.")}
+                    {t("labs.aiImport.photoAutoAssign", "Photos were automatically matched to the recognized bottles — tap the camera icon to adjust.")}
                   </p>
                 )}
                 {aiImportResults.map((w: any, i: number) => {
@@ -7513,7 +7510,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   </label>
                   {aiImportPhotoPicker === i && aiImportImageUrls.length > 0 && (
                     <div className="flex gap-1.5 overflow-x-auto py-1.5" data-testid={`labs-ai-photo-strip-${i}`}>
-                      {aiImportImageUrls.map((u, ui) => (
+                      {aiImportImageUrls.map((u, ui) => u && (
                         <img
                           key={ui}
                           src={u}
@@ -8470,7 +8467,15 @@ async function runChunkedAiImport(
     const chunkText = i === 0 ? text : "";
     try {
       const r = await tastingApi.aiImport(chunkFiles, chunkText, hostId);
-      if (Array.isArray(r?.whiskies)) merged.whiskies.push(...r.whiskies);
+      if (Array.isArray(r?.whiskies)) {
+        // Herkunftsfoto-Index vom Server ist pro Anfrage 0-basiert ->
+        // um die bereits gesammelten Bilder dieses Gesamt-Imports verschieben.
+        const offset = merged.imageUrls.length;
+        r.whiskies.forEach((w: any) => {
+          if (w && typeof w.sourceImageIndex === "number") w.sourceImageIndex += offset;
+        });
+        merged.whiskies.push(...r.whiskies);
+      }
       if (r?.tastingMeta && typeof r.tastingMeta === "object") {
         for (const [k, v] of Object.entries(r.tastingMeta)) {
           if (v !== null && v !== undefined && v !== "" && merged.tastingMeta[k] === undefined) merged.tastingMeta[k] = v;
@@ -8489,6 +8494,25 @@ async function runChunkedAiImport(
   if (merged.whiskies.length === 0 && firstError) throw firstError;
   merged.whiskies.forEach((w: any, i: number) => { if (w && typeof w === "object") w.sortOrder = i; });
   return merged;
+}
+
+// Fotos automatisch den erkannten Flaschen zuordnen: bevorzugt anhand des von
+// der KI gemeldeten Herkunftsfotos (sourceImageIndex, 0-basiert global);
+// Positions-Zuordnung (Foto i -> Flasche i) nur als Fallback bei gleicher Anzahl.
+function assignPhotosFromSource(whiskies: any[], urls: string[]) {
+  if (!Array.isArray(whiskies) || !Array.isArray(urls) || urls.length === 0) return;
+  let assigned = 0;
+  for (const w of whiskies) {
+    if (!w || typeof w !== "object") continue;
+    const si = w.sourceImageIndex;
+    if (typeof si === "number" && Number.isInteger(si) && si >= 0 && si < urls.length && urls[si]) {
+      w._photoUrl = urls[si];
+      assigned++;
+    }
+  }
+  if (assigned === 0 && urls.length === whiskies.length) {
+    whiskies.forEach((w: any, i: number) => { if (w && typeof w === "object" && urls[i]) w._photoUrl = urls[i]; });
+  }
 }
 
 function appendAiFilesCapped(prev: File[], added: File[], t: TFunction): File[] {

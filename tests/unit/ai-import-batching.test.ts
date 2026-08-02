@@ -112,6 +112,43 @@ describe("mergeAiImportBatchResults", () => {
     expect(merged.tastingMeta.date).toBe("2026-08-02"); // null in batch 1 is skipped
   });
 
+  it("maps per-batch 1-based sourceImageIndex to global 0-based indices", () => {
+    const batches = buildAiImportBatches("", images(7)); // batch 0: imgs 0-4, batch 1: imgs 5-6
+    const settled = [
+      fulfilled({ whiskies: [{ name: "A", sourceImageIndex: 1 }, { name: "B", sourceImageIndex: 5 }] }),
+      fulfilled({ whiskies: [{ name: "C", sourceImageIndex: 2 }] }),
+    ];
+    const merged = mergeAiImportBatchResults(settled, batches);
+    expect(merged.whiskies.map((w) => w.sourceImageIndex)).toEqual([0, 4, 6]);
+  });
+
+  it("drops invalid sourceImageIndex values (out of range, non-integer, null)", () => {
+    const batches = buildAiImportBatches("", images(7));
+    const settled = [
+      fulfilled({ whiskies: [
+        { name: "A", sourceImageIndex: 0 },
+        { name: "B", sourceImageIndex: 6 },
+        { name: "C", sourceImageIndex: 2.5 },
+        { name: "D", sourceImageIndex: null },
+        { name: "E" },
+      ] }),
+    ];
+    const merged = mergeAiImportBatchResults(settled, batches);
+    for (const w of merged.whiskies) expect("sourceImageIndex" in w).toBe(false);
+  });
+
+  it("keeps sourceImageIndex mapping correct when text shares the first batch", () => {
+    const batches = buildAiImportBatches("pasted list", images(6)); // batch 0: text + imgs 0-4, batch 1: img 5
+    const settled = [
+      fulfilled({ whiskies: [{ name: "T", sourceImageIndex: null }, { name: "A", sourceImageIndex: 3 }] }),
+      fulfilled({ whiskies: [{ name: "B", sourceImageIndex: 1 }] }),
+    ];
+    const merged = mergeAiImportBatchResults(settled, batches);
+    expect("sourceImageIndex" in merged.whiskies[0]).toBe(false);
+    expect(merged.whiskies[1].sourceImageIndex).toBe(2);
+    expect(merged.whiskies[2].sourceImageIndex).toBe(5);
+  });
+
   it("tolerates malformed fulfilled payloads (null / missing whiskies array)", () => {
     const batches = buildAiImportBatches("", images(10));
     const settled = [fulfilled(null), fulfilled({ whiskies: "not-an-array" })];
