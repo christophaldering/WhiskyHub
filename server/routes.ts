@@ -11461,7 +11461,132 @@ Write as if you know this person through their tasting notes. Tone: warm, knowle
         });
       }
 
-      console.log(`[BARCODE-LOOKUP] Not found in DB, trying AI text identification...`);
+      // Stufe 3: Open Food Facts (echte Barcode-Datenbank, enthält auch Spirituosen).
+      // Kurzer Timeout; bei Fehler/Timeout geht es sauber zum AI-Fallback weiter.
+      console.log(`[BARCODE-LOOKUP] Not found in DB, trying Open Food Facts...`);
+      let offProduct: { name: string; brand: string; alcohol: string; quantity: string; whiskySignal: boolean } | null = null;
+      try {
+        const offController = new AbortController();
+        const offTimer = setTimeout(() => offController.abort(), 4000);
+        const offRes = await fetch(
+          `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,brands,categories_tags,quantity,alcohol_by_volume,nutriments`,
+          {
+            signal: offController.signal,
+            headers: { "User-Agent": "CaskSense/1.0 (whisky tasting app; barcode lookup)" },
+          },
+        );
+        clearTimeout(offTimer);
+        if (offRes.ok) {
+          const offJson: any = await offRes.json();
+          const p = offJson?.product;
+          const name = (p?.product_name || "").trim();
+          if (offJson?.status === 1 && name) {
+            const cats: string[] = Array.isArray(p?.categories_tags) ? p.categories_tags : [];
+            const catStr = cats.join(" ").toLowerCase();
+            const nameBrand = `${name} ${p?.brands || ""}`.toLowerCase();
+            // Nur echte Spirituosen-Signale akzeptieren (kein generisches
+            // "beverage" — sonst rutschen Säfte/Bier/Wein als Treffer durch).
+            const whiskySignal = /whisk(y|ey|ies)|bourbon|scotch|single malt|blended malt/.test(`${catStr} ${nameBrand}`);
+            const spiritLike =
+              whiskySignal ||
+              /spirit|liquor|liqueur|brandy|rum|eau-de-vie|schnaps|alcoholic-beverages|hard-liquors|distilled/.test(catStr);
+            if (spiritLike) {
+              const alcohol = p?.alcohol_by_volume || p?.nutriments?.alcohol || "";
+              offProduct = {
+                name,
+                brand: (p?.brands || "").trim(),
+                alcohol: alcohol ? String(alcohol) : "",
+                quantity: (p?.quantity || "").trim(),
+                whiskySignal,
+              };
+              console.log(`[BARCODE-LOOKUP] OFF hit: "${offProduct.name}" (brand: "${offProduct.brand}")`);
+            } else {
+              console.log(`[BARCODE-LOOKUP] OFF product "${name}" not spirits-like, ignoring`);
+            }
+          } else {
+            console.log(`[BARCODE-LOOKUP] OFF: no product for code`);
+          }
+        } else {
+          console.warn(`[BARCODE-LOOKUP] OFF returned ${offRes.status}`);
+        }
+      } catch (offErr: any) {
+        console.warn(`[BARCODE-LOOKUP] OFF lookup failed: ${offErr?.name === "AbortError" ? "timeout" : offErr?.message}`);
+      }
+
+      if (offProduct) {
+        // Produktdaten per AI in die Whisky-Felder normalisieren; wenn das
+        // fehlschlägt, liefern wir den OFF-Rohtreffer direkt zurück.
+        try {
+          const openai = new OpenAI({
+            apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+            baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+          });
+          const completion = await openai.chat.completions.create({
+            model: "gpt-5-mini",
+            response_format: { type: "json_object" },
+            messages: [
+              {
+                role: "system",
+                content: `You normalize whisky product data into structured fields. Given a product name/brand from a barcode database, return JSON:
+{"name": "clean full product name", "distillery": "distillery name", "age": "age statement or empty", "abv": "ABV number or empty", "caskType": "cask type or empty", "region": "region or empty", "country": "country or empty"}
+Fill fields only when clearly derivable from the input or well-known facts about this exact product. Use empty strings when unsure.`,
+              },
+              {
+                role: "user",
+                content: `Product: ${offProduct.name}\nBrand: ${offProduct.brand}\nAlcohol: ${offProduct.alcohol}\nQuantity: ${offProduct.quantity}`,
+              },
+            ],
+          });
+          logChatUsage(AI_LOG_ANON, "barcode_lookup_off", "gpt-5-mini", completion);
+          const rawNorm = completion.choices[0]?.message?.content || "{}";
+          const parsed = JSON.parse(rawNorm);
+          if (!parsed.name) {
+            console.warn(`[BARCODE-LOOKUP] OFF normalization empty name, raw: ${rawNorm.slice(0, 300)}`);
+          }
+          if (parsed.name) {
+            console.log(`[BARCODE-LOOKUP] OFF+AI normalized: "${parsed.name}"`);
+            return res.json({
+              found: true,
+              source: "openfoodfacts",
+              data: {
+                name: parsed.name,
+                distillery: parsed.distillery || offProduct.brand || "",
+                region: parsed.region || "",
+                country: parsed.country || "",
+                age: parsed.age ? String(parsed.age) : "",
+                abv: parsed.abv ? String(parsed.abv) : (offProduct.alcohol || ""),
+                caskType: parsed.caskType || "",
+                confidence: 85,
+              },
+            });
+          }
+        } catch (normErr: any) {
+          console.warn("[BARCODE-LOOKUP] OFF normalization failed:", normErr.message);
+        }
+        // Roh-Fallback nur bei starkem Whisky-Signal; sonst weiter zum AI-Fallback.
+        if (!offProduct.whiskySignal) {
+          console.log(`[BARCODE-LOOKUP] OFF hit without whisky signal and no normalization — continuing to AI fallback`);
+          offProduct = null;
+        }
+      }
+      if (offProduct) {
+        console.log(`[BARCODE-LOOKUP] Returning raw OFF data for "${offProduct.name}"`);
+        return res.json({
+          found: true,
+          source: "openfoodfacts",
+          data: {
+            name: offProduct.name,
+            distillery: offProduct.brand,
+            region: "",
+            age: "",
+            abv: offProduct.alcohol,
+            caskType: "",
+            confidence: 70,
+          },
+        });
+      }
+
+      console.log(`[BARCODE-LOOKUP] Not found via Open Food Facts, trying AI text identification...`);
       try {
         const openai = new OpenAI({
           apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
