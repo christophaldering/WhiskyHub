@@ -3621,6 +3621,9 @@ export async function registerRoutes(
     if (body.ppm === "") body.ppm = null;
     if (body.price !== undefined) body.price = (typeof body.price === "string" ? parseFloat(body.price) : body.price) || null;
     if (body.price === "") body.price = null;
+    if (body.priceRrp !== undefined) body.priceRrp = (typeof body.priceRrp === "string" ? parseFloat(body.priceRrp) : body.priceRrp) || null;
+    if (body.priceMarket !== undefined) body.priceMarket = (typeof body.priceMarket === "string" ? parseFloat(body.priceMarket) : body.priceMarket) || null;
+    if (body.priceCurrency !== undefined) body.priceCurrency = (typeof body.priceCurrency === "string" && body.priceCurrency.trim()) ? body.priceCurrency.trim().toUpperCase().slice(0, 3) : null;
     if (body.wbScore !== undefined) body.wbScore = (typeof body.wbScore === "string" ? parseFloat(body.wbScore) : body.wbScore) || null;
     if (body.wbScore === "") body.wbScore = null;
     if (body.imageUrl) {
