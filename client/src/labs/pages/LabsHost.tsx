@@ -244,46 +244,63 @@ function whiskybaseUrlFor(w: any): string {
   return /^\d+$/.test(id) ? `https://www.whiskybase.com/whiskies/whisky/${id}` : "";
 }
 
+// Whiskybase-Links laufen nachgelagert (wie startPriceLookup): der Import
+// bleibt schnell, die Links erscheinen nachträglich. onlyIndex begrenzt die
+// Suche auf eine einzelne Zeile (Wiederholen-Knopf nach Timeout).
+let _wbLookupSeq = 0;
 function startWhiskybaseLookup(
   list: any[],
   hostId: string,
   setResults: (updater: (rs: any[]) => any[]) => void,
+  onlyIndex?: number,
 ) {
-  const keyOf = (w: any) => `${(w?.name || "").trim().toLowerCase()}\u0000${(w?.distillery || "").trim().toLowerCase()}`;
+  // Request-scoped und index-basiert: gleichnamige Flaschen und überlappende
+  // Requests bleiben so korrekt zugeordnet (kein Name-Matching mehr).
+  const reqId = `wb-${++_wbLookupSeq}-${Date.now()}`;
   const missing = list
-    .map((w: any, i: number) => ({ i, name: (w?.name || "").trim(), distillery: w?.distillery || null }))
-    .filter((m) => m.name && !whiskybaseUrlFor(list[m.i]))
+    .map((w: any, i: number) => ({ i, name: (w?.name || "").trim() }))
+    .filter((m) => m.name && !whiskybaseUrlFor(list[m.i]) && (onlyIndex == null || m.i === onlyIndex))
     .slice(0, 60);
   if (missing.length === 0) return;
-  const pendingKeys = new Set(missing.map((m) => keyOf(list[m.i])));
-  setResults((rs) => rs.map((w) => (pendingKeys.has(keyOf(w)) && !whiskybaseUrlFor(w) ? { ...w, _wbPending: true } : w)));
+  const missingIdx = new Set(missing.map((m) => m.i));
+  setResults((rs) => rs.map((w, idx) => {
+    if (!missingIdx.has(idx)) return w;
+    const { _wbFailed, ...rest } = w || {};
+    return { ...rest, _wbPending: reqId, _wbIdx: idx };
+  }));
   (async () => {
     let results: any[] | null = null;
+    let transportFailed = false;
     try {
       const res = await fetch(apiUrl("/api/tastings/wb-lookup"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hostId, items: missing.map((m) => ({ name: m.name, distillery: m.distillery })) }),
+        body: JSON.stringify({
+          hostId,
+          items: missing.map((m) => ({ name: m.name, distillery: list[m.i]?.distillery || null })),
+        }),
       });
       if (res.ok) {
         const data = await res.json().catch(() => null);
         if (Array.isArray(data?.results)) results = data.results;
+        else transportFailed = true;
+      } else {
+        transportFailed = true;
       }
     } catch {
-      // non-fatal: Links bleiben einfach leer
+      transportFailed = true;
     }
-    const byKey = new Map<string, { whiskybaseId: string; whiskybaseUrl: string | null }>();
+    const byIdx = new Map<number, { whiskybaseId: string | null; whiskybaseUrl: string | null; failed?: boolean }>();
     if (results) {
-      missing.forEach((m, i) => {
-        const r = results![i];
-        if (r?.whiskybaseId) byKey.set(keyOf(list[m.i]), r);
-      });
+      missing.forEach((m, i) => { const r = results![i]; if (r) byIdx.set(m.i, r); });
     }
+    // Nur Zeilen dieses Requests anfassen — fremde/neuere Lookups bleiben unberührt.
     setResults((rs) => rs.map((w) => {
-      if (!w?._wbPending) return w;
-      const { _wbPending, ...rest } = w;
-      const hit = byKey.get(keyOf(w));
-      return hit ? { ...rest, whiskybaseId: hit.whiskybaseId, whiskybaseUrl: hit.whiskybaseUrl } : rest;
+      if (w?._wbPending !== reqId) return w;
+      const { _wbPending, _wbIdx, ...rest } = w;
+      const hit = typeof _wbIdx === "number" ? byIdx.get(_wbIdx) : undefined;
+      if (hit?.whiskybaseId) return { ...rest, whiskybaseId: hit.whiskybaseId, whiskybaseUrl: hit.whiskybaseUrl };
+      return (transportFailed || hit?.failed) ? { ...rest, _wbFailed: true } : rest;
     }));
   })();
 }
@@ -2469,6 +2486,17 @@ function MobileCompanion({
                               <Loader2 className="w-3 h-3 animate-spin" />
                               {t("labs.aiImport.wbSearching", "Whiskybase search running…")}
                             </span>
+                          ) : w._wbFailed ? (
+                            <button
+                              type="button"
+                              className="text-[11px] underline inline-flex items-center gap-1 text-left"
+                              style={{ color: "var(--labs-warning, #f59e0b)", minHeight: 44 }}
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); startWhiskybaseLookup(mobileAiResults, pid, setMobileAiResults, i); }}
+                              data-testid={`mobile-ai-wb-retry-${i}`}
+                            >
+                              <RefreshCw className="w-3 h-3 flex-shrink-0" />
+                              {t("labs.aiImport.wbRetry", "Search failed, try again here")}
+                            </button>
                           ) : (
                             <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("labs.aiImport.wbNoLink", "no Whiskybase match found")}</span>
                           )}
@@ -7783,6 +7811,17 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                           <Loader2 className="w-3 h-3 animate-spin" />
                           {t("labs.aiImport.wbSearching", "Whiskybase search running…")}
                         </span>
+                      ) : w._wbFailed ? (
+                        <button
+                          type="button"
+                          className="text-[11px] underline inline-flex items-center gap-1 text-left"
+                          style={{ color: "var(--labs-warning, #f59e0b)", minHeight: 44 }}
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); startWhiskybaseLookup(aiImportResults, currentParticipant?.id || "", setAiImportResults, i); }}
+                          data-testid={`labs-ai-wb-retry-${i}`}
+                        >
+                          <RefreshCw className="w-3 h-3 flex-shrink-0" />
+                          {t("labs.aiImport.wbRetry", "Search failed, try again here")}
+                        </button>
                       ) : (
                         <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("labs.aiImport.wbNoLink", "no Whiskybase match found")}</span>
                       )}

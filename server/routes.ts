@@ -21160,11 +21160,11 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
       // 60s pro Paket: die Websuche braucht mehrere Sekunden pro Whisky;
       // 25s liefen in Produktion bei 7 Flaschen in den Timeout.
       const ids = await lookupWhiskybaseIds(openai, cleaned, { timeoutMs: 60000 });
-      const results = ids.map((id) => {
-        const clean = (id || "").toString().trim();
+      const results = ids.map((o) => {
+        const clean = (o?.whiskybaseId || "").toString().trim();
         return /^\d+$/.test(clean)
-          ? { whiskybaseId: clean, whiskybaseUrl: `${WHISKYBASE_URL_PREFIX}${clean}` }
-          : { whiskybaseId: null, whiskybaseUrl: null };
+          ? { whiskybaseId: clean, whiskybaseUrl: `${WHISKYBASE_URL_PREFIX}${clean}`, failed: false }
+          : { whiskybaseId: null, whiskybaseUrl: null, failed: !!o?.failed };
       });
       return res.json({ results });
     } catch (e: any) {

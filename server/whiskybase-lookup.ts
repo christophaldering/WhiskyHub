@@ -8,6 +8,13 @@ export interface WhiskybaseLookupItem {
   distillery?: string | null;
 }
 
+export interface WhiskybaseLookupOutcome {
+  /** Numerische Whiskybase-ID oder null. */
+  whiskybaseId: string | null;
+  /** true = technischer Fehlschlag (Timeout), NICHT "sauber gesucht, nichts gefunden". */
+  failed: boolean;
+}
+
 export const WHISKYBASE_URL_PREFIX = "https://www.whiskybase.com/whiskies/whisky/";
 
 // Kleine Pakete: die Websuche braucht pro Whisky mehrere Sekunden; große
@@ -68,17 +75,19 @@ Respond with JSON exactly in this shape (one entry per item, in the same order):
 }
 
 /**
- * Liefert pro Item die Whiskybase-ID (string) oder null.
- * Fehler/Timeouts sind non-fatal: betroffene Items bleiben null.
+ * Liefert pro Item die Whiskybase-ID (string) oder null, plus ein Flag, ob der
+ * Versuch technisch gescheitert ist (Timeout) — im Unterschied zu "sauber
+ * gesucht, aber kein sicherer Treffer". Nur so kann das UI einen sinnvollen
+ * Wiederholen-Knopf anbieten statt fälschlich "kein Treffer" zu behaupten.
  */
 export async function lookupWhiskybaseIds(
   client: any,
   items: WhiskybaseLookupItem[],
   opts: { timeoutMs?: number; maxItems?: number } = {},
-): Promise<(string | null)[]> {
+): Promise<WhiskybaseLookupOutcome[]> {
   const timeoutMs = opts.timeoutMs ?? 25000;
   const maxItems = opts.maxItems ?? 60;
-  const results: (string | null)[] = items.map(() => null);
+  const results: WhiskybaseLookupOutcome[] = items.map(() => ({ whiskybaseId: null, failed: false }));
   const capped = items.slice(0, maxItems);
 
   const chunks: { start: number; items: WhiskybaseLookupItem[] }[] = [];
@@ -92,30 +101,33 @@ export async function lookupWhiskybaseIds(
   const failed: { start: number; items: WhiskybaseLookupItem[] }[] = [];
   settled.forEach((s, ci) => {
     if (s.status === "fulfilled") {
-      s.value.forEach((id, i) => { results[chunks[ci].start + i] = id; });
+      s.value.forEach((id, i) => { results[chunks[ci].start + i] = { whiskybaseId: id, failed: false }; });
     } else {
       console.warn("[whiskybase-lookup] chunk failed (non-fatal):", (s.reason as any)?.message);
       failed.push(chunks[ci]);
     }
   });
 
-  // Fehlgeschlagene Pakete einmal in Zweier-Häppchen wiederholen: seltene
-  // Abfüllungen brauchen mehr Such-Zeit; kleinere Pakete bleiben unterm Timeout.
+  // Fehlgeschlagene Pakete einzeln wiederholen (analog price-lookup.ts): eine
+  // zähe Abfüllung reißt so ihre Nachbarn nicht mehr mit, und jedem Item steht
+  // die volle Timeout-Zeit allein zur Verfügung.
   if (failed.length > 0) {
     const retryChunks: { start: number; items: WhiskybaseLookupItem[] }[] = [];
     for (const f of failed) {
-      for (let i = 0; i < f.items.length; i += 2) {
-        retryChunks.push({ start: f.start + i, items: f.items.slice(i, i + 2) });
+      for (let i = 0; i < f.items.length; i += 1) {
+        retryChunks.push({ start: f.start + i, items: f.items.slice(i, i + 1) });
       }
     }
     const retried = await Promise.allSettled(
       retryChunks.map((c) => lookupChunk(client, c.items, timeoutMs)),
     );
     retried.forEach((s, ci) => {
+      const at = retryChunks[ci].start;
       if (s.status === "fulfilled") {
-        s.value.forEach((id, i) => { results[retryChunks[ci].start + i] = id; });
+        s.value.forEach((id, i) => { results[at + i] = { whiskybaseId: id, failed: false }; });
       } else {
         console.warn("[whiskybase-lookup] retry chunk failed (non-fatal):", (s.reason as any)?.message);
+        results[at] = { whiskybaseId: null, failed: true };
       }
     });
   }
