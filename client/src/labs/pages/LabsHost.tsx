@@ -353,7 +353,9 @@ function startPriceLookup(
 function formatLookupPrice(value: number | null | undefined, currency: string | null | undefined): string {
   if (value == null || isNaN(Number(value))) return "";
   const num = Number(value).toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-  const cur = (currency || "EUR").toUpperCase();
+  // Keine bekannte Währung → nur die Zahl anzeigen (kein irreführendes €-Symbol).
+  const cur = (currency || "").trim().toUpperCase();
+  if (!/^[A-Z]{3}$/.test(cur)) return num;
   return cur === "EUR" ? `${num} €` : `${num} ${cur}`;
 }
 
@@ -6250,6 +6252,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         whiskybaseId: extFields.whiskybaseId || "",
         wbScore: extFields.wbScore ? parseFloat(extFields.wbScore) || null : null,
         price: normalizePrice(extFields.price),
+        priceRrp: normalizePrice(extFields.priceRrp),
+        priceMarket: normalizePrice(extFields.priceMarket),
+        priceCurrency: /^[A-Z]{3}$/.test((extFields.priceCurrency || "").trim().toUpperCase()) ? (extFields.priceCurrency || "").trim().toUpperCase() : null,
         peatLevel: extFields.peatLevel || "",
         ppm: extFields.ppm ? parseFloat(extFields.ppm) || null : null,
         hostSummary: extFields.hostSummary || "",
@@ -6281,6 +6286,12 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     const coerced: Record<string, unknown> = { ...editFields };
     if (coerced.abv !== undefined) coerced.abv = normalizeAbv(coerced.abv);
     if (coerced.price !== undefined) coerced.price = normalizePrice(coerced.price);
+    if (coerced.priceRrp !== undefined) coerced.priceRrp = normalizePrice(coerced.priceRrp);
+    if (coerced.priceMarket !== undefined) coerced.priceMarket = normalizePrice(coerced.priceMarket);
+    if (coerced.priceCurrency !== undefined) {
+      const cur = String(coerced.priceCurrency || "").trim().toUpperCase();
+      coerced.priceCurrency = /^[A-Z]{3}$/.test(cur) ? cur : null;
+    }
     if (coerced.ppm !== undefined) coerced.ppm = coerced.ppm ? parseFloat(coerced.ppm as string) || null : null;
     if (coerced.wbScore !== undefined) coerced.wbScore = coerced.wbScore ? parseFloat(coerced.wbScore as string) || null : null;
     if (coerced.flavorProfile !== undefined) { coerced.flavorProfile = coerced.flavorProfile === "auto" || !coerced.flavorProfile ? null : coerced.flavorProfile; }
@@ -6307,6 +6318,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       distilledYear: w.distilledYear || "",
       bottledYear: w.bottledYear || "",
       price: w.price ? String(w.price).replace(".", ",") : "",
+      priceRrp: w.priceRrp != null ? String(w.priceRrp).replace(".", ",") : "",
+      priceMarket: w.priceMarket != null ? String(w.priceMarket).replace(".", ",") : "",
+      priceCurrency: w.priceCurrency || "",
       hostSummary: w.hostSummary || "",
       notes: w.notes || "",
       flavorProfile: w.flavorProfile || "",
@@ -7877,6 +7891,12 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 <input className="labs-input" placeholder={t("labs.host.fieldDistilled")} value={extFields.distilledYear || ""} onChange={e => setExtFields({ ...extFields, distilledYear: e.target.value })} data-testid="labs-ext-distilled" />
                 <input className="labs-input" placeholder={t("labs.host.fieldBottled")} value={extFields.bottledYear || ""} onChange={e => setExtFields({ ...extFields, bottledYear: e.target.value })} data-testid="labs-ext-bottled" />
                 <input className="labs-input" placeholder={t("labs.host.fieldPriceEur")} value={extFields.price || ""} onChange={e => setExtFields({ ...extFields, price: e.target.value })} data-testid="labs-ext-price" />
+                <input className="labs-input" placeholder={t("labs.host.fieldPriceRrp", "RRP")} value={extFields.priceRrp || ""} onChange={e => setExtFields({ ...extFields, priceRrp: e.target.value })} data-testid="labs-ext-price-rrp" />
+                <input className="labs-input" placeholder={t("labs.host.fieldPriceMarket", "Market price")} value={extFields.priceMarket || ""} onChange={e => setExtFields({ ...extFields, priceMarket: e.target.value })} data-testid="labs-ext-price-market" />
+                <input className="labs-input" placeholder={t("labs.host.fieldPriceCurrency", "Currency (e.g. EUR)")} maxLength={3} value={extFields.priceCurrency || ""} onChange={e => setExtFields({ ...extFields, priceCurrency: e.target.value.replace(/[^a-zA-Z]/g, "").toUpperCase() })} data-testid="labs-ext-price-currency" />
+                {!!(extFields.priceCurrency || "").trim() && !/^[A-Z]{3}$/.test((extFields.priceCurrency || "").trim()) && (
+                  <p className="text-xs col-span-2" style={{ color: "var(--labs-danger)" }} data-testid="labs-ext-price-currency-warn">{t("labs.host.currencyInvalid", "Currency must be a 3-letter code (e.g. EUR) — otherwise it won't be saved.")}</p>
+                )}
                 <input className="labs-input" placeholder={t("labs.host.fieldPeat")} value={extFields.peatLevel || ""} onChange={e => setExtFields({ ...extFields, peatLevel: e.target.value })} data-testid="labs-ext-peat" />
                 <input className="labs-input" placeholder={t("labs.host.fieldPpm")} value={extFields.ppm || ""} onChange={e => setExtFields({ ...extFields, ppm: e.target.value })} data-testid="labs-ext-ppm" />
                 <select className="labs-input col-span-2" value={extFields.flavorProfile || "auto"} onChange={e => setExtFields({ ...extFields, flavorProfile: e.target.value })} data-testid="labs-ext-flavor-profile" style={{ fontSize: 13 }}>
@@ -8018,6 +8038,12 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       <input className="labs-input" placeholder={t("labs.host.fieldDistilled")} value={editFields.distilledYear || ""} onChange={e => setEditFields({ ...editFields, distilledYear: e.target.value })} data-testid="labs-edit-distilled" />
                       <input className="labs-input" placeholder={t("labs.host.fieldBottled")} value={editFields.bottledYear || ""} onChange={e => setEditFields({ ...editFields, bottledYear: e.target.value })} data-testid="labs-edit-bottled" />
                       <input className="labs-input" placeholder={t("labs.host.fieldPriceEur")} value={editFields.price || ""} onChange={e => setEditFields({ ...editFields, price: e.target.value })} />
+                      <input className="labs-input" placeholder={t("labs.host.fieldPriceRrp", "RRP")} value={editFields.priceRrp || ""} onChange={e => setEditFields({ ...editFields, priceRrp: e.target.value })} data-testid="labs-edit-price-rrp" />
+                      <input className="labs-input" placeholder={t("labs.host.fieldPriceMarket", "Market price")} value={editFields.priceMarket || ""} onChange={e => setEditFields({ ...editFields, priceMarket: e.target.value })} data-testid="labs-edit-price-market" />
+                      <input className="labs-input" placeholder={t("labs.host.fieldPriceCurrency", "Currency (e.g. EUR)")} maxLength={3} value={editFields.priceCurrency || ""} onChange={e => setEditFields({ ...editFields, priceCurrency: e.target.value.replace(/[^a-zA-Z]/g, "").toUpperCase() })} data-testid="labs-edit-price-currency" />
+                      {!!(editFields.priceCurrency || "").trim() && !/^[A-Z]{3}$/.test((editFields.priceCurrency || "").trim()) && (
+                        <p className="text-xs col-span-2" style={{ color: "var(--labs-danger)" }} data-testid="labs-edit-price-currency-warn">{t("labs.host.currencyInvalid", "Currency must be a 3-letter code (e.g. EUR) — otherwise it won't be saved.")}</p>
+                      )}
                       <select className="labs-input col-span-2" value={editFields.flavorProfile || "auto"} onChange={e => setEditFields({ ...editFields, flavorProfile: e.target.value })} data-testid="labs-edit-flavor-profile" style={{ fontSize: 13 }}>
                         <option value="auto">{`${t("labs.host.flavorAuto")}${(() => { const d = detectFlavorProfile({ region: editFields.region, peatLevel: editFields.peatLevel, caskType: editFields.caskType }); const lbl = d ? FLAVOR_PROFILES.find(p => p.id === d)?.en : null; return lbl ? ` (${t("labs.host.flavorAutoDetected", { label: lbl })})` : ""; })()}`}</option>
                         <option value="none">{t("labs.host.flavorNone")}</option>
@@ -8104,7 +8130,10 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       </p>
                       <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
                         {rvShowDetails
-                          ? ([w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.country, w.caskType].filter(Boolean).join(" · ") || t("labs.host.noAdditionalDetails"))
+                          ? ([w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.country, w.caskType,
+                              w.priceRrp != null ? `${t("labs.aiImport.rrpShort", "RRP")} ${formatLookupPrice(w.priceRrp, w.priceCurrency)}` : null,
+                              w.priceMarket != null ? `${t("labs.aiImport.marketShort", "Now")} ${formatLookupPrice(w.priceMarket, w.priceCurrency)}` : null,
+                            ].filter(Boolean).join(" · ") || t("labs.host.noAdditionalDetails"))
                           : (rvHidden ? t("m2.host.hidden", "Hidden") : rvActive ? t("m2.host.partiallyRevealed", "Partially revealed") : t("labs.host.noAdditionalDetails"))}
                       </p>
                     </div>
