@@ -646,6 +646,9 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
       }
 
       await dbSync.execute(sqlSync`ALTER TABLE whiskies ADD COLUMN IF NOT EXISTS country text`);
+      await dbSync.execute(sqlSync`ALTER TABLE whiskies ADD COLUMN IF NOT EXISTS price_rrp real`);
+      await dbSync.execute(sqlSync`ALTER TABLE whiskies ADD COLUMN IF NOT EXISTS price_market real`);
+      await dbSync.execute(sqlSync`ALTER TABLE whiskies ADD COLUMN IF NOT EXISTS price_currency text`);
       await dbSync.execute(sqlSync`ALTER TABLE whiskybase_collection ADD COLUMN IF NOT EXISTS country text`);
       await dbSync.execute(sqlSync`ALTER TABLE whiskybase_collection ADD COLUMN IF NOT EXISTS region text`);
       await dbSync.execute(sqlSync`ALTER TABLE whiskybase_collection ADD COLUMN IF NOT EXISTS distilled_year integer`);

@@ -148,6 +148,9 @@ async function preBuildMigrations() {
       { table: "whiskybase_collection", column: "region", type: "text" },
       { table: "whiskybase_collection", column: "distilled_year", type: "integer" },
       { table: "whiskies", column: "country", type: "text" },
+      { table: "whiskies", column: "price_rrp", type: "real" },
+      { table: "whiskies", column: "price_market", type: "real" },
+      { table: "whiskies", column: "price_currency", type: "text" },
       { table: "wishlist_entries", column: "country", type: "text" },
     ];
     for (const { table, column, type } of addCols) {

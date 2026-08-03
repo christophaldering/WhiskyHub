@@ -241,6 +241,9 @@ export const whiskies = pgTable("whiskies", {
   distilledYear: text("distilled_year"), // Year of distillation
   bottledYear: text("bottled_year"), // Year of bottling
   price: real("price"), // Bottle price (0.7l)
+  priceRrp: real("price_rrp"), // Original retail price (UVP), web-researched
+  priceMarket: real("price_market"), // Current market price, web-researched
+  priceCurrency: text("price_currency"), // ISO currency code for priceRrp/priceMarket (e.g. EUR)
   hostSummary: text("host_summary"), // Host's detailed tasting assessment/review
   distilleryUrl: text("distillery_url"), // Distillery homepage URL
   aiFactsCache: text("ai_facts_cache"), // Cached AI-generated interesting facts (JSON)

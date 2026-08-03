@@ -21170,6 +21170,40 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
     }
   });
 
+  // Preise (UVP + aktueller Marktpreis) im Hintergrund nachladen: der
+  // Smart-Import liefert sein Ergebnis sofort, der Client holt Preise
+  // anschließend über diesen Endpoint (Websuche pro Flasche dauert Sekunden).
+  app.post("/api/tastings/price-lookup", async (req: any, res: any) => {
+    try {
+      if (await isAIDisabled("ai_import")) return res.status(503).json({ message: "AI feature disabled by admin" });
+      const { hostId, items } = req.body || {};
+      if (!hostId) return res.status(400).json({ message: "hostId required" });
+      if (!Array.isArray(items) || items.length === 0 || items.length > 60) {
+        return res.status(400).json({ message: "1-60 items required" });
+      }
+      const cleaned = items.map((it: any) => ({
+        name: String(it?.name || "").trim().slice(0, 200),
+        distillery: it?.distillery ? String(it.distillery).slice(0, 100) : null,
+        age: it?.age ? String(it.age).slice(0, 20) : null,
+        abv: typeof it?.abv === "number" && isFinite(it.abv) ? it.abv : null,
+      }));
+      if (cleaned.some((it) => !it.name)) {
+        return res.status(400).json({ message: "each item needs a name" });
+      }
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+      const { lookupPrices } = await import("./price-lookup");
+      // 60s pro Paket: die Websuche braucht mehrere Sekunden pro Whisky.
+      const results = await lookupPrices(openai, cleaned, { timeoutMs: 60000 });
+      return res.json({ results });
+    } catch (e: any) {
+      console.error("[price-lookup] failed:", e);
+      res.status(500).json({ message: e.message || "Price lookup failed" });
+    }
+  });
+
   // Lineup-Feinschliff: Freitext-Anweisung -> neue Reihenfolge der erkannten
   // Flaschen (mit Begründungen). Arbeitet rein auf den mitgeschickten Daten,
   // persistiert nichts.

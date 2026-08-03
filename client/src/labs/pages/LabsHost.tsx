@@ -287,6 +287,193 @@ function startWhiskybaseLookup(
     }));
   })();
 }
+// Preise (UVP + Marktpreis) im Hintergrund nachladen — gleiche Mechanik wie
+// startWhiskybaseLookup: Import bleibt schnell, Preise erscheinen nachträglich.
+let _priceLookupSeq = 0;
+function startPriceLookup(
+  list: any[],
+  hostId: string,
+  setResults: (updater: (rs: any[]) => any[]) => void,
+) {
+  // Request-scoped: jede Suche bekommt eine eigene ID; Ergebnisse werden über
+  // eine pro Zeile mitreisende Index-Markierung zugeordnet (kein Name-Matching
+  // — gleichnamige Flaschen und überlappende Requests bleiben so korrekt).
+  const reqId = `pl-${++_priceLookupSeq}-${Date.now()}`;
+  const missing = list
+    .map((w: any, i: number) => ({ i, name: (w?.name || "").trim() }))
+    .filter((m) => m.name && list[m.i]?.priceRrp == null && list[m.i]?.priceMarket == null)
+    .slice(0, 60);
+  if (missing.length === 0) return;
+  const missingIdx = new Set(missing.map((m) => m.i));
+  // Wird synchron direkt nach setResults(list) aufgerufen: der Updater sieht
+  // exakt diese Liste, daher ist Index-Markierung hier zuverlässig. Die
+  // Markierung reist danach mit der Zeile mit (übersteht Umsortieren).
+  setResults((rs) => rs.map((w, idx) => (missingIdx.has(idx) ? { ...w, _pricePending: reqId, _priceIdx: idx } : w)));
+  (async () => {
+    let results: any[] | null = null;
+    try {
+      const res = await fetch(apiUrl("/api/tastings/price-lookup"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hostId,
+          items: missing.map((m) => ({
+            name: m.name,
+            distillery: list[m.i]?.distillery || null,
+            age: list[m.i]?.age ? String(list[m.i].age) : null,
+            abv: normalizeAbv(list[m.i]?.abv),
+          })),
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (Array.isArray(data?.results)) results = data.results;
+      }
+    } catch {
+      // non-fatal: Preise bleiben einfach leer
+    }
+    const byIdx = new Map<number, { priceRrp: number | null; priceMarket: number | null; priceCurrency: string | null }>();
+    if (results) {
+      missing.forEach((m, i) => {
+        const r = results![i];
+        if (r && (r.priceRrp != null || r.priceMarket != null)) byIdx.set(m.i, r);
+      });
+    }
+    // Nur Zeilen dieses Requests anfassen — fremde/neuere Lookups bleiben unberührt.
+    setResults((rs) => rs.map((w) => {
+      if (w?._pricePending !== reqId) return w;
+      const { _pricePending, _priceIdx, ...rest } = w;
+      const hit = typeof _priceIdx === "number" ? byIdx.get(_priceIdx) : undefined;
+      return hit ? { ...rest, priceRrp: hit.priceRrp, priceMarket: hit.priceMarket, priceCurrency: hit.priceCurrency } : rest;
+    }));
+  })();
+}
+
+// Preisformat für nachgeladene Preise (mit Währung; EUR als €-Suffix wie gehabt).
+function formatLookupPrice(value: number | null | undefined, currency: string | null | undefined): string {
+  if (value == null || isNaN(Number(value))) return "";
+  const num = Number(value).toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  const cur = (currency || "EUR").toUpperCase();
+  return cur === "EUR" ? `${num} €` : `${num} ${cur}`;
+}
+
+// --- Wählbare Anzeige-Felder für die Import-Kurzzeile ---
+const IMPORT_LINE_FIELDS = [
+  "distillery", "age", "abv", "country", "region", "caskType",
+  "peatLevel", "price", "priceRrp", "priceMarket", "wbScore", "distilledYear",
+] as const;
+type ImportLineField = typeof IMPORT_LINE_FIELDS[number];
+const IMPORT_LINE_FIELDS_DEFAULT: ImportLineField[] = ["distillery", "age", "abv", "country", "caskType", "peatLevel", "wbScore", "price"];
+const IMPORT_LINE_FIELDS_STORAGE_KEY = "casksense.aiImport.lineFields";
+
+function loadImportLineFields(): ImportLineField[] {
+  try {
+    const raw = localStorage.getItem(IMPORT_LINE_FIELDS_STORAGE_KEY);
+    if (!raw) return IMPORT_LINE_FIELDS_DEFAULT;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return IMPORT_LINE_FIELDS_DEFAULT;
+    const valid = parsed.filter((f: any): f is ImportLineField => (IMPORT_LINE_FIELDS as readonly string[]).includes(f));
+    return valid.length > 0 ? valid : IMPORT_LINE_FIELDS_DEFAULT;
+  } catch {
+    return IMPORT_LINE_FIELDS_DEFAULT;
+  }
+}
+
+function saveImportLineFields(fields: ImportLineField[]) {
+  try { localStorage.setItem(IMPORT_LINE_FIELDS_STORAGE_KEY, JSON.stringify(fields)); } catch { /* ignore */ }
+}
+
+function importLineFieldLabel(field: ImportLineField, t: TFunction): string {
+  switch (field) {
+    case "distillery": return t("labs.aiImport.fieldDistillery", "Distillery");
+    case "age": return t("labs.aiImport.fieldAge", "Age");
+    case "abv": return t("labs.aiImport.fieldAbv", "ABV");
+    case "country": return t("labs.aiImport.fieldCountry", "Country");
+    case "region": return t("labs.aiImport.fieldRegion", "Region");
+    case "caskType": return t("labs.aiImport.fieldCask", "Cask");
+    case "peatLevel": return t("labs.aiImport.fieldPeat", "Peat");
+    case "price": return t("labs.aiImport.fieldPrice", "Price");
+    case "priceRrp": return t("labs.aiImport.fieldPriceRrp", "RRP");
+    case "priceMarket": return t("labs.aiImport.fieldPriceMarket", "Market price");
+    case "wbScore": return t("labs.aiImport.fieldWbScore", "WB score");
+    case "distilledYear": return t("labs.aiImport.fieldVintage", "Vintage");
+  }
+}
+
+function buildImportMetaLine(w: any, fields: ImportLineField[], t: TFunction): string {
+  const parts = fields.map((f) => {
+    switch (f) {
+      case "distillery": return w.distillery || null;
+      case "age": return w.age ? `${w.age}y` : null;
+      case "abv": return w.abv ? `${w.abv}%` : null;
+      case "country": return w.country || null;
+      case "region": return w.region || null;
+      case "caskType": return w.caskType || w.cask || null;
+      case "peatLevel": return w.peatLevel || null;
+      case "price": return formatPrice(w.price);
+      case "priceRrp": return w.priceRrp != null ? `${t("labs.aiImport.rrpShort", "RRP")} ${formatLookupPrice(w.priceRrp, w.priceCurrency)}` : null;
+      case "priceMarket": return w.priceMarket != null ? `${t("labs.aiImport.marketShort", "Now")} ${formatLookupPrice(w.priceMarket, w.priceCurrency)}` : null;
+      case "wbScore": return w.wbScore ? `WB ${w.wbScore}` : null;
+      case "distilledYear": return w.distilledYear || null;
+    }
+  });
+  return parts.filter(Boolean).join(" · ");
+}
+
+// Chips zum Ein-/Ausblenden der Kurzzeilen-Variablen (mobil + Desktop).
+function ImportFieldChips({ fields, onChange, t, testPrefix }: {
+  fields: ImportLineField[];
+  onChange: (next: ImportLineField[]) => void;
+  t: TFunction;
+  testPrefix: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const toggle = (f: ImportLineField) => {
+    const next = fields.includes(f) ? fields.filter((x) => x !== f) : [...IMPORT_LINE_FIELDS.filter((x) => fields.includes(x) || x === f)];
+    onChange(next);
+    saveImportLineFields(next);
+  };
+  return (
+    <div>
+      <button
+        type="button"
+        className="text-[11px] inline-flex items-center gap-1"
+        style={{ color: "var(--labs-text-muted)", background: "none", border: "none", padding: "2px 0", cursor: "pointer" }}
+        onClick={() => setOpen(!open)}
+        data-testid={`${testPrefix}-fields-toggle`}
+      >
+        <Sliders className="w-3 h-3" />
+        {t("labs.aiImport.fieldsToggle", "Displayed fields")}
+        {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+      </button>
+      {open && (
+        <div className="flex gap-1.5 flex-wrap pt-1" data-testid={`${testPrefix}-fields-chips`}>
+          {IMPORT_LINE_FIELDS.map((f) => {
+            const active = fields.includes(f);
+            return (
+              <button
+                key={f}
+                type="button"
+                className="text-[11px] px-2 py-1 rounded-full"
+                style={{
+                  background: active ? "color-mix(in srgb, var(--labs-accent) 15%, transparent)" : "transparent",
+                  color: active ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                  border: `1px solid ${active ? "color-mix(in srgb, var(--labs-accent) 35%, transparent)" : "color-mix(in srgb, var(--labs-text-muted) 30%, transparent)"}`,
+                  cursor: "pointer",
+                }}
+                onClick={() => toggle(f)}
+                data-testid={`${testPrefix}-field-chip-${f}`}
+              >
+                {importLineFieldLabel(f, t)}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function exportAiResultsCsv(results: any[], t: any) {
   const esc = (v: any) => {
     const s = v == null ? "" : String(v);
@@ -1489,6 +1676,7 @@ function MobileCompanion({
   const [mobileEditFields, setMobileEditFields] = useState<{ distillery: string; age: string; abv: string }>({ distillery: "", age: "", abv: "" });
   const [mobileShowPicker, setMobileShowPicker] = useState(false);
   const [mobileAiToCollection, setMobileAiToCollection] = useState(false);
+  const [mobileLineFields, setMobileLineFields] = useState<ImportLineField[]>(() => loadImportLineFields());
   // Base + counter so multiple adds while the picker stays open get strictly
   // increasing sortOrder (whiskyCount refreshes async and would repeat values).
   const mobilePickerOrderRef = useRef({ base: 0, added: 0 });
@@ -1683,6 +1871,7 @@ function MobileCompanion({
           setMobileAiResults(result.whiskies);
           setMobileAiImageUrls(urls);
           startWhiskybaseLookup(result.whiskies, pid, setMobileAiResults);
+          startPriceLookup(result.whiskies, pid, setMobileAiResults);
           const existingList = (whiskies || []) as Array<Record<string, unknown>>;
           const nonDupeIndices = new Set(
             result.whiskies.map((_: any, i: number) => i).filter((i: number) =>
@@ -1759,6 +1948,9 @@ function MobileCompanion({
             peatLevel: w.peatLevel || "",
             ppm: w.ppm ? parseFloat(w.ppm) || null : null,
             price: normalizePrice(w.price),
+            priceRrp: normalizePrice(w.priceRrp),
+            priceMarket: normalizePrice(w.priceMarket),
+            priceCurrency: w.priceCurrency || null,
             distilledYear: w.distilledYear || "",
             bottledYear: w.bottledYear || "",
             whiskybaseId: w.whiskybaseId || "",
@@ -2220,6 +2412,7 @@ function MobileCompanion({
                         {t("labs.aiImport.photoAutoAssign", "Photos were automatically matched to the recognized bottles — tap the camera icon to adjust.")}
                       </p>
                     )}
+                    <ImportFieldChips fields={mobileLineFields} onChange={setMobileLineFields} t={t} testPrefix="mobile-ai" />
                     {mobileAiResults.map((w: any, i: number) => {
                       const isDupe = dupeIndices.has(i);
                       return (
@@ -2249,7 +2442,13 @@ function MobileCompanion({
                             {isDupe && <span className="text-[11px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "color-mix(in srgb, var(--labs-warning, #f59e0b) 20%, transparent)", color: "var(--labs-warning, #f59e0b)", whiteSpace: "nowrap" }} data-testid={`mobile-ai-dupe-badge-${i}`}>{t("labs.aiImport.duplicate", "duplicate")}</span>}
                           </div>
                           <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
-                            {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.caskType || w.cask, w.peatLevel, w.wbScore ? `WB ${w.wbScore}` : null, formatPrice(w.price)].filter(Boolean).join(" · ")}
+                            {buildImportMetaLine(w, mobileLineFields, t)}
+                            {w._pricePending && (
+                              <span className="inline-flex items-center gap-1 ml-1.5" data-testid={`mobile-ai-price-pending-${i}`}>
+                                <Loader2 className="w-3 h-3 animate-spin inline" />
+                                {t("labs.aiImport.priceSearching", "Price search running…")}
+                              </span>
+                            )}
                           </p>
                           {whiskybaseUrlFor(w) ? (
                             <a
@@ -5659,6 +5858,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const [aiImportResults, setAiImportResults] = useState<any[]>([]);
   const [aiImportImageUrls, setAiImportImageUrls] = useState<string[]>([]);
   const [aiImportSelected, setAiImportSelected] = useState<Set<number>>(new Set());
+  const [aiImportLineFields, setAiImportLineFields] = useState<ImportLineField[]>(() => loadImportLineFields());
   const [aiImportPhotoPicker, setAiImportPhotoPicker] = useState<number | null>(null);
   const [showCollectionImport, setShowCollectionImport] = useState(false);
   const [showWishlistImport, setShowWishlistImport] = useState(false);
@@ -5853,6 +6053,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           setAiImportResults(result.whiskies);
           setAiImportImageUrls(urls);
           startWhiskybaseLookup(result.whiskies, currentParticipant?.id || "", setAiImportResults);
+          startPriceLookup(result.whiskies, currentParticipant?.id || "", setAiImportResults);
           const existingList = (whiskies || []) as Array<Record<string, unknown>>;
           const nonDupeIndices = new Set(
             result.whiskies.map((_: any, i: number) => i).filter((i: number) =>
@@ -5924,6 +6125,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             peatLevel: w.peatLevel || "",
             ppm: w.ppm ? parseFloat(w.ppm) || null : null,
             price: normalizePrice(w.price),
+            priceRrp: normalizePrice(w.priceRrp),
+            priceMarket: normalizePrice(w.priceMarket),
+            priceCurrency: w.priceCurrency || null,
             distilledYear: w.distilledYear || "",
             bottledYear: w.bottledYear || "",
             whiskybaseId: w.whiskybaseId || "",
@@ -7499,6 +7703,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                     {t("labs.aiImport.photoAutoAssign", "Photos were automatically matched to the recognized bottles — tap the camera icon to adjust.")}
                   </p>
                 )}
+                <ImportFieldChips fields={aiImportLineFields} onChange={setAiImportLineFields} t={t} testPrefix="labs-ai" />
                 {aiImportResults.map((w: any, i: number) => {
                   const isDupe = dupeIndices.has(i);
                   return (
@@ -7539,7 +7744,13 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                         {isDupe && <span className="text-[11px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "color-mix(in srgb, var(--labs-warning, #f59e0b) 20%, transparent)", color: "var(--labs-warning, #f59e0b)", whiteSpace: "nowrap" }} data-testid={`labs-ai-dupe-badge-${i}`}>{t("labs.aiImport.duplicate", "duplicate")}</span>}
                       </div>
                       <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                        {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.country, w.caskType || w.cask, w.peatLevel, w.wbScore ? `WB ${w.wbScore}` : null, formatPrice(w.price)].filter(Boolean).join(" · ")}
+                        {buildImportMetaLine(w, aiImportLineFields, t)}
+                        {w._pricePending && (
+                          <span className="inline-flex items-center gap-1 ml-1.5" data-testid={`labs-ai-price-pending-${i}`}>
+                            <Loader2 className="w-3 h-3 animate-spin inline" />
+                            {t("labs.aiImport.priceSearching", "Price search running…")}
+                          </span>
+                        )}
                       </p>
                       {whiskybaseUrlFor(w) ? (
                         <a
