@@ -2129,16 +2129,6 @@ function MobileCompanion({
 
   // Feinschliff-Vorschlag übernehmen: Reihenfolge ersetzen, Auswahl anhand
   // der Objekt-Identität auf die neuen Indizes ummappen.
-  const applyMobileRefine = (next: any[]) => {
-    const sel = new Set<number>();
-    next.forEach((w, i) => {
-      const oldIdx = mobileAiResults.indexOf(w);
-      if (oldIdx >= 0 && mobileAiSelected.has(oldIdx)) sel.add(i);
-    });
-    setMobileAiResults(next.map((w, i) => ({ ...w, sortOrder: i + 1 })));
-    setMobileAiSelected(sel);
-    setMobileAiPhotoPicker(null);
-  };
 
   const assignMobilePhoto = (idx: number, url: string | null) => {
     setMobileAiResults(rs => rs.map((w, i) => (i === idx ? { ...w, _photoUrl: url || undefined } : w)));
@@ -2609,6 +2599,17 @@ function MobileCompanion({
                     {mobileAiSummary.duplicatesSkipped > 0 && <p style={{ color: "var(--labs-text-muted)", margin: 0 }}>{mobileAiSummary.duplicatesSkipped} {t("labs.aiImport.duplicatesSkipped", "duplicates skipped")}</p>}
                     {mobileAiSummary.failed > 0 && <p style={{ color: "var(--labs-danger)", margin: 0 }}>{mobileAiSummary.failed} {t("labs.aiImport.failed", "failed")}</p>}
                   </div>
+                  <AiRefinePanel
+                    results={[]}
+                    hostId={pid}
+                    language={i18n.language || "de"}
+                    t={t}
+                    testPrefix="mobile-ai-post"
+                    onApply={() => {}}
+                    savedWhiskies={whiskies || []}
+                    tastingId={tastingId}
+                    onSavedApply={() => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] })}
+                  />
                   <div className="flex items-center gap-2 mt-3">
                     <button
                       className="labs-btn-ghost text-xs"
@@ -2625,17 +2626,6 @@ function MobileCompanion({
                       {t("labs.aiImport.close", "Close")}
                     </button>
                   </div>
-                  <AiRefinePanel
-                    results={[]}
-                    hostId={pid}
-                    language={i18n.language || "de"}
-                    t={t}
-                    testPrefix="mobile-ai-post"
-                    onApply={() => {}}
-                    savedWhiskies={whiskies || []}
-                    tastingId={tastingId}
-                    onSavedApply={() => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] })}
-                  />
                   </>
                 )}
 
@@ -2659,7 +2649,6 @@ function MobileCompanion({
                       </button>
                       </div>
                     </div>
-                    <AiRefinePanel results={mobileAiResults} hostId={pid} language={i18n.language || "de"} t={t} testPrefix="mobile-ai" onApply={applyMobileRefine} />
                     {mobileAiImageUrls.length > 1 && mobileAiResults.some((w: any) => w._photoUrl) && (
                       <p className="text-[11px]" style={{ color: "var(--labs-text-muted)", margin: 0 }} data-testid="mobile-ai-photo-hint">
                         {t("labs.aiImport.photoAutoAssign", "Photos were automatically matched to the recognized bottles — tap the camera icon to adjust.")}
@@ -6351,17 +6340,6 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     return () => clearTimeout(timer);
   }, [aiImportFiles]);
 
-  // Feinschliff-Vorschlag übernehmen (Desktop): siehe applyMobileRefine.
-  const applyDesktopRefine = (next: any[]) => {
-    const sel = new Set<number>();
-    next.forEach((w, i) => {
-      const oldIdx = aiImportResults.indexOf(w);
-      if (oldIdx >= 0 && aiImportSelected.has(oldIdx)) sel.add(i);
-    });
-    setAiImportResults(next.map((w, i) => ({ ...w, sortOrder: i + 1 })));
-    setAiImportSelected(sel);
-    setAiImportPhotoPicker(null);
-  };
 
   const assignDesktopPhoto = (idx: number, url: string | null) => {
     setAiImportResults(rs => rs.map((w, i) => (i === idx ? { ...w, _photoUrl: url || undefined } : w)));
@@ -7947,6 +7925,17 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 {aiImportSummary.duplicatesSkipped > 0 && <p style={{ color: "var(--labs-text-muted)", margin: 0 }}>{aiImportSummary.duplicatesSkipped} {t("labs.aiImport.duplicatesSkipped", "duplicates skipped")}</p>}
                 {aiImportSummary.failed > 0 && <p style={{ color: "var(--labs-danger)", margin: 0 }}>{aiImportSummary.failed} {t("labs.aiImport.failed", "failed")}</p>}
               </div>
+              <AiRefinePanel
+                results={[]}
+                hostId={currentParticipant?.id || ""}
+                language={i18n.language || "de"}
+                t={t}
+                testPrefix="labs-ai-post"
+                onApply={() => {}}
+                savedWhiskies={whiskies || []}
+                tastingId={tastingId}
+                onSavedApply={() => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] })}
+              />
               <div className="flex items-center gap-2 mt-3">
                 <button
                   className="labs-btn-ghost text-xs"
@@ -7963,17 +7952,6 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   {t("labs.aiImport.close", "Close")}
                 </button>
               </div>
-              <AiRefinePanel
-                results={[]}
-                hostId={currentParticipant?.id || ""}
-                language={i18n.language || "de"}
-                t={t}
-                testPrefix="labs-ai-post"
-                onApply={() => {}}
-                savedWhiskies={whiskies || []}
-                tastingId={tastingId}
-                onSavedApply={() => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] })}
-              />
               </>
             )}
 
@@ -8003,7 +7981,6 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                     </button>
                   </div>
                 </div>
-                <AiRefinePanel results={aiImportResults} hostId={currentParticipant?.id || ""} language={i18n.language || "de"} t={t} testPrefix="labs-ai" onApply={applyDesktopRefine} />
                 {aiImportImageUrls.length > 1 && aiImportResults.some((w: any) => w._photoUrl) && (
                   <p className="text-[11px]" style={{ color: "var(--labs-text-muted)", margin: 0 }} data-testid="labs-ai-photo-hint">
                     {t("labs.aiImport.photoAutoAssign", "Photos were automatically matched to the recognized bottles — tap the camera icon to adjust.")}
