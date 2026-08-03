@@ -21020,7 +21020,8 @@ Extract ALL whisky information you can find. Return a JSON object with this stru
       "country": "Scotland / Ireland / Japan / USA / Canada / India / Taiwan / Other",
       "region": "Speyside / Islay / Highland / etc.",
       "caskType": "Cask type(s)",
-      "distilledYear": "Vintage/distilled year(s) e.g. '2010 - 2025'",
+      "distilledYear": "Year of DISTILLATION only, e.g. '2010' or '11.09.2013'. Never a range.",
+      "bottledYear": "Year of BOTTLING only, e.g. '2025' or '14.09.2021'. Never a range. null if unknown.",
       "whiskybaseId": "Whiskybase ID number if visible",
       "wbScore": 87.5,
       "price": 80.00,
@@ -21042,6 +21043,11 @@ Important rules:
 - Prices should be numbers without currency symbols
 - Parse whiskybase IDs as strings
 - wbScore should be a number 0-100
+- distilledYear and bottledYear are SEPARATE fields. If the source shows a range
+  like "2007 - 2021" or "2013/2024", split it: the earlier value is
+  distilledYear, the later one is bottledYear. NEVER put a range into a single
+  field. If only one year is given, put it in distilledYear and set bottledYear
+  to null.
 - If you find tasting notes (nose/palate/finish descriptions), combine them into hostSummary
 - Set null for any field you cannot determine
 - sourceImageIndex: when the whisky was recognized from one of the provided images, set the 1-based index of that image (1 = first image in this request, 2 = second, ...). Multiple whiskies on the same photo share the same index. Set null when the whisky comes from text/PDF content or you are unsure.
@@ -21105,6 +21111,15 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
         // Technische Fehlschläge ohne jedes Ergebnis -> echter Fehler (nicht als
         // "nichts erkannt" tarnen, auch wenn einzelne Pakete durchliefen).
         return res.status(500).json({ message: "AI could not extract data from the provided content" });
+      }
+
+      // Jahrgangsangaben normalisieren: trotz getrennter Feldabfrage liefert das
+      // Modell gelegentlich Bereiche in distilledYear. Deterministisches Netz.
+      try {
+        const { normalizeWhiskyVintage } = await import("./vintage-split");
+        for (const w of merged.whiskies) normalizeWhiskyVintage(w);
+      } catch (vErr: any) {
+        console.warn("[ai-import] vintage normalize failed (non-fatal):", vErr?.message);
       }
 
       // Whiskybase-URLs nur für bereits sichtbare IDs setzen. Die Websuche für
@@ -21342,6 +21357,7 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
           wbScore: w.wbScore != null ? parseFloat(String(w.wbScore)) || null : null,
           bottler: w.bottler?.trim() || null,
           distilledYear: w.distilledYear?.toString()?.trim() || null,
+          bottledYear: w.bottledYear?.toString()?.trim() || null,
           price: w.price != null ? parseFloat(String(w.price)) || null : null,
           hostNotes: w.hostNotes?.trim() || null,
           hostSummary: w.hostSummary?.trim() || null,
