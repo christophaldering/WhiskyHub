@@ -533,7 +533,7 @@ function buildImportMetaLine(w: any, fields: ImportLineField[], t: TFunction): s
 // werden muss. Der placeholder bleibt zusaetzlich stehen (sichtbar solange das
 // Feld leer ist). wrapClassName traegt Grid-Angaben wie col-span-2, die frueher
 // am Input selbst hingen.
-function LabeledInput({ placeholder, wrapClassName, ...rest }: any) {
+function LabeledInput({ placeholder, wrapClassName, ...rest }: React.InputHTMLAttributes<HTMLInputElement> & { placeholder?: string; wrapClassName?: string }) {
   return (
     <label className={wrapClassName} style={{ display: "block", minWidth: 0 }}>
       <span style={{ display: "block", fontSize: 11, lineHeight: "14px", marginBottom: 4, color: "var(--labs-text-muted)" }}>
@@ -544,7 +544,7 @@ function LabeledInput({ placeholder, wrapClassName, ...rest }: any) {
   );
 }
 
-function LabeledTextarea({ placeholder, wrapClassName, ...rest }: any) {
+function LabeledTextarea({ placeholder, wrapClassName, ...rest }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { placeholder?: string; wrapClassName?: string }) {
   return (
     <label className={wrapClassName} style={{ display: "block", minWidth: 0 }}>
       <span style={{ display: "block", fontSize: 11, lineHeight: "14px", marginBottom: 4, color: "var(--labs-text-muted)" }}>
