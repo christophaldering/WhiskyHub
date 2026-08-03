@@ -8,7 +8,7 @@ import { useAppStore } from "@/lib/store";
 import { useAIStatus } from "@/hooks/use-ai-status";
 import type { EncyclopediaSuggestion } from "@shared/schema";
 import { RichTextEditor } from "@/components/rich-text-editor";
-import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus, Heart, Rocket, Wifi, Star, Brain, Clock, Settings, FlaskConical, Filter, AlertTriangle, Globe, UserPlus, BellRing, Megaphone, Scale } from "lucide-react";
+import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus, Heart, Rocket, Wifi, Star, Brain, Clock, Settings, FlaskConical, Filter, AlertTriangle, Globe, UserPlus, BellRing, Megaphone, Scale, MailCheck } from "lucide-react";
 import AnalyticsDashboard from "@/components/admin/AnalyticsDashboard";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -44,6 +44,7 @@ interface AdminParticipant {
   canAccessWhiskyDb: boolean;
   newsletterOptIn: boolean;
   communityContributor: boolean;
+  emailVerified: boolean;
 }
 
 interface AdminTasting {
@@ -680,6 +681,16 @@ export default function AdminPanel() {
     onError: (e: Error) => toast({ title: t("admin.error"), description: e.message, variant: "destructive" }),
   });
 
+  const verifyEmailMutation = useMutation({
+    mutationFn: (participantId: string) =>
+      adminApi.verifyParticipantEmail(participantId, currentParticipant!.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      toast({ title: t("admin.emailVerifiedManually") });
+    },
+    onError: (e: Error) => toast({ title: t("admin.error"), description: e.message, variant: "destructive" }),
+  });
+
   const dbAccessMutation = useMutation({
     mutationFn: ({ participantId, canAccess }: { participantId: string; canAccess: boolean }) =>
       adminApi.updateWhiskyDbAccess(participantId, canAccess, currentParticipant!.id),
@@ -1069,14 +1080,14 @@ export default function AdminPanel() {
                                 <TooltipTrigger asChild>
                                   <span data-testid={`email-indicator-${p.id}`}>
                                     {p.email ? (
-                                      <Mail className="w-3.5 h-3.5 text-green-500 inline-block" />
+                                      <Mail className={`w-3.5 h-3.5 inline-block ${p.emailVerified ? "text-green-500" : "text-amber-500"}`} />
                                     ) : (
                                       <span className="text-muted-foreground/50">—</span>
                                     )}
                                   </span>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p>{p.email || t("admin.noEmail")}</p>
+                                  <p>{p.email ? `${p.email}${p.emailVerified ? "" : ` · ${t("admin.emailUnverified")}`}` : t("admin.noEmail")}</p>
                                 </TooltipContent>
                               </Tooltip>
                               <span className="truncate">
@@ -1120,6 +1131,39 @@ export default function AdminPanel() {
                                 <p>{t("admin.whiskyDbAccessTooltip")}</p>
                               </TooltipContent>
                             </Tooltip>
+                          )}
+                          {p.email && !p.emailVerified && (
+                            <AlertDialog>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:bg-amber-500/10" data-testid={`btn-verify-email-${p.id}`}>
+                                      <MailCheck className="w-4 h-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{t("admin.verifyEmailManually")}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>{t("admin.verifyEmailManually")}</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {t("admin.verifyEmailManuallyDesc", { name: p.name, email: p.email })}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>{t("admin.cancel")}</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => verifyEmailMutation.mutate(p.id)}
+                                    data-testid={`btn-confirm-verify-email-${p.id}`}
+                                  >
+                                    {t("admin.verifyEmailConfirm")}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           )}
                           {p.id !== currentParticipant?.id && (
                             <AlertDialog>

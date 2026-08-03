@@ -1322,6 +1322,8 @@ export const adminApi = {
     fetchJSON(`/admin/analytics?requesterId=${requesterId}`),
   getAnalyticsDashboard: (requesterId: string, days?: number) =>
     fetchJSON(`/admin/analytics/dashboard?requesterId=${requesterId}${days ? `&days=${days}` : ''}`),
+  verifyParticipantEmail: (participantId: string, requesterId: string) =>
+    fetchJSON(`/admin/participants/${participantId}/verify-email`, { method: "PATCH", body: JSON.stringify({ requesterId }) }),
   updateWhiskyDbAccess: (participantId: string, canAccess: boolean, requesterId: string) =>
     fetchJSON(`/admin/participants/${participantId}/whisky-db-access`, { method: "PATCH", body: JSON.stringify({ canAccess, requesterId }) }),
   getNewsletters: (requesterId: string) =>

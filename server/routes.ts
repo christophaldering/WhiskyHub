@@ -22,7 +22,7 @@ import { registerFunnelRoutes } from "./funnel-routes";
 import { recordEvents as recordFunnelEvents } from "./funnel-store";
 import { addConnection, broadcastToTasting } from "./sse";
 import { getCachedWhiskyDna, setCachedWhiskyDna } from "./whiskyDnaCache";
-import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES, getAIFreeQuota, setAIFreeQuota, getAIUsageOverview, getAIUsageBreakdown, checkAIQuota, logAIUsage } from "./ai-settings";
+import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, logAdminAudit, AI_FEATURES, getAIFreeQuota, setAIFreeQuota, getAIUsageOverview, getAIUsageBreakdown, checkAIQuota, logAIUsage } from "./ai-settings";
 import { getAIClient, getAIStatus } from "./ai-client";
 import { labsAskToolMap, buildOpenAIToolList, type AnswerMode, type LabsToolSource, type LabsToolDefinition } from "./labs-ask-tools";
 import {
@@ -16035,8 +16035,24 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       if (!requester || requester.role !== "admin") {
         return res.status(403).json({ message: "Admin access required" });
       }
+      const target = await storage.getParticipant(req.params.id);
+      if (!target) return res.status(404).json({ message: "Participant not found" });
+      if (target.emailVerified) {
+        return res.json({ message: "Email already verified", participant: target });
+      }
       const updated = await storage.verifyEmail(req.params.id);
       if (!updated) return res.status(404).json({ message: "Participant not found" });
+      // Audit-Log: wer hat wann welchen Nutzer manuell verifiziert.
+      try {
+        await logAdminAudit(
+          "manual_email_verify",
+          `${requester.name} (${requester.id})`,
+          { participantId: target.id, name: target.name, email: target.email, emailVerified: false },
+          { participantId: updated.id, emailVerified: true },
+        );
+      } catch (auditErr) {
+        console.warn("[admin] audit log write failed for manual_email_verify:", auditErr);
+      }
       res.json({ message: "Email verified", participant: updated });
     } catch (e: any) {
       res.status(500).json({ message: e.message });

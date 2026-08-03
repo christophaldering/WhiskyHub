@@ -100,6 +100,16 @@ export async function updateAISettings(newSettings: AISettings, actorId: string,
   return newSettings;
 }
 
+// Generischer Admin-Audit-Eintrag (z. B. manuelle E-Mail-Verifizierung).
+export async function logAdminAudit(
+  action: string,
+  actor: string,
+  before?: any,
+  after?: any,
+): Promise<void> {
+  await db.insert(adminAuditLog).values({ action, actor, before, after });
+}
+
 export async function getAuditLog(limit = 50): Promise<any[]> {
   const rows = await db.select().from(adminAuditLog)
     .where(eq(adminAuditLog.action, "ai_settings_update"))
