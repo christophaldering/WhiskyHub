@@ -533,6 +533,15 @@ function buildImportMetaLine(w: any, fields: ImportLineField[], t: TFunction): s
 // werden muss. Der placeholder bleibt zusaetzlich stehen (sichtbar solange das
 // Feld leer ist). wrapClassName traegt Grid-Angaben wie col-span-2, die frueher
 // am Input selbst hingen.
+function extractWbId(raw: string): string {
+  // Whiskybase-URL erkennen und ID extrahieren:
+  // https://www.whiskybase.com/whiskies/whisky/200396/caol-ila-...
+  const urlMatch = raw.match(/whiskybase\.com\/whiskies\/whisky\/(\d+)/i);
+  if (urlMatch) return urlMatch[1];
+  // Reine Ziffernfolge: Sonderzeichen entfernen wie bisher
+  return raw.replace(/[^0-9]/g, "");
+}
+
 function LabeledInput({ placeholder, wrapClassName, ...rest }: React.InputHTMLAttributes<HTMLInputElement> & { placeholder?: string; wrapClassName?: string }) {
   return (
     <label className={wrapClassName} style={{ display: "block", minWidth: 0 }}>
@@ -2736,7 +2745,7 @@ function MobileCompanion({
                   className="labs-input"
                   placeholder={t("labs.host.wbPlaceholder")}
                   value={mobileWbId}
-                  onChange={e => { setMobileWbId(e.target.value.replace(/[^0-9]/g, "")); setMobileWbResult(""); }}
+                  onChange={e => { setMobileWbId(extractWbId(e.target.value)); setMobileWbResult(""); }}
                   onKeyDown={e => { if (e.key === "Enter" && mobileWbId.trim()) handleMobileWbLookup(); }}
                   style={{ width: 64, fontSize: 12, textAlign: "center", border: "1px solid rgba(255,255,255,0.07)" }}
                   data-testid="mobile-wb-lookup-input"
@@ -8076,7 +8085,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   className="labs-input"
                   placeholder={t("labs.host.wbPlaceholder")}
                   value={wbLookupId}
-                  onChange={e => { setWbLookupId(e.target.value.replace(/[^0-9]/g, "")); setWbLookupResult(""); }}
+                  onChange={e => { setWbLookupId(extractWbId(e.target.value)); setWbLookupResult(""); }}
                   onKeyDown={e => { if (e.key === "Enter" && wbLookupId.trim()) handleWbLookup(wbLookupId, "add"); }}
                   style={{ width: 80, fontSize: 13, textAlign: "center" }}
                   data-testid="labs-wb-lookup-input"
@@ -8203,7 +8212,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                         className="labs-input"
                         placeholder={t("labs.host.wbPlaceholder")}
                         value={editWbLookupId}
-                        onChange={e => { setEditWbLookupId(e.target.value.replace(/[^0-9]/g, "")); setEditWbLookupResult(""); }}
+                        onChange={e => { setEditWbLookupId(extractWbId(e.target.value)); setEditWbLookupResult(""); }}
                         onKeyDown={e => { if (e.key === "Enter" && editWbLookupId.trim()) handleWbLookup(editWbLookupId, "edit"); }}
                         style={{ width: 80, fontSize: 13, textAlign: "center" }}
                         data-testid="labs-edit-wb-lookup-input"
