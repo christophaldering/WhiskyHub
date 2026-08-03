@@ -676,13 +676,18 @@ function exportAiResultsCsv(results: any[], t: any) {
 // Lineup-Feinschliff: Freitext-Anweisung -> KI-Sortiervorschlag mit
 // Vorher/Nachher-Vorschau. Wird in beiden Smart-Import-Ergebnislisten
 // (mobil + Desktop) verwendet.
-function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply }: {
+function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply, savedWhiskies, tastingId: refineTastingId, onSavedApply }: {
   results: any[];
   hostId: string;
   language: string;
   t: any;
   testPrefix: string;
   onApply: (next: any[]) => void;
+  // Wenn savedWhiskies + refineTastingId gesetzt: arbeitet auf dem gespeicherten
+  // Lineup und schreibt per PATCH /api/tastings/:id/reorder zurueck.
+  savedWhiskies?: any[];
+  tastingId?: string;
+  onSavedApply?: () => void;
 }) {
   const [instruction, setInstruction] = useState("");
   const [loading, setLoading] = useState(false);
@@ -693,8 +698,9 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply }: {
   const snapshotOf = (rs: any[]) => rs.map((w: any) => w?.name || "").join("\u0000");
   const proposalSnapshotRef = useRef<string>("");
 
-  if (results.length < 2) return null;
-  if (proposal && proposalSnapshotRef.current !== snapshotOf(results)) {
+  const effectiveList = savedWhiskies && savedWhiskies.length > 0 ? savedWhiskies : results;
+  if (effectiveList.length < 2) return null;
+  if (proposal && proposalSnapshotRef.current !== snapshotOf(effectiveList)) {
     setProposal(null);
   }
 
@@ -711,7 +717,7 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply }: {
           hostId,
           instruction: instr.trim(),
           language,
-          whiskies: results.map((w: any) => ({
+          whiskies: effectiveList.map((w: any) => ({
             name: w.name, distillery: w.distillery, age: w.age, abv: w.abv,
             caskType: w.caskType || w.cask, region: w.region, country: w.country,
             category: w.category, peatLevel: w.peatLevel, wbScore: w.wbScore, price: w.price,
@@ -720,7 +726,7 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply }: {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.message || "Refine failed");
-      proposalSnapshotRef.current = snapshotOf(results);
+      proposalSnapshotRef.current = snapshotOf(effectiveList);
       setProposal(data);
     } catch (e: any) {
       setError(e?.message || t("labs.aiRefine.error", "Fine-tuning failed. Please try again."));
@@ -735,15 +741,25 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply }: {
     { key: "check", label: t("labs.aiRefine.presetCheck", "Check my order") },
   ];
 
-  const acceptProposal = () => {
-    if (!proposal || proposalSnapshotRef.current !== snapshotOf(results)) {
+  const acceptProposal = async () => {
+    if (!proposal || proposalSnapshotRef.current !== snapshotOf(effectiveList)) {
       setProposal(null);
       return;
     }
-    const next = proposal.order.map(oldIdx => results[oldIdx]).filter(Boolean);
+    const next = proposal.order.map(oldIdx => effectiveList[oldIdx]).filter(Boolean);
     setProposal(null);
     setInstruction("");
-    onApply(next);
+    if (savedWhiskies && savedWhiskies.length > 0 && refineTastingId) {
+      const orderPayload = next.map((w: any, idx: number) => ({ id: w.id, sortOrder: idx + 1 }));
+      await fetch(apiUrl(`/api/tastings/${refineTastingId}/reorder`), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order: orderPayload }),
+      });
+      onSavedApply?.();
+    } else {
+      onApply(next);
+    }
   };
 
   return (
@@ -794,7 +810,7 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply }: {
           {proposal.summary && <p className="text-[11px]" style={{ color: "var(--labs-text-secondary)", margin: 0 }}>{proposal.summary}</p>}
           <div className="space-y-1">
             {proposal.order.map((oldIdx, pos) => {
-              const w = results[oldIdx];
+              const w = effectiveList[oldIdx];
               if (!w) return null;
               const moved = oldIdx !== pos;
               return (
@@ -807,7 +823,7 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply }: {
               );
             })}
             {proposal.removed.map(oldIdx => {
-              const w = results[oldIdx];
+              const w = effectiveList[oldIdx];
               if (!w) return null;
               return (
                 <div key={`rm-${oldIdx}`} className="text-[11px] flex gap-1.5 items-baseline" style={{ color: "var(--labs-text-muted)" }}>
@@ -2195,11 +2211,10 @@ function MobileCompanion({
     setMobileAiResults([]);
     setMobileAiImageUrls([]);
     setMobileAiSelected(new Set());
-    if (fail === 0) {
-      setMobileAiFiles([]);
-      setMobileAiText("");
-      setTimeout(() => { setMobileAiImport(false); setMobileAiSummary(null); }, 2500);
-    }
+    setMobileAiFiles([]);
+    setMobileAiText("");
+    // Kein automatisches Schliessen — Nutzer sieht den Nachklapp-Block
+    // (Excel-Export + Feinschliff) und schliesst bewusst.
   };
 
   return (
@@ -2587,12 +2602,41 @@ function MobileCompanion({
                 )}
 
                 {mobileAiSummary && (
+                  <>
                   <div className="text-xs p-3 rounded-lg space-y-1" style={{ background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 20%, transparent)" }} data-testid="mobile-ai-summary">
                     {mobileAiSummary.added > 0 && <p style={{ color: "var(--labs-success)", margin: 0 }}>{mobileAiSummary.added} {t("labs.aiImport.added", "added")}</p>}
                     {mobileAiSummary.duplicatesAdded > 0 && <p style={{ color: "var(--labs-warning, var(--labs-text-muted))", margin: 0 }}>{mobileAiSummary.duplicatesAdded} {t("labs.aiImport.duplicatesAdded", "duplicates added")}</p>}
                     {mobileAiSummary.duplicatesSkipped > 0 && <p style={{ color: "var(--labs-text-muted)", margin: 0 }}>{mobileAiSummary.duplicatesSkipped} {t("labs.aiImport.duplicatesSkipped", "duplicates skipped")}</p>}
                     {mobileAiSummary.failed > 0 && <p style={{ color: "var(--labs-danger)", margin: 0 }}>{mobileAiSummary.failed} {t("labs.aiImport.failed", "failed")}</p>}
                   </div>
+                  <div className="flex items-center gap-2 mt-3">
+                    <button
+                      className="labs-btn-ghost text-xs"
+                      onClick={() => downloadLineupExcel(tastingId, i18n.language?.startsWith("de") ? "de" : "en")}
+                      data-testid="mobile-ai-post-excel"
+                    >
+                      {t("labs.aiImport.downloadExcel", "Download Excel")}
+                    </button>
+                    <button
+                      className="labs-btn-ghost text-xs"
+                      onClick={() => { setMobileAiImport(false); setMobileAiSummary(null); }}
+                      data-testid="mobile-ai-post-close"
+                    >
+                      {t("labs.aiImport.close", "Close")}
+                    </button>
+                  </div>
+                  <AiRefinePanel
+                    results={[]}
+                    hostId={pid}
+                    language={i18n.language || "de"}
+                    t={t}
+                    testPrefix="mobile-ai-post"
+                    onApply={() => {}}
+                    savedWhiskies={whiskies || []}
+                    tastingId={tastingId}
+                    onSavedApply={() => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] })}
+                  />
+                  </>
                 )}
 
                 {mobileAiResults.length > 0 && (() => {
@@ -2606,13 +2650,6 @@ function MobileCompanion({
                         {dupeIndices.size > 0 && <span style={{ color: "var(--labs-text-muted)" }}> ({dupeIndices.size} {t("labs.aiImport.alreadyInLineup", "already in lineup")})</span>}
                       </span>
                       <div className="flex items-center gap-1">
-                      <button
-                        className="labs-btn-ghost text-xs"
-                        onClick={() => exportAiResultsCsv(mobileAiResults, t)}
-                        data-testid="mobile-ai-export-csv"
-                      >
-                        {t("labs.aiImport.exportCsv", "Export CSV")}
-                      </button>
                       <button
                         className="labs-btn-ghost text-xs"
                         onClick={() => setMobileAiSelected(mobileAiSelected.size === nonDupeCount ? new Set() : new Set(mobileAiResults.map((_, i) => i).filter(i => !dupeIndices.has(i))))}
@@ -6398,9 +6435,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     setAiImportSelected(new Set());
     setAiImportFiles([]);
     setAiImportText("");
-    if (failed === 0) {
-      setTimeout(() => { setShowAiImport(false); setAiImportSummary(null); }, 2500);
-    }
+    // Kein automatisches Schliessen — Nutzer sieht den Nachklapp-Block.
   };
 
   const handleWbLookup = useCallback(async (wbIdRaw: string, target: "add" | "edit") => {
@@ -7905,12 +7940,41 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             )}
 
             {aiImportSummary && (
+              <>
               <div className="text-xs p-3 rounded-lg space-y-1 mt-2" style={{ background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 20%, transparent)" }} data-testid="labs-ai-import-summary">
                 {aiImportSummary.added > 0 && <p style={{ color: "var(--labs-success)", margin: 0 }}>{aiImportSummary.added} {t("labs.aiImport.added", "added")}</p>}
                 {aiImportSummary.duplicatesAdded > 0 && <p style={{ color: "var(--labs-warning, var(--labs-text-muted))", margin: 0 }}>{aiImportSummary.duplicatesAdded} {t("labs.aiImport.duplicatesAdded", "duplicates added")}</p>}
                 {aiImportSummary.duplicatesSkipped > 0 && <p style={{ color: "var(--labs-text-muted)", margin: 0 }}>{aiImportSummary.duplicatesSkipped} {t("labs.aiImport.duplicatesSkipped", "duplicates skipped")}</p>}
                 {aiImportSummary.failed > 0 && <p style={{ color: "var(--labs-danger)", margin: 0 }}>{aiImportSummary.failed} {t("labs.aiImport.failed", "failed")}</p>}
               </div>
+              <div className="flex items-center gap-2 mt-3">
+                <button
+                  className="labs-btn-ghost text-xs"
+                  onClick={() => downloadLineupExcel(tastingId, i18n.language?.startsWith("de") ? "de" : "en")}
+                  data-testid="labs-ai-post-excel"
+                >
+                  {t("labs.aiImport.downloadExcel", "Download Excel")}
+                </button>
+                <button
+                  className="labs-btn-ghost text-xs"
+                  onClick={() => { setShowAiImport(false); setAiImportSummary(null); }}
+                  data-testid="labs-ai-post-close"
+                >
+                  {t("labs.aiImport.close", "Close")}
+                </button>
+              </div>
+              <AiRefinePanel
+                results={[]}
+                hostId={currentParticipant?.id || ""}
+                language={i18n.language || "de"}
+                t={t}
+                testPrefix="labs-ai-post"
+                onApply={() => {}}
+                savedWhiskies={whiskies || []}
+                tastingId={tastingId}
+                onSavedApply={() => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] })}
+              />
+              </>
             )}
 
             {aiImportResults.length > 0 && (() => {
@@ -7924,13 +7988,6 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                     {dupeIndices.size > 0 && <span style={{ color: "var(--labs-text-muted)" }}> ({dupeIndices.size} {t("labs.aiImport.alreadyInLineup", "already in lineup")})</span>}
                   </span>
                   <div className="flex items-center gap-1">
-                    <button
-                      className="labs-btn-ghost text-xs"
-                      onClick={() => exportAiResultsCsv(aiImportResults, t)}
-                      data-testid="labs-ai-export-csv"
-                    >
-                      {t("labs.aiImport.exportCsv", "Export CSV")}
-                    </button>
                     <button
                       className="labs-btn-ghost text-xs"
                       onClick={() => {
