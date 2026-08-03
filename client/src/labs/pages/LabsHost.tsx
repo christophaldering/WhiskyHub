@@ -502,6 +502,33 @@ function buildImportMetaLine(w: any, fields: ImportLineField[], t: TFunction): s
   return parts.filter(Boolean).join(" · ");
 }
 
+// Formularfeld mit dauerhaft sichtbarer Beschriftung. Die Beschriftung wird aus
+// dem placeholder abgeleitet, damit an den Aufrufstellen nichts dupliziert
+// werden muss. Der placeholder bleibt zusaetzlich stehen (sichtbar solange das
+// Feld leer ist). wrapClassName traegt Grid-Angaben wie col-span-2, die frueher
+// am Input selbst hingen.
+function LabeledInput({ placeholder, wrapClassName, ...rest }: any) {
+  return (
+    <label className={wrapClassName} style={{ display: "block", minWidth: 0 }}>
+      <span style={{ display: "block", fontSize: 11, lineHeight: "14px", marginBottom: 4, color: "var(--labs-text-muted)" }}>
+        {placeholder}
+      </span>
+      <input className="labs-input" placeholder={placeholder} style={{ width: "100%" }} {...rest} />
+    </label>
+  );
+}
+
+function LabeledTextarea({ placeholder, wrapClassName, ...rest }: any) {
+  return (
+    <label className={wrapClassName} style={{ display: "block", minWidth: 0 }}>
+      <span style={{ display: "block", fontSize: 11, lineHeight: "14px", marginBottom: 4, color: "var(--labs-text-muted)" }}>
+        {placeholder}
+      </span>
+      <textarea className="labs-input" placeholder={placeholder} style={{ width: "100%" }} {...rest} />
+    </label>
+  );
+}
+
 // Chips zum Ein-/Ausblenden der Kurzzeilen-Variablen (mobil + Desktop).
 function ImportFieldChips({ fields, onChange, t, testPrefix }: {
   fields: ImportLineField[];
@@ -7994,32 +8021,32 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             )}
             {showExtendedFields && (
               <div className="grid grid-cols-2 gap-2">
-                <input className="labs-input" placeholder={t("labs.host.fieldDistillery")} value={extFields.distillery || ""} onChange={e => setExtFields({ ...extFields, distillery: e.target.value })} data-testid="labs-ext-distillery" />
-                <input className="labs-input" placeholder={t("m2.host.abvLabel")} value={extFields.abv || ""} onChange={e => setExtFields({ ...extFields, abv: e.target.value })} data-testid="labs-ext-abv" />
-                <input className="labs-input" placeholder={t("m2.host.caskTypeLabel")} value={extFields.caskType || ""} onChange={e => setExtFields({ ...extFields, caskType: e.target.value })} data-testid="labs-ext-cask" />
-                <input className="labs-input" placeholder={t("labs.host.fieldAge")} value={extFields.age || ""} onChange={e => setExtFields({ ...extFields, age: e.target.value })} data-testid="labs-ext-age" />
-                <input className="labs-input" placeholder={t("labs.host.fieldCategory")} value={extFields.category || ""} onChange={e => setExtFields({ ...extFields, category: e.target.value })} data-testid="labs-ext-category" />
-                <input className="labs-input" placeholder={t("labs.host.fieldCountry")} value={extFields.country || ""} onChange={e => setExtFields({ ...extFields, country: e.target.value })} data-testid="labs-ext-country" />
-                <input className="labs-input" placeholder={t("labs.host.fieldRegion")} value={extFields.region || ""} onChange={e => setExtFields({ ...extFields, region: e.target.value })} data-testid="labs-ext-region" />
-                <input className="labs-input" placeholder={t("labs.host.fieldBottler")} value={extFields.bottler || ""} onChange={e => setExtFields({ ...extFields, bottler: e.target.value })} data-testid="labs-ext-bottler" />
-                <input className="labs-input" placeholder={t("labs.host.fieldDistilled")} value={extFields.distilledYear || ""} onChange={e => setExtFields({ ...extFields, distilledYear: e.target.value })} data-testid="labs-ext-distilled" />
-                <input className="labs-input" placeholder={t("labs.host.fieldBottled")} value={extFields.bottledYear || ""} onChange={e => setExtFields({ ...extFields, bottledYear: e.target.value })} data-testid="labs-ext-bottled" />
-                <input className="labs-input" placeholder={t("labs.host.fieldPriceEur")} value={extFields.price || ""} onChange={e => setExtFields({ ...extFields, price: e.target.value })} data-testid="labs-ext-price" />
-                <input className="labs-input" placeholder={t("labs.host.fieldPriceRrp", "RRP")} value={extFields.priceRrp || ""} onChange={e => setExtFields({ ...extFields, priceRrp: e.target.value })} data-testid="labs-ext-price-rrp" />
-                <input className="labs-input" placeholder={t("labs.host.fieldPriceMarket", "Market price")} value={extFields.priceMarket || ""} onChange={e => setExtFields({ ...extFields, priceMarket: e.target.value })} data-testid="labs-ext-price-market" />
-                <input className="labs-input" placeholder={t("labs.host.fieldPriceCurrency", "Currency (e.g. EUR)")} maxLength={3} value={extFields.priceCurrency || ""} onChange={e => setExtFields({ ...extFields, priceCurrency: e.target.value.replace(/[^a-zA-Z]/g, "").toUpperCase() })} data-testid="labs-ext-price-currency" />
+                <LabeledInput placeholder={t("labs.host.fieldDistillery")} value={extFields.distillery || ""} onChange={e => setExtFields({ ...extFields, distillery: e.target.value })} data-testid="labs-ext-distillery" />
+                <LabeledInput placeholder={t("m2.host.abvLabel")} value={extFields.abv || ""} onChange={e => setExtFields({ ...extFields, abv: e.target.value })} data-testid="labs-ext-abv" />
+                <LabeledInput placeholder={t("m2.host.caskTypeLabel")} value={extFields.caskType || ""} onChange={e => setExtFields({ ...extFields, caskType: e.target.value })} data-testid="labs-ext-cask" />
+                <LabeledInput placeholder={t("labs.host.fieldAge")} value={extFields.age || ""} onChange={e => setExtFields({ ...extFields, age: e.target.value })} data-testid="labs-ext-age" />
+                <LabeledInput placeholder={t("labs.host.fieldCategory")} value={extFields.category || ""} onChange={e => setExtFields({ ...extFields, category: e.target.value })} data-testid="labs-ext-category" />
+                <LabeledInput placeholder={t("labs.host.fieldCountry")} value={extFields.country || ""} onChange={e => setExtFields({ ...extFields, country: e.target.value })} data-testid="labs-ext-country" />
+                <LabeledInput placeholder={t("labs.host.fieldRegion")} value={extFields.region || ""} onChange={e => setExtFields({ ...extFields, region: e.target.value })} data-testid="labs-ext-region" />
+                <LabeledInput placeholder={t("labs.host.fieldBottler")} value={extFields.bottler || ""} onChange={e => setExtFields({ ...extFields, bottler: e.target.value })} data-testid="labs-ext-bottler" />
+                <LabeledInput placeholder={t("labs.host.fieldDistilled")} value={extFields.distilledYear || ""} onChange={e => setExtFields({ ...extFields, distilledYear: e.target.value })} data-testid="labs-ext-distilled" />
+                <LabeledInput placeholder={t("labs.host.fieldBottled")} value={extFields.bottledYear || ""} onChange={e => setExtFields({ ...extFields, bottledYear: e.target.value })} data-testid="labs-ext-bottled" />
+                <LabeledInput placeholder={t("labs.host.fieldPriceEur")} value={extFields.price || ""} onChange={e => setExtFields({ ...extFields, price: e.target.value })} data-testid="labs-ext-price" />
+                <LabeledInput placeholder={t("labs.host.fieldPriceRrp", "RRP")} value={extFields.priceRrp || ""} onChange={e => setExtFields({ ...extFields, priceRrp: e.target.value })} data-testid="labs-ext-price-rrp" />
+                <LabeledInput placeholder={t("labs.host.fieldPriceMarket", "Market price")} value={extFields.priceMarket || ""} onChange={e => setExtFields({ ...extFields, priceMarket: e.target.value })} data-testid="labs-ext-price-market" />
+                <LabeledInput placeholder={t("labs.host.fieldPriceCurrency", "Currency (e.g. EUR)")} maxLength={3} value={extFields.priceCurrency || ""} onChange={e => setExtFields({ ...extFields, priceCurrency: e.target.value.replace(/[^a-zA-Z]/g, "").toUpperCase() })} data-testid="labs-ext-price-currency" />
                 {!!(extFields.priceCurrency || "").trim() && !/^[A-Z]{3}$/.test((extFields.priceCurrency || "").trim()) && (
                   <p className="text-xs col-span-2" style={{ color: "var(--labs-danger)" }} data-testid="labs-ext-price-currency-warn">{t("labs.host.currencyInvalid", "Currency must be a 3-letter code (e.g. EUR) — otherwise it won't be saved.")}</p>
                 )}
-                <input className="labs-input" placeholder={t("labs.host.fieldPeat")} value={extFields.peatLevel || ""} onChange={e => setExtFields({ ...extFields, peatLevel: e.target.value })} data-testid="labs-ext-peat" />
-                <input className="labs-input" placeholder={t("labs.host.fieldPpm")} value={extFields.ppm || ""} onChange={e => setExtFields({ ...extFields, ppm: e.target.value })} data-testid="labs-ext-ppm" />
+                <LabeledInput placeholder={t("labs.host.fieldPeat")} value={extFields.peatLevel || ""} onChange={e => setExtFields({ ...extFields, peatLevel: e.target.value })} data-testid="labs-ext-peat" />
+                <LabeledInput placeholder={t("labs.host.fieldPpm")} value={extFields.ppm || ""} onChange={e => setExtFields({ ...extFields, ppm: e.target.value })} data-testid="labs-ext-ppm" />
                 <select className="labs-input col-span-2" value={extFields.flavorProfile || "auto"} onChange={e => setExtFields({ ...extFields, flavorProfile: e.target.value })} data-testid="labs-ext-flavor-profile" style={{ fontSize: 13 }}>
                   <option value="auto">{`${t("labs.host.flavorAuto")}${(() => { const d = detectFlavorProfile({ region: extFields.region, peatLevel: extFields.peatLevel, caskType: extFields.caskType }); const lbl = d ? FLAVOR_PROFILES.find(p => p.id === d)?.en : null; return lbl ? ` (${t("labs.host.flavorAutoDetected", { label: lbl })})` : ""; })()}`}</option>
                   <option value="none">{t("labs.host.flavorNone")}</option>
                   {FLAVOR_PROFILES.map(fp => <option key={fp.id} value={fp.id}>{fp.en}</option>)}
                 </select>
-                <textarea className="labs-input col-span-2" rows={2} placeholder={t("labs.host.hostSummaryPlaceholder")} value={extFields.hostSummary || ""} onChange={e => setExtFields({ ...extFields, hostSummary: e.target.value })} style={{ resize: "vertical" }} data-testid="labs-ext-summary" />
-                <textarea className="labs-input col-span-2" rows={2} placeholder={t("labs.host.notesPlaceholder")} value={extFields.notes || ""} onChange={e => setExtFields({ ...extFields, notes: e.target.value })} style={{ resize: "vertical" }} data-testid="labs-ext-notes" />
+                <LabeledTextarea wrapClassName="col-span-2" rows={2} placeholder={t("labs.host.hostSummaryPlaceholder")} value={extFields.hostSummary || ""} onChange={e => setExtFields({ ...extFields, hostSummary: e.target.value })} style={{ resize: "vertical" }} data-testid="labs-ext-summary" />
+                <LabeledTextarea wrapClassName="col-span-2" rows={2} placeholder={t("labs.host.notesPlaceholder")} value={extFields.notes || ""} onChange={e => setExtFields({ ...extFields, notes: e.target.value })} style={{ resize: "vertical" }} data-testid="labs-ext-notes" />
                 <div className="col-span-2">
                   <WhiskyImageUpload
                     imageUrl={extImagePreview}
@@ -8140,21 +8167,21 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                       </div>
                     )}
                     <div className="grid grid-cols-2 gap-2">
-                      <input className="labs-input col-span-2" placeholder={t("labs.host.fieldName")} value={editFields.name || ""} onChange={e => setEditFields({ ...editFields, name: e.target.value })} data-testid="labs-edit-whisky-name" />
-                      <input className="labs-input" placeholder={t("labs.host.fieldDistillery")} value={editFields.distillery || ""} onChange={e => setEditFields({ ...editFields, distillery: e.target.value })} />
-                      <input className="labs-input" placeholder={t("m2.host.abvLabel")} value={editFields.abv || ""} onChange={e => setEditFields({ ...editFields, abv: e.target.value })} />
-                      <input className="labs-input" placeholder={t("m2.host.caskTypeLabel")} value={editFields.caskType || ""} onChange={e => setEditFields({ ...editFields, caskType: e.target.value })} />
-                      <input className="labs-input" placeholder={t("labs.host.fieldAge")} value={editFields.age || ""} onChange={e => setEditFields({ ...editFields, age: e.target.value })} />
-                      <input className="labs-input" placeholder={t("labs.host.fieldCategory")} value={editFields.category || ""} onChange={e => setEditFields({ ...editFields, category: e.target.value })} />
-                      <input className="labs-input" placeholder={t("labs.host.fieldCountry")} value={editFields.country || ""} onChange={e => setEditFields({ ...editFields, country: e.target.value })} />
-                      <input className="labs-input" placeholder={t("labs.host.fieldRegion")} value={editFields.region || ""} onChange={e => setEditFields({ ...editFields, region: e.target.value })} />
-                      <input className="labs-input" placeholder={t("labs.host.fieldBottler")} value={editFields.bottler || ""} onChange={e => setEditFields({ ...editFields, bottler: e.target.value })} />
-                      <input className="labs-input" placeholder={t("labs.host.fieldDistilled")} value={editFields.distilledYear || ""} onChange={e => setEditFields({ ...editFields, distilledYear: e.target.value })} data-testid="labs-edit-distilled" />
-                      <input className="labs-input" placeholder={t("labs.host.fieldBottled")} value={editFields.bottledYear || ""} onChange={e => setEditFields({ ...editFields, bottledYear: e.target.value })} data-testid="labs-edit-bottled" />
-                      <input className="labs-input" placeholder={t("labs.host.fieldPriceEur")} value={editFields.price || ""} onChange={e => setEditFields({ ...editFields, price: e.target.value })} />
-                      <input className="labs-input" placeholder={t("labs.host.fieldPriceRrp", "RRP")} value={editFields.priceRrp || ""} onChange={e => setEditFields({ ...editFields, priceRrp: e.target.value })} data-testid="labs-edit-price-rrp" />
-                      <input className="labs-input" placeholder={t("labs.host.fieldPriceMarket", "Market price")} value={editFields.priceMarket || ""} onChange={e => setEditFields({ ...editFields, priceMarket: e.target.value })} data-testid="labs-edit-price-market" />
-                      <input className="labs-input" placeholder={t("labs.host.fieldPriceCurrency", "Currency (e.g. EUR)")} maxLength={3} value={editFields.priceCurrency || ""} onChange={e => setEditFields({ ...editFields, priceCurrency: e.target.value.replace(/[^a-zA-Z]/g, "").toUpperCase() })} data-testid="labs-edit-price-currency" />
+                      <LabeledInput wrapClassName="col-span-2" placeholder={t("labs.host.fieldName")} value={editFields.name || ""} onChange={e => setEditFields({ ...editFields, name: e.target.value })} data-testid="labs-edit-whisky-name" />
+                      <LabeledInput placeholder={t("labs.host.fieldDistillery")} value={editFields.distillery || ""} onChange={e => setEditFields({ ...editFields, distillery: e.target.value })} />
+                      <LabeledInput placeholder={t("m2.host.abvLabel")} value={editFields.abv || ""} onChange={e => setEditFields({ ...editFields, abv: e.target.value })} />
+                      <LabeledInput placeholder={t("m2.host.caskTypeLabel")} value={editFields.caskType || ""} onChange={e => setEditFields({ ...editFields, caskType: e.target.value })} />
+                      <LabeledInput placeholder={t("labs.host.fieldAge")} value={editFields.age || ""} onChange={e => setEditFields({ ...editFields, age: e.target.value })} />
+                      <LabeledInput placeholder={t("labs.host.fieldCategory")} value={editFields.category || ""} onChange={e => setEditFields({ ...editFields, category: e.target.value })} />
+                      <LabeledInput placeholder={t("labs.host.fieldCountry")} value={editFields.country || ""} onChange={e => setEditFields({ ...editFields, country: e.target.value })} />
+                      <LabeledInput placeholder={t("labs.host.fieldRegion")} value={editFields.region || ""} onChange={e => setEditFields({ ...editFields, region: e.target.value })} />
+                      <LabeledInput placeholder={t("labs.host.fieldBottler")} value={editFields.bottler || ""} onChange={e => setEditFields({ ...editFields, bottler: e.target.value })} />
+                      <LabeledInput placeholder={t("labs.host.fieldDistilled")} value={editFields.distilledYear || ""} onChange={e => setEditFields({ ...editFields, distilledYear: e.target.value })} data-testid="labs-edit-distilled" />
+                      <LabeledInput placeholder={t("labs.host.fieldBottled")} value={editFields.bottledYear || ""} onChange={e => setEditFields({ ...editFields, bottledYear: e.target.value })} data-testid="labs-edit-bottled" />
+                      <LabeledInput placeholder={t("labs.host.fieldPriceEur")} value={editFields.price || ""} onChange={e => setEditFields({ ...editFields, price: e.target.value })} />
+                      <LabeledInput placeholder={t("labs.host.fieldPriceRrp", "RRP")} value={editFields.priceRrp || ""} onChange={e => setEditFields({ ...editFields, priceRrp: e.target.value })} data-testid="labs-edit-price-rrp" />
+                      <LabeledInput placeholder={t("labs.host.fieldPriceMarket", "Market price")} value={editFields.priceMarket || ""} onChange={e => setEditFields({ ...editFields, priceMarket: e.target.value })} data-testid="labs-edit-price-market" />
+                      <LabeledInput placeholder={t("labs.host.fieldPriceCurrency", "Currency (e.g. EUR)")} maxLength={3} value={editFields.priceCurrency || ""} onChange={e => setEditFields({ ...editFields, priceCurrency: e.target.value.replace(/[^a-zA-Z]/g, "").toUpperCase() })} data-testid="labs-edit-price-currency" />
                       {!!(editFields.priceCurrency || "").trim() && !/^[A-Z]{3}$/.test((editFields.priceCurrency || "").trim()) && (
                         <p className="text-xs col-span-2" style={{ color: "var(--labs-danger)" }} data-testid="labs-edit-price-currency-warn">{t("labs.host.currencyInvalid", "Currency must be a 3-letter code (e.g. EUR) — otherwise it won't be saved.")}</p>
                       )}
@@ -8163,8 +8190,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                         <option value="none">{t("labs.host.flavorNone")}</option>
                         {FLAVOR_PROFILES.map(fp => <option key={fp.id} value={fp.id}>{fp.en}</option>)}
                       </select>
-                      <textarea className="labs-input col-span-2" rows={2} placeholder={t("labs.host.hostSummaryPlaceholder")} value={editFields.hostSummary || ""} onChange={e => setEditFields({ ...editFields, hostSummary: e.target.value })} style={{ resize: "vertical" }} />
-                      <textarea className="labs-input col-span-2" rows={2} placeholder={t("labs.host.notesPlaceholder")} value={editFields.notes || ""} onChange={e => setEditFields({ ...editFields, notes: e.target.value })} style={{ resize: "vertical" }} />
+                      <LabeledTextarea wrapClassName="col-span-2" rows={2} placeholder={t("labs.host.hostSummaryPlaceholder")} value={editFields.hostSummary || ""} onChange={e => setEditFields({ ...editFields, hostSummary: e.target.value })} style={{ resize: "vertical" }} />
+                      <LabeledTextarea wrapClassName="col-span-2" rows={2} placeholder={t("labs.host.notesPlaceholder")} value={editFields.notes || ""} onChange={e => setEditFields({ ...editFields, notes: e.target.value })} style={{ resize: "vertical" }} />
                     </div>
                     <WhiskyImageUpload
                       whiskyId={w.id}
