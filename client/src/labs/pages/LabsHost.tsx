@@ -904,6 +904,40 @@ const isSimilarWhisky = (
   return false;
 };
 
+// Findet zu einer Import-Zeile die passende bereits vorhandene Flasche.
+// Reihenfolge der Kriterien ist bewusst: die Whiskybase-ID ist eindeutig und
+// ueberlebt eine Namensaenderung in Excel; die Namensaehnlichkeit ist nur der
+// Rueckfall, wenn keine ID vorliegt.
+function findExistingWhisky(candidate: any, existingList: Array<Record<string, unknown>>): any | null {
+  if (!candidate || !Array.isArray(existingList) || existingList.length === 0) return null;
+  const candId = (candidate.whiskybaseId ?? "").toString().trim();
+  if (/^\d+$/.test(candId)) {
+    const byId = existingList.find((ew: any) => {
+      const id = (ew?.whiskybaseId ?? "").toString().trim();
+      return /^\d+$/.test(id) && id === candId;
+    });
+    if (byId) return byId;
+  }
+  const byName = existingList.find((ew: any) =>
+    isSimilarWhisky(candidate.name || "", candidate.distillery || "", (ew as any)?.name || "", (ew as any)?.distillery || ""),
+  );
+  return byName || null;
+}
+
+// Baut aus dem Anlage-Payload den Aktualisierungs-Payload.
+// Leere Werte werden ENTFERNT, damit ein Reimport bestehende Angaben niemals
+// ueberschreibt oder loescht. tastingId und sortOrder bleiben ebenfalls aussen
+// vor: Zugehoerigkeit und Reihenfolge aendert ein Reimport nicht.
+function toUpdatePayload(payload: Record<string, any>): Record<string, any> {
+  const out: Record<string, any> = {};
+  for (const [k, v] of Object.entries(payload)) {
+    if (k === "tastingId" || k === "sortOrder") continue;
+    if (v === "" || v === null || v === undefined) continue;
+    out[k] = v;
+  }
+  return out;
+}
+
 function getRevealState(tasting: any, whiskyCount: number, t: (key: string, opts?: any) => string) {
   let stepGroups = REVEAL_DEFAULT_ORDER;
   try {
@@ -1967,10 +2001,7 @@ function MobileCompanion({
     if (!whiskies || !mobileAiResults.length) return new Set<number>();
     const dupes = new Set<number>();
     mobileAiResults.forEach((w: any, i: number) => {
-      const match = whiskies.some((ew: any) =>
-        isSimilarWhisky(w.name || "", w.distillery || "", ew.name || "", ew.distillery || "")
-      );
-      if (match) dupes.add(i);
+      if (findExistingWhisky(w, whiskies as Array<Record<string, unknown>>)) dupes.add(i);
     });
     return dupes;
   }, [whiskies, mobileAiResults]);
@@ -2074,9 +2105,10 @@ function MobileCompanion({
     for (const idx of Array.from(mobileAiSelected)) {
       const w = mobileAiResults[idx];
       if (w) {
-        const isDupe = existingList.some((ew: any) => isSimilarWhisky(w.name || "", w.distillery || "", ew.name || "", ew.distillery || ""));
+        const existingMatch = findExistingWhisky(w, existingList);
+        const isDupe = !!existingMatch;
         try {
-          await whiskyApi.create({
+          const payload: Record<string, any> = {
             tastingId,
             imageUrl: w._photoUrl || singlePhotoUrl || "",
             name: w.name || "",
@@ -2101,7 +2133,12 @@ function MobileCompanion({
             notes: w.notes || "",
             hostSummary: w.hostSummary || "",
             sortOrder: w.sortOrder ? parseInt(w.sortOrder) || (whiskyCount + added + dupeAdded + 1) : (whiskyCount + added + dupeAdded + 1),
-          });
+          };
+          if (existingMatch) {
+            await whiskyApi.update(String(existingMatch.id), toUpdatePayload(payload));
+          } else {
+            await whiskyApi.create(payload);
+          }
           if (mobileAiToCollection && pid) {
             try {
               await collectionApi.add(pid, {
@@ -6168,10 +6205,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     if (!whiskies || !aiImportResults.length) return new Set<number>();
     const dupes = new Set<number>();
     aiImportResults.forEach((w: any, i: number) => {
-      const match = whiskies.some((ew: any) =>
-        isSimilarWhisky(w.name || "", w.distillery || "", ew.name || "", ew.distillery || "")
-      );
-      if (match) dupes.add(i);
+      if (findExistingWhisky(w, whiskies as Array<Record<string, unknown>>)) dupes.add(i);
     });
     return dupes;
   }, [whiskies, aiImportResults]);
@@ -6270,9 +6304,10 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
     for (const idx of Array.from(aiImportSelected)) {
       const w = aiImportResults[idx];
       if (w) {
-        const isDupe = existingList.some((ew: any) => isSimilarWhisky(w.name || "", w.distillery || "", ew.name || "", ew.distillery || ""));
+        const existingMatch = findExistingWhisky(w, existingList);
+        const isDupe = !!existingMatch;
         try {
-          await whiskyApi.create({
+          const payload: Record<string, any> = {
             tastingId,
             name: w.name || "",
             distillery: w.distillery || "",
@@ -6297,7 +6332,12 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             hostSummary: w.hostSummary || "",
             imageUrl: w._photoUrl || singlePhotoUrl || "",
             sortOrder: w.sortOrder ? parseInt(w.sortOrder) || ((whiskies?.length || 0) + added + dupeAdded + 1) : ((whiskies?.length || 0) + added + dupeAdded + 1),
-          });
+          };
+          if (existingMatch) {
+            await whiskyApi.update(String(existingMatch.id), toUpdatePayload(payload));
+          } else {
+            await whiskyApi.create(payload);
+          }
           if (aiImportToCollection && currentParticipant?.id) {
             try {
               await collectionApi.add(currentParticipant.id, {
