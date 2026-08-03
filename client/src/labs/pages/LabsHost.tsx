@@ -2613,17 +2613,22 @@ function MobileCompanion({
                   <div className="flex items-center gap-2 mt-3">
                     <button
                       className="labs-btn-ghost text-xs"
-                      onClick={() => downloadLineupExcel(tastingId, i18n.language?.startsWith("de") ? "de" : "en")}
-                      data-testid="mobile-ai-post-excel"
-                    >
-                      {t("labs.aiImport.downloadExcel", "Download Excel")}
-                    </button>
-                    <button
-                      className="labs-btn-ghost text-xs"
                       onClick={() => { setMobileAiImport(false); setMobileAiSummary(null); }}
                       data-testid="mobile-ai-post-close"
                     >
                       {t("labs.aiImport.close", "Close")}
+                    </button>
+                  </div>
+                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", marginTop: 16, paddingTop: 14 }}>
+                    <p className="text-xs" style={{ color: "var(--labs-text-muted)", marginBottom: 8 }}>
+                      {t("labs.aiImport.exportHint", "Download the lineup as Excel for your records.")}
+                    </p>
+                    <button
+                      className="labs-btn-ghost text-xs"
+                      onClick={() => downloadLineupExcel(tastingId, i18n.language?.startsWith("de") ? "de" : "en")}
+                      data-testid="mobile-ai-post-excel"
+                    >
+                      {t("labs.aiImport.downloadExcel", "Download Excel")}
                     </button>
                   </div>
                   </>
@@ -7939,17 +7944,22 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               <div className="flex items-center gap-2 mt-3">
                 <button
                   className="labs-btn-ghost text-xs"
-                  onClick={() => downloadLineupExcel(tastingId, i18n.language?.startsWith("de") ? "de" : "en")}
-                  data-testid="labs-ai-post-excel"
-                >
-                  {t("labs.aiImport.downloadExcel", "Download Excel")}
-                </button>
-                <button
-                  className="labs-btn-ghost text-xs"
                   onClick={() => { setShowAiImport(false); setAiImportSummary(null); }}
                   data-testid="labs-ai-post-close"
                 >
                   {t("labs.aiImport.close", "Close")}
+                </button>
+              </div>
+              <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", marginTop: 16, paddingTop: 14 }}>
+                <p className="text-xs" style={{ color: "var(--labs-text-muted)", marginBottom: 8 }}>
+                  {t("labs.aiImport.exportHint", "Download the lineup as Excel for your records.")}
+                </p>
+                <button
+                  className="labs-btn-ghost text-xs"
+                  onClick={() => downloadLineupExcel(tastingId, i18n.language?.startsWith("de") ? "de" : "en")}
+                  data-testid="labs-ai-post-excel"
+                >
+                  {t("labs.aiImport.downloadExcel", "Download Excel")}
                 </button>
               </div>
               </>
