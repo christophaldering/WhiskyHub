@@ -289,7 +289,7 @@ function startWhiskybaseLookup(
     .slice(0, 60);
   // Auch ohne fehlende IDs kann es Zeilen geben, die schon eine ID mitbringen
   // (aus Handout/Excel) und noch keinen Score haben.
-  if (missing.length === 0) { startWbScoreLookup(list, hostId, setResults, onlyIndex); return; }
+  if (missing.length === 0) { return; }
   const missingIdx = new Set(missing.map((m) => m.i));
   setResults((rs) => rs.map((w, idx) => {
     if (!missingIdx.has(idx)) return w;
@@ -327,71 +327,22 @@ function startWhiskybaseLookup(
       if (w?._wbPending !== reqId) return w;
       const { _wbPending, _wbIdx, ...rest } = w;
       const hit = typeof _wbIdx === "number" ? byIdx.get(_wbIdx) : undefined;
-      if (hit?.whiskybaseId) return { ...rest, whiskybaseId: hit.whiskybaseId, whiskybaseUrl: hit.whiskybaseUrl };
+      if (hit?.whiskybaseId) return {
+        ...rest,
+        whiskybaseId: hit.whiskybaseId,
+        whiskybaseUrl: hit.whiskybaseUrl,
+        ...(hit.wbScore != null ? { wbScore: hit.wbScore } : {}),
+        ...(hit.distilledYear ? { distilledYear: hit.distilledYear } : {}),
+        ...(hit.bottledYear ? { bottledYear: hit.bottledYear } : {}),
+        ...(hit.caskType ? { caskType: hit.caskType } : {}),
+        ...(hit.abv ? { abv: hit.abv } : {}),
+        ...(hit.age ? { age: hit.age } : {}),
+      };
       return (transportFailed || hit?.failed) ? { ...rest, _wbFailed: true } : rest;
     }));
-    // Score-Lookup auf dem rechnerisch nächsten Stand starten — bewusst NICHT
-    // aus dem setResults-Updater heraus, dessen Ausführungszeitpunkt React
-    // bestimmt. Die Indizes sind stabil, das reicht zur Zuordnung.
-    const withIds = list.map((w: any, idx: number) => {
-      const hit = byIdx.get(idx);
-      return hit?.whiskybaseId ? { ...w, whiskybaseId: hit.whiskybaseId } : w;
-    });
-    startWbScoreLookup(withIds, hostId, setResults, onlyIndex);
   })();
 }
 
-// Whiskybase-Score nachladen. Läuft NACH dem ID-Lookup und nur für Zeilen, die
-// eine ID haben und noch keinen Score — ein aus Handout/Excel bereits
-// erfasster Score wird NICHT überschrieben.
-let _wbScoreSeq = 0;
-function startWbScoreLookup(
-  list: any[],
-  hostId: string,
-  setResults: (updater: (rs: any[]) => any[]) => void,
-  onlyIndex?: number,
-) {
-  const reqId = `wbs-${++_wbScoreSeq}-${Date.now()}`;
-  const wanted = list
-    .map((w: any, i: number) => ({ i, id: (w?.whiskybaseId ?? "").toString().trim() }))
-    .filter((m) => /^\d+$/.test(m.id) && list[m.i]?.wbScore == null && (onlyIndex == null || m.i === onlyIndex))
-    .slice(0, 60);
-  if (wanted.length === 0) return;
-  const wantedIdx = new Set(wanted.map((m) => m.i));
-  setResults((rs) => rs.map((w, idx) => (wantedIdx.has(idx) ? { ...w, _wbScorePending: reqId, _wbScoreIdx: idx } : w)));
-  (async () => {
-    let results: any[] | null = null;
-    try {
-      const res = await fetch(apiUrl("/api/tastings/wb-score"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          hostId,
-          items: wanted.map((m) => ({ whiskybaseId: m.id, name: list[m.i]?.name || null })),
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json().catch(() => null);
-        if (Array.isArray(data?.results)) results = data.results;
-      }
-    } catch {
-      // non-fatal: Score bleibt einfach leer
-    }
-    const byIdx = new Map<number, number>();
-    if (results) {
-      wanted.forEach((m, i) => {
-        const r = results![i];
-        if (r && typeof r.wbScore === "number") byIdx.set(m.i, r.wbScore);
-      });
-    }
-    setResults((rs) => rs.map((w) => {
-      if (w?._wbScorePending !== reqId) return w;
-      const { _wbScorePending, _wbScoreIdx, ...rest } = w;
-      const hit = typeof _wbScoreIdx === "number" ? byIdx.get(_wbScoreIdx) : undefined;
-      return hit != null ? { ...rest, wbScore: hit } : rest;
-    }));
-  })();
-}
 
 // Preise (UVP + Marktpreis) im Hintergrund nachladen — gleiche Mechanik wie
 // startWhiskybaseLookup: Import bleibt schnell, Preise erscheinen nachträglich.
@@ -2694,12 +2645,6 @@ function MobileCompanion({
                               <span className="inline-flex items-center gap-1 ml-1.5" data-testid={`mobile-ai-price-pending-${i}`}>
                                 <Loader2 className="w-3 h-3 animate-spin inline" />
                                 {t("labs.aiImport.priceSearching", "Price search running…")}
-                              </span>
-                            )}
-                            {w._wbScorePending && (
-                              <span className="inline-flex items-center gap-1 ml-1.5" data-testid={`mobile-ai-wbscore-pending-${i}`}>
-                                <Loader2 className="w-3 h-3 animate-spin inline" />
-                                {t("labs.aiImport.wbScoreSearching", "WB score search running…")}
                               </span>
                             )}
                           </p>
@@ -8042,12 +7987,6 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                           <span className="inline-flex items-center gap-1 ml-1.5" data-testid={`labs-ai-price-pending-${i}`}>
                             <Loader2 className="w-3 h-3 animate-spin inline" />
                             {t("labs.aiImport.priceSearching", "Price search running…")}
-                          </span>
-                        )}
-                        {w._wbScorePending && (
-                          <span className="inline-flex items-center gap-1 ml-1.5" data-testid={`labs-ai-wbscore-pending-${i}`}>
-                            <Loader2 className="w-3 h-3 animate-spin inline" />
-                            {t("labs.aiImport.wbScoreSearching", "WB score search running…")}
                           </span>
                         )}
                       </p>
