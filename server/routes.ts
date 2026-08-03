@@ -21173,6 +21173,37 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
     }
   });
 
+  // Whiskybase-Score nachladen: läuft NACH dem ID-Lookup und arbeitet auf
+  // bekannten IDs. Getrennt gehalten, damit ein Score-Timeout die bereits
+  // gefundenen Links nicht gefährdet.
+  app.post("/api/tastings/wb-score", async (req: any, res: any) => {
+    try {
+      if (await isAIDisabled("ai_import")) return res.status(503).json({ message: "AI feature disabled by admin" });
+      const { hostId, items } = req.body || {};
+      if (!hostId) return res.status(400).json({ message: "hostId required" });
+      if (!Array.isArray(items) || items.length === 0 || items.length > 60) {
+        return res.status(400).json({ message: "1-60 items required" });
+      }
+      const cleaned = items.map((it: any) => ({
+        whiskybaseId: String(it?.whiskybaseId || "").replace(/\D/g, "").slice(0, 20),
+        name: it?.name ? String(it.name).slice(0, 200) : null,
+      }));
+      if (cleaned.some((it) => !it.whiskybaseId)) {
+        return res.status(400).json({ message: "each item needs a numeric whiskybaseId" });
+      }
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+      const { lookupWhiskybaseScores } = await import("./whiskybase-score");
+      const scores = await lookupWhiskybaseScores(openai, cleaned, { timeoutMs: 60000 });
+      return res.json({ results: scores });
+    } catch (e: any) {
+      console.error("[wb-score] failed:", e);
+      res.status(500).json({ message: e.message || "Whiskybase score lookup failed" });
+    }
+  });
+
   // Preise (UVP + aktueller Marktpreis) im Hintergrund nachladen: der
   // Smart-Import liefert sein Ergebnis sofort, der Client holt Preise
   // anschließend über diesen Endpoint (Websuche pro Flasche dauert Sekunden).

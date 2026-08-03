@@ -261,7 +261,9 @@ function startWhiskybaseLookup(
     .map((w: any, i: number) => ({ i, name: (w?.name || "").trim() }))
     .filter((m) => m.name && !whiskybaseUrlFor(list[m.i]) && (onlyIndex == null || m.i === onlyIndex))
     .slice(0, 60);
-  if (missing.length === 0) return;
+  // Auch ohne fehlende IDs kann es Zeilen geben, die schon eine ID mitbringen
+  // (aus Handout/Excel) und noch keinen Score haben.
+  if (missing.length === 0) { startWbScoreLookup(list, hostId, setResults, onlyIndex); return; }
   const missingIdx = new Set(missing.map((m) => m.i));
   setResults((rs) => rs.map((w, idx) => {
     if (!missingIdx.has(idx)) return w;
@@ -302,8 +304,69 @@ function startWhiskybaseLookup(
       if (hit?.whiskybaseId) return { ...rest, whiskybaseId: hit.whiskybaseId, whiskybaseUrl: hit.whiskybaseUrl };
       return (transportFailed || hit?.failed) ? { ...rest, _wbFailed: true } : rest;
     }));
+    // Score-Lookup auf dem rechnerisch nächsten Stand starten — bewusst NICHT
+    // aus dem setResults-Updater heraus, dessen Ausführungszeitpunkt React
+    // bestimmt. Die Indizes sind stabil, das reicht zur Zuordnung.
+    const withIds = list.map((w: any, idx: number) => {
+      const hit = byIdx.get(idx);
+      return hit?.whiskybaseId ? { ...w, whiskybaseId: hit.whiskybaseId } : w;
+    });
+    startWbScoreLookup(withIds, hostId, setResults, onlyIndex);
   })();
 }
+
+// Whiskybase-Score nachladen. Läuft NACH dem ID-Lookup und nur für Zeilen, die
+// eine ID haben und noch keinen Score — ein aus Handout/Excel bereits
+// erfasster Score wird NICHT überschrieben.
+let _wbScoreSeq = 0;
+function startWbScoreLookup(
+  list: any[],
+  hostId: string,
+  setResults: (updater: (rs: any[]) => any[]) => void,
+  onlyIndex?: number,
+) {
+  const reqId = `wbs-${++_wbScoreSeq}-${Date.now()}`;
+  const wanted = list
+    .map((w: any, i: number) => ({ i, id: (w?.whiskybaseId ?? "").toString().trim() }))
+    .filter((m) => /^\d+$/.test(m.id) && list[m.i]?.wbScore == null && (onlyIndex == null || m.i === onlyIndex))
+    .slice(0, 60);
+  if (wanted.length === 0) return;
+  const wantedIdx = new Set(wanted.map((m) => m.i));
+  setResults((rs) => rs.map((w, idx) => (wantedIdx.has(idx) ? { ...w, _wbScorePending: reqId, _wbScoreIdx: idx } : w)));
+  (async () => {
+    let results: any[] | null = null;
+    try {
+      const res = await fetch(apiUrl("/api/tastings/wb-score"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hostId,
+          items: wanted.map((m) => ({ whiskybaseId: m.id, name: list[m.i]?.name || null })),
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (Array.isArray(data?.results)) results = data.results;
+      }
+    } catch {
+      // non-fatal: Score bleibt einfach leer
+    }
+    const byIdx = new Map<number, number>();
+    if (results) {
+      wanted.forEach((m, i) => {
+        const r = results![i];
+        if (r && typeof r.wbScore === "number") byIdx.set(m.i, r.wbScore);
+      });
+    }
+    setResults((rs) => rs.map((w) => {
+      if (w?._wbScorePending !== reqId) return w;
+      const { _wbScorePending, _wbScoreIdx, ...rest } = w;
+      const hit = typeof _wbScoreIdx === "number" ? byIdx.get(_wbScoreIdx) : undefined;
+      return hit != null ? { ...rest, wbScore: hit } : rest;
+    }));
+  })();
+}
+
 // Preise (UVP + Marktpreis) im Hintergrund nachladen — gleiche Mechanik wie
 // startWhiskybaseLookup: Import bleibt schnell, Preise erscheinen nachträglich.
 let _priceLookupSeq = 0;
