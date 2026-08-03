@@ -2531,6 +2531,12 @@ function MobileCompanion({
                                 {t("labs.aiImport.priceSearching", "Price search running…")}
                               </span>
                             )}
+                            {w._wbScorePending && (
+                              <span className="inline-flex items-center gap-1 ml-1.5" data-testid={`mobile-ai-wbscore-pending-${i}`}>
+                                <Loader2 className="w-3 h-3 animate-spin inline" />
+                                {t("labs.aiImport.wbScoreSearching", "WB score search running…")}
+                              </span>
+                            )}
                           </p>
                           {whiskybaseUrlFor(w) ? (
                             <a
@@ -7854,6 +7860,12 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                           <span className="inline-flex items-center gap-1 ml-1.5" data-testid={`labs-ai-price-pending-${i}`}>
                             <Loader2 className="w-3 h-3 animate-spin inline" />
                             {t("labs.aiImport.priceSearching", "Price search running…")}
+                          </span>
+                        )}
+                        {w._wbScorePending && (
+                          <span className="inline-flex items-center gap-1 ml-1.5" data-testid={`labs-ai-wbscore-pending-${i}`}>
+                            <Loader2 className="w-3 h-3 animate-spin inline" />
+                            {t("labs.aiImport.wbScoreSearching", "WB score search running…")}
                           </span>
                         )}
                       </p>
