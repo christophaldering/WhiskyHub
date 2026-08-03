@@ -588,9 +588,43 @@ function exportAiResultsCsv(results: any[], t: any) {
     const s = v == null ? "" : String(v);
     return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  const headers = t("labs.aiImport.csvHeaders", "Name|Distillery|Age|ABV|Region|Country|Cask type|Whiskybase").split("|");
-  const rows = results.map((w: any) =>
-    [w.name, w.distillery, w.age, w.abv, w.region, w.country, w.caskType || w.cask, whiskybaseUrlFor(w)].map(esc).join(","),
+  // Vollstaendige Spaltenliste — identisch zum Excel-Export des Lineups.
+  // Whiskybase steht bewusst in zwei Spalten (ID maschinenlesbar, URL klickbar),
+  // Preise und Waehrung getrennt, damit die Zahlen rechenbar bleiben.
+  const headers = t(
+    "labs.aiImport.csvHeaders",
+    "#|Name|Distillery|Bottler|Age|ABV %|Category|Region|Country|Cask type|Peat level|PPM|Distilled|Bottled|Price|RRP|Market price|Currency|WB score|Whiskybase ID|Whiskybase URL|Notes|Host summary",
+  ).split("|");
+  const wbIdOf = (w: any) => {
+    const id = (w?.whiskybaseId ?? "").toString().trim();
+    return /^\d+$/.test(id) ? id : "";
+  };
+  const rows = results.map((w: any, i: number) =>
+    [
+      w.sortOrder ?? i + 1,
+      w.name,
+      w.distillery,
+      w.bottler,
+      w.age,
+      w.abv,
+      w.category || w.type,
+      w.region,
+      w.country,
+      w.caskType || w.cask,
+      w.peatLevel,
+      w.ppm,
+      w.distilledYear,
+      w.bottledYear,
+      w.price,
+      w.priceRrp,
+      w.priceMarket,
+      w.priceCurrency,
+      w.wbScore,
+      wbIdOf(w),
+      whiskybaseUrlFor(w),
+      w.notes,
+      w.hostSummary,
+    ].map(esc).join(","),
   );
   const csv = "\uFEFF" + [headers.map(esc).join(","), ...rows].join("\r\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });

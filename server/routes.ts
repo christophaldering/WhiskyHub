@@ -928,21 +928,41 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Lineup is empty — add whiskies before exporting", code: "EMPTY_LINEUP" });
       }
       const lang = (req.query.lang as string) === "de" ? "de" : "en";
+      // Vollstaendige Spaltenliste — identisch zum CSV-Export der Import-Vorschau.
       const H = lang === "de"
-        ? { pos: "Position", name: "Name", distillery: "Destillerie", bottler: "Bottler", age: "Alter", abv: "ABV (%)", region: "Region", country: "Land", cask: "Fasstyp" }
-        : { pos: "Position", name: "Name", distillery: "Distillery", bottler: "Bottler", age: "Age", abv: "ABV (%)", region: "Region", country: "Country", cask: "Cask Type" };
+        ? { pos: "#", name: "Name", distillery: "Destillerie", bottler: "Abfüller", age: "Alter", abv: "ABV %", category: "Kategorie", region: "Region", country: "Land", cask: "Fasstyp", peat: "Torf", ppm: "PPM", distilled: "Destilliert", bottled: "Abgefüllt", price: "Preis", rrp: "UVP", market: "Marktpreis", currency: "Währung", wbScore: "WB-Score", wbId: "Whiskybase ID", wbUrl: "Whiskybase URL", notes: "Notizen", summary: "Host-Zusammenfassung" }
+        : { pos: "#", name: "Name", distillery: "Distillery", bottler: "Bottler", age: "Age", abv: "ABV %", category: "Category", region: "Region", country: "Country", cask: "Cask type", peat: "Peat level", ppm: "PPM", distilled: "Distilled", bottled: "Bottled", price: "Price", rrp: "RRP", market: "Market price", currency: "Currency", wbScore: "WB score", wbId: "Whiskybase ID", wbUrl: "Whiskybase URL", notes: "Notes", summary: "Host summary" };
+      const num = (v: any) => (v != null && v !== "" ? (Number(v) || Number(v) === 0 ? Number(v) : v) : "");
       const sorted = [...ws].sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-      const data = sorted.map((w: any, i: number) => ({
-        [H.pos]: i + 1,
-        [H.name]: w.name || "",
-        [H.distillery]: w.distillery || "",
-        [H.bottler]: w.bottler || "",
-        [H.age]: w.age || "",
-        [H.abv]: w.abv != null && w.abv !== "" ? Number(w.abv) || w.abv : "",
-        [H.region]: w.region || "",
-        [H.country]: w.country || "",
-        [H.cask]: w.caskType || "",
-      }));
+      const data = sorted.map((w: any, i: number) => {
+        const wbId = (w.whiskybaseId ?? "").toString().trim();
+        const wbNumeric = /^\d+$/.test(wbId) ? wbId : "";
+        return {
+          [H.pos]: i + 1,
+          [H.name]: w.name || "",
+          [H.distillery]: w.distillery || "",
+          [H.bottler]: w.bottler || "",
+          [H.age]: w.age || "",
+          [H.abv]: num(w.abv),
+          [H.category]: w.category || "",
+          [H.region]: w.region || "",
+          [H.country]: w.country || "",
+          [H.cask]: w.caskType || "",
+          [H.peat]: w.peatLevel || "",
+          [H.ppm]: num(w.ppm),
+          [H.distilled]: w.distilledYear || "",
+          [H.bottled]: w.bottledYear || "",
+          [H.price]: num(w.price),
+          [H.rrp]: num(w.priceRrp),
+          [H.market]: num(w.priceMarket),
+          [H.currency]: w.priceCurrency || "",
+          [H.wbScore]: num(w.wbScore),
+          [H.wbId]: wbNumeric,
+          [H.wbUrl]: wbNumeric ? `https://www.whiskybase.com/whiskies/whisky/${wbNumeric}` : "",
+          [H.notes]: w.notes || "",
+          [H.summary]: w.hostSummary || "",
+        };
+      });
       const safeTitle = String((tasting as any).title || "lineup").replace(/[^a-zA-Z0-9äöüÄÖÜß _-]/g, "").trim().replace(/\s+/g, "_").slice(0, 60) || "lineup";
       const buf = await buildExcelBuffer([{ name: "Lineup", data }]);
       res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
