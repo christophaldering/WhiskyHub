@@ -454,6 +454,13 @@ const COLUMN_MAP: Record<string, string> = {
   bottler: "bottler", "independent bottler": "bottler", ib: "bottler", abfüller: "bottler",
   vintage: "distilledYear", jahrgang: "distilledYear", "distilled year": "distilledYear", distilled_year: "distilledYear",
   price: "price", preis: "price", "retail price": "price",
+  bottled: "bottledYear", "bottled year": "bottledYear", bottled_year: "bottledYear",
+  abgefüllt: "bottledYear", abfülljahr: "bottledYear",
+  destilliert: "distilledYear",
+  rrp: "priceRrp", uvp: "priceRrp", price_rrp: "priceRrp",
+  "market price": "priceMarket", marktpreis: "priceMarket", price_market: "priceMarket",
+  currency: "priceCurrency", währung: "priceCurrency", price_currency: "priceCurrency",
+  "wb-score": "wbScore",
   host_summary: "hostSummary", hostsummary: "hostSummary", "host summary": "hostSummary",
 };
 

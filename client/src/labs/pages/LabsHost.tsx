@@ -66,9 +66,11 @@ const EXCEL_ALLOWED_FIELDS = new Set([
   "sortOrder", "name", "distillery", "age", "abv", "category", "region",
   "country", "caskType", "peatLevel", "ppm", "bottler",
   "distilledYear", "bottledYear",
-  "price", "whiskybaseId", "notes", "hostSummary",
+  "price", "priceRrp", "priceMarket", "priceCurrency",
+  "wbScore", "whiskybaseId", "notes", "hostSummary",
 ]);
 const EXCEL_HEADER_MAP: Record<string, string> = {
+  // --- Englisch (bestehend) ---
   "#": "sortOrder", "name": "name", "name *": "name",
   "distillery": "distillery", "age": "age", "abv %": "abv", "abv": "abv",
   "category": "category", "region": "region", "country": "country",
@@ -78,6 +80,30 @@ const EXCEL_HEADER_MAP: Record<string, string> = {
   "bottled": "bottledYear", "bottled year": "bottledYear",
   "price": "price", "whiskybase id": "whiskybaseId",
   "notes": "notes", "host summary": "hostSummary",
+  // --- Englisch (neu, aus dem vollstaendigen Export) ---
+  "abv (%)": "abv",
+  "rrp": "priceRrp", "retail price": "priceRrp",
+  "market price": "priceMarket",
+  "currency": "priceCurrency",
+  "wb score": "wbScore", "whiskybase score": "wbScore",
+  "whiskybase": "whiskybaseId", "wb": "whiskybaseId",
+  // --- Deutsch (neu) ---
+  "destillerie": "distillery", "brennerei": "distillery",
+  "abfüller": "bottler",
+  "alter": "age",
+  "kategorie": "category",
+  "land": "country",
+  "fasstyp": "caskType", "fass": "caskType",
+  "torf": "peatLevel", "torfgehalt": "peatLevel",
+  "destilliert": "distilledYear", "jahrgang": "distilledYear",
+  "abgefüllt": "bottledYear",
+  "preis": "price",
+  "uvp": "priceRrp",
+  "marktpreis": "priceMarket",
+  "währung": "priceCurrency",
+  "wb-score": "wbScore",
+  "notizen": "notes", "anmerkungen": "notes",
+  "host-zusammenfassung": "hostSummary",
 };
 
 function _parseStandardRows(rows: any[]): any[] {
