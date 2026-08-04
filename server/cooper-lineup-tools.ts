@@ -103,7 +103,7 @@ export async function runCooperLineupTool(
   for (const c of collection as any[]) {
     push({
       name: textOf(c.name),
-      distillery: c.brand ?? null,
+      distillery: c.distillery ?? c.brand ?? null,
       region: c.region ?? null,
       country: c.country ?? null,
       age: c.statedAge != null ? textOf(c.statedAge) : null,
