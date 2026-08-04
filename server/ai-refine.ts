@@ -20,6 +20,9 @@ export interface RefineWhiskyInput {
 }
 
 export interface RefineResult {
+  /** "reorder" = Cooper schlaegt eine neue Reihenfolge vor (bestaetigungspflichtig).
+   *  "answer"  = Cooper antwortet nur; das Lineup bleibt unangetastet. */
+  mode: "reorder" | "answer";
   order: number[];
   removed: number[];
   reasons: Record<number, string>;
@@ -27,7 +30,8 @@ export interface RefineResult {
 }
 
 const responseSchema = z.object({
-  order: z.array(z.number().int().nonnegative()),
+  mode: z.enum(["reorder", "answer"]).default("reorder"),
+  order: z.array(z.number().int().nonnegative()).default([]),
   removed: z.array(z.number().int().nonnegative()).default([]),
   changes: z
     .array(z.object({ index: z.number().int().nonnegative(), reason: z.string() }))
@@ -37,23 +41,34 @@ const responseSchema = z.object({
 
 export function buildRefinePrompt(whiskies: RefineWhiskyInput[], instruction: string, language: string): { system: string; user: string } {
   const lang = language?.startsWith("de") ? "German" : "English";
-  const system = `You are a whisky tasting dramaturgy expert. The host gives you the current lineup order of recognized bottles and an instruction in natural language (German or English). Re-order the lineup according to the instruction. You may also remove bottles when the instruction clearly asks for it (e.g. "remove everything under 46%", "limit to 12 bottles"). Never invent new bottles.
+  const system = `Du bist Cooper — benannt nach dem Küfer, der die Fässer baut, in denen Whisky reift. Kein abgehobener Kritiker, sondern ein Handwerker, der Holz, Zeit und Geduld kennt. Hier hilfst du dem Gastgeber VOR dem Tasting, sein Lineup zu ordnen. Das ist Vorbereitung, nicht der Moment am Glas: du darfst hier sachkundig sein, Zusammenhänge erklären und begründen.
 
-Consider classic tasting dramaturgy when the instruction is vague: lighter/lower ABV first, intensity rising, heavily peated bottles late so they don't overpower delicate ones, sherry bombs grouped or near the end, a memorable finale.
+Du bekommst die aktuelle Reihenfolge der Flaschen und eine Äußerung des Gastgebers in natürlicher Sprache.
 
-If the instruction is a review request (e.g. "check my order"), keep or minimally adjust the order and explain issues via change reasons.
+Entscheide zuerst, was verlangt ist:
 
-Return ONLY JSON:
+(A) mode "reorder" — der Gastgeber will das Lineup ändern ("nach ABV aufsteigend", "die Torfigen ans Ende", "prüf mal meine Reihenfolge", "wirf alles unter 46% raus"). Liefere die neue Reihenfolge. Entfernen darfst du nur, wenn klar darum gebeten wird.
+
+(B) mode "answer" — der Gastgeber fragt etwas, ohne eine Änderung zu wollen ("warum ausgerechnet diese Reihenfolge?", "welcher ist der kräftigste?", "was fällt dir an meiner Auswahl auf?", "passt das für Einsteiger?"). Dann antwortest du NUR in "summary" und lässt das Lineup unangetastet.
+
+Im Zweifel wählst du (B). Eine ungefragte Umstellung ist der teurere Fehler: sie kostet den Gastgeber Vertrauen, eine Rückfrage nur einen Satz.
+
+Zur Dramaturgie, wenn die Anweisung vage bleibt: leichtere und schwächere Abfüllungen zuerst, Intensität steigend, stark getorfte spät, damit sie den Rest nicht überdecken. Sherry-Lastiges gern als Block. Aber das sind Faustregeln, keine Gesetze — wenn die Auswahl etwas anderes nahelegt, sag es.
+
+Ton: ruhig, knapp, ohne Weinsprache-Pathos. Keine Schwärmerei, keine Superlative. Du erfindest NIEMALS Flaschen, die nicht in der Liste stehen, und behauptest nichts über Abfüllungen, was du nicht aus den gegebenen Daten ablesen kannst.
+
+Antworte NUR mit JSON:
 {
-  "order": [<indices of the KEPT bottles in the NEW order, using the given "index" values>],
-  "removed": [<indices of removed bottles, empty if none>],
-  "changes": [{"index": <bottle index>, "reason": "<short reason why this bottle moved/was removed/stays, max ~90 chars>"}],
-  "summary": "<1-2 sentence overall explanation>"
+  "mode": "reorder" | "answer",
+  "order": [<Indizes der behaltenen Flaschen in der NEUEN Reihenfolge; bei mode "answer" leer lassen>],
+  "removed": [<Indizes entfernter Flaschen; leer wenn keine>],
+  "changes": [{"index": <Index>, "reason": "<kurz, warum diese Flasche sich bewegt hat oder entfernt wurde, max ~90 Zeichen>"}],
+  "summary": "<bei mode reorder: 1-2 Sätze Gesamtbegründung. Bei mode answer: deine Antwort, höchstens 4 Sätze.>"
 }
-Rules:
-- "order" plus "removed" must together contain EXACTLY the given indices, each exactly once.
-- Provide a "changes" reason for every bottle whose position changed and every removed bottle.
-- Write all reasons and the summary in ${lang}.`;
+Regeln:
+- Bei mode "reorder" müssen "order" und "removed" zusammen GENAU die gegebenen Indizes enthalten, jeden genau einmal.
+- Begründe jede Flasche, deren Position sich ändert, und jede entfernte.
+- Schreibe alle Begründungen und die summary auf ${lang === "German" ? "Deutsch" : "Englisch"}.`;
   const lines = whiskies.map(w =>
     `index=${w.index} | ${w.name}${w.distillery ? ` | ${w.distillery}` : ""}${w.age ? ` | ${w.age}y` : ""}${w.abv ? ` | ${w.abv}%` : ""}${w.caskType ? ` | cask: ${w.caskType}` : ""}${w.peatLevel ? ` | peat: ${w.peatLevel}` : ""}${w.region ? ` | ${w.region}` : ""}${w.country ? ` | ${w.country}` : ""}${w.wbScore ? ` | WB ${w.wbScore}` : ""}${w.price ? ` | ${w.price} EUR` : ""}`,
   );
@@ -70,6 +85,20 @@ export function parseRefineResponse(raw: string, inputIndices: number[]): Refine
   const parsed = responseSchema.parse(JSON.parse(jsonText));
 
   const inputSet = new Set(inputIndices);
+
+  // Reiner Antwortzug: Cooper hat nur geredet. Das Lineup bleibt exakt so, wie
+  // es war — auch wenn das Modell versehentlich eine Reihenfolge mitgeliefert
+  // hat. So kann eine Rueckfrage niemals unbemerkt das Lineup umstellen.
+  if (parsed.mode === "answer") {
+    return {
+      mode: "answer",
+      order: [...inputIndices],
+      removed: [],
+      reasons: {},
+      summary: parsed.summary.slice(0, 1200),
+    };
+  }
+
   const seen = new Set<number>();
   for (const idx of [...parsed.order, ...parsed.removed]) {
     if (!inputSet.has(idx) || seen.has(idx)) {
@@ -85,5 +114,5 @@ export function parseRefineResponse(raw: string, inputIndices: number[]): Refine
   for (const c of parsed.changes) {
     if (inputSet.has(c.index) && c.reason?.trim()) reasons[c.index] = c.reason.trim().slice(0, 200);
   }
-  return { order, removed: parsed.removed, reasons, summary: parsed.summary.slice(0, 500) };
+  return { mode: "reorder", order, removed: parsed.removed, reasons, summary: parsed.summary.slice(0, 500) };
 }
