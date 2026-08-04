@@ -740,11 +740,14 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply, save
   return (
     <div className="labs-card p-3 space-y-2" style={{ border: "1px solid color-mix(in srgb, var(--labs-accent) 25%, transparent)" }} data-testid={`${testPrefix}-refine-panel`}>
       <div className="flex items-start gap-2">
-        <span style={{ flexShrink: 0, marginTop: 1, display: "inline-flex" }}>
-          <CooperBarrel size={18} />
+        <span style={{ flexShrink: 0, display: "inline-flex" }}>
+          <CooperBarrel size={54} />
         </span>
         <div style={{ minWidth: 0 }}>
-          <div className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>{t("labs.aiRefine.title", "Fine-tune lineup")}</div>
+          <div className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>
+            {t("labs.aiRefine.title", "Fine-tune lineup")}
+            <InfoHint text={t("labs.aiRefine.hint")} testId={`${testPrefix}-cooper-hint`} />
+          </div>
           <div className="text-xs" style={{ color: "var(--labs-text-muted)", marginTop: 2 }}>{t("labs.aiRefine.subtitle", "Reorder or drop bottles — just say it in your own words.")}</div>
         </div>
       </div>
