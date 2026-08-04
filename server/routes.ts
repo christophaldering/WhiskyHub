@@ -2556,6 +2556,25 @@ export async function registerRoutes(
       if (details.visibility !== undefined && !["private", "public", "group"].includes(details.visibility)) {
         return res.status(400).json({ message: "Invalid visibility value" });
       }
+      // Bewertungsskala und Blindmodus duerfen nicht mehr wandern, sobald die
+      // erste Bewertung existiert: ein Skalenwechsel wuerde bereits erfasste
+      // Zahlen auf eine andere Skala stellen, ein Blind-Wechsel wuerde Namen
+      // nachtraeglich verstecken oder verfrueht enthuellen.
+      const wantsScaleChange =
+        details.ratingScale !== undefined && Number(details.ratingScale) !== Number(tasting.ratingScale);
+      const wantsBlindChange =
+        details.blindMode !== undefined && Boolean(details.blindMode) !== Boolean(tasting.blindMode);
+      if (wantsScaleChange || wantsBlindChange) {
+        const existingRatings = await storage.getRatingsForTasting(req.params.id);
+        if (existingRatings.length > 0) {
+          return res.status(409).json({
+            message: wantsScaleChange
+              ? "Die Bewertungsskala kann nicht mehr geändert werden, sobald Bewertungen vorliegen."
+              : "Blind Tasting kann nicht mehr umgestellt werden, sobald Bewertungen vorliegen.",
+            code: "RATINGS_EXIST_IMMUTABLE",
+          });
+        }
+      }
       const updated = await storage.updateTastingDetails(req.params.id, details);
       res.json(updated);
     } catch (e: any) {

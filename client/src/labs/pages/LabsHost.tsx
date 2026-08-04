@@ -7183,13 +7183,6 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         </div>
       )}
 
-      {currentParticipant && (
-        <div className="mb-6">
-          <h2 className="labs-section-label">{t("labs.host.tastingSetup")}</h2>
-          {setupSectionNode}
-        </div>
-      )}
-
       <div className="grid grid-cols-3 gap-3 mb-6">
         <div className="labs-card p-4 text-center">
           <Wine className="w-5 h-5 mx-auto mb-2" style={{ color: "var(--labs-accent)" }} />
@@ -8122,6 +8115,13 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         );
         })()}
       </div>
+
+      {currentParticipant && (
+        <div className="mb-6">
+          <h2 className="labs-section-label">{t("labs.host.tastingSetup")}</h2>
+          {setupSectionNode}
+        </div>
+      )}
 
       {!tasting.guidedMode && (
       <div className="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
