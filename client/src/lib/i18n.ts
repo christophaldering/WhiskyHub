@@ -6444,7 +6444,9 @@ const resources = {
           collectionSaved: "saved to collection",
         },
         aiRefine: {
-          title: "Fine-tune lineup",
+          title: "Let the AI arrange your lineup",
+          subtitle: "Reorder or drop bottles — just say it in your own words.",
+          examplesLabel: "For example:",
           placeholder: "e.g. sort by ABV ascending, peaty ones last…",
           run: "Apply",
           loading: "The AI is arranging your lineup…",
@@ -16314,7 +16316,9 @@ const resources = {
           collectionSaved: "in Sammlung gespeichert",
         },
         aiRefine: {
-          title: "Lineup-Feinschliff",
+          title: "Lineup von der KI ordnen lassen",
+          subtitle: "Reihenfolge ändern oder Flaschen aussortieren — sag es in eigenen Worten.",
+          examplesLabel: "Zum Beispiel:",
           placeholder: "z. B. nach ABV aufsteigend, die Torfigen ans Ende…",
           run: "Los",
           loading: "Die KI ordnet dein Lineup…",

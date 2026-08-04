@@ -736,9 +736,27 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply, save
 
   return (
     <div className="labs-card p-3 space-y-2" style={{ border: "1px solid color-mix(in srgb, var(--labs-accent) 25%, transparent)" }} data-testid={`${testPrefix}-refine-panel`}>
-      <div className="flex items-center gap-1.5">
-        <Sparkles className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
-        <span className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>{t("labs.aiRefine.title", "Fine-tune lineup")}</span>
+      <div className="flex items-start gap-2">
+        <Sparkles className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-accent)", marginTop: 1 }} />
+        <div style={{ minWidth: 0 }}>
+          <div className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>{t("labs.aiRefine.title", "Fine-tune lineup")}</div>
+          <div className="text-xs" style={{ color: "var(--labs-text-muted)", marginTop: 2 }}>{t("labs.aiRefine.subtitle", "Reorder or drop bottles — just say it in your own words.")}</div>
+        </div>
+      </div>
+      <div className="flex gap-1.5 flex-wrap items-center">
+        <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>{t("labs.aiRefine.examplesLabel", "For example:")}</span>
+        {presets.map(p => (
+          <button
+            key={p.key}
+            className="text-[11px] px-2 py-1 rounded-full"
+            style={{ background: "color-mix(in srgb, var(--labs-accent) 10%, transparent)", color: "var(--labs-accent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 25%, transparent)", opacity: loading ? 0.5 : 1 }}
+            onClick={() => { setInstruction(p.label); runRefine(p.label); }}
+            disabled={loading}
+            data-testid={`${testPrefix}-refine-preset-${p.key}`}
+          >
+            {p.label}
+          </button>
+        ))}
       </div>
       <div className="flex gap-1.5">
         <input
@@ -758,20 +776,6 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply, save
         >
           {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : t("labs.aiRefine.run", "Apply")}
         </button>
-      </div>
-      <div className="flex gap-1.5 flex-wrap">
-        {presets.map(p => (
-          <button
-            key={p.key}
-            className="text-[11px] px-2 py-1 rounded-full"
-            style={{ background: "color-mix(in srgb, var(--labs-accent) 10%, transparent)", color: "var(--labs-accent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 25%, transparent)", opacity: loading ? 0.5 : 1 }}
-            onClick={() => { setInstruction(p.label); runRefine(p.label); }}
-            disabled={loading}
-            data-testid={`${testPrefix}-refine-preset-${p.key}`}
-          >
-            {p.label}
-          </button>
-        ))}
       </div>
       {loading && (
         <p className="text-[11px]" style={{ color: "var(--labs-text-muted)", margin: 0 }}>{t("labs.aiRefine.loading", "The AI is arranging your lineup…")}</p>
@@ -2571,17 +2575,6 @@ function MobileCompanion({
                     {mobileAiSummary.duplicatesSkipped > 0 && <p style={{ color: "var(--labs-text-muted)", margin: 0 }}>{mobileAiSummary.duplicatesSkipped} {t("labs.aiImport.duplicatesSkipped", "duplicates skipped")}</p>}
                     {mobileAiSummary.failed > 0 && <p style={{ color: "var(--labs-danger)", margin: 0 }}>{mobileAiSummary.failed} {t("labs.aiImport.failed", "failed")}</p>}
                   </div>
-                  <AiRefinePanel
-                    results={[]}
-                    hostId={pid}
-                    language={i18n.language || "de"}
-                    t={t}
-                    testPrefix="mobile-ai-post"
-                    onApply={() => {}}
-                    savedWhiskies={whiskies || []}
-                    tastingId={tastingId}
-                    onSavedApply={() => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] })}
-                  />
                   <div className="flex items-center gap-2 mt-3">
                     <button
                       className="labs-btn-ghost text-xs"
@@ -7702,17 +7695,6 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 {aiImportSummary.duplicatesSkipped > 0 && <p style={{ color: "var(--labs-text-muted)", margin: 0 }}>{aiImportSummary.duplicatesSkipped} {t("labs.aiImport.duplicatesSkipped", "duplicates skipped")}</p>}
                 {aiImportSummary.failed > 0 && <p style={{ color: "var(--labs-danger)", margin: 0 }}>{aiImportSummary.failed} {t("labs.aiImport.failed", "failed")}</p>}
               </div>
-              <AiRefinePanel
-                results={[]}
-                hostId={currentParticipant?.id || ""}
-                language={i18n.language || "de"}
-                t={t}
-                testPrefix="labs-ai-post"
-                onApply={() => {}}
-                savedWhiskies={whiskies || []}
-                tastingId={tastingId}
-                onSavedApply={() => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] })}
-              />
               <div className="flex items-center gap-2 mt-3">
                 <button
                   className="labs-btn-ghost text-xs"
@@ -7989,6 +7971,22 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           </div>
         )}
 
+
+        {whiskyCount >= 2 && tasting.status !== "archived" && (
+          <div className="mb-3">
+            <AiRefinePanel
+              results={[]}
+              hostId={currentParticipant?.id || ""}
+              language={i18n.language || "de"}
+              t={t}
+              testPrefix="labs-ai-lineup"
+              onApply={() => {}}
+              savedWhiskies={whiskies || []}
+              tastingId={tastingId}
+              onSavedApply={() => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] })}
+            />
+          </div>
+        )}
 
         {(() => {
           const rvDesktop = tasting.blindMode && !tasting.guidedMode && tasting.status === "reveal"
