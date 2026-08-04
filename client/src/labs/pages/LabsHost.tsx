@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
+import { InfoHint } from "@/labs/components/InfoHint";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -3226,9 +3227,10 @@ function MobileCompanion({
   );
 }
 
-function LabsToggle({ checked, onChange, icon, label, description, testId }: {
+function LabsToggle({ checked, onChange, icon, label, description, testId, hint }: {
   checked: boolean; onChange: (v: boolean) => void;
   icon: React.ReactNode; label: string; description: string; testId: string;
+  hint?: string;
 }) {
   return (
     <div
@@ -3255,6 +3257,7 @@ function LabsToggle({ checked, onChange, icon, label, description, testId }: {
             }}
           >
             {label}
+            {hint && <InfoHint text={hint} testId={`${testId}-hint`} />}
           </p>
           <p
             className="text-xs"
@@ -3877,7 +3880,7 @@ function CreateTastingForm() {
 
       <div className="space-y-5">
         <div>
-          <label className="labs-section-label" htmlFor="tasting-title">{t("m2.host.titleLabel")} *</label>
+          <label className="labs-section-label" htmlFor="tasting-title">{t("m2.host.titleLabel")} *<InfoHint text={t("m2.host.hintTitle")} testId="labs-hint-title" /></label>
           <input
             id="tasting-title"
             className="labs-input"
@@ -3891,7 +3894,7 @@ function CreateTastingForm() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="labs-section-label" htmlFor="tasting-date">{t("m2.host.dateLabel")}</label>
+            <label className="labs-section-label" htmlFor="tasting-date">{t("m2.host.dateLabel")}<InfoHint text={t("m2.host.hintDate")} testId="labs-hint-date" /></label>
             <input
               id="tasting-date"
               type="date"
@@ -3902,7 +3905,7 @@ function CreateTastingForm() {
             />
           </div>
           <div>
-            <label className="labs-section-label" htmlFor="tasting-time">{t("labs.host.timeLabel")}</label>
+            <label className="labs-section-label" htmlFor="tasting-time">{t("labs.host.timeLabel")}<InfoHint text={t("m2.host.hintTime")} testId="labs-hint-time" /></label>
             <input
               id="tasting-time"
               type="time"
@@ -3918,6 +3921,7 @@ function CreateTastingForm() {
           <div>
             <label className="labs-section-label" htmlFor="tasting-location">
               {t("labs.host.locationOrVideoLabel", "Ort oder Video-Link")}
+              <InfoHint text={t("m2.host.hintLocation")} testId="labs-hint-location" />
             </label>
             <input
               id="tasting-location"
@@ -5448,6 +5452,7 @@ function TastingSetupSection({
             <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
               <Gauge className="w-3 h-3" />
               {t("labs.host.ratingScale")}
+              <InfoHint text={t("m2.host.hintRatingScale")} testId="labs-hint-scale" />
               {!isDraft && <Lock className="w-2.5 h-2.5" style={{ color: "var(--labs-text-muted)" }} />}
             </label>
             {isDraft ? (
@@ -5476,6 +5481,7 @@ function TastingSetupSection({
             label={t("labs.host.blindTasting")}
             description={t("labs.host.blindTastingDesc")}
             testId="labs-settings-toggle-blind"
+            hint={t("m2.host.hintBlindMode")}
           />
 
           {tasting.blindMode && (() => {
@@ -5536,12 +5542,14 @@ function TastingSetupSection({
             label={t("labs.host.hostControlsPace")}
             description={t("labs.host.hostControlsPaceDesc")}
             testId="labs-settings-toggle-guided"
+            hint={t("m2.host.hintGuidedMode")}
           />
 
           <div>
             <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
               <Sliders className="w-3 h-3" />
               {t("labs.host.tastingExperience")}
+              <InfoHint text={t("m2.host.hintSessionUiMode")} testId="labs-hint-uimode" />
             </label>
             <LabsSegmentedSelect
               value={(tasting.sessionUiMode as string) || "flow"}
@@ -5558,6 +5566,7 @@ function TastingSetupSection({
             <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
               <Globe className="w-3 h-3" />
               {t("labs.host.howGuestsJoin")}
+              <InfoHint text={t("m2.host.hintGuestMode")} testId="labs-hint-guestmode" />
             </label>
             <LabsSegmentedSelect
               value={(tasting.guestMode as string) || "standard"}
@@ -5580,6 +5589,7 @@ function TastingSetupSection({
             label={t("labs.host.showRanking")}
             description={t("labs.host.showRankingDesc")}
             testId="labs-settings-toggle-ranking"
+            hint={t("m2.host.hintShowRanking")}
           />
           {tasting.blindMode && tasting.showRanking && (
             <p className="text-xs mt-1 px-1" style={{ color: "var(--labs-accent)", opacity: 0.8 }} data-testid="blind-ranking-hint">
@@ -5594,6 +5604,7 @@ function TastingSetupSection({
             label={t("labs.host.showGroupScores")}
             description={t("labs.host.showGroupScoresDesc")}
             testId="labs-settings-toggle-avg"
+            hint={t("m2.host.hintShowGroupAvg")}
           />
 
           <LabsToggle
@@ -5603,12 +5614,14 @@ function TastingSetupSection({
             label={t("labs.host.showResultsAfter")}
             description={t("labs.host.showResultsAfterDesc")}
             testId="labs-settings-toggle-reveal"
+            hint={t("m2.host.hintShowReveal")}
           />
 
           <div>
             <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
               <Star className="w-3 h-3" />
               {t("labs.host.ratingPrompt")}
+              <InfoHint text={t("m2.host.hintRatingPrompt")} testId="labs-hint-prompt" />
             </label>
             <div className="flex gap-2">
               <input
@@ -5646,6 +5659,7 @@ function TastingSetupSection({
               label={t("labs.host.enableDiscussion")}
               description={t("labs.host.enableDiscussionDesc")}
               testId="labs-settings-toggle-reflection"
+              hint={t("m2.host.hintReflection")}
             />
             {tasting.reflectionEnabled && (
               <div className="mt-3">
@@ -5666,6 +5680,7 @@ function TastingSetupSection({
             <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
               <Video className="w-3 h-3" />
               Video Call Link
+              <InfoHint text={t("m2.host.hintVideoLink")} testId="labs-hint-videolink" />
             </label>
             <div className="flex gap-2">
               <input
