@@ -542,14 +542,25 @@ function ImportFieldChips({ fields, onChange, t, testPrefix }: {
     <div>
       <button
         type="button"
-        className="text-[11px] inline-flex items-center gap-1"
-        style={{ color: "var(--labs-text-muted)", background: "none", border: "none", padding: "2px 0", cursor: "pointer" }}
+        className="text-xs inline-flex items-center gap-1.5"
+        style={{
+          color: "var(--labs-text)",
+          background: "transparent",
+          border: "1px solid color-mix(in srgb, var(--labs-text-muted) 30%, transparent)",
+          borderRadius: 999,
+          padding: "0 12px",
+          minHeight: 44,
+          cursor: "pointer",
+        }}
         onClick={() => setOpen(!open)}
         data-testid={`${testPrefix}-fields-toggle`}
       >
-        <Sliders className="w-3 h-3" />
+        <Sliders className="w-3.5 h-3.5" />
         {t("labs.aiImport.fieldsToggle", "Displayed fields")}
-        {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+        <span style={{ color: "var(--labs-text-muted)" }}>
+          {fields.length}/{IMPORT_LINE_FIELDS.length}
+        </span>
+        {open ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
       </button>
       {open && (
         <div className="flex gap-1.5 flex-wrap pt-1" data-testid={`${testPrefix}-fields-chips`}>
@@ -7405,202 +7416,6 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         />
       )}
 
-      {!tasting.guidedMode && (
-      <div className="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div>
-          <h2 className="labs-section-label">{t("m2.host.sessionControlsLabel", "Live Session")}</h2>
-          <p style={{ fontSize: 12, color: "var(--labs-text-muted)", marginBottom: 8, marginTop: -4 }}>
-            {tasting.status === "archived"
-              ? t("m2.host.sessionControlsDescArchived", "This session has been archived.")
-              : t("m2.host.sessionControlsDesc", "Control the tasting your guests are seeing right now.")}
-          </p>
-          <div className="labs-card p-4">
-            <div className="flex flex-wrap gap-2">
-              {tasting.status === "draft" && (
-                <button
-                  className="labs-btn-primary flex items-center gap-2"
-                  onClick={() => statusMutation.mutate({ status: "open" })}
-                  disabled={statusMutation.isPending}
-                  data-testid="labs-host-start"
-                >
-                  <Play className="w-4 h-4" />
-                  {t("m2.host.startTasting", "Start Tasting")}
-                </button>
-              )}
-              {tasting.status === "open" && (
-                <button
-                  className="labs-btn-secondary flex items-center gap-2"
-                  onClick={() => {
-                    if (!window.confirm(t("m2.host.endSessionConfirmDesc"))) return;
-                    statusMutation.mutate({ status: "closed" });
-                  }}
-                  disabled={statusMutation.isPending}
-                  data-testid="labs-host-close"
-                >
-                  <Square className="w-4 h-4" />
-                  {t("m2.host.endSession")}
-                </button>
-              )}
-              {tasting.status === "closed" && (
-                <>
-                  <button
-                    className="labs-btn-primary flex items-center gap-2"
-                    onClick={() => statusMutation.mutate({ status: "open" })}
-                    disabled={statusMutation.isPending}
-                    data-testid="labs-host-reopen"
-                  >
-                    <Play className="w-4 h-4" />
-                    Reopen
-                  </button>
-                  {isHost && (
-                    <button
-                      className="labs-btn-ghost flex items-center gap-2"
-                      onClick={() => setShowArchiveWarning(true)}
-                      disabled={statusMutation.isPending}
-                      data-testid="labs-host-archive"
-                    >
-                      Archive
-                    </button>
-                  )}
-                </>
-              )}
-              {tasting.status === "reveal" && isHost && (
-                <button
-                  className="labs-btn-ghost flex items-center gap-2"
-                  onClick={() => setShowArchiveWarning(true)}
-                  disabled={statusMutation.isPending}
-                  data-testid="labs-host-archive-reveal"
-                >
-                  Complete & Archive
-                </button>
-              )}
-              {tasting.status === "archived" && (
-                <div className="flex items-center gap-3 w-full" data-testid="labs-host-archived-info">
-                  <div className="flex items-center gap-2 text-sm" style={{ color: "var(--labs-text-muted)" }}>
-                    <Archive className="w-4 h-4" />
-                    {t("m2.host.archivedMessage", "This session has been archived.")}
-                  </div>
-                  <button
-                    className="labs-btn-primary flex items-center gap-2 ml-auto"
-                    onClick={() => statusMutation.mutate({ status: "open" })}
-                    disabled={statusMutation.isPending}
-                    data-testid="labs-host-reopen-archived"
-                  >
-                    <Play className="w-4 h-4" />
-                    {t("m2.host.reopenSession", "Reopen")}
-                  </button>
-                </div>
-              )}
-              {!["draft", "open", "closed", "reveal", "archived"].includes(tasting.status) && (
-                <div className="flex items-center gap-3 w-full" data-testid="labs-host-unknown-status">
-                  <div className="flex items-center gap-2 text-sm" style={{ color: "var(--labs-text-muted)" }}>
-                    <Info className="w-4 h-4" />
-                    {t("m2.host.unknownStatusMessage", "Current status: {{status}}", { status: tasting.status })}
-                  </div>
-                  <button
-                    className="labs-btn-primary flex items-center gap-2 ml-auto"
-                    onClick={() => statusMutation.mutate({ status: "open" })}
-                    disabled={statusMutation.isPending}
-                    data-testid="labs-host-reopen-unknown"
-                  >
-                    <Play className="w-4 h-4" />
-                    {t("m2.host.reopenSession", "Reopen")}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {tasting.blindMode && (tasting.status === "open" || tasting.status === "closed" || tasting.status === "reveal") && (() => {
-          const whiskyCount = (whiskies || []).length;
-          const rv = getRevealState(tasting, whiskyCount, t);
-          return (
-            <div>
-              <h2 className="labs-section-label">{t("labs.host.revealControls")}</h2>
-              <div className="labs-card p-4 space-y-4">
-                <div className="flex flex-wrap gap-2">
-                  {(tasting.status === "open" || tasting.status === "closed") && (
-                    <button
-                      className="labs-btn-secondary flex items-center gap-2"
-                      onClick={() => statusMutation.mutate({ status: "reveal" })}
-                      disabled={statusMutation.isPending}
-                      data-testid={tasting.status === "open" ? "labs-host-reveal-mode" : "labs-host-enter-reveal"}
-                    >
-                      <Eye className="w-4 h-4" />
-                      Enter Showtime
-                    </button>
-                  )}
-                  {tasting.status === "reveal" && whiskyCount > 0 && (
-                    <button
-                      className="labs-btn-primary flex items-center gap-2"
-                      onClick={() => revealMutation.mutate()}
-                      disabled={revealMutation.isPending || rv.allRevealed}
-                      style={{ opacity: rv.allRevealed ? 0.5 : 1 }}
-                      data-testid="labs-host-reveal-next"
-                    >
-                      {revealMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
-                      {t(`labs.host.${rv.nextLabelKey}`, rv.nextLabelParam ? { label: rv.nextLabelParam } : {})}
-                    </button>
-                  )}
-                </div>
-
-                {tasting.status === "reveal" && whiskyCount > 0 && (
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium" style={{ color: "var(--labs-text-muted)" }}>
-                        {rv.allRevealed ? t("labs.host.allDramsRevealed") : t("labs.host.dramOfTotal", { current: rv.revealIndex + 1, total: whiskyCount })}
-                      </span>
-                      <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                        {t("labs.host.stepOfTotal", { current: Math.min(rv.revealStep, rv.maxSteps), total: rv.maxSteps })}
-                      </span>
-                    </div>
-                    <div className="flex gap-1 mb-1.5">
-                      {rv.stepLabels.map((label: string, idx: number) => (
-                        <div
-                          key={label}
-                          className="flex-1 h-1.5 rounded-full"
-                          style={{
-                            background: idx < rv.revealStep ? "var(--labs-accent)" : "var(--labs-border)",
-                            transition: "background 300ms ease",
-                          }}
-                        />
-                      ))}
-                    </div>
-                    <div className="flex justify-between mb-3">
-                      {rv.stepLabels.map((label: string, idx: number) => (
-                        <span key={label} className="text-[11px]" style={{ color: idx < rv.revealStep ? "var(--labs-accent)" : "var(--labs-text-muted)" }}>
-                          {label}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {(whiskies || []).map((_: any, i: number) => {
-                        const fullyDone = i < rv.revealIndex || (i === rv.revealIndex && rv.revealStep >= rv.maxSteps);
-                        const isCurrent = i === rv.revealIndex && rv.revealStep < rv.maxSteps;
-                        let bg = "var(--labs-border)";
-                        let fg = "var(--labs-text-muted)";
-                        if (fullyDone) { bg = "var(--labs-success)"; fg = "var(--labs-bg)"; }
-                        else if (isCurrent) { bg = "var(--labs-accent)"; fg = "var(--labs-bg)"; }
-                        return (
-                          <div
-                            key={i}
-                            className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold"
-                            style={{ background: bg, color: fg }}
-                          >
-                            {fullyDone ? <Check className="w-3 h-3" /> : String.fromCharCode(65 + i)}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })()}
-      </div>
-      )}
 
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
@@ -8498,6 +8313,204 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         );
         })()}
       </div>
+
+      {!tasting.guidedMode && (
+      <div className="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div>
+          <h2 className="labs-section-label">{t("m2.host.sessionControlsLabel", "Live Session")}</h2>
+          <p style={{ fontSize: 12, color: "var(--labs-text-muted)", marginBottom: 8, marginTop: -4 }}>
+            {tasting.status === "archived"
+              ? t("m2.host.sessionControlsDescArchived", "This session has been archived.")
+              : t("m2.host.sessionControlsDesc", "Control the tasting your guests are seeing right now.")}
+          </p>
+          <div className="labs-card p-4">
+            <div className="flex flex-wrap gap-2">
+              {tasting.status === "draft" && (
+                <button
+                  className="labs-btn-primary flex items-center gap-2"
+                  onClick={() => statusMutation.mutate({ status: "open" })}
+                  disabled={statusMutation.isPending || whiskyCount === 0}
+                  title={whiskyCount === 0 ? t("m2.host.startTastingNeedsWhiskies", "Add at least one whisky first.") : undefined}
+                  data-testid="labs-host-start"
+                >
+                  <Play className="w-4 h-4" />
+                  {t("m2.host.startTasting", "Start Tasting")}
+                </button>
+              )}
+              {tasting.status === "open" && (
+                <button
+                  className="labs-btn-secondary flex items-center gap-2"
+                  onClick={() => {
+                    if (!window.confirm(t("m2.host.endSessionConfirmDesc"))) return;
+                    statusMutation.mutate({ status: "closed" });
+                  }}
+                  disabled={statusMutation.isPending}
+                  data-testid="labs-host-close"
+                >
+                  <Square className="w-4 h-4" />
+                  {t("m2.host.endSession")}
+                </button>
+              )}
+              {tasting.status === "closed" && (
+                <>
+                  <button
+                    className="labs-btn-primary flex items-center gap-2"
+                    onClick={() => statusMutation.mutate({ status: "open" })}
+                    disabled={statusMutation.isPending}
+                    data-testid="labs-host-reopen"
+                  >
+                    <Play className="w-4 h-4" />
+                    Reopen
+                  </button>
+                  {isHost && (
+                    <button
+                      className="labs-btn-ghost flex items-center gap-2"
+                      onClick={() => setShowArchiveWarning(true)}
+                      disabled={statusMutation.isPending}
+                      data-testid="labs-host-archive"
+                    >
+                      Archive
+                    </button>
+                  )}
+                </>
+              )}
+              {tasting.status === "reveal" && isHost && (
+                <button
+                  className="labs-btn-ghost flex items-center gap-2"
+                  onClick={() => setShowArchiveWarning(true)}
+                  disabled={statusMutation.isPending}
+                  data-testid="labs-host-archive-reveal"
+                >
+                  Complete & Archive
+                </button>
+              )}
+              {tasting.status === "archived" && (
+                <div className="flex items-center gap-3 w-full" data-testid="labs-host-archived-info">
+                  <div className="flex items-center gap-2 text-sm" style={{ color: "var(--labs-text-muted)" }}>
+                    <Archive className="w-4 h-4" />
+                    {t("m2.host.archivedMessage", "This session has been archived.")}
+                  </div>
+                  <button
+                    className="labs-btn-primary flex items-center gap-2 ml-auto"
+                    onClick={() => statusMutation.mutate({ status: "open" })}
+                    disabled={statusMutation.isPending}
+                    data-testid="labs-host-reopen-archived"
+                  >
+                    <Play className="w-4 h-4" />
+                    {t("m2.host.reopenSession", "Reopen")}
+                  </button>
+                </div>
+              )}
+              {!["draft", "open", "closed", "reveal", "archived"].includes(tasting.status) && (
+                <div className="flex items-center gap-3 w-full" data-testid="labs-host-unknown-status">
+                  <div className="flex items-center gap-2 text-sm" style={{ color: "var(--labs-text-muted)" }}>
+                    <Info className="w-4 h-4" />
+                    {t("m2.host.unknownStatusMessage", "Current status: {{status}}", { status: tasting.status })}
+                  </div>
+                  <button
+                    className="labs-btn-primary flex items-center gap-2 ml-auto"
+                    onClick={() => statusMutation.mutate({ status: "open" })}
+                    disabled={statusMutation.isPending}
+                    data-testid="labs-host-reopen-unknown"
+                  >
+                    <Play className="w-4 h-4" />
+                    {t("m2.host.reopenSession", "Reopen")}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {tasting.blindMode && (tasting.status === "open" || tasting.status === "closed" || tasting.status === "reveal") && (() => {
+          const whiskyCount = (whiskies || []).length;
+          const rv = getRevealState(tasting, whiskyCount, t);
+          return (
+            <div>
+              <h2 className="labs-section-label">{t("labs.host.revealControls")}</h2>
+              <div className="labs-card p-4 space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  {(tasting.status === "open" || tasting.status === "closed") && (
+                    <button
+                      className="labs-btn-secondary flex items-center gap-2"
+                      onClick={() => statusMutation.mutate({ status: "reveal" })}
+                      disabled={statusMutation.isPending}
+                      data-testid={tasting.status === "open" ? "labs-host-reveal-mode" : "labs-host-enter-reveal"}
+                    >
+                      <Eye className="w-4 h-4" />
+                      Enter Showtime
+                    </button>
+                  )}
+                  {tasting.status === "reveal" && whiskyCount > 0 && (
+                    <button
+                      className="labs-btn-primary flex items-center gap-2"
+                      onClick={() => revealMutation.mutate()}
+                      disabled={revealMutation.isPending || rv.allRevealed}
+                      style={{ opacity: rv.allRevealed ? 0.5 : 1 }}
+                      data-testid="labs-host-reveal-next"
+                    >
+                      {revealMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+                      {t(`labs.host.${rv.nextLabelKey}`, rv.nextLabelParam ? { label: rv.nextLabelParam } : {})}
+                    </button>
+                  )}
+                </div>
+
+                {tasting.status === "reveal" && whiskyCount > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium" style={{ color: "var(--labs-text-muted)" }}>
+                        {rv.allRevealed ? t("labs.host.allDramsRevealed") : t("labs.host.dramOfTotal", { current: rv.revealIndex + 1, total: whiskyCount })}
+                      </span>
+                      <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                        {t("labs.host.stepOfTotal", { current: Math.min(rv.revealStep, rv.maxSteps), total: rv.maxSteps })}
+                      </span>
+                    </div>
+                    <div className="flex gap-1 mb-1.5">
+                      {rv.stepLabels.map((label: string, idx: number) => (
+                        <div
+                          key={label}
+                          className="flex-1 h-1.5 rounded-full"
+                          style={{
+                            background: idx < rv.revealStep ? "var(--labs-accent)" : "var(--labs-border)",
+                            transition: "background 300ms ease",
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex justify-between mb-3">
+                      {rv.stepLabels.map((label: string, idx: number) => (
+                        <span key={label} className="text-[11px]" style={{ color: idx < rv.revealStep ? "var(--labs-accent)" : "var(--labs-text-muted)" }}>
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {(whiskies || []).map((_: any, i: number) => {
+                        const fullyDone = i < rv.revealIndex || (i === rv.revealIndex && rv.revealStep >= rv.maxSteps);
+                        const isCurrent = i === rv.revealIndex && rv.revealStep < rv.maxSteps;
+                        let bg = "var(--labs-border)";
+                        let fg = "var(--labs-text-muted)";
+                        if (fullyDone) { bg = "var(--labs-success)"; fg = "var(--labs-bg)"; }
+                        else if (isCurrent) { bg = "var(--labs-accent)"; fg = "var(--labs-bg)"; }
+                        return (
+                          <div
+                            key={i}
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold"
+                            style={{ background: bg, color: fg }}
+                          >
+                            {fullyDone ? <Check className="w-3 h-3" /> : String.fromCharCode(65 + i)}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+      )}
 
       {participantCount > 0 && !tasting.guidedMode && (
         <ParticipantStatusSection
