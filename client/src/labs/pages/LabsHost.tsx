@@ -3693,21 +3693,25 @@ function CreateTastingForm() {
   const [date, setDate] = useState(draft?.date || new Date().toISOString().split("T")[0]);
   const [time, setTime] = useState(draft?.time || "");
   const [location, setLocation] = useState(draft?.location || "");
-  const [description, setDescription] = useState(draft?.description || "");
-  const [blindMode, setBlindMode] = useState(draft?.blindMode ?? false);
-  const [revealOrder, setRevealOrder] = useState(draft?.revealOrder || "classic");
+  // Diese Felder werden beim Anlegen nicht mehr abgefragt — sie gehoeren ins
+  // Cockpit ("Tasting Settings"). Bewusst NICHT aus dem Draft geladen: ein alter
+  // Entwurf koennte sonst z. B. blindMode=true einschleusen, ohne dass es im
+  // reduzierten Formular sichtbar waere.
+  const [description, setDescription] = useState("");
+  const [blindMode, setBlindMode] = useState(false);
+  const [revealOrder, setRevealOrder] = useState("classic");
   const [customRevealSteps, setCustomRevealSteps] = useState<string[][]>(draft?.customRevealSteps || REVEAL_PRESETS_MAP.classic);
-  const [ratingScale, setRatingScale] = useState(draft?.ratingScale ?? 100);
-  const [guidedMode, setGuidedMode] = useState(draft?.guidedMode ?? false);
-  const [guestMode, setGuestMode] = useState(draft?.guestMode || "standard");
+  const [ratingScale, setRatingScale] = useState(100);
+  const [guidedMode, setGuidedMode] = useState(false);
+  const [guestMode, setGuestMode] = useState("standard");
   const [sessionUiMode] = useState(draft?.sessionUiMode || "flow");
-  const [reflectionEnabled, setReflectionEnabled] = useState(draft?.reflectionEnabled ?? false);
+  const [reflectionEnabled, setReflectionEnabled] = useState(false);
   const [reflectionMode, setReflectionMode] = useState(draft?.reflectionMode || "standard");
   const [reflectionVisibility, setReflectionVisibility] = useState(draft?.reflectionVisibility || "named");
   const [videoLink, setVideoLink] = useState(draft?.videoLink || "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [advancedOpen, setAdvancedOpen] = useState(draft?.advancedOpen ?? false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [myCommunities, setMyCommunities] = useState<any[]>([]);
   const [selectedCommunityIds, setSelectedCommunityIds] = useState<Set<string>>(new Set());
   const [draftSaved, setDraftSaved] = useState(!!draft);
@@ -3939,199 +3943,6 @@ function CreateTastingForm() {
               data-testid="labs-host-input-video"
             />
           </div>
-        </div>
-
-        <div>
-          <label className="labs-section-label" htmlFor="tasting-description">
-            <FileText className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
-            {t("labs.host.descriptionLabel")}
-          </label>
-          <textarea
-            id="tasting-description"
-            className="labs-input"
-            placeholder={t("labs.host.descriptionPlaceholder")}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={2}
-            style={{ resize: "vertical", minHeight: 48 }}
-            data-testid="labs-host-input-description"
-          />
-        </div>
-
-        <LabsToggle
-          checked={blindMode}
-          onChange={(v: boolean) => {
-            setBlindMode(v);
-          }}
-          icon={<EyeOff className="w-5 h-5" style={{ color: blindMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
-          label={t("labs.host.blindTasting")}
-          description={t("labs.host.blindTastingDesc")}
-          testId="labs-host-toggle-blind"
-        />
-
-        {blindMode && (
-          <div>
-            <label className="labs-section-label">
-              <Eye className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
-              {t("labs.host.revealOrder")}
-            </label>
-            <LabsSegmentedSelect
-              value={revealOrder}
-              options={[
-                { value: "classic", label: t("labs.host.revealClassic"), desc: t("labs.host.revealClassicDesc") },
-                { value: "photo-first", label: t("labs.host.revealPhotoFirst"), desc: t("labs.host.revealPhotoFirstDesc") },
-                { value: "details-first", label: t("labs.host.revealDetails"), desc: t("labs.host.revealDetailsDesc") },
-                { value: "one-by-one", label: t("labs.host.revealOneByOne"), desc: t("labs.host.revealOneByOneDesc") },
-                { value: "custom", label: t("labs.host.revealCustom"), desc: t("labs.host.revealCustomDesc") },
-              ]}
-              onChange={(val: string | number) => {
-                const v = String(val);
-                setRevealOrder(v);
-                if (v !== "custom" && REVEAL_PRESETS_MAP[v]) {
-                  setCustomRevealSteps(REVEAL_PRESETS_MAP[v]);
-                }
-              }}
-            />
-            {revealOrder === "custom" && (
-              <CustomRevealEditor
-                steps={customRevealSteps}
-                onChange={(newSteps) => {
-                  setCustomRevealSteps(newSteps);
-                }}
-              />
-            )}
-          </div>
-        )}
-
-        <LabsToggle
-          checked={guidedMode}
-          onChange={(v: boolean) => { setGuidedMode(v); }}
-          icon={<Compass className="w-5 h-5" style={{ color: guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
-          label={t("labs.host.hostControlsPace")}
-          description={t("labs.host.hostControlsPaceDesc")}
-          testId="labs-host-toggle-guided"
-        />
-
-        <div>
-          <label className="labs-section-label">
-            <Gauge className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
-            {t("labs.host.ratingScale")}
-          </label>
-          <LabsSegmentedSelect
-            value={ratingScale}
-            options={[
-              { value: 5, label: "5", desc: t("labs.host.simple") },
-              { value: 10, label: "10", desc: t("labs.host.classic") },
-              { value: 20, label: "20", desc: t("labs.host.detailed") },
-              { value: 100, label: "100", desc: t("labs.host.pro") },
-            ]}
-            onChange={setRatingScale}
-          />
-        </div>
-
-        {myCommunities.length > 0 && (
-          <div>
-            <label className="labs-section-label flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
-              {t("labs.host.targetCommunities")}
-            </label>
-            <p className="text-[11px] mb-2" style={{ color: "var(--labs-text-muted)" }}>
-              {t("labs.host.targetCommunitiesDesc")}
-            </p>
-            <div className="labs-card" style={{ padding: "var(--labs-space-sm) var(--labs-space-md)" }}>
-              {myCommunities.map((c: any) => (
-                <label key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", cursor: "pointer" }} data-testid={`tasting-community-${c.id}`}>
-                  <input type="checkbox" checked={selectedCommunityIds.has(c.id)} onChange={() => toggleCommunity(c.id)} data-testid={`checkbox-tasting-community-${c.id}`} />
-                  <span style={{ fontSize: 13, fontWeight: 500, color: "var(--labs-text)" }}>{c.name}</span>
-                  {c.memberCount != null && <span style={{ fontSize: 11, color: "var(--labs-text-muted)" }}>({c.memberCount})</span>}
-                </label>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="labs-card overflow-hidden" style={{ border: "1px solid var(--labs-border)" }}>
-          <button
-            type="button"
-            onClick={() => setAdvancedOpen(!advancedOpen)}
-            className="w-full flex items-center justify-between"
-            style={{
-              padding: "14px 16px",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "var(--labs-text)",
-              fontSize: 14,
-              fontWeight: 600,
-            }}
-            data-testid="labs-host-toggle-advanced"
-          >
-            <span className="flex items-center gap-2">
-              <Sliders className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
-              Advanced Options
-            </span>
-            <ChevronDown
-              className="w-4 h-4 transition-transform"
-              style={{
-                color: "var(--labs-text-muted)",
-                transform: advancedOpen ? "rotate(180deg)" : "rotate(0deg)",
-              }}
-            />
-          </button>
-
-          {advancedOpen && (
-            <div style={{ padding: "0 16px 16px" }} className="space-y-5">
-              <div>
-                <label className="labs-section-label">
-                  <Globe className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
-                  {t("labs.host.howGuestsJoin")}
-                </label>
-                <p className="text-xs mb-2" style={{ color: "var(--labs-text-muted)" }}>
-                  {t("labs.host.guestAccountDesc")}
-                </p>
-                <LabsSegmentedSelect
-                  value={guestMode}
-                  options={[
-                    { value: "standard", label: t("m2.host.guestStandard"), desc: t("m2.host.guestStandardDesc") },
-                    { value: "ultra", label: t("m2.host.guestUltra"), desc: t("m2.host.guestUltraDesc") },
-                  ]}
-                  onChange={setGuestMode}
-                />
-              </div>
-
-              <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 16 }}>
-                <label className="labs-section-label">
-                  <MessageCircle className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
-                  {t("labs.host.groupDiscussion")}
-                </label>
-                <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>
-                  {t("labs.host.enableDiscussionDesc")}
-                </p>
-                <LabsToggle
-                  checked={reflectionEnabled}
-                  onChange={setReflectionEnabled}
-                  icon={<MessageCircle className="w-5 h-5" style={{ color: reflectionEnabled ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
-                  label={t("labs.host.enableDiscussion")}
-                  description={t("labs.host.enableDiscussionDesc")}
-                  testId="labs-host-toggle-reflection"
-                />
-                {reflectionEnabled && (
-                  <div className="mt-4">
-                    <label className="labs-section-label" style={{ fontSize: 11 }}>{t("labs.host.showNames")}</label>
-                    <LabsSegmentedSelect
-                      value={reflectionVisibility === "optional" ? "named" : reflectionVisibility}
-                      options={[
-                        { value: "named", label: t("labs.host.namesNamed"), desc: t("labs.host.namesNamedDesc") },
-                        { value: "anonymous", label: t("labs.host.namesAnonymous"), desc: t("labs.host.namesAnonymousDesc") },
-                      ]}
-                      onChange={setReflectionVisibility}
-                    />
-                  </div>
-                )}
-              </div>
-
-            </div>
-          )}
         </div>
 
         {error && (
