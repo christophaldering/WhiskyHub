@@ -666,7 +666,8 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply, save
   const [instruction, setInstruction] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [proposal, setProposal] = useState<{ mode?: "reorder" | "answer"; order: number[]; removed: number[]; reasons: Record<number, string>; summary?: string } | null>(null);
+  const [proposal, setProposal] = useState<{ mode?: "reorder" | "answer"; order: number[]; removed: number[]; reasons: Record<number, string>; summary?: string; additions?: Array<{ name: string; distillery: string | null; age: string | null; abv: string | null; cask: string | null; region: string | null; reason: string }> } | null>(null);
+  const [addingBottles, setAddingBottles] = useState(false);
   // Fingerabdruck der Liste zum Zeitpunkt des Vorschlags: ändert sich die
   // Liste semantisch (neuer Import, andere Reihenfolge), verfällt der Vorschlag.
   const snapshotOf = (rs: any[]) => rs.map((w: any) => w?.name || "").join("\u0000");
@@ -789,6 +790,75 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply, save
         <p className="text-[11px]" style={{ color: "var(--labs-text-muted)", margin: 0 }}>{t("labs.aiRefine.loading", "The AI is arranging your lineup…")}</p>
       )}
       {error && <p className="text-[11px]" style={{ color: "var(--labs-danger)", margin: 0 }} data-testid={`${testPrefix}-refine-error`}>{error}</p>}
+      {proposal?.additions && proposal.additions.length > 0 && (
+        <div className="space-y-1.5" data-testid={`${testPrefix}-refine-additions`}>
+          <p className="text-[11px]" style={{ color: "var(--labs-text-muted)", margin: 0 }}>
+            {t("labs.aiRefine.additionsLabel", "From your collection — add to the lineup?")}
+          </p>
+          {proposal.additions.map((a, i) => (
+            <div
+              key={`${a.name}-${i}`}
+              className="text-xs flex items-start gap-2"
+              style={{ color: "var(--labs-text-secondary)" }}
+            >
+              <span style={{ color: "var(--labs-accent)" }}>+</span>
+              <span style={{ minWidth: 0 }}>
+                {a.name}
+                {a.reason && (
+                  <span style={{ color: "var(--labs-text-muted)" }}> — {a.reason}</span>
+                )}
+              </span>
+            </div>
+          ))}
+          <div className="flex items-center gap-2">
+            <button
+              className="labs-btn-primary text-xs"
+              disabled={addingBottles}
+              onClick={async () => {
+                if (!refineTastingId || !proposal.additions) return;
+                setAddingBottles(true);
+                try {
+                  const base = (savedWhiskies?.length ?? 0) + 1;
+                  for (let i = 0; i < proposal.additions.length; i++) {
+                    const a = proposal.additions[i];
+                    await whiskyApi.create({
+                      tastingId: refineTastingId,
+                      name: a.name,
+                      distillery: a.distillery || "",
+                      country: "",
+                      region: a.region || "",
+                      caskType: a.cask || "",
+                      age: a.age || "",
+                      abv: normalizeAbv(a.abv),
+                      imageUrl: "",
+                      sortOrder: base + i,
+                    });
+                  }
+                  onSavedApply?.();
+                  setProposal(null);
+                } catch {
+                  /* Panel offen lassen — der Gastgeber kann es erneut versuchen */
+                } finally {
+                  setAddingBottles(false);
+                }
+              }}
+              data-testid={`${testPrefix}-refine-additions-apply`}
+            >
+              {addingBottles
+                ? t("labs.host.savingEllipsis", "Saving…")
+                : t("labs.aiRefine.additionsApply", "Add to lineup")}
+            </button>
+            <button
+              className="labs-btn-ghost text-xs"
+              onClick={() => setProposal(null)}
+              data-testid={`${testPrefix}-refine-additions-discard`}
+            >
+              {t("labs.aiRefine.discard", "Discard")}
+            </button>
+          </div>
+        </div>
+      )}
+
       {proposal?.mode === "answer" && (
         <div className="space-y-1.5" data-testid={`${testPrefix}-refine-answer`}>
           <p className="text-xs" style={{ color: "var(--labs-text-secondary)", margin: 0, lineHeight: 1.5 }}>

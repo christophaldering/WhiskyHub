@@ -6460,6 +6460,8 @@ const resources = {
           presetCheck: "Check my order",
           accept: "Apply order",
           discard: "Discard",
+          additionsLabel: "From your collection — add to the lineup?",
+          additionsApply: "Add to lineup",
         },
         collection: {
           abvDesc: "The strength spectrum of your collection",
@@ -16350,6 +16352,8 @@ const resources = {
           presetCheck: "Reihenfolge prüfen",
           accept: "Reihenfolge übernehmen",
           discard: "Verwerfen",
+          additionsLabel: "Aus deiner Sammlung — ins Lineup aufnehmen?",
+          additionsApply: "Ins Lineup aufnehmen",
         },
         scoresNormalizedHint: "Werte auf 100-Punkte-Skala normalisiert",
         scoresNormalizedMultiScale: "Enthält Bewertungen aus verschiedenen Skalen, auf 100 Punkte normalisiert",

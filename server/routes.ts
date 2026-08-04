@@ -21285,16 +21285,42 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
       }));
       const { system, user } = buildRefinePrompt(items, instruction.trim().slice(0, 1000), language || "de");
       const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL });
-      // gpt-5-Familie: bewusst KEIN max_tokens/temperature (Empty-Content-Falle).
-      const completion = await openai.chat.completions.create({
-        model: "gpt-5-mini",
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
-        response_format: { type: "json_object" },
-      });
-      const raw = completion.choices?.[0]?.message?.content || "";
+      const { cooperLineupTools, runCooperLineupTool } = await import("./cooper-lineup-tools");
+      const messages: any[] = [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ];
+      // Cooper darf hoechstens zweimal in der Sammlung nachschlagen, bevor er
+      // antworten muss. Das genuegt fuer "such mir was Torfiges" und deckelt
+      // zugleich Laufzeit und Kosten, falls das Modell in einer Schleife haengt.
+      let raw = "";
+      for (let turn = 0; turn < 3; turn++) {
+        const isLast = turn === 2;
+        // gpt-5-Familie: bewusst KEIN max_tokens/temperature (Empty-Content-Falle).
+        const completion: any = await openai.chat.completions.create({
+          model: "gpt-5-mini",
+          messages,
+          ...(isLast ? {} : { tools: cooperLineupTools, tool_choice: "auto" }),
+          response_format: { type: "json_object" },
+        });
+        const msg = completion.choices?.[0]?.message;
+        const calls = msg?.tool_calls || [];
+        if (!calls.length) {
+          raw = msg?.content || "";
+          break;
+        }
+        messages.push(msg);
+        for (const call of calls) {
+          let parsedArgs: Record<string, unknown> = {};
+          try {
+            parsedArgs = JSON.parse(call.function?.arguments || "{}");
+          } catch {
+            parsedArgs = {};
+          }
+          const toolOut = await runCooperLineupTool(call.function?.name || "", parsedArgs, String(hostId));
+          messages.push({ role: "tool", tool_call_id: call.id, content: toolOut });
+        }
+      }
       if (!raw.trim()) return res.status(502).json({ message: "AI returned no result. Please try again." });
       let result;
       try {
