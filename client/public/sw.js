@@ -9,7 +9,11 @@ function isHashedAsset(pathname) {
 }
 
 self.addEventListener('install', (event) => {
-  self.skipWaiting();
+  // Bewusst KEIN sofortiges Uebernehmen hier: der neue SW soll warten, bis der Nutzer
+  // im UpdateBanner zustimmt. Sonst uebernimmt er mitten in einer laufenden
+  // Seite, der activate-Handler loescht die alten Assets, und nachgeladene
+  // Chunks laufen ins 404 — die bekannte weisse Seite nach dem Deploy.
+  // Die Uebernahme erfolgt ueber die SKIP_WAITING-Nachricht aus applyUpdate().
   event.waitUntil(
     caches.open(SHELL_CACHE).then((cache) => cache.addAll(SHELL_URLS))
   );
