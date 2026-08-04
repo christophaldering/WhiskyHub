@@ -668,6 +668,10 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply, save
   const [error, setError] = useState("");
   const [proposal, setProposal] = useState<{ mode?: "reorder" | "answer"; order: number[]; removed: number[]; reasons: Record<number, string>; summary?: string; additions?: Array<{ name: string; distillery: string | null; age: string | null; abv: string | null; cask: string | null; region: string | null; reason: string }> } | null>(null);
   const [addingBottles, setAddingBottles] = useState(false);
+  // Sichtbarer Gespraechsverlauf. Wird mitgeschickt, damit Rueckfragen einen
+  // Bezug haben, und verfaellt zusammen mit dem Vorschlag, sobald sich das
+  // Lineup aendert — sonst spraeche Cooper ueber eine Liste, die es nicht mehr gibt.
+  const [chat, setChat] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
   // Fingerabdruck der Liste zum Zeitpunkt des Vorschlags: ändert sich die
   // Liste semantisch (neuer Import, andere Reihenfolge), verfällt der Vorschlag.
   const snapshotOf = (rs: any[]) => rs.map((w: any) => w?.name || "").join("\u0000");
@@ -677,6 +681,7 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply, save
   if (effectiveList.length < 2) return null;
   if (proposal && proposalSnapshotRef.current !== snapshotOf(effectiveList)) {
     setProposal(null);
+    setChat([]);
   }
 
   const runRefine = async (instr: string) => {
@@ -692,6 +697,7 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply, save
           hostId,
           instruction: instr.trim(),
           language,
+          history: chat,
           whiskies: effectiveList.map((w: any) => ({
             name: w.name, distillery: w.distillery, age: w.age, abv: w.abv,
             caskType: w.caskType || w.cask, region: w.region, country: w.country,
@@ -703,6 +709,13 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply, save
       if (!res.ok) throw new Error(data?.message || "Refine failed");
       proposalSnapshotRef.current = snapshotOf(effectiveList);
       setProposal(data);
+      if (data?.summary) {
+        setChat(prev => [
+          ...prev,
+          { role: "user" as const, content: instr.trim() },
+          { role: "assistant" as const, content: String(data.summary) },
+        ].slice(-8));
+      }
     } catch (e: any) {
       setError(e?.message || t("labs.aiRefine.error", "Fine-tuning failed. Please try again."));
     }
@@ -740,10 +753,8 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply, save
 
   return (
     <div className="labs-card p-3 space-y-2" style={{ border: "1px solid color-mix(in srgb, var(--labs-accent) 25%, transparent)" }} data-testid={`${testPrefix}-refine-panel`}>
-      <div className="flex items-start gap-2">
-        <span style={{ flexShrink: 0, display: "inline-flex" }}>
-          <CooperBarrel size={54} />
-        </span>
+      <div className="flex flex-col items-center text-center" style={{ gap: 8, paddingTop: 4 }}>
+        <CooperBarrel size={80} />
         <div style={{ minWidth: 0 }}>
           <div className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>
             {t("labs.aiRefine.title", "Fine-tune lineup")}
@@ -767,6 +778,42 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply, save
           </button>
         ))}
       </div>
+
+      {chat.length > 0 && (
+        <div
+          className="space-y-2"
+          style={{
+            maxHeight: 260,
+            overflowY: "auto",
+            padding: "10px 12px",
+            borderRadius: 8,
+            background: "color-mix(in srgb, var(--labs-accent) 5%, transparent)",
+          }}
+          data-testid={`${testPrefix}-refine-chat`}
+        >
+          {chat.map((m, i) => (
+            <div key={i} className="text-xs" style={{ lineHeight: 1.5 }}>
+              <span
+                style={{
+                  color: m.role === "user" ? "var(--labs-text-muted)" : "var(--labs-accent)",
+                  marginRight: 6,
+                }}
+              >
+                {m.role === "user" ? t("labs.aiRefine.chatYou", "Du") : "Cooper"}
+              </span>
+              <span style={{ color: "var(--labs-text-secondary)" }}>{m.content}</span>
+            </div>
+          ))}
+          <button
+            className="labs-btn-ghost text-[11px]"
+            onClick={() => { setChat([]); setProposal(null); setInstruction(""); }}
+            data-testid={`${testPrefix}-refine-chat-reset`}
+          >
+            {t("labs.aiRefine.chatReset", "Start over")}
+          </button>
+        </div>
+      )}
+
       <div className="flex gap-1.5">
         <input
           className="labs-input flex-1 text-xs"
@@ -859,24 +906,8 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply, save
         </div>
       )}
 
-      {proposal?.mode === "answer" && (
-        <div className="space-y-1.5" data-testid={`${testPrefix}-refine-answer`}>
-          <p className="text-xs" style={{ color: "var(--labs-text-secondary)", margin: 0, lineHeight: 1.5 }}>
-            {proposal.summary}
-          </p>
-          <button
-            className="labs-btn-ghost text-xs"
-            onClick={() => setProposal(null)}
-            data-testid={`${testPrefix}-refine-answer-close`}
-          >
-            {t("labs.aiRefine.answerClose", "Got it")}
-          </button>
-        </div>
-      )}
-
       {proposal && proposal.mode !== "answer" && (
         <div className="space-y-1.5" data-testid={`${testPrefix}-refine-proposal`}>
-          {proposal.summary && <p className="text-[11px]" style={{ color: "var(--labs-text-secondary)", margin: 0 }}>{proposal.summary}</p>}
           <div className="space-y-1">
             {proposal.order.map((oldIdx, pos) => {
               const w = effectiveList[oldIdx];
@@ -2065,6 +2096,39 @@ function MobileCompanion({
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] }),
   });
 
+  // Reihenfolge per Finger aendern. Bewusst Pointer-Events statt HTML5-Drag:
+  // Letzteres feuert auf iOS gar nicht. Das Ziehen startet nur am Griff, damit
+  // Scrollen ueberall sonst weiter funktioniert.
+  const mobileReorderMut = useMutation({
+    mutationFn: (order: { id: string; sortOrder: number }[]) => whiskyApi.reorder(tastingId, order),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] }),
+  });
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [overIdx, setOverIdx] = useState<number | null>(null);
+  const rowRefs = useRef<Array<HTMLDivElement | null>>([]);
+
+  const dragTargetAt = (clientY: number): number | null => {
+    for (let i = 0; i < rowRefs.current.length; i++) {
+      const el = rowRefs.current[i];
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      if (clientY >= r.top && clientY <= r.bottom) return i;
+    }
+    return null;
+  };
+
+  const commitMobileDrag = () => {
+    const from = dragIdx;
+    const to = overIdx;
+    setDragIdx(null);
+    setOverIdx(null);
+    if (from == null || to == null || from === to || !whiskies) return;
+    const reordered = [...whiskies];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(to, 0, moved);
+    mobileReorderMut.mutate(reordered.map((w: any, i: number) => ({ id: w.id, sortOrder: i + 1 })));
+  };
+
   const guidedAdvanceMut = useMutation({
     mutationFn: () => guidedApi.advance(tastingId, pid),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] }),
@@ -2889,7 +2953,52 @@ function MobileCompanion({
           {whiskyCount > 0 && (
             <div className="space-y-2 mb-3">
               {whiskies.map((w: any, i: number) => (
-                <div key={w.id} className="labs-card p-3 flex items-center gap-2" data-testid={`mobile-whisky-${w.id}`}>
+                <div
+                  key={w.id}
+                  ref={el => { rowRefs.current[i] = el; }}
+                  className="labs-card p-3 flex items-center gap-2"
+                  style={{
+                    opacity: dragIdx === i ? 0.45 : 1,
+                    outline: overIdx === i && dragIdx !== null && dragIdx !== i
+                      ? "2px solid var(--labs-accent)" : "none",
+                    outlineOffset: -2,
+                    transition: "opacity 120ms ease",
+                  }}
+                  data-testid={`mobile-whisky-${w.id}`}
+                >
+                  {mobileEditId !== w.id && tasting.status !== "archived" && whiskies.length > 1 && (
+                    <span
+                      onPointerDown={e => {
+                        e.preventDefault();
+                        (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+                        setDragIdx(i);
+                        setOverIdx(i);
+                      }}
+                      onPointerMove={e => {
+                        if (dragIdx === null) return;
+                        const target = dragTargetAt(e.clientY);
+                        if (target !== null) setOverIdx(target);
+                      }}
+                      onPointerUp={() => commitMobileDrag()}
+                      onPointerCancel={() => { setDragIdx(null); setOverIdx(null); }}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: 32,
+                        minHeight: 44,
+                        marginLeft: -6,
+                        flexShrink: 0,
+                        cursor: "grab",
+                        touchAction: "none",
+                        color: "var(--labs-text-muted)",
+                      }}
+                      aria-label={t("labs.whisky.dragHandle", "Reorder")}
+                      data-testid={`mobile-whisky-drag-${w.id}`}
+                    >
+                      <GripVertical style={{ width: 16, height: 16 }} />
+                    </span>
+                  )}
                   {mobileEditId === w.id ? (
                     <div className="flex-1 space-y-1.5">
                       <input
