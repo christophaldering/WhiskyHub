@@ -709,6 +709,7 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply, save
       if (!res.ok) throw new Error(data?.message || "Refine failed");
       proposalSnapshotRef.current = snapshotOf(effectiveList);
       setProposal(data);
+      setInstruction("");
       if (data?.summary) {
         setChat(prev => [
           ...prev,
@@ -804,13 +805,7 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply, save
               <span style={{ color: "var(--labs-text-secondary)" }}>{m.content}</span>
             </div>
           ))}
-          <button
-            className="labs-btn-ghost text-[11px]"
-            onClick={() => { setChat([]); setProposal(null); setInstruction(""); }}
-            data-testid={`${testPrefix}-refine-chat-reset`}
-          >
-            {t("labs.aiRefine.chatReset", "Start over")}
-          </button>
+
         </div>
       )}
 

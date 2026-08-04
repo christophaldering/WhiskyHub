@@ -96,6 +96,7 @@ Regeln:
 - Bei mode "reorder" müssen "order" und "removed" zusammen GENAU die gegebenen Indizes enthalten, jeden genau einmal.
 - Begründe jede Flasche, deren Position sich ändert, und jede entfernte.
 - "additions" nur füllen, wenn ausdrücklich um Ergänzung gebeten wurde UND das Werkzeug echte Treffer geliefert hat. Sonst leer lassen.
+- Hast du das Werkzeug benutzt und Treffer bekommen, die du empfiehlst, dann gehören diese Flaschen ZWINGEND nach "additions" — auch bei mode "answer". Sie nur in der summary aufzuzählen genügt nicht: der Gastgeber bekommt sonst keinen Knopf zum Übernehmen und muss alles abtippen. Nenne in "additions" exakt die Namen aus den Suchtreffern.
 - Schreibe alle Begründungen und die summary auf ${lang === "German" ? "Deutsch" : "Englisch"}.`;
   const lines = whiskies.map(w =>
     `index=${w.index} | ${w.name}${w.distillery ? ` | ${w.distillery}` : ""}${w.age ? ` | ${w.age}y` : ""}${w.abv ? ` | ${w.abv}%` : ""}${w.caskType ? ` | cask: ${w.caskType}` : ""}${w.peatLevel ? ` | peat: ${w.peatLevel}` : ""}${w.region ? ` | ${w.region}` : ""}${w.country ? ` | ${w.country}` : ""}${w.wbScore ? ` | WB ${w.wbScore}` : ""}${w.price ? ` | ${w.price} EUR` : ""}`,

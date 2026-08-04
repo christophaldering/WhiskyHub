@@ -21329,6 +21329,13 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
             parsedArgs = {};
           }
           const toolOut = await runCooperLineupTool(call.function?.name || "", parsedArgs, String(hostId));
+          // Mitschreiben, ob Cooper wirklich in der Sammlung war und was er fand.
+          // Ohne diese Zeile laesst sich im Nachhinein nicht unterscheiden, ob er
+          // gesucht oder eine Flasche frei erfunden hat.
+          try {
+            const hitCount = Array.isArray(JSON.parse(toolOut)?.hits) ? JSON.parse(toolOut).hits.length : 0;
+            console.log(`[ai-refine] tool=${call.function?.name} query="${String(parsedArgs?.query ?? "").slice(0, 60)}" hits=${hitCount}`);
+          } catch { /* Logging darf den Zug nie abbrechen */ }
           messages.push({ role: "tool", tool_call_id: call.id, content: toolOut });
         }
       }
