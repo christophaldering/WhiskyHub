@@ -11,7 +11,23 @@ import { Info } from "lucide-react";
  */
 export function InfoHint({ text, testId }: { text: string; testId?: string }) {
   const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const wrapRef = useRef<HTMLSpanElement | null>(null);
+
+  // Das Popover wird fest im Viewport positioniert statt relativ zum Label.
+  // Nur so laesst sich garantieren, dass es an keinem Rand abgeschnitten wird —
+  // und genau das passierte bei (i)-Symbolen weit rechts.
+  const place = () => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const margin = 12;
+    const width = Math.min(300, window.innerWidth - margin * 2);
+    let left = r.left - 8;
+    if (left + width > window.innerWidth - margin) left = window.innerWidth - margin - width;
+    if (left < margin) left = margin;
+    setPos({ top: r.bottom + 8, left, width });
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -21,11 +37,16 @@ export function InfoHint({ text, testId }: { text: string; testId?: string }) {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
+    const onReflow = () => setOpen(false);
     document.addEventListener("mousedown", onDocClick);
     document.addEventListener("keydown", onKey);
+    window.addEventListener("resize", onReflow);
+    window.addEventListener("scroll", onReflow, true);
     return () => {
       document.removeEventListener("mousedown", onDocClick);
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", onReflow);
+      window.removeEventListener("scroll", onReflow, true);
     };
   }, [open]);
 
@@ -36,6 +57,7 @@ export function InfoHint({ text, testId }: { text: string; testId?: string }) {
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
+          if (!open) place();
           setOpen((v) => !v);
         }}
         aria-expanded={open}
@@ -57,15 +79,17 @@ export function InfoHint({ text, testId }: { text: string; testId?: string }) {
       >
         <Info style={{ width: 13, height: 13 }} />
       </button>
-      {open && (
+      {open && pos && (
         <span
           role="note"
           style={{
-            position: "absolute",
-            top: "calc(100% + 8px)",
-            left: -8,
+            position: "fixed",
+            top: pos.top,
+            left: pos.left,
             zIndex: 60,
-            width: "min(280px, calc(100vw - 48px))",
+            width: pos.width,
+            maxHeight: "60vh",
+            overflowY: "auto",
             padding: 12,
             borderRadius: 8,
             background: "var(--labs-surface)",

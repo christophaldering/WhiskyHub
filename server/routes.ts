@@ -21286,8 +21286,19 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
       const { system, user } = buildRefinePrompt(items, instruction.trim().slice(0, 1000), language || "de");
       const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL });
       const { cooperLineupTools, runCooperLineupTool } = await import("./cooper-lineup-tools");
+      // Vorheriger Gespraechsverlauf, damit Rueckfragen wie "und wenn ich den
+      // rausnehme?" einen Bezug haben. Bewusst gedeckelt: nur die letzten sechs
+      // Wortmeldungen, jede gekuerzt — ein Lineup-Gespraech ist kurz, und ein
+      // mitwachsender Verlauf wuerde Kosten und Verwirrung gleichermassen mehren.
+      const priorTurns: Array<{ role: string; content: string }> = Array.isArray(req.body?.history)
+        ? req.body.history
+            .filter((m: any) => (m?.role === "user" || m?.role === "assistant") && typeof m?.content === "string")
+            .slice(-6)
+            .map((m: any) => ({ role: m.role, content: String(m.content).slice(0, 800) }))
+        : [];
       const messages: any[] = [
         { role: "system", content: system },
+        ...priorTurns,
         { role: "user", content: user },
       ];
       // Cooper darf hoechstens zweimal in der Sammlung nachschlagen, bevor er

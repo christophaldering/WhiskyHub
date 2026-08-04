@@ -270,8 +270,8 @@
   transition: background-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
   min-width: 0;
   overflow-wrap: break-word;
-  hyphens: auto;
-  -webkit-hyphens: auto;
+  hyphens: manual;
+  -webkit-hyphens: manual;
 }
 
 .labs-card:hover {
@@ -1519,8 +1519,8 @@ a.labs-dram-item {
   -webkit-tap-highlight-color: transparent;
   min-height: 56px;
   overflow-wrap: break-word;
-  hyphens: auto;
-  -webkit-hyphens: auto;
+  hyphens: manual;
+  -webkit-hyphens: manual;
 }
 
 @media (hover: hover) {
@@ -1740,8 +1740,8 @@ a.labs-dram-item {
   text-align: center;
   white-space: normal;
   overflow-wrap: break-word;
-  hyphens: auto;
-  -webkit-hyphens: auto;
+  hyphens: manual;
+  -webkit-hyphens: manual;
   line-height: 1.25;
 }
 

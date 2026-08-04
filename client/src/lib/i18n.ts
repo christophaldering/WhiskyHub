@@ -6462,6 +6462,8 @@ const resources = {
           discard: "Discard",
           additionsLabel: "From your collection — add to the lineup?",
           additionsApply: "Add to lineup",
+          chatYou: "You",
+          chatReset: "Start over",
         },
         collection: {
           abvDesc: "The strength spectrum of your collection",
@@ -16354,6 +16356,8 @@ const resources = {
           discard: "Verwerfen",
           additionsLabel: "Aus deiner Sammlung — ins Lineup aufnehmen?",
           additionsApply: "Ins Lineup aufnehmen",
+          chatYou: "Du",
+          chatReset: "Neu anfangen",
         },
         scoresNormalizedHint: "Werte auf 100-Punkte-Skala normalisiert",
         scoresNormalizedMultiScale: "Enthält Bewertungen aus verschiedenen Skalen, auf 100 Punkte normalisiert",
