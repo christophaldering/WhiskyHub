@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { InfoHint } from "@/labs/components/InfoHint";
+import CooperBarrel from "@/labs/components/rating/CooperBarrel";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -665,7 +666,7 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply, save
   const [instruction, setInstruction] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [proposal, setProposal] = useState<{ order: number[]; removed: number[]; reasons: Record<number, string>; summary?: string } | null>(null);
+  const [proposal, setProposal] = useState<{ mode?: "reorder" | "answer"; order: number[]; removed: number[]; reasons: Record<number, string>; summary?: string } | null>(null);
   // Fingerabdruck der Liste zum Zeitpunkt des Vorschlags: ändert sich die
   // Liste semantisch (neuer Import, andere Reihenfolge), verfällt der Vorschlag.
   const snapshotOf = (rs: any[]) => rs.map((w: any) => w?.name || "").join("\u0000");
@@ -712,6 +713,7 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply, save
     { key: "peat", label: t("labs.aiRefine.presetPeat", "Peat at the end") },
     { key: "sherry", label: t("labs.aiRefine.presetSherry", "Sherry block") },
     { key: "check", label: t("labs.aiRefine.presetCheck", "Check my order") },
+    { key: "ask", label: t("labs.aiRefine.presetAsk", "What stands out?") },
   ];
 
   const acceptProposal = async () => {
@@ -738,7 +740,9 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply, save
   return (
     <div className="labs-card p-3 space-y-2" style={{ border: "1px solid color-mix(in srgb, var(--labs-accent) 25%, transparent)" }} data-testid={`${testPrefix}-refine-panel`}>
       <div className="flex items-start gap-2">
-        <Sparkles className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-accent)", marginTop: 1 }} />
+        <span style={{ flexShrink: 0, marginTop: 1, display: "inline-flex" }}>
+          <CooperBarrel size={18} />
+        </span>
         <div style={{ minWidth: 0 }}>
           <div className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>{t("labs.aiRefine.title", "Fine-tune lineup")}</div>
           <div className="text-xs" style={{ color: "var(--labs-text-muted)", marginTop: 2 }}>{t("labs.aiRefine.subtitle", "Reorder or drop bottles — just say it in your own words.")}</div>
@@ -782,7 +786,22 @@ function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply, save
         <p className="text-[11px]" style={{ color: "var(--labs-text-muted)", margin: 0 }}>{t("labs.aiRefine.loading", "The AI is arranging your lineup…")}</p>
       )}
       {error && <p className="text-[11px]" style={{ color: "var(--labs-danger)", margin: 0 }} data-testid={`${testPrefix}-refine-error`}>{error}</p>}
-      {proposal && (
+      {proposal?.mode === "answer" && (
+        <div className="space-y-1.5" data-testid={`${testPrefix}-refine-answer`}>
+          <p className="text-xs" style={{ color: "var(--labs-text-secondary)", margin: 0, lineHeight: 1.5 }}>
+            {proposal.summary}
+          </p>
+          <button
+            className="labs-btn-ghost text-xs"
+            onClick={() => setProposal(null)}
+            data-testid={`${testPrefix}-refine-answer-close`}
+          >
+            {t("labs.aiRefine.answerClose", "Got it")}
+          </button>
+        </div>
+      )}
+
+      {proposal && proposal.mode !== "answer" && (
         <div className="space-y-1.5" data-testid={`${testPrefix}-refine-proposal`}>
           {proposal.summary && <p className="text-[11px]" style={{ color: "var(--labs-text-secondary)", margin: 0 }}>{proposal.summary}</p>}
           <div className="space-y-1">
