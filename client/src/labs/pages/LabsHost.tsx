@@ -2797,6 +2797,22 @@ function MobileCompanion({
             </div>
           )}
 
+          {whiskyCount >= 2 && tasting.status !== "archived" && (
+            <div className="mb-3">
+              <AiRefinePanel
+                results={[]}
+                hostId={pid || ""}
+                language={i18n.language || "de"}
+                t={t}
+                testPrefix="labs-ai-lineup-mobile"
+                onApply={() => {}}
+                savedWhiskies={whiskies || []}
+                tastingId={tastingId}
+                onSavedApply={() => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] })}
+              />
+            </div>
+          )}
+
           {whiskyCount > 0 && (
             <div className="space-y-2 mb-3">
               {whiskies.map((w: any, i: number) => (
