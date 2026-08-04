@@ -318,7 +318,17 @@ function startWhiskybaseLookup(
     } catch {
       transportFailed = true;
     }
-    const byIdx = new Map<number, { whiskybaseId: string | null; whiskybaseUrl: string | null; failed?: boolean }>();
+    const byIdx = new Map<number, {
+      whiskybaseId: string | null;
+      whiskybaseUrl: string | null;
+      failed?: boolean;
+      wbScore?: number | null;
+      distilledYear?: number | null;
+      bottledYear?: number | null;
+      caskType?: string | null;
+      abv?: number | null;
+      age?: string | number | null;
+    }>();
     if (results) {
       missing.forEach((m, i) => { const r = results![i]; if (r) byIdx.set(m.i, r); });
     }
