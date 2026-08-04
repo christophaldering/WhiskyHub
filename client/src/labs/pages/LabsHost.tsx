@@ -6399,6 +6399,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           ...(data.bottledYear ? { bottledYear: String(data.bottledYear) } : {}),
           ...(data.price && !prev.price ? { price: String(data.price).replace(".", ",") } : {}),
           ...(data.category && !prev.category ? { category: data.category } : {}),
+          ...(data.wbScore != null ? { wbScore: String(data.wbScore) } : {}),
           whiskybaseId: id,
         }));
         setShowExtendedFields(true);
@@ -6419,6 +6420,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           ...(data.bottledYear ? { bottledYear: String(data.bottledYear) } : {}),
           ...(data.price && !prev.price ? { price: String(data.price).replace(".", ",") } : {}),
           ...(data.category && !prev.category ? { category: data.category } : {}),
+          ...(data.wbScore != null ? { wbScore: String(data.wbScore) } : {}),
           whiskybaseId: id,
         }));
         setResult("ok");
