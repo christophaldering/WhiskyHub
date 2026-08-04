@@ -9,7 +9,7 @@ on:
 env:
   # tsc-Schulden-Ratsche: Fehlerzahl darf diese Baseline NIE überschreiten.
   # Beim Schuldenabbau: Zahl hier manuell senken (nie erhöhen).
-  TSC_BASELINE: 501
+  TSC_BASELINE: 413
 
 jobs:
   check:
