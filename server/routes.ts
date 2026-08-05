@@ -21205,8 +21205,28 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
         apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
         baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
       });
+      // Erst in der eigenen Sammlung nachsehen. Wer seine Whiskybase-Sammlung
+      // importiert hat, hat die IDs bereits — dafuer eine Websuche zu starten
+      // waere langsamer, teurer und unzuverlaessiger als ein Abgleich.
+      const { matchAgainstCollection } = await import("./whiskybase-from-collection");
+      const fromCollection = await matchAgainstCollection(String(hostId || ""), cleaned).catch(
+        () => new Map<number, any>(),
+      );
+      const openIdx = cleaned.map((_, i) => i).filter((i) => !fromCollection.has(i));
+      if (fromCollection.size > 0) {
+        console.log(`[wb-lookup] ${fromCollection.size}/${cleaned.length} aus eigener Sammlung, ${openIdx.length} via Websuche`);
+      }
+
       const { lookupWhiskiesOnWb } = await import("./whiskybase-unified");
-      const outcomes = await lookupWhiskiesOnWb(openai, cleaned, { timeoutMs: 90000 });
+      const webOutcomes = openIdx.length > 0
+        ? await lookupWhiskiesOnWb(openai, openIdx.map((i) => cleaned[i]), { timeoutMs: 90000 })
+        : [];
+      const outcomes = cleaned.map((_, i) => {
+        const hit = fromCollection.get(i);
+        if (hit) return hit;
+        const pos = openIdx.indexOf(i);
+        return pos >= 0 ? webOutcomes[pos] : { whiskybaseId: null, whiskybaseUrl: null, wbScore: null, distilledYear: null, bottledYear: null, caskType: null, abv: null, age: null, failed: true };
+      });
       const results = outcomes.map((o) => ({
         whiskybaseId: o.whiskybaseId,
         whiskybaseUrl: o.whiskybaseUrl,
