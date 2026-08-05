@@ -3018,7 +3018,9 @@ function MobileCompanion({
                             <p className="text-sm font-medium truncate" style={{ margin: 0 }}>{w.name}</p>
                             {isDupe && <span className="text-[11px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "color-mix(in srgb, var(--labs-warning, #f59e0b) 20%, transparent)", color: "var(--labs-warning, #f59e0b)", whiteSpace: "nowrap" }} data-testid={`mobile-ai-dupe-badge-${i}`}>{t("labs.aiImport.duplicate", "duplicate")}</span>}
                           </div>
-                          <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
+                          {/* Umbrechen statt abschneiden: wer zwoelf Felder waehlt,
+                              will sie auch sehen — nicht fuenf davon und drei Punkte. */}
+                          <p className="text-xs" style={{ color: "var(--labs-text-muted)", lineHeight: 1.45 }}>
                             {buildImportMetaLine(w, mobileLineFields, t)}
                             {w._pricePending && (
                               <span className="inline-flex items-center gap-1 ml-1.5" data-testid={`mobile-ai-price-pending-${i}`}>
