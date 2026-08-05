@@ -281,6 +281,7 @@ function startWhiskybaseLookup(
   hostId: string,
   setResults: (updater: (rs: any[]) => any[]) => void,
   onlyIndex?: number,
+  attempt: number = 0,
 ) {
   // Request-scoped und index-basiert: gleichnamige Flaschen und überlappende
   // Requests bleiben so korrekt zugeordnet (kein Name-Matching mehr).
@@ -288,6 +289,10 @@ function startWhiskybaseLookup(
   const missing = list
     .map((w: any, i: number) => ({ i, name: (w?.name || "").trim() }))
     .filter((m) => m.name && !whiskybaseUrlFor(list[m.i]) && (onlyIndex == null || m.i === onlyIndex))
+    // Zweiter Anlauf: nur die Zeilen, die beim ersten Mal wirklich gescheitert
+    // sind. Nicht gefundene Flaschen (kein Treffer, aber kein Fehler) werden
+    // NICHT erneut versucht — die findet auch der zweite Anlauf nicht.
+    .filter((m) => attempt === 0 || list[m.i]?._wbFailed === true)
     .slice(0, 60);
   // Auch ohne fehlende IDs kann es Zeilen geben, die schon eine ID mitbringen
   // (aus Handout/Excel) und noch keinen Score haben.
@@ -352,6 +357,19 @@ function startWhiskybaseLookup(
       };
       return (transportFailed || hit?.failed) ? { ...rest, _wbFailed: true } : rest;
     }));
+
+    // Ein automatischer zweiter Anlauf fuer die Ausreisser. Fehlschlaege haengen
+    // erfahrungsgemaess an Last, nicht an den Daten: beim manuellen Nachstossen
+    // fanden sich dieselben Flaschen anstandslos. Ohne das muesste der Gastgeber
+    // selbst merken, dass neun von einunddreissig Flaschen leer geblieben sind.
+    if (attempt === 0 && onlyIndex == null) {
+      setResults((rs) => {
+        if (rs.some((w: any) => w?._wbFailed)) {
+          setTimeout(() => startWhiskybaseLookup(rs, hostId, setResults, undefined, 1), 2000);
+        }
+        return rs;
+      });
+    }
   })();
 }
 
@@ -7894,6 +7912,28 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 >
                   {t("labs.aiImport.addCount", "Add {{count}} Whiskies", { count: aiImportSelected.size })}
                 </button>
+                {(() => {
+                  // Der Knopf bleibt bedienbar — wer die Zusatzdaten nicht braucht,
+                  // soll nicht warten muessen. Aber die Folge muss sichtbar sein:
+                  // was jetzt noch laeuft, geht beim Hinzufuegen verloren.
+                  const pending = aiImportResults.filter(
+                    (w: any, i: number) => aiImportSelected.has(i) && (w?._wbPending || w?._pricePending),
+                  ).length;
+                  if (pending === 0) return null;
+                  return (
+                    <p
+                      className="text-[11px]"
+                      style={{ color: "var(--labs-text-muted)", margin: "6px 0 0", lineHeight: 1.4 }}
+                      data-testid="labs-ai-import-pending-hint"
+                    >
+                      {t(
+                        "labs.aiImport.stillLoadingHint",
+                        "{{count}} bottles are still being looked up. Adding now keeps them without Whiskybase link and price.",
+                        { count: pending },
+                      )}
+                    </p>
+                  );
+                })()}
               </div>
               );
             })()}
@@ -8823,6 +8863,10 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   onClick={async () => {
                     try {
                       await tastingApi.updateStatus(tastingId, "deleted", undefined, currentParticipant.id);
+                      // Ohne diese Zeile zeigt die Uebersicht das geloeschte Tasting
+                      // weiter an, bis der Cache von selbst ablaeuft — es sieht dann
+                      // aus, als haette das Loeschen nicht funktioniert.
+                      await queryClient.invalidateQueries({ queryKey: ["tastings"] });
                       navigate("/labs/tastings");
                     } catch (e: any) {
                       console.error("Delete failed:", e);

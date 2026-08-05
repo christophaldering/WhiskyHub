@@ -6441,6 +6441,7 @@ const resources = {
           cardSubtitle: "Photo, Excel, PDF or just describe it — AI fills in the details.",
           cardButton: "Import lineup",
           alsoCollection: "Also save selected bottles to my collection",
+          stillLoadingHint: "{{count}} bottles are still being looked up. Adding now keeps them without Whiskybase link and price.",
           collectionSaved: "saved to collection",
         },
         aiRefine: {
@@ -16335,6 +16336,7 @@ const resources = {
           emptyTitle: "Noch keine Whiskies.",
           orManually: "oder manuell",
           alsoCollection: "Ausgewählte Flaschen auch in meine Sammlung übernehmen",
+          stillLoadingHint: "Für {{count}} Flaschen läuft die Suche noch. Wenn du jetzt hinzufügst, bleiben sie ohne Whiskybase-Verknüpfung und Preis.",
           collectionSaved: "in Sammlung gespeichert",
         },
         aiRefine: {
