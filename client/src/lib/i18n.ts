@@ -6155,6 +6155,13 @@ const resources = {
         wbScore: "Whiskybase rating",
         rrp: "RRP",
         market: "Market",
+        wbId: "WB ID",
+        wbFetch: "Fill from Whiskybase",
+        wbLoading: "Fetching…",
+        wbNotFound: "Not found",
+        wbRateLimit: "Too many requests",
+        wbInvalid: "Invalid ID",
+        wbFailed: "Failed",
       },
       labs: {
         aiImages: {
@@ -16129,6 +16136,13 @@ const resources = {
         wbScore: "Whiskybase-Bewertung",
         rrp: "UVP",
         market: "Marktpreis",
+        wbId: "WB-ID",
+        wbFetch: "Aus Whiskybase füllen",
+        wbLoading: "Wird geholt…",
+        wbNotFound: "Nicht gefunden",
+        wbRateLimit: "Zu viele Anfragen",
+        wbInvalid: "Ungültige ID",
+        wbFailed: "Fehlgeschlagen",
       },
       labs: {
         aiImages: {

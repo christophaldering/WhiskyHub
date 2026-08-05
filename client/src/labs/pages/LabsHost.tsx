@@ -8338,125 +8338,14 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
               if (editingWhiskyId === w.id) {
                 return (
-                  <div key={w.id} className="labs-card p-4 space-y-2" data-testid={`labs-host-whisky-edit-${w.id}`}>
-                    <div className="flex gap-2 items-center mb-2">
-                      <input
-                        className="labs-input"
-                        placeholder={t("labs.host.wbPlaceholder")}
-                        value={editWbLookupId}
-                        onChange={e => { setEditWbLookupId(extractWbId(e.target.value)); setEditWbLookupResult(""); }}
-                        onKeyDown={e => { if (e.key === "Enter" && editWbLookupId.trim()) handleWbLookup(editWbLookupId, "edit"); }}
-                        style={{ width: 80, fontSize: 13, textAlign: "center" }}
-                        data-testid="labs-edit-wb-lookup-input"
-                      />
-                      <button
-                        className="labs-btn-ghost p-1.5"
-                        onClick={() => handleWbLookup(editWbLookupId, "edit")}
-                        disabled={!editWbLookupId.trim() || editWbLookupLoading}
-                        title={t("labs.host.wbLookup")}
-                        data-testid="labs-edit-wb-lookup-btn"
-                        style={{ color: editWbLookupResult === "ok" ? "var(--labs-success)" : editWbLookupResult && editWbLookupResult !== "ok" ? "var(--labs-danger)" : "var(--labs-accent)" }}
-                      >
-                        {editWbLookupLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : editWbLookupResult === "ok" ? <Check className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
-                      </button>
-                      {editWbLookupResult && editWbLookupResult !== "ok" && (
-                        <span className="text-xs" style={{ color: "var(--labs-danger)" }}>
-                          {editWbLookupResult === "not_found" ? "Not found" : editWbLookupResult === "rate_limit" ? "Rate limit" : editWbLookupResult === "invalid" ? "Invalid ID" : "Failed"}
-                        </span>
-                      )}
-                      <span className="text-xs flex-1" style={{ color: "var(--labs-text-muted)", textAlign: "right" }}>Whiskybase Lookup</span>
-                    </div>
-                    {editWbLookupId.trim() && (
-                      <div className="flex items-center gap-2" style={{ marginTop: 4, marginBottom: 4 }}>
-                        <button
-                          className="labs-btn-ghost text-xs"
-                          disabled={editWbFetchImageLoading || !editWbLookupId.trim()}
-                          onClick={async () => {
-                            setEditWbFetchImageLoading(true);
-                            setEditWbFetchImageResult("");
-                            try {
-                              const res = await fetch(`/api/whiskies/${w.id}/fetch-whiskybase-image`, {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ whiskybaseId: editWbLookupId.trim() }),
-                              });
-                              if (res.ok) {
-                                setEditWbFetchImageResult("ok");
-                                queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
-                              } else {
-                                const data = await res.json().catch(() => ({}));
-                                setEditWbFetchImageResult(data.message || "Failed");
-                              }
-                            } catch {
-                              setEditWbFetchImageResult("Network error");
-                            } finally {
-                              setEditWbFetchImageLoading(false);
-                            }
-                          }}
-                          data-testid="labs-edit-wb-fetch-image-btn"
-                          style={{
-                            display: "inline-flex", alignItems: "center", gap: 4,
-                            padding: "4px 10px", borderRadius: 6,
-                            border: `1px solid ${editWbFetchImageResult === "ok" ? "var(--labs-success)" : "var(--labs-accent)"}`,
-                            color: editWbFetchImageResult === "ok" ? "var(--labs-success)" : "var(--labs-accent)",
-                          }}
-                        >
-                          {editWbFetchImageLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : editWbFetchImageResult === "ok" ? <Check className="w-3 h-3" /> : <Image className="w-3 h-3" />}
-                          Bild von Whiskybase laden
-                        </button>
-                        {editWbFetchImageResult && editWbFetchImageResult !== "ok" && (
-                          <span className="text-xs" style={{ color: "var(--labs-danger)" }}>{editWbFetchImageResult}</span>
-                        )}
-                      </div>
-                    )}
-                    <div className="grid grid-cols-2 gap-2">
-                      <LabeledInput wrapClassName="col-span-2" placeholder={t("labs.host.fieldName")} value={editFields.name || ""} onChange={e => setEditFields({ ...editFields, name: e.target.value })} data-testid="labs-edit-whisky-name" />
-                      <LabeledInput placeholder={t("labs.host.fieldDistillery")} value={editFields.distillery || ""} onChange={e => setEditFields({ ...editFields, distillery: e.target.value })} />
-                      <LabeledInput placeholder={t("m2.host.abvLabel")} value={editFields.abv || ""} onChange={e => setEditFields({ ...editFields, abv: e.target.value })} />
-                      <LabeledInput placeholder={t("m2.host.caskTypeLabel")} value={editFields.caskType || ""} onChange={e => setEditFields({ ...editFields, caskType: e.target.value })} />
-                      <LabeledInput placeholder={t("labs.host.fieldAge")} value={editFields.age || ""} onChange={e => setEditFields({ ...editFields, age: e.target.value })} />
-                      <LabeledInput placeholder={t("labs.host.fieldCategory")} value={editFields.category || ""} onChange={e => setEditFields({ ...editFields, category: e.target.value })} />
-                      <LabeledInput placeholder={t("labs.host.fieldCountry")} value={editFields.country || ""} onChange={e => setEditFields({ ...editFields, country: e.target.value })} />
-                      <LabeledInput placeholder={t("labs.host.fieldRegion")} value={editFields.region || ""} onChange={e => setEditFields({ ...editFields, region: e.target.value })} />
-                      <LabeledInput placeholder={t("labs.host.fieldBottler")} value={editFields.bottler || ""} onChange={e => setEditFields({ ...editFields, bottler: e.target.value })} />
-                      <LabeledInput placeholder={t("labs.host.fieldDistilled")} value={editFields.distilledYear || ""} onChange={e => setEditFields({ ...editFields, distilledYear: e.target.value })} data-testid="labs-edit-distilled" />
-                      <LabeledInput placeholder={t("labs.host.fieldBottled")} value={editFields.bottledYear || ""} onChange={e => setEditFields({ ...editFields, bottledYear: e.target.value })} data-testid="labs-edit-bottled" />
-                      <LabeledInput placeholder={t("labs.host.fieldPriceEur")} value={editFields.price || ""} onChange={e => setEditFields({ ...editFields, price: e.target.value })} />
-                      <LabeledInput placeholder={t("labs.host.fieldPriceRrp", "RRP")} value={editFields.priceRrp || ""} onChange={e => setEditFields({ ...editFields, priceRrp: e.target.value })} data-testid="labs-edit-price-rrp" />
-                      <LabeledInput placeholder={t("labs.host.fieldPriceMarket", "Market price")} value={editFields.priceMarket || ""} onChange={e => setEditFields({ ...editFields, priceMarket: e.target.value })} data-testid="labs-edit-price-market" />
-                      <LabeledInput placeholder={t("labs.host.fieldPriceCurrency", "Currency (e.g. EUR)")} maxLength={3} value={editFields.priceCurrency || ""} onChange={e => setEditFields({ ...editFields, priceCurrency: e.target.value.replace(/[^a-zA-Z]/g, "").toUpperCase() })} data-testid="labs-edit-price-currency" />
-                      {!!(editFields.priceCurrency || "").trim() && !/^[A-Z]{3}$/.test((editFields.priceCurrency || "").trim()) && (
-                        <p className="text-xs col-span-2" style={{ color: "var(--labs-danger)" }} data-testid="labs-edit-price-currency-warn">{t("labs.host.currencyInvalid", "Currency must be a 3-letter code (e.g. EUR) — otherwise it won't be saved.")}</p>
-                      )}
-                      <select className="labs-input col-span-2" value={editFields.flavorProfile || "auto"} onChange={e => setEditFields({ ...editFields, flavorProfile: e.target.value })} data-testid="labs-edit-flavor-profile" style={{ fontSize: 13 }}>
-                        <option value="auto">{`${t("labs.host.flavorAuto")}${(() => { const d = detectFlavorProfile({ region: editFields.region, peatLevel: editFields.peatLevel, caskType: editFields.caskType }); const lbl = d ? FLAVOR_PROFILES.find(p => p.id === d)?.en : null; return lbl ? ` (${t("labs.host.flavorAutoDetected", { label: lbl })})` : ""; })()}`}</option>
-                        <option value="none">{t("labs.host.flavorNone")}</option>
-                        {FLAVOR_PROFILES.map(fp => <option key={fp.id} value={fp.id}>{fp.en}</option>)}
-                      </select>
-                      <LabeledTextarea wrapClassName="col-span-2" rows={2} placeholder={t("labs.host.hostSummaryPlaceholder")} value={editFields.hostSummary || ""} onChange={e => setEditFields({ ...editFields, hostSummary: e.target.value })} style={{ resize: "vertical" }} />
-                      <LabeledTextarea wrapClassName="col-span-2" rows={2} placeholder={t("labs.host.notesPlaceholder")} value={editFields.notes || ""} onChange={e => setEditFields({ ...editFields, notes: e.target.value })} style={{ resize: "vertical" }} />
-                    </div>
-                    <WhiskyImageUpload
-                      whiskyId={w.id}
-                      tastingId={tastingId}
-                      imageUrl={w.imageUrl}
-                      variant="labs"
-                      size="sm"
-                      testIdPrefix={`labs-edit-image-${w.id}`}
+                  <div key={w.id} data-testid={`labs-host-whisky-edit-${w.id}`}>
+                    <WhiskyEditForm
+                      whisky={w}
+                      saving={updateWhiskyMutation.isPending}
+                      onSave={(data) => updateWhiskyMutation.mutate({ id: w.id, data })}
+                      onCancel={() => setEditingWhiskyId(null)}
+                      onImageChanged={() => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] })}
                     />
-                    {tasting?.hostId && (
-                      <WhiskyHandoutManager
-                        whisky={w}
-                        hostId={tasting.hostId}
-                        tastingId={tastingId}
-                      />
-                    )}
-                    <div className="flex gap-2 justify-end">
-                      <button className="labs-btn-ghost text-sm" onClick={() => setEditingWhiskyId(null)}>{t("labs.host.cancel")}</button>
-                      <button className="labs-btn-primary text-sm" onClick={() => handleSaveEditWhisky(w.id)} disabled={updateWhiskyMutation.isPending} data-testid="labs-edit-whisky-save">
-                        {updateWhiskyMutation.isPending ? t("labs.host.saving") : t("labs.host.save")}
-                      </button>
-                    </div>
                   </div>
                 );
               }
