@@ -484,6 +484,75 @@ function startWhiskybaseLookup(
 // Preise (UVP + Marktpreis) im Hintergrund nachladen — gleiche Mechanik wie
 // startWhiskybaseLookup: Import bleibt schnell, Preise erscheinen nachträglich.
 let _priceLookupSeq = 0;
+export type PriceProgress = { done: number; total: number; found: number; current: string | null } | null;
+
+/**
+ * Preise fuer bereits GESPEICHERTE Whiskys nachtragen.
+ *
+ * Bewusst getrennt von der Suche im Import: eine Websuche pro Flasche dauert
+ * zehn bis zwanzig Sekunden, bei dreissig Flaschen also fast zehn Minuten. Im
+ * Import waere das eine Zumutung — man will dort weiterklicken, und wer es tut,
+ * verliert die Ergebnisse. Hier laeuft es am fertigen Lineup: nichts kann mehr
+ * verloren gehen, jeder Treffer wird sofort gespeichert, und der Gastgeber
+ * startet es selbst, wenn er es will.
+ *
+ * Streng nacheinander statt parallel — es eilt nicht, und die Websuche liefert
+ * bei einzelnen Anfragen zuverlaessigere Ergebnisse.
+ */
+async function runPriceLookupForSaved(
+  whiskies: any[],
+  hostId: string,
+  onProgress: (p: PriceProgress) => void,
+  onSaved: () => void,
+  shouldStop: () => boolean,
+): Promise<void> {
+  const open = whiskies.filter(
+    (w: any) => w?.name && w.priceRrp == null && w.priceMarket == null,
+  );
+  const total = open.length;
+  if (total === 0) { onProgress(null); return; }
+
+  let done = 0;
+  let found = 0;
+  for (const w of open) {
+    if (shouldStop()) break;
+    onProgress({ done, total, found, current: w.name });
+    try {
+      const res = await fetch(apiUrl("/api/tastings/price-lookup"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hostId,
+          items: [{
+            name: w.name,
+            distillery: w.distillery || null,
+            age: w.age || null,
+            abv: w.abv || null,
+          }],
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        const hit = Array.isArray(data?.results) ? data.results[0] : null;
+        if (hit && (hit.priceRrp != null || hit.priceMarket != null)) {
+          await whiskyApi.update(String(w.id), {
+            priceRrp: hit.priceRrp ?? null,
+            priceMarket: hit.priceMarket ?? null,
+            priceCurrency: hit.currency || hit.priceCurrency || null,
+          } as any);
+          found += 1;
+        }
+      }
+    } catch {
+      // Eine Flasche ohne Preis ist kein Grund, den Rest abzubrechen.
+    }
+    done += 1;
+    onProgress({ done, total, found, current: null });
+  }
+  onSaved();
+  onProgress(null);
+}
+
 function startPriceLookup(
   list: any[],
   hostId: string,
@@ -2102,6 +2171,8 @@ function MobileCompanion({
   const mobileAiLoadingRef = useRef(false);
   const [mobileAiResults, setMobileAiResults] = useState<any[]>([]);
   const [mobileWbProgress, setMobileWbProgress] = useState<WbProgress>(null);
+  const [mobilePriceProgress, setMobilePriceProgress] = useState<PriceProgress>(null);
+  const mobilePriceStopRef = useRef(false);
   const [mobileAiImageUrls, setMobileAiImageUrls] = useState<string[]>([]);
   const [mobileAiSelected, setMobileAiSelected] = useState<Set<number>>(new Set());
   const [mobileAiPhotoPicker, setMobileAiPhotoPicker] = useState<number | null>(null);
@@ -2357,7 +2428,6 @@ function MobileCompanion({
           setMobileAiImageUrls(urls);
           setMobileWbProgress(null);
           startWhiskybaseLookup(result.whiskies, pid, setMobileAiResults, undefined, setMobileWbProgress);
-          startPriceLookup(result.whiskies, pid, setMobileAiResults);
           const existingList = (whiskies || []) as Array<Record<string, unknown>>;
           const nonDupeIndices = new Set(
             result.whiskies.map((_: any, i: number) => i).filter((i: number) =>
@@ -3068,6 +3138,48 @@ function MobileCompanion({
                 <p className="text-xs" style={{ color: "var(--labs-danger)", margin: 0 }}>
                   {mobileWbResult === "not_found" ? "WB ID not found" : mobileWbResult === "rate_limit" ? "Too many lookups" : mobileWbResult === "invalid" ? "Invalid ID" : "Lookup failed"}
                 </p>
+              )}
+            </div>
+          )}
+
+          {whiskyCount > 0 && tasting.status !== "archived" && (
+            <div className="mb-3">
+              {mobilePriceProgress ? (
+                <>
+                  <ProgressLine
+                    label={t("labs.price.searching", "Looking up prices")}
+                    done={mobilePriceProgress.done}
+                    total={mobilePriceProgress.total}
+                    countLabel={t("labs.price.progressCount", "{{done}} of {{total}} · {{found}} found", {
+                      done: mobilePriceProgress.done, total: mobilePriceProgress.total, found: mobilePriceProgress.found,
+                    })}
+                    sub={mobilePriceProgress.current}
+                  />
+                  <button
+                    className="labs-btn-ghost text-xs"
+                    onClick={() => { mobilePriceStopRef.current = true; }}
+                    data-testid="labs-mobile-price-stop"
+                  >
+                    {t("labs.price.stop", "Stop")}
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="labs-btn-ghost text-xs"
+                  onClick={() => {
+                    mobilePriceStopRef.current = false;
+                    void runPriceLookupForSaved(
+                      (whiskies || []) as any[],
+                      pid || "",
+                      setMobilePriceProgress,
+                      () => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] }),
+                      () => mobilePriceStopRef.current,
+                    );
+                  }}
+                  data-testid="labs-mobile-price-start"
+                >
+                  {t("labs.price.start", "Look up prices")}
+                </button>
               )}
             </div>
           )}
@@ -6298,6 +6410,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const aiImportLoadingRef = useRef(false);
   const [aiImportResults, setAiImportResults] = useState<any[]>([]);
   const [wbProgress, setWbProgress] = useState<WbProgress>(null);
+  const [priceProgress, setPriceProgress] = useState<PriceProgress>(null);
+  const priceStopRef = useRef(false);
   const [aiImportImageUrls, setAiImportImageUrls] = useState<string[]>([]);
   const [aiImportSelected, setAiImportSelected] = useState<Set<number>>(new Set());
   const [aiImportLineFields, setAiImportLineFields] = useState<ImportLineField[]>(() => loadImportLineFields());
@@ -6493,7 +6607,6 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           setAiImportImageUrls(urls);
           setWbProgress(null);
           startWhiskybaseLookup(result.whiskies, currentParticipant?.id || "", setAiImportResults, undefined, setWbProgress);
-          startPriceLookup(result.whiskies, currentParticipant?.id || "", setAiImportResults);
           const existingList = (whiskies || []) as Array<Record<string, unknown>>;
           const nonDupeIndices = new Set(
             result.whiskies.map((_: any, i: number) => i).filter((i: number) =>
@@ -8214,6 +8327,48 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           </div>
         )}
 
+
+        {whiskyCount > 0 && tasting.status !== "archived" && (
+          <div className="mb-3">
+            {priceProgress ? (
+              <>
+                <ProgressLine
+                  label={t("labs.price.searching", "Looking up prices")}
+                  done={priceProgress.done}
+                  total={priceProgress.total}
+                  countLabel={t("labs.price.progressCount", "{{done}} of {{total}} · {{found}} found", {
+                    done: priceProgress.done, total: priceProgress.total, found: priceProgress.found,
+                  })}
+                  sub={priceProgress.current}
+                />
+                <button
+                  className="labs-btn-ghost text-xs"
+                  onClick={() => { priceStopRef.current = true; }}
+                  data-testid="labs-desktop-price-stop"
+                >
+                  {t("labs.price.stop", "Stop")}
+                </button>
+              </>
+            ) : (
+              <button
+                className="labs-btn-ghost text-xs"
+                onClick={() => {
+                  priceStopRef.current = false;
+                  void runPriceLookupForSaved(
+                    (whiskies || []) as any[],
+                    currentParticipant?.id || "",
+                    setPriceProgress,
+                    () => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] }),
+                    () => priceStopRef.current,
+                  );
+                }}
+                data-testid="labs-desktop-price-start"
+              >
+                {t("labs.price.start", "Look up prices")}
+              </button>
+            )}
+          </div>
+        )}
 
         {whiskyCount >= 2 && tasting.status !== "archived" && (
           <div className="mb-3">
