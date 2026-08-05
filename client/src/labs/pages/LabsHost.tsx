@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { InfoHint } from "@/labs/components/InfoHint";
+import { WhiskyEditForm } from "@/labs/components/WhiskyEditForm";
 import CooperBarrel from "@/labs/components/rating/CooperBarrel";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -3252,91 +3253,14 @@ function MobileCompanion({
                     </span>
                   )}
                   {mobileEditId === w.id ? (
-                    <div className="flex-1 space-y-1.5">
-                      <input
-                        className="labs-input w-full"
-                        value={mobileEditName}
-                        onChange={e => setMobileEditName(e.target.value)}
-                        autoFocus
-                        data-testid="mobile-edit-whisky-input"
+                    <div className="flex-1" style={{ minWidth: 0 }}>
+                      <WhiskyEditForm
+                        whisky={w}
+                        saving={updateWhiskyMut.isPending}
+                        showImage={false}
+                        onSave={(data) => updateWhiskyMut.mutate({ id: w.id, data })}
+                        onCancel={() => setMobileEditId(null)}
                       />
-                      <div className="flex gap-1.5">
-                        <input
-                          className="labs-input flex-1 min-w-0"
-                          placeholder={t("labs.host.distillery", "Distillery")}
-                          value={mobileEditFields.distillery}
-                          onChange={e => setMobileEditFields(f => ({ ...f, distillery: e.target.value }))}
-                          style={{ fontSize: 12 }}
-                          data-testid="mobile-edit-whisky-distillery"
-                        />
-                        <input
-                          className="labs-input"
-                          placeholder={t("labs.host.age", "Age")}
-                          value={mobileEditFields.age}
-                          onChange={e => setMobileEditFields(f => ({ ...f, age: e.target.value }))}
-                          style={{ width: 52, fontSize: 12, textAlign: "center" }}
-                          data-testid="mobile-edit-whisky-age"
-                        />
-                        <input
-                          className="labs-input"
-                          placeholder="ABV"
-                          inputMode="decimal"
-                          value={mobileEditFields.abv}
-                          onChange={e => setMobileEditFields(f => ({ ...f, abv: e.target.value }))}
-                          style={{ width: 58, fontSize: 12, textAlign: "center" }}
-                          data-testid="mobile-edit-whisky-abv"
-                        />
-                      </div>
-                      <div className="flex gap-1.5">
-                        <input
-                          className="labs-input flex-1 min-w-0"
-                          placeholder={t("labs.host.country", "Country")}
-                          value={mobileEditFields.country}
-                          onChange={e => setMobileEditFields(f => ({ ...f, country: e.target.value }))}
-                          style={{ fontSize: 12 }}
-                          data-testid="mobile-edit-whisky-country"
-                        />
-                        <input
-                          className="labs-input flex-1 min-w-0"
-                          placeholder={t("labs.host.region", "Region")}
-                          value={mobileEditFields.region}
-                          onChange={e => setMobileEditFields(f => ({ ...f, region: e.target.value }))}
-                          style={{ fontSize: 12 }}
-                          data-testid="mobile-edit-whisky-region"
-                        />
-                      </div>
-                      <div className="flex gap-1.5">
-                        <input
-                          className="labs-input flex-1 min-w-0"
-                          placeholder={t("labs.host.caskType", "Cask")}
-                          value={mobileEditFields.caskType}
-                          onChange={e => setMobileEditFields(f => ({ ...f, caskType: e.target.value }))}
-                          style={{ fontSize: 12 }}
-                          data-testid="mobile-edit-whisky-cask"
-                        />
-                        <input
-                          className="labs-input"
-                          placeholder={t("labs.host.bottledYear", "Bottled")}
-                          inputMode="numeric"
-                          value={mobileEditFields.bottledYear}
-                          onChange={e => setMobileEditFields(f => ({ ...f, bottledYear: e.target.value }))}
-                          style={{ width: 72, fontSize: 12, textAlign: "center" }}
-                          data-testid="mobile-edit-whisky-bottled"
-                        />
-                      </div>
-                      <div className="flex gap-1.5 justify-end">
-                        <button className="labs-btn-ghost px-2 text-xs" onClick={() => setMobileEditId(null)}>
-                          <X className="w-3 h-3" />
-                        </button>
-                        <button
-                          className="labs-btn-primary px-3 text-xs"
-                          onClick={() => updateWhiskyMut.mutate({ id: w.id, data: { name: mobileEditName, distillery: mobileEditFields.distillery, age: mobileEditFields.age, abv: normalizeAbv(mobileEditFields.abv), country: mobileEditFields.country, region: mobileEditFields.region, caskType: mobileEditFields.caskType, bottledYear: mobileEditFields.bottledYear } })}
-                          disabled={!mobileEditName.trim()}
-                          data-testid="mobile-edit-whisky-save"
-                        >
-                          {updateWhiskyMut.isPending ? "..." : <Check className="w-3 h-3" />}
-                        </button>
-                      </div>
                     </div>
                   ) : (
                     <>

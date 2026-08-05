@@ -59,6 +59,7 @@ import TastingAnalysisSection from "@/labs/components/TastingAnalysisSection";
 import TastingPersonalSection from "@/labs/components/TastingPersonalSection";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
+import { WhiskyEditForm } from "@/labs/components/WhiskyEditForm";
 import { getTastingPhase, isResultDownloadsPhase, RESULT_DOWNLOAD_KINDS } from "@/labs/utils/tastingPhase";
 import type { Tasting, WhiskyFriend } from "@shared/schema";
 import QRCode from "qrcode";
@@ -204,84 +205,6 @@ function QuickChip({ icon: Icon, label, onClick, testId }: {
       <Icon className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
       <span className="text-xs font-semibold truncate" style={{ color: "var(--labs-text)" }}>{label}</span>
     </button>
-  );
-}
-
-function InlineWhiskyEdit({ whisky, onSave, onCancel, onImageChanged }: {
-  whisky: Record<string, unknown>;
-  onSave: (data: Record<string, unknown>) => void;
-  onCancel: () => void;
-  onImageChanged?: () => void;
-}) {
-  const { t } = useTranslation();
-  const [name, setName] = useState((whisky.name as string) || "");
-  const [distillery, setDistillery] = useState((whisky.distillery as string) || "");
-  const [country, setCountry] = useState((whisky.country as string) || "");
-  const [age, setAge] = useState((whisky.age as string) || "");
-  const [abv, setAbv] = useState(whisky.abv != null ? String(whisky.abv) : "");
-
-  return (
-    <div className="labs-card p-3 space-y-2" data-testid={`labs-detail-whisky-edit-${whisky.id}`}>
-      <WhiskyImageUpload
-        whiskyId={whisky.id as string}
-        imageUrl={(whisky.imageUrl as string | null) ?? null}
-        onImageUploaded={() => onImageChanged?.()}
-        onImageDeleted={() => onImageChanged?.()}
-      />
-      <input
-        className="labs-input w-full text-sm"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder={t("tastingDetail.namePlaceholder")}
-        data-testid={`input-whisky-name-${whisky.id}`}
-      />
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-        <input
-          className="labs-input text-sm"
-          value={distillery}
-          onChange={(e) => setDistillery(e.target.value)}
-          placeholder={t("tastingDetail.distilleryPlaceholder")}
-          data-testid={`input-whisky-distillery-${whisky.id}`}
-        />
-        <input
-          className="labs-input text-sm"
-          value={country}
-          onChange={(e) => setCountry(e.target.value)}
-          placeholder={t("tastingDetail.countryPlaceholder", "Country")}
-          data-testid={`input-whisky-country-${whisky.id}`}
-        />
-        <input
-          className="labs-input text-sm"
-          value={age}
-          onChange={(e) => setAge(e.target.value)}
-          placeholder={t("tastingDetail.agePlaceholder")}
-          data-testid={`input-whisky-age-${whisky.id}`}
-        />
-        <input
-          className="labs-input text-sm"
-          value={abv}
-          onChange={(e) => setAbv(e.target.value)}
-          placeholder={t("tastingDetail.abvPlaceholder")}
-          data-testid={`input-whisky-abv-${whisky.id}`}
-        />
-      </div>
-      <div className="flex gap-2 justify-end">
-        <button className="labs-btn-ghost text-xs" onClick={onCancel} data-testid={`button-whisky-cancel-${whisky.id}`}>{t("ui.cancel")}</button>
-        <button
-          className="labs-btn-primary text-xs px-3"
-          onClick={() => onSave({
-            name: name.trim() || undefined,
-            distillery: distillery.trim() || null,
-            country: country.trim() || null,
-            age: age.trim() || null,
-            abv: abv.trim() ? parseFloat(abv) : null,
-          })}
-          data-testid={`button-whisky-save-${whisky.id}`}
-        >
-          {t("ui.save")}
-        </button>
-      </div>
-    </div>
   );
 }
 
@@ -1094,32 +1017,15 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
             </header>
 
             {isHost && isDraft && showAddWhisky && (
-              <div className="labs-card p-3 mb-3 flex gap-2" data-testid="labs-detail-add-whisky-form">
-                <input
-                  className="labs-input flex-1 text-sm"
-                  value={newWhiskyName}
-                  onChange={(e) => setNewWhiskyName(e.target.value)}
-                  placeholder={t("tastingDetail.whiskyNamePlaceholder")}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && newWhiskyName.trim()) {
-                      addWhiskyMutation.mutate({ tastingId, name: newWhiskyName.trim(), sortOrder: whiskyCount });
-                    }
-                  }}
-                  data-testid="input-add-whisky-name"
-                  autoFocus
+              <div className="mb-3" data-testid="labs-detail-add-whisky-form">
+                <WhiskyEditForm
+                  whisky={{}}
+                  saving={addWhiskyMutation.isPending}
+                  onSave={(data) =>
+                    addWhiskyMutation.mutate({ ...data, tastingId, sortOrder: whiskyCount } as any)
+                  }
+                  onCancel={() => setShowAddWhisky(false)}
                 />
-                <button
-                  className="labs-btn-primary text-xs px-3"
-                  disabled={!newWhiskyName.trim() || addWhiskyMutation.isPending}
-                  onClick={() => {
-                    if (newWhiskyName.trim()) {
-                      addWhiskyMutation.mutate({ tastingId, name: newWhiskyName.trim(), sortOrder: whiskyCount });
-                    }
-                  }}
-                  data-testid="button-add-whisky"
-                >
-                  {addWhiskyMutation.isPending ? "..." : t("ui.add")}
-                </button>
               </div>
             )}
 
@@ -1149,7 +1055,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                         style={{ padding: 12, gridColumn: "1 / -1" }}
                         data-testid={`labs-detail-whisky-edit-${wid}`}
                       >
-                        <InlineWhiskyEdit
+                        <WhiskyEditForm
                           whisky={w}
                           onSave={(data) => updateWhiskyMutation.mutate({ id: wid, data })}
                           onCancel={() => setEditingWhiskyId(null)}
