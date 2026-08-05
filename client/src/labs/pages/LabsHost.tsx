@@ -278,6 +278,35 @@ function whiskybaseUrlFor(w: any): string {
 let _wbLookupSeq = 0;
 export type WbProgress = { done: number; total: number; found: number; current: string | null } | null;
 
+/** Schlichter Fortschrittsbalken. Wird fuer die Bildanalyse und die
+ *  Whiskybase-Suche gleichermassen benutzt, damit beide Wartezeiten
+ *  gleich aussehen und gleich lesbar sind. */
+function ProgressLine({
+  label, done, total, sub, countLabel,
+}: { label: string; done: number; total: number; sub?: string | null; countLabel?: string }) {
+  if (total <= 0) return null;
+  const pct = Math.max(0, Math.min(100, Math.round((done / total) * 100)));
+  return (
+    <div style={{ margin: "8px 0 12px" }} data-testid="progress-line">
+      <div className="flex items-center justify-between" style={{ marginBottom: 4, gap: 8 }}>
+        <span className="text-[11px]" style={{ color: "var(--labs-text-secondary)", minWidth: 0 }}>{label}</span>
+        <span className="text-[11px]" style={{ color: "var(--labs-text-muted)", flexShrink: 0 }}>{countLabel ?? `${done}/${total}`}</span>
+      </div>
+      <div style={{ height: 4, borderRadius: 2, background: "var(--labs-border)", overflow: "hidden" }}>
+        <div style={{ width: `${pct}%`, height: "100%", background: "var(--labs-accent)", transition: "width 260ms ease" }} />
+      </div>
+      {sub && (
+        <div
+          className="text-[11px]"
+          style={{ color: "var(--labs-text-muted)", marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+        >
+          {sub}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** Fortschritt der Whiskybase-Suche. Zeigt bewusst auch die Trefferzahl:
  *  wer nach zwanzig Flaschen erst drei Treffer sieht, weiss frueh, woran er ist. */
 function WbProgressBar({ progress, t }: { progress: WbProgress; t: TFunction }) {
@@ -2806,15 +2835,24 @@ function MobileCompanion({
                 >
                   {mobileAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : mobileAiFiles.some(isExcelFile) ? <Upload className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
                   {mobileAiLoading
-                    ? (mobileAiProgress
-                        ? t("labs.aiImport.batchProgress", "Analyzing… batch {{done}} of {{total}}", { done: Math.min(mobileAiProgress.done + 1, mobileAiProgress.total), total: mobileAiProgress.total })
-                        : t("labs.host.importingEllipsis"))
+                    ? t("labs.host.analyzingEllipsis", "Analysing…")
                     : mobileAiFiles.some(isExcelFile) ? t("labs.host.importExcel") : t("labs.host.analyze")}
                 </button>
                 {mobileAiLoading && mobileAiProgress && (
-                  <div className="text-[11px] text-center" style={{ color: "var(--labs-text-muted)" }} data-testid="mobile-ai-import-progress">
-                    {t("labs.aiImport.progressHint", "{{count}} photos are being analyzed in batches — this can take a few minutes.", { count: mobileAiFiles.filter(isImageFile).length })}
-                  </div>
+                  <ProgressLine
+                    label={t("labs.aiImport.analyzingPhotos", "Reading labels")}
+                    done={mobileAiProgress.done}
+                    total={mobileAiProgress.total}
+                    countLabel={t("labs.aiImport.photosProgress", "{{done}} of {{total}} photos", {
+                      // In Fotos rechnen, nicht in Paketen: wie die Software ihre
+                      // Arbeit intern aufteilt, geht niemanden etwas an.
+                      done: Math.min(
+                        Math.round((mobileAiProgress.done / Math.max(1, mobileAiProgress.total)) * mobileAiFiles.length),
+                        mobileAiFiles.length,
+                      ),
+                      total: mobileAiFiles.length,
+                    })}
+                  />
                 )}
 
                 {mobileAiError && (
@@ -7844,16 +7882,23 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               >
                 {aiImportLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : aiImportFiles.some(isExcelFile) ? <Upload className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
                 {aiImportLoading
-                  ? (aiImportProgress
-                      ? t("labs.aiImport.batchProgress", "Analyzing… batch {{done}} of {{total}}", { done: Math.min(aiImportProgress.done + 1, aiImportProgress.total), total: aiImportProgress.total })
-                      : t("labs.host.importingEllipsis"))
+                  ? t("labs.host.analyzingEllipsis", "Analysing…")
                   : aiImportFiles.some(isExcelFile) ? t("labs.host.importExcel") : t("labs.host.analyze")}
               </button>
             </div>
             {aiImportLoading && aiImportProgress && (
-              <div className="text-[11px] mt-2 text-right" style={{ color: "var(--labs-text-muted)" }} data-testid="labs-ai-import-progress">
-                {t("labs.aiImport.progressHint", "{{count}} photos are being analyzed in batches — this can take a few minutes.", { count: aiImportFiles.filter(isImageFile).length })}
-              </div>
+              <ProgressLine
+                label={t("labs.aiImport.analyzingPhotos", "Reading labels")}
+                done={aiImportProgress.done}
+                total={aiImportProgress.total}
+                countLabel={t("labs.aiImport.photosProgress", "{{done}} of {{total}} photos", {
+                  done: Math.min(
+                    Math.round((aiImportProgress.done / Math.max(1, aiImportProgress.total)) * aiImportFiles.length),
+                    aiImportFiles.length,
+                  ),
+                  total: aiImportFiles.length,
+                })}
+              />
             )}
 
             {aiImportError && (
