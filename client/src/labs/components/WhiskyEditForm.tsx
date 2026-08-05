@@ -74,6 +74,42 @@ export function WhiskyEditForm({
   const [peatLevel, setPeatLevel] = useState(str(whisky.peatLevel));
   const [notes, setNotes] = useState(str(whisky.notes));
 
+  // Whiskybase-ID eingeben und die Felder daraus fuellen. Frueher gab es das
+  // nur im Desktop-Cockpit — der einzige Grund, warum dort ein eigenes
+  // Formular stehenbleiben musste.
+  const [wbLookupId, setWbLookupId] = useState("");
+  const [wbLookupState, setWbLookupState] = useState<"" | "loading" | "not_found" | "rate_limit" | "invalid" | "failed">("");
+
+  const runWbLookup = async () => {
+    const raw = wbLookupId.trim().replace(/^[Ww][Bb]\s*/i, "");
+    const cleaned = raw.match(/whiskies\/whisky\/(\d+)/)?.[1] ?? raw;
+    if (!/^\d+$/.test(cleaned)) { setWbLookupState("invalid"); return; }
+    setWbLookupState("loading");
+    try {
+      const res = await fetch(`/api/whiskybase-lookup/${encodeURIComponent(cleaned)}`);
+      if (!res.ok) {
+        setWbLookupState(res.status === 429 ? "rate_limit" : res.status === 400 ? "invalid" : "not_found");
+        return;
+      }
+      const d = await res.json();
+      // Vorhandenes NICHT ueberschreiben: was der Gastgeber selbst eingetragen
+      // hat, wiegt schwerer als ein Katalogwert.
+      if (d.name && !name.trim()) setName(d.name);
+      if (d.distillery && !distillery.trim()) setDistillery(d.distillery);
+      if (d.country && !country.trim()) setCountry(d.country);
+      if (d.region && !region.trim()) setRegion(d.region);
+      if (d.age && !age.trim()) setAge(String(d.age));
+      if (d.abv && !abv.trim()) setAbv(String(d.abv));
+      if (d.bottler && !bottler.trim()) setBottler(d.bottler);
+      if (d.caskType && !caskType.trim()) setCaskType(d.caskType);
+      if (d.peatLevel && !peatLevel.trim()) setPeatLevel(d.peatLevel);
+      setWbLookupState("");
+      setDetailsOpen(true);
+    } catch {
+      setWbLookupState("failed");
+    }
+  };
+
   // Bei neuen Flaschen zu, bei bestehenden ebenfalls — wer korrigieren will,
   // klappt gezielt auf. Ausnahme: wenn schon Details da sind, ist es
   // irrefuehrend, sie zu verstecken.
@@ -152,6 +188,38 @@ export function WhiskyEditForm({
       <div className="flex gap-2">
         {field(country, setCountry, t("whiskyForm.country", "Country"), "whisky-edit-country")}
         {field(region, setRegion, t("whiskyForm.region", "Region"), "whisky-edit-region")}
+      </div>
+
+      <div className="flex gap-2 items-center">
+        <input
+          className="labs-input text-sm"
+          style={{ width: 110 }}
+          value={wbLookupId}
+          onChange={(e) => { setWbLookupId(e.target.value); setWbLookupState(""); }}
+          onKeyDown={(e) => { if (e.key === "Enter") void runWbLookup(); }}
+          placeholder={t("whiskyForm.wbId", "WB-ID")}
+          inputMode="numeric"
+          data-testid="whisky-edit-wb-id"
+        />
+        <button
+          type="button"
+          className="labs-btn-ghost text-xs"
+          onClick={() => void runWbLookup()}
+          disabled={wbLookupState === "loading" || !wbLookupId.trim()}
+          data-testid="whisky-edit-wb-fetch"
+        >
+          {wbLookupState === "loading"
+            ? t("whiskyForm.wbLoading", "Fetching…")
+            : t("whiskyForm.wbFetch", "Fill from Whiskybase")}
+        </button>
+        {wbLookupState && wbLookupState !== "loading" && (
+          <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }} data-testid="whisky-edit-wb-state">
+            {wbLookupState === "not_found" && t("whiskyForm.wbNotFound", "Not found")}
+            {wbLookupState === "rate_limit" && t("whiskyForm.wbRateLimit", "Too many requests")}
+            {wbLookupState === "invalid" && t("whiskyForm.wbInvalid", "Invalid ID")}
+            {wbLookupState === "failed" && t("whiskyForm.wbFailed", "Failed")}
+          </span>
+        )}
       </div>
 
       <button
