@@ -1,124 +1,139 @@
 /**
- * Einfacher Lookup-Cache fuer Whiskybase-Suchergebnisse.
+ * Gedaechtnis fuer die Whiskybase-Suche.
  *
- * Treffer werden 30 Tage gehalten, Nichttreffer nur 7 — eine Flasche, die
- * heute nicht auf Whiskybase steht, kann naechsten Monat dort stehen.
- * Technische Fehlschlaege (failed=true) werden nicht gecacht, damit ein
- * vorueber-gehender Serverfehler nicht dauerhaft eine Flasche blockiert.
+ * Die Websuche ist der teuerste und langsamste Teil des Imports — und sie
+ * wiederholt sich staendig: dieselben Standardabfuellungen tauchen in jedem
+ * zweiten Tasting auf. Einmal gefunden, sollte eine Flasche nie wieder gesucht
+ * werden muessen.
+ *
+ * Nichttreffer werden ebenfalls vermerkt, aber nur kurz. Eine Flasche, die
+ * heute niemand erfasst hat, kann naechsten Monat auf Whiskybase stehen — ein
+ * dauerhaftes "gibt es nicht" waere falsch.
  */
 
 import { db } from "./db";
 import { whiskybaseLookupCache } from "@shared/schema";
-import { inArray } from "drizzle-orm";
+import { inArray, sql } from "drizzle-orm";
 import type { WbLookupItem, WbLookupOutcome } from "./whiskybase-unified";
 
-const TTL_FOUND_MS = 30 * 24 * 60 * 60 * 1000;   // 30 Tage
-const TTL_NOT_FOUND_MS = 7 * 24 * 60 * 60 * 1000; // 7 Tage
-
-function makeKey(item: WbLookupItem): string {
-  const name = String(item.name || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-  const dist = String(item.distillery || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-  return dist ? `${name}||${dist}` : name;
-}
+/** Treffer bleiben ein Vierteljahr gueltig, Nichttreffer eine Woche. */
+const HIT_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+const MISS_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
- * Liest gecachte Ergebnisse fuer eine Liste von Suchitems.
- * Gibt eine Map<Position, WbLookupOutcome> zurueck — nur Positionen mit
- * gueltigen, noch nicht abgelaufenen Cache-Eintraegen sind enthalten.
+ * Suchschluessel. Bewusst grob normalisiert, damit "Ardbeg 10 Years" und
+ * "ardbeg 10 years old" denselben Eintrag treffen — aber mit Alkoholstaerke,
+ * weil sie bei Einzelfaessern oft das einzige unterscheidende Merkmal ist.
  */
+export function cacheKeyFor(item: WbLookupItem): string {
+  const parts = [item.name, item.distillery, item.abv]
+    .filter(Boolean)
+    .map((v) =>
+      String(v)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim(),
+    )
+    .filter((v) => v.length > 0);
+  return parts.join("|");
+}
+
+function isFresh(updatedAt: Date | string | null, notFound: boolean): boolean {
+  if (!updatedAt) return false;
+  const ts = updatedAt instanceof Date ? updatedAt.getTime() : new Date(updatedAt).getTime();
+  if (!Number.isFinite(ts)) return false;
+  return Date.now() - ts < (notFound ? MISS_TTL_MS : HIT_TTL_MS);
+}
+
+/** Liefert fuer die uebergebenen Flaschen alles, was noch frisch im Speicher liegt. */
 export async function readFromCache(
   items: WbLookupItem[],
 ): Promise<Map<number, WbLookupOutcome>> {
-  const result = new Map<number, WbLookupOutcome>();
-  if (items.length === 0) return result;
+  const out = new Map<number, WbLookupOutcome>();
+  if (items.length === 0) return out;
 
-  const keys = items.map(makeKey);
+  const keys = items.map(cacheKeyFor);
+  const unique = Array.from(new Set(keys.filter((k) => k.length > 0)));
+  if (unique.length === 0) return out;
+
   let rows: any[] = [];
   try {
-    rows = await db
-      .select()
-      .from(whiskybaseLookupCache)
-      .where(inArray(whiskybaseLookupCache.queryKey, keys));
+    rows = await db.select().from(whiskybaseLookupCache).where(inArray(whiskybaseLookupCache.queryKey, unique));
   } catch {
-    return result;
+    return out;
   }
 
-  const byKey = new Map(rows.map((r) => [r.queryKey, r]));
-  const now = Date.now();
+  const byKey = new Map<string, any>();
+  for (const r of rows) byKey.set(r.queryKey, r);
 
-  items.forEach((item, pos) => {
-    const row = byKey.get(keys[pos]);
-    if (!row) return;
-    const ttl = row.notFound ? TTL_NOT_FOUND_MS : TTL_FOUND_MS;
-    if (now - new Date(row.updatedAt).getTime() > ttl) return; // abgelaufen
-    result.set(pos, {
-      whiskybaseId: row.whiskybaseId ?? null,
-      whiskybaseUrl: row.whiskybaseUrl ?? null,
-      wbScore: row.wbScore ?? null,
-      distilledYear: row.distilledYear ?? null,
-      bottledYear: row.bottledYear ?? null,
-      caskType: row.caskType ?? null,
-      abv: row.abv ?? null,
-      age: row.age ?? null,
+  keys.forEach((k, i) => {
+    const r = byKey.get(k);
+    if (!r || !isFresh(r.updatedAt, r.notFound)) return;
+    // Ein gespeicherter Nichttreffer wird als "nicht gefunden" durchgereicht,
+    // NICHT als Fehlschlag — sonst wuerde das UI zum Wiederholen auffordern.
+    out.set(i, {
+      whiskybaseId: r.whiskybaseId,
+      whiskybaseUrl: r.whiskybaseUrl,
+      wbScore: r.wbScore,
+      distilledYear: r.distilledYear,
+      bottledYear: r.bottledYear,
+      caskType: r.caskType,
+      abv: r.abv,
+      age: r.age,
       failed: false,
-    });
+    } as WbLookupOutcome);
   });
-
-  return result;
+  return out;
 }
 
 /**
- * Schreibt frische Suchergebnisse in den Cache.
- * Technische Fehlschlaege (outcome.failed === true) werden uebersprungen.
- * Wird fire-and-forget aufgerufen (void).
+ * Schreibt Ergebnisse fort. Echte Fehlschlaege (Zeitueberschreitung) werden
+ * bewusst NICHT gespeichert — sonst wuerde ein einmaliger Aussetzer eine
+ * Flasche eine Woche lang blockieren.
  */
 export async function writeToCache(
   items: WbLookupItem[],
   outcomes: WbLookupOutcome[],
 ): Promise<void> {
-  const toWrite = items
-    .map((item, pos) => ({ item, outcome: outcomes[pos] }))
-    .filter(({ outcome }) => outcome && !outcome.failed);
-
-  if (toWrite.length === 0) return;
+  const rows = items
+    .map((item, i) => ({ item, o: outcomes[i], key: cacheKeyFor(item) }))
+    .filter(({ o, key }) => o && !o.failed && key.length > 0)
+    .map(({ o, key }) => ({
+      queryKey: key,
+      whiskybaseId: o.whiskybaseId ?? null,
+      whiskybaseUrl: o.whiskybaseUrl ?? null,
+      wbScore: o.wbScore ?? null,
+      distilledYear: o.distilledYear ?? null,
+      bottledYear: o.bottledYear ?? null,
+      caskType: o.caskType ?? null,
+      abv: o.abv ?? null,
+      age: o.age ?? null,
+      notFound: !o.whiskybaseId,
+      updatedAt: new Date(),
+    }));
+  if (rows.length === 0) return;
 
   try {
-    for (const { item, outcome } of toWrite) {
-      const key = makeKey(item);
-      await db
-        .insert(whiskybaseLookupCache)
-        .values({
-          queryKey: key,
-          whiskybaseId: outcome.whiskybaseId,
-          whiskybaseUrl: outcome.whiskybaseUrl,
-          wbScore: outcome.wbScore,
-          distilledYear: outcome.distilledYear,
-          bottledYear: outcome.bottledYear,
-          caskType: outcome.caskType,
-          abv: outcome.abv,
-          age: outcome.age,
-          notFound: !outcome.whiskybaseId,
-          updatedAt: new Date(),
-        })
-        .onConflictDoUpdate({
-          target: whiskybaseLookupCache.queryKey,
-          set: {
-            whiskybaseId: outcome.whiskybaseId,
-            whiskybaseUrl: outcome.whiskybaseUrl,
-            wbScore: outcome.wbScore,
-            distilledYear: outcome.distilledYear,
-            bottledYear: outcome.bottledYear,
-            caskType: outcome.caskType,
-            abv: outcome.abv,
-            age: outcome.age,
-            notFound: !outcome.whiskybaseId,
-            updatedAt: new Date(),
-          },
-        });
-    }
-  } catch (err) {
-    // Cache-Fehler sind nicht fatal — die Suche hat ihre Ergebnisse bereits
-    // zurueckgegeben; ein fehlgeschlagener Schreibvorgang ist kein Problem.
-    console.warn("[wb-cache] writeToCache failed:", err);
+    await db
+      .insert(whiskybaseLookupCache)
+      .values(rows)
+      .onConflictDoUpdate({
+        target: whiskybaseLookupCache.queryKey,
+        set: {
+          whiskybaseId: sql`excluded.whiskybase_id`,
+          whiskybaseUrl: sql`excluded.whiskybase_url`,
+          wbScore: sql`excluded.wb_score`,
+          distilledYear: sql`excluded.distilled_year`,
+          bottledYear: sql`excluded.bottled_year`,
+          caskType: sql`excluded.cask_type`,
+          abv: sql`excluded.abv`,
+          age: sql`excluded.age`,
+          notFound: sql`excluded.not_found`,
+          updatedAt: sql`excluded.updated_at`,
+        },
+      });
+  } catch {
+    // Der Speicher ist Beschleunigung, kein Zweck. Faellt er aus, laeuft der
+    // Import unveraendert weiter — nur eben ohne Gedaechtnis.
   }
 }
