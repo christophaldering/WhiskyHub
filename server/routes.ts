@@ -21191,6 +21191,12 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
       const cleaned = items.map((it: any) => ({
         name: String(it?.name || "").trim().slice(0, 200),
         distillery: it?.distillery ? String(it.distillery).slice(0, 100) : null,
+        // Merkmale aus der Bildanalyse mitgeben — sie unterscheiden zwischen
+        // "irgendein Ledaig 24" und genau der Flasche auf dem Etikett.
+        age: it?.age ? String(it.age).slice(0, 20) : null,
+        abv: it?.abv ? String(it.abv).slice(0, 20) : null,
+        caskType: it?.caskType ? String(it.caskType).slice(0, 100) : null,
+        bottledYear: it?.bottledYear ? String(it.bottledYear).slice(0, 10) : null,
       }));
       if (cleaned.some((it) => !it.name)) {
         return res.status(400).json({ message: "each item needs a name" });
@@ -21200,7 +21206,7 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
         baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
       });
       const { lookupWhiskiesOnWb } = await import("./whiskybase-unified");
-      const outcomes = await lookupWhiskiesOnWb(openai, cleaned, { timeoutMs: 60000 });
+      const outcomes = await lookupWhiskiesOnWb(openai, cleaned, { timeoutMs: 90000 });
       const results = outcomes.map((o) => ({
         whiskybaseId: o.whiskybaseId,
         whiskybaseUrl: o.whiskybaseUrl,

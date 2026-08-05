@@ -11,6 +11,13 @@ export const WHISKYBASE_URL_PREFIX =
 export interface WbLookupItem {
   name: string;
   distillery?: string | null;
+  /** Zusaetzliche Merkmale aus der Bildanalyse. Sie schaerfen die Suche
+   *  erheblich: "Ledaig 24" findet vieles, "Ledaig 24, 53.5%, Cask 207"
+   *  genau eine Flasche. */
+  age?: string | null;
+  abv?: string | null;
+  caskType?: string | null;
+  bottledYear?: string | null;
 }
 
 export interface WbLookupOutcome {
@@ -110,6 +117,12 @@ For each whisky, find its Whiskybase page and extract:
 - abv: alcohol percentage as shown (e.g. "57.1"), null if unknown
 - age: age statement in years (e.g. "14"), or "NAS", null if unknown
 
+SEARCH STRATEGY:
+- Start with a site-restricted search: site:whiskybase.com followed by distillery, age and any cask number.
+- Independent bottlings are often listed under the DISTILLERY name, not the bottler's series name. If "Cask Hound Bowmore 2000" finds nothing, try "Bowmore 2000" plus the ABV.
+- A cask number in the name (e.g. "Cask #207") is the strongest identifier — always include it.
+- If the first search fails, try a second one with fewer terms before giving up.
+
 CRITICAL RULES:
 - ONLY report values you actually found on a Whiskybase page — NEVER guess
 - If multiple bottlings match, pick the one with the highest score or most ratings
@@ -119,7 +132,16 @@ CRITICAL RULES:
   const user = `Find each whisky on Whiskybase.com and extract the data fields.
 
 Items:
-${items.map((m, i) => `${i + 1}. name="${m.name}"${m.distillery ? `, distillery="${m.distillery}"` : ""}`).join("\n")}
+${items.map((m, i) => {
+  const extra = [
+    m.distillery ? `distillery="${m.distillery}"` : "",
+    m.age ? `age="${m.age}"` : "",
+    m.abv ? `abv="${m.abv}"` : "",
+    m.caskType ? `cask="${m.caskType}"` : "",
+    m.bottledYear ? `bottled="${m.bottledYear}"` : "",
+  ].filter(Boolean).join(", ");
+  return `${i + 1}. name="${m.name}"${extra ? `, ${extra}` : ""}`;
+}).join("\n")}
 
 Return JSON exactly:
 {"results":[{"index":<int>,"whiskybaseId":"<string|null>","wbScore":<number|null>,"distilledYear":"<string|null>","bottledYear":"<string|null>","caskType":"<string|null>","abv":"<string|null>","age":"<string|null>"}]}`;
