@@ -276,100 +276,151 @@ function whiskybaseUrlFor(w: any): string {
 // bleibt schnell, die Links erscheinen nachträglich. onlyIndex begrenzt die
 // Suche auf eine einzelne Zeile (Wiederholen-Knopf nach Timeout).
 let _wbLookupSeq = 0;
+export type WbProgress = { done: number; total: number; found: number; current: string | null } | null;
+
+/** Fortschritt der Whiskybase-Suche. Zeigt bewusst auch die Trefferzahl:
+ *  wer nach zwanzig Flaschen erst drei Treffer sieht, weiss frueh, woran er ist. */
+function WbProgressBar({ progress, t }: { progress: WbProgress; t: TFunction }) {
+  if (!progress || progress.total === 0) return null;
+  const pct = Math.round((progress.done / progress.total) * 100);
+  return (
+    <div style={{ margin: "8px 0 12px" }} data-testid="wb-progress">
+      <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
+        <span className="text-[11px]" style={{ color: "var(--labs-text-secondary)" }}>
+          {t("labs.aiImport.wbSearching", "Searching Whiskybase")}
+        </span>
+        <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
+          {t("labs.aiImport.wbProgressCount", "{{done}} of {{total}} · {{found}} found", {
+            done: progress.done,
+            total: progress.total,
+            found: progress.found,
+          })}
+        </span>
+      </div>
+      <div style={{ height: 4, borderRadius: 2, background: "var(--labs-border)", overflow: "hidden" }}>
+        <div
+          style={{
+            width: `${pct}%`,
+            height: "100%",
+            background: "var(--labs-accent)",
+            transition: "width 260ms ease",
+          }}
+        />
+      </div>
+      {progress.current && (
+        <div
+          className="text-[11px]"
+          style={{
+            color: "var(--labs-text-muted)",
+            marginTop: 4,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {progress.current}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Whiskybase-Suche, Flasche fuer Flasche.
+ *
+ * Frueher gingen alle Flaschen in Vierergruppen und alle Gruppen gleichzeitig
+ * los. Das hatte zwei Folgen: ein Fehlschlag riss immer vier Flaschen mit, und
+ * bei dreissig Flaschen liefen acht Modellaufrufe parallel — genug, um in
+ * Ratenbegrenzungen zu laufen. Beides zusammen ergab das Muster "die ersten
+ * vier fehlen, dann geht es wieder".
+ *
+ * Jetzt: eine Anfrage pro Flasche, hoechstens drei gleichzeitig. Faellt eine
+ * aus, faellt nur diese aus. Und der Fortschritt ist zaehlbar, statt dass man
+ * minutenlang auf einen Ladekreis sieht.
+ */
 function startWhiskybaseLookup(
   list: any[],
   hostId: string,
   setResults: (updater: (rs: any[]) => any[]) => void,
   onlyIndex?: number,
-  attempt: number = 0,
+  onProgress?: (p: WbProgress) => void,
 ) {
-  // Request-scoped und index-basiert: gleichnamige Flaschen und überlappende
-  // Requests bleiben so korrekt zugeordnet (kein Name-Matching mehr).
   const reqId = `wb-${++_wbLookupSeq}-${Date.now()}`;
   const missing = list
     .map((w: any, i: number) => ({ i, name: (w?.name || "").trim() }))
     .filter((m) => m.name && !whiskybaseUrlFor(list[m.i]) && (onlyIndex == null || m.i === onlyIndex))
-    // Zweiter Anlauf: nur die Zeilen, die beim ersten Mal wirklich gescheitert
-    // sind. Nicht gefundene Flaschen (kein Treffer, aber kein Fehler) werden
-    // NICHT erneut versucht — die findet auch der zweite Anlauf nicht.
-    .filter((m) => attempt === 0 || list[m.i]?._wbFailed === true)
     .slice(0, 60);
-  // Auch ohne fehlende IDs kann es Zeilen geben, die schon eine ID mitbringen
-  // (aus Handout/Excel) und noch keinen Score haben.
-  if (missing.length === 0) { return; }
+  if (missing.length === 0) { onProgress?.(null); return; }
+
   const missingIdx = new Set(missing.map((m) => m.i));
   setResults((rs) => rs.map((w, idx) => {
     if (!missingIdx.has(idx)) return w;
     const { _wbFailed, ...rest } = w || {};
     return { ...rest, _wbPending: reqId, _wbIdx: idx };
   }));
-  (async () => {
-    let results: any[] | null = null;
-    let transportFailed = false;
-    try {
-      const res = await fetch(apiUrl("/api/tastings/wb-lookup"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          hostId,
-          items: missing.map((m) => ({ name: m.name, distillery: list[m.i]?.distillery || null })),
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json().catch(() => null);
-        if (Array.isArray(data?.results)) results = data.results;
-        else transportFailed = true;
-      } else {
-        transportFailed = true;
-      }
-    } catch {
-      transportFailed = true;
-    }
-    const byIdx = new Map<number, {
-      whiskybaseId: string | null;
-      whiskybaseUrl: string | null;
-      failed?: boolean;
-      wbScore?: number | null;
-      distilledYear?: number | null;
-      bottledYear?: number | null;
-      caskType?: string | null;
-      abv?: number | null;
-      age?: string | number | null;
-    }>();
-    if (results) {
-      missing.forEach((m, i) => { const r = results![i]; if (r) byIdx.set(m.i, r); });
-    }
-    // Nur Zeilen dieses Requests anfassen — fremde/neuere Lookups bleiben unberührt.
-    setResults((rs) => rs.map((w) => {
-      if (w?._wbPending !== reqId) return w;
-      const { _wbPending, _wbIdx, ...rest } = w;
-      const hit = typeof _wbIdx === "number" ? byIdx.get(_wbIdx) : undefined;
-      if (hit?.whiskybaseId) return {
-        ...rest,
-        whiskybaseId: hit.whiskybaseId,
-        whiskybaseUrl: hit.whiskybaseUrl,
-        ...(hit.wbScore != null ? { wbScore: hit.wbScore } : {}),
-        ...(hit.distilledYear ? { distilledYear: hit.distilledYear } : {}),
-        ...(hit.bottledYear ? { bottledYear: hit.bottledYear } : {}),
-        ...(hit.caskType ? { caskType: hit.caskType } : {}),
-        ...(hit.abv ? { abv: hit.abv } : {}),
-        ...(hit.age ? { age: hit.age } : {}),
-      };
-      return (transportFailed || hit?.failed) ? { ...rest, _wbFailed: true } : rest;
-    }));
 
-    // Ein automatischer zweiter Anlauf fuer die Ausreisser. Fehlschlaege haengen
-    // erfahrungsgemaess an Last, nicht an den Daten: beim manuellen Nachstossen
-    // fanden sich dieselben Flaschen anstandslos. Ohne das muesste der Gastgeber
-    // selbst merken, dass neun von einunddreissig Flaschen leer geblieben sind.
-    if (attempt === 0 && onlyIndex == null) {
-      setResults((rs) => {
-        if (rs.some((w: any) => w?._wbFailed)) {
-          setTimeout(() => startWhiskybaseLookup(rs, hostId, setResults, undefined, 1), 2000);
+  (async () => {
+    const queue = [...missing];
+    const total = missing.length;
+    let done = 0;
+    let found = 0;
+
+    const applyOne = (idx: number, hit: any, failed: boolean) => {
+      setResults((rs) => rs.map((w) => {
+        if (w?._wbPending !== reqId || w?._wbIdx !== idx) return w;
+        const { _wbPending, _wbIdx, ...rest } = w;
+        if (hit?.whiskybaseId) return {
+          ...rest,
+          whiskybaseId: hit.whiskybaseId,
+          whiskybaseUrl: hit.whiskybaseUrl,
+          ...(hit.wbScore != null ? { wbScore: hit.wbScore } : {}),
+          ...(hit.distilledYear ? { distilledYear: hit.distilledYear } : {}),
+          ...(hit.bottledYear ? { bottledYear: hit.bottledYear } : {}),
+          ...(hit.caskType ? { caskType: hit.caskType } : {}),
+          ...(hit.abv ? { abv: hit.abv } : {}),
+          ...(hit.age ? { age: hit.age } : {}),
+        };
+        return failed ? { ...rest, _wbFailed: true } : rest;
+      }));
+    };
+
+    const worker = async () => {
+      while (queue.length > 0) {
+        const m = queue.shift();
+        if (!m) break;
+        onProgress?.({ done, total, found, current: m.name });
+        let hit: any = null;
+        let failed = false;
+        try {
+          const res = await fetch(apiUrl("/api/tastings/wb-lookup"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              hostId,
+              items: [{ name: m.name, distillery: list[m.i]?.distillery || null }],
+            }),
+          });
+          if (res.ok) {
+            const data = await res.json().catch(() => null);
+            hit = Array.isArray(data?.results) ? data.results[0] : null;
+            if (!hit || hit.failed) failed = true;
+          } else {
+            failed = true;
+          }
+        } catch {
+          failed = true;
         }
-        return rs;
-      });
-    }
+        done += 1;
+        if (hit?.whiskybaseId) found += 1;
+        applyOne(m.i, hit, failed);
+        onProgress?.({ done, total, found, current: null });
+      }
+    };
+
+    // Drei gleichzeitig: schnell genug, um bei dreissig Flaschen nicht zu
+    // langweilen, und zurueckhaltend genug, um nicht in Limits zu laufen.
+    await Promise.all([worker(), worker(), worker()]);
+    onProgress?.(null);
   })();
 }
 
@@ -1994,6 +2045,7 @@ function MobileCompanion({
   const [mobileAiProgress, setMobileAiProgress] = useState<{ done: number; total: number } | null>(null);
   const mobileAiLoadingRef = useRef(false);
   const [mobileAiResults, setMobileAiResults] = useState<any[]>([]);
+  const [mobileWbProgress, setMobileWbProgress] = useState<WbProgress>(null);
   const [mobileAiImageUrls, setMobileAiImageUrls] = useState<string[]>([]);
   const [mobileAiSelected, setMobileAiSelected] = useState<Set<number>>(new Set());
   const [mobileAiPhotoPicker, setMobileAiPhotoPicker] = useState<number | null>(null);
@@ -2241,7 +2293,8 @@ function MobileCompanion({
           assignPhotosFromSource(result.whiskies, urls);
           setMobileAiResults(result.whiskies);
           setMobileAiImageUrls(urls);
-          startWhiskybaseLookup(result.whiskies, pid, setMobileAiResults);
+          setMobileWbProgress(null);
+          startWhiskybaseLookup(result.whiskies, pid, setMobileAiResults, undefined, setMobileWbProgress);
           startPriceLookup(result.whiskies, pid, setMobileAiResults);
           const existingList = (whiskies || []) as Array<Record<string, unknown>>;
           const nonDupeIndices = new Set(
@@ -2774,6 +2827,7 @@ function MobileCompanion({
                   const nonDupeCount = mobileAiResults.length - dupeIndices.size;
                   return (
                   <div className="space-y-2 mt-1">
+                    <WbProgressBar progress={mobileWbProgress} t={t} />
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>
                         {t("labs.aiImport.found", "Found {{count}}", { count: mobileAiResults.length })}
@@ -2854,7 +2908,7 @@ function MobileCompanion({
                               type="button"
                               className="text-[11px] underline inline-flex items-center gap-1 text-left"
                               style={{ color: "var(--labs-warning, #f59e0b)", minHeight: 44 }}
-                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); startWhiskybaseLookup(mobileAiResults, pid, setMobileAiResults, i); }}
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); startWhiskybaseLookup(mobileAiResults, pid, setMobileAiResults, i, setMobileWbProgress); }}
                               data-testid={`mobile-ai-wb-retry-${i}`}
                             >
                               <RefreshCw className="w-3 h-3 flex-shrink-0" />
@@ -6135,6 +6189,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const [aiImportProgress, setAiImportProgress] = useState<{ done: number; total: number } | null>(null);
   const aiImportLoadingRef = useRef(false);
   const [aiImportResults, setAiImportResults] = useState<any[]>([]);
+  const [wbProgress, setWbProgress] = useState<WbProgress>(null);
   const [aiImportImageUrls, setAiImportImageUrls] = useState<string[]>([]);
   const [aiImportSelected, setAiImportSelected] = useState<Set<number>>(new Set());
   const [aiImportLineFields, setAiImportLineFields] = useState<ImportLineField[]>(() => loadImportLineFields());
@@ -6328,7 +6383,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           assignPhotosFromSource(result.whiskies, urls);
           setAiImportResults(result.whiskies);
           setAiImportImageUrls(urls);
-          startWhiskybaseLookup(result.whiskies, currentParticipant?.id || "", setAiImportResults);
+          setWbProgress(null);
+          startWhiskybaseLookup(result.whiskies, currentParticipant?.id || "", setAiImportResults, undefined, setWbProgress);
           startPriceLookup(result.whiskies, currentParticipant?.id || "", setAiImportResults);
           const existingList = (whiskies || []) as Array<Record<string, unknown>>;
           const nonDupeIndices = new Set(
@@ -7773,6 +7829,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               const nonDupeCount = aiImportResults.length - dupeIndices.size;
               return (
               <div className="space-y-2 mt-3">
+                <WbProgressBar progress={wbProgress} t={t} />
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>
                     {t("labs.aiImport.found", "Found {{count}}", { count: aiImportResults.length })}
@@ -7870,7 +7927,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                           type="button"
                           className="text-[11px] underline inline-flex items-center gap-1 text-left"
                           style={{ color: "var(--labs-warning, #f59e0b)", minHeight: 44 }}
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); startWhiskybaseLookup(aiImportResults, currentParticipant?.id || "", setAiImportResults, i); }}
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); startWhiskybaseLookup(aiImportResults, currentParticipant?.id || "", setAiImportResults, i, setWbProgress); }}
                           data-testid={`labs-ai-wb-retry-${i}`}
                         >
                           <RefreshCw className="w-3 h-3 flex-shrink-0" />
