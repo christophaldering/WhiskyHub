@@ -344,6 +344,7 @@ function startWhiskybaseLookup(
   setResults: (updater: (rs: any[]) => any[]) => void,
   onlyIndex?: number,
   onProgress?: (p: WbProgress) => void,
+  attempt: number = 0,
 ) {
   const reqId = `wb-${++_wbLookupSeq}-${Date.now()}`;
   const missing = list
@@ -397,7 +398,14 @@ function startWhiskybaseLookup(
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               hostId,
-              items: [{ name: m.name, distillery: list[m.i]?.distillery || null }],
+              items: [{
+                name: m.name,
+                distillery: list[m.i]?.distillery || null,
+                age: list[m.i]?.age || null,
+                abv: list[m.i]?.abv || null,
+                caskType: list[m.i]?.caskType || list[m.i]?.cask || null,
+                bottledYear: list[m.i]?.bottledYear || null,
+              }],
             }),
           });
           if (res.ok) {
@@ -420,6 +428,25 @@ function startWhiskybaseLookup(
     // Drei gleichzeitig: schnell genug, um bei dreissig Flaschen nicht zu
     // langweilen, und zurueckhaltend genug, um nicht in Limits zu laufen.
     await Promise.all([worker(), worker(), worker()]);
+
+    // Echte Fehlschlaege (Zeitueberschreitung, Transportfehler) einmal
+    // automatisch nachholen. Nicht gefundene Flaschen bleiben unberuehrt —
+    // die findet auch ein zweiter Anlauf nicht.
+    if (attempt === 0 && onlyIndex == null) {
+      setResults((rs) => {
+        const retryIdx = rs
+          .map((w: any, i: number) => (w?._wbFailed ? i : -1))
+          .filter((i) => i >= 0);
+        if (retryIdx.length > 0) {
+          setTimeout(() => {
+            for (const idx of retryIdx) {
+              startWhiskybaseLookup(rs, hostId, setResults, idx, undefined, 1);
+            }
+          }, 1500);
+        }
+        return rs;
+      });
+    }
     onProgress?.(null);
   })();
 }
@@ -2066,7 +2093,13 @@ function MobileCompanion({
   };
   const [mobileEditId, setMobileEditId] = useState<string | null>(null);
   const [mobileEditName, setMobileEditName] = useState("");
-  const [mobileEditFields, setMobileEditFields] = useState<{ distillery: string; age: string; abv: string }>({ distillery: "", age: "", abv: "" });
+  // Vollstaendig statt nur Name/Destillerie/Alter/ABV: nach dem Import stehen
+  // Region, Land, Fasstyp und Jahrgang in den Daten — wer nachbessern will,
+  // muss sie auch sehen und aendern koennen.
+  const [mobileEditFields, setMobileEditFields] = useState<{
+    distillery: string; age: string; abv: string;
+    country: string; region: string; caskType: string; bottledYear: string;
+  }>({ distillery: "", age: "", abv: "", country: "", region: "", caskType: "", bottledYear: "" });
   const [mobileShowPicker, setMobileShowPicker] = useState(false);
   const [mobileAiToCollection, setMobileAiToCollection] = useState(false);
   const [mobileLineFields, setMobileLineFields] = useState<ImportLineField[]>(() => loadImportLineFields());
@@ -3102,13 +3135,50 @@ function MobileCompanion({
                           data-testid="mobile-edit-whisky-abv"
                         />
                       </div>
+                      <div className="flex gap-1.5">
+                        <input
+                          className="labs-input flex-1 min-w-0"
+                          placeholder={t("labs.host.country", "Country")}
+                          value={mobileEditFields.country}
+                          onChange={e => setMobileEditFields(f => ({ ...f, country: e.target.value }))}
+                          style={{ fontSize: 12 }}
+                          data-testid="mobile-edit-whisky-country"
+                        />
+                        <input
+                          className="labs-input flex-1 min-w-0"
+                          placeholder={t("labs.host.region", "Region")}
+                          value={mobileEditFields.region}
+                          onChange={e => setMobileEditFields(f => ({ ...f, region: e.target.value }))}
+                          style={{ fontSize: 12 }}
+                          data-testid="mobile-edit-whisky-region"
+                        />
+                      </div>
+                      <div className="flex gap-1.5">
+                        <input
+                          className="labs-input flex-1 min-w-0"
+                          placeholder={t("labs.host.caskType", "Cask")}
+                          value={mobileEditFields.caskType}
+                          onChange={e => setMobileEditFields(f => ({ ...f, caskType: e.target.value }))}
+                          style={{ fontSize: 12 }}
+                          data-testid="mobile-edit-whisky-cask"
+                        />
+                        <input
+                          className="labs-input"
+                          placeholder={t("labs.host.bottledYear", "Bottled")}
+                          inputMode="numeric"
+                          value={mobileEditFields.bottledYear}
+                          onChange={e => setMobileEditFields(f => ({ ...f, bottledYear: e.target.value }))}
+                          style={{ width: 72, fontSize: 12, textAlign: "center" }}
+                          data-testid="mobile-edit-whisky-bottled"
+                        />
+                      </div>
                       <div className="flex gap-1.5 justify-end">
                         <button className="labs-btn-ghost px-2 text-xs" onClick={() => setMobileEditId(null)}>
                           <X className="w-3 h-3" />
                         </button>
                         <button
                           className="labs-btn-primary px-3 text-xs"
-                          onClick={() => updateWhiskyMut.mutate({ id: w.id, data: { name: mobileEditName, distillery: mobileEditFields.distillery, age: mobileEditFields.age, abv: normalizeAbv(mobileEditFields.abv) } })}
+                          onClick={() => updateWhiskyMut.mutate({ id: w.id, data: { name: mobileEditName, distillery: mobileEditFields.distillery, age: mobileEditFields.age, abv: normalizeAbv(mobileEditFields.abv), country: mobileEditFields.country, region: mobileEditFields.region, caskType: mobileEditFields.caskType, bottledYear: mobileEditFields.bottledYear } })}
                           disabled={!mobileEditName.trim()}
                           data-testid="mobile-edit-whisky-save"
                         >
@@ -3134,7 +3204,7 @@ function MobileCompanion({
                           {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ") || t("labs.host.noAdditionalDetails")}
                         </p>
                       </div>
-                      <button className="labs-btn-ghost p-1" onClick={() => { setMobileEditId(w.id); setMobileEditName(w.name || ""); setMobileEditFields({ distillery: w.distillery || "", age: w.age || "", abv: w.abv != null ? String(w.abv) : "" }); }} data-testid={`mobile-edit-whisky-${w.id}`}>
+                      <button className="labs-btn-ghost p-1" onClick={() => { setMobileEditId(w.id); setMobileEditName(w.name || ""); setMobileEditFields({ distillery: w.distillery || "", age: w.age || "", abv: w.abv != null ? String(w.abv) : "", country: w.country || "", region: w.region || "", caskType: w.caskType || "", bottledYear: w.bottledYear != null ? String(w.bottledYear) : "" }); }} data-testid={`mobile-edit-whisky-${w.id}`}>
                         <Pencil className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} />
                       </button>
                       <button className="labs-btn-ghost p-1" onClick={() => deleteWhiskyMut.mutate(w.id)} data-testid={`mobile-delete-whisky-${w.id}`}>
