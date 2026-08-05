@@ -1827,6 +1827,34 @@ export const historicalTastingEntriesBakCurveV2 = pgTable("historical_tasting_en
   normalizedTotal: real("normalized_total"),
 });
 
+/**
+ * Gedaechtnis der Whiskybase-Suche.
+ *
+ * Ohne diese Tabelle startet jede Suche bei null: zwei Gastgeber mit demselben
+ * Ardbeg 10 loesen zwei getrennte Websuchen aus, und wer ein Tasting dupliziert,
+ * sucht alles noch einmal. Mit ihr wird jede Flasche genau einmal im Netz
+ * gesucht — danach kommt sie sofort.
+ *
+ * Auch Nichttreffer werden vermerkt, allerdings kurzlebiger: eine Flasche, die
+ * heute nicht auf Whiskybase steht, kann naechsten Monat dort stehen.
+ */
+export const whiskybaseLookupCache = pgTable("whiskybase_lookup_cache", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  /** Normalisierter Suchschluessel aus Name + Destillerie. */
+  queryKey: text("query_key").notNull().unique(),
+  whiskybaseId: text("whiskybase_id"),
+  whiskybaseUrl: text("whiskybase_url"),
+  wbScore: real("wb_score"),
+  distilledYear: text("distilled_year"),
+  bottledYear: text("bottled_year"),
+  caskType: text("cask_type"),
+  abv: text("abv"),
+  age: text("age"),
+  /** true = beim letzten Versuch nichts gefunden (kuerzere Haltbarkeit). */
+  notFound: boolean("not_found").notNull().default(false),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const AUTO_HANDOUT_CHAPTER_TYPES = {
   distillery: [
     { id: "steckbrief", title: "Steckbrief" },

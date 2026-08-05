@@ -21217,10 +21217,27 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
         console.log(`[wb-lookup] ${fromCollection.size}/${cleaned.length} aus eigener Sammlung, ${openIdx.length} via Websuche`);
       }
 
+      // Zweite Vorstufe: was schon einmal gesucht wurde, kommt aus dem Speicher.
+      const { readFromCache, writeToCache } = await import("./whiskybase-cache");
+      const openItems = openIdx.map((i) => cleaned[i]);
+      const cached = await readFromCache(openItems).catch(() => new Map<number, any>());
+      const stillOpenPos = openItems.map((_, p) => p).filter((p) => !cached.has(p));
+      if (cached.size > 0) {
+        console.log(`[wb-lookup] ${cached.size}/${openItems.length} aus Speicher, ${stillOpenPos.length} neu zu suchen`);
+      }
+
       const { lookupWhiskiesOnWb } = await import("./whiskybase-unified");
-      const webOutcomes = openIdx.length > 0
-        ? await lookupWhiskiesOnWb(openai, openIdx.map((i) => cleaned[i]), { timeoutMs: 90000 })
+      const freshOutcomes = stillOpenPos.length > 0
+        ? await lookupWhiskiesOnWb(openai, stillOpenPos.map((p) => openItems[p]), { timeoutMs: 90000 })
         : [];
+      void writeToCache(stillOpenPos.map((p) => openItems[p]), freshOutcomes);
+
+      const webOutcomes = openItems.map((_, p) => {
+        const c = cached.get(p);
+        if (c) return c;
+        const pos = stillOpenPos.indexOf(p);
+        return pos >= 0 ? freshOutcomes[pos] : { whiskybaseId: null, whiskybaseUrl: null, wbScore: null, distilledYear: null, bottledYear: null, caskType: null, abv: null, age: null, failed: true };
+      });
       const outcomes = cleaned.map((_, i) => {
         const hit = fromCollection.get(i);
         if (hit) return hit;
