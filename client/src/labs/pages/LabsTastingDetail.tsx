@@ -1088,6 +1088,15 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                           onCancel={() => setEditingWhiskyId(null)}
                           onImageChanged={() => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] })}
                         />
+                        <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--labs-border)" }}>
+                          <PriceAgentButton
+                            whiskyId={wid}
+                            whiskyName={(w.name as string) || `#${i + 1}`}
+                            agentLog={(w as any).priceAgentLog}
+                            agentCost={(w as any).priceAgentCost}
+                            onSaved={() => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] })}
+                          />
+                        </div>
                       </div>
                     );
                   }
@@ -1145,13 +1154,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                             padding: 2,
                           }}
                         >
-                          <PriceAgentButton
-                            whiskyId={wid}
-                            whiskyName={wName || `#${i + 1}`}
-                            agentLog={(w as any).priceAgentLog}
-                            agentCost={(w as any).priceAgentCost}
-                            onSaved={() => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] })}
-                          />
                           <button
                             type="button"
                             className="labs-btn-ghost"

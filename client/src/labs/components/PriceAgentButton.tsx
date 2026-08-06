@@ -118,7 +118,7 @@ export function PriceAgentButton({ whiskyId, whiskyName, agentLog, agentCost, on
     return (
       <div className="labs-card" style={{ padding: "8px 12px", marginTop: 6, fontSize: 12, display: "flex", alignItems: "center", gap: 8 }} data-testid={`price-agent-running-${whiskyId}`}>
         <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--labs-accent)", flexShrink: 0 }} />
-        <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+        <span style={{ minWidth: 0, flex: 1, lineHeight: 1.4 }}>
           {progress
             ? `${t("priceAgent.stepOf", "Schritt")} ${progress.step}/${progress.maxSteps} · ${stationLabel(progress.station)}${progress.note ? ` — ${progress.note}` : ""}`
             : t("priceAgent.starting", "Tiefensuche startet…")}
@@ -161,20 +161,24 @@ export function PriceAgentButton({ whiskyId, whiskyName, agentLog, agentCost, on
     );
   }
 
-  // phase === "idle": nur das Symbol, plus dezenter Hinweis auf einen frueheren Lauf
+  // phase === "idle": beschrifteter Knopf im aufgeklappten Bearbeiten-Bereich.
+  // Ein frueherer Lauf zeigt seine Kosten dezent daneben.
   return (
     <button
       type="button"
       className="labs-btn-ghost"
-      style={{ padding: 4, display: "inline-flex" }}
+      style={{ padding: "6px 10px", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12 }}
       onClick={() => setPhase("confirm")}
-      title={agentLog
-        ? `${t("priceAgent.title", "Tiefensuche")}${agentCost != null ? ` · ${t("priceAgent.lastRun", "letzter Lauf")} ${Number(agentCost).toFixed(2)} €` : ""}`
-        : t("priceAgent.title", "Tiefensuche")}
       aria-label={t("priceAgent.title", "Tiefensuche")}
       data-testid={`button-price-agent-${whiskyId}`}
     >
-      <Telescope className="w-3 h-3" style={{ color: agentLog ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />
+      <Telescope className="w-3.5 h-3.5" style={{ color: agentLog ? "var(--labs-accent)" : "var(--labs-text-muted)", flexShrink: 0 }} />
+      <span>{t("priceAgent.title", "Tiefensuche")}</span>
+      {agentLog && agentCost != null && (
+        <span style={{ color: "var(--labs-text-muted)", fontSize: 11 }}>
+          · {t("priceAgent.lastRun", "letzter Lauf")} {Number(agentCost).toFixed(2)} €
+        </span>
+      )}
     </button>
   );
 }
