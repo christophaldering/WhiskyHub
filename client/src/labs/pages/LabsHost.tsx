@@ -9245,12 +9245,37 @@ export async function runChunkedAiImport(
   const total = chunks.length;
   const merged: any = { whiskies: [], tastingMeta: {}, imageUrls: [], failedImages: 0, source: "ai" };
   let firstError: Error | null = null;
+  // Zwei Pakete gleichzeitig: halbiert die Wartezeit, ohne bei schwachem
+  // Mobilfunk zu kippen. Ergebnisse werden erst gesammelt und dann in
+  // PAKET-REIHENFOLGE zusammengesetzt — die Foto-Zuordnung rechnet mit
+  // fortlaufenden Bild-Indizes und darf nicht durcheinandergeraten.
+  const rawResults: any[] = new Array(total).fill(null);
+  let done = 0;
+  const queue = Array.from({ length: total }, (_, i) => i);
+  const worker = async () => {
+    while (queue.length > 0) {
+      const i = queue.shift();
+      if (i == null) break;
+      const chunkFiles = i === 0 ? [...others, ...chunks[i]] : chunks[i];
+      const chunkText = i === 0 ? text : "";
+      try {
+        rawResults[i] = await tastingApi.aiImport(chunkFiles, chunkText, hostId);
+      } catch (e) {
+        rawResults[i] = { __chunkError: e };
+      }
+      done += 1;
+      onProgress?.(done, total);
+    }
+  };
+  await Promise.all([worker(), worker()]);
   for (let i = 0; i < total; i++) {
-    onProgress?.(i, total);
-    const chunkFiles = i === 0 ? [...others, ...chunks[i]] : chunks[i];
-    const chunkText = i === 0 ? text : "";
+    const r = rawResults[i];
+    if (r && r.__chunkError) {
+      merged.failedImages += chunks[i].length;
+      if (!firstError) firstError = r.__chunkError instanceof Error ? r.__chunkError : new Error(String(r.__chunkError));
+      continue;
+    }
     try {
-      const r = await tastingApi.aiImport(chunkFiles, chunkText, hostId);
       if (Array.isArray(r?.whiskies)) {
         // Herkunftsfoto-Index vom Server ist pro Anfrage 0-basiert ->
         // um die bereits gesammelten Bilder dieses Gesamt-Imports verschieben.
@@ -9267,11 +9292,9 @@ export async function runChunkedAiImport(
       }
       if (Array.isArray(r?.imageUrls)) merged.imageUrls.push(...r.imageUrls);
       if (typeof r?.failedImages === "number") merged.failedImages += r.failedImages;
-    } catch (e) {
-      // Teilpaket-Fehler nicht verschlucken: Fotos zählen als fehlgeschlagen,
-      // und ohne jedes Ergebnis wird der erste Fehler durchgereicht.
+    } catch {
+      // Merge-Fehler eines Einzelpakets: als fehlgeschlagen zaehlen.
       merged.failedImages += chunks[i].length;
-      if (!firstError) firstError = e instanceof Error ? e : new Error(String(e));
     }
   }
   onProgress?.(total, total);

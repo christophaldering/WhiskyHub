@@ -69,9 +69,7 @@ export function SmartImportPanel({
       const whiskies: any[] = Array.isArray(result?.whiskies) ? result.whiskies : [];
       setResults(whiskies);
       setSelected(new Set(whiskies.map((_: any, i: number) => i)));
-      if (whiskies.length > 0) {
-        startWhiskybaseLookup(whiskies, hostId, setResults, undefined, setWbProgress);
-      }
+      // Whiskybase-Suche startet bewusst NICHT automatisch — nur per Knopf.
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -215,6 +213,15 @@ export function SmartImportPanel({
             total: files.length,
           })}
         />
+      )}
+      {results.length > 0 && !wbProgress && (
+        <button
+          className="labs-btn-ghost text-xs"
+          onClick={() => startWhiskybaseLookup(results, hostId, setResults, undefined, setWbProgress)}
+          data-testid="smart-import-wb-start"
+        >
+          {t("labs.wbSaved.start", "Whiskybase lookup")}
+        </button>
       )}
       <WbProgressBar progress={wbProgress} t={t} />
       {error && (
