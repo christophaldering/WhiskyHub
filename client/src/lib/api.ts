@@ -34,6 +34,10 @@ export function authHeaderValue(): string | null {
   return getSessionToken() || getParticipantId();
 }
 
+export function getSessionAuthValue(): string | null {
+  return authHeaderValue();
+}
+
 // SECURITY (H-01, Stufe 3b): Globaler fetch-Interceptor. Setzt für /api-Aufrufe den
 // x-participant-id-Header auf das Sitzungs-Token, sobald eines vorhanden ist. Dadurch
 // senden ALLE Aufrufstellen (auch die verstreuten Inline-Header) automatisch das Token,

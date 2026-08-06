@@ -63,6 +63,7 @@ import { WhiskyEditForm } from "@/labs/components/WhiskyEditForm";
 import { SmartImportPanel } from "@/labs/components/SmartImportPanel";
 import { LineupLookupTools } from "@/labs/components/LineupLookupTools";
 import { AiRefinePanel } from "@/labs/pages/LabsHost";
+import { PriceAgentButton } from "@/labs/components/PriceAgentButton";
 import { getTastingPhase, isResultDownloadsPhase, RESULT_DOWNLOAD_KINDS } from "@/labs/utils/tastingPhase";
 import type { Tasting, WhiskyFriend } from "@shared/schema";
 import QRCode from "qrcode";
@@ -1144,6 +1145,13 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                             padding: 2,
                           }}
                         >
+                          <PriceAgentButton
+                            whiskyId={wid}
+                            whiskyName={wName || `#${i + 1}`}
+                            agentLog={(w as any).priceAgentLog}
+                            agentCost={(w as any).priceAgentCost}
+                            onSaved={() => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] })}
+                          />
                           <button
                             type="button"
                             className="labs-btn-ghost"
