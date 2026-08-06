@@ -64,7 +64,9 @@ Respond with JSON exactly in this shape (one entry per item, in the same order):
 {"results":[{"index":<int>,"rrp":<number|null>,"market":<number|null>,"currency":<string|null>,"rrpSource":<string|null>,"marketSource":<string|null>}]}\n\nrrpSource/marketSource: the shop or site name where you found each price (e.g. "whiskybase.com", "The Whisky Exchange"). null if not found.`;
 
   const call = client.responses.create({
-    model: process.env.AI_INTEGRATIONS_OPENAI_MODEL || "gpt-5-mini",
+    // Eigene Variable: die Preissuche braucht das staerkste Modell, waehrend
+    // andere Integrationen bewusst auf dem guenstigeren mini laufen duerfen.
+    model: process.env.AI_PRICE_LOOKUP_MODEL || "gpt-5",
     tools: [{ type: "web_search" }],
     input: [
       { role: "system", content: sys },
@@ -80,11 +82,23 @@ Respond with JSON exactly in this shape (one entry per item, in the same order):
   const res = await Promise.race([call, timeout]);
   const text = res.output_text || "";
   const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) return out;
+  if (!jsonMatch) {
+    console.warn("[price-lookup] keine JSON-Antwort. Anfang:", text.slice(0, 300));
+    return out;
+  }
   let parsedJson: unknown;
-  try { parsedJson = JSON.parse(jsonMatch[0]); } catch { return out; }
+  try {
+    parsedJson = JSON.parse(jsonMatch[0]);
+  } catch (e: any) {
+    console.warn("[price-lookup] JSON unlesbar:", e?.message, "Anfang:", jsonMatch[0].slice(0, 300));
+    return out;
+  }
   const parsed = priceSchema.safeParse(parsedJson);
-  if (!parsed.success) return out;
+  if (!parsed.success) {
+    console.warn("[price-lookup] Schema passt nicht:", JSON.stringify(parsed.error.issues).slice(0, 300));
+    return out;
+  }
+  console.log("[price-lookup] Antwort ausgewertet:", parsed.data.results.length, "Eintraege fuer", items.length, "Flaschen");
   for (const r of parsed.data.results) {
     if (r.index >= 1 && r.index <= items.length) {
       const rrp = typeof r.rrp === "number" && isFinite(r.rrp) && r.rrp > 0 ? Math.round(r.rrp * 100) / 100 : null;

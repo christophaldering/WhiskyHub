@@ -21337,8 +21337,9 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
         baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
       });
       const { lookupPrices } = await import("./price-lookup");
-      // 60s pro Paket: die Websuche braucht mehrere Sekunden pro Whisky.
-      const results = await lookupPrices(openai, cleaned, { timeoutMs: 60000 });
+      // 180s pro Paket: hartnaeckige Suche oeffnet mehrere Shop-Seiten; mit
+      // 60s starben genau die seltenen Abfuellungen, die man am ehesten sucht.
+      const results = await lookupPrices(openai, cleaned, { timeoutMs: 180000 });
       return res.json({ results });
     } catch (e: any) {
       console.error("[price-lookup] failed:", e);
