@@ -162,6 +162,10 @@ export function WhiskyEditForm({
     });
   };
 
+  // Dauerhafte Beschriftung ueber jedem Feld: Platzhalter allein
+  // verschwinden, sobald ein Wert drinsteht — dann ist "67" nicht mehr
+  // als Alkoholgehalt erkennbar. Die Beschriftung wird aus dem
+  // placeholder abgeleitet, damit die Aufrufstellen unveraendert bleiben.
   const field = (
     value: string,
     setter: (v: string) => void,
@@ -169,15 +173,25 @@ export function WhiskyEditForm({
     testId: string,
     extra?: { numeric?: boolean; width?: number },
   ) => (
-    <input
-      className="labs-input text-sm"
-      style={{ minWidth: 0, ...(extra?.width ? { width: extra.width } : { flex: 1 }) }}
-      value={value}
-      onChange={(e) => setter(e.target.value)}
-      placeholder={placeholder}
-      inputMode={extra?.numeric ? "decimal" : undefined}
-      data-testid={testId}
-    />
+    <label
+      style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2, ...(extra?.width ? { width: extra.width } : { flex: 1 }) }}
+    >
+      <span
+        className="text-[10px]"
+        style={{ color: "var(--labs-text-muted)", letterSpacing: "0.02em", lineHeight: 1.2 }}
+      >
+        {placeholder}
+      </span>
+      <input
+        className="labs-input text-sm"
+        style={{ minWidth: 0, width: "100%" }}
+        value={value}
+        onChange={(e) => setter(e.target.value)}
+        placeholder={placeholder}
+        inputMode={extra?.numeric ? "decimal" : undefined}
+        data-testid={testId}
+      />
+    </label>
   );
 
   return (
