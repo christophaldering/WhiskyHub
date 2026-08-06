@@ -2645,7 +2645,7 @@ function MobileCompanion({
                   data-testid="mobile-add-whisky-toggle"
                 >
                   <X className="w-3 h-3" />
-                  Close
+                  {t("labs.aiImport.close", "Close")}
                 </button>
               ) : (
                 <button
@@ -2830,7 +2830,8 @@ function MobileCompanion({
                 >
                   <Upload className="w-6 h-6" style={{ color: "var(--labs-accent)", opacity: 0.75 }} />
                   <p className="text-xs text-center" style={{ color: "var(--labs-text-secondary)" }}>
-                    Drop photos, PDFs, Excel or files here
+                    {t("labs.host.dropFiles", "Drop photos, PDFs, Excel or files here")}
+                    <InfoHint text={t("labs.aiImport.uploadHint")} testId="mobile-upload-hint" />
                   </p>
                   <a
                     href="/CaskSense_Whisky_Import_Template.xlsx"
@@ -2841,17 +2842,17 @@ function MobileCompanion({
                     data-testid="mobile-download-excel-template"
                   >
                     <Download className="w-3 h-3 inline mr-0.5" />
-                    Download Excel Template
+                    {t("labs.host.downloadTemplate", "Download Excel Template")}
                   </a>
                   <div className="flex gap-2">
                     <label className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer flex items-center gap-1.5" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none" }}>
                       <Camera className="w-3 h-3" />
-                      Camera
+                      {t("labs.host.camera", "Camera")}
                       <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={e => { if (e.target.files) setMobileAiFiles(prev => appendAiFilesCapped(prev, Array.from(e.target.files!), t)); }} />
                     </label>
                     <label className="labs-btn-ghost text-xs cursor-pointer flex items-center gap-1.5">
                       <Upload className="w-3 h-3" />
-                      Browse
+                      {t("labs.host.browse", "Browse")}
                       <input type="file" accept="image/*,.pdf,.doc,.docx,.csv,.txt,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple style={{ display: "none" }} onChange={e => { if (e.target.files) setMobileAiFiles(prev => appendAiFilesCapped(prev, Array.from(e.target.files!), t)); }} />
                     </label>
                   </div>
@@ -7852,12 +7853,12 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 data-testid="desktop-download-excel-template"
               >
                 <Download className="w-3 h-3 inline mr-0.5" />
-                Download Excel Template
+                {t("labs.host.downloadTemplate", "Download Excel Template")}
               </a>
               <div className="flex gap-2 mt-1">
                 <label className="labs-btn-ghost text-xs cursor-pointer">
                   <Camera className="w-3 h-3 inline mr-1" />
-                  Camera
+                  {t("labs.host.camera", "Camera")}
                   <input
                     type="file"
                     accept="image/*"
@@ -7868,7 +7869,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 </label>
                 <label className="labs-btn-ghost text-xs cursor-pointer">
                   <Upload className="w-3 h-3 inline mr-1" />
-                  Browse
+                  {t("labs.host.browse", "Browse")}
                   <input
                     type="file"
                     accept="image/*,.pdf,.doc,.docx,.csv,.txt,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -9016,7 +9017,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   }}
                   data-testid="labs-desktop-confirm-delete"
                 >
-                  Yes, Delete
+                  {t("labs.host.yesDelete", "Yes, Delete")}
                 </button>
                 <button
                   className="flex-1 py-2.5 text-sm rounded-lg cursor-pointer"
