@@ -2698,16 +2698,19 @@ function MobileCompanion({
             <p className="labs-section-label mb-0">Whiskies ({whiskyCount})</p>
             <div className="flex items-center gap-1">
             {whiskyCount > 0 && (
-              <button
-                className="labs-btn-ghost flex items-center gap-1 text-xs"
-                onClick={handleMobileLineupExport}
-                disabled={mobileLineupExporting}
-                title={t("hostUi.exportLineup", "Export lineup as Excel")}
-                data-testid="mobile-lineup-export-btn"
-              >
-                {mobileLineupExporting ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSpreadsheet className="w-3 h-3" />}
-                {t("hostUi.exportLineupShort", "Excel")}
-              </button>
+              <>
+                <button
+                  className="labs-btn-ghost flex items-center gap-1 text-xs"
+                  onClick={handleMobileLineupExport}
+                  disabled={mobileLineupExporting}
+                  title={t("hostUi.exportLineup", "Export lineup as Excel")}
+                  data-testid="mobile-lineup-export-btn"
+                >
+                  {mobileLineupExporting ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSpreadsheet className="w-3 h-3" />}
+                  {t("hostUi.exportLineupShort", "Excel")}
+                </button>
+                <InfoHint text={t("labs.aiImport.exportHint", "Download the lineup as Excel for your records.")} testId="lineup-export-hint" />
+              </>
             )}
             <div style={{ position: "relative" }}>
               {(mobileShowAdd || mobileAiImport) ? (
@@ -7705,16 +7708,19 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           <h2 className="labs-section-label mb-0">Whiskies ({whiskyCount})</h2>
           <div className="flex items-center gap-1">
           {whiskyCount > 0 && (
-            <button
-              className="labs-btn-ghost flex items-center gap-1 text-xs"
-              onClick={handleLineupExport}
-              disabled={lineupExporting}
-              title={t("hostUi.exportLineup", "Export lineup as Excel")}
-              data-testid="labs-lineup-export-btn"
-            >
-              {lineupExporting ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSpreadsheet className="w-3 h-3" />}
-              {t("hostUi.exportLineupShort", "Excel")}
-            </button>
+            <>
+              <button
+                className="labs-btn-ghost flex items-center gap-1 text-xs"
+                onClick={handleLineupExport}
+                disabled={lineupExporting}
+                title={t("hostUi.exportLineup", "Export lineup as Excel")}
+                data-testid="labs-lineup-export-btn"
+              >
+                {lineupExporting ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSpreadsheet className="w-3 h-3" />}
+                {t("hostUi.exportLineupShort", "Excel")}
+              </button>
+              <InfoHint text={t("labs.aiImport.exportHint", "Download the lineup as Excel for your records.")} testId="lineup-export-hint" />
+            </>
           )}
           {tasting.status === "draft" && (
             <div className="relative">
@@ -8535,14 +8541,14 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
       {!tasting.guidedMode && (
       <div className="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div>
+        <div className="w-full">
           <h2 className="labs-section-label">{t("m2.host.sessionControlsLabel", "Live Session")}</h2>
           <p style={{ fontSize: 12, color: "var(--labs-text-muted)", marginBottom: 8, marginTop: -4 }}>
             {tasting.status === "archived"
               ? t("m2.host.sessionControlsDescArchived", "This session has been archived.")
               : t("m2.host.sessionControlsDesc", "Control the tasting your guests are seeing right now.")}
           </p>
-          <div className="labs-card p-4">
+          <div className="labs-card p-4 w-full">
             <div className="flex flex-wrap gap-2">
               {tasting.status === "draft" && (
                 <button
@@ -8553,7 +8559,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   data-testid="labs-host-start"
                 >
                   <Play className="w-4 h-4" />
-                  {t("m2.host.startTasting", "Start Tasting")}
+                  {t("m2.host.startNow", "Start")}
                 </button>
               )}
               {tasting.status === "open" && (
