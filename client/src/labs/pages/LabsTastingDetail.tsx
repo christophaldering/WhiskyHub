@@ -62,6 +62,7 @@ import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 import { WhiskyEditForm } from "@/labs/components/WhiskyEditForm";
 import { SmartImportPanel } from "@/labs/components/SmartImportPanel";
 import { LineupLookupTools } from "@/labs/components/LineupLookupTools";
+import { AiRefinePanel } from "@/labs/pages/LabsHost";
 import { getTastingPhase, isResultDownloadsPhase, RESULT_DOWNLOAD_KINDS } from "@/labs/utils/tastingPhase";
 import type { Tasting, WhiskyFriend } from "@shared/schema";
 import QRCode from "qrcode";
@@ -211,7 +212,7 @@ function QuickChip({ icon: Icon, label, onClick, testId }: {
 }
 
 export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const tastingId = params.id;
   const { currentParticipant } = useAppStore();
   const [, navigate] = useLocation();
@@ -1041,13 +1042,6 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 />
               </div>
             )}
-            {isHost && isDraft && whiskyCount > 0 && (
-              <LineupLookupTools
-                whiskies={(whiskies || []) as any[]}
-                hostId={String(currentParticipant?.id || "")}
-                tastingId={tastingId}
-              />
-            )}
             {isHost && isDraft && showAddWhisky && (
               <div className="mb-3" data-testid="labs-detail-add-whisky-form">
                 <WhiskyEditForm
@@ -1262,6 +1256,30 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {isHost && isDraft && whiskyCount > 0 && (
+              <LineupLookupTools
+                whiskies={(whiskies || []) as any[]}
+                hostId={String(currentParticipant?.id || "")}
+                tastingId={tastingId}
+              />
+            )}
+
+            {isHost && isDraft && whiskyCount >= 2 && (
+              <div className="mb-3">
+                <AiRefinePanel
+                  results={[]}
+                  hostId={String(currentParticipant?.id || "")}
+                  language={i18n.language || "de"}
+                  t={t}
+                  testPrefix="labs-detail-ai-lineup"
+                  onApply={() => {}}
+                  savedWhiskies={(whiskies || []) as any[]}
+                  tastingId={tastingId}
+                  onSavedApply={() => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] })}
+                />
               </div>
             )}
           </section>

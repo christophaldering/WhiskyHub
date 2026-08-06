@@ -916,7 +916,7 @@ function exportAiResultsCsv(results: any[], t: any) {
 // Lineup-Feinschliff: Freitext-Anweisung -> KI-Sortiervorschlag mit
 // Vorher/Nachher-Vorschau. Wird in beiden Smart-Import-Ergebnislisten
 // (mobil + Desktop) verwendet.
-function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply, savedWhiskies, tastingId: refineTastingId, onSavedApply }: {
+export function AiRefinePanel({ results, hostId, language, t, testPrefix, onApply, savedWhiskies, tastingId: refineTastingId, onSavedApply }: {
   results: any[];
   hostId: string;
   language: string;
