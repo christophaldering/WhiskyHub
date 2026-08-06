@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { Search, Euro } from "lucide-react";
+import { Search, Euro, FileSpreadsheet } from "lucide-react";
+import { downloadLineupExcel } from "@/labs/pages/LabsHost";
 import { InfoHint } from "@/labs/components/InfoHint";
 import {
   ProgressLine,
@@ -28,12 +29,13 @@ export function LineupLookupTools({
   hostId: string;
   tastingId: string;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const [wbProgress, setWbProgress] = useState<PriceProgress>(null);
   const [priceProgress, setPriceProgress] = useState<PriceProgress>(null);
   const wbStop = useRef(false);
   const priceStop = useRef(false);
+  const [idleNote, setIdleNote] = useState("");
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
 
@@ -42,12 +44,18 @@ export function LineupLookupTools({
       {/* Als Kacheln statt Textzeilen: zwei Werkzeuge, die man erkennt und
           drueckt — mit (i), das erklaert, was passiert. Textknoepfe wurden
           von Testern schlicht uebersehen. */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         <button
           className="labs-card p-3 text-left"
           style={{ minHeight: 64, opacity: wbProgress ? 0.6 : 1 }}
           disabled={!!wbProgress}
           onClick={() => {
+            const open = whiskies.filter((w: any) => w?.name && !w.whiskybaseId).length;
+            if (open === 0) {
+              setIdleNote(t("labs.wbSaved.allLinked", "All {{count}} bottles are already linked to Whiskybase.", { count: whiskies.length }));
+              return;
+            }
+            setIdleNote("");
             wbStop.current = false;
             void runWbLookupForSaved(whiskies, hostId, setWbProgress, refresh, () => wbStop.current);
           }}
@@ -67,6 +75,12 @@ export function LineupLookupTools({
           style={{ minHeight: 64, opacity: priceProgress ? 0.6 : 1 }}
           disabled={!!priceProgress}
           onClick={() => {
+            const open = whiskies.filter((w: any) => w?.name && w.priceRrp == null && w.priceMarket == null).length;
+            if (open === 0) {
+              setIdleNote(t("labs.price.allPriced", "All {{count}} bottles already have prices.", { count: whiskies.length }));
+              return;
+            }
+            setIdleNote("");
             priceStop.current = false;
             void runPriceLookupForSaved(whiskies, hostId, setPriceProgress, refresh, () => priceStop.current);
           }}
@@ -81,7 +95,25 @@ export function LineupLookupTools({
             {t("labs.price.subtitle", "RRP & market price")}
           </span>
         </button>
+        <button
+          className="labs-card p-3 text-left col-span-2 sm:col-span-1"
+          style={{ minHeight: 64 }}
+          onClick={() => void downloadLineupExcel(tastingId, i18n.language?.startsWith("de") ? "de" : "en")}
+          data-testid="lineup-excel-tile"
+        >
+          <span className="text-sm font-medium inline-flex items-center gap-1.5">
+            <FileSpreadsheet className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+            {t("labs.export.tile", "Excel export")}
+            <InfoHint text={t("labs.aiImport.exportHint", "Download the lineup as Excel for your records.")} testId="lineup-excel-hint" />
+          </span>
+          <span className="text-[11px] block mt-0.5" style={{ color: "var(--labs-text-muted)" }}>
+            {t("labs.export.subtitle", "Lineup as a file")}
+          </span>
+        </button>
       </div>
+      {idleNote && (
+        <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }} data-testid="lineup-idle-note">{idleNote}</p>
+      )}
       {wbProgress && (
         <>
           <ProgressLine

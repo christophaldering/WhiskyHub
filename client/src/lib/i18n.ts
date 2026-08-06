@@ -6485,12 +6485,18 @@ const resources = {
           stop: "Stop",
           hint: "Researches RRP and current market price for bottles without prices — with source and date, saved immediately.",
           subtitle: "RRP & market price",
+          allPriced: "All {{count}} bottles already have prices.",
         },
         wbSaved: {
           start: "Whiskybase lookup",
           searching: "Looking up Whiskybase entries",
           hint: "Finds the Whiskybase entry for every bottle that has none yet — link and community score are saved immediately.",
           subtitle: "Link bottles & fetch scores",
+          allLinked: "All {{count}} bottles are already linked to Whiskybase.",
+        },
+        export: {
+          tile: "Excel export",
+          subtitle: "Lineup as a file",
         },
         smartImport: {
           filesSelected: "{{count}} files selected",
@@ -16435,12 +16441,18 @@ const resources = {
           stop: "Anhalten",
           hint: "Recherchiert UVP und aktuellen Marktpreis für Flaschen ohne Preise — mit Quelle und Datum, sofort gespeichert.",
           subtitle: "UVP & Marktpreis",
+          allPriced: "Alle {{count}} Flaschen haben bereits Preise.",
         },
         wbSaved: {
           start: "Whiskybase-Suche",
           searching: "Whiskybase-Einträge werden gesucht",
           hint: "Sucht für jede noch unverknüpfte Flasche den passenden Whiskybase-Eintrag — Link und Community-Bewertung werden sofort gespeichert.",
           subtitle: "Flaschen verknüpfen & Scores holen",
+          allLinked: "Alle {{count}} Flaschen sind bereits mit Whiskybase verknüpft.",
+        },
+        export: {
+          tile: "Excel-Export",
+          subtitle: "Lineup als Datei",
         },
         smartImport: {
           filesSelected: "{{count}} Dateien ausgewählt",

@@ -249,7 +249,7 @@ async function parseExcelWhiskies(file: File): Promise<any[]> {
   return bestResult;
 }
 
-async function downloadLineupExcel(tastingId: string, lang: string): Promise<void> {
+export async function downloadLineupExcel(tastingId: string, lang: string): Promise<void> {
   const res = await fetch(apiUrl(`/api/tastings/${tastingId}/lineup-export?lang=${lang}`), { headers: pidHeaders() });
   if (!res.ok) {
     const err = await res.json().catch(() => ({} as any));
@@ -2697,21 +2697,6 @@ function MobileCompanion({
           <div className="flex items-center justify-between mb-2">
             <p className="labs-section-label mb-0">Whiskies ({whiskyCount})</p>
             <div className="flex items-center gap-1">
-            {whiskyCount > 0 && (
-              <>
-                <button
-                  className="labs-btn-ghost flex items-center gap-1 text-xs"
-                  onClick={handleMobileLineupExport}
-                  disabled={mobileLineupExporting}
-                  title={t("hostUi.exportLineup", "Export lineup as Excel")}
-                  data-testid="mobile-lineup-export-btn"
-                >
-                  {mobileLineupExporting ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSpreadsheet className="w-3 h-3" />}
-                  {t("hostUi.exportLineupShort", "Excel")}
-                </button>
-                <InfoHint text={t("labs.aiImport.exportHint", "Download the lineup as Excel for your records.")} testId="lineup-export-hint" />
-              </>
-            )}
             <div style={{ position: "relative" }}>
               {(mobileShowAdd || mobileAiImport) ? (
                 <button
@@ -7707,21 +7692,6 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         <div className="flex items-center justify-between mb-3">
           <h2 className="labs-section-label mb-0">Whiskies ({whiskyCount})</h2>
           <div className="flex items-center gap-1">
-          {whiskyCount > 0 && (
-            <>
-              <button
-                className="labs-btn-ghost flex items-center gap-1 text-xs"
-                onClick={handleLineupExport}
-                disabled={lineupExporting}
-                title={t("hostUi.exportLineup", "Export lineup as Excel")}
-                data-testid="labs-lineup-export-btn"
-              >
-                {lineupExporting ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSpreadsheet className="w-3 h-3" />}
-                {t("hostUi.exportLineupShort", "Excel")}
-              </button>
-              <InfoHint text={t("labs.aiImport.exportHint", "Download the lineup as Excel for your records.")} testId="lineup-export-hint" />
-            </>
-          )}
           {tasting.status === "draft" && (
             <div className="relative">
               {(showAddWhisky || showAiImport) ? (
@@ -8549,10 +8519,10 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               : t("m2.host.sessionControlsDesc", "Control the tasting your guests are seeing right now.")}
           </p>
           <div className="labs-card p-4 w-full">
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 justify-center">
               {tasting.status === "draft" && (
                 <button
-                  className="labs-btn-primary flex items-center gap-2"
+                  className="labs-btn-primary flex items-center gap-2 w-full sm:w-auto"
                   onClick={() => statusMutation.mutate({ status: "open" })}
                   disabled={statusMutation.isPending || whiskyCount === 0}
                   title={whiskyCount === 0 ? t("m2.host.startTastingNeedsWhiskies", "Add at least one whisky first.") : undefined}
