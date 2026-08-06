@@ -82,7 +82,13 @@ Respond with JSON exactly in this shape (one entry per item, in the same order):
       const rrp = typeof r.rrp === "number" && isFinite(r.rrp) && r.rrp > 0 ? Math.round(r.rrp * 100) / 100 : null;
       const market = typeof r.market === "number" && isFinite(r.market) && r.market > 0 ? Math.round(r.market * 100) / 100 : null;
       const currency = (rrp !== null || market !== null) && r.currency ? r.currency.toUpperCase() : null;
-      out[r.index - 1] = { priceRrp: rrp, priceMarket: market, priceCurrency: currency };
+      out[r.index - 1] = {
+        priceRrp: rrp,
+        priceMarket: market,
+        priceCurrency: currency,
+        priceRrpSource: typeof r.rrpSource === "string" ? r.rrpSource.slice(0, 120) : null,
+        priceMarketSource: typeof r.marketSource === "string" ? r.marketSource.slice(0, 120) : null,
+      };
     }
   }
   return out;
