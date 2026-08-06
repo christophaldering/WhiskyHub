@@ -21276,6 +21276,10 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
       }
       const cleaned = items.map((it: any) => ({
         name: String(it?.name || "").trim().slice(0, 200),
+        // Bekannte Whiskybase-Seite mitgeben: dort steht oft ein Preis —
+        // Nachschlagen statt blind suchen.
+        whiskybaseUrl: it?.whiskybaseUrl && String(it.whiskybaseUrl).startsWith("https://www.whiskybase.com/")
+          ? String(it.whiskybaseUrl).slice(0, 200) : null,
         distillery: it?.distillery ? String(it.distillery).slice(0, 100) : null,
         age: it?.age ? String(it.age).slice(0, 20) : null,
         abv: typeof it?.abv === "number" && isFinite(it.abv) ? it.abv : null,

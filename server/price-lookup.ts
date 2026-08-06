@@ -6,6 +6,7 @@ import { z } from "zod";
 
 export interface PriceLookupItem {
   name: string;
+  whiskybaseUrl?: string | null;
   distillery?: string | null;
   age?: string | null;
   abv?: number | null;
@@ -47,10 +48,17 @@ async function lookupChunk(
   if (!client?.responses?.create) return out;
 
   const sys = "You research whisky bottle prices (0.7l standard bottle) using the web search tool. For each bottle find (a) the original recommended retail price (RRP/UVP) at release and (b) the current typical market price at reputable retailers or auction/secondary market. Only report a price when you actually found it in search results — NEVER guess or estimate. If unsure, return null. Reply ONLY with strict JSON.";
-  const user = `For each whisky below, find the original RRP and the current market price. Prefer EUR; otherwise use the currency you found (3-letter ISO code). Round to whole numbers where sensible. Return null for anything you could not verify via web search.
+  const user = `For each whisky below, find the original RRP and the current market price.
+
+METHOD — be persistent, not quick:
+1. If a "whiskybase" URL is given, OPEN that page FIRST and read the price(s) stated there. This is the most reliable source for these bottles.
+2. Then (or otherwise) search shops: try SEVERAL query variants — the exact name, name + "kaufen", name + "price", and with the cask number if present. Prices are rarely in search snippets: OPEN the most promising shop page and read the price from the page itself.
+3. Only give up on a bottle after both routes failed. A found price with a named source beats a fast null.
+
+Prefer EUR; otherwise use the currency you found (3-letter ISO code). Round to whole numbers where sensible. Return null for anything you could not verify via web search.
 
 Items:
-${items.map((m, i) => `${i + 1}. name="${m.name}"${m.distillery ? `, distillery="${m.distillery}"` : ""}${m.age ? `, age="${m.age}"` : ""}${m.abv ? `, abv=${m.abv}` : ""}`).join("\n")}
+${items.map((m, i) => `${i + 1}. name="${m.name}"${m.whiskybaseUrl ? `, whiskybase="${m.whiskybaseUrl}"` : ""}${m.distillery ? `, distillery="${m.distillery}"` : ""}${m.age ? `, age="${m.age}"` : ""}${m.abv ? `, abv=${m.abv}` : ""}`).join("\n")}
 
 Respond with JSON exactly in this shape (one entry per item, in the same order):
 {"results":[{"index":<int>,"rrp":<number|null>,"market":<number|null>,"currency":<string|null>,"rrpSource":<string|null>,"marketSource":<string|null>}]}\n\nrrpSource/marketSource: the shop or site name where you found each price (e.g. "whiskybase.com", "The Whisky Exchange"). null if not found.`;

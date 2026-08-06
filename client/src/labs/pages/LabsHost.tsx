@@ -589,6 +589,7 @@ export async function runPriceLookupForSaved(
           hostId,
           items: [{
             name: w.name,
+            whiskybaseUrl: w.whiskybaseUrl || null,
             distillery: w.distillery || null,
             age: w.age || null,
             abv: w.abv || null,
