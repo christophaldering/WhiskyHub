@@ -244,6 +244,12 @@ export const whiskies = pgTable("whiskies", {
   priceRrp: real("price_rrp"), // Original retail price (UVP), web-researched
   priceMarket: real("price_market"), // Current market price, web-researched
   priceCurrency: text("price_currency"), // ISO currency code for priceRrp/priceMarket (e.g. EUR)
+  // Herkunft der Preise: ohne Quelle und Datum ist ein Preis nur eine Zahl.
+  // Ein Marktpreis von 2024 und einer von heute sind verschiedene Aussagen.
+  priceRrpSource: text("price_rrp_source"),
+  priceRrpDate: text("price_rrp_date"),
+  priceMarketSource: text("price_market_source"),
+  priceMarketDate: text("price_market_date"),
   hostSummary: text("host_summary"), // Host's detailed tasting assessment/review
   distilleryUrl: text("distillery_url"), // Distillery homepage URL
   aiFactsCache: text("ai_facts_cache"), // Cached AI-generated interesting facts (JSON)

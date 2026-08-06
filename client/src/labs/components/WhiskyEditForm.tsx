@@ -126,6 +126,10 @@ export function WhiskyEditForm({
   const [priceRrp, setPriceRrp] = useState(str(whisky.priceRrp));
   const [priceMarket, setPriceMarket] = useState(str(whisky.priceMarket));
   const [priceCurrency, setPriceCurrency] = useState(str(whisky.priceCurrency) || "EUR");
+  const [priceRrpSource, setPriceRrpSource] = useState(str(whisky.priceRrpSource));
+  const [priceRrpDate, setPriceRrpDate] = useState(str(whisky.priceRrpDate));
+  const [priceMarketSource, setPriceMarketSource] = useState(str(whisky.priceMarketSource));
+  const [priceMarketDate, setPriceMarketDate] = useState(str(whisky.priceMarketDate));
 
   const submit = () => {
     if (!name.trim()) return;
@@ -151,6 +155,10 @@ export function WhiskyEditForm({
       priceRrp: priceRrp.trim() ? parseFloat(priceRrp.replace(",", ".")) : null,
       priceMarket: priceMarket.trim() ? parseFloat(priceMarket.replace(",", ".")) : null,
       priceCurrency: priceCurrency.trim() || null,
+      priceRrpSource: priceRrpSource.trim() || null,
+      priceRrpDate: priceRrpDate.trim() || null,
+      priceMarketSource: priceMarketSource.trim() || null,
+      priceMarketDate: priceMarketDate.trim() || null,
     });
   };
 
@@ -266,6 +274,14 @@ export function WhiskyEditForm({
           <div className="flex gap-2">
             {field(priceRrp, setPriceRrp, t("whiskyForm.rrp", "RRP"), "whisky-edit-rrp", { numeric: true })}
             {field(priceMarket, setPriceMarket, t("whiskyForm.market", "Market"), "whisky-edit-market", { numeric: true })}
+          </div>
+          <div className="flex gap-2">
+            {field(priceRrpSource, setPriceRrpSource, t("whiskyForm.rrpSource", "RRP source"), "whisky-edit-rrp-source")}
+            {field(priceRrpDate, setPriceRrpDate, t("whiskyForm.priceDate", "Date"), "whisky-edit-rrp-date", { width: 104 })}
+          </div>
+          <div className="flex gap-2">
+            {field(priceMarketSource, setPriceMarketSource, t("whiskyForm.marketSource", "Market source"), "whisky-edit-market-source")}
+            {field(priceMarketDate, setPriceMarketDate, t("whiskyForm.priceDate", "Date"), "whisky-edit-market-date", { width: 104 })}
           </div>
           <textarea
             className="labs-input w-full text-sm"

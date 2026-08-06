@@ -598,10 +598,17 @@ export async function runPriceLookupForSaved(
         const data = await res.json().catch(() => null);
         const hit = Array.isArray(data?.results) ? data.results[0] : null;
         if (hit && (hit.priceRrp != null || hit.priceMarket != null)) {
+          // Quelle und Abfragedatum gehoeren zum Preis: eine Zahl ohne
+          // Herkunft ist nicht nachpruefbar und veraltet unbemerkt.
+          const today = new Date().toISOString().slice(0, 10);
           await whiskyApi.update(String(w.id), {
             priceRrp: hit.priceRrp ?? null,
             priceMarket: hit.priceMarket ?? null,
             priceCurrency: hit.currency || hit.priceCurrency || null,
+            priceRrpSource: hit.priceRrp != null ? (hit.priceRrpSource || null) : null,
+            priceRrpDate: hit.priceRrp != null ? today : null,
+            priceMarketSource: hit.priceMarket != null ? (hit.priceMarketSource || null) : null,
+            priceMarketDate: hit.priceMarket != null ? today : null,
           } as any);
           found += 1;
         }

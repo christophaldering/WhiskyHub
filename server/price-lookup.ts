@@ -13,6 +13,8 @@ export interface PriceLookupItem {
 
 export interface PriceLookupResult {
   priceRrp: number | null;
+  priceRrpSource?: string | null;
+  priceMarketSource?: string | null;
   priceMarket: number | null;
   priceCurrency: string | null;
 }
@@ -27,11 +29,13 @@ const priceSchema = z.object({
     rrp: z.number().min(0).max(1000000).nullable().optional(),
     market: z.number().min(0).max(1000000).nullable().optional(),
     currency: z.string().trim().regex(/^[A-Za-z]{3}$/).nullable().optional(),
+    rrpSource: z.string().trim().max(200).nullable().optional(),
+    marketSource: z.string().trim().max(200).nullable().optional(),
   })),
 });
 
 function emptyResult(): PriceLookupResult {
-  return { priceRrp: null, priceMarket: null, priceCurrency: null };
+  return { priceRrp: null, priceMarket: null, priceCurrency: null, priceRrpSource: null, priceMarketSource: null };
 }
 
 async function lookupChunk(
@@ -49,7 +53,7 @@ Items:
 ${items.map((m, i) => `${i + 1}. name="${m.name}"${m.distillery ? `, distillery="${m.distillery}"` : ""}${m.age ? `, age="${m.age}"` : ""}${m.abv ? `, abv=${m.abv}` : ""}`).join("\n")}
 
 Respond with JSON exactly in this shape (one entry per item, in the same order):
-{"results":[{"index":<int>,"rrp":<number|null>,"market":<number|null>,"currency":<string|null>}]}`;
+{"results":[{"index":<int>,"rrp":<number|null>,"market":<number|null>,"currency":<string|null>,"rrpSource":<string|null>,"marketSource":<string|null>}]}\n\nrrpSource/marketSource: the shop or site name where you found each price (e.g. "whiskybase.com", "The Whisky Exchange"). null if not found.`;
 
   const call = client.responses.create({
     model: process.env.AI_INTEGRATIONS_OPENAI_MODEL || "gpt-5-mini",
