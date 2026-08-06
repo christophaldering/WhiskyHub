@@ -9,6 +9,7 @@
 import { z } from "zod";
 
 export interface PriceAgentInput {
+  lang?: "de" | "en";
   name: string;
   whiskybaseUrl?: string | null;
   distillery?: string | null;
@@ -55,8 +56,12 @@ const stepSchema = z.object({
   summary: z.string().max(600).optional(),
 });
 
-function buildSystem(): string {
+function buildSystem(lang: "de" | "en"): string {
+  const langLine = lang === "en"
+    ? "Schreibe note und summary auf ENGLISCH."
+    : "Schreibe note und summary auf DEUTSCH.";
   return [
+    langLine,
     "Du recherchierst hartnaeckig UVP (Originalpreis bei Erscheinen) und aktuellen Marktpreis EINER Whiskyflasche (0,7l) per Websuche.",
     "Du arbeitest in EINZELSCHRITTEN: pro Antwort genau EINE Suchaktion (Suche ausfuehren, die vielversprechendste Seite OEFFNEN, Preis aus der SEITE lesen — nie aus dem Snippet).",
     "Stationsfolge: (1) falls Whiskybase-URL gegeben, diese Seite zuerst. (2) Shops mit mehreren Query-Varianten: exakter Name, Name + kaufen, Name + Fassnummer, Destillerie + Alter + Fasstyp. (3) Auktions-/Archivseiten fuer den Marktwert ausverkaufter Abfuellungen (z.B. whiskyauction, scotchwhiskyauctions).",
@@ -103,7 +108,7 @@ export async function runPriceAgent(
     (item.caskType ? ` cask="${item.caskType}"` : "");
 
   const messages: Array<{ role: string; content: string }> = [
-    { role: "system", content: buildSystem() },
+    { role: "system", content: buildSystem(item.lang === "en" ? "en" : "de") },
     { role: "user", content: `Flasche: ${desc}\nBeginne mit Schritt 1.` },
   ];
 

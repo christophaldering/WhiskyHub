@@ -21,7 +21,7 @@ export function PriceAgentButton({ whiskyId, whiskyName, agentLog, agentCost, on
   agentCost?: number | null;
   onSaved: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState<Progress | null>(null);
   const [result, setResult] = useState<AgentResult | null>(null);
@@ -46,6 +46,7 @@ export function PriceAgentButton({ whiskyId, whiskyName, agentLog, agentCost, on
       const res = await fetch(apiUrl(`/api/whiskies/${whiskyId}/price-agent`), {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ lang: i18n.language?.startsWith("de") ? "de" : "en" }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.message || `HTTP ${res.status}`);

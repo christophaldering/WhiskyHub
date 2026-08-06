@@ -21406,9 +21406,11 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
       (async () => {
         try {
           const { runPriceAgent } = await import("./price-agent");
+          const agentLang = req.body?.lang === "en" ? "en" : "de";
           const result = await runPriceAgent(
             openai,
             {
+              lang: agentLang,
               name: whisky.name || "",
               whiskybaseUrl: wbUrl,
               distillery: whisky.distillery || null,
