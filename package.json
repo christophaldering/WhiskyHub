@@ -85,7 +85,7 @@
     "@uppy/core": "^5.2.0",
     "@uppy/dashboard": "^5.1.1",
     "@uppy/react": "^5.2.0",
-    "adm-zip": "^0.5.16",
+    "adm-zip": "^0.6.0",
     "bcryptjs": "^3.0.3",
     "browser-image-compression": "^2.0.2",
     "class-variance-authority": "^0.7.1",
@@ -120,7 +120,7 @@
     "mime-types": "^3.0.2",
     "multer": "^2.1.1",
     "next-themes": "^0.4.6",
-    "nodemailer": "^8.0.1",
+    "nodemailer": "^9.0.4",
     "openai": "^6.22.0",
     "p-limit": "^7.3.0",
     "p-retry": "^7.1.1",
@@ -140,7 +140,7 @@
     "react-leaflet": "^5.0.0",
     "react-resizable-panels": "^2.1.9",
     "recharts": "^2.15.4",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.3",
     "sonner": "^2.0.7",
     "supertest": "^7.2.2",
     "tailwind-merge": "^3.3.1",
@@ -172,7 +172,7 @@
     "autoprefixer": "^10.4.21",
     "drizzle-kit": "^0.31.4",
     "esbuild": "^0.25.0",
-    "postcss": "^8.5.6",
+    "postcss": "^8.5.26",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.20.5",
     "typescript": "5.6.3",
@@ -192,6 +192,7 @@
     "tar": "7.5.19",
     "tmp": "0.2.7",
     "undici": "7.28.0",
-    "uuid": "11.1.1"
+    "uuid": "11.1.1",
+    "brace-expansion": "5.0.9"
   }
 }

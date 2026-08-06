@@ -26,10 +26,15 @@ block publish.
   exceljs) imports uuid via named imports (`require("uuid").v4` / `import * as
   uuid`), and uuid v11 still exports those. The deep imports (`uuid/v4`) that
   v7+ removed are not used.
-- Overrides only take effect after a fresh install. Use the package-management
-  tools (installLanguagePackages / uninstallLanguagePackages) — direct
-  `npm install` via bash is blocked, but the packager respects package.json
-  overrides.
+- Overrides only take effect after a fresh install. `npm install --no-audit`
+  via bash works fine (the earlier "bash is blocked" note was stale); so does
+  `installLanguagePackages`.
+- **Re-audit after each override bump**: brace-expansion had two chained CVEs —
+  5.0.6→5.0.8 fixed one, but 5.0.8 itself had a bypass (CVE-2026-69152) fixed
+  in 5.0.9. Always run `runDependencyAudit()` again until count=0.
+- `nodemailer` is a declared direct dep but is not imported anywhere in source
+  (only appears in the build allowlist). It was bumped v8→v9 (major) without
+  code changes — safe because no code uses it directly.
 - `tsc --noEmit` on the full monorepo OOMs even at 6GB heap in this env; rely on
   `npm run build` (vite + esbuild) as the build verification instead.
 
