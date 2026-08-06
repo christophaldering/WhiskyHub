@@ -6442,16 +6442,6 @@ const resources = {
           close: "Close",
           wbSearching: "Looking up Whiskybase entries",
           wbProgressCount: "{{done}} of {{total}} · {{found}} found",
-        },
-        price: {
-          start: "Look up prices",
-          searching: "Looking up prices",
-          progressCount: "{{done}} of {{total}} · {{found}} found",
-          stop: "Stop",
-        },
-        wbSaved: {
-          start: "Whiskybase lookup",
-          searching: "Looking up Whiskybase entries",
           priceSearching: "Price search running…",
           fieldsToggle: "Displayed fields",
           fieldDistillery: "Distillery",
@@ -6484,6 +6474,16 @@ const resources = {
           alsoCollection: "Also save selected bottles to my collection",
           stillLoadingHint: "{{count}} bottles are still being looked up. Adding now keeps them without Whiskybase link and price.",
           collectionSaved: "saved to collection",
+        },
+        price: {
+          start: "Look up prices",
+          searching: "Looking up prices",
+          progressCount: "{{done}} of {{total}} · {{found}} found",
+          stop: "Stop",
+        },
+        wbSaved: {
+          start: "Whiskybase lookup",
+          searching: "Looking up Whiskybase entries",
         },
         aiRefine: {
           title: "Ask Cooper about your lineup",
@@ -16378,16 +16378,6 @@ const resources = {
           close: "Schliessen",
           wbSearching: "Whiskybase-Einträge werden gesucht",
           wbProgressCount: "{{done}} von {{total}} · {{found}} gefunden",
-        },
-        price: {
-          start: "Preise suchen",
-          searching: "Preise werden gesucht",
-          progressCount: "{{done}} von {{total}} · {{found}} gefunden",
-          stop: "Anhalten",
-        },
-        wbSaved: {
-          start: "Whiskybase-Suche",
-          searching: "Whiskybase-Einträge werden gesucht",
           priceSearching: "Preissuche läuft…",
           fieldsToggle: "Angezeigte Felder",
           fieldDistillery: "Brennerei",
@@ -16421,6 +16411,16 @@ const resources = {
           alsoCollection: "Ausgewählte Flaschen auch in meine Sammlung übernehmen",
           stillLoadingHint: "Für {{count}} Flaschen läuft die Suche noch. Wenn du jetzt hinzufügst, bleiben sie ohne Whiskybase-Verknüpfung und Preis.",
           collectionSaved: "in Sammlung gespeichert",
+        },
+        price: {
+          start: "Preise suchen",
+          searching: "Preise werden gesucht",
+          progressCount: "{{done}} von {{total}} · {{found}} gefunden",
+          stop: "Anhalten",
+        },
+        wbSaved: {
+          start: "Whiskybase-Suche",
+          searching: "Whiskybase-Einträge werden gesucht",
         },
         aiRefine: {
           title: "Cooper zum Lineup fragen",
