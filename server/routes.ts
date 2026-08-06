@@ -21347,6 +21347,130 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
     }
   });
 
+  // ===== TIEFENSUCHE (Preis-Agent) =====
+  // Hartnaeckige Einzelflaschen-Recherche als Hintergrundauftrag. Bewusst
+  // teuer (gpt-5 + Websuche), daher: nur auf ausdruecklichen Wunsch, nur
+  // EIN laufender Agent pro Host, Ergebnis inkl. Protokoll und Kosten
+  // wird an der Flasche gespeichert.
+  interface PriceAgentJob {
+    id: string;
+    hostId: string;
+    whiskyId: string;
+    createdAt: number;
+    updatedAt: number;
+    status: "running" | "done" | "error";
+    progress: { step: number; maxSteps: number; station: string; note: string } | null;
+    result: { priceRrp: number | null; priceMarket: number | null; priceCurrency: string | null; costEur: number; log: string } | null;
+    error: string | null;
+    stopRequested: boolean;
+  }
+  const priceAgentJobs: Map<string, PriceAgentJob> = (globalThis as any).__priceAgentJobs || new Map();
+  (globalThis as any).__priceAgentJobs = priceAgentJobs;
+  const PRICE_AGENT_JOB_TTL_MS = 60 * 60 * 1000;
+  const sweepPriceAgentJobs = () => {
+    const now = Date.now();
+    for (const [id, j] of Array.from(priceAgentJobs.entries())) {
+      if (j.status !== "running" && now - j.updatedAt > PRICE_AGENT_JOB_TTL_MS) priceAgentJobs.delete(id);
+    }
+  };
+
+  app.post("/api/whiskies/:id/price-agent", async (req: any, res: any) => {
+    try {
+      if (await isAIDisabled("ai_import")) return res.status(503).json({ message: "AI feature disabled by admin" });
+      if (await rejectIfWhiskyArchived(req.params.id, res)) return;
+      const auth = await requireWhiskyHostOrAdmin(req, req.params.id);
+      if (!auth.authorized) return res.status(auth.status).json({ message: auth.message });
+      sweepPriceAgentJobs();
+      const hostId = String(req.headers["x-participant-id"] || "");
+      for (const j of priceAgentJobs.values()) {
+        if (j.status === "running" && j.hostId === hostId) {
+          return res.status(409).json({ message: "Es laeuft bereits eine Tiefensuche. Bitte warten oder abbrechen.", jobId: j.id });
+        }
+      }
+      const whisky = await storage.getWhisky(req.params.id);
+      if (!whisky) return res.status(404).json({ message: "Whisky not found" });
+      const jobId = `pa-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const job: PriceAgentJob = {
+        id: jobId, hostId, whiskyId: whisky.id,
+        createdAt: Date.now(), updatedAt: Date.now(),
+        status: "running", progress: null, result: null, error: null, stopRequested: false,
+      };
+      priceAgentJobs.set(jobId, job);
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+      const wbId = (whisky.whiskybaseId ?? "").toString().trim();
+      const wbUrl = /^\d+$/.test(wbId) ? `https://www.whiskybase.com/whiskies/whisky/${wbId}` : null;
+      // Hintergrund: Antwort geht sofort raus, der Agent laeuft weiter.
+      (async () => {
+        try {
+          const { runPriceAgent } = await import("./price-agent");
+          const result = await runPriceAgent(
+            openai,
+            {
+              name: whisky.name || "",
+              whiskybaseUrl: wbUrl,
+              distillery: whisky.distillery || null,
+              age: whisky.age || null,
+              abv: typeof whisky.abv === "number" ? whisky.abv : null,
+              caskType: whisky.caskType || null,
+            },
+            (p) => { job.progress = p; job.updatedAt = Date.now(); },
+            () => job.stopRequested,
+          );
+          const today = new Date().toISOString().slice(0, 10);
+          const patch: Record<string, any> = {
+            priceAgentLog: result.log,
+            priceAgentCost: result.costEur,
+          };
+          // Nur gefundene Preise schreiben — vorhandene Werte nie mit null tilgen.
+          if (result.priceRrp != null) {
+            patch.priceRrp = result.priceRrp;
+            patch.priceRrpSource = result.priceRrpSource;
+            patch.priceRrpDate = today;
+          }
+          if (result.priceMarket != null) {
+            patch.priceMarket = result.priceMarket;
+            patch.priceMarketSource = result.priceMarketSource;
+            patch.priceMarketDate = today;
+          }
+          if (result.priceCurrency) patch.priceCurrency = result.priceCurrency;
+          await storage.updateWhisky(whisky.id, patch);
+          job.result = { priceRrp: result.priceRrp, priceMarket: result.priceMarket, priceCurrency: result.priceCurrency, costEur: result.costEur, log: result.log };
+          job.status = "done";
+        } catch (e: any) {
+          job.error = String(e?.message || e).slice(0, 300);
+          job.status = "error";
+          console.error("[price-agent] job failed:", e);
+        } finally {
+          job.updatedAt = Date.now();
+        }
+      })();
+      return res.json({ jobId });
+    } catch (e: any) {
+      console.error("[price-agent] start failed:", e);
+      res.status(500).json({ message: e.message || "Tiefensuche konnte nicht starten" });
+    }
+  });
+
+  app.get("/api/price-agent/:jobId", async (req: any, res: any) => {
+    const job = priceAgentJobs.get(String(req.params.jobId));
+    if (!job) return res.status(404).json({ message: "Job not found" });
+    const hostId = String(req.headers["x-participant-id"] || "");
+    if (job.hostId !== hostId) return res.status(403).json({ message: "Not your job" });
+    return res.json({ status: job.status, progress: job.progress, result: job.result, error: job.error });
+  });
+
+  app.post("/api/price-agent/:jobId/stop", async (req: any, res: any) => {
+    const job = priceAgentJobs.get(String(req.params.jobId));
+    if (!job) return res.status(404).json({ message: "Job not found" });
+    const hostId = String(req.headers["x-participant-id"] || "");
+    if (job.hostId !== hostId) return res.status(403).json({ message: "Not your job" });
+    job.stopRequested = true;
+    return res.json({ ok: true });
+  });
+
   // Lineup-Feinschliff: Freitext-Anweisung -> neue Reihenfolge der erkannten
   // Flaschen (mit Begründungen). Arbeitet rein auf den mitgeschickten Daten,
   // persistiert nichts.
