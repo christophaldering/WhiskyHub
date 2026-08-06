@@ -1065,9 +1065,9 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
             ) : (
               <div
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-                  gap: 10,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 6,
                 }}
                 data-testid="labs-detail-rueckblick-grid"
               >
@@ -1078,7 +1078,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                       <div
                         key={wid}
                         className="labs-card"
-                        style={{ padding: 12, gridColumn: "1 / -1" }}
+                        style={{ padding: 12 }}
                         data-testid={`labs-detail-whisky-edit-${wid}`}
                       >
                         <WhiskyEditForm
@@ -1106,6 +1106,14 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                   if (fields.has("abv") && w.abv) meta.push({ label: t("taxonomy.abv", "ABV"), value: `${w.abv}%` });
                   if (fields.has("caskType") && w.caskType) meta.push({ label: t("taxonomy.cask", "Cask"), value: String(w.caskType) });
                   if (fields.has("peatLevel") && w.peatLevel) meta.push({ label: t("taxonomy.peat", "Peat"), value: String(w.peatLevel) });
+                  if (fields.has("category") && w.category) meta.push({ label: t("taxonomy.category", "Category"), value: String(w.category) });
+                  if (fields.has("bottler") && w.bottler) meta.push({ label: t("taxonomy.bottler", "Bottler"), value: String(w.bottler) });
+                  if (fields.has("distilledYear") && w.distilledYear) meta.push({ label: t("taxonomy.distilled", "Distilled"), value: String(w.distilledYear) });
+                  if (fields.has("bottledYear") && w.bottledYear) meta.push({ label: t("taxonomy.bottled", "Bottled"), value: String(w.bottledYear) });
+                  if (fields.has("ppm") && w.ppm) meta.push({ label: t("taxonomy.ppm", "PPM"), value: String(w.ppm) });
+                  if (fields.has("wbScore") && w.wbScore) meta.push({ label: t("taxonomy.wbScore", "WB score"), value: String(w.wbScore) });
+                  if (fields.has("price") && w.priceRrp) meta.push({ label: t("taxonomy.rrp", "RRP"), value: `${w.priceRrp} ${w.priceCurrency || "EUR"}` });
+                  if (fields.has("price") && w.priceMarket) meta.push({ label: t("taxonomy.market", "Market"), value: `${w.priceMarket} ${w.priceCurrency || "EUR"}` });
 
                   return (
                     <div
@@ -1113,21 +1121,20 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                       className="labs-card"
                       data-testid={`labs-detail-rueckblick-card-${wid}`}
                       style={{
-                        padding: 12,
+                        padding: "10px 12px",
                         display: "flex",
-                        flexDirection: "column",
+                        flexDirection: "row",
                         alignItems: "center",
-                        textAlign: "center",
-                        gap: 8,
+                        textAlign: "left",
+                        gap: 12,
                         position: "relative",
                       }}
                     >
                       {isHost && (
                         <div
                           style={{
-                            position: "absolute",
-                            top: 6,
-                            right: 6,
+                            order: 5,
+                            flexShrink: 0,
                             display: "flex",
                             alignItems: "center",
                             gap: 2,
@@ -1195,19 +1202,18 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                       <WhiskyImage
                         imageUrl={imgRevealed ? (w.imageUrl as string | undefined) : undefined}
                         name={displayName}
-                        size={64}
-                        height={78}
+                        size={40}
+                        height={50}
                         whiskyId={wid}
                         testId={`rueckblick-image-${wid}`}
                       />
 
-                      <div style={{ minWidth: 0, width: "100%" }}>
+                      <div style={{ minWidth: 0, flex: 1 }}>
                         <p
                           style={{
-                            fontSize: 12, fontWeight: 600, color: "var(--labs-text)",
-                            margin: 0, lineHeight: 1.25,
-                            overflow: "hidden", textOverflow: "ellipsis",
-                            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                            fontSize: 13, fontWeight: 600, color: "var(--labs-text)",
+                            margin: 0, lineHeight: 1.3,
+                            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                           }}
                           data-testid={`rueckblick-name-${wid}`}
                         >
@@ -1217,8 +1223,8 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                           <div
                             data-testid={`rueckblick-meta-${wid}`}
                             style={{
-                              marginTop: 4, fontSize: 10, color: "var(--labs-text-muted)",
-                              lineHeight: 1.35, display: "flex", flexDirection: "column", gap: 1,
+                              marginTop: 3, fontSize: 11, color: "var(--labs-text-muted)",
+                              lineHeight: 1.4, display: "flex", flexWrap: "wrap", columnGap: 10, rowGap: 2,
                             }}
                           >
                             {meta.map((m, j) => (
@@ -1234,6 +1240,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                         <span
                           data-testid={`rueckblick-status-${wid}`}
                           style={{
+                            order: 4, flexShrink: 0,
                             fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
                             padding: "2px 8px", borderRadius: 999,
                             background: fullyRevealed ? "var(--labs-success-muted, rgba(74,222,128,0.12))"
