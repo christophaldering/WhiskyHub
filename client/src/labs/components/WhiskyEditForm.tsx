@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
@@ -130,6 +130,22 @@ export function WhiskyEditForm({
   const [priceRrpDate, setPriceRrpDate] = useState(str(whisky.priceRrpDate));
   const [priceMarketSource, setPriceMarketSource] = useState(str(whisky.priceMarketSource));
   const [priceMarketDate, setPriceMarketDate] = useState(str(whisky.priceMarketDate));
+
+  // Die Tiefensuche schreibt Preise im Hintergrund an die Flasche, waehrend
+  // dieses Formular offen sein kann. Ohne Nachfuehrung zeigt es dann leere
+  // Preisfelder — und Speichern wuerde die frischen Werte mit null tilgen.
+  // Deshalb: NUR die Preisfelder aus den neuen Daten uebernehmen; alle
+  // uebrigen Felder (Name, Notizen ...) behalten laufende Eingaben.
+  useEffect(() => {
+    setPriceRrp(str(whisky.priceRrp));
+    setPriceMarket(str(whisky.priceMarket));
+    if (str(whisky.priceCurrency)) setPriceCurrency(str(whisky.priceCurrency));
+    setPriceRrpSource(str(whisky.priceRrpSource));
+    setPriceRrpDate(str(whisky.priceRrpDate));
+    setPriceMarketSource(str(whisky.priceMarketSource));
+    setPriceMarketDate(str(whisky.priceMarketDate));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [whisky.priceRrp, whisky.priceMarket, whisky.priceCurrency, whisky.priceRrpSource, whisky.priceRrpDate, whisky.priceMarketSource, whisky.priceMarketDate]);
 
   const submit = () => {
     if (!name.trim()) return;
