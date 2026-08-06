@@ -77,7 +77,10 @@ export function WhiskyEditForm({
   // Whiskybase-ID eingeben und die Felder daraus fuellen. Frueher gab es das
   // nur im Desktop-Cockpit — der einzige Grund, warum dort ein eigenes
   // Formular stehenbleiben musste.
-  const [wbLookupId, setWbLookupId] = useState("");
+  // Zeigt die GESPEICHERTE ID an und dient zugleich als Suchfeld. Vorher
+  // startete es leer — dann stand unten eine Bewertung, aber oben keine ID,
+  // was aussah, als fehlte die Verknuepfung.
+  const [wbLookupId, setWbLookupId] = useState(str(whisky.whiskybaseId));
   const [wbLookupState, setWbLookupState] = useState<"" | "loading" | "not_found" | "rate_limit" | "invalid" | "failed">("");
 
   const runWbLookup = async () => {
@@ -103,6 +106,7 @@ export function WhiskyEditForm({
       if (d.bottler && !bottler.trim()) setBottler(d.bottler);
       if (d.caskType && !caskType.trim()) setCaskType(d.caskType);
       if (d.peatLevel && !peatLevel.trim()) setPeatLevel(d.peatLevel);
+      if (d.wbScore != null && !wbScore.trim()) setWbScore(String(d.wbScore));
       setWbLookupState("");
       setDetailsOpen(true);
     } catch {
@@ -116,12 +120,12 @@ export function WhiskyEditForm({
   const hasDetails = [whisky.bottler, whisky.caskType, whisky.distilledYear, whisky.bottledYear, whisky.category, whisky.peatLevel, whisky.notes].some(Boolean);
   const [detailsOpen, setDetailsOpen] = useState(hasDetails);
 
-  const wbScore = whisky.wbScore;
-  const wbId = str(whisky.whiskybaseId);
-  const priceRrp = whisky.priceRrp;
-  const priceMarket = whisky.priceMarket;
-  const currency = str(whisky.priceCurrency) || "EUR";
-  const hasLookupData = wbScore != null || wbId || priceRrp != null || priceMarket != null;
+  // Editierbar statt nur lesbar: die Suche findet ein Drittel der Flaschen
+  // nicht — dann muessen Score und Preise von Hand nachtragbar sein.
+  const [wbScore, setWbScore] = useState(str(whisky.wbScore));
+  const [priceRrp, setPriceRrp] = useState(str(whisky.priceRrp));
+  const [priceMarket, setPriceMarket] = useState(str(whisky.priceMarket));
+  const [priceCurrency, setPriceCurrency] = useState(str(whisky.priceCurrency) || "EUR");
 
   const submit = () => {
     if (!name.trim()) return;
@@ -139,6 +143,14 @@ export function WhiskyEditForm({
       category: category.trim() || null,
       peatLevel: peatLevel.trim() || null,
       notes: notes.trim() || null,
+      whiskybaseId: wbLookupId.trim() || null,
+      whiskybaseUrl: wbLookupId.trim()
+        ? `https://www.whiskybase.com/whiskies/whisky/${wbLookupId.trim()}/`
+        : null,
+      wbScore: wbScore.trim() ? parseFloat(wbScore.replace(",", ".")) : null,
+      priceRrp: priceRrp.trim() ? parseFloat(priceRrp.replace(",", ".")) : null,
+      priceMarket: priceMarket.trim() ? parseFloat(priceMarket.replace(",", ".")) : null,
+      priceCurrency: priceCurrency.trim() || null,
     });
   };
 
@@ -247,6 +259,14 @@ export function WhiskyEditForm({
             {field(category, setCategory, t("whiskyForm.category", "Category"), "whisky-edit-category")}
             {field(peatLevel, setPeatLevel, t("whiskyForm.peat", "Peat"), "whisky-edit-peat")}
           </div>
+          <div className="flex gap-2">
+            {field(wbScore, setWbScore, t("whiskyForm.wbScore", "Whiskybase rating"), "whisky-edit-wbscore", { numeric: true })}
+            {field(priceCurrency, setPriceCurrency, t("whiskyForm.currency", "Currency"), "whisky-edit-currency", { width: 72 })}
+          </div>
+          <div className="flex gap-2">
+            {field(priceRrp, setPriceRrp, t("whiskyForm.rrp", "RRP"), "whisky-edit-rrp", { numeric: true })}
+            {field(priceMarket, setPriceMarket, t("whiskyForm.market", "Market"), "whisky-edit-market", { numeric: true })}
+          </div>
           <textarea
             className="labs-input w-full text-sm"
             rows={2}
@@ -258,33 +278,17 @@ export function WhiskyEditForm({
         </div>
       )}
 
-      {hasLookupData && (
-        <div
-          className="text-[11px] space-y-0.5"
-          style={{ color: "var(--labs-text-muted)", paddingTop: 4, borderTop: "1px solid var(--labs-border)" }}
-          data-testid="whisky-edit-lookup"
+      {wbLookupId.trim() && (
+        <a
+          href={`https://www.whiskybase.com/whiskies/whisky/${wbLookupId.trim()}/`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-[11px]"
+          style={{ color: "var(--labs-accent)" }}
+          data-testid="whisky-edit-wb-link"
         >
-          {wbScore != null && <div>{t("whiskyForm.wbScore", "Whiskybase rating")}: {String(wbScore)}</div>}
-          {(priceRrp != null || priceMarket != null) && (
-            <div>
-              {priceRrp != null && <>{t("whiskyForm.rrp", "RRP")}: {String(priceRrp)} {currency}</>}
-              {priceRrp != null && priceMarket != null && " · "}
-              {priceMarket != null && <>{t("whiskyForm.market", "Market")}: {String(priceMarket)} {currency}</>}
-            </div>
-          )}
-          {wbId && (
-            <a
-              href={`https://www.whiskybase.com/whiskies/whisky/${wbId}/`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1"
-              style={{ color: "var(--labs-accent)" }}
-              data-testid="whisky-edit-wb-link"
-            >
-              Whiskybase <ExternalLink className="w-3 h-3" />
-            </a>
-          )}
-        </div>
+          Whiskybase <ExternalLink className="w-3 h-3" />
+        </a>
       )}
 
       <div className="flex gap-2 justify-end">
