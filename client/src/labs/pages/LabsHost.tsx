@@ -2500,7 +2500,7 @@ function MobileCompanion({
           setMobileAiResults(result.whiskies);
           setMobileAiImageUrls(urls);
           setMobileWbProgress(null);
-          startWhiskybaseLookup(result.whiskies, pid, setMobileAiResults, undefined, setMobileWbProgress);
+          // Whiskybase-Suche startet bewusst NICHT automatisch — nur per Kachel/Knopf.
           const existingList = (whiskies || []) as Array<Record<string, unknown>>;
           const nonDupeIndices = new Set(
             result.whiskies.map((_: any, i: number) => i).filter((i: number) =>
@@ -3022,18 +3022,6 @@ function MobileCompanion({
                       {t("labs.aiImport.close", "Close")}
                     </button>
                   </div>
-                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", marginTop: 16, paddingTop: 14 }}>
-                    <p className="text-xs" style={{ color: "var(--labs-text-muted)", marginBottom: 8 }}>
-                      {t("labs.aiImport.exportHint", "Download the lineup as Excel for your records.")}
-                    </p>
-                    <button
-                      className="labs-btn-ghost text-xs"
-                      onClick={() => downloadLineupExcel(tastingId, i18n.language?.startsWith("de") ? "de" : "en")}
-                      data-testid="mobile-ai-post-excel"
-                    >
-                      {t("labs.aiImport.downloadExcel", "Download Excel")}
-                    </button>
-                  </div>
                   </>
                 )}
 
@@ -3042,7 +3030,16 @@ function MobileCompanion({
                   const nonDupeCount = mobileAiResults.length - dupeIndices.size;
                   return (
                   <div className="space-y-2 mt-1">
-                    <WbProgressBar progress={mobileWbProgress} t={t} />
+                    {mobileAiResults.length > 0 && !mobileWbProgress && (
+                  <button
+                    className="labs-btn-ghost text-xs"
+                    onClick={() => startWhiskybaseLookup(mobileAiResults, pid, setMobileAiResults, undefined, setMobileWbProgress)}
+                    data-testid="mobile-import-wb-start"
+                  >
+                    {t("labs.wbSaved.start", "Whiskybase lookup")}
+                  </button>
+                )}
+                <WbProgressBar progress={mobileWbProgress} t={t} />
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>
                         {t("labs.aiImport.found", "Found {{count}}", { count: mobileAiResults.length })}
@@ -6573,7 +6570,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           setAiImportResults(result.whiskies);
           setAiImportImageUrls(urls);
           setWbProgress(null);
-          startWhiskybaseLookup(result.whiskies, currentParticipant?.id || "", setAiImportResults, undefined, setWbProgress);
+          // Whiskybase-Suche startet bewusst NICHT automatisch — nur per Kachel/Knopf.
           const existingList = (whiskies || []) as Array<Record<string, unknown>>;
           const nonDupeIndices = new Set(
             result.whiskies.map((_: any, i: number) => i).filter((i: number) =>
@@ -8004,18 +8001,6 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   {t("labs.aiImport.close", "Close")}
                 </button>
               </div>
-              <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", marginTop: 16, paddingTop: 14 }}>
-                <p className="text-xs" style={{ color: "var(--labs-text-muted)", marginBottom: 8 }}>
-                  {t("labs.aiImport.exportHint", "Download the lineup as Excel for your records.")}
-                </p>
-                <button
-                  className="labs-btn-ghost text-xs"
-                  onClick={() => downloadLineupExcel(tastingId, i18n.language?.startsWith("de") ? "de" : "en")}
-                  data-testid="labs-ai-post-excel"
-                >
-                  {t("labs.aiImport.downloadExcel", "Download Excel")}
-                </button>
-              </div>
               </>
             )}
 
@@ -8024,7 +8009,16 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               const nonDupeCount = aiImportResults.length - dupeIndices.size;
               return (
               <div className="space-y-2 mt-3">
-                <WbProgressBar progress={wbProgress} t={t} />
+                {aiImportResults.length > 0 && !wbProgress && (
+              <button
+                className="labs-btn-ghost text-xs"
+                onClick={() => startWhiskybaseLookup(aiImportResults, currentParticipant?.id || "", setAiImportResults, undefined, setWbProgress)}
+                data-testid="desktop-import-wb-start"
+              >
+                {t("labs.wbSaved.start", "Whiskybase lookup")}
+              </button>
+            )}
+            <WbProgressBar progress={wbProgress} t={t} />
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>
                     {t("labs.aiImport.found", "Found {{count}}", { count: aiImportResults.length })}
