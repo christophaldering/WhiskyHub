@@ -500,6 +500,68 @@ export type PriceProgress = { done: number; total: number; found: number; curren
  * Streng nacheinander statt parallel — es eilt nicht, und die Websuche liefert
  * bei einzelnen Anfragen zuverlaessigere Ergebnisse.
  */
+/**
+ * Whiskybase-Verknuepfung fuer bereits GESPEICHERTE Whiskys nachholen.
+ *
+ * Gegenstueck zur Preissuche: laeuft auf Knopfdruck am fertigen Lineup,
+ * nimmt nur Flaschen ohne Verknuepfung, speichert jeden Treffer sofort.
+ * Dank Sammlungs- und Speicher-Vorstufen auf dem Server sind Wiederholungen
+ * guenstig — nur wirklich Unbekanntes geht ins Netz.
+ */
+async function runWbLookupForSaved(
+  whiskies: any[],
+  hostId: string,
+  onProgress: (p: PriceProgress) => void,
+  onSaved: () => void,
+  shouldStop: () => boolean,
+): Promise<void> {
+  const open = whiskies.filter((w: any) => w?.name && !w.whiskybaseId);
+  const total = open.length;
+  if (total === 0) { onProgress(null); return; }
+
+  let done = 0;
+  let found = 0;
+  for (const w of open) {
+    if (shouldStop()) break;
+    onProgress({ done, total, found, current: w.name });
+    try {
+      const res = await fetch(apiUrl("/api/tastings/wb-lookup"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hostId,
+          items: [{
+            name: w.name,
+            distillery: w.distillery || null,
+            age: w.age || null,
+            abv: w.abv || null,
+            caskType: w.caskType || null,
+            bottledYear: w.bottledYear || null,
+          }],
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        const hit = Array.isArray(data?.results) ? data.results[0] : null;
+        if (hit?.whiskybaseId) {
+          await whiskyApi.update(String(w.id), {
+            whiskybaseId: hit.whiskybaseId,
+            whiskybaseUrl: hit.whiskybaseUrl || `https://www.whiskybase.com/whiskies/whisky/${hit.whiskybaseId}/`,
+            ...(hit.wbScore != null ? { wbScore: hit.wbScore } : {}),
+          } as any);
+          found += 1;
+        }
+      }
+    } catch {
+      // Eine Flasche ohne Treffer ist kein Grund, den Rest abzubrechen.
+    }
+    done += 1;
+    onProgress({ done, total, found, current: null });
+  }
+  onSaved();
+  onProgress(null);
+}
+
 async function runPriceLookupForSaved(
   whiskies: any[],
   hostId: string,
@@ -2174,6 +2236,8 @@ function MobileCompanion({
   const [mobileWbProgress, setMobileWbProgress] = useState<WbProgress>(null);
   const [mobilePriceProgress, setMobilePriceProgress] = useState<PriceProgress>(null);
   const mobilePriceStopRef = useRef(false);
+  const [mobileWbSavedProgress, setMobileWbSavedProgress] = useState<PriceProgress>(null);
+  const mobileWbSavedStopRef = useRef(false);
   const [mobileAiImageUrls, setMobileAiImageUrls] = useState<string[]>([]);
   const [mobileAiSelected, setMobileAiSelected] = useState<Set<number>>(new Set());
   const [mobileAiPhotoPicker, setMobileAiPhotoPicker] = useState<number | null>(null);
@@ -3147,29 +3211,31 @@ function MobileCompanion({
           )}
 
           {whiskyCount > 0 && tasting.status !== "archived" && (
-            <div className="mb-3">
-              {mobilePriceProgress ? (
-                <>
-                  <ProgressLine
-                    label={t("labs.price.searching", "Looking up prices")}
-                    done={mobilePriceProgress.done}
-                    total={mobilePriceProgress.total}
-                    countLabel={t("labs.price.progressCount", "{{done}} of {{total}} · {{found}} found", {
-                      done: mobilePriceProgress.done, total: mobilePriceProgress.total, found: mobilePriceProgress.found,
-                    })}
-                    sub={mobilePriceProgress.current}
-                  />
-                  <button
-                    className="labs-btn-ghost text-xs"
-                    onClick={() => { mobilePriceStopRef.current = true; }}
-                    data-testid="labs-mobile-price-stop"
-                  >
-                    {t("labs.price.stop", "Stop")}
-                  </button>
-                </>
-              ) : (
+            <div className="mb-3 space-y-2">
+              {/* Zwei Nachschlage-Werkzeuge am fertigen Lineup, bewusst als aktive
+                  Schalter: der Gastgeber stoesst an und sieht den Fortschritt, statt
+                  dass im Hintergrund etwas Unsichtbares passiert. */}
+              <div className="flex gap-2 flex-wrap">
                 <button
                   className="labs-btn-ghost text-xs"
+                  disabled={!!mobileWbSavedProgress}
+                  onClick={() => {
+                    mobileWbSavedStopRef.current = false;
+                    void runWbLookupForSaved(
+                      (whiskies || []) as any[],
+                      pid || "",
+                      setMobileWbSavedProgress,
+                      () => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] }),
+                      () => mobileWbSavedStopRef.current,
+                    );
+                  }}
+                  data-testid="labs-mobile-wb-start"
+                >
+                  {t("labs.wbSaved.start", "Whiskybase lookup")}
+                </button>
+                <button
+                  className="labs-btn-ghost text-xs"
+                  disabled={!!mobilePriceProgress}
                   onClick={() => {
                     mobilePriceStopRef.current = false;
                     void runPriceLookupForSaved(
@@ -3184,6 +3250,38 @@ function MobileCompanion({
                 >
                   {t("labs.price.start", "Look up prices")}
                 </button>
+              </div>
+              {mobileWbSavedProgress && (
+                <>
+                  <ProgressLine
+                    label={t("labs.wbSaved.searching", "Looking up Whiskybase entries")}
+                    done={mobileWbSavedProgress.done}
+                    total={mobileWbSavedProgress.total}
+                    countLabel={t("labs.price.progressCount", "{{done}} of {{total}} · {{found}} found", {
+                      done: mobileWbSavedProgress.done, total: mobileWbSavedProgress.total, found: mobileWbSavedProgress.found,
+                    })}
+                    sub={mobileWbSavedProgress.current}
+                  />
+                  <button className="labs-btn-ghost text-xs" onClick={() => { mobileWbSavedStopRef.current = true; }} data-testid="labs-mobile-wb-stop">
+                    {t("labs.price.stop", "Stop")}
+                  </button>
+                </>
+              )}
+              {mobilePriceProgress && (
+                <>
+                  <ProgressLine
+                    label={t("labs.price.searching", "Looking up prices")}
+                    done={mobilePriceProgress.done}
+                    total={mobilePriceProgress.total}
+                    countLabel={t("labs.price.progressCount", "{{done}} of {{total}} · {{found}} found", {
+                      done: mobilePriceProgress.done, total: mobilePriceProgress.total, found: mobilePriceProgress.found,
+                    })}
+                    sub={mobilePriceProgress.current}
+                  />
+                  <button className="labs-btn-ghost text-xs" onClick={() => { mobilePriceStopRef.current = true; }} data-testid="labs-mobile-price-stop">
+                    {t("labs.price.stop", "Stop")}
+                  </button>
+                </>
               )}
             </div>
           )}
@@ -6339,6 +6437,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const [wbProgress, setWbProgress] = useState<WbProgress>(null);
   const [priceProgress, setPriceProgress] = useState<PriceProgress>(null);
   const priceStopRef = useRef(false);
+  const [wbSavedProgress, setWbSavedProgress] = useState<PriceProgress>(null);
+  const wbSavedStopRef = useRef(false);
   const [aiImportImageUrls, setAiImportImageUrls] = useState<string[]>([]);
   const [aiImportSelected, setAiImportSelected] = useState<Set<number>>(new Set());
   const [aiImportLineFields, setAiImportLineFields] = useState<ImportLineField[]>(() => loadImportLineFields());
@@ -8256,29 +8356,31 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
 
         {whiskyCount > 0 && tasting.status !== "archived" && (
-          <div className="mb-3">
-            {priceProgress ? (
-              <>
-                <ProgressLine
-                  label={t("labs.price.searching", "Looking up prices")}
-                  done={priceProgress.done}
-                  total={priceProgress.total}
-                  countLabel={t("labs.price.progressCount", "{{done}} of {{total}} · {{found}} found", {
-                    done: priceProgress.done, total: priceProgress.total, found: priceProgress.found,
-                  })}
-                  sub={priceProgress.current}
-                />
-                <button
-                  className="labs-btn-ghost text-xs"
-                  onClick={() => { priceStopRef.current = true; }}
-                  data-testid="labs-desktop-price-stop"
-                >
-                  {t("labs.price.stop", "Stop")}
-                </button>
-              </>
-            ) : (
+          <div className="mb-3 space-y-2">
+            {/* Zwei Nachschlage-Werkzeuge am fertigen Lineup, bewusst als aktive
+                Schalter: der Gastgeber stoesst an und sieht den Fortschritt, statt
+                dass im Hintergrund etwas Unsichtbares passiert. */}
+            <div className="flex gap-2 flex-wrap">
               <button
                 className="labs-btn-ghost text-xs"
+                disabled={!!wbSavedProgress}
+                onClick={() => {
+                  wbSavedStopRef.current = false;
+                  void runWbLookupForSaved(
+                    (whiskies || []) as any[],
+                    currentParticipant?.id || "",
+                    setWbSavedProgress,
+                    () => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] }),
+                    () => wbSavedStopRef.current,
+                  );
+                }}
+                data-testid="labs-desktop-wb-start"
+              >
+                {t("labs.wbSaved.start", "Whiskybase lookup")}
+              </button>
+              <button
+                className="labs-btn-ghost text-xs"
+                disabled={!!priceProgress}
                 onClick={() => {
                   priceStopRef.current = false;
                   void runPriceLookupForSaved(
@@ -8293,6 +8395,38 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               >
                 {t("labs.price.start", "Look up prices")}
               </button>
+            </div>
+            {wbSavedProgress && (
+              <>
+                <ProgressLine
+                  label={t("labs.wbSaved.searching", "Looking up Whiskybase entries")}
+                  done={wbSavedProgress.done}
+                  total={wbSavedProgress.total}
+                  countLabel={t("labs.price.progressCount", "{{done}} of {{total}} · {{found}} found", {
+                    done: wbSavedProgress.done, total: wbSavedProgress.total, found: wbSavedProgress.found,
+                  })}
+                  sub={wbSavedProgress.current}
+                />
+                <button className="labs-btn-ghost text-xs" onClick={() => { wbSavedStopRef.current = true; }} data-testid="labs-desktop-wb-stop">
+                  {t("labs.price.stop", "Stop")}
+                </button>
+              </>
+            )}
+            {priceProgress && (
+              <>
+                <ProgressLine
+                  label={t("labs.price.searching", "Looking up prices")}
+                  done={priceProgress.done}
+                  total={priceProgress.total}
+                  countLabel={t("labs.price.progressCount", "{{done}} of {{total}} · {{found}} found", {
+                    done: priceProgress.done, total: priceProgress.total, found: priceProgress.found,
+                  })}
+                  sub={priceProgress.current}
+                />
+                <button className="labs-btn-ghost text-xs" onClick={() => { priceStopRef.current = true; }} data-testid="labs-desktop-price-stop">
+                  {t("labs.price.stop", "Stop")}
+                </button>
+              </>
             )}
           </div>
         )}

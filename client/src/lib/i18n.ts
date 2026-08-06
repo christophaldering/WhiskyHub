@@ -6448,6 +6448,10 @@ const resources = {
           searching: "Looking up prices",
           progressCount: "{{done}} of {{total}} · {{found}} found",
           stop: "Stop",
+        },
+        wbSaved: {
+          start: "Whiskybase lookup",
+          searching: "Looking up Whiskybase entries",
           priceSearching: "Price search running…",
           fieldsToggle: "Displayed fields",
           fieldDistillery: "Distillery",
@@ -16380,6 +16384,10 @@ const resources = {
           searching: "Preise werden gesucht",
           progressCount: "{{done}} von {{total}} · {{found}} gefunden",
           stop: "Anhalten",
+        },
+        wbSaved: {
+          start: "Whiskybase-Suche",
+          searching: "Whiskybase-Einträge werden gesucht",
           priceSearching: "Preissuche läuft…",
           fieldsToggle: "Angezeigte Felder",
           fieldDistillery: "Brennerei",
