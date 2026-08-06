@@ -60,6 +60,8 @@ import TastingPersonalSection from "@/labs/components/TastingPersonalSection";
 import WhiskyImage from "@/labs/components/WhiskyImage";
 import WhiskyImageUpload from "@/components/WhiskyImageUpload";
 import { WhiskyEditForm } from "@/labs/components/WhiskyEditForm";
+import { SmartImportPanel } from "@/labs/components/SmartImportPanel";
+import { LineupLookupTools } from "@/labs/components/LineupLookupTools";
 import { getTastingPhase, isResultDownloadsPhase, RESULT_DOWNLOAD_KINDS } from "@/labs/utils/tastingPhase";
 import type { Tasting, WhiskyFriend } from "@shared/schema";
 import QRCode from "qrcode";
@@ -227,6 +229,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
   const [editingWhiskyId, setEditingWhiskyId] = useState<string | null>(null);
   const [deletingWhiskyId, setDeletingWhiskyId] = useState<string | null>(null);
   const [showAddWhisky, setShowAddWhisky] = useState(false);
+  const [showSmartImport, setShowSmartImport] = useState(false);
   const [newWhiskyName, setNewWhiskyName] = useState("");
   const [showSessionSettings, setShowSessionSettings] = useState(false);
   const [showManageTasters, setShowManageTasters] = useState(false);
@@ -953,7 +956,19 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
                 {isHost && isDraft && (
                   <button
                     type="button"
-                    onClick={() => setShowAddWhisky(!showAddWhisky)}
+                    onClick={() => { setShowSmartImport(!showSmartImport); setShowAddWhisky(false); }}
+                    className="labs-btn-secondary"
+                    data-testid="labs-detail-smart-import-toggle"
+                    style={{ fontSize: 12, padding: "6px 12px", display: "inline-flex", alignItems: "center", gap: 4 }}
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Smart-Import
+                  </button>
+                )}
+                {isHost && isDraft && (
+                  <button
+                    type="button"
+                    onClick={() => { setShowAddWhisky(!showAddWhisky); setShowSmartImport(false); }}
                     className="labs-btn-secondary"
                     data-testid="labs-detail-add-whisky-toggle"
                     style={{ fontSize: 12, padding: "6px 12px", display: "inline-flex", alignItems: "center", gap: 6 }}
@@ -1016,6 +1031,23 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
               </div>
             </header>
 
+            {isHost && isDraft && showSmartImport && (
+              <div className="mb-3">
+                <SmartImportPanel
+                  tastingId={tastingId}
+                  hostId={String(currentParticipant?.id || "")}
+                  existingCount={whiskyCount}
+                  onClose={() => setShowSmartImport(false)}
+                />
+              </div>
+            )}
+            {isHost && isDraft && whiskyCount > 0 && (
+              <LineupLookupTools
+                whiskies={(whiskies || []) as any[]}
+                hostId={String(currentParticipant?.id || "")}
+                tastingId={tastingId}
+              />
+            )}
             {isHost && isDraft && showAddWhisky && (
               <div className="mb-3" data-testid="labs-detail-add-whisky-form">
                 <WhiskyEditForm
