@@ -6485,6 +6485,11 @@ const resources = {
           start: "Whiskybase lookup",
           searching: "Looking up Whiskybase entries",
         },
+        smartImport: {
+          filesSelected: "{{count}} files selected",
+          clear: "Clear",
+          addSelected: "Add {{count}} to lineup",
+        },
         aiRefine: {
           title: "Ask Cooper about your lineup",
           subtitle: "Reorder, drop bottles or simply ask — in your own words.",
@@ -16421,6 +16426,11 @@ const resources = {
         wbSaved: {
           start: "Whiskybase-Suche",
           searching: "Whiskybase-Einträge werden gesucht",
+        },
+        smartImport: {
+          filesSelected: "{{count}} Dateien ausgewählt",
+          clear: "Leeren",
+          addSelected: "{{count}} ins Lineup übernehmen",
         },
         aiRefine: {
           title: "Cooper zum Lineup fragen",

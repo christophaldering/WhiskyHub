@@ -282,7 +282,7 @@ export type WbProgress = { done: number; total: number; found: number; current: 
 /** Schlichter Fortschrittsbalken. Wird fuer die Bildanalyse und die
  *  Whiskybase-Suche gleichermassen benutzt, damit beide Wartezeiten
  *  gleich aussehen und gleich lesbar sind. */
-function ProgressLine({
+export function ProgressLine({
   label, done, total, sub, countLabel,
 }: { label: string; done: number; total: number; sub?: string | null; countLabel?: string }) {
   if (total <= 0) return null;
@@ -310,7 +310,7 @@ function ProgressLine({
 
 /** Fortschritt der Whiskybase-Suche. Zeigt bewusst auch die Trefferzahl:
  *  wer nach zwanzig Flaschen erst drei Treffer sieht, weiss frueh, woran er ist. */
-function WbProgressBar({ progress, t }: { progress: WbProgress; t: TFunction }) {
+export function WbProgressBar({ progress, t }: { progress: WbProgress; t: TFunction }) {
   if (!progress || progress.total === 0) return null;
   const pct = Math.round((progress.done / progress.total) * 100);
   return (
@@ -368,7 +368,7 @@ function WbProgressBar({ progress, t }: { progress: WbProgress; t: TFunction }) 
  * aus, faellt nur diese aus. Und der Fortschritt ist zaehlbar, statt dass man
  * minutenlang auf einen Ladekreis sieht.
  */
-function startWhiskybaseLookup(
+export function startWhiskybaseLookup(
   list: any[],
   hostId: string,
   setResults: (updater: (rs: any[]) => any[]) => void,
@@ -508,7 +508,7 @@ export type PriceProgress = { done: number; total: number; found: number; curren
  * Dank Sammlungs- und Speicher-Vorstufen auf dem Server sind Wiederholungen
  * guenstig — nur wirklich Unbekanntes geht ins Netz.
  */
-async function runWbLookupForSaved(
+export async function runWbLookupForSaved(
   whiskies: any[],
   hostId: string,
   onProgress: (p: PriceProgress) => void,
@@ -562,7 +562,7 @@ async function runWbLookupForSaved(
   onProgress(null);
 }
 
-async function runPriceLookupForSaved(
+export async function runPriceLookupForSaved(
   whiskies: any[],
   hostId: string,
   onProgress: (p: PriceProgress) => void,
@@ -9355,7 +9355,7 @@ export default function LabsHost({ params }: LabsHostProps) {
   return <CreateTastingForm />;
 }
 
-async function runChunkedAiImport(
+export async function runChunkedAiImport(
   files: File[],
   text: string,
   hostId: string,
