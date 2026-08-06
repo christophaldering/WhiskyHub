@@ -6483,10 +6483,14 @@ const resources = {
           searching: "Looking up prices",
           progressCount: "{{done}} of {{total}} · {{found}} found",
           stop: "Stop",
+          hint: "Researches RRP and current market price for bottles without prices — with source and date, saved immediately.",
+          subtitle: "RRP & market price",
         },
         wbSaved: {
           start: "Whiskybase lookup",
           searching: "Looking up Whiskybase entries",
+          hint: "Finds the Whiskybase entry for every bottle that has none yet — link and community score are saved immediately.",
+          subtitle: "Link bottles & fetch scores",
         },
         smartImport: {
           filesSelected: "{{count}} files selected",
@@ -16428,10 +16432,14 @@ const resources = {
           searching: "Preise werden gesucht",
           progressCount: "{{done}} von {{total}} · {{found}} gefunden",
           stop: "Anhalten",
+          hint: "Recherchiert UVP und aktuellen Marktpreis für Flaschen ohne Preise — mit Quelle und Datum, sofort gespeichert.",
+          subtitle: "UVP & Marktpreis",
         },
         wbSaved: {
           start: "Whiskybase-Suche",
           searching: "Whiskybase-Einträge werden gesucht",
+          hint: "Sucht für jede noch unverknüpfte Flasche den passenden Whiskybase-Eintrag — Link und Community-Bewertung werden sofort gespeichert.",
+          subtitle: "Flaschen verknüpfen & Scores holen",
         },
         smartImport: {
           filesSelected: "{{count}} Dateien ausgewählt",
