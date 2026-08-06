@@ -3203,30 +3203,6 @@ function MobileCompanion({
             </div>
           )}
 
-          {whiskyCount > 0 && tasting.status !== "archived" && (
-            <LineupLookupTools
-              whiskies={(whiskies || []) as any[]}
-              hostId={pid || ""}
-              tastingId={tastingId}
-            />
-          )}
-
-          {whiskyCount >= 2 && tasting.status !== "archived" && (
-            <div className="mb-3">
-              <AiRefinePanel
-                results={[]}
-                hostId={pid || ""}
-                language={i18n.language || "de"}
-                t={t}
-                testPrefix="labs-ai-lineup-mobile"
-                onApply={() => {}}
-                savedWhiskies={whiskies || []}
-                tastingId={tastingId}
-                onSavedApply={() => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] })}
-              />
-            </div>
-          )}
-
           {whiskyCount > 0 && (
             <div className="space-y-2 mb-3">
               {whiskies.map((w: any, i: number) => (
@@ -3314,6 +3290,30 @@ function MobileCompanion({
                   )}
                 </div>
               ))}
+            </div>
+          )}
+
+          {whiskyCount > 0 && tasting.status !== "archived" && (
+            <LineupLookupTools
+              whiskies={(whiskies || []) as any[]}
+              hostId={pid || ""}
+              tastingId={tastingId}
+            />
+          )}
+
+          {whiskyCount >= 2 && tasting.status !== "archived" && (
+            <div className="mb-3">
+              <AiRefinePanel
+                results={[]}
+                hostId={pid || ""}
+                language={i18n.language || "de"}
+                t={t}
+                testPrefix="labs-ai-lineup-mobile"
+                onApply={() => {}}
+                savedWhiskies={whiskies || []}
+                tastingId={tastingId}
+                onSavedApply={() => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] })}
+              />
             </div>
           )}
 
@@ -8265,30 +8265,6 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         )}
 
 
-        {whiskyCount > 0 && tasting.status !== "archived" && (
-          <LineupLookupTools
-            whiskies={(whiskies || []) as any[]}
-            hostId={currentParticipant?.id || ""}
-            tastingId={tastingId}
-          />
-        )}
-
-        {whiskyCount >= 2 && tasting.status !== "archived" && (
-          <div className="mb-3">
-            <AiRefinePanel
-              results={[]}
-              hostId={currentParticipant?.id || ""}
-              language={i18n.language || "de"}
-              t={t}
-              testPrefix="labs-ai-lineup"
-              onApply={() => {}}
-              savedWhiskies={whiskies || []}
-              tastingId={tastingId}
-              onSavedApply={() => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] })}
-            />
-          </div>
-        )}
-
         {(() => {
           const rvDesktop = tasting.blindMode && !tasting.guidedMode && tasting.status === "reveal"
             ? getRevealState(tasting, whiskyCount, t) : null;
@@ -8500,6 +8476,30 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           </div>
         );
         })()}
+
+        {whiskyCount > 0 && tasting.status !== "archived" && (
+          <LineupLookupTools
+            whiskies={(whiskies || []) as any[]}
+            hostId={currentParticipant?.id || ""}
+            tastingId={tastingId}
+          />
+        )}
+
+        {whiskyCount >= 2 && tasting.status !== "archived" && (
+          <div className="mb-3">
+            <AiRefinePanel
+              results={[]}
+              hostId={currentParticipant?.id || ""}
+              language={i18n.language || "de"}
+              t={t}
+              testPrefix="labs-ai-lineup"
+              onApply={() => {}}
+              savedWhiskies={whiskies || []}
+              tastingId={tastingId}
+              onSavedApply={() => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] })}
+            />
+          </div>
+        )}
       </div>
 
       {currentParticipant && (
