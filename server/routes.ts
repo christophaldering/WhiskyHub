@@ -937,14 +937,15 @@ export async function registerRoutes(
       const lang = (req.query.lang as string) === "de" ? "de" : "en";
       // Vollstaendige Spaltenliste — identisch zum CSV-Export der Import-Vorschau.
       const H = lang === "de"
-        ? { pos: "#", name: "Name", distillery: "Destillerie", bottler: "Abfüller", age: "Alter", abv: "ABV %", category: "Kategorie", region: "Region", country: "Land", cask: "Fasstyp", peat: "Torf", ppm: "PPM", distilled: "Destilliert", bottled: "Abgefüllt", price: "Preis", rrp: "UVP", market: "Marktpreis", currency: "Währung", wbScore: "WB-Score", wbId: "Whiskybase ID", wbUrl: "Whiskybase URL", notes: "Notizen", summary: "Host-Zusammenfassung" }
-        : { pos: "#", name: "Name", distillery: "Distillery", bottler: "Bottler", age: "Age", abv: "ABV %", category: "Category", region: "Region", country: "Country", cask: "Cask type", peat: "Peat level", ppm: "PPM", distilled: "Distilled", bottled: "Bottled", price: "Price", rrp: "RRP", market: "Market price", currency: "Currency", wbScore: "WB score", wbId: "Whiskybase ID", wbUrl: "Whiskybase URL", notes: "Notes", summary: "Host summary" };
+        ? { photo: "Foto", pos: "#", name: "Name", distillery: "Destillerie", bottler: "Abfüller", age: "Alter", abv: "ABV %", category: "Kategorie", region: "Region", country: "Land", cask: "Fasstyp", peat: "Torf", ppm: "PPM", distilled: "Destilliert", bottled: "Abgefüllt", price: "Preis", rrp: "UVP", market: "Marktpreis", currency: "Währung", wbScore: "WB-Score", wbId: "Whiskybase ID", wbUrl: "Whiskybase URL", notes: "Notizen", summary: "Host-Zusammenfassung" }
+        : { photo: "Photo", pos: "#", name: "Name", distillery: "Distillery", bottler: "Bottler", age: "Age", abv: "ABV %", category: "Category", region: "Region", country: "Country", cask: "Cask type", peat: "Peat level", ppm: "PPM", distilled: "Distilled", bottled: "Bottled", price: "Price", rrp: "RRP", market: "Market price", currency: "Currency", wbScore: "WB score", wbId: "Whiskybase ID", wbUrl: "Whiskybase URL", notes: "Notes", summary: "Host summary" };
       const num = (v: any) => (v != null && v !== "" ? (Number(v) || Number(v) === 0 ? Number(v) : v) : "");
       const sorted = [...ws].sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
       const data = sorted.map((w: any, i: number) => {
         const wbId = (w.whiskybaseId ?? "").toString().trim();
         const wbNumeric = /^\d+$/.test(wbId) ? wbId : "";
         return {
+          [H.photo]: "",
           [H.pos]: i + 1,
           [H.name]: w.name || "",
           [H.distillery]: w.distillery || "",
@@ -971,7 +972,51 @@ export async function registerRoutes(
         };
       });
       const safeTitle = String((tasting as any).title || "lineup").replace(/[^a-zA-Z0-9äöüÄÖÜß _-]/g, "").trim().replace(/\s+/g, "_").slice(0, 60) || "lineup";
-      const buf = await buildExcelBuffer([{ name: "Lineup", data }]);
+      // Flaschenfotos einbetten. Excel akzeptiert nur PNG/JPEG, unsere Bilder
+      // liegen teils als WebP vor — daher immer durch sharp normalisieren.
+      // Fehler pro Bild sind non-fatal: die Zeile bleibt dann einfach leer.
+      const PHOTO_W = 54;
+      const PHOTO_H = 70;
+      const loadPhoto = async (raw: string): Promise<Buffer | null> => {
+        try {
+          let src: Buffer;
+          if (/^https?:\/\//i.test(raw)) {
+            assertSafeImageUrl(raw);
+            const r = await fetch(raw, { redirect: "error" });
+            if (!r.ok) return null;
+            src = Buffer.from(await r.arrayBuffer());
+            if (src.length > 20 * 1024 * 1024) return null;
+          } else {
+            const f = await objectStorage.getObjectEntityFile(raw);
+            const [b] = await f.download();
+            src = b;
+          }
+          return await sharp(src, { failOn: "none" })
+            .rotate()
+            .resize({ width: PHOTO_W * 2, height: PHOTO_H * 2, fit: "inside", withoutEnlargement: true })
+            .png()
+            .toBuffer();
+        } catch {
+          return null;
+        }
+      };
+      const photoImages: any[] = [];
+      // In Paketen von 5, sonst dauert ein Lineup mit 30 Flaschen zu lange.
+      for (let i = 0; i < sorted.length; i += 5) {
+        const slice = sorted.slice(i, i + 5);
+        const loaded = await Promise.all(slice.map((w: any) =>
+          w?.imageUrl ? loadPhoto(String(w.imageUrl)) : Promise.resolve(null)));
+        loaded.forEach((b, j) => {
+          if (b) photoImages.push({ rowIndex: i + j, colIndex: 0, buffer: b, extension: "png", widthPx: PHOTO_W, heightPx: PHOTO_H });
+        });
+      }
+      const buf = await buildExcelBuffer([{
+        name: "Lineup",
+        data,
+        images: photoImages,
+        imageColumnWidth: 10,
+        imageRowHeight: 58,
+      }]);
       res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
       res.setHeader("Content-Disposition", `attachment; filename="${safeTitle}_lineup.xlsx"`);
       res.send(buf);

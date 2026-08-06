@@ -93,16 +93,49 @@ export function jsonToCsv(data: Record<string, any>[]): string {
   return sheetToCsv(jsonToSheet(data));
 }
 
-export async function buildExcelBuffer(sheets: { name: string; data: Record<string, any>[] }[]): Promise<Buffer> {
+/** Ein in ein Blatt eingebettetes Bild. rowIndex ist 0-basiert OHNE Kopfzeile. */
+export interface ExcelSheetImage {
+  rowIndex: number;
+  colIndex: number;
+  buffer: Buffer;
+  extension: "png" | "jpeg";
+  widthPx: number;
+  heightPx: number;
+}
+
+export interface ExcelSheetSpec {
+  name: string;
+  data: Record<string, any>[];
+  images?: ExcelSheetImage[];
+  imageColumnWidth?: number;
+  imageRowHeight?: number;
+}
+
+export async function buildExcelBuffer(sheets: ExcelSheetSpec[]): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
 
-  for (const { name, data } of sheets) {
+  for (const { name, data, images, imageColumnWidth, imageRowHeight } of sheets) {
     if (data.length === 0) continue;
     const worksheet = workbook.addWorksheet(name.slice(0, 31));
     const headers = Object.keys(data[0]);
     worksheet.addRow(headers);
     for (const item of data) {
       worksheet.addRow(headers.map(h => item[h] != null ? item[h] : ""));
+    }
+    if (images && images.length > 0) {
+      // Ohne gesetzte Breite/Hoehe ueberlappt das Bild die Nachbarzellen.
+      const cols = new Set(images.map(im => im.colIndex));
+      for (const c of Array.from(cols)) worksheet.getColumn(c + 1).width = imageColumnWidth ?? 10;
+      for (const im of images) {
+        // +1 Kopfzeile, +1 weil ExcelJS-Zeilen 1-basiert sind.
+        worksheet.getRow(im.rowIndex + 2).height = imageRowHeight ?? 58;
+        const id = workbook.addImage({ buffer: im.buffer as any, extension: im.extension });
+        worksheet.addImage(id, {
+          tl: { col: im.colIndex + 0.15, row: im.rowIndex + 1.1 },
+          ext: { width: im.widthPx, height: im.heightPx },
+          editAs: "oneCell",
+        });
+      }
     }
   }
 
