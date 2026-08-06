@@ -250,6 +250,11 @@ export const whiskies = pgTable("whiskies", {
   priceRrpDate: text("price_rrp_date"),
   priceMarketSource: text("price_market_source"),
   priceMarketDate: text("price_market_date"),
+  // Tiefensuche (Preis-Agent): Rechercheprotokoll und tatsaechliche
+  // API-Kosten in EUR des letzten Laufs. Auch ein Fehlschlag hinterlaesst
+  // so Wissen ("ausverkauft bei X, letzte Auktion 03/2026").
+  priceAgentLog: text("price_agent_log"),
+  priceAgentCost: real("price_agent_cost"),
   hostSummary: text("host_summary"), // Host's detailed tasting assessment/review
   distilleryUrl: text("distillery_url"), // Distillery homepage URL
   aiFactsCache: text("ai_facts_cache"), // Cached AI-generated interesting facts (JSON)
