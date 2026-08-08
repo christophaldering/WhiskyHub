@@ -20993,6 +20993,7 @@ If the user data includes a "hostContext" field, treat it as additional creative
       let excelResult: { whiskies: any[]; tastingMeta: any; hostNotes: Record<number, string> } | null = null;
       const imageContents: { type: "image_url"; image_url: { url: string } }[] = [];
       const uploadedImageUrls: string[] = [];
+      let failedUploads = 0;
       let textContent = pastedText.trim();
 
       for (const file of files) {
@@ -21034,14 +21035,27 @@ If the user data includes a "hostContext" field, treat it as additional creative
             type: "image_url",
             image_url: { url: `data:${aiMime};base64,${aiBuffer.toString("base64")}` },
           });
-          try {
-            const storedUrl = await uploadBufferToObjectStorage(objectStorage, file.buffer, file.mimetype);
+          // Ein Wiederholungsversuch faengt voruebergehende Object-Storage-
+          // Schluckaufe (z.B. 503-Serien) ab, die sonst still die gesamte
+          // Foto-Zuordnung zerstoeren.
+          {
+            let storedUrl = "";
+            let lastErr: any = null;
+            for (let attempt = 1; attempt <= 2 && !storedUrl; attempt++) {
+              try {
+                storedUrl = (await uploadBufferToObjectStorage(objectStorage, file.buffer, file.mimetype)) || "";
+              } catch (persistErr: any) {
+                lastErr = persistErr;
+                if (attempt < 2) await new Promise((r2) => setTimeout(r2, 500));
+              }
+            }
+            if (!storedUrl) {
+              failedUploads += 1;
+              console.warn(`[ai-import] image persist failed after retry (${file.originalname}):`, String(lastErr?.message || lastErr).slice(0, 200));
+            }
             // Platzhalter bei Fehlschlag: Index-Ausrichtung zu den analysierten
             // Bildern muss erhalten bleiben (sourceImageIndex -> imageUrls[i]).
-            uploadedImageUrls.push(storedUrl || "");
-          } catch (persistErr) {
-            console.warn("[ai-import] image persist failed", persistErr);
-            uploadedImageUrls.push("");
+            uploadedImageUrls.push(storedUrl);
           }
         } else if (ext === ".pdf" || file.mimetype === "application/pdf") {
           const { extractTextFromPdf } = await import("./pdf-utils");
@@ -21213,6 +21227,7 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
         whiskies: merged.whiskies,
         tastingMeta: merged.tastingMeta,
         imageUrls: uploadedImageUrls,
+        failedUploads: failedUploads > 0 ? failedUploads : undefined,
         failedImages: merged.failedImages > 0 ? merged.failedImages : undefined,
         source: "ai",
       });

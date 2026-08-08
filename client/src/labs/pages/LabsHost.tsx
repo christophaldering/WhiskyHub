@@ -2493,6 +2493,9 @@ function MobileCompanion({
         if (result?.failedImages > 0 && result?.whiskies?.length) {
           toast({ description: t("labs.aiImport.partialFail", "{{count}} photo(s) could not be analyzed. The remaining bottles were recognized — you can re-upload the missing photos.", { count: result.failedImages }) });
         }
+        if (result?.failedUploads > 0) {
+          toast({ description: t("labs.aiImport.uploadFail", "{{count}} Foto(s) konnten nicht gespeichert werden — die Foto-Zuordnung ist unvollständig. Bitte Import mit den Fotos erneut versuchen.", { count: result.failedUploads }) });
+        }
         if (result?.whiskies?.length) {
           // Fotos automatisch zuordnen: bevorzugt anhand des von der KI
           // gemeldeten Herkunftsfotos; Positions-Zuordnung nur als Fallback.
@@ -6552,6 +6555,9 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         if (result?.failedImages > 0 && result?.whiskies?.length) {
           toast({ description: t("labs.aiImport.partialFail", "{{count}} photo(s) could not be analyzed. The remaining bottles were recognized — you can re-upload the missing photos.", { count: result.failedImages }) });
         }
+        if (result?.failedUploads > 0) {
+          toast({ description: t("labs.aiImport.uploadFail", "{{count}} Foto(s) konnten nicht gespeichert werden — die Foto-Zuordnung ist unvollständig. Bitte Import mit den Fotos erneut versuchen.", { count: result.failedUploads }) });
+        }
         if (result?.whiskies?.length) {
           // Fotos automatisch zuordnen (siehe assignPhotosFromSource).
           const urls: string[] = Array.isArray(result.imageUrls) ? result.imageUrls : [];
@@ -9214,7 +9220,7 @@ export async function runChunkedAiImport(
     chunks.push(images.slice(i, i + AI_IMPORT_UPLOAD_CHUNK));
   }
   const total = chunks.length;
-  const merged: any = { whiskies: [], tastingMeta: {}, imageUrls: [], failedImages: 0, source: "ai" };
+  const merged: any = { whiskies: [], tastingMeta: {}, imageUrls: [], failedImages: 0, failedUploads: 0, source: "ai" };
   let firstError: Error | null = null;
   // Zwei Pakete gleichzeitig: halbiert die Wartezeit, ohne bei schwachem
   // Mobilfunk zu kippen. Ergebnisse werden erst gesammelt und dann in
@@ -9263,6 +9269,7 @@ export async function runChunkedAiImport(
       }
       if (Array.isArray(r?.imageUrls)) merged.imageUrls.push(...r.imageUrls);
       if (typeof r?.failedImages === "number") merged.failedImages += r.failedImages;
+      if (typeof r?.failedUploads === "number") merged.failedUploads += r.failedUploads;
     } catch {
       // Merge-Fehler eines Einzelpakets: als fehlgeschlagen zaehlen.
       merged.failedImages += chunks[i].length;
