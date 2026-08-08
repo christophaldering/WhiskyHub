@@ -937,8 +937,8 @@ export async function registerRoutes(
       const lang = (req.query.lang as string) === "de" ? "de" : "en";
       // Vollstaendige Spaltenliste — identisch zum CSV-Export der Import-Vorschau.
       const H = lang === "de"
-        ? { photo: "Foto", pos: "#", name: "Name", distillery: "Destillerie", bottler: "Abfüller", age: "Alter", abv: "ABV %", category: "Kategorie", region: "Region", country: "Land", cask: "Fasstyp", peat: "Torf", ppm: "PPM", distilled: "Destilliert", bottled: "Abgefüllt", price: "Preis", rrp: "UVP", market: "Marktpreis", currency: "Währung", wbScore: "WB-Score", wbId: "Whiskybase ID", wbUrl: "Whiskybase URL", notes: "Notizen", summary: "Host-Zusammenfassung" }
-        : { photo: "Photo", pos: "#", name: "Name", distillery: "Distillery", bottler: "Bottler", age: "Age", abv: "ABV %", category: "Category", region: "Region", country: "Country", cask: "Cask type", peat: "Peat level", ppm: "PPM", distilled: "Distilled", bottled: "Bottled", price: "Price", rrp: "RRP", market: "Market price", currency: "Currency", wbScore: "WB score", wbId: "Whiskybase ID", wbUrl: "Whiskybase URL", notes: "Notes", summary: "Host summary" };
+        ? { photo: "Foto", pos: "#", name: "Name", distillery: "Destillerie", bottler: "Abfüller", age: "Alter", abv: "ABV %", category: "Kategorie", region: "Region", country: "Land", cask: "Fasstyp", peat: "Torf", ppm: "PPM", distilled: "Destilliert", bottled: "Abgefüllt", price: "Preis", rrp: "UVP", rrpSource: "UVP-Quelle", rrpDate: "UVP-Datum", market: "Marktpreis", marketSource: "Marktpreis-Quelle", marketDate: "Marktpreis-Datum", currency: "Währung", wbScore: "WB-Score", wbId: "Whiskybase ID", wbUrl: "Whiskybase URL", notes: "Notizen", summary: "Host-Zusammenfassung" }
+        : { photo: "Photo", pos: "#", name: "Name", distillery: "Distillery", bottler: "Bottler", age: "Age", abv: "ABV %", category: "Category", region: "Region", country: "Country", cask: "Cask type", peat: "Peat level", ppm: "PPM", distilled: "Distilled", bottled: "Bottled", price: "Price", rrp: "RRP", rrpSource: "RRP source", rrpDate: "RRP date", market: "Market price", marketSource: "Market price source", marketDate: "Market price date", currency: "Currency", wbScore: "WB score", wbId: "Whiskybase ID", wbUrl: "Whiskybase URL", notes: "Notes", summary: "Host summary" };
       const num = (v: any) => (v != null && v !== "" ? (Number(v) || Number(v) === 0 ? Number(v) : v) : "");
       const sorted = [...ws].sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
       const data = sorted.map((w: any, i: number) => {
@@ -962,7 +962,11 @@ export async function registerRoutes(
           [H.bottled]: w.bottledYear || "",
           [H.price]: num(w.price),
           [H.rrp]: num(w.priceRrp),
+          [H.rrpSource]: w.priceRrpSource || "",
+          [H.rrpDate]: w.priceRrpDate || "",
           [H.market]: num(w.priceMarket),
+          [H.marketSource]: w.priceMarketSource || "",
+          [H.marketDate]: w.priceMarketDate || "",
           [H.currency]: w.priceCurrency || "",
           [H.wbScore]: num(w.wbScore),
           [H.wbId]: wbNumeric,
