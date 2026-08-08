@@ -95,8 +95,16 @@ function emptyOutcome(): WbLookupOutcome {
 
 function parseText(text: string): z.infer<typeof chunkSchema> | null {
   const m = text.match(/\{[\s\S]*\}/);
-  if (!m) return null;
-  try { return chunkSchema.parse(JSON.parse(m[0])); } catch { return null; }
+  if (!m) {
+    console.warn("[wb-lookup] keine JSON-Antwort. Anfang:", text.slice(0, 300));
+    return null;
+  }
+  try {
+    return chunkSchema.parse(JSON.parse(m[0]));
+  } catch (e: any) {
+    console.warn("[wb-lookup] Antwort nicht auswertbar:", String(e?.message || e).slice(0, 200), "| Anfang:", m[0].slice(0, 300));
+    return null;
+  }
 }
 
 async function lookupChunk(
@@ -163,9 +171,16 @@ Return JSON exactly:
     (t as any).unref?.();
   });
 
-  const res = await Promise.race([call, timeout]);
+  let res: { output_text?: string };
+  try {
+    res = await Promise.race([call, timeout]);
+  } catch (e: any) {
+    console.warn("[wb-lookup] API-Fehler:", String(e?.message || e).slice(0, 200));
+    throw e;
+  }
   const parsed = parseText(res.output_text || "");
   if (!parsed) return out;
+  console.log(`[wb-lookup] Paket ausgewertet: ${parsed.results.length} Antworten fuer ${items.length} Flaschen, davon mit ID: ${parsed.results.filter(r => r.whiskybaseId).length}`);
 
   for (const r of parsed.results) {
     if (r.index < 1 || r.index > items.length) continue;
