@@ -262,6 +262,23 @@ export function WhiskyEditForm({
             ? t("whiskyForm.wbLoading", "Fetching…")
             : t("whiskyForm.wbFetch", "Fill from Whiskybase")}
         </button>
+        <button
+          type="button"
+          className="labs-btn-ghost text-xs"
+          style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
+          onClick={() => {
+            // Kostenloser Weg zur ID: Whiskybase-Suche mit dem Namen
+            // vorbefuellt oeffnen; der Mensch erkennt die richtige Flasche
+            // schneller und sicherer als jede Websuche per Modell.
+            const q = encodeURIComponent((name || "").trim());
+            if (q) window.open(`https://www.whiskybase.com/search?q=${q}`, "_blank", "noopener");
+          }}
+          disabled={!(name || "").trim()}
+          data-testid="whisky-edit-wb-search-link"
+        >
+          <ExternalLink className="w-3 h-3" />
+          {t("whiskyForm.wbSearchLink", "Search on Whiskybase")}
+        </button>
         {wbLookupState && wbLookupState !== "loading" && (
           <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }} data-testid="whisky-edit-wb-state">
             {wbLookupState === "not_found" && t("whiskyForm.wbNotFound", "Not found")}
