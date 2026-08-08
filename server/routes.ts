@@ -758,6 +758,35 @@ async function rejectIfWhiskyArchived(whiskyId: string, res: Response): Promise<
 // (public/anonymous flows). Keeps usage-cost logging complete without polluting per-user quota.
 const AI_LOG_ANON = "anonymous";
 
+// Kostenschutz: Tageslimit pro Nutzer (Flaschen je Suchart) und globaler
+// Tages-Kostendeckel in EUR. Beides bremst boeswillige Dauerfeuer-Anfragen,
+// ohne den normalen Betrieb (ein Tasting = <=60 Flaschen) zu beruehren.
+const AI_DAY_ITEM_LIMIT = 300;
+const aiDayItems = new Map<string, number>();
+function consumeDailyItems(participantId: string, feature: string, n: number): boolean {
+  const today = new Date().toISOString().slice(0, 10);
+  const key = `${feature}:${participantId}:${today}`;
+  const used = aiDayItems.get(key) || 0;
+  if (used + n > AI_DAY_ITEM_LIMIT) return false;
+  aiDayItems.set(key, used + n);
+  if (aiDayItems.size > 5000) {
+    for (const k of Array.from(aiDayItems.keys())) if (!k.endsWith(today)) aiDayItems.delete(k);
+  }
+  return true;
+}
+async function aiBudgetExceededMessage(): Promise<string | null> {
+  try {
+    const { getTodayAiCostEur, getAiDailyBudgetEur } = await import("./ai-settings");
+    const [spent, budget] = await Promise.all([getTodayAiCostEur(), getAiDailyBudgetEur()]);
+    if (spent >= budget) {
+      return `Tagesbudget fuer KI-Suchen erreicht (${spent.toFixed(2)} von ${budget.toFixed(2)} EUR). Morgen wieder verfuegbar.`;
+    }
+  } catch {
+    // Deckel-Pruefung darf den Betrieb nie selbst lahmlegen.
+  }
+  return null;
+}
+
 // Fire-and-forget cost logger for raw-OpenAI call sites (not routed through getAIClient).
 // Never throws, never blocks the user path; extracts token usage from the response.
 function logChatUsage(participantId: string, featureId: string, model: string, resp: any): void {
@@ -21247,10 +21276,17 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
   app.post("/api/tastings/wb-lookup", async (req: any, res: any) => {
     try {
       if (await isAIDisabled("ai_import")) return res.status(503).json({ message: "AI feature disabled by admin" });
-      const { hostId, items } = req.body || {};
-      if (!hostId) return res.status(400).json({ message: "hostId required" });
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const hostId = auth.participant.id;
+      const { items } = req.body || {};
       if (!Array.isArray(items) || items.length === 0 || items.length > 60) {
         return res.status(400).json({ message: "1-60 items required" });
+      }
+      const budgetMsg = await aiBudgetExceededMessage();
+      if (budgetMsg) return res.status(429).json({ message: budgetMsg });
+      if (!consumeDailyItems(hostId, "wb_lookup", items.length)) {
+        return res.status(429).json({ message: "Tageslimit fuer Whiskybase-Suchen erreicht. Morgen geht es weiter." });
       }
       const cleaned = items.map((it: any) => ({
         name: String(it?.name || "").trim().slice(0, 200),
@@ -21333,10 +21369,17 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
   app.post("/api/tastings/price-lookup", async (req: any, res: any) => {
     try {
       if (await isAIDisabled("ai_import")) return res.status(503).json({ message: "AI feature disabled by admin" });
-      const { hostId, items } = req.body || {};
-      if (!hostId) return res.status(400).json({ message: "hostId required" });
+      const auth = await requireAuth(req);
+      if (!auth.authenticated) return res.status(auth.status).json({ message: auth.message });
+      const hostId = auth.participant.id;
+      const { items } = req.body || {};
       if (!Array.isArray(items) || items.length === 0 || items.length > 60) {
         return res.status(400).json({ message: "1-60 items required" });
+      }
+      const budgetMsg = await aiBudgetExceededMessage();
+      if (budgetMsg) return res.status(429).json({ message: budgetMsg });
+      if (!consumeDailyItems(hostId, "price_lookup", items.length)) {
+        return res.status(429).json({ message: "Tageslimit fuer Preissuchen erreicht. Morgen geht es weiter." });
       }
       const cleaned = items.map((it: any) => ({
         name: String(it?.name || "").trim().slice(0, 200),
@@ -21400,6 +21443,8 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
       const auth = await requireWhiskyHostOrAdmin(req, req.params.id);
       if (!auth.authorized) return res.status(auth.status).json({ message: auth.message });
       sweepPriceAgentJobs();
+      const budgetMsg = await aiBudgetExceededMessage();
+      if (budgetMsg) return res.status(429).json({ message: budgetMsg });
       const hostId = String(req.headers["x-participant-id"] || "");
       for (const j of priceAgentJobs.values()) {
         if (j.status === "running" && j.hostId === hostId) {

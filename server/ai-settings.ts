@@ -172,6 +172,31 @@ export function costEurFor(model: string | null, tokensIn: number, tokensOut: nu
   return (tokensIn / 1e6) * p.in + (tokensOut / 1e6) * p.out;
 }
 
+/** Heutige KI-Kosten (EUR) aus dem Usage-Log — Grundlage des Tagesdeckels. */
+export async function getTodayAiCostEur(): Promise<number> {
+  const rows = await db
+    .select({
+      model: aiUsageLog.model,
+      tin: sql<number>`coalesce(sum(${aiUsageLog.tokensIn}),0)`,
+      tout: sql<number>`coalesce(sum(${aiUsageLog.tokensOut}),0)`,
+    })
+    .from(aiUsageLog)
+    .where(sql`${aiUsageLog.createdAt} >= date_trunc('day', now())`)
+    .groupBy(aiUsageLog.model);
+  return rows.reduce((a, r) => a + costEurFor(r.model, Number(r.tin), Number(r.tout)), 0);
+}
+
+/** Tagesbudget aus system_settings (Schluessel ai_daily_budget_eur), Standard 15 EUR. */
+export async function getAiDailyBudgetEur(): Promise<number> {
+  try {
+    const row = await db.select().from(systemSettings).where(eq(systemSettings.key, "ai_daily_budget_eur")).limit(1);
+    const v: any = row[0]?.value;
+    const n = Number(v?.eur ?? v);
+    if (Number.isFinite(n) && n > 0) return n;
+  } catch {}
+  return 15;
+}
+
 export function logAIUsage(participantId: string, featureId: string, meta?: AIUsageMeta): void {
   recordAIUsage(participantId, featureId, meta).catch(() => {});
 }
