@@ -3,6 +3,7 @@
 // Suche werden übernommen; ohne sicheren Treffer bleibt das Feld null.
 // Muster (Chunking/Timeout/Retry) analog zu ./whiskybase-lookup.ts.
 import { z } from "zod";
+import { logAIUsage } from "./ai-settings";
 
 export interface PriceLookupItem {
   name: string;
@@ -80,6 +81,11 @@ Respond with JSON exactly in this shape (one entry per item, in the same order):
   });
 
   const res = await Promise.race([call, timeout]);
+  logAIUsage("anonymous", "price_lookup", {
+    model: process.env.AI_PRICE_LOOKUP_MODEL || "gpt-5",
+    tokensIn: (res as any)?.usage?.input_tokens ?? null,
+    tokensOut: (res as any)?.usage?.output_tokens ?? null,
+  });
   const text = res.output_text || "";
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {

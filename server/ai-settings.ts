@@ -1,6 +1,6 @@
 import { eq, sql, and, gte, count } from "drizzle-orm";
 import { db } from "./db";
-import { systemSettings, adminAuditLog, aiUsageLog, participants, profiles } from "@shared/schema";
+import { systemSettings, adminAuditLog, aiUsageLog, participants, profiles, whiskies } from "@shared/schema";
 
 export const AI_FEATURES = [
   { id: "ai_enrich", label: "Whisky AI Enrich (Fakten)", route: "/api/whiskies/:id/ai-enrich" },
@@ -161,6 +161,17 @@ export async function recordAIUsage(participantId: string, featureId: string, me
 }
 
 // Fire-and-forget usage logger: never throws, never blocks the user path.
+// EUR je 1M Tokens, Stand 08/2026 — bei OpenAI-Preisaenderung pflegen.
+// Unbekannte Modelle rechnen konservativ mit dem gpt-5-Satz.
+const MODEL_EUR_PER_1M: Record<string, { in: number; out: number }> = {
+  "gpt-5": { in: 1.15, out: 9.2 },
+  "gpt-5-mini": { in: 0.23, out: 1.84 },
+};
+export function costEurFor(model: string | null, tokensIn: number, tokensOut: number): number {
+  const p = MODEL_EUR_PER_1M[model || ""] || MODEL_EUR_PER_1M["gpt-5"];
+  return (tokensIn / 1e6) * p.in + (tokensOut / 1e6) * p.out;
+}
+
 export function logAIUsage(participantId: string, featureId: string, meta?: AIUsageMeta): void {
   recordAIUsage(participantId, featureId, meta).catch(() => {});
 }
@@ -178,8 +189,10 @@ export async function checkAIQuota(participantId: string): Promise<{ allowed: bo
 
 export interface AIUsageBreakdown {
   totals: { calls: number; users: number; firstAt: string | null; lastAt: string | null };
-  perFeature: Array<{ featureId: string; all: number; d30: number; d90: number }>;
-  perMonth: Array<{ month: string; calls: number; users: number }>;
+  perFeature: Array<{ featureId: string; all: number; d30: number; d90: number; costEur: number; costEur30: number }>;
+  perMonth: Array<{ month: string; calls: number; users: number; costEur: number }>;
+  totalCostEur: number;
+  legacyDeepSearchEur: number;
   note: string;
 }
 
@@ -214,6 +227,42 @@ export async function getAIUsageBreakdown(): Promise<AIUsageBreakdown> {
     .groupBy(sql`date_trunc('month', ${aiUsageLog.createdAt})`)
     .orderBy(sql`date_trunc('month', ${aiUsageLog.createdAt}) desc`);
 
+  // Tokens je Funktion/Modell und je Monat/Modell — daraus Euro.
+  const featTok = await db
+    .select({
+      featureId: aiUsageLog.featureId,
+      model: aiUsageLog.model,
+      tin: sql<number>`coalesce(sum(${aiUsageLog.tokensIn}),0)`,
+      tout: sql<number>`coalesce(sum(${aiUsageLog.tokensOut}),0)`,
+      tin30: sql<number>`coalesce(sum(${aiUsageLog.tokensIn}) filter (where ${aiUsageLog.createdAt} >= now() - interval '30 days'),0)`,
+      tout30: sql<number>`coalesce(sum(${aiUsageLog.tokensOut}) filter (where ${aiUsageLog.createdAt} >= now() - interval '30 days'),0)`,
+    })
+    .from(aiUsageLog)
+    .groupBy(aiUsageLog.featureId, aiUsageLog.model);
+  const featCost = new Map<string, { all: number; d30: number }>();
+  for (const r of featTok) {
+    const cur = featCost.get(r.featureId) || { all: 0, d30: 0 };
+    cur.all += costEurFor(r.model, Number(r.tin), Number(r.tout));
+    cur.d30 += costEurFor(r.model, Number(r.tin30), Number(r.tout30));
+    featCost.set(r.featureId, cur);
+  }
+  const monTok = await db
+    .select({
+      month: sql<string>`to_char(date_trunc('month', ${aiUsageLog.createdAt}), 'YYYY-MM')`,
+      model: aiUsageLog.model,
+      tin: sql<number>`coalesce(sum(${aiUsageLog.tokensIn}),0)`,
+      tout: sql<number>`coalesce(sum(${aiUsageLog.tokensOut}),0)`,
+    })
+    .from(aiUsageLog)
+    .groupBy(sql`date_trunc('month', ${aiUsageLog.createdAt})`, aiUsageLog.model);
+  const monCost = new Map<string, number>();
+  for (const r of monTok) {
+    monCost.set(r.month, (monCost.get(r.month) || 0) + costEurFor(r.model, Number(r.tin), Number(r.tout)));
+  }
+  const [legacyRow] = await db
+    .select({ s: sql<number>`coalesce(sum(${whiskies.priceAgentCost}),0)` })
+    .from(whiskies);
+
   return {
     totals: {
       calls: Number(totalsRow?.calls ?? 0),
@@ -221,8 +270,10 @@ export async function getAIUsageBreakdown(): Promise<AIUsageBreakdown> {
       firstAt: totalsRow?.firstAt ?? null,
       lastAt: totalsRow?.lastAt ?? null,
     },
-    perFeature: perFeatureRows.map((r) => ({ featureId: r.featureId, all: Number(r.all), d30: Number(r.d30), d90: Number(r.d90) })),
-    perMonth: perMonthRows.map((r) => ({ month: r.month, calls: Number(r.calls), users: Number(r.users) })),
+    perFeature: perFeatureRows.map((r) => ({ featureId: r.featureId, all: Number(r.all), d30: Number(r.d30), d90: Number(r.d90), costEur: Math.round((featCost.get(r.featureId)?.all || 0) * 100) / 100, costEur30: Math.round((featCost.get(r.featureId)?.d30 || 0) * 100) / 100 })),
+    perMonth: perMonthRows.map((r) => ({ month: r.month, calls: Number(r.calls), users: Number(r.users), costEur: Math.round((monCost.get(r.month) || 0) * 100) / 100 })),
+    totalCostEur: Math.round(Array.from(monCost.values()).reduce((a, b) => a + b, 0) * 100) / 100,
+    legacyDeepSearchEur: Math.round(Number(legacyRow?.s || 0) * 100) / 100,
     note: "Erfasst werden Plattform-Key-Aufrufe (getAIClient) sowie Voice-, Bild- und Report-Endpoints mit rohen OpenAI-Clients. Bei getAIClient-Aufrufen bleiben model/tokens leer (der Log erfolgt vor dem Call); die Voice-Session-Dauer wird noch nicht erfasst. Aufrufe mit eigenem User-Key werden nicht geloggt.",
   };
 }

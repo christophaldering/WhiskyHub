@@ -4,6 +4,7 @@
 // erhalten, werden aber nicht mehr aufgerufen.
 
 import { z } from "zod";
+import { logAIUsage } from "./ai-settings";
 
 export const WHISKYBASE_URL_PREFIX =
   "https://www.whiskybase.com/whiskies/whisky/";
@@ -178,6 +179,11 @@ Return JSON exactly:
     console.warn("[wb-lookup] API-Fehler:", String(e?.message || e).slice(0, 200));
     throw e;
   }
+  logAIUsage("anonymous", "wb_lookup", {
+    model: process.env.AI_INTEGRATIONS_OPENAI_MODEL || "gpt-5-mini",
+    tokensIn: (res as any)?.usage?.input_tokens ?? null,
+    tokensOut: (res as any)?.usage?.output_tokens ?? null,
+  });
   const parsed = parseText(res.output_text || "");
   if (!parsed) return out;
   console.log(`[wb-lookup] Paket ausgewertet: ${parsed.results.length} Antworten fuer ${items.length} Flaschen, davon mit ID: ${parsed.results.filter(r => r.whiskybaseId).length}`);

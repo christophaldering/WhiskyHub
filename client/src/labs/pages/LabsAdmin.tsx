@@ -1648,19 +1648,27 @@ function AITab({ pid }: { pid: string }) {
         {(breakdown?.perFeature.length ?? 0) === 0 ? (
           <div className="text-center py-4 text-xs" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.noLoggedAiUsage") }</div>
         ) : (
-          <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 gap-y-1 mb-2">
+          <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-4 gap-y-1 mb-2">
             <span className="text-[11px] font-semibold" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.featureLabel") }</span>
             <span className="text-[11px] font-semibold text-right w-14" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.days30") }</span>
             <span className="text-[11px] font-semibold text-right w-14" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.days90") }</span>
             <span className="text-[11px] font-semibold text-right w-14" style={{ color: "var(--labs-text-muted)" }}>{ t("admin.totalLabel") }</span>
+            <span className="text-[11px] font-semibold text-right w-16" style={{ color: "var(--labs-text-muted)" }}>€</span>
             {breakdown?.perFeature.map((f) => (
               <Fragment key={f.featureId}>
                 <span className="text-xs truncate" style={{ color: "var(--labs-text)" }} data-testid={`labs-admin-feature-${f.featureId}`}>{f.featureId}</span>
                 <span className="text-xs font-mono text-right w-14" style={{ color: "var(--labs-text-secondary)" }}>{f.d30}</span>
                 <span className="text-xs font-mono text-right w-14" style={{ color: "var(--labs-text-secondary)" }}>{f.d90}</span>
                 <span className="text-xs font-mono font-semibold text-right w-14" style={{ color: "var(--labs-text)" }}>{f.all}</span>
+                <span className="text-xs font-mono text-right w-16" style={{ color: "var(--labs-accent)" }}>{(f as any).costEur?.toFixed?.(2) ?? "–"}</span>
               </Fragment>
             ))}
+          </div>
+        )}
+        {breakdown != null && (
+          <div className="text-xs mt-2" style={{ color: "var(--labs-text)" }}>
+            Gesamt: <span className="font-semibold" style={{ color: "var(--labs-accent)" }}>{((breakdown as any).totalCostEur ?? 0).toFixed(2)} €</span>
+            <span style={{ color: "var(--labs-text-muted)" }}> · Tiefensuche-Altbestand an Flaschen: {((breakdown as any).legacyDeepSearchEur ?? 0).toFixed(2)} €</span>
           </div>
         )}
         {(breakdown?.perMonth.length ?? 0) > 0 && (
@@ -1670,7 +1678,7 @@ function AITab({ pid }: { pid: string }) {
               {breakdown?.perMonth.map((m) => (
                 <div key={m.month} className="flex items-center justify-between text-xs px-2 py-1 rounded" style={{ border: "1px solid var(--labs-border)" }} data-testid={`labs-admin-month-${m.month}`}>
                   <span className="font-mono" style={{ color: "var(--labs-text)" }}>{m.month}</span>
-                  <span style={{ color: "var(--labs-text-muted)" }}>{m.calls} { t("admin.callsShort") } · {m.users} { t("admin.usersShort") }</span>
+                  <span style={{ color: "var(--labs-text-muted)" }}>{m.calls} { t("admin.callsShort") } · {m.users} { t("admin.usersShort") } · <span style={{ color: "var(--labs-accent)" }}>{(m as any).costEur?.toFixed?.(2) ?? "0.00"} €</span></span>
                 </div>
               ))}
             </div>

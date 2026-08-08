@@ -7,6 +7,7 @@
 // Bewusst teuer (gpt-5 + Websuche) — wird nur auf ausdruecklichen
 // Wunsch fuer einzelne Flaschen gestartet.
 import { z } from "zod";
+import { logAIUsage } from "./ai-settings";
 
 export interface PriceAgentInput {
   lang?: "de" | "en";
@@ -127,6 +128,11 @@ export async function runPriceAgent(
     }
     inTok += res?.usage?.input_tokens ?? 0;
     outTok += res?.usage?.output_tokens ?? 0;
+    logAIUsage("anonymous", "price_agent", {
+      model,
+      tokensIn: res?.usage?.input_tokens ?? null,
+      tokensOut: res?.usage?.output_tokens ?? null,
+    });
     const parsed = parseStep(res?.output_text || "");
     if (!parsed) {
       logLines.push(`Schritt ${steps}: Antwort nicht auswertbar`);
