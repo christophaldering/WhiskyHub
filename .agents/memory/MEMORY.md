@@ -10,3 +10,4 @@
 - [Client IP for rate limiting](client-ip-rate-limit.md) — no `trust proxy` set; use x-forwarded-for-first, never req.ip-only or all visitors share one bucket.
 - [Cooper de-pressure invariant](cooper-depressure.md) — Cooper prompts never push corner-coverage; ledger is silent-only; chip-loss guard appends unsent adoptedTerms at finalize.
 - [Merge marker checker](merge-marker-checker.md) — continueMergeResolution flags any "=======" substring, even comment banners; swap 7+ equals for dashes.
+- [Untracked patch inputs](untracked-patch-inputs.md) — inspect auto-created commits; local patch files can be included unintentionally and must be removed before push.
