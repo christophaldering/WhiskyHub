@@ -21297,6 +21297,12 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
         abv: it?.abv ? String(it.abv).slice(0, 20) : null,
         caskType: it?.caskType ? String(it.caskType).slice(0, 100) : null,
         bottledYear: it?.bottledYear ? String(it.bottledYear).slice(0, 10) : null,
+        // Weitere Pruefsteine fuer das Validierungs-Gate in whiskybase-unified.
+        // Optional: der Client schickt sie noch nicht ueberall mit, und ein
+        // fehlendes Merkmal wird als "nicht widersprochen" behandelt.
+        distilledYear: it?.distilledYear ? String(it.distilledYear).slice(0, 10) : null,
+        bottler: it?.bottler ? String(it.bottler).slice(0, 100) : null,
+        sizeMl: typeof it?.sizeMl === "number" && isFinite(it.sizeMl) ? it.sizeMl : null,
       }));
       if (cleaned.some((it) => !it.name)) {
         return res.status(400).json({ message: "each item needs a name" });
@@ -21354,7 +21360,18 @@ If you detect personal scores, ratings, or evaluations written by the user (e.g.
         abv: o.abv,
         age: o.age,
         failed: o.failed,
+        // Warum kein Treffer uebernommen wurde. Aeltere Clients ignorieren
+        // die Felder; das UI kann daraus "uneindeutig, bitte pruefen"
+        // statt eines stummen Leerfelds machen.
+        status: o.status ?? (o.whiskybaseId ? "confirmed" : "not_found"),
+        rejectedReason: o.rejectedReason ?? null,
+        candidateIds: o.candidateIds ?? [],
       }));
+      const decided = results.reduce((acc, r) => {
+        acc[r.status] = (acc[r.status] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      console.log(`[wb-lookup] Ergebnis: ${JSON.stringify(decided)}`);
       return res.json({ results });
     } catch (e: any) {
       console.error("[wb-lookup] failed:", e);

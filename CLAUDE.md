@@ -17,7 +17,7 @@ Postgres via Drizzle. Entstanden auf Replit, läuft weiterhin dort — daraus fo
 ```bash
 npm run dev          # Server + Vite, NODE_ENV=development
 npm run check        # tsc — schlägt fehl, das ist erwartet, siehe tsc-Baseline
-npm run test:unit    # Vitest, 112 Tests in 9 Dateien, ~8s
+npm run test:unit    # Vitest, 133 Tests in 10 Dateien, ~10s
 npm run test:all     # unit + api + e2e + smoke
 npm run build        # tsx script/build.ts
 npm run db:push      # drizzle-kit push

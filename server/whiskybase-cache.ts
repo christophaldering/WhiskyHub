@@ -90,6 +90,11 @@ export async function readFromCache(
  * Schreibt Ergebnisse fort. Echte Fehlschlaege (Zeitueberschreitung) werden
  * bewusst NICHT gespeichert — sonst wuerde ein einmaliger Aussetzer eine
  * Flasche eine Woche lang blockieren.
+ *
+ * Aus demselben Grund werden auch "ambiguous" und "rejected" nicht
+ * gespeichert: beides sind offene Faelle. Sobald jemand die Fassnummer oder
+ * den Alkoholgehalt nachtraegt, soll die naechste Suche eine echte Chance
+ * bekommen — und nicht eine Woche lang ein stummes "nicht gefunden" erben.
  */
 export async function writeToCache(
   items: WbLookupItem[],
@@ -97,7 +102,9 @@ export async function writeToCache(
 ): Promise<void> {
   const rows = items
     .map((item, i) => ({ item, o: outcomes[i], key: cacheKeyFor(item) }))
-    .filter(({ o, key }) => o && !o.failed && key.length > 0)
+    .filter(({ o, key }) =>
+      o && !o.failed && key.length > 0
+      && o.status !== "ambiguous" && o.status !== "rejected")
     .map(({ o, key }) => ({
       queryKey: key,
       whiskybaseId: o.whiskybaseId ?? null,

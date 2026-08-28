@@ -14,18 +14,43 @@ export interface WbLookupItem {
   distillery?: string | null;
   /** Zusaetzliche Merkmale aus der Bildanalyse. Sie schaerfen die Suche
    *  erheblich: "Ledaig 24" findet vieles, "Ledaig 24, 53.5%, Cask 207"
-   *  genau eine Flasche. */
+   *  genau eine Flasche.
+   *  Zugleich sind sie die Pruefsteine: was der Treffer davon abweichend
+   *  meldet, fuehrt zur Ablehnung (siehe checkMatch). */
   age?: string | null;
   abv?: string | null;
   caskType?: string | null;
   bottledYear?: string | null;
+  distilledYear?: string | null;
+  bottler?: string | null;
+  /** Gebindegroesse in Millilitern. Fehlt sie, wird 700 angenommen —
+   *  damit faellt eine 200-ml-Miniatur als Treffer heraus. */
+  sizeMl?: number | null;
 }
+
+/**
+ * Ergebnis der Aufloesung. Bewusst mit einem dritten Zustand:
+ *  confirmed  — Treffer gefunden und gegen die Ausgangsmerkmale geprueft
+ *  ambiguous  — mehrere Kandidaten, kein trennendes Merkmal
+ *  rejected   — ein Treffer kam zurueck, widerspricht aber den Ausgangsdaten
+ *  not_found  — nichts gefunden
+ *  failed     — technischer Fehlschlag (Zeitueberschreitung)
+ *
+ * "ambiguous" und "rejected" sind der Kern der Korrektur: ein leeres Feld
+ * mit zwei Kandidaten ist fuer die Qualitaetssicherung wertvoller als ein
+ * plausibler Fehltreffer — der wird naemlich nicht geprueft, weil er
+ * plausibel aussieht.
+ */
+export type WbResolutionStatus =
+  | "confirmed" | "ambiguous" | "rejected" | "not_found" | "failed";
 
 export interface WbLookupOutcome {
   whiskybaseId: string | null;
   whiskybaseUrl: string | null;
   wbScore: number | null;
-  // Felder, die WB zurueckliefert und das Etikett ergaenzen koennen:
+  // Felder, die WB zurueckliefert und das Etikett ergaenzen koennen.
+  // Sie sind nur dann gesetzt, wenn der Treffer die Pruefung bestanden hat —
+  // ein abgelehnter Treffer darf die Ausgangsdaten nicht ueberschreiben.
   distilledYear: string | null;
   bottledYear: string | null;
   caskType: string | null;
@@ -33,6 +58,14 @@ export interface WbLookupOutcome {
   age: string | null;
   /** true = technischer Fehlschlag (Timeout), nicht "nicht gefunden" */
   failed: boolean;
+  // --- ab hier optional, damit bestehende Aufrufer unveraendert bleiben ---
+  status?: WbResolutionStatus;
+  bottler?: string | null;
+  sizeMl?: number | null;
+  /** Grund der Ablehnung, im Klartext fuer Log und Admin-Oberflaeche. */
+  rejectedReason?: string | null;
+  /** IDs, zwischen denen nicht entschieden werden konnte. */
+  candidateIds?: string[];
 }
 
 // Lookup fuer eine bekannte ID (manueller Lookup im Bearbeiten-Dialog).
@@ -60,15 +93,157 @@ const chunkSchema = z.object({
     z.object({
       index: z.number().int().min(1),
       whiskybaseId: z.string().nullable().optional(),
+      /** Modell meldet selbst Uneindeutigkeit. */
+      ambiguous: z.boolean().nullable().optional(),
+      candidateIds: z.array(z.string()).nullable().optional(),
       wbScore: z.number().min(0).max(100).nullable().optional(),
       distilledYear: z.string().nullable().optional(),
       bottledYear: z.string().nullable().optional(),
       caskType: z.string().nullable().optional(),
       abv: z.string().nullable().optional(),
       age: z.string().nullable().optional(),
+      bottler: z.string().nullable().optional(),
+      sizeMl: z.number().nullable().optional(),
     }),
   ),
 });
+
+// ---------------------------------------------------------------------------
+// Validierungs-Gate
+//
+// Die Merkmale der gesuchten Flasche werden dem Modell mitgegeben, wurden
+// bisher aber nie gegen die Antwort geprueft. Die einzige Pruefung war
+// /^\d+$/ — also "besteht aus Ziffern", nicht "gehoert zu dieser Flasche".
+// Ein Treffer mit 43,0 % auf eine Suche mit 57,1 % kam dadurch anstandslos
+// durch. Die folgenden Funktionen schliessen genau diese Luecke; sie sind
+// rein und ohne I/O, damit sie direkt testbar sind.
+// ---------------------------------------------------------------------------
+
+/** Abweichung, die noch als "derselbe Wert" gilt. WB fuehrt eine Nachkommastelle. */
+export const ABV_TOLERANCE = 0.1;
+
+/** Angenommene Gebindegroesse, wenn nichts anderes bekannt ist. */
+export const DEFAULT_SIZE_ML = 700;
+
+/**
+ * Bekannte Namensdrift bei Abfuellern. Ohne diese Tabelle wuerde das Gate
+ * legitime Treffer wegwerfen, weil dieselbe Firma auf zwei Etiketten
+ * unterschiedlich heisst.
+ */
+const BOTTLER_ALIASES: Record<string, string[]> = {
+  "van wees": ["the ultimate whisky company", "the ultimate", "vw"],
+  "the cask hound": ["the caskhound", "tcah", "exquisite casks"],
+  "anam na h-alba": ["anha"],
+  "duncan taylor": ["battlehill", "battlehill scotch whisky co"],
+  "whisky & life": ["unbound", "whisky for life"],
+};
+
+function normalizeName(s: string): string {
+  return s.toLowerCase().normalize("NFKD").replace(/[^a-z0-9&]+/g, " ").trim();
+}
+
+/** Fuehrt einen Abfuellernamen auf seine kanonische Form zurueck. */
+export function canonicalBottler(s: string | null | undefined): string {
+  const n = normalizeName(String(s ?? ""));
+  if (!n) return "";
+  for (const [canonical, aliases] of Object.entries(BOTTLER_ALIASES)) {
+    if (n === normalizeName(canonical)) return normalizeName(canonical);
+    if (aliases.some((a) => normalizeName(a) === n)) return normalizeName(canonical);
+  }
+  return n;
+}
+
+export function sameBottler(a: string | null | undefined, b: string | null | undefined): boolean {
+  const ca = canonicalBottler(a);
+  const cb = canonicalBottler(b);
+  if (!ca || !cb) return true; // unbekannt heisst nicht widersprochen
+  return ca === cb;
+}
+
+/** "57,1 %" / "57.1" / "abv 57.1%" -> 57.1 */
+export function parseAbv(v: string | number | null | undefined): number | null {
+  if (v == null) return null;
+  if (typeof v === "number") return isFinite(v) ? v : null;
+  const m = String(v).replace(",", ".").match(/\d+(\.\d+)?/);
+  if (!m) return null;
+  const n = Number(m[0]);
+  return isFinite(n) ? n : null;
+}
+
+/** "14" / "14 Jahre" / "NAS" -> 14 | "NAS" | null */
+export function parseAge(v: string | number | null | undefined): number | "NAS" | null {
+  if (v == null) return null;
+  const s = String(v).trim();
+  if (!s) return null;
+  if (/^n\.?a\.?s\.?$/i.test(s) || /no age statement/i.test(s)) return "NAS";
+  const m = s.match(/\d+/);
+  if (!m) return null;
+  const n = Number(m[0]);
+  return isFinite(n) ? n : null;
+}
+
+/** "2007" / "15.03.2007" / "2007-03-15" -> 2007 */
+export function parseYear(v: string | number | null | undefined): number | null {
+  if (v == null) return null;
+  const m = String(v).match(/(19|20)\d{2}/);
+  return m ? Number(m[0]) : null;
+}
+
+/** Die Felder eines Whiskybase-Treffers, soweit sie geprueft werden. */
+export interface WbCandidateFields {
+  abv?: string | number | null;
+  age?: string | number | null;
+  bottledYear?: string | number | null;
+  distilledYear?: string | number | null;
+  bottler?: string | null;
+  sizeMl?: number | null;
+}
+
+/**
+ * Prueft einen Treffer gegen die Merkmale der gesuchten Flasche.
+ *
+ * Rueckgabe: null = bestanden, sonst der Grund der Ablehnung im Klartext.
+ *
+ * Grundsatz: geprueft wird nur, wo BEIDE Seiten einen Wert haben. Ein
+ * fehlendes Merkmal ist kein Widerspruch — sonst wuerde die Pruefung genau
+ * die duenn beschrifteten Einzelfassabfuellungen aussortieren, um die es geht.
+ */
+export function checkMatch(src: WbLookupItem, found: WbCandidateFields): string | null {
+  const sAbv = parseAbv(src.abv);
+  const fAbv = parseAbv(found.abv);
+  if (sAbv != null && fAbv != null && Math.abs(sAbv - fAbv) > ABV_TOLERANCE) {
+    return `ABV ${sAbv} statt ${fAbv}`;
+  }
+
+  const sAge = parseAge(src.age);
+  const fAge = parseAge(found.age);
+  if (sAge != null && fAge != null && sAge !== fAge) {
+    return `Alter ${sAge} statt ${fAge}`;
+  }
+
+  const sBottled = parseYear(src.bottledYear);
+  const fBottled = parseYear(found.bottledYear);
+  if (sBottled != null && fBottled != null && sBottled !== fBottled) {
+    return `Abfuelljahr ${sBottled} statt ${fBottled}`;
+  }
+
+  const sDistilled = parseYear(src.distilledYear);
+  const fDistilled = parseYear(found.distilledYear);
+  if (sDistilled != null && fDistilled != null && sDistilled !== fDistilled) {
+    return `Destillationsjahr ${sDistilled} statt ${fDistilled}`;
+  }
+
+  if (src.bottler && found.bottler && !sameBottler(src.bottler, found.bottler)) {
+    return `Abfueller "${src.bottler}" statt "${found.bottler}"`;
+  }
+
+  const expectedSize = src.sizeMl ?? DEFAULT_SIZE_ML;
+  if (found.sizeMl != null && found.sizeMl !== expectedSize) {
+    return `Gebinde ${found.sizeMl} ml statt ${expectedSize} ml`;
+  }
+
+  return null;
+}
 
 const idLookupSchema = z.object({
   found: z.boolean(),
@@ -125,6 +300,8 @@ For each whisky, find its Whiskybase page and extract:
 - caskType: cask type as shown on WB (e.g. "Tawny Port Wine Barrique"), null if unknown
 - abv: alcohol percentage as shown (e.g. "57.1"), null if unknown
 - age: age statement in years (e.g. "14"), or "NAS", null if unknown
+- bottler: the bottler as shown on the page, null if unknown
+- sizeMl: bottle size in millilitres as shown (e.g. 700, 200), null if not stated
 
 SEARCH STRATEGY:
 - Start with a site-restricted search: site:whiskybase.com followed by distillery, age and any cask number.
@@ -134,8 +311,15 @@ SEARCH STRATEGY:
 
 CRITICAL RULES:
 - ONLY report values you actually found on a Whiskybase page — NEVER guess
-- If multiple bottlings match, pick the one with the highest score or most ratings
+- If several bottlings match and you CANNOT tell them apart by cask number, ABV,
+  bottling date or distillation date, then return whiskybaseId: null,
+  ambiguous: true, and list the candidate IDs in candidateIds.
+  NEVER decide by rating score or number of votes: the better known batch is not
+  the same thing as the right bottle, and a wrong ID that looks plausible is worse
+  than an empty field, because nobody checks it.
 - If no confident match found, return whiskybaseId: null
+- Report every field exactly as the page shows it. Never adjust a value to make it
+  agree with the request — a disagreement is useful information, not an error.
 - Reply ONLY with strict JSON, no markdown`;
 
   const user = `Find each whisky on Whiskybase.com and extract the data fields.
@@ -153,7 +337,7 @@ ${items.map((m, i) => {
 }).join("\n")}
 
 Return JSON exactly:
-{"results":[{"index":<int>,"whiskybaseId":"<string|null>","wbScore":<number|null>,"distilledYear":"<string|null>","bottledYear":"<string|null>","caskType":"<string|null>","abv":"<string|null>","age":"<string|null>"}]}`;
+{"results":[{"index":<int>,"whiskybaseId":"<string|null>","ambiguous":<bool>,"candidateIds":[<string>],"wbScore":<number|null>,"distilledYear":"<string|null>","bottledYear":"<string|null>","caskType":"<string|null>","abv":"<string|null>","age":"<string|null>","bottler":"<string|null>","sizeMl":<number|null>}]}`;
 
   const call = client.responses.create({
     model: process.env.AI_INTEGRATIONS_OPENAI_MODEL || "gpt-5-mini",
@@ -191,13 +375,49 @@ Return JSON exactly:
   for (const r of parsed.results) {
     if (r.index < 1 || r.index > items.length) continue;
     const idx = r.index - 1;
+      const src = items[idx];
     const id = (r.whiskybaseId ?? "").toString().trim();
     const validId = /^\d+$/.test(id) ? id : null;
+      const candidateIds = (r.candidateIds ?? []).filter((c) => /^\d+$/.test(String(c).trim()));
+
+      // Fall 1: das Modell meldet selbst Uneindeutigkeit. Dann bleibt das Feld
+      // leer und die Kandidaten werden weitergereicht — die Entscheidung
+      // gehoert an einen Menschen, nicht an den Zufall.
+      if (!validId || r.ambiguous === true) {
+        out[idx] = {
+          ...emptyOutcome(),
+          status: r.ambiguous === true || candidateIds.length > 1 ? "ambiguous" : "not_found",
+          candidateIds,
+        };
+        if (out[idx].status === "ambiguous") {
+          console.log(`[wb-lookup] uneindeutig: "${src.name}" — Kandidaten ${candidateIds.join(", ") || "unbenannt"}`);
+        }
+        continue;
+      }
+
+      // Fall 2: ein Treffer kam zurueck. Bevor er uebernommen wird, muss er
+      // zu den Merkmalen passen, mit denen gesucht wurde.
+      const reason = checkMatch(src, {
+        abv: r.abv, age: r.age,
+        bottledYear: r.bottledYear, distilledYear: r.distilledYear,
+        bottler: r.bottler, sizeMl: r.sizeMl,
+      });
+      if (reason) {
+        console.log(`[wb-lookup] verworfen: "${src.name}" -> WB ${validId} (${reason})`);
+        out[idx] = {
+          ...emptyOutcome(),
+          status: "rejected",
+          rejectedReason: reason,
+          candidateIds: [validId],
+        };
+        continue;
+      }
+
+      // Fall 3: bestanden. Erst jetzt duerfen die WB-Werte die Ausgangsdaten
+      // ergaenzen — sie widersprechen ihnen nachweislich nicht mehr.
     out[idx] = {
       whiskybaseId: validId,
-      whiskybaseUrl: validId
-        ? `${WHISKYBASE_URL_PREFIX}${validId}`
-        : null,
+        whiskybaseUrl: `${WHISKYBASE_URL_PREFIX}${validId}`,
       wbScore:
         typeof r.wbScore === "number" && isFinite(r.wbScore) && r.wbScore > 0
           ? Math.round(r.wbScore * 100) / 100
@@ -208,6 +428,11 @@ Return JSON exactly:
       abv: r.abv ?? null,
       age: r.age ?? null,
       failed: false,
+        status: "confirmed",
+        bottler: r.bottler ?? null,
+        sizeMl: r.sizeMl ?? null,
+        rejectedReason: null,
+        candidateIds: [],
     };
   }
   return out;
@@ -261,7 +486,7 @@ export async function lookupWhiskiesOnWb(
         s.value.forEach((r, i) => { results[at + i] = r; });
       } else {
         console.warn("[wb-unified] retry failed:", (s.reason as any)?.message);
-        results[at] = { ...emptyOutcome(), failed: true };
+        results[at] = { ...emptyOutcome(), failed: true, status: "failed" };
       }
     });
   }
